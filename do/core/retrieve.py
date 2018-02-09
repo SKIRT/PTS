@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.retrieve Retrieve a file or directory from one of the remotes.
+## \package pts.do.core.retrieve Retrieve a file or directory from a remote host.
 
 # -----------------------------------------------------------------
 
@@ -21,12 +21,18 @@ from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
+# Create configuration definition
 definition = ConfigurationDefinition()
+
+# Required
 definition.add_required("remote_path", "string", "remote path of the file or directory to retrieve")
 definition.add_required("remote", "string", "remote host to retrieve from", choices=find_host_ids())
+
+# Local path
 definition.add_positional_optional("local_path", "string", "path of the local directory to store the file/directory")
 
-config = parse_arguments("retrieve", definition)
+# Create configuration
+config = parse_arguments("retrieve", definition, "Retrieve a file or directory from a remote host")
 
 # -----------------------------------------------------------------
 

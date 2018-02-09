@@ -113,7 +113,7 @@ definition.add_flag("allow_multisocket_processes", "allow using multiple sockets
 # -----------------------------------------------------------------
 
 # Special options
-definition.add_flag("keep", "keep remote input and output", False)
+definition.add_flag("keep", "keep remote input and output", True) # for certainty
 definition.add_flag("attached", "run SKIRT in attached mode", False)
 definition.add_flag("show_progress", "show progress of local simulations", False)
 definition.add_flag("dry", "dry-run (don't actually launch simulations)", False)

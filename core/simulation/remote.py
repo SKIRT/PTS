@@ -1854,6 +1854,9 @@ class SKIRTRemote(Remote):
         # If retrieve file types are defined, download these files seperately to the local filesystem
         else: self.retrieve_simulation_types(simulation)
 
+        # Check if there are any output files in the local output directory
+        if fs.is_empty(simulation.output_path): raise ValueError("Retrieval was unsuccesful: no output files in '" + simulation.output_path + "'")
+
         # If retrieval was succesful, add this information to the simulation file
         simulation.retrieved = True
         simulation.save()
@@ -2394,7 +2397,9 @@ class SKIRTRemote(Remote):
                 else: active_screen = self.is_active_screen(screen_name)
 
                 # Set status of simulation
-                if active_screen: simulation_status = "queued"
+                if active_screen:
+                    # CAN ALSO BE CRASHED (OR OUTPUT HAS BEEN DELETED ACCIDENTLY)
+                    simulation_status = "queued"
                 else: simulation_status = "cancelled"
 
             # Attached terminal session

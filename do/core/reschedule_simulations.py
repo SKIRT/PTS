@@ -299,6 +299,23 @@ for simulation_name in simulations:
 
     #print(new_simulation.remote_input_path)
 
+    ## SET PROPERTIES FROM ORIGINAL SIMULATION
+
+    # ANALYSIS OPTIONS
+    new_simulation.analysis = simulation.analysis
+    new_simulation.analyser_paths = simulation.analyser_paths
+
+    # Options for retrieval
+    new_simulation.retrieve_types = simulation.retrieve_types
+
+    # Options for removing remote or local input and output
+    new_simulation.remove_remote_input = simulation.remove_remote_input
+    new_simulation.remove_remote_output = simulation.remove_remote_output  # After retrieval
+    new_simulation.remove_remote_simulation_directory = simulation.remove_remote_simulation_directory  # After retrieval
+    new_simulation.remove_local_output = simulation.remove_local_output  # After analysis
+
+    ##
+
     # If the input directory is shared between the different simulations
     if shared and shared_key not in shared_input_paths: shared_input_paths[shared_key] = new_simulation.remote_input_path
 

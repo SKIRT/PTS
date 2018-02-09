@@ -239,6 +239,7 @@ class SimulationAdapter(Configurable):
 
             # Loop over the names
             for name in self.config.names:
+                if name not in self.all_simulations: raise ValueError("Simulation '" + name + "' is not a simulation of host '" + self.config.remote + "'")
                 simulation_id = self.all_simulations[name].id
                 self.simulations[simulation_id] = self.all_simulations[name]
 

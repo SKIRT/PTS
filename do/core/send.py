@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.send Send a file or directory to one of the configured remotes.
+## \package pts.do.core.send Send a file or directory to a remote host.
 
 # -----------------------------------------------------------------
 
@@ -20,11 +20,18 @@ from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
+# Create configuration definition
 definition = ConfigurationDefinition()
+
+# Required
 definition.add_required("local_path", "string", "path or name of the file or directory to send")
 definition.add_required("remote", "string", "the remote host to send to", choices=find_host_ids())
+
+# Remote path
 definition.add_positional_optional("remote_path", "string", "path of the remote directory to send to")
-config = parse_arguments("send", definition)
+
+# Create configuration
+config = parse_arguments("send", definition, "Send a file or directory to a remote host")
 
 # -----------------------------------------------------------------
 
