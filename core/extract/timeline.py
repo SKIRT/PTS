@@ -910,8 +910,35 @@ class TimeLineExtractor(object):
         # Obtain the log files created by the simulation
         self.log_files = simulation.logfiles()
 
+        # Check whether there are log files
+        if not self.has_logfiles: raise ValueError("No log files found in simulation output")
+
         # Set the output path
         self.output_path = output_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nlogfiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.log_files)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_logfiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nlogfiles > 0
 
     # -----------------------------------------------------------------
 

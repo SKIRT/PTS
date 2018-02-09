@@ -82,7 +82,7 @@ filternames_for_colours["mu3000"] = ["hfi_3000"]
 
 # -----------------------------------------------------------------
 
-ignore_columns = ["name", "common_name", "ra", "dec", "inclination", "ellipticity", "redshift", "names", "distance", "position_angle", "velocity", "d25", "effective_radius", "type"]
+ignore_columns = ["Name", "Common name", "RA", "DEC", "Inclination", "Ellipticity", "Redshift", "Names", "Distance", "Position angle", "Velocity", "D25", "Effective radius", "Type"]
 column_names = [column_name for column_name in table.colnames if column_name not in ignore_columns and not column_name.startswith("has_") and not column_name.endswith("error")]
 
 # -----------------------------------------------------------------

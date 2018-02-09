@@ -290,11 +290,38 @@ class MemoryExtractor(object):
         # Obtain the log files created by the simulation
         self.log_files = simulation.logfiles()
 
+        # Check whether there are log files
+        if not self.has_logfiles: raise ValueError("No log files found in simulation output")
+
         # Check whether the log files contain memory information
         if not self.log_files[0].has_memory: raise NoMemoryData("The log files don't contain memory information", simulation_name=simulation.name)
 
         # Set the output path
         self.output_path = output_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nlogfiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.log_files)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_logfiles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nlogfiles > 0
 
     # -----------------------------------------------------------------
 

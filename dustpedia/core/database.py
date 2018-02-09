@@ -423,6 +423,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_urls(self, galaxy_name, error_maps=True):
 
         """
@@ -439,7 +440,8 @@ class DustPediaDatabase(object):
 
         # Go to the page
         formatted_galaxy_name = galaxy_name.replace("+", "%2B")
-        r = self.session.get(data_link + "?GalaxyName="+formatted_galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+        url = data_link + "?GalaxyName="+formatted_galaxy_name+"&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search"
+        r = self.session.get(url)
 
         page_as_string = r.content
 
@@ -516,6 +518,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_names(self, galaxy_name, error_maps=True):
 
         """
@@ -542,6 +545,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_names_and_urls(self, galaxy_name, error_maps=True):
 
         """
@@ -575,6 +579,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_name_for_filter(self, galaxy_name, fltr):
 
         """
@@ -606,6 +611,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_names_and_filters(self, galaxy_name):
 
         """
@@ -636,6 +642,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_names_and_filters_per_observatory(self, galaxy_name):
 
         """
@@ -664,6 +671,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_filters(self, galaxy_name):
 
         """
@@ -702,6 +710,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_image_filters_per_observatory(self, galaxy_name):
 
         """
@@ -728,6 +737,32 @@ class DustPediaDatabase(object):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_image_filters_per_instrument(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Initialize
+        instruments = DefaultOrderedDict(list)
+
+        # Get filters
+        filters = self.get_image_filters(galaxy_name)
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Add to dict
+            instruments[fltr.instrument].append(fltr)
+
+        # Return
+        return instruments
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_observatories(self, galaxy_name):
 
         """
@@ -737,6 +772,19 @@ class DustPediaDatabase(object):
         """
 
         return self.get_image_filters_per_observatory(galaxy_name).keys()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_instruments(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return self.get_image_filters_per_instrument(galaxy_name).keys()
 
     # -----------------------------------------------------------------
 
@@ -762,7 +810,7 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        return "SDSS" in self.get_observatories(galaxy_name)
+        return "SDSS" in self.get_instruments(galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -793,6 +841,32 @@ class DustPediaDatabase(object):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def has_irac(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "IRAC" in self.get_instruments(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_mips(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        return "MIPS" in self.get_instruments(galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def has_wise(self, galaxy_name):
 
         """
@@ -814,7 +888,7 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        return "Pacs" in self.get_observatories(galaxy_name)
+        return "Pacs" in self.get_instruments(galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -827,7 +901,7 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        return "SPIRE" in self.get_observatories(galaxy_name)
+        return "SPIRE" in self.get_instruments(galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -840,7 +914,7 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        return self.has_pacs(galaxy_name) or self.has_spire(galaxy_name)
+        return "Herschel" in self.get_observatories(galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -1276,6 +1350,33 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def has_galaxy(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Get page
+        formatted_galaxy_name = galaxy_name.replace("+", "%2B")
+        url = data_link + "?GalaxyName=" + formatted_galaxy_name + "&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search"
+        # print(url)
+        r = self.session.get(url)
+        page_as_string = r.content
+
+        tree = html.fromstring(page_as_string)
+
+        table_list = [e for e in tree.iter() if e.tag == 'table']
+        # print(len(table_list), table_list)
+
+        # Return whether there are tables on the page
+        return len(table_list) > 0
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_galaxy_info(self, galaxy_name):
 
         """
@@ -1417,6 +1518,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_galaxy_info_table(self, galaxy_name):
 
         """
@@ -1438,6 +1540,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_black_body_parameters(self, galaxy_name):
 
         """
@@ -1628,6 +1731,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_black_body_galaxy_index(self, galaxy_name):
 
         """
@@ -1641,6 +1745,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_mass_black_body(self, galaxy_name):
 
         """
@@ -1655,6 +1760,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_mass_error_black_body(self, galaxy_name):
 
         """
@@ -1669,6 +1775,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_temperature_black_body(self, galaxy_name):
 
         """
@@ -1683,6 +1790,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_temperature_error_black_body(self, galaxy_name):
 
         """
@@ -1697,6 +1805,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_luminosity_black_body(self, galaxy_name):
 
         """
@@ -1711,6 +1820,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_luminosity_error_black_body(self, galaxy_name):
 
         """
@@ -1725,6 +1835,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_chi_squared_black_body(self, galaxy_name):
 
         """
@@ -1739,6 +1850,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def has_dust_black_body_table_parameters(self, galaxy_name):
 
         """
@@ -1757,6 +1869,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_black_body_table_parameters(self, galaxy_name):
 
         """
@@ -1832,6 +1945,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_cigale_galaxy_index(self, galaxy_name):
 
         """
@@ -1846,6 +1960,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_mass_cigale(self, galaxy_name):
 
         """
@@ -1861,6 +1976,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_mass_error_cigale(self, galaxy_name):
 
         """
@@ -1876,6 +1992,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_sfr_cigale(self, galaxy_name):
 
         """
@@ -1891,6 +2008,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_sfr_error_cigale(self, galaxy_name):
 
         """
@@ -1906,6 +2024,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_stellar_mass_cigale(self, galaxy_name):
 
         """
@@ -1921,6 +2040,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_stellar_mass_error_cigale(self, galaxy_name):
 
         """
@@ -1936,6 +2056,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_stellar_luminosity_cigale(self, galaxy_name):
 
         """
@@ -1951,6 +2072,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_stellar_luminosity_error_cigale(self, galaxy_name):
 
         """
@@ -1966,6 +2088,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_luminosity_cigale(self, galaxy_name):
 
         """
@@ -1981,6 +2104,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_dust_luminosity_error_cigale(self, galaxy_name):
 
         """
@@ -1996,6 +2120,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_fuv_attenuation_cigale(self, galaxy_name):
 
         """
@@ -2011,6 +2136,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_fuv_attenuation_error_cigale(self, galaxy_name):
 
         """
@@ -2026,6 +2152,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def has_cigale_parameters(self, galaxy_name):
 
         """
@@ -2043,6 +2170,7 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_cigale_parameters(self, galaxy_name):
 
         """

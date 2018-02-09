@@ -34,127 +34,245 @@ from pts.core.tools import tables
 # -----------------------------------------------------------------
 
 # Basic info
-name_name = "name"
-ra_name = "ra"
-dec_name = "dec"
-stage_name = "stage"
-type_name = "type"
-velocity_name = "velocity"
-d25_name = "d25"
-inclination_name = "inclination"
+name_name = "Name"
+ra_name = "RA"
+dec_name = "DEC"
+stage_name = "Stage"
+type_name = "Type"
+velocity_name = "Velocity"
+d25_name = "D25"
+inclination_name = "Inclination"
+
+old_name_name = "name"
+old_ra_name = "ra"
+old_dec_name = "dec"
+old_stage_name = "stage"
+old_type_name = "type"
+old_velocity_name = "velocity"
+old_d25_name = "d25"
+old_inclination_name = "inclination"
 
 # Properties
-common_name_name = "common_name"
-names_name = "names"
-distance_name = "distance"
-redshift_name = "redshift"
+common_name_name = "Common name"
+names_name = "Names"
+distance_name = "Distance"
+redshift_name = "Redshift"
+
+old_common_name_name = "common_name"
+old_names_name = "names"
+old_distance_name = "distance"
+old_redshift_name = "redshift"
 
 # Morphology
-has_s4g_name = "has_s4g"
-position_angle_name = "position_angle"
-ellipticity_name = "ellipticity"
-sersic_index_name = "sersic_index"
-effective_radius_name = "effective_radius"
+has_s4g_name = "Has S4G"
+position_angle_name = "Position angle"
+ellipticity_name = "Ellipticity"
+sersic_index_name = "Sersic index"
+effective_radius_name = "Effective radius"
+
+old_has_s4g_name = "has_s4g"
+old_position_angle_name = "position_angle"
+old_ellipticity_name = "ellipticity"
+old_sersic_index_name = "sersic_index"
+old_effective_radius_name = "effective_radius"
 
 # Set luminosities
-galex_fuv_name = "galex_fuv"
-galex_nuv_name = "galex_nuv"
-sdss_u_name = "sdss_u"
-sdss_g_name = "sdss_g"
-sdss_r_name = "sdss_r"
-sdss_i_name = "sdss_i"
-sdss_z_name = "sdss_z"
-twomassj_name = "2mass_j"
-twomassh_name = "2mass_h"
-twomassk_name = "2mass_k"
-wise_w1_name = "wise_w1"
-wise_w2_name = "wise_w2"
-wise_w3_name = "wise_w3"
-wise_w4_name = "wise_w4"
-iras12_name = "iras12"
-iras25_name = "iras25"
-iras60_name = "iras60"
-iras100_name = "iras100"
-i1_name = "i1"
-i2_name = "i2"
-i3_name = "i3"
-i4_name = "i4"
-mips24_name = "mips24"
-mips70_name = "mips70"
-mips160_name = "mips160"
-pblue_name = "pblue"
-pgreen_name = "pgreen"
-pred_name = "pred"
-psw_name = "psw"
-pmw_name = "pmw"
-plw_name = "plw"
-hfi_350_name = "hfi_350"
-hfi_550_name = "hfi_550"
-hfi_850_name = "hfi_850"
-hfi_1380_name = "hfi_1380"
-hfi_2100_name = "hfi_2100"
-hfi_3000_name = "hfi_3000"
+galex_fuv_name = "GALEX FUV"
+galex_nuv_name = "GALEX NUV"
+sdss_u_name = "SDSS u"
+sdss_g_name = "SDSS g"
+sdss_r_name = "SDSS r"
+sdss_i_name = "SDSS i"
+sdss_z_name = "SDSS z"
+twomassj_name = "2MASS J"
+twomassh_name = "2MASS H"
+twomassk_name = "2MASS Ks"
+wise_w1_name = "WISE W1"
+wise_w2_name = "WISE W2"
+wise_w3_name = "WISE W3"
+wise_w4_name = "WISE W4"
+iras12_name = "IRAS 12 micron"
+iras25_name = "IRAS 25 micron"
+iras60_name = "IRAS 60 micron"
+iras100_name = "IRAS 100 micron"
+i1_name = "IRAC I1"
+i2_name = "IRAC I2"
+i3_name = "IRAC I3"
+i4_name = "IRAC I4"
+mips24_name = "MIPS 24 micron"
+mips70_name = "MIPS 70 micron"
+mips160_name = "MIPS 160 micron"
+pblue_name = "Pacs blue"
+pgreen_name = "Pacs green"
+pred_name = "Pacs red"
+psw_name = "SPIRE PSW"
+pmw_name = "SPIRE PMW"
+plw_name = "SPIRE PLW"
+hfi_350_name = "Planck 350 micron"
+hfi_550_name = "Planck 550 micron"
+hfi_850_name = "Planck 850 micron"
+hfi_1380_name = "Planck 1380 micron"
+hfi_2100_name = "Planck 2100 micron"
+hfi_3000_name = "Planck 3000 micron"
+
+old_galex_fuv_name = "galex_fuv"
+old_galex_nuv_name = "galex_nuv"
+old_sdss_u_name = "sdss_u"
+old_sdss_g_name = "sdss_g"
+old_sdss_r_name = "sdss_r"
+old_sdss_i_name = "sdss_i"
+old_sdss_z_name = "sdss_z"
+old_twomassj_name = "2mass_j"
+old_twomassh_name = "2mass_h"
+old_twomassk_name = "2mass_k"
+old_wise_w1_name = "wise_w1"
+old_wise_w2_name = "wise_w2"
+old_wise_w3_name = "wise_w3"
+old_wise_w4_name = "wise_w4"
+old_iras12_name = "iras12"
+old_iras25_name = "iras25"
+old_iras60_name = "iras60"
+old_iras100_name = "iras100"
+old_i1_name = "i1"
+old_i2_name = "i2"
+old_i3_name = "i3"
+old_i4_name = "i4"
+old_mips24_name = "mips24"
+old_mips70_name = "mips70"
+old_mips160_name = "mips160"
+old_pblue_name = "pblue"
+old_pgreen_name = "pgreen"
+old_pred_name = "pred"
+old_psw_name = "psw"
+old_pmw_name = "pmw"
+old_plw_name = "plw"
+old_hfi_350_name = "hfi_350"
+old_hfi_550_name = "hfi_550"
+old_hfi_850_name = "hfi_850"
+old_hfi_1380_name = "hfi_1380"
+old_hfi_2100_name = "hfi_2100"
+old_hfi_3000_name = "hfi_3000"
 
 # Colours
-fuv_nuv_name = "fuv_nuv"
-fuv_h_name = "fuv_h"
-fuv_j_name = "fuv_j"
-fuv_k_name = "fuv_k"
-fuv_u_name = "fuv_u"
-fuv_g_name = "fuv_g"
-fuv_r_name = "fuv_r"
-fuv_i_name = "fuv_i"
-fuv_z_name = "fuv_z"
-fuv_mu3_name = "fuv_mu3"
-fuv_mu4_name = "fuv_mu4"
-nuv_h_name = "nuv_h"
-nuv_j_name = "nuv_j"
-nuv_k_name = "nuv_k"
-nuv_u_name = "nuv_u"
-nuv_g_name = "nuv_g"
-nuv_r_name = "nuv_r"
-nuv_i_name = "nuv_i"
-nuv_z_name = "nuv_z"
-nuv_mu3_name = "nuv_mu3"
-nuv_mu4_name = "nuv_mu4"
-mu25_mu70_name = "mu25_mu70"
-mu25_mu60_name = "mu25_mu60"
-mu60_mu100_name = "mu60_mu100"
-mu70_mu100_name = "mu70_mu100"
-mu100_mu160_name = "mu100_mu160"
-mu160_mu250_name = "mu160_mu250"
-mu250_mu350_name = "mu250_mu350"
-mu350_mu500_name = "mu350_mu500"
-mu350_mu550_name = "mu350_mu550"
-mu500_mu850_name = "mu500_mu850"
-mu550_mu850_name = "mu550_mu850"
-mu850_mu1380_name = "mu850_mu1380"
-mu1380_mu2100_name = "mu1380_mu2100"
-mu2100_mu3000_name = "mu2100_mu3000"
+fuv_nuv_name = "FUV-NUV"
+fuv_h_name = "FUV-H"
+fuv_j_name = "FUV-J"
+fuv_k_name = "FUV-Ks"
+fuv_u_name = "FUV-u"
+fuv_g_name = "FUV-g"
+fuv_r_name = "FUV_r"
+fuv_i_name = "FUV_i"
+fuv_z_name = "FUV_z"
+fuv_mu3_name = "FUV - 3.5 micron"
+fuv_mu4_name = "FUV - 4.5 micron"
+nuv_h_name = "NUV-H"
+nuv_j_name = "NUV-J"
+nuv_k_name = "NUV-Ks"
+nuv_u_name = "NUV-u"
+nuv_g_name = "NUV-g"
+nuv_r_name = "NUV-r"
+nuv_i_name = "NUV-i"
+nuv_z_name = "NUV-z"
+nuv_mu3_name = "NUV - 3.5 micron"
+nuv_mu4_name = "NUV - 4.5 micron"
+mu25_mu70_name = "25 micron - 70 micron"
+mu25_mu60_name = "25 micron - 60 micron"
+mu60_mu100_name = "60 micron - 100 micron"
+mu70_mu100_name = "70 micron - 100 micron"
+mu100_mu160_name = "100 micron - 160 micron"
+mu160_mu250_name = "160 micron - 250 micron"
+mu250_mu350_name = "250 micron - 350 micron"
+mu350_mu500_name = "350 micron - 500 micron"
+mu350_mu550_name = "350 micron - 550 micron"
+mu500_mu850_name = "500 micron - 850 micron"
+mu550_mu850_name = "550 micron - 850 micron"
+mu850_mu1380_name = "850 micron - 1380 micron"
+mu1380_mu2100_name = "1380 micron - 2100 micron"
+mu2100_mu3000_name = "2100 micron - 3000 micron"
+
+old_fuv_nuv_name = "fuv_nuv"
+old_fuv_h_name = "fuv_h"
+old_fuv_j_name = "fuv_j"
+old_fuv_k_name = "fuv_k"
+old_fuv_u_name = "fuv_u"
+old_fuv_g_name = "fuv_g"
+old_fuv_r_name = "fuv_r"
+old_fuv_i_name = "fuv_i"
+old_fuv_z_name = "fuv_z"
+old_fuv_mu3_name = "fuv_mu3"
+old_fuv_mu4_name = "fuv_mu4"
+old_nuv_h_name = "nuv_h"
+old_nuv_j_name = "nuv_j"
+old_nuv_k_name = "nuv_k"
+old_nuv_u_name = "nuv_u"
+old_nuv_g_name = "nuv_g"
+old_nuv_r_name = "nuv_r"
+old_nuv_i_name = "nuv_i"
+old_nuv_z_name = "nuv_z"
+old_nuv_mu3_name = "nuv_mu3"
+old_nuv_mu4_name = "nuv_mu4"
+old_mu25_mu70_name = "mu25_mu70"
+old_mu25_mu60_name = "mu25_mu60"
+old_mu60_mu100_name = "mu60_mu100"
+old_mu70_mu100_name = "mu70_mu100"
+old_mu100_mu160_name = "mu100_mu160"
+old_mu160_mu250_name = "mu160_mu250"
+old_mu250_mu350_name = "mu250_mu350"
+old_mu350_mu500_name = "mu350_mu500"
+old_mu350_mu550_name = "mu350_mu550"
+old_mu500_mu850_name = "mu500_mu850"
+old_mu550_mu850_name = "mu550_mu850"
+old_mu850_mu1380_name = "mu850_mu1380"
+old_mu1380_mu2100_name = "mu1380_mu2100"
+old_mu2100_mu3000_name = "mu2100_mu3000"
 
 # Models
-sfr_name = "sfr"
-sfr_error_name = "sfr_error"
-dust_mass_name = "dust_mass"
-dust_mass_error_name = "dust_mass_error"
-dust_luminosity_name = "dust_luminosity"
-dust_luminosity_error_name = "dust_luminosity_error"
-dust_temperature_name = "dust_temperature"
-dust_temperature_error_name = "dust_temperature_error"
-stellar_mass_name = "stellar_mass"
-stellar_mass_error_name = "stellar_mass_error"
-stellar_luminosity_name = "stellar_luminosity"
-stellar_luminosity_error_name = "stellar_luminosity_error"
+sfr_name = "SFR"
+sfr_error_name = "SFR error"
+dust_mass_name = "Dust mass"
+dust_mass_error_name = "Dust mass error"
+dust_luminosity_name = "Dust luminosity"
+dust_luminosity_error_name = "Dust luminosity error"
+dust_temperature_name = "Dust temperature"
+dust_temperature_error_name = "Dust temperature error"
+stellar_mass_name = "Stellar mass"
+stellar_mass_error_name = "Stellar mass error"
+stellar_luminosity_name = "Stellar luminosity"
+stellar_luminosity_error_name = "Stellar luminosity error"
+
+old_sfr_name = "sfr"
+old_sfr_error_name = "sfr_error"
+old_dust_mass_name = "dust_mass"
+old_dust_mass_error_name = "dust_mass_error"
+old_dust_luminosity_name = "dust_luminosity"
+old_dust_luminosity_error_name = "dust_luminosity_error"
+old_dust_temperature_name = "dust_temperature"
+old_dust_temperature_error_name = "dust_temperature_error"
+old_stellar_mass_name = "stellar_mass"
+old_stellar_mass_error_name = "stellar_mass_error"
+old_stellar_luminosity_name = "stellar_luminosity"
+old_stellar_luminosity_error_name = "stellar_luminosity_error"
 
 # Presence
-has_galex_name = "has_galex"
-has_sdss_name = "has_sdss"
-has_2mass_name = "has_2mass"
-has_spitzer_name = "has_spitzer"
-has_wise_name = "has_wise"
-has_pacs_name = "has_pacs"
-has_spire_name = "has_spire"
-has_planck_name = "has_spire"
+has_galex_name = "Has GALEX"
+has_sdss_name = "Has SDSS"
+has_2mass_name = "Has 2MASS"
+has_irac_name = "Has IRAC"
+has_mips_name = "Has MIPS"
+has_wise_name = "Has WISE"
+has_pacs_name = "Has Pacs"
+has_spire_name = "Has SPIRE"
+has_planck_name = "Has Planck"
+
+old_has_galex_name = "has_galex"
+old_has_sdss_name = "has_sdss"
+old_has_2mass_name = "has_2mass"
+old_has_irac_name = "has_irac"
+old_has_mips_name = "has_mips"
+old_has_wise_name = "has_wise"
+old_has_pacs_name = "has_pacs"
+old_has_spire_name = "has_spire"
+old_has_planck_name = "has_planck"
 
 # -----------------------------------------------------------------
 
@@ -182,7 +300,7 @@ models_names = [sfr_name, sfr_error_name, dust_mass_name, dust_mass_error_name, 
                 dust_luminosity_error_name, dust_temperature_name, dust_temperature_error_name, stellar_mass_name,
                 stellar_mass_error_name, stellar_luminosity_name, stellar_luminosity_error_name]
 
-presence_names = [has_galex_name, has_sdss_name, has_2mass_name, has_spitzer_name, has_wise_name, has_pacs_name, has_spire_name, has_planck_name]
+presence_names = [has_galex_name, has_sdss_name, has_2mass_name, has_irac_name, has_mips_name, has_wise_name, has_pacs_name, has_spire_name, has_planck_name]
 
 # -----------------------------------------------------------------
 
@@ -204,7 +322,7 @@ definition.add_optional("extend", "file_path", "extend existing table file")
 
 # Adjust existing table
 definition.add_optional("adjust", "file_path", "adjust existing table file")
-definition.add_optional("column_names", "string_list", "column names to adjust", choices=column_names)
+definition.add_optional("columns", "string_list", "column names to adjust", choices=column_names)
 
 # Get configuration
 config = parse_arguments("make_galaxy_table", definition)
@@ -308,7 +426,7 @@ hfi_3000_filter = parse_filter("HFI 100")
 # -----------------------------------------------------------------
 
 # Check
-if config.adjust is not None and config.column_names is None: raise ValueError("Column names to adjust must be specified")
+if config.adjust is not None and config.columns is None: raise ValueError("Column names to adjust must be specified")
 
 # Load table to extend
 if config.extend is not None: table = current_table
@@ -769,18 +887,35 @@ def get_presence(galaxy_name):
     :return:
     """
 
+    #observatories = database.get_observatories(galaxy_name)
+    #print("OBS:", observatories)
+
+    #filters = database.get_image_filters_per_observatory(galaxy_name)
+    #print(filters)
+
     # Check presence of data
     has_galex = database.has_galex(galaxy_name)
     has_sdss = database.has_sdss(galaxy_name)
     has_2mass = database.has_2mass(galaxy_name)
-    has_spitzer = database.has_spitzer(galaxy_name)
+    has_irac = database.has_irac(galaxy_name)
+    has_mips = database.has_mips(galaxy_name)
     has_wise = database.has_wise(galaxy_name)
     has_pacs = database.has_pacs(galaxy_name)
     has_spire = database.has_spire(galaxy_name)
     has_planck = database.has_planck(galaxy_name)
 
+    print("GALEX:", has_galex)
+    print("SDSS:", has_sdss)
+    print("2MASS:", has_2mass)
+    print("IRAC:", has_irac)
+    print("MIPS:", has_mips)
+    print("WISE:", has_wise)
+    print("Pacs:", has_pacs)
+    print("SPIRE:", has_spire)
+    print("Planck:", has_planck)
+
     # Return
-    return has_galex, has_sdss, has_2mass, has_spitzer, has_wise, has_pacs, has_spire, has_planck
+    return has_galex, has_sdss, has_2mass, has_irac, has_mips, has_wise, has_pacs, has_spire, has_planck
 
 # -----------------------------------------------------------------
 
@@ -788,13 +923,13 @@ def get_presence(galaxy_name):
 if config.adjust is not None:
 
     adjust_any = True
-    adjust_info = sequences.contains_any(info_names, config.column_names)
-    adjust_properties = sequences.contains_any(properties_names, config.column_names)
-    adjust_morphology = sequences.contains_any(morphology_names, config.column_names)
-    adjust_luminosities = sequences.contains_any(luminosities_names, config.column_names)
-    adjust_colours = sequences.contains_any(colours_names, config.column_names)
-    adjust_models = sequences.contains_any(models_names, config.column_names)
-    adjust_presence = sequences.contains_any(presence_names, config.column_names)
+    adjust_info = sequences.contains_any(info_names, config.columns)
+    adjust_properties = sequences.contains_any(properties_names, config.columns)
+    adjust_morphology = sequences.contains_any(morphology_names, config.columns)
+    adjust_luminosities = sequences.contains_any(luminosities_names, config.columns)
+    adjust_colours = sequences.contains_any(colours_names, config.columns)
+    adjust_models = sequences.contains_any(models_names, config.columns)
+    adjust_presence = sequences.contains_any(presence_names, config.columns)
 
 # Nothing to adjust
 else: adjust_any = adjust_info = adjust_properties = adjust_morphology = adjust_luminosities = adjust_colours = adjust_models = adjust_presence = False
@@ -817,6 +952,9 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
     # Inform the user
     log.info("Processing galaxy '" + galaxy_name + "' (" + str(galaxy_index+1) + " out of " + str(ngalaxies) + ") ...")
+
+    # Has galaxy on the database?
+    if not database.has_galaxy(galaxy_name): continue
 
     # Set galaxy properties
     properties = OrderedDict()
@@ -841,7 +979,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
         # Adjust current table?
         if adjust_info:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == name_name: table[column_name][row_index] = info.name
                 elif column_name == ra_name: table[column_name][row_index] = info.position.ra
                 elif column_name == dec_name: table[column_name][row_index] = info.position.dec
@@ -877,7 +1015,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
         # Adjust current table?
         if adjust_properties:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == common_name_name: table[column_name][row_index] = common_name
                 elif column_name == names_name: table[column_name][row_index] = "  ".join(gal_names) if gal_names is not None and len(gal_names) > 0 else None
                 elif column_name == distance_name: table[column_name][row_index] = gal_distance
@@ -899,7 +1037,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
         # Adjust current table?
         if adjust_morphology:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == has_s4g_name: table[column_name][row_index] = has_s4g
                 elif column_name == position_angle_name: table[column_name][row_index] = position_angle
                 elif column_name == ellipticity_name: table[column_name][row_index] = ellipticity
@@ -942,7 +1080,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
         # Adjust current table?
         if adjust_luminosities:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == galex_fuv_name: table[column_name][row_index] = fuv_lum
                 elif column_name == galex_nuv_name: table[column_name][row_index] = nuv_lum
                 elif column_name == sdss_u_name: table[column_name][row_index] = u_lum
@@ -1034,7 +1172,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
         # Adjust current table?
         if adjust_colours:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == fuv_nuv_name: table[column_name][row_index] = fuv_nuv
                 elif column_name == fuv_h_name: table[column_name][row_index] = fuv_h
                 elif column_name == fuv_j_name: table[column_name][row_index] = fuv_j
@@ -1117,7 +1255,7 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
 
         # Adjust current table?
         if adjust_models:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == sfr_name: table[column_name][row_index] = sfr
                 elif column_name == sfr_error_name: table[column_name][row_index] = sfr_error
                 elif column_name == dust_mass_name: table[column_name][row_index] = dust_mass
@@ -1149,15 +1287,17 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
     if needs_presence:
 
         # Get the presence of data for different observatories
-        has_galex, has_sdss, has_2mass, has_spitzer, has_wise, has_pacs, has_spire, has_planck = get_presence(galaxy_name)
+        has_galex, has_sdss, has_2mass, has_irac, has_mips, has_wise, has_pacs, has_spire, has_planck = get_presence(galaxy_name)
 
         # Adjust current table?
         if adjust_models:
-            for column_name in config.column_names:
+            for column_name in config.columns:
                 if column_name == has_galex_name: table[column_name][row_index] = has_galex
                 elif column_name == has_sdss_name: table[column_name][row_index] = has_sdss
                 elif column_name == has_2mass_name: table[column_name][row_index] = has_2mass
-                elif column_name == has_spitzer_name: table[column_name][row_index] = has_spitzer
+                #elif column_name == has_spitzer_name: table[column_name][row_index] = has_spitzer
+                elif column_name == has_irac_name: table[column_name][row_index] = has_irac
+                elif column_name == has_mips_name: table[column_name][row_index] = has_mips
                 elif column_name == has_wise_name: table[column_name][row_index] = has_wise
                 elif column_name == has_pacs_name: table[column_name][row_index] = has_pacs
                 elif column_name == has_spire_name: table[column_name][row_index] = has_spire
@@ -1167,7 +1307,9 @@ for galaxy_index, galaxy_name in enumerate(galaxy_names):
         properties[has_galex_name] = has_galex
         properties[has_sdss_name] = has_sdss
         properties[has_2mass_name] = has_2mass
-        properties[has_spitzer_name] = has_spitzer
+        #properties[has_spitzer_name] = has_spitzer
+        properties[has_irac_name] = has_irac
+        properties[has_mips_name] = has_mips
         properties[has_wise_name] = has_wise
         properties[has_pacs_name] = has_pacs
         properties[has_spire_name] = has_spire
