@@ -60,7 +60,7 @@ definition.add_optional("assignment", "file_path", "path of assignment file")
 
 # Timing table
 definition.add_optional("timing", "file_path", "path of timing table")
-definition.add_optional("runtime", "time_quantity", "estimated runtime for the simulations")
+definition.add_optional("runtime", "duration", "estimated runtime for the simulations")
 
 # Logging options
 definition.import_section_from_composite_class("logging", "logging options", LoggingOptions)
@@ -282,7 +282,7 @@ for simulation_name in simulations:
     scheduling_options.nodes = 1
     scheduling_options.ppn = remote.host.cluster.sockets_per_node * remote.host.cluster.cores_per_socket # full node
     scheduling_options.full_node = True
-    scheduling_options.walltime = runtime * 1.2
+    scheduling_options.walltime = runtime
     if config.jobscripts_path is not None: scheduling_options.local_jobscript_path = fs.join(config.jobscripts_path, simulation_name + ".sh")
     scheduling_options.mail = config.mail
 
