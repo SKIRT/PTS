@@ -18,6 +18,7 @@ from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.fitting.run import FittingRuns
 from pts.core.tools.stringify import tostr
 from pts.core.tools import filesystem as fs
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -39,8 +40,12 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 definition.add_required("generation", "string", "generation for which to remove the simulations (none means all)")
 definition.add_positional_optional("remote", "string", "remote host for which to remove the simulations (none means all")
 
+# Make backup?
+definition.add_flag("backup", "make backup of simulation files")
+definition.add_optional("backup_path", "directory_path", "backup directory path")
+
 # Get configuration
-config = parse_arguments("clear_generation_output", definition)
+config = parse_arguments("clear_generation_simulations", definition, "Remove the simulation files for a certain generation")
 
 # -----------------------------------------------------------------
 
@@ -73,8 +78,15 @@ for host_id in generation.host_ids:
     # Proceed?
     if not prompt_proceed("proceed removing the simulation files for simulations '" + tostr(filepaths.keys())): continue
 
-    # Remove
+    # Get the filepaths
     paths = filepaths.values()
+
+    # Backup
+    if config.backup:
+        log.debug("Creating backup of the simulation files ...")
+        fs.copy_files(paths, config.backup_path)
+
+    # Remove
     fs.remove_files(paths)
 
 # -----------------------------------------------------------------
