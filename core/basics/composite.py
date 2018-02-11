@@ -433,6 +433,68 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def show_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
+                          startswith=None, endswith=None, required=True, label=None):
+
+        """
+        This function ...
+        :param recursive:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :param startswith:
+        :param endswith:
+        :param required:
+        :param label:
+        :return:
+        """
+
+        # Loop over the properties
+        for name in self.property_names:
+
+            #if suggestions is not None and name in suggestions: used_suggestions.append(name)
+
+            # Checks
+            if contains is not None and contains not in name: continue
+            if not_contains is not None and not_contains in name: continue
+            if exact_name is not None and name != exact_name: continue
+            if exact_not_name is not None and name == exact_not_name: continue
+            if startswith is not None and not name.startswith(startswith): continue
+            if endswith is not None and not name.endswith(endswith): continue
+
+            description = self.get_description(name)
+            ptype = self.get_ptype(name)
+            default = self.get_value(name)
+            choices = self.get_choices(name)
+
+            # Get suggestions
+            #suggestns = suggestions[name] if suggestions is not None and name in suggestions else None
+
+            # Add label to description
+            if label is not None: description = description + " [" + label + "]"
+
+            # Fixed variable: show value and description
+            #if self.get_fixed(name):
+            #    value = prompt_fixed(name, description, self.get_value(name))
+            #    continue
+
+            if self.get_fixed(name): suffix = " FIXED"
+            else: suffix = ""
+
+            print(" - " + name + " (" + description + "): " + tostr(default) + " [" + ptype + "]" + suffix)
+
+        # Recursive: also loop over the sections
+        if recursive:
+
+            # Loop over the sections
+            for name in self.section_names:
+
+                # Show the properties of the section
+                self.sections[name].show_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
+
+    # -----------------------------------------------------------------
+
     def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
                           startswith=None, endswith=None, required=True, label=None, suggestions=None, add_suggestions=False):
 
