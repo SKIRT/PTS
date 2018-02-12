@@ -21,33 +21,10 @@ from ..simulation.remote import get_simulation_for_host
 from ..basics.log import log
 from ..tools.stringify import stringify, tostr
 from ..tools import sequences
-from ..basics.configuration import parent_type
 from ..tools import filesystem as fs
 from ..simulation.remote import get_simulations_for_host
 from ..tools import introspection
-
-# -----------------------------------------------------------------
-
-properties = OrderedDict()
-properties["ski_path"] = "local ski file path"
-properties["input_path"] = "local input path"
-properties["output_path"] = "local output path"
-properties["base_path"] = "local simulation base path"
-properties["name"] = "simulation name"
-properties["host_id"] = "remote host ID"
-properties["cluster_name"] = "remote cluster name"
-properties["id"] = "remote host simulation ID"
-properties["remote_ski_path"] = "remote ski file path"
-properties["remote_simulation_path"] = "remote simulation path"
-properties["remote_input_path"] = "remote input path"
-properties["remote_output_path"] = "remote output path"
-properties["submitted_at"] = "simulation submission timestamp"
-properties["retrieve_types"] = "retrieve output file types"
-properties["remove_remote_input"] = "remove remote input directory"
-properties["remove_remote_output"] = "remove remote output directory"
-properties["remove_remote_simulation_directory"] = "remove remote simulation directory"
-properties["remove_local_output"] = "remove local output after analysis"
-properties["retrieved"] = "retrieved flag"
+from .shower import properties, get_common_ptype, get_values_for_simulations, get_value_for_simulation, get_analysis_values_for_simulations, get_analysis_value_for_simulation
 
 # -----------------------------------------------------------------
 
@@ -954,47 +931,6 @@ class AnalysisAdapter(Configurable):
 
 # -----------------------------------------------------------------
 
-def get_analysis_value_for_simulation(simulation, name, section=None):
-
-    """
-    This function ...
-    :param simulation:
-    :param name:
-    :param section:
-    :return:
-    """
-
-    if section is not None: return simulation.analysis[section][name]
-    else: return simulation.analysis[name]
-
-# -----------------------------------------------------------------
-
-def get_analysis_values_for_simulations(simulations, name, section=None):
-
-    """
-    This function ...
-    :param simulations:
-    :param name:
-    :param section:
-    :return:
-    """
-
-    values = dict()
-
-    # Loop over the simulations
-    for simulation_id in simulations:
-
-        # Get value
-        value = get_analysis_value_for_simulation(simulations[simulation_id], name, section=section)
-
-        # Set value
-        values[simulation_id] = value
-
-    # Return the values
-    return values
-
-# -----------------------------------------------------------------
-
 def set_analysis_value_for_simulation(simulation, name, value, section=None):
 
     """
@@ -1077,27 +1013,12 @@ def set_analysis_value_for_simulations_prompt(simulations, name, value, changed=
         if current_value == value: continue
 
         # Prompt
-        if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + " for simulation '" + simulation_name + "'?"):
+        if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + "' for simulation '" + simulation_name + "'?"):
             set_analysis_value_for_simulation(simulation, name, value, section=section)
             changed[simulation_id] = True
 
     # Return the changed dictionary
     return changed
-
-# -----------------------------------------------------------------
-
-
-def get_value_for_simulation(simulation, name):
-
-    """
-    Thisn function ...
-    :param simulation:
-    :param name:
-    :return:
-    """
-
-    # Get the current value
-    return getattr(simulation, name)
 
 # -----------------------------------------------------------------
 
@@ -1116,31 +1037,6 @@ def set_value_for_simulation(simulation, name, value):
 
     # Set the new value
     setattr(simulation, name, value)
-
-# -----------------------------------------------------------------
-
-def get_values_for_simulations(simulations, name):
-
-    """
-    This function ...
-    :param simulations:
-    :param name:
-    :return:
-    """
-
-    values = dict()
-
-    # Loop over the simulations
-    for simulation_id in simulations:
-
-        # Get value
-        value = get_value_for_simulation(simulations[simulation_id], name)
-
-        # Set value
-        values[simulation_id] = value
-
-    # Return the values
-    return values
 
 # -----------------------------------------------------------------
 
@@ -1195,53 +1091,12 @@ def set_value_for_simulations_prompt(simulations, name, value, changed=None):
         if current_value == value: continue
 
         # Prompt
-        if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + " for simulation '" + simulation_name + "'?"):
+        if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + "' for simulation '" + simulation_name + "'?"):
             set_value_for_simulation(simulation, name, value)
             changed[simulation_id] = True
 
     # Return the changed dictionary
     return changed
-
-# -----------------------------------------------------------------
-
-def get_common_ptype(values):
-
-    """
-    Thisj function ...
-    :param values:
-    :return:
-    """
-
-    ptype = None
-    ptypes = set()
-
-    for value in values:
-
-        parsetype, val = stringify(value)
-
-        if ptype is None: ptype = parsetype
-        elif ptype != parsetype: ptype = "mixed"
-
-        # Add the parse type
-        ptypes.add(parsetype)
-
-    ptypes = list(ptypes)
-
-    if len(ptypes) == 1: ptype = ptypes[0]
-    elif sequences.all_equal(ptypes): ptype = ptypes[0]
-    else:
-
-        # Investigate the different ptypes
-        parent_types = [parent_type(type_name) for type_name in ptypes]
-
-        # Check
-        for i in range(len(parent_types)):
-            if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_types))
-        if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
-        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
-
-    # Return the type
-    return ptype
 
 # -----------------------------------------------------------------
 

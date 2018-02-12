@@ -588,7 +588,8 @@ def stringify_tuple(value, **kwargs):
     delimiter = kwargs.pop("delimiter", ",")
 
     # Return
-    return ptype + "_tuple", delimiter.join(strings)
+    if ptype is not None: return ptype + "_tuple", delimiter.join(strings)
+    else: return "tuple", delimiter.join(strings)
 
 # -----------------------------------------------------------------
 

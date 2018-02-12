@@ -19,6 +19,49 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def is_dictionary(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from .types import is_dictionary
+    return is_dictionary(value)
+
+# -----------------------------------------------------------------
+
+def contains_dictionary(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    for item in value:
+        if is_dictionary(item): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def replace_dictionaries_by_tuples(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    new = []
+    for item in value:
+        if is_dictionary(item): item = tuple(item.items())
+        new.append(item)
+    return new
+
+# -----------------------------------------------------------------
+
 def is_sequence(value):
 
     """
@@ -924,8 +967,9 @@ def unique_values(sequence, ignore=None, ignore_none=False):
     :return:
     """
 
-    # Contains other sequences (non-hashable)
+    # Contains other sequences or dictionaries (non-hashable)
     if contains_sequence(sequence): sequence = replace_sequences_by_tuples(sequence)
+    if contains_dictionary(sequence): sequence = replace_dictionaries_by_tuples(sequence)
 
     result = list(set(sequence))
     if ignore_none: result = removed(result, [None])

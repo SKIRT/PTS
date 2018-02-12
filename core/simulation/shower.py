@@ -15,7 +15,6 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..launch.options import get_analysis_property_names_and_descriptions, get_analysis_section_names_and_descriptions, get_analysis_property_names_and_descriptions_for_section
-from ..basics.configuration import prompt_proceed, prompt_variable
 from ..tools.utils import lazyproperty
 from ..simulation.remote import get_simulation_for_host
 from ..basics.log import log
@@ -25,6 +24,9 @@ from ..basics.configuration import parent_type
 from ..tools import filesystem as fs
 from ..simulation.remote import get_simulations_for_host
 from ..tools import introspection
+from ..tools import types
+from ..basics import containers
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -48,6 +50,38 @@ properties["remove_remote_output"] = "remove remote output directory"
 properties["remove_remote_simulation_directory"] = "remove remote simulation directory"
 properties["remove_local_output"] = "remove local output after analysis"
 properties["retrieved"] = "retrieved flag"
+
+# -----------------------------------------------------------------
+
+def compare_simulations(*simulations):
+
+    """
+    This function ...
+    :param simulations:
+    :return:
+    """
+
+    # Create shower
+    shower = SimulationShower()
+
+    # Run
+    shower.run(simulations=simulations)
+
+# -----------------------------------------------------------------
+
+def compare_analysis(*simulations):
+
+    """
+    This function ...
+    :param simulations:
+    :return:
+    """
+
+    # Create shower
+    shower = AnalysisShower()
+
+    # Run
+    shower.run(simulations=simulations)
 
 # -----------------------------------------------------------------
 
@@ -110,8 +144,27 @@ class SimulationShower(Configurable):
             if self.config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
             self.config.names = fs.directories_in_path(returns="name")
 
+        # Get simulations
+        if "simulations" in kwargs:
+            simulations = kwargs.pop("simulations")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            elif types.is_dictionary(simulations): self.simulations = simulations
+            else: raise ValueError("Simulations must be specified as sequence or dictionary")
+
         # Load the simulations
-        self.load_simulations()
+        if not self.has_simulations: self.load_simulations()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
 
     # -----------------------------------------------------------------
 
@@ -274,7 +327,9 @@ class SimulationShower(Configurable):
         log.debug("Showing single simulation ...")
 
         # Show the simulation name
-        print(self.single_simulation_name)
+        print("")
+        print(fmt.blue + fmt.underlined + self.single_simulation_name + fmt.reset)
+        print("")
 
         # Loop over the properties
         for name in self.property_names:
@@ -289,9 +344,9 @@ class SimulationShower(Configurable):
             if default is not None:
 
                 ptype, pstring = stringify(default)
-                print(" - " + name + "(" + description + "): " + pstring + " [" + ptype + "]")
+                print(" - " + fmt.bold + name + fmt.reset + "(" + description + "): " + pstring + " [" + ptype + "]")
 
-            else: print(" - " + name + "(" + description +  "): None")
+            else: print(" - " + fmt.bold + name + fmt.reset + "(" + description +  "): None")
 
     # -----------------------------------------------------------------
 
@@ -335,7 +390,11 @@ class SimulationShower(Configurable):
         log.debug("Showing multiple simulations ...")
 
         # Show simulation names
-        print(self.simulation_names)
+        print("")
+        print("Simulations:")
+        print("")
+        for index, name in enumerate(self.simulation_names): print("(" + str(index) + ") " + fmt.blue + fmt.underlined + name + fmt.reset)
+        print("")
 
         # Loop over the properties
         for name in self.property_names:
@@ -353,11 +412,11 @@ class SimulationShower(Configurable):
             if nunique_values == 1:
 
                 ptype, string = stringify(unique_values[0])
-                print(" - " + name + " (" + description + "): " + string + " [" + ptype + "]")
+                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + " [" + ptype + "]" + fmt.reset)
 
             else:
 
-                print(" - " + name + " (" + description + "): ")
+                print(fmt.red + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + fmt.reset)
 
                 for value in unique_values:
                     ptype, string = stringify(value)
@@ -424,8 +483,27 @@ class AnalysisShower(Configurable):
             if self.config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
             self.config.names = fs.directories_in_path(returns="name")
 
+        # Get simulations
+        if "simulations" in kwargs:
+            simulations = kwargs.pop("simulations")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            elif types.is_dictionary(simulations): self.simulations = simulations
+            else: raise ValueError("Simulations must be specified as sequence or dictionary")
+
         # Load the simulations
-        self.load_simulations()
+        if not self.has_simulations: self.load_simulations()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
 
     # -----------------------------------------------------------------
 
@@ -658,7 +736,10 @@ class AnalysisShower(Configurable):
         # Debugging
         log.debug("Showing single simulation ...")
 
-        print(self.single_simulation_name)
+        # Show simulation name
+        print("")
+        print(fmt.blue + fmt.underlined + self.single_simulation_name + fmt.reset)
+        print("")
 
         # Show
         self.single_simulation.analysis.show_properties(contains=self.config.contains, not_contains=self.config.not_contains,
@@ -677,7 +758,12 @@ class AnalysisShower(Configurable):
         # Debugging
         log.debug("Showing multiple simulations ...")
 
-        print(self.simulation_names)
+        # Show simulation names
+        print("")
+        print("Simulations:")
+        print("")
+        for index, name in enumerate(self.simulation_names): print("(" + str(index) + ") " + fmt.underlined + fmt.blue + name + fmt.reset)
+        print("")
 
         # Properties
         self.show_properties()
@@ -733,7 +819,7 @@ class AnalysisShower(Configurable):
                 default = unique_values[0]
                 ptype, string = stringify(default)
 
-                print(" - " + name + " (" + description + "): " + string + " [" + ptype + "]")
+                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + " [" + ptype + "]" + fmt.reset)
 
             # Multiple unique values
             else:
@@ -746,7 +832,7 @@ class AnalysisShower(Configurable):
                 #choices = None
                 #suggestions = unique_values
 
-                print(" - " + name + " (" + description + "):")
+                print(fmt.red + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "):" + fmt.reset)
 
                 for value in unique_values:
 
@@ -771,7 +857,8 @@ class AnalysisShower(Configurable):
             # Get section description
             section_description = self.sections[section_name]
 
-            print(section_name)
+            # Show section
+            print(fmt.bold + section_name + fmt.reset + ": " + section_description)
 
             # Debug
             log.debug("Entering section '" + section_name + "' ...")
@@ -803,18 +890,20 @@ class AnalysisShower(Configurable):
                 # Get the ptype
                 ptype = self.get_ptype(name, section_name)
 
+                #print(name, ptype, unique_values)
+
                 # Only one unique value
-                if len(unique_values) == 1:
+                if nunique_values == 1:
 
                     default = unique_values[0]
                     ptype, string = stringify(default)
 
-                    print(" - " + name + " (" + description + "): " + string + " [" + ptype + "]")
+                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + " [" + ptype + "]" + fmt.reset)
 
                 # Multiple unique values
                 else:
 
-                    print(" - " + name + " (" + description + "):")
+                    print(fmt.red + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "):" + fmt.reset)
 
                     for value in unique_values:
 
@@ -864,98 +953,6 @@ def get_analysis_values_for_simulations(simulations, name, section=None):
 
 # -----------------------------------------------------------------
 
-def set_analysis_value_for_simulation(simulation, name, value, section=None):
-
-    """
-    This function ...
-    :param simulation:
-    :param name:
-    :param value:
-    :param section:
-    :return:
-    """
-
-    # Debugging
-    log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
-    if section is not None: log.debug("in section '" + section + "'")
-
-    #print(simulation.analysis[section][name])
-    #print(value)
-
-    # Set the new value
-    if section is not None:
-        section = simulation.analysis[section]
-        #print(section)
-        section[name] = value
-    else: simulation.analysis[name] = value
-
-# -----------------------------------------------------------------
-
-def set_analysis_value_for_simulations(simulations, name, value, section=None):
-
-    """
-    This function ...
-    :param simulations:
-    :param name:
-    :param section:
-    :return:
-    """
-
-    # Debugging
-    log.debug("Changing the value of '" + name + "' to '" + tostr(value) + " for all simulations ...")
-    if section is not None: log.debug("in section '" + section + "'")
-
-    # Loop over the simulations
-    for simulation_id in simulations:
-
-        # Set value
-        set_analysis_value_for_simulation(simulations[simulation_id], name, value, section=section)
-
-# -----------------------------------------------------------------
-
-def set_analysis_value_for_simulations_prompt(simulations, name, value, changed=None, section=None):
-
-    """
-    This function ...
-    :param simulations:
-    :param name:
-    :param value:
-    :param changed:
-    :param section:
-    :return:
-    """
-
-    # Initialize changed dictinoary
-    if changed is None: changed = {simulation_id: False for simulation_id in simulations}
-
-    # Debugging
-    log.debug("Changing the values of '" + name + "' for each simulation ...")
-    if section is not None: log.debug("in section '" + section + "'")
-
-    # Loop over the simulations, set the value
-    for simulation_id in simulations:
-
-        # Get simulation name
-        simulation = simulations[simulation_id]
-        simulation_name = simulation.name
-
-        # Get current value
-        current_value = get_analysis_value_for_simulation(simulation, name, section=section)
-
-        # Check
-        if current_value == value: continue
-
-        # Prompt
-        if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + " for simulation '" + simulation_name + "'?"):
-            set_analysis_value_for_simulation(simulation, name, value, section=section)
-            changed[simulation_id] = True
-
-    # Return the changed dictionary
-    return changed
-
-# -----------------------------------------------------------------
-
-
 def get_value_for_simulation(simulation, name):
 
     """
@@ -967,24 +964,6 @@ def get_value_for_simulation(simulation, name):
 
     # Get the current value
     return getattr(simulation, name)
-
-# -----------------------------------------------------------------
-
-def set_value_for_simulation(simulation, name, value):
-
-    """
-    This function ...
-    :param simulation:
-    :param name:
-    :param value:
-    :return:
-    """
-
-    # Debugging
-    log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
-
-    # Set the new value
-    setattr(simulation, name, value)
 
 # -----------------------------------------------------------------
 
@@ -1010,66 +989,6 @@ def get_values_for_simulations(simulations, name):
 
     # Return the values
     return values
-
-# -----------------------------------------------------------------
-
-def set_value_for_simulations(simulations, name, value):
-
-    """
-    This function ...
-    :param simulations:
-    :param name:
-    :return:
-    """
-
-    # Debugging
-    log.debug("Changing the value of '" + name + "' to '" + tostr(value) + " for all simulations ...")
-
-    # Loop over the simulations
-    for simulation_id in simulations:
-
-        # Set value
-        set_value_for_simulation(simulations[simulation_id], name, value)
-
-# -----------------------------------------------------------------
-
-def set_value_for_simulations_prompt(simulations, name, value, changed=None):
-
-    """
-    This function ...
-    :param simulations:
-    :param name:
-    :param value:
-    :param changed:
-    :return:
-    """
-
-    # Initialize changed dictinoary
-    if changed is None: changed = {simulation_id: False for simulation_id in simulations}
-
-    # Debugging
-    log.debug("Changing the values of '" + name + "' for each simulation ...")
-
-    # Loop over the simulations, set the value
-    for simulation_id in simulations:
-
-        # Get simulation name
-        simulation = simulations[simulation_id]
-        simulation_name = simulation.name
-
-        # Get current value
-        current_value = get_value_for_simulation(simulation, name)
-
-        # Check
-        if current_value == value: continue
-
-        # Prompt
-        if prompt_proceed("Replace the value of '" + name + "' from '" + tostr(current_value) + "' to '" + tostr(value) + " for simulation '" + simulation_name + "'?"):
-            set_value_for_simulation(simulation, name, value)
-            changed[simulation_id] = True
-
-    # Return the changed dictionary
-    return changed
 
 # -----------------------------------------------------------------
 
@@ -1111,44 +1030,5 @@ def get_common_ptype(values):
 
     # Return the type
     return ptype
-
-# -----------------------------------------------------------------
-
-def save_simulation(simulation):
-
-    """
-    This function ...
-    :param simulation:
-    :return:
-    """
-
-    # Debugging
-    log.debug("Saving the simulation ...")
-
-    # Save the simulation
-    simulation.save()
-
-# -----------------------------------------------------------------
-
-def save_simulations(simulations, changed=None):
-
-    """
-    This function ...
-    :param simulations:
-    :param changed:
-    :return:
-    """
-
-    # Debugging
-    log.debug("Saving the simulations ...")
-
-    # Loop over the simulations
-    for simulation_id in simulations:
-
-        # Not changed?
-        if changed is not None and not changed[simulation_id]: continue
-
-        # Save
-        simulations[simulation_id].save()
 
 # -----------------------------------------------------------------

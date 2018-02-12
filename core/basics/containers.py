@@ -1263,3 +1263,22 @@ def create_subdict(dictionary, keys):
     return new
 
 # -----------------------------------------------------------------
+
+def dict_from_sequence(sequence, attribute=None, key=None):
+
+    """
+    This function ...
+    :param sequence:
+    :param attribute:
+    :param key:
+    :return:
+    """
+
+    # Check
+    if attribute is not None and key is not None: raise ValueError("Cannot specify both key and attribute name")
+
+    if attribute is not None: return OrderedDict((getattr(item, attribute), item) for item in sequence)
+    elif key is not None: return OrderedDict((item[key], item) for item in sequence)
+    else: raise ValueError("Either key or attribute should be specified")
+
+# -----------------------------------------------------------------
