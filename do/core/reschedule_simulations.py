@@ -114,7 +114,7 @@ if config.screen is not None:
         status = remote.get_status(as_dict=True, returns=["name", "status"], simulation_names=screen.simulation_names)
 
         # Create a list of only the not-finished simulations
-        simulation_names = [simulation_name for simulation_name in status if is_finished_status(status[simulation_name])]
+        simulation_names = [simulation_name for simulation_name in status if not is_finished_status(status[simulation_name])]
         #print("finished simulations: " + tostr(simulation_names))
 
         # Check screen
