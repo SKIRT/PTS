@@ -1825,7 +1825,8 @@ def read_lines_filehandle(fh, newlines=False):
     # Loop over the lines, cut off the end-of-line characters
     for line in fh.readlines():
         if newlines: yield line
-        else: yield line[:-1]
+        elif line.endswith("\n"): yield line[:-1]
+        else: yield line # sometimes, the last line does not end on a newline character!
 
 # -----------------------------------------------------------------
 
