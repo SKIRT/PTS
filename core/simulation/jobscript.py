@@ -315,11 +315,13 @@ class SKIRTJobScript(_JobScript):
         cores_per_node = cluster.cores_per_socket * cluster.sockets_per_node
 
         # Set number of threads per core
-        if hyperthreading is None: hyperthreading = cluster.threads_per_core > 1
+        #if hyperthreading is None: hyperthreading = cluster.threads_per_core > 1
 
         # Set number of threads per core based on hyperthreading flag
-        if hyperthreading: threads_per_core = cluster.threads_per_core
-        else: threads_per_core = 1
+        #if hyperthreading: threads_per_core = cluster.threads_per_core
+        #else: threads_per_core = 1
+
+        threads_per_core = arguments.parallel.threads_per_core
 
         # Determine number of threads per node
         threads_per_node = threads_per_core * cores_per_node

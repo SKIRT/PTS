@@ -1282,3 +1282,16 @@ def dict_from_sequence(sequence, attribute=None, key=None):
     else: raise ValueError("Either key or attribute should be specified")
 
 # -----------------------------------------------------------------
+
+def sequence_from_dict(dictionary, keys):
+
+    """
+    This function ...
+    :param dictionary:
+    :param keys:
+    :return:
+    """
+
+    return [dictionary[key] for key in keys]
+
+# -----------------------------------------------------------------

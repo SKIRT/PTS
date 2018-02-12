@@ -103,7 +103,7 @@ remote = SKIRTRemote(host_id=config.host)
 # -----------------------------------------------------------------
 
 # Get the simulation status
-#simulation_status = remote.get_status(as_dict=True, returns=("name", "status"), simulations=simulations)
+simulation_status = remote.get_status(as_dict=True, returns=("name", "status"), simulations=simulations)
 
 # -----------------------------------------------------------------
 
@@ -149,8 +149,8 @@ for simulation in simulations:
     simulation_name = simulation.name
 
     # Get the status
-    #status = simulation_status[simulation_name]
-    status = "aborted"
+    status = simulation_status[simulation_name]
+    #status = "aborted"
 
     # Check status
     if is_finished_status(status):
