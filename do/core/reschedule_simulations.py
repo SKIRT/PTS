@@ -277,14 +277,16 @@ for simulation_name in simulations:
             else: remote_input_path = None
         else: shared_key = remote_input_path = None
 
-    # Set scheduling options
-    scheduling_options = SchedulingOptions()
-    scheduling_options.nodes = 1
-    scheduling_options.ppn = remote.host.cluster.sockets_per_node * remote.host.cluster.cores_per_socket # full node
-    scheduling_options.full_node = True
-    scheduling_options.walltime = runtime
-    if config.jobscripts_path is not None: scheduling_options.local_jobscript_path = fs.join(config.jobscripts_path, simulation_name + ".sh")
-    scheduling_options.mail = config.mail
+    # Set scheduling options if necessary
+    if remote.scheduler:
+        scheduling_options = SchedulingOptions()
+        scheduling_options.nodes = 1
+        scheduling_options.ppn = remote.host.cluster.sockets_per_node * remote.host.cluster.cores_per_socket # full node
+        scheduling_options.full_node = True
+        scheduling_options.walltime = runtime
+        if config.jobscripts_path is not None: scheduling_options.local_jobscript_path = fs.join(config.jobscripts_path, simulation_name + ".sh")
+        scheduling_options.mail = config.mail
+    else: scheduling_options = None
 
     # Show
     #print(logging)

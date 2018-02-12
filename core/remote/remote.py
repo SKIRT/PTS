@@ -6100,6 +6100,40 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def node_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get node status
+        status = self.get_node_status()
+
+        names = []
+        for element in status.getchildren():
+            if element.tag != "Node": continue  # doesn't happen
+            name = element.xpath("name")[0].text
+            names.append(name)
+
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def active_cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import sequences
+        return sequences.get_all_equal_value([name.split(".")[1] for name in self.node_names])
+
+    # -----------------------------------------------------------------
+
+    @property
     def cpu_load(self):
 
         """
@@ -6515,6 +6549,32 @@ class Remote(object):
         """
 
         return self.host.cluster_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cluster_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.host.cluster_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def other_cluster_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = self.cluster_names
+        names.remove(self.cluster_name)
+        return names
 
     # -----------------------------------------------------------------
 

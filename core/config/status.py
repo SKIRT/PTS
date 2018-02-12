@@ -55,3 +55,8 @@ definition.add_optional("nopen_files", "positive_integer", "number of allowed op
 definition.import_section("analysis", "analyser options", analysis_definition)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("simulations", "get status of simulations", True)
+definition.add_flag("tasks", "get status of tasks", True)
+
+# -----------------------------------------------------------------

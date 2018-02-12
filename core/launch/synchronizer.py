@@ -30,6 +30,10 @@ from ..simulation.remote import get_retrieved_simulations, get_retrieved_tasks, 
 
 # -----------------------------------------------------------------
 
+has_skirt = introspection.skirt_is_present()
+
+# -----------------------------------------------------------------
+
 class RemoteSynchronizer(Configurable):
 
     """
@@ -147,7 +151,7 @@ class RemoteSynchronizer(Configurable):
                         continue
 
                     # Setup SKIRT remote environment
-                    if introspection.skirt_is_present() and remote.has_skirt: remote = SKIRTRemote.from_remote(remote)
+                    if has_skirt and remote.has_skirt: remote = SKIRTRemote.from_remote(remote)
 
                     # Add the remote to the list of remote objects
                     self.remotes.append(remote)
@@ -444,10 +448,10 @@ class RemoteSynchronizer(Configurable):
         log.info("Loading finished SKIRT simulations and PTS tasks ...")
 
         # Load SKIRT simulations
-        if introspection.skirt_is_present(): self.load_simulations()
+        if self.config.simulations and has_skirt: self.load_simulations()
 
         # Load PTS tasks
-        self.load_tasks()
+        if self.config.tasks: self.load_tasks()
 
     # -----------------------------------------------------------------
 
@@ -518,10 +522,10 @@ class RemoteSynchronizer(Configurable):
         log.info("Retrieving finished SKIRT simulations and PTS tasks ...")
 
         # Retrieve SKIRT simulations
-        if introspection.skirt_is_present(): self.retrieve_simulations()
+        if self.config.simulations and has_skirt: self.retrieve_simulations()
 
         # Retrieve PTS tasks
-        self.retrieve_tasks()
+        if self.config.tasks: self.retrieve_tasks()
 
     # -----------------------------------------------------------------
 
@@ -582,10 +586,10 @@ class RemoteSynchronizer(Configurable):
         log.info("Analysing the output of retrieved SKIRT simulations and PTS tasks ...")
 
         # Analyse the output of the retrieved simulations
-        if introspection.skirt_is_present(): self.analyse_simulations()
+        if self.config.simulations and has_skirt: self.analyse_simulations()
 
         # Analyse the output of the retrieved tasks
-        self.analyse_tasks()
+        if self.config.tasks: self.analyse_tasks()
 
     # -----------------------------------------------------------------
 
@@ -636,10 +640,10 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Announce the status of the SKIRT simulations
-        if introspection.skirt_is_present(): self.announce_simulations()
+        if self.config.simulations and has_skirt: self.announce_simulations()
 
         # Announce the status of the PTS tasks
-        self.announce_tasks()
+        if self.config.tasks: self.announce_tasks()
 
     # -----------------------------------------------------------------
 

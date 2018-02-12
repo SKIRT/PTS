@@ -378,6 +378,20 @@ class Host(SimplePropertyComposite):
     # -----------------------------------------------------------------
 
     @property
+    def cluster_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = self.clusters.keys()
+        names.remove("default")
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def nclusters(self):
 
         """
@@ -385,7 +399,7 @@ class Host(SimplePropertyComposite):
         :return:
         """
 
-        return len(self.clusters)
+        return len(self.cluster_names)
 
     # -----------------------------------------------------------------
 

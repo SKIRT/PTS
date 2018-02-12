@@ -2102,6 +2102,9 @@ class SKIRTRemote(Remote):
                 # This simulation has an unknown status, check the log file
                 else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
 
+            # Job not present in the queue anymore
+            else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
+
         # Simulation is managed with an SQL database
         elif simulation.handle.type == "sql":
 
@@ -2129,6 +2132,33 @@ class SKIRTRemote(Remote):
         :return:
         """
 
+        status = dict()
+
+        # Loop over the clusters
+        for cluster_name in self.cluster_names:
+
+            status_cluster = self._get_jobs_status_cluster(cluster_name)
+            status.update(status_cluster)
+
+        # Return the status
+        return status
+
+    # -----------------------------------------------------------------
+
+    def _get_jobs_status_cluster(self, cluster_name):
+
+        """
+        This function ...
+        :param cluster_name:
+        :return:
+        """
+
+        # Swap cluster
+        if cluster_name != self.active_cluster_name:
+            self.swap_cluster(cluster_name)
+            swapped = True
+        else: swapped = False
+
         # Create a dictionary that contains the status of the different jobs that are scheduled or running on the cluster
         queue_status = dict()
 
@@ -2139,7 +2169,7 @@ class SKIRTRemote(Remote):
         for line in output:
 
             # If this line mentions a job
-            if "master15" in line:
+            if "master" in line:
 
                 # Get the job ID
                 jobid = int(line.split(".")[0])
@@ -2155,6 +2185,9 @@ class SKIRTRemote(Remote):
 
                 # Add the status of this job to the dictionary
                 queue_status[jobid] = jobstatus
+
+        # Swap back to original cluster
+        if swapped: self.swap_cluster(self.cluster_name)
 
         # Return the queue status
         return queue_status

@@ -105,8 +105,8 @@ def get_status_multinode(remote):
 
     # print(status)
 
-    from lxml import etree
-    result = etree.tostring(status, pretty_print=True, method="html")
+    #from lxml import etree
+    #result = etree.tostring(status, pretty_print=True, method="html")
 
     # CPU model
     cpu_model = None
