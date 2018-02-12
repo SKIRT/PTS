@@ -72,6 +72,9 @@ definition.add_optional("backup_path", "directory_path", "backup directory path"
 # Jobscripts path
 definition.add_optional("jobscripts_path", "directory_path", "path of the directory for the jobscripts to be saved locally")
 
+# Screen script path
+definition.add_optional("screenscript_path", "directory_path", "path of the directory for the screen script to be saved locally")
+
 # Flags
 definition.add_flag("dry", "run in dry mode")
 definition.add_flag("mail", "send mail when jobs start")
@@ -326,8 +329,12 @@ for simulation_name in simulations:
 
 # -----------------------------------------------------------------
 
+# Determine screen script path
+if config.screenscript_path is not None: local_script_path = fs.join(config.screenscript_path, config.host.id + ".sh")
+else: local_script_path = None
+
 # Launch the queue
-handles = remote.start_queue(dry=config.dry)
+handles = remote.start_queue(dry=config.dry, local_script_path=local_script_path)
 
 # -----------------------------------------------------------------
 
