@@ -388,6 +388,72 @@ class Parallelization(object):
 
     # -----------------------------------------------------------------
 
+    def as_tuple(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.cores, self.processes, self.threads_per_core, self.data_parallel)
+
+    # -----------------------------------------------------------------
+
+    def as_string(self):
+
+        """
+        This function returns a parsable string
+        :return:
+        """
+
+        return ":".join(str(prop) for prop in self.as_tuple())
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_string(cls, string, default_nthreads_per_core=1):
+
+        """
+        This function ...
+        :param string:
+        :param default_nthreads_per_core:
+        :return:
+        """
+
+        from ..tools.parsing import integer, boolean
+
+        # Parse
+        splitted = string.split(":")
+        if len(splitted) < 2: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core][:data_parallel?]'")
+        if len(splitted) > 4: raise ValueError("Invalid input: must be 'ncores:nprocesses[:nthreads_per_core][:data_parallel?]'")
+
+        ncores = integer(splitted[0])
+        nprocesses = integer(splitted[1])
+
+        # Get number of threads per core (hyperthreading)
+        if len(splitted) > 2: nthreads_per_core = integer(splitted[2])
+        else: nthreads_per_core = default_nthreads_per_core
+
+        # Get data_parallel flag
+        if len(splitted) > 3: data_parallel = boolean(splitted[3])
+        else: data_parallel = False
+
+        # Create and return the parallelization
+        return Parallelization(ncores, nthreads_per_core, nprocesses, data_parallel=data_parallel)
+
+    # -----------------------------------------------------------------
+
+    def __hash__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return hash(self.as_tuple())
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other):
 
         """

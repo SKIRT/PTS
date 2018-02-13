@@ -33,6 +33,7 @@ adapt_simulation_settings | -- | simulation.adapter.SimulationAdapter | argument
 adapt_analysis_options | -- | simulation.adapter.AnalysisAdapter | arguments | Change certain analysis options for a single or multiple simulations
 show_simulation_settings | -- | simulation.shower.SimulationShower | arguments | Show certain simulation settings
 show_analysis_options | -- | simulation.shower.AnalysisShower | arguments | Show certain analysis settings
+manage | -- | launch.manager.SimulationManager | arguments | Manage batch of simulations
 
 # PLOTTING
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs

@@ -19,6 +19,7 @@ from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.launch.analyser import reanalyse_simulation, all_steps, analyse_simulation, show_analysis_steps
 from pts.core.config.analyse_simulation import definition as analysis_definition
 from pts.core.tools.stringify import tostr
+from pts.core.launch.manager import SimulationManager
 
 # -----------------------------------------------------------------
 
@@ -70,41 +71,16 @@ if not generation.has_assignment_table: raise RuntimeError("No assignment for th
 
 # -----------------------------------------------------------------
 
-# Get the simulations
-if config.simulations is not None: simulations = [generation.get_simulation(name) for name in config.simulations]
-else: simulations = generation.retrieved_simulations
+
 
 # -----------------------------------------------------------------
 
-# Loop over the retrieved simulations
-for simulation in simulations:
+# Create simulation manager
+manager = SimulationManager()
 
-    # Show steps that will be performed
-    show_analysis_steps(simulation)
+# Set options
 
-    # Get parameter values
-    parameter_values = generation.get_parameter_values_for_simulation(simulation.name)
-    parameter_string = ", ".join(label + ": " + tostr(value) for label, value in parameter_values.items())
-
-    # Analyse?
-    if config.prompt_simulations and not prompt_proceed("analyse simulation '" + simulation.name + "' [" + parameter_string + "] ?"): continue
-
-    # Re-analysis
-    if config.reanalyse is not None:
-
-        # Inform the user
-        log.info("Re-analysing simulation '" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ") ...")
-
-        # Reanalyse simulation
-        reanalyse_simulation(simulation, config.reanalyse, config.features)
-
-    # Normal analysis
-    else:
-
-        # Inform the user
-        log.info("Analysing simulation '" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ") ...")
-
-        # Analyse the simulation
-        analyse_simulation(simulation, config=config.analysis)
+# Run the manager
+manager.run()
 
 # -----------------------------------------------------------------

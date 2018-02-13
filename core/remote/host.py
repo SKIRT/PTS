@@ -471,6 +471,40 @@ class Host(SimplePropertyComposite):
 
     # -----------------------------------------------------------------
 
+    def as_tuple(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.id, self.cluster_name)
+
+    # -----------------------------------------------------------------
+
+    def as_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.cluster_name is not None: return self.id + ":" + self.cluster_name
+        else: return self.id
+
+    # -----------------------------------------------------------------
+
+    def __hash__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return hash(self.as_tuple())
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other):
 
         """
@@ -479,6 +513,7 @@ class Host(SimplePropertyComposite):
         :return:
         """
 
+        # Compare to string (host ID)
         if types.is_string_type(other):
 
             if ":" in other: host_id, clustername = other.split(":")
@@ -487,8 +522,10 @@ class Host(SimplePropertyComposite):
             if clustername is None: return self.id == host_id
             else: return self.id == host_id and self.cluster_name == clustername
 
+        # Compare to other host object
         elif isinstance(other, Host): return self.id == other.id and self.cluster_name == other.cluster_name
 
+        # Invalid input
         else: raise ValueError("Invalid input: must be string or Host")
 
 # -----------------------------------------------------------------

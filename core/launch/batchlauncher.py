@@ -199,6 +199,34 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        hosts = []
+        for index in range(self.nsimulations):
+            host = self.get_host_for_index(index)
+            hosts.append(host)
+        return hosts
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.unique_values(self.hosts, ignore=[None])
+
+    # -----------------------------------------------------------------
+
     def get_index_for_simulation(self, simulation_name):
 
         """
@@ -208,6 +236,18 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         return tables.find_index(self, simulation_name, "Simulation name")
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Simulation name", index)
 
     # -----------------------------------------------------------------
 
@@ -223,6 +263,20 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def set_local_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        self.set_value("Host ID", index, None)
+        self.set_value("Cluster", index, None)
+
+    # -----------------------------------------------------------------
+
     def set_host_id_for_simulation(self, simulation_name, host_id):
 
         """
@@ -233,7 +287,21 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
-        self["Host ID"][index] = host_id
+        self.set_value("Host ID", index, host_id)
+
+    # -----------------------------------------------------------------
+
+    def set_cluster_name_for_simulation(self, simulation_name, cluster_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param cluster_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        self.set_value("Cluster", index, cluster_name)
 
     # -----------------------------------------------------------------
 
@@ -248,11 +316,10 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
-        self["Host ID"][index] = host_id
-        if cluster_name is not None:
-            self["Cluster"].mask[index] = False
-            self["Cluster"][index] = cluster_name
-        else: self["Cluster"].mask[index] = True
+
+        # Set values
+        self.set_value("Host ID", index, host_id)
+        self.set_value("Cluster", index, cluster_name)
 
     # -----------------------------------------------------------------
 
@@ -266,21 +333,7 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
-        self["ID"][index] = id
-
-    # -----------------------------------------------------------------
-
-    def set_success_for_simulation(self, simulation_name, success=True):
-
-        """
-        This function ...
-        :param simulation_name:
-        :param success:
-        :return:
-        """
-
-        index = self.get_index_for_simulation(simulation_name)
-        self["Success"][index] = success
+        self.set_value("ID", index, id)
 
     # -----------------------------------------------------------------
 
@@ -293,7 +346,74 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
-        return self["Host ID"][index]
+        return self.get_host_id_for_index(index)
+
+    # -----------------------------------------------------------------
+
+    def get_host_id_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Host ID", index)
+
+    # -----------------------------------------------------------------
+
+    def get_cluster_name_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self.get_cluster_name_for_index(index)
+
+    # -----------------------------------------------------------------
+
+    def get_cluster_name_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Cluster", index)
+
+    # -----------------------------------------------------------------
+
+    def get_host_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        return self.get_host_for_index(index)
+    
+    # -----------------------------------------------------------------
+
+    def get_host_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+        
+        host_id = self.get_value("Host ID", index)
+        cluster_name = self.get_value("Cluster", index)
+
+        # Return None or host
+        if host_id is None: return None
+        else: return load_host(host_id, clustername=cluster_name)
 
     # -----------------------------------------------------------------
 
@@ -306,7 +426,7 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
-        return self["ID"][index]
+        return self.get_value("ID", index)
 
     # -----------------------------------------------------------------
 
@@ -319,7 +439,7 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation_id(simulation_id)
-        return self["Simulation name"][index]
+        return self.get_value("Simulation name", index)
 
     # -----------------------------------------------------------------
 
@@ -332,7 +452,7 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
-        return self["Success"][index]
+        return self.get_value("Success", index)
 
     # -----------------------------------------------------------------
 
@@ -344,7 +464,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return self["Host ID"].mask[index]
+        return self.is_masked_value("Host ID", index)
 
     # -----------------------------------------------------------------
 
@@ -369,7 +489,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return not self["Host ID"].mask[index]
+        return not self.is_masked_value("Host ID", index)
 
     # -----------------------------------------------------------------
 
@@ -382,7 +502,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return self["Host ID"][index] == host_id
+        return self.get_value("Host ID", index) == host_id
 
     # -----------------------------------------------------------------
 
@@ -423,7 +543,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        self["Success"][index] = value
+        self.set_value("Success", index, value)
 
     # -----------------------------------------------------------------
 
@@ -447,7 +567,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return self["Simulation name"][index]
+        return self.get_value("Simulation name", index)
 
     # -----------------------------------------------------------------
 
@@ -459,7 +579,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return self["ID"][index] if not self["ID"].mask[index] else None
+        return self.get_value("ID", index)
 
     # -----------------------------------------------------------------
 
@@ -471,7 +591,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return self["Host ID"][index] if not self["Host ID"].mask[index] else None
+        return self.get_value("Host ID", index)
 
     # -----------------------------------------------------------------
 

@@ -767,6 +767,54 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def get_column_array_dtype(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        return self[column_name].dtype
+
+    # -----------------------------------------------------------------
+
+    def get_column_array_dtype_string(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        return str(self.get_column_array_dtype(column_name))
+
+    # -----------------------------------------------------------------
+
+    def is_string_column(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        return self.get_column_array_dtype_string(column_name).startswith("|S")
+
+    # -----------------------------------------------------------------
+
+    def get_string_column_size(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        return int(self.get_column_array_dtype_string(column_name).split("S")[1])
+
+    # -----------------------------------------------------------------
+
     def get_column_unit(self, column_name):
 
         """
@@ -1105,31 +1153,61 @@ class SmartTable(Table):
         :return:
         """
 
-        new_sizes = dict()
+        # Initialize dictionary for the new sizes of the columns
+        #new_sizes = dict()
 
-        #print(values)
+        # Loop over the columns
+        for index, colname in enumerate(self.column_names):
 
-        colnames = self.colnames
-        for index in range(len(colnames)):
+            # Skip non-string columns
+            if not self.is_string_column(colname): continue
 
-            colname = colnames[index]
-            #print(colname, values[index])
-
-            dtype_str = str(self[colname].dtype)
-
-            if not dtype_str.startswith("|S"): continue
-
-            current_string_length = int(dtype_str.split("S")[1])
-            if values[index] is None: new_string_length = 0
-            else: new_string_length = len(values[index])
-
-            if new_string_length > current_string_length: new_sizes[colname] = new_string_length
+            # Resize if necessary
+            self.resize_string_column_for_string(colname, values[index])
 
         # Resize columns
-        for colname in new_sizes:
+        #for colname in new_sizes: self.resize_string_column(colname, new_sizes[colname])
 
-            current_resized = self[colname].astype("S" + str(new_sizes[colname]))
-            self.replace_column(colname, current_resized)
+    # -----------------------------------------------------------------
+
+    def resize_string_column_for_string(self, colname, string):
+
+        """
+        This function ...
+        :param colname:
+        :param string:
+        :return:
+        """
+
+        # Get current column string length
+        current_string_length = self.get_string_column_size(colname)
+
+        # Get new string length
+        if string is None: new_string_length = 0
+        else: new_string_length = len(string)
+
+        # Doesn't need resize?
+        if new_string_length <= current_string_length: return
+
+        # Resize
+        self.resize_string_column(colname, new_string_length)
+
+    # -----------------------------------------------------------------
+
+    def resize_string_column(self, colname, size):
+
+        """
+        This function ...
+        :param colname:
+        :param size:
+        :return:
+        """
+
+        # Create new version of the column
+        resized = self[colname].astype("S" + str(size))
+
+        # Replace the column
+        self.replace_column(colname, resized)
 
     # -----------------------------------------------------------------
 
@@ -1287,6 +1365,48 @@ class SmartTable(Table):
 
         # Return the value
         return value
+
+    # -----------------------------------------------------------------
+
+    def set_value(self, colname, index, value, conversion_info=None, return_previous=False):
+
+        """
+        This function ...
+        :param colname:
+        :param index:
+        :param value:
+        :param return_previous:
+        :param conversion_info:
+        :return:
+        """
+
+        # Get the current value
+        if return_previous: previous = self.get_value(colname, index)
+        else: previous = None
+
+        # Value is None?
+        if value is None: self[colname].mask[index] = True
+
+        # Column with unit
+        elif self.has_column_unit(colname):
+
+            # Set the value in the correct unit
+            if conversion_info is None: conversion_info = dict()
+            self[colname][index] = value.to(self.column_unit(colname), **conversion_info).value
+
+        # Column without unit: check that value has no unit
+        elif hasattr(value, "unit"): raise ValueError("Value has unit but unit of column is undefined")
+
+        # String column
+        elif self.is_string_column(colname):
+            self.resize_string_column_for_string(colname, value)
+            self[colname][index] = value
+
+        # Other column type
+        else: self[colname][index] = value
+
+        # Return the previous value
+        return previous
 
     # -----------------------------------------------------------------
 
