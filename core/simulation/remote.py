@@ -417,11 +417,12 @@ class SKIRTRemote(Remote):
     This class ...
     """
 
-    def __init__(self, host_id=None):
+    def __init__(self, host_id=None, cluster_name=None):
 
         """
         The constructor ...
         :param host_id:
+        :param cluster_name:
         :return:
         """
 
@@ -445,7 +446,7 @@ class SKIRTRemote(Remote):
 
         # If host ID is given, setup
         if host_id is not None:
-            if not self.setup(host_id): log.warning("The connection could not be made. Run setup().")
+            if not self.setup(host_id, cluster_name=cluster_name): log.warning("The connection could not be made. Run setup().")
 
     # -----------------------------------------------------------------
 
@@ -2125,23 +2126,30 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def get_jobs_status(self):
+    def get_jobs_status(self, cluster_name=None):
 
         """
         This function ...
+        :param cluster_name:
         :return:
         """
 
-        status = dict()
+        # Only for specific cluster
+        if cluster_name is not None: return self._get_jobs_status_cluster(cluster_name)
 
-        # Loop over the clusters
-        for cluster_name in self.cluster_names:
+        # For all clusters
+        else:
 
-            status_cluster = self._get_jobs_status_cluster(cluster_name)
-            status.update(status_cluster)
+            status = dict()
 
-        # Return the status
-        return status
+            # Loop over the clusters
+            for clustername in self.cluster_names:
+
+                status_cluster = self._get_jobs_status_cluster(clustername)
+                status.update(status_cluster)
+
+            # Return the status
+            return status
 
     # -----------------------------------------------------------------
 
@@ -2334,7 +2342,7 @@ class SKIRTRemote(Remote):
         if self.scheduler:
 
             # Check jobs status
-            if jobs_status is None: jobs_status = self.get_jobs_status()
+            if jobs_status is None: jobs_status = self.get_jobs_status(cluster_name=simulation.cluster_name)
 
             # Check session
             #if session is None:

@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 import numpy as np
-from collections import OrderedDict, Callable
+from collections import OrderedDict, Callable, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..tools import types
@@ -1293,5 +1293,40 @@ def sequence_from_dict(dictionary, keys):
     """
 
     return [dictionary[key] for key in keys]
+
+# -----------------------------------------------------------------
+
+def create_nested_defaultdict(nlevels, initializer):
+
+    """
+    This function ...
+    :param nlevels:
+    :param initializer:
+    :return:
+    """
+
+    # Only one level
+    if nlevels == 1: return defaultdict(initializer)
+
+    # 2 levels
+    elif nlevels == 2: return defaultdict(lambda: defaultdict(initializer))
+
+    # 3 levels
+    elif nlevels == 3: return defaultdict(lambda: defaultdict(lambda: initializer))
+
+    # 4 levels
+    elif nlevels == 4: return defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: initializer)))
+
+    # Not implemented
+    else: raise NotImplementedError("Not implemented for nlevels > 4")
+
+    # GENERAL CASE: DIDN'T WORK ...
+    # else:
+        # Create initializer
+        #initializer = lambda : defaultdict(initializer)
+        #prev_init = initializer
+        #for _ in range(level-1): prev_init = lambda: defaultdict(copy.copy(prev_init))
+        # Create defaultdict and return
+        #return defaultdict(prev_init)
 
 # -----------------------------------------------------------------

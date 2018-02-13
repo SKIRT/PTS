@@ -40,6 +40,7 @@ definition.add_flag("success", "success flag to fill in into the assignment tabl
 # Showing
 definition.add_flag("show", "showing", True)
 definition.add_flag("show_assignment", "show the assignment scheme")
+definition.add_flag("show_status", "show the simulation status")
 definition.add_flag("show_runtimes", "show runtimes")
 definition.add_flag("show_memory", "show memory")
 
