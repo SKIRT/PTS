@@ -271,18 +271,19 @@ def new(data=None, names=None, meta=None, dtypes=None, copy=True):
     :return:
     """
 
-    if data is None: return Table()
-    else:
+    #if data is None: return Table()
+    #else:
 
-        # Create a new table from the data
-        table = Table(data=data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
+    # Create a new table from the data
+    table = Table(data=data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
 
+    if data is not None:
         # Set mask for each column from None values
         for column_index in range(len(names)):
             table[names[column_index]].mask = [value is None for value in data[column_index]]
 
-        # Return the new table
-        return table
+    # Return the new table
+    return table
 
 # -----------------------------------------------------------------
 

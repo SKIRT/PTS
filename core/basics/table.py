@@ -1062,31 +1062,87 @@ class SmartTable(Table):
             #filehandle = StringIO.StringIO()
             #for line in data_lines: filehandle.write(line + "\n")
 
-            # Call the constructor from Astropy, to read in plain ascii format
-            table = super(SmartTable, cls).read(data_lines, format="ascii.commented_header")
-
-            # FIX BOOLEAN COLUMNS
-            to_boolean = []
-            for column_name in table.colnames:
-                values = list(table[column_name])
-                #value_strings = [str(value) for value in values] # actually not necessary
-                #print(column_name, values)
-                if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
-                if sequences.all_in(values, ["True", "False"]): to_boolean.append(column_name)
-
             # Search for density and brightness, set meta info
-            for line in header:
+            index = -1
+            density = None
+            brightness = None
+            for index, line in enumerate(header):
+
+                if line.startswith("PTS data format"): continue
+
                 if line.startswith("density:"):
 
                     density_string = line.split("density: ")[1]
                     string = "[" + ",".join('"' + s + '"' for s in density_string.split(",")) + "]"
-                    table.meta["density"] = eval(string)
+                    #table.meta["density"] = eval(string)
+                    density = eval(string)
 
                 elif line.startswith("brightness:"):
 
                     brightness_string = line.split("brightness: ")[1]
                     string = "[" + ",".join('"' + s + '"' for s in brightness_string.split(",")) + "]"
-                    table.meta["brightness"] = eval(string)
+                    #table.meta["brightness"] = eval(string)
+                    brightness = eval(string)
+
+                else: break
+
+            # Contains type line
+            if index == len(header) - 2:
+
+                # Get types
+                types_string = header[-2]
+                column_type_strings = types_string.split()
+                column_types = []
+                for type_string in column_type_strings:
+                    if type_string == "string": dtype = str
+                    elif type_string == "boolean": dtype = bool
+                    elif type_string == "integer": dtype = int
+                    elif type_string == "real": dtype = float
+                    else: raise ValueError("Unrecognized column type string: '" + type_string + "'")
+                    column_types.append(dtype)
+
+            # Doesn't contain type line
+            elif index == len(header) - 1: column_types = None
+
+            # Invalid
+            else: raise IOError("Something is wrong with the file")
+
+            #print(data_lines)
+            #print(len(data_lines))
+            ndata_lines = len(data_lines)
+            nrows = ndata_lines - 1
+            #print(nrows)
+
+            # Call the constructor from Astropy, to read in plain ascii format
+            if nrows == 0:
+                if column_types is None: raise IOError("The table file doesn't contain the column types and neither does it have any rows")
+                colnames_string = data_lines[0][2:]
+                from ..tools import strings
+                column_names = strings.split_except_within_double_quotes(colnames_string, add_quotes=False)
+                print("COLNAMES:", column_names)
+                print("COLTYPES:", column_types)
+                table = cls(data=None, names=column_names, masked=True, dtype=column_types, copy=True)
+                #from ..tools import tables
+                #table2 = tables.new(names=column_names, dtypes=column_types)
+                #print(repr(table2))
+                #for k, column_name in enumerate(column_names): table[column_name] = table[column_name].astype(column_types[k])
+            else: table = super(SmartTable, cls).read(data_lines, format="ascii.commented_header")
+
+            # Set density and brightness meta
+            if density is not None: table.meta["density"] = density
+            if brightness is not None: table.meta["brightness"] = brightness
+
+            # FIX BOOLEAN COLUMNS
+            to_boolean = []
+            for column_name in table.colnames:
+                values = list(table[column_name])
+                if len(values) == 0: continue
+                #value_strings = [str(value) for value in values] # actually not necessary
+                #print(column_name, values)
+                if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
+                if sequences.all_in(values, ["True", "False"]): to_boolean.append(column_name)
+
+            #print(index, header[index], len(header))
 
             # Set units
             unit_string = header[-1]
@@ -1666,6 +1722,13 @@ class SmartTable(Table):
             # Set density and brightness lists
             if "density" in self.meta and len(self.meta["density"]) > 0: header.append("density: " + tostr(self.meta["density"]))
             if "brightness" in self.meta and len(self.meta["brightness"]) > 0: header.append("brightness: " + tostr(self.meta["brightness"]))
+
+            # Set type string line for the header
+            type_string = ""
+            for name in self.column_names:
+                dtype = self.column_type(name)
+                type_string += " " + str(dtype)
+            header.append(type_string.strip())
 
             # Set unit string line for the header
             unit_string = ""

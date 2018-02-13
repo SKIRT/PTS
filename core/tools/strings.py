@@ -338,11 +338,12 @@ class alphabet_strings_iterator(object):
 
 # -----------------------------------------------------------------
 
-def split_except_within_single_quotes(text):
+def split_except_within_single_quotes(text, add_quotes=True):
 
     """
     This function strips the whitespace from a string, except when it is within quotes
-    :param text:f
+    :param text:
+    :param add_quotes:
     :return:
     """
 
@@ -352,7 +353,9 @@ def split_except_within_single_quotes(text):
 
     for i, item in enumerate(lst):
 
-        if i % 2: parts.append("'" + item + "'")
+        if i % 2:
+            if add_quotes: parts.append("'" + item + "'")
+            else: parts.append(item)
         else:
 
             for a in item.split(): parts.append(a)
@@ -361,11 +364,12 @@ def split_except_within_single_quotes(text):
 
 # -----------------------------------------------------------------
 
-def split_except_within_double_quotes(text):
+def split_except_within_double_quotes(text, add_quotes=True):
 
     """
     This function ...
     :param text:
+    :param add_quotes:
     :return:
     """
 
@@ -375,7 +379,9 @@ def split_except_within_double_quotes(text):
 
     for i, item in enumerate(lst):
 
-        if i % 2: parts.append('"' + item + '"')
+        if i % 2:
+            if add_quotes: parts.append('"' + item + '"')
+            else: parts.append(item)
         else:
 
             for a in item.split(): parts.append(a)
