@@ -1094,15 +1094,11 @@ class SmartTable(Table):
                 column_type_strings = types_string.split()
                 column_types = []
                 for type_string in column_type_strings:
-                    if type_string == "string": dtype = str
-                    elif type_string == "boolean": dtype = bool
-                    elif type_string == "integer": dtype = int
-                    elif type_string == "real": dtype = float
-                    else: raise ValueError("Unrecognized column type string: '" + type_string + "'")
+                    dtype = column_type_to_builtin(type_string)
                     column_types.append(dtype)
 
             # Doesn't contain type line
-            elif index == len(header) - 1: column_types = None
+            elif index == len(header) - 1: column_types = column_type_strings = None
 
             # Invalid
             else: raise IOError("Something is wrong with the file")
@@ -1119,8 +1115,8 @@ class SmartTable(Table):
                 colnames_string = data_lines[0][2:]
                 from ..tools import strings
                 column_names = strings.split_except_within_double_quotes(colnames_string, add_quotes=False)
-                print("COLNAMES:", column_names)
-                print("COLTYPES:", column_types)
+                #print("COLNAMES:", column_names)
+                #print("COLTYPES:", column_types)
                 table = cls(data=None, names=column_names, masked=True, dtype=column_types, copy=True)
                 #from ..tools import tables
                 #table2 = tables.new(names=column_names, dtypes=column_types)
@@ -1133,14 +1129,24 @@ class SmartTable(Table):
             if brightness is not None: table.meta["brightness"] = brightness
 
             # FIX BOOLEAN COLUMNS
+            # and also check column types
             to_boolean = []
-            for column_name in table.colnames:
-                values = list(table[column_name])
-                if len(values) == 0: continue
-                #value_strings = [str(value) for value in values] # actually not necessary
-                #print(column_name, values)
-                if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
-                if sequences.all_in(values, ["True", "False"]): to_boolean.append(column_name)
+            if column_type_strings is not None:
+                for k, column_name in enumerate(table.colnames):
+                    column_type_string = column_type_strings[k]
+                    actual_column_type = dtype_name_to_column_type(table[column_name].dtype.name)
+                    #print(column_type_string, actual_column_type)
+                    if actual_column_type == column_type_string: continue
+                    elif column_type_string == "boolean" and actual_column_type == "string": to_boolean.append(column_name)
+                    else: raise RuntimeError("Something went wrong: column '" + column_name + "' with type '" + column_type_string + "' is parsed as '" + actual_column_type + "' column")
+            else:
+                for column_name in table.colnames:
+                    values = list(table[column_name])
+                    if len(values) == 0: continue
+                    #value_strings = [str(value) for value in values] # actually not necessary
+                    #print(column_name, values)
+                    if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
+                    if sequences.all_in(values, ["True", "False"]): to_boolean.append(column_name)
 
             #print(index, header[index], len(header))
 
@@ -1154,6 +1160,7 @@ class SmartTable(Table):
                 if unit_string == '""': continue
                 table[colname].unit = unit_string
 
+            #print(to_boolean)
             # DO THIS AT THE END BECAUSE OTHERWISE UNITS ASSIGNED TO THE WRONG COLUMNS
             # Loop over the columns to convert to booleans
             for column_name in to_boolean:
@@ -1589,12 +1596,7 @@ class SmartTable(Table):
         """
 
         coltype = self[column_name].dtype.name
-
-        if coltype.startswith("string"): return "string"
-        elif coltype.startswith("float"): return "real"
-        elif coltype.startswith("int"): return "integer"
-        elif coltype.startswith("bool"): return "boolean"
-        else: raise ValueError("Unknown column type: " + coltype)
+        return dtype_name_to_column_type(coltype)
 
     # -----------------------------------------------------------------
 
@@ -2239,5 +2241,37 @@ def initialize_table(table):
 
         # Initialize "brightness" meta
         if "brightness" not in table.meta: table.meta["brightness"] = []
+
+# -----------------------------------------------------------------
+
+def dtype_name_to_column_type(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    if name.startswith("string"): return "string"
+    elif name.startswith("float"): return "real"
+    elif name.startswith("int"): return "integer"
+    elif name.startswith("bool"): return "boolean"
+    else: raise ValueError("Unknown column type: '" + name + "'")
+
+# -----------------------------------------------------------------
+
+def column_type_to_builtin(column_type):
+
+    """
+    This function ...
+    :param column_type:
+    :return:
+    """
+
+    if column_type == "string": return str
+    elif column_type == "boolean": return bool
+    elif column_type == "integer": return int
+    elif column_type == "real": return float
+    else: raise ValueError("Unrecognized column type string: '" + column_type + "'")
 
 # -----------------------------------------------------------------
