@@ -12,19 +12,21 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ..basics.table import SmartTable
 from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from ..basics.log import log
-from ..units.parsing import parse_unit as u
 from ..tools import sequences
 
 # -----------------------------------------------------------------
 
 all_ski_parameters = ["Wavelengths", "Dust cells", "Grid type", "Min level", "Max level", "Search method",
-                          "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion",
-                          "Self-absorption", "Transient heating", "Number of pixels"]
+                      "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion",
+                      "Self-absorption", "Transient heating", "Number of pixels"]
 
 # -----------------------------------------------------------------
 
@@ -33,6 +35,37 @@ class MemoryTable(SmartTable):
     """
     This class ...
     """
+
+    _column_info = OrderedDict()
+    _column_info["Simulation name"] = (str, None, "name of the simulation")
+    _column_info["Timestamp"] = (str, None, "timestamp")
+    _column_info["Host id"] = (str, None, "remote host ID")
+    _column_info["Cluster name"] = (str, None, "remote cluster name")
+    _column_info["Cores"] = (int, None, "number of cores")
+    _column_info["Threads per core"] = (int, None, "number of threads per core")
+    _column_info["Processes"] = (int, None, "number of processes")
+    _column_info["Wavelengths"] = (int, None, "number of wavelengths")
+    _column_info["Dust cells"] = (int, None, "number of dust cells")
+    _column_info["Grid type"] = (str, None, "type of grid")
+    _column_info["Min level"] = (int, None, "minimum division level for the tree")
+    _column_info["Max level"] = (int, None, "maximum division level for the tree")
+    _column_info["Search method"] = (str, None, "search method (TopDown, Neighbor or Bookkeeping)")
+    _column_info["Sample count"] = (int, None, "sample count")
+    _column_info["Max optical depth"] = (float, None, "maximum optical depth")
+    _column_info["Max mass fraction"] = (float, None, "maximum mass fraction")
+    _column_info["Max density dispersion"] = (float, None, "maximum density dispersion")
+    _column_info["Self-absorption"] = (bool, None, "self-absorption enabled")
+    _column_info["Transient heating"] = (bool, None, "transient (non-LTE) heating enabled")
+    _column_info["Data-parallel"] = (bool, None, "data parallelization enabled")
+    _column_info["Number of pixels"] = (int, None, "total number of spatial pixels for all instruments")
+    _column_info["Total peak memory"] = (float, "Gbyte", "peak memory usage during total simulation")
+    _column_info["Setup peak memory"] = (float, "Gbyte", "peak memory usage during setup")
+    _column_info["Stellar emission peak memory"] = (float, "Gbyte", "peak memory usage during stellar emission")
+    _column_info["Spectra calculation peak memory"] = (float, "Gbyte", "peak memory usage during spectra calculation")
+    _column_info["Dust emission peak memory"] = (float, "Gbyte", "peak memory usage during dust emission")
+    _column_info["Writing peak memory"] = (float, "Gbyte", "peak memory usage during writing")
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -46,33 +79,7 @@ class MemoryTable(SmartTable):
         super(MemoryTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Simulation name", str, None, "name of the simulation")
-        self.add_column_info("Timestamp", str, None, "timestamp")
-        self.add_column_info("Host id", str, None, "remote host ID")
-        self.add_column_info("Cluster name", str, None, "remote cluster name")
-        self.add_column_info("Cores", int, None, "number of cores")
-        self.add_column_info("Threads per core", int, None, "number of threads per core")
-        self.add_column_info("Processes", int, None, "number of processes")
-        self.add_column_info("Wavelengths", int, None, "number of wavelengths")
-        self.add_column_info("Dust cells", int, None, "number of dust cells")
-        self.add_column_info("Grid type", str, None, "type of grid")
-        self.add_column_info("Min level", int, None, "minimum division level for the tree"),
-        self.add_column_info("Max level", int, None, "maximum division level for the tree"),
-        self.add_column_info("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)")
-        self.add_column_info("Sample count", int, None, "sample count")
-        self.add_column_info("Max optical depth", float, None, "maximum optical depth")
-        self.add_column_info("Max mass fraction", float, None, "maximum mass fraction")
-        self.add_column_info("Max density dispersion", float, None, "maximum density dispersion")
-        self.add_column_info("Self-absorption", bool, None, "self-absorption enabled")
-        self.add_column_info("Transient heating", bool, None, "transient (non-LTE) heating enabled")
-        self.add_column_info("Data-parallel", bool, None, "data parallelization enabled")
-        self.add_column_info("Number of pixels", int, None, "total number of spatial pixels for all instruments")
-        self.add_column_info("Total peak memory", float, u("Gbyte"), "peak memory usage during total simulation")
-        self.add_column_info("Setup peak memory", float, u("Gbyte"), "peak memory usage during setup")
-        self.add_column_info("Stellar emission peak memory", float, u("Gbyte"), "peak memory usage during stellar emission")
-        self.add_column_info("Spectra calculation peak memory", float, u("Gbyte"), "peak memory usage during spectra calculation")
-        self.add_column_info("Dust emission peak memory", float, u("Gbyte"), "peak memory usage during dust emission")
-        self.add_column_info("Writing peak memory", float, u("Gbyte"), "peak memory usage during writing")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

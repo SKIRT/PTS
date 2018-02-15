@@ -1097,7 +1097,7 @@ def multiply_all_integers(lst):
 def all_in(sequence, target):
 
     """
-    Thisf unction ...
+    This function returns whether all elements in 'sequence' are also in 'target'
     :param sequence: 
     :param target: 
     :return: 
@@ -1112,7 +1112,7 @@ def all_in(sequence, target):
 def any_in(sequence, target):
 
     """
-    This function ...
+    This function returns whether any element in 'sequence' is also in 'target'
     :param sequence: 
     :param target: 
     :return: 
@@ -1789,7 +1789,7 @@ def is_unique(sequence, value):
 def has_any(lst):
 
     """
-    This function ...
+    This function returns whether 'lst' contains any elements
     :param lst:
     :return:
     """
@@ -1801,7 +1801,7 @@ def has_any(lst):
 def contains_any(lst, other):
 
     """
-    This function ...
+    This function returns whether 'lst' contains any item from 'other'
     :param lst:
     :param other:
     :return:
@@ -1816,7 +1816,7 @@ def contains_any(lst, other):
 def contains_all(lst, other):
 
     """
-    This function ...
+    This function returns whether 'lst' contains all items from 'other'
     :param lst:
     :param other:
     :return:

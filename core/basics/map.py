@@ -150,6 +150,30 @@ class Map(dict):
             # If the key is not present, show a warning
             else: warnings.warn("An item with the key '" + key + "' is not present in the Map")
 
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function makes a recursive shallow copy
+        :return:
+        """
+
+        # Initialize map
+        new = Map()
+
+        # Loop over all items
+        for key in self:
+
+            # Copy nested Map
+            if isinstance(self[key], Map): new[key] = self[key].copy()
+
+            # Just set the item, don't copy
+            else: new[key] = self[key]
+
+        # Return the copy
+        return new
+
 # -----------------------------------------------------------------
 
 class ConfigurationTest(Map):
