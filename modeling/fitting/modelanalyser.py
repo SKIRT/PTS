@@ -158,8 +158,8 @@ class FluxDifferencesTable(SmartTable):
         :return:
         """
 
-        instrument = self["Instrument"][index]
-        band = self["Band"][index]
+        instrument = self.get_value("Instrument", index)
+        band = self.get_value("Band", index)
         return parse_filter_from_instrument_and_band(instrument, band)
 
     # -----------------------------------------------------------------

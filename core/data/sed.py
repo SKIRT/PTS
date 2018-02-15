@@ -985,16 +985,18 @@ class ObservedSED(FilterCurve):
         for i in range(len(self)):
 
             # Get instrument and band
-            instrument_entry = self["Instrument"][i]
-            band_entry = self["Band"][i]
+            instrument_entry = self.get_value("Instrument", i)
+            band_entry = self.get_value("Band", i)
 
             if not (instrument_entry == instrument and band_entry == band): continue
 
             if has_unit:
 
                 # Add the unit initially to be able to convert
-                error_min = self["Error-"][i] * self["Error-"].unit
-                error_plus = self["Error+"][i] * self["Error+"].unit
+                #error_min = self["Error-"][i] * self["Error-"].unit
+                #error_plus = self["Error+"][i] * self["Error+"].unit
+                error_min = self.get_value("Error-", i)
+                error_plus = self.get_value("Error+", i)
 
                 # If a target unit is specified, convert
                 if unit is not None:
@@ -1009,7 +1011,7 @@ class ObservedSED(FilterCurve):
 
                 error = ErrorBar(error_min, error_plus)
 
-            else: error = ErrorBar(self["Error-"][i], self["Error+"][i])
+            else: error = ErrorBar(self.get_value("Error-", i), self.get_value("Error+", i))
 
             return error
 

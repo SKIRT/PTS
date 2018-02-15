@@ -18,11 +18,11 @@ from datetime import datetime
 
 # Import astronomical modules
 from ..tools import tables
-from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from pts.core.tools.utils import lazyproperty
 from ..basics.log import log
+from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
@@ -48,7 +48,7 @@ class NoTimingData(Exception):
 
 # -----------------------------------------------------------------
 
-class TimeLineTable(Table):
+class TimeLineTable(SmartTable):
 
     """
     This function ...
@@ -80,47 +80,6 @@ class TimeLineTable(Table):
 
         # The path to the table file
         table.path = None
-
-        # Return the table
-        return table
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the table
-        table = cls.read(path, format="ascii.ecsv")
-
-        # Set the path
-        table.path = path
-
-        # Return the table
-        return table
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_remote_file(cls, path, remote):
-
-        """
-        This function ...
-        :param path:
-        :param remote:
-        :return:
-        """
-
-        # Open the contents
-        contents = remote.get_text(path)
-
-        # Open the table
-        table = cls.read(contents, format="ascii.ecsv")
 
         # Return the table
         return table
@@ -821,34 +780,6 @@ class TimeLineTable(Table):
         """
 
         return self.communication_root + self.waiting_root
-
-    # -----------------------------------------------------------------
-
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Save to the current path
-        self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
-    def saveto(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Write the table in ECSV format
-        self.write(path, format="ascii.ecsv")
-
-        # Set the path
-        self.path = path
 
 # -----------------------------------------------------------------
 

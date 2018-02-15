@@ -528,7 +528,7 @@ class WavelengthCurve(Curve):
         :return:
         """
 
-        return self["Wavelength"][0] * self.column_unit("Wavelength")
+        return self.get_value("Wavelength", 0)
 
     # -----------------------------------------------------------------
 
@@ -540,7 +540,7 @@ class WavelengthCurve(Curve):
         :return:
         """
 
-        return self["Wavelength"][-1] * self.column_unit("Wavelength")
+        return self.get_value("Wavelength", -1)
 
     # -----------------------------------------------------------------
 
@@ -743,19 +743,20 @@ class FilterCurve(WavelengthCurve):
         for i in range(len(self)):
 
             # Get instrument and band
-            instrument_entry = self["Instrument"][i]
-            band_entry = self["Band"][i]
+            instrument_entry = self.get_value("Instrument", i)
+            band_entry = self.get_value("Band", i)
 
             if not (instrument_entry == instrument and band_entry == band): continue
 
             # if the entry is masked, return None
-            if has_mask and self[self.value_name].mask[i]: return None
+            if has_mask and self.is_masked_value(self.value_name, i): return None
 
             # The column has a unit, we can convert if necessary
             if has_unit:
 
                 # Add the unit initially to be able to convert
-                value = self[self.value_name][i] * self[self.value_name].unit
+                #value = self[self.value_name][i] * self[self.value_name].unit
+                value = self.get_value(self.value_name, i)
 
                 # If a target unit is specified, convert
                 if unit is not None: value = value.to(unit).value * u(unit)
@@ -764,7 +765,7 @@ class FilterCurve(WavelengthCurve):
                 if not add_unit: value = value.value
 
             # No unit for the column
-            else: value = self[self.value_name][i]
+            else: value = self.get_value(self.value_name, i)
 
             # Return the value / quantity ...
             return value
@@ -826,8 +827,8 @@ class FilterCurve(WavelengthCurve):
         for i in range(len(self)):
 
             # Get the instrument and band
-            instrument = str(self["Instrument"][i])
-            band = str(self["Band"][i])
+            instrument = str(self.get_value("Instrument", i))
+            band = str(self.get_value("Band", i))
 
             # Add the filter name
             names.append(instrument + " " + band)
@@ -873,7 +874,7 @@ class FilterCurve(WavelengthCurve):
         for index in range(len(self)):
 
             # Match found
-            if self["Instrument"][index] == fltr.instrument and self["Band"][index] == fltr.band: return True
+            if self.get_value("Instrument", index) == fltr.instrument and self.get_value("Band", index) == fltr.band: return True
 
         # No match found
         return False
@@ -893,7 +894,7 @@ class FilterCurve(WavelengthCurve):
         for index in range(len(self)):
 
             # Match?
-            if self["Instrument"][index] == fltr.instrument and self["Band"][index] == fltr.band: return index
+            if self.get_value("Instrument", index) == fltr.instrument and self.get_value("Band", index) == fltr.band: return index
 
         # No match
         if return_none: return None
@@ -972,8 +973,8 @@ class FilterCurve(WavelengthCurve):
         """
 
         # Get instrument and band
-        instrument = self["Instrument"][index]
-        band = self["Band"][index]
+        instrument = self.get_value("Instrument", index)
+        band = self.get_value("Band", index)
 
         # Parse the filter
         return parse_filter(instrument + " " + band)
