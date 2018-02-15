@@ -29,7 +29,7 @@ from ..basics.distribution import Distribution
 from ..plot.distribution import plot_distribution
 from ..tools.utils import lazyproperty, memoize_method
 from ..basics.configuration import prompt_proceed
-from .analyser import show_analysis_steps, analyse_simulation, reanalyse_simulation
+from .analyser import show_analysis_steps, analyse_simulation, reanalyse_simulation, has_analysed
 from ..simulation.remote import get_simulations_for_host
 from ..tools import types
 from ..basics.containers import DefaultOrderedDict
@@ -37,6 +37,8 @@ from ..tools import strings
 from ..simulation.remote import SKIRTRemote
 from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict
+from ..tools import sequences
+from ..basics.log import no_debugging
 
 # -----------------------------------------------------------------
 
@@ -73,6 +75,66 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_showing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.show
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_writing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_reanalysis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.reanalyse is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_analysis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.analyse
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -84,20 +146,20 @@ class SimulationManager(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Get the simulation status
-        self.get_status()
-
         # Show
-        if self.config.show: self.show()
+        if self.do_showing: self.show()
 
         # 3. Write
-        if self.config.write: self.write()
+        if self.do_writing: self.write()
 
         # Plotting
-        if self.config.plot: self.plot()
+        if self.do_plotting: self.plot()
+
+        # Re-analyse
+        if self.do_reanalysis: self.reanalyse()
 
         # Analyse
-        if self.config.analyse: self.analyse()
+        if self.do_analysis: self.analyse()
 
     # -----------------------------------------------------------------
 
@@ -115,16 +177,17 @@ class SimulationManager(Configurable):
         # Set the number of allowed open file handles
         #fs.set_nallowed_open_files(1024)
 
-        # Initialize
+        # Check options
+        if self.config.prompt_simulations_reanalysis is None: self.config.prompt_simulations_reanalysis = self.config.reanalyse_simulations is None
+
+        # Initialize simulations and assignment scheme
         self.initialize(**kwargs)
 
         # Get timing table
-        if "timing" in kwargs: self.timing = kwargs.pop("timing")
-        elif self.config.timing is not None: self.timing = TimingTable.from_file(self.config.timing)
+        self.get_timing_table(**kwargs)
 
         # Get memory table
-        if "memory" in kwargs: self.memory = kwargs.pop("memory")
-        elif self.config.memory is not None: self.memory = MemoryTable.from_file(self.config.memory)
+        self.get_memory_table(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -149,6 +212,114 @@ class SimulationManager(Configurable):
         """
 
         return self.memory is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for host_id in self.simulations:
+            for simulation_name in self.simulations[host_id]:
+                yield self.simulations[host_id][simulation_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_retrieved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations:
+            if not simulation.retrieved: continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_not_retrieved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations:
+            if simulation.retrieved: continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_analysed_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations:
+            if not simulation.analysed: continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_not_analysed_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations:
+            if simulation.analysed: continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    def get_timing_table(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        if "timing" in kwargs: self.timing = kwargs.pop("timing")
+        elif self.config.timing is not None: self.timing = TimingTable.from_file(self.config.timing)
+        else:
+
+            table_paths = []
+            for simulation in self.all_simulations: table_paths.append(simulation.analysis.timing_table_path)
+            timing_table_path = sequences.get_all_equal_value(table_paths, ignore_none=True, return_none=True)
+            if timing_table_path is not None: self.timing = TimingTable.from_file(timing_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_memory_table(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        if "memory" in kwargs: self.memory = kwargs.pop("memory")
+        elif self.config.memory is not None: self.memory = MemoryTable.from_file(self.config.memory)
+        else:
+
+            table_paths = []
+            for simulation in self.all_simulations: table_paths.append(simulation.analysis.memory_table_path)
+            memory_table_path = sequences.get_all_equal_value(table_paths, ignore_none=True, return_none=True)
+            if memory_table_path is not None: self.memory = MemoryTable.from_file(memory_table_path)
 
     # -----------------------------------------------------------------
 
@@ -844,7 +1015,7 @@ class SimulationManager(Configurable):
         for simulation_name in self.simulation_names:
 
             # Check
-            if not self.has_timing(simulation_name): continue
+            if not self.has_timing_for_simulation(simulation_name): continue
 
             # Get timing
             intermediate_time = self.timing.intermediate_time_for_simulation(simulation_name)
@@ -1067,20 +1238,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_status(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the simulation status ...")
-
-
-
-    # -----------------------------------------------------------------
-
     def show(self):
 
         """
@@ -1116,7 +1273,7 @@ class SimulationManager(Configurable):
         times = create_nested_defaultdict(2, list)
         for host in times_dict:
             for parallelization in times_dict[host]:
-                times[host][parallelization].append(times_dict[host][parallelization].to("min").value)
+                for runtime in times_dict[host][parallelization]: times[host][parallelization].append(runtime.to("min").value)
         return times
 
     # -----------------------------------------------------------------
@@ -1240,7 +1397,7 @@ class SimulationManager(Configurable):
         memories = create_nested_defaultdict(2, list)
         for host in memories_dict:
             for parallelization in memories_dict[host]:
-                memories[host][parallelization].append(memories_dict[host][parallelization].to("GB").value)
+                for memory in memories_dict[host][parallelization]: memories[host][parallelization].append(memory.to("GB").value)
         return memories
 
     # -----------------------------------------------------------------
@@ -1653,6 +1810,222 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ntotal_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.total_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ntotal_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.ntotal_times, self.ntotal_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nsetup_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.setup_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nsetup_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nsetup_times, self.nsetup_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nstellar_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.stellar_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nstellar_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nstellar_times, self.nstellar_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nspectra_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.spectra_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nspectra_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nspectra_times, self.nspectra_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.dust_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.ndust_times, self.ndust_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwriting_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.writing_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwriting_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nwriting_times, self.nwriting_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwaiting_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.waiting_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwaiting_times_outliers(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return get_noutliers(self.nwaiting_times, self.nwaiting_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ncommunication_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.communication_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ncommunication_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.ncommunication_times, self.ncommunication_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nintermediate_times_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ntimes(self.intermediate_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nintermediate_times_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nintermediate_times, self.nintermediate_times_clipped)
+
+    # -----------------------------------------------------------------
+
     def get_memories_clipped(self, memories_dict):
 
         """
@@ -1663,7 +2036,7 @@ class SimulationManager(Configurable):
 
         clipped = defaultdict(dict)
         for host in memories_dict:
-            for paralleliation in memories_dict[host]:
+            for parallelization in memories_dict[host]:
                 clipped[host][parallelization] = numbers.sigma_clip(memories_dict[host][parallelization])
         return clipped
 
@@ -1741,6 +2114,150 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ntotal_memories_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nmemories(self.total_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ntotal_memories_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.ntotal_memories, self.ntotal_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nsetup_memories_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nmemories(self.setup_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nsetup_memories_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nsetup_memories, self.nsetup_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nstellar_memories_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nmemories(self.stellar_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nstellar_memories_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nstellar_memories, self.nstellar_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nspectra_memories_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nmemories(self.spectra_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nspectra_memories_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nspectra_memories, self.nspectra_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_memories_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nmemories(self.dust_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_memories_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.ndust_memories, self.ndust_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwriting_memories_clipped(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nmemories(self.writing_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwriting_memories_outliers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_noutliers(self.nwriting_memories, self.nwriting_memories_clipped)
+
+    # -----------------------------------------------------------------
+
     def show_assignment(self):
 
         """
@@ -1780,6 +2297,8 @@ class SimulationManager(Configurable):
         log.info("Showing the simulation status ...")
 
         nfinished = 0
+
+
 
         # Get status of jobs and screen sessions
         screen_states_hosts = dict()
@@ -1826,7 +2345,7 @@ class SimulationManager(Configurable):
                 #else: simulation_status = " unknown"
                 screen_states = screen_states_hosts[host_id] if host_id in screen_states_hosts else None
                 jobs_status = jobs_status_hosts[host_id] if host_id in jobs_status_hosts else None
-                simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
+                with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
 
                 # Show
                 if simulation_status == "finished":
@@ -1958,6 +2477,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stddev_spectra_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_times(self.spectra_times_clipped, self.average_spectra_times)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def average_dust_times(self):
 
         """
@@ -1966,6 +2497,18 @@ class SimulationManager(Configurable):
         """
 
         return self.get_average_times(self.dust_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_dust_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_times(self.dust_times_clipped, self.average_dust_times)
 
     # -----------------------------------------------------------------
 
@@ -1982,6 +2525,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stddev_writing_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_times(self.writing_times_clipped, self.average_writing_times)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def average_waiting_times(self):
 
         """
@@ -1990,6 +2545,18 @@ class SimulationManager(Configurable):
         """
 
         return self.get_average_times(self.waiting_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_waiting_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_times(self.waiting_times_clipped, self.average_waiting_times)
 
     # -----------------------------------------------------------------
 
@@ -2006,6 +2573,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stddev_communication_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_times(self.communication_times_clipped, self.average_communication_times)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def average_intermediate_times(self):
 
         """
@@ -2014,6 +2593,18 @@ class SimulationManager(Configurable):
         """
 
         return self.get_average_times(self.intermediate_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_intermediate_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_times(self.intermediate_times_clipped, self.average_intermediate_times)
 
     # -----------------------------------------------------------------
 
@@ -2030,19 +2621,59 @@ class SimulationManager(Configurable):
         for host in self.average_total_times:
             for parallelization in self.average_total_times[host]:
 
+                total = self.average_total_times[host][parallelization]
+                setup = self.average_setup_times[host][parallelization]
+                stellar = self.average_stellar_times[host][parallelization]
+                spectra = self.average_spectra_times[host][parallelization]
+                dust = self.average_dust_times[host][parallelization]
+                writing = self.average_writing_times[host][parallelization]
+                waiting = self.average_waiting_times[host][parallelization]
+                communication = self.average_communication_times[host][parallelization]
+                intermediate = self.average_intermediate_times[host][parallelization]
+
+                total_err = self.stddev_total_times[host][parallelization]
+                setup_err = self.stddev_setup_times[host][parallelization]
+                stellar_err = self.stddev_stellar_times[host][parallelization]
+                spectra_err = self.stddev_spectra_times[host][parallelization]
+                dust_err = self.stddev_dust_times[host][parallelization]
+                writing_err = self.stddev_writing_times[host][parallelization]
+                waiting_err = self.stddev_waiting_times[host][parallelization]
+                communication_err = self.stddev_communication_times[host][parallelization]
+                intermediate_err = self.stddev_intermediate_times[host][parallelization]
+
+                ntotal = self.ntotal_times[host][parallelization]
+                nsetup = self.nsetup_times[host][parallelization]
+                nstellar = self.nstellar_times[host][parallelization]
+                nspectra = self.nspectra_times[host][parallelization]
+                ndust = self.ndust_times[host][parallelization]
+                nwriting = self.nwriting_times[host][parallelization]
+                nwaiting = self.nwaiting_times[host][parallelization]
+                ncommunication = self.ncommunication_times[host][parallelization]
+                nintermediate = self.nintermediate_times[host][parallelization]
+
+                total_noutliers = self.ntotal_times_outliers[host][parallelization]
+                setup_noutliers = self.nsetup_times_outliers[host][parallelization]
+                stellar_noutliers = self.nstellar_times_outliers[host][parallelization]
+                spectra_noutliers = self.nspectra_times_outliers[host][parallelization]
+                dust_noutliers = self.ndust_times_outliers[host][parallelization]
+                writing_noutliers = self.nwriting_times_outliers[host][parallelization]
+                waiting_noutliers = self.nwaiting_times_outliers[host][parallelization]
+                communication_noutliers = self.ncommunication_times_outliers[host][parallelization]
+                intermediate_noutliers = self.nintermediate_times_outliers[host][parallelization]
+
                 # Show
                 print("")
                 print(fmt.bold + "Runtimes:" + fmt.reset)
                 print("")
-                print(" - Total time: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") minutes [" + str(total_time_noutliers) + " outliers out of " + str(ntotal_times) + " data points]")
-                print(" - Setup time: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") minutes [" + str(setup_time_noutliers) + " outliers out of " + str(nsetup_times) + " data points]")
-                print(" - Stellar time: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True, ndigits=3) + ") minutes [" + str(stellar_time_noutliers) + " outliers out of " + str(nstellar_times) + " data points]")
-                print(" - Spectra time: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") minutes [" + str(spectra_time_noutliers) + " outliers out of " + str(nspectra_times) + " data points]")
-                print(" - Dust time: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") minutes [" + str(dust_time_noutliers) + " outliers out of " + str(ndust_times) + " data points]")
-                print(" - Writing time: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") minutes [" + str(writing_time_noutliers) + " outliers out of " + str(nwriting_times) + " data points]")
-                print(" - Waiting time: (" + tostr(waiting, round=True, ndigits=3) + " ± " + tostr(waiting_err, round=True, ndigits=3) + ") minutes [" + str(waiting_time_noutliers) + " outliers out of " + str(nwaiting_times) + " data points]")
-                print(" - Communication time: (" + tostr(communication, round=True, ndigits=3) + " ± " + tostr(communication_err, round=True, ndigits=3) + ") minutes [" + str(communication_time_noutliers) + " outliers out of " + str(ncommunication_times) + " data points]")
-                print(" - Intermediate time: (" + tostr(intermediate, round=True, ndigits=3) + " ± " + tostr(intermediate_err, round=True, ndigits=3) + ") minutes [" + str(intermediate_time_noutliers) + " outliers out of " + str(nintermediate_times) + " data points]")
+                print(" - Total time: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") minutes [" + str(total_noutliers) + " outliers out of " + str(ntotal) + " data points]")
+                print(" - Setup time: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") minutes [" + str(setup_noutliers) + " outliers out of " + str(nsetup) + " data points]")
+                print(" - Stellar time: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True, ndigits=3) + ") minutes [" + str(stellar_noutliers) + " outliers out of " + str(nstellar) + " data points]")
+                print(" - Spectra time: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") minutes [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
+                print(" - Dust time: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") minutes [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
+                print(" - Writing time: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") minutes [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
+                print(" - Waiting time: (" + tostr(waiting, round=True, ndigits=3) + " ± " + tostr(waiting_err, round=True, ndigits=3) + ") minutes [" + str(waiting_noutliers) + " outliers out of " + str(nwaiting) + " data points]")
+                print(" - Communication time: (" + tostr(communication, round=True, ndigits=3) + " ± " + tostr(communication_err, round=True, ndigits=3) + ") minutes [" + str(communication_noutliers) + " outliers out of " + str(ncommunication) + " data points]")
+                print(" - Intermediate time: (" + tostr(intermediate, round=True, ndigits=3) + " ± " + tostr(intermediate_err, round=True, ndigits=3) + ") minutes [" + str(intermediate_noutliers) + " outliers out of " + str(nintermediate) + " data points]")
 
     # -----------------------------------------------------------------
 
@@ -2056,8 +2687,8 @@ class SimulationManager(Configurable):
 
         averages = defaultdict(dict)
         for host in memories_dict:
-            for paralleliation in memories_dict[host]:
-                averages[host][paralleliation] = numbers.arithmetic_mean(*memories_dict[host][parallelization])
+            for parallelization in memories_dict[host]:
+                averages[host][parallelization] = numbers.arithmetic_mean(*memories_dict[host][parallelization])
         return averages
 
     # -----------------------------------------------------------------
@@ -2118,6 +2749,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stddev_setup_memories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_memories(self.setup_memories_clipped, self.average_setup_memories)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def average_stellar_memories(self):
 
         """
@@ -2126,6 +2769,18 @@ class SimulationManager(Configurable):
         """
 
         return self.get_average_memories(self.stellar_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_stellar_memories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_memories(self.stellar_memories_clipped, self.average_stellar_memories)
 
     # -----------------------------------------------------------------
 
@@ -2142,6 +2797,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stddev_spectra_memories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_memories(self.spectra_memories_clipped, self.average_spectra_memories)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def average_dust_memories(self):
 
         """
@@ -2154,6 +2821,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stddev_dust_memories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_memories(self.dust_memories_clipped, self.average_dust_memories)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def average_writing_memories(self):
 
         """
@@ -2162,6 +2841,18 @@ class SimulationManager(Configurable):
         """
 
         return self.get_average_memories(self.writing_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_writing_memories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_stddev_memories(self.writing_memories_clipped, self.average_writing_memories)
 
     # -----------------------------------------------------------------
 
@@ -2178,16 +2869,44 @@ class SimulationManager(Configurable):
         for host in self.average_total_memories:
             for parallelization in self.average_total_memories[host]:
 
+                total = self.average_total_memories[host][parallelization]
+                setup = self.average_setup_memories[host][parallelization]
+                stellar = self.average_stellar_memories[host][parallelization]
+                spectra = self.average_spectra_memories[host][parallelization]
+                dust = self.average_dust_memories[host][parallelization]
+                writing = self.average_writing_memories[host][parallelization]
+
+                total_err = self.stddev_total_memories[host][parallelization]
+                setup_err = self.stddev_setup_memories[host][parallelization]
+                stellar_err = self.stddev_stellar_memories[host][parallelization]
+                spectra_err = self.stddev_spectra_memories[host][parallelization]
+                dust_err = self.stddev_dust_memories[host][parallelization]
+                writing_err = self.stddev_writing_memories[host][parallelization]
+
+                ntotal = self.ntotal_memories[host][parallelization]
+                nsetup = self.nsetup_memories[host][parallelization]
+                nstellar = self.nstellar_memories[host][parallelization]
+                nspectra = self.nspectra_memories[host][parallelization]
+                ndust = self.ndust_memories[host][parallelization]
+                nwriting = self.nwriting_memories[host][parallelization]
+
+                total_noutliers = self.ntotal_memories_outliers[host][parallelization]
+                setup_noutliers = self.nsetup_memories_outliers[host][parallelization]
+                stellar_noutliers = self.nstellar_memories_outliers[host][parallelization]
+                spectra_noutliers = self.nspectra_memories_outliers[host][parallelization]
+                dust_noutliers = self.ndust_memories_outliers[host][parallelization]
+                writing_noutliers = self.nwriting_memories_outliers[host][parallelization]
+
                 # Show
                 print("")
                 print(fmt.bold + "Memory usage:" + fmt.reset)
                 print("")
-                print(" - Total memory: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") GB [" + str(total_memory_noutliers) + " outliers out of " + str(ntotal_memories) + " data points]")
-                print(" - Setup memory: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") GB [" + str(setup_memory_noutliers) + " outliers out of " + str(nsetup_memories) + " data points]")
-                print(" - Stellar memory: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True,ndigits=3) + ") GB [" + str(stellar_memory_noutliers) + " outliers out of " + str(nstellar_memories) + " data points]")
-                print(" - Spectra memory: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") GB [" + str(spectra_memory_noutliers) + " outliers out of " + str(nspectra_memories) + " data points]")
-                print(" - Dust memory: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") GB [" + str(dust_memory_noutliers) + " outliers out of " + str(ndust_memories) + " data points]")
-                print(" - Writing memory: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") GB [" + str(writing_memory_noutliers) + " outliers out of " + str(nwriting_memories) + " data points]")
+                print(" - Total memory: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") GB [" + str(total_noutliers) + " outliers out of " + str(ntotal) + " data points]")
+                print(" - Setup memory: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") GB [" + str(setup_noutliers) + " outliers out of " + str(nsetup) + " data points]")
+                print(" - Stellar memory: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True,ndigits=3) + ") GB [" + str(stellar_noutliers) + " outliers out of " + str(nstellar) + " data points]")
+                print(" - Spectra memory: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") GB [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
+                print(" - Dust memory: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") GB [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
+                print(" - Writing memory: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") GB [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
 
     # -----------------------------------------------------------------
 
@@ -2242,6 +2961,130 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_times_distributions(self, times_dict):
+
+        """
+        This function ...
+        :param times_dict:
+        :return:
+        """
+
+        distributions = defaultdict(dict)
+        for host in times_dict:
+            for parallelization in times_dict[host]:
+                distributions[host][parallelization] = Distribution.from_values("Runtime", times_dict[host][parallelization], unit="min")
+        return distributions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.total_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def setup_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.setup_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.stellar_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectra_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.spectra_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.dust_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def writing_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.writing_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def waiting_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.waiting_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.communication_times_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intermediate_times_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_times_distributions(self.intermediate_times_clipped)
+
+    # -----------------------------------------------------------------
+
     def plot_runtimes(self):
 
         """
@@ -2252,27 +3095,142 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Plotting the runtimes ...")
 
-        # Create distributions
-        total = Distribution.from_values("Runtime", total_times, unit="min")
-        setup = Distribution.from_values("Runtime", setup_times, unit="min")
-        stellar = Distribution.from_values("Runtime", stellar_times, unit="min")
-        spectra = Distribution.from_values("Runtime", spectra_times, unit="min")
-        dust = Distribution.from_values("Runtime", dust_times, unit="min")
-        writing = Distribution.from_values("Runtime", writing_times, unit="min")
-        waiting = Distribution.from_values("Runtime", waiting_times, unit="min")
-        communication = Distribution.from_values("Runtime", communication_times, unit="min")
-        intermediate = Distribution.from_values("Runtime", intermediate_times, unit="min")
+        # Loop over the hosts
+        for host in self.total_times_distributions:
 
-        # Plot
-        plot_distribution(total, title="Total")
-        plot_distribution(setup, title="Setup")
-        plot_distribution(stellar, title="Stellar")
-        plot_distribution(spectra, title="Spectra")
-        plot_distribution(dust, title="Dust")
-        plot_distribution(writing, title="Writing")
-        plot_distribution(waiting, title="Waiting")
-        plot_distribution(communication, title="Communication")
-        plot_distribution(intermediate, title="Intermediate")
+            # Debugging
+            log.debug("Plotting the runtimes for host '" + tostr(host) + "' ...")
+
+            # Loop over the parallelization schemes
+            for parallelization in self.total_times_distributions[host]:
+
+                # Debugging
+                log.debug("Plotting the runtimes for the parallelization scheme '" + tostr(parallelization) + "' ...")
+
+                # Get the distributions
+                total = self.total_times_distributions[host][parallelization]
+                setup = self.setup_times_distributions[host][parallelization]
+                stellar = self.stellar_times_distributions[host][parallelization]
+                spectra = self.spectra_times_distributions[host][parallelization]
+                dust = self.dust_times_distributions[host][parallelization]
+                writing = self.writing_times_distributions[host][parallelization]
+                waiting = self.waiting_times_distributions[host][parallelization]
+                communication = self.communication_times_distributions[host][parallelization]
+                intermediate = self.intermediate_times_distributions[host][parallelization]
+
+                # Get the averages
+                mean_total = self.average_total_times[host][parallelization]
+                mean_setup = self.average_setup_times[host][parallelization]
+                mean_stellar = self.average_stellar_times[host][parallelization]
+                mean_spectra = self.average_spectra_times[host][parallelization]
+                mean_dust = self.average_dust_times[host][parallelization]
+                mean_writing = self.average_writing_times[host][parallelization]
+                mean_waiting = self.average_waiting_times[host][parallelization]
+                mean_communication = self.average_communication_times[host][parallelization]
+                mean_intermediate = self.average_intermediate_times[host][parallelization]
+
+                print(self.total_times[host][parallelization])
+                print(self.total_times_clipped[host][parallelization])
+
+                # Plot the distributions
+                x_limits = (0., None)
+                plot_distribution(total, title="Total runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_total)
+                plot_distribution(setup, title="Setup runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_setup)
+                plot_distribution(stellar, title="Stellar emission runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_stellar)
+                plot_distribution(spectra, title="Spectra calculation runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_spectra)
+                plot_distribution(dust, title="Dust emission runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_dust)
+                plot_distribution(writing, title="Writing runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_writing)
+                plot_distribution(waiting, title="Waiting runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_waiting)
+                plot_distribution(communication, title="Communication runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_communication)
+                plot_distribution(intermediate, title="Intermediate runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_intermediate)
+
+    # -----------------------------------------------------------------
+
+    def get_memories_distributions(self, memories_dict):
+
+        """
+        This function ...
+        :param memories_dict:
+        :return:
+        """
+
+        distributions = defaultdict(dict)
+        for host in memories_dict:
+            for parallelization in memories_dict[host]:
+                distributions[host][parallelization] = Distribution.from_values("Memory usage", memories_dict[host][parallelization], unit="GB")
+        return distributions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_memories_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_memories_distributions(self.total_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def setup_memories_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_memories_distributions(self.setup_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_memories_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_memories_distributions(self.stellar_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectra_memories_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_memories_distributions(self.spectra_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_memories_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_memories_distributions(self.dust_memories_clipped)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def writing_memories_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_memories_distributions(self.writing_memories_clipped)
 
     # -----------------------------------------------------------------
 
@@ -2286,21 +3244,82 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Plotting the memory usage ...")
 
-        # Create distributions
-        total = Distribution.from_values("Memory usage", total_memories, unit="GB")
-        setup = Distribution.from_values("Memory usage", setup_memories, unit="GB")
-        stellar = Distribution.from_values("Memory usage", stellar_memories, unit="GB")
-        spectra = Distribution.from_values("Memory usage", spectra_memories, unit="GB")
-        dust = Distribution.from_values("Memory usage", dust_memories, unit="GB")
-        writing = Distribution.from_values("Memory usage", writing_memories, unit="GB")
+        # Loop over the hosts
+        for host in self.total_memories_distributions:
 
-        # Plot
-        plot_distribution(total, title="Total")
-        plot_distribution(setup, title="Setup")
-        plot_distribution(stellar, title="Stellar")
-        plot_distribution(spectra, title="Spectra")
-        plot_distribution(dust, title="Dust")
-        plot_distribution(writing, title="Writing")
+            # Debugging
+            log.debug("Plotting the memory usages for host '" + tostr(host) + "' ...")
+
+            # Loop over the parallelization schemes
+            for parallelization in self.total_memories_distributions[host]:
+
+                # Debugging
+                log.debug("Plotting the memory usages for the parallelization scheme '" + tostr(parallelization) + "' ...")
+
+                # Get distributions
+                total = self.total_memories_distributions[host][parallelization]
+                setup = self.setup_memories_distributions[host][parallelization]
+                stellar = self.stellar_memories_distributions[host][parallelization]
+                spectra = self.spectra_memories_distributions[host][parallelization]
+                dust = self.dust_memories_distributions[host][parallelization]
+                writing = self.writing_memories_distributions[host][parallelization]
+
+                # Get the averages
+                mean_total = self.average_total_memories[host][parallelization]
+                mean_setup = self.average_setup_memories[host][parallelization]
+                mean_stellar = self.average_stellar_memories[host][parallelization]
+                mean_spectra = self.average_spectra_memories[host][parallelization]
+                mean_dust = self.average_dust_memories[host][parallelization]
+                mean_writing = self.average_writing_memories[host][parallelization]
+
+                # Plot
+                x_limits = (0., None)
+                plot_distribution(total, title="Total memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_total)
+                plot_distribution(setup, title="Setup memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_setup)
+                plot_distribution(stellar, title="Stellar emission memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_stellar)
+                plot_distribution(spectra, title="Spectra calculation memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_spectra)
+                plot_distribution(dust, title="Dust emission memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_dust)
+                plot_distribution(writing, title="Writing memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_writing)
+
+    # -----------------------------------------------------------------
+
+    def reanalyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Re-analysing the simulations ...")
+
+        # Get the config for analysis
+        config = self.config.analysis.copy()
+        config.batch.replace = True
+
+        # Loop over the analysed simulations
+        for simulation in self.all_retrieved_simulations:
+
+            # Check remote
+            if self.config.reanalyse_remotes is not None and simulation.host_id not in self.config.reanalyse_remotes: continue
+
+            # Check simulation name
+            if self.config.reanalyse_simulations is not None and simulation.name not in self.config.reanalyse_simulations: continue
+
+            # Check whether analysis is already done (so it is actually a re-analysis)
+            if not has_analysed(simulation, self.config.reanalyse, self.config.features_reanalysis): continue
+
+            # Set display name
+            display_name = "'" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ")"
+
+            # Re-analyse?
+            if self.config.prompt_simulations_reanalysis and not prompt_proceed("re-analyse simulation " + display_name + "?"): continue
+
+            # Debugging
+            log.debug("Re-analysing simulation " + display_name + " ...")
+
+            # Reanalyse simulation
+            reanalyse_simulation(simulation, self.config.reanalyse, self.config.features_reanalysis, config=config)
 
     # -----------------------------------------------------------------
 
@@ -2314,39 +3333,48 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Analysing the simulations ...")
 
-        # Get the simulations
-        #if config.simulations is not None: simulations = [generation.get_simulation(name) for name in config.simulations]
-        #else: simulations = generation.retrieved_simulations
-
         # Loop over the retrieved simulations
-        for simulation in simulations:
+        for simulation in self.all_retrieved_simulations:
+
+            # Check remote
+            if self.config.analyse_remotes is not None and simulation.host_id not in self.config.analyse_remotes: continue
+
+            # Check simulation name
+            if self.config.analyse_simulations is not None and simulation.name not in self.config.analyse_simulations: continue
+
+            # Check if already analysed
+            if simulation.analysed: continue
+
+            # Set display name
+            display_name = "'" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ")"
+
+            # Re-analyse?
+            if self.config.prompt_simulations_analysis and not prompt_proceed("analyse simulation " + display_name + "?"): continue
 
             # Show steps that will be performed
             show_analysis_steps(simulation)
 
-            # Get parameter values
-            parameter_values = generation.get_parameter_values_for_simulation(simulation.name)
-            parameter_string = ", ".join(label + ": " + tostr(value) for label, value in parameter_values.items())
+            # Debugging
+            log.debug("Analysing simulation " + display_name + " ...")
 
-            # Analyse?
-            if config.prompt_simulations and not prompt_proceed("analyse simulation '" + simulation.name + "' [" + parameter_string + "] ?"): continue
+            # Analyse the simulation
+            analyse_simulation(simulation, config=self.config.analysis)
 
-            # Re-analysis
-            if config.reanalyse is not None:
+# -----------------------------------------------------------------
 
-                # Inform the user
-                log.info("Re-analysing simulation '" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ") ...")
+def get_noutliers(nvalues_dict, nclipped_dict):
 
-                # Reanalyse simulation
-                reanalyse_simulation(simulation, config.reanalyse, config.features)
+    """
+    This function ...
+    :param nvalues_dict:
+    :param nclipped_dict:
+    :return:
+    """
 
-            # Normal analysis
-            else:
-
-                # Inform the user
-                log.info("Analysing simulation '" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ") ...")
-
-                # Analyse the simulation
-                analyse_simulation(simulation, config=config.analysis)
+    noutliers = defaultdict(dict)
+    for host in nvalues_dict:
+        for parallelization in nvalues_dict[host]:
+            noutliers = nvalues_dict[host][parallelization] - nclipped_dict[host][parallelization]
+    return noutliers
 
 # -----------------------------------------------------------------

@@ -24,6 +24,8 @@ from ..simulation.remote import get_simulation_for_host
 from ..tools import sequences
 from .options import extraction_names, plotting_names, misc_names
 from ..tools import formatting as fmt
+from ..tools import types
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -33,6 +35,232 @@ scaling = "scaling"
 # -----------------------------------------------------------------
 
 all_steps = steps + [batch, scaling]
+
+# -----------------------------------------------------------------
+
+def has_analysed(simulation, steps, features=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param steps:
+    :param features:
+    :return:
+    """
+
+    # Check
+    if types.is_string_type(steps): steps = [steps]
+    elif types.is_string_sequence(steps): pass
+    else: raise ValueError("Invalid value for 'steps'")
+
+    # Only one step defined
+    if len(steps) == 1:
+
+        # Get the step
+        step = steps[0]
+
+        # Extraction
+        if step == extraction:
+
+            # Features are defined
+            if features is not None:
+
+                # Check features
+                if not sequences.all_in(features, extraction_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(extraction_names) + "'")
+
+                # Return
+                return sequences.contains_any(simulation.analysed_extraction, features)
+
+            # Features are not defined
+            else: return sequences.has_any(simulation.analysed_extraction)
+
+        # Plotting
+        elif step == plotting:
+
+            # Features are defined
+            if features is not None:
+
+                # Check features
+                if not sequences.all_in(features, plotting_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(plotting_names) + "'")
+
+                # Return
+                return sequences.contains_any(simulation.analysed_plotting, features)
+
+            # Features are not defined
+            else: return sequences.has_any(simulation.analysed_plotting)
+
+        # Misc
+        elif step == misc:
+
+            # Features are defined
+            if features is not None:
+
+                # Check features
+                if not sequences.all_in(features, misc_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(misc_names) + "'")
+
+                # Return
+                return sequences.contains_any(simulation.analysed_misc, features)
+
+            # Features are not defined
+            else: return sequences.has_any(simulation.analysed_misc)
+
+        # Batch
+        elif step == batch:
+
+            # Check whether features are not defined
+            if features is not None: raise ValueError("Cannot define features for the batch simulation analysis")
+
+            # Return flag
+            return simulation.analysed_batch
+
+        # Scaling
+        elif step == scaling:
+
+            # Check whether features are not defined
+            if features is not None: raise ValueError("Cannot define features for scaling simulation analysis")
+
+            # Return flag
+            return simulation.analysed_scaling
+
+        # Invalid
+        else: raise ValueError("Invalid step: '" + step + "'")
+
+    # Multiple steps defined
+    else:
+
+        # Check whether features are not defined
+        if features is not None: raise ValueError("Features cannot be specified with multiple steps")
+
+        # Reset extraction
+        if extraction in steps and sequences.has_any(simulation.analysed_extraction): return True
+
+        # Reset plotting
+        if plotting in steps and sequences.has_any(simulation.analysed_plotting): return True
+
+        # Reset misc
+        if misc in steps and sequences.has_any(simulation.analysed_misc): return True
+
+        # Reset batch
+        if batch in steps and simulation.analysed_batch: return True
+
+        # Reset scaling
+        if scaling in steps and simulation.analysed_scaling: return True
+
+        # Return False
+        return False
+
+# -----------------------------------------------------------------
+
+def is_analysed(simulation, steps, features=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param steps:
+    :param features:
+    :return:
+    """
+
+    # Check
+    if types.is_string_type(steps): steps = [steps]
+    elif types.is_string_sequence(steps): pass
+    else: raise ValueError("Invalid value for 'steps'")
+
+    # Only one step defined
+    if len(steps) == 1:
+
+        # Get the step
+        step = steps[0]
+
+        # Extraction
+        if step == extraction:
+
+            # Features are defined
+            if features is not None:
+
+                # Check features
+                if not sequences.all_in(features, extraction_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(extraction_names) + "'")
+
+                # Return
+                return sequences.contains_all(simulation.analysed_extraction, features)
+
+            # Features are not defined
+            else: return sequences.contains_all(simulation.analysed_extraction, extraction_names)
+
+        # Plotting
+        elif step == plotting:
+
+            # Features are defined
+            if features is not None:
+
+                # Check features
+                if not sequences.all_in(features, plotting_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(plotting_names) + "'")
+
+                # Return
+                return sequences.contains_all(simulation.analysed_plotting, features)
+
+            # Features are not defined
+            else: return sequences.contains_all(simulation.analysed_plotting, plotting_names)
+
+        # Misc
+        elif step == misc:
+
+            # Features are defined
+            if features is not None:
+
+                # Check features
+                if not sequences.all_in(features, misc_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(misc_names) + "'")
+
+                # Return
+                return sequences.contains_all(simulation.analysed_misc, features)
+
+            # Features are not defined
+            else: return sequences.contains_all(simulation.analysed_misc, misc_names)
+
+        # Batch
+        elif step == batch:
+
+            # Check whether features are not defined
+            if features is not None: raise ValueError("Cannot define features for the batch simulation analysis")
+
+            # Return flag
+            return simulation.analysed_batch
+
+        # Scaling
+        elif step == scaling:
+
+            # Check whether features are not defined
+            if features is not None: raise ValueError("Cannot define features for scaling simulation analysis")
+
+            # Return flag
+            return simulation.analysed_scaling
+
+        # Invalid
+        else: raise ValueError("Invalid step: '" + step + "'")
+
+    # Multiple steps defined
+    else:
+
+        # Check whether features are not defined
+        if features is not None: raise ValueError("Features cannot be specified with multiple steps")
+
+        # Reset extraction
+        if extraction in steps and not sequences.contains_all(simulation.analysed_extraction, extraction_names): return False
+
+        # Reset plotting
+        if plotting in steps and not sequences.contains_all(simulation.analysed_plotting, plotting_names): return False
+
+        # Reset misc
+        if misc in steps and not sequences.contains_all(simulation.analysed_misc, plotting_names): return False
+
+        # Reset batch
+        if batch in steps and not simulation.analysed_batch: return False
+
+        # Reset scaling
+        if scaling in steps and not simulation.analysed_scaling: return False
+
+        # Return True
+        return True
 
 # -----------------------------------------------------------------
 
@@ -48,6 +276,11 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
     :param config:
     :return:
     """
+
+    # Check
+    if types.is_string_type(steps): steps = [steps]
+    elif types.is_string_sequence(steps): pass
+    else: raise ValueError("Invalid value for 'steps'")
 
     # Only one step defined
     if len(steps) == 1:
@@ -65,7 +298,13 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
             if features is None: simulation.analysed_extraction = []
 
             # Select features
-            else: simulation.analysed_extraction = sequences.elements_not_in_other(extraction_names, features, check_existing=True)
+            else:
+
+                # Check features
+                if not sequences.all_in(features, extraction_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(extraction_names) + "'")
+
+                # Set features
+                simulation.analysed_extraction = sequences.elements_not_in_other(extraction_names, features, check_existing=True)
 
         # Plotting
         elif step == plotting:
@@ -74,7 +313,13 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
             if features is None: simulation.analysed_plotting = []
 
             # Select features
-            else: simulation.analysed_plotting = sequences.elements_not_in_other(plotting_names, features, check_existing=True)
+            else:
+
+                # Check features
+                if not sequences.all_in(features, plotting_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(plotting_names) + "'")
+
+                # Set features
+                simulation.analysed_plotting = sequences.elements_not_in_other(plotting_names, features, check_existing=True)
 
         # Misc
         elif step == misc:
@@ -83,7 +328,13 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
             if features is None: simulation.analysed_misc = []
 
             # Select features
-            else: simulation.analysed_misc = sequences.elements_not_in_other(misc_names, features, check_existing=True)
+            else:
+
+                # Check features
+                if not sequences.all_in(features, misc_names): raise ValueError("Features contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(misc_names) + "'")
+
+                # Set features
+                simulation.analysed_misc = sequences.elements_not_in_other(misc_names, features, check_existing=True)
 
         # Batch
         elif step == batch:
@@ -162,7 +413,13 @@ def analyse_simulation(simulation, not_steps=None, not_features=None, config=Non
                 if not_features is None: simulation.analysed_extraction = extraction_names
 
                 # Features are defined
-                else: sequences.extend_unique(simulation.analysed_extraction, not_features)
+                else:
+
+                    # Check features
+                    if not sequences.all_in(not_features, extraction_names): raise ValueError("Features contains invalid value(s): '" + tostr(not_features) + "': can only contain '" + tostr(extraction_names) + "'")
+
+                    # Add features
+                    sequences.extend_unique(simulation.analysed_extraction, not_features)
 
             # Plotting
             elif not_step == plotting:
@@ -171,7 +428,13 @@ def analyse_simulation(simulation, not_steps=None, not_features=None, config=Non
                 if not_features is None: simulation.analysed_plotting = plotting_names
 
                 # Features are defined
-                else: sequences.extend_unique(simulation.analysed_plotting, not_features)
+                else:
+
+                    # Check features
+                    if not sequences.all_in(not_features, plotting_names): raise ValueError("Features contains invalid value(s): '" + tostr(not_features) + "': can only contain '" + tostr(plotting_names) + "'")
+
+                    # Add features
+                    sequences.extend_unique(simulation.analysed_plotting, not_features)
 
             # Misc
             elif not_step == misc:
@@ -180,7 +443,13 @@ def analyse_simulation(simulation, not_steps=None, not_features=None, config=Non
                 if not_features is None: simulation.analysed_misc = misc_names
 
                 # Features are defined
-                else: sequences.extend_unique(simulation.analysed_misc, not_features)
+                else:
+
+                    # Check features
+                    if not sequences.all_in(not_features, misc_names): raise ValueError("Features contains invalid value(s): '" + tostr(not_features) + "': can only contain '" + tostr(misc_names) + "'")
+
+                    # Add features
+                    sequences.extend_unique(simulation.analysed_misc, not_features)
 
             # Batch
             elif not_step == batch:

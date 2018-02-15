@@ -36,7 +36,10 @@ from ..tools.stringify import tostr
 
 def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
                       y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf", axes=None,
-                      xsize=5, ysize=5, return_image=False, colors=None, statistics=True):
+                      xsize=5, ysize=5, return_image=False, colors=None, statistics=True, soft_xmin=False,
+                      soft_xmax=False, soft_ymin=False, soft_ymax=False, mean=None, median=None, most_frequent=None,
+                      stddev=None, fwhm=None, show_mean=None, show_median=None, show_most_frequent=None,
+                      show_stddev=False, show_fwhm=False):
 
     """
     This function ...
@@ -57,6 +60,20 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param return_image:
     :param colors:
     :param statistics:
+    :param soft_xmin:
+    :param soft_xmax:
+    :param soft_ymin:
+    :param soft_ymax:
+    :param mean:
+    :param median:
+    :param most_frequent:
+    :param stddev:
+    :param fwhm:
+    :param show_mean:
+    :param show_median:
+    :param show_most_frequent:
+    :param show_stddev:
+    :param show_fwhm:
     :return:
     """
 
@@ -83,35 +100,102 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     if logscale: patch = axes.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
     else: patch = axes.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths, linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
 
-    # Determine the x limits
-    if x_limits is None:
-        if logscale:
-            x_min = distribution.min_edge_log
-            x_max = distribution.max_edge_log
-        else:
-            x_min = distribution.min_edge
-            x_max = distribution.max_edge
-    else:
-        x_min = x_limits[0]
-        x_max = x_limits[1]
+    # Determine automatic x_min and x_max
+    x_min_auto = distribution.min_edge_log if logscale else distribution.min_edge
+    x_max_auto = distribution.max_edge_log if logscale else distribution.max_edge
 
-    # Determine the y limits
-    if y_limits is None:
-        y_min = 0. if not logfrequency else 0.5 * distribution.min_frequency_nonzero
-        y_max = 1.1 * distribution.max_frequency if not logfrequency else 2. * distribution.max_frequency
+    # Use automatic xmin and xmax
+    if x_limits is None: x_min, x_max = x_min_auto, x_max_auto
+
+    # From arguments
     else:
-        y_min = y_limits[0]
-        y_max = y_limits[1]
+
+        if x_limits[0] is None: x_min = x_min_auto
+        elif soft_xmin: x_min = max(x_limits[0], x_min_auto)
+        else: x_min = x_limits[0]
+
+        if x_limits[1] is None: x_max = x_max_auto
+        elif soft_xmax: x_max = min(x_limits[1], x_max_auto)
+        else: x_max = x_limits[1]
+
+    # Calculate automatic y_min and y_max
+    y_min_auto = 0. if not logfrequency else 0.5 * distribution.min_frequency_nonzero
+    y_max_auto = 1.1 * distribution.max_frequency if not logfrequency else 2. * distribution.max_frequency
+
+    # Use automatic ymin and ymax
+    if y_limits is None: y_min, y_max = y_min_auto, y_max_auto
+
+    # From arguments
+    else:
+
+        if y_limits[0] is None: y_min = y_min_auto
+        elif soft_ymin: y_min = max(y_limits[0], y_min_auto)
+        else: y_min = y_limits[0]
+
+        if y_limits[1] is None: y_max = x_max_auto
+        elif soft_ymax: y_max = min(y_limits[1], y_max_auto)
+        else: y_max = y_limits[1]
 
     # Set the axis limits
     axes.set_xlim(x_min, x_max)
     axes.set_ylim(y_min, y_max)
 
-    if statistics:
-        if logscale: mean_line = axes.axvline(distribution.geometric_mean, color="green", linestyle="dashed", label="Mean")
-        else: mean_line = axes.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
-        median_line = axes.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
-        max_line = axes.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
+    # Set flags
+    if show_mean is None: show_mean = statistics
+    if show_median is None: show_median = statistics
+    if show_most_frequent is None: show_most_frequent = statistics
+    if show_stddev is None: show_stddev = statistics
+    if show_fwhm is None: show_fwhm = statistics
+
+    # Show mean
+    if show_mean:
+
+        # Get mean
+        if mean is None:
+            if logscale: mean = distribution.geometric_mean_value
+            else: mean = distribution.mean_value
+
+        # Show
+        mean_line = axes.axvline(mean, color="green", linestyle="dashed", label="Mean")
+
+    # Don't show mean
+    else: mean_line = None
+
+    # Show median
+    if show_median:
+
+        # Get median
+        if median is None: median = distribution.median_value
+
+        # Show
+        median_line = axes.axvline(median, color="purple", linestyle="dashed", label="Median")
+
+    # Don't show median
+    else: median_line = None
+
+    # Show most frequent
+    if show_most_frequent:
+
+        # Get most frequent
+        if most_frequent is None: most_frequent = distribution.most_frequent_value
+
+        # Show
+        most_frequent_line = axes.axvline(most_frequent, color="orange", linestyle="dashed", label="Most frequent")
+
+    # Don't show most frequent
+    else: most_frequent_line = None
+
+    # Show stddev
+    if show_stddev:
+
+        # Get the stddev
+        if stddev is None: stddev = distribution.stddev_value
+
+    # Show FWHM
+    if show_fwhm:
+
+        # Get the FWHM
+        if fwhm is None: fwhm = distribution.fwhm_value
 
     # Axes were not provided, but figure was created here
     if not only_axes:
@@ -121,6 +205,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 
         if x_label is None: x_label = distribution.value_name
         if y_label is None: y_label = distribution.y_name
+        #print("UNIT:", distribution.unit)
         if distribution.unit is not None: x_label += " [" + str(distribution.unit) + "]"
 
         # Put the title and labels
