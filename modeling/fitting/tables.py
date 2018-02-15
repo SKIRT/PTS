@@ -1464,7 +1464,7 @@ class ModelProbabilitiesTable(SmartTable):
         """
 
         index = np.argmax(self["Probability"])
-        return self["Simulation name"][index]
+        return self.get_value("Simulation name", index)
 
     # -----------------------------------------------------------------
 

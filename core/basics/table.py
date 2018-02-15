@@ -31,6 +31,10 @@ from .containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
 
+string_column_none_default = "--"
+
+# -----------------------------------------------------------------
+
 def has_same_values_for_column(tables, column_name, reference_column_name, reference_values):
 
     """
@@ -335,6 +339,48 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_columns(cls, columns, names, units=None, dtypes=None, descriptions=None):
+
+        """
+        This function ...
+        :param columns:
+        :param names:
+        :param units:
+        :param dtypes:
+        :param descriptions:
+        :return:
+        """
+
+        # Create the table
+        table = cls()
+
+        # Loop over the columns
+        for index, name in enumerate(names):
+
+            # Determine dtype
+            if dtypes is not None and dtypes[index] is not None: dtype = dtypes[index]
+            else: pass
+
+            # Determine the unit
+            if units is not None and units[index] is not None: unit = units[index]
+            else: pass
+
+            # Determine the description
+            if descriptions is not None and descriptions[index] is not None: description = descriptions[index]
+            else: description = "no description"
+
+            # Add the column
+            table.add_column_info(name, dtype, unit, description)
+
+        # Add the rows
+        #for
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_dictionary(cls, dictionary, key_label="Property", value_label="Value", tostr_kwargs=None,
                         key_description="property name", value_description="property value"):
 
@@ -631,38 +677,15 @@ class SmartTable(Table):
                 column_types.append(column_type)
                 column_units.append(column_unit)
 
-                if column_type.endswith("real"): real_type = float
-                elif column_type.endswith("integer"): real_type = int
-                elif column_type.endswith("string"): real_type = str
-                elif column_type.endswith("boolean"): real_type = bool
-                elif column_type.endswith("quantity"): real_type = float
-
-                # UNIT HAVE TO BE CONVERTED TO STRINGS
-                elif column_type.endswith("unit"):
-                    to_string.append(name)
-                    real_type = str
-
-                # FILTERS HAVE TO BE CONVERTED TO STRINGS
-                elif column_type.endswith("filter"):
-                    to_string.append(name)
-                    real_type = str
-
-                # SPECIAL CASE: WAS NONE FOR EACH COMPOSITE
-                elif column_type == "None": real_type = str
-
-                # LISTS OF THINGS -> STRINGS
-                elif column_type.endswith("_list"):
-                    to_string.append(name)
-                    real_type = str
-
-                # NOT RECOGNIZED
-                else: raise ValueError("Column type not recognized: " + str(column_type) + " (" + str(type(column_type)) + ")")
+                # Get builtin type for the column
+                real_type, needs_tostring = property_type_to_builtin(column_type, return_tostring=True)
+                if needs_tostring: to_string.append(name)
 
             # Add the column info
             table.add_column_info(name, real_type, column_unit, column_description)
 
         # Set None string
-        if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = "--"
+        if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = string_column_none_default
 
         # Add the rows
         for composite_label, obj in zip(labels, objects):
@@ -1138,7 +1161,11 @@ class SmartTable(Table):
                     #print(column_type_string, actual_column_type)
                     if actual_column_type == column_type_string: continue
                     elif column_type_string == "boolean" and actual_column_type == "string": to_boolean.append(column_name)
-                    else: raise RuntimeError("Something went wrong: column '" + column_name + "' with type '" + column_type_string + "' is parsed as '" + actual_column_type + "' column")
+                    else:
+                        #raise RuntimeError("Something went wrong: column '" + column_name + "' with type '" + column_type_string + "' is parsed as '" + actual_column_type + "' column")
+                        warnings.warn("Column '" + column_name + "' with type '" + column_type_string + "' is parsed as '" + actual_column_type + "' column: fixing ...")
+                        real_type = column_type_to_builtin(column_type_string)
+                        table[column_name] = table[column_name].astype(real_type)
             else:
                 for column_name in table.colnames:
                     values = list(table[column_name])
@@ -1184,6 +1211,12 @@ class SmartTable(Table):
 
             # Set masks
             set_table_masks(table)
+
+            # Fix
+            fix_column_types(table)
+
+            # Fix None strings
+            fix_nones(table)
 
         # Write the table in the desired format (by Astropy)
         elif format == "csv": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.csv")
@@ -2205,6 +2238,67 @@ def set_table_masks(table):
 
 # -----------------------------------------------------------------
 
+def fix_column_types(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    to_convert = dict()
+
+    # Loop over the columns
+    for name in table.colnames:
+
+        # Get the type
+        dtype_name = table[name].dtype.name
+
+        # OK?
+        if is_allowed_dtype_name(dtype_name): continue
+
+        # Get property type
+        values = list(table[name])
+        ptype = get_common_property_type(values)
+        #print(name, ptype)
+
+        # Get builtin type
+        real_type = property_type_to_builtin(ptype)
+
+        # Set to convert
+        to_convert[name] = real_type
+
+    #print(to_convert)
+
+    # Do the conversion
+    for name in to_convert: table[name] = table[name].astype(to_convert[name])
+
+# -----------------------------------------------------------------
+
+def fix_nones(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    # Loop over the string columns
+    for name in table.colnames:
+        if dtype_to_column_type(table[name].dtype) != "string": continue
+
+        values = table[name]
+        indices = sequences.find_indices(values, "None")
+
+        #print(indices)
+
+        # Mask
+        for index in indices:
+            table[name][index] = string_column_none_default
+            table[name].mask[index] = True
+
+# -----------------------------------------------------------------
+
 def initialize_table(table):
 
     """
@@ -2220,12 +2314,7 @@ def initialize_table(table):
     for name in table.colnames:
 
         # Get the type
-        dtype = table[name].dtype
-        if np.issubdtype(dtype, np.string_): simple_dtype = str
-        elif np.issubdtype(dtype, np.float): simple_dtype = float
-        elif np.issubdtype(dtype, np.int): simple_dtype = int
-        elif np.issubdtype(dtype, np.bool): simple_dtype = bool
-        else: raise ValueError("Did not recognize the dtype of column '" + name + "'")
+        simple_dtype = dtype_to_builtin(table[name].dtype)
 
         # Get unit of the column
         unit = table.column_unit(name)
@@ -2241,6 +2330,43 @@ def initialize_table(table):
 
         # Initialize "brightness" meta
         if "brightness" not in table.meta: table.meta["brightness"] = []
+
+# -----------------------------------------------------------------
+
+all_column_types = ["string", "real", "integer", "boolean"]
+dtype_name_startswith_strings = ["string", "float", "int", "bool"]
+
+# -----------------------------------------------------------------
+
+def dtype_to_column_type(dtype):
+
+    """
+    This function ...
+    :param dtype:
+    :return:
+    """
+
+    if np.issubdtype(dtype, np.string_): return "string"
+    elif np.issubdtype(dtype, np.float): return "real"
+    elif np.issubdtype(dtype, np.int): return "integer"
+    elif np.issubdtype(dtype, np.bool): return "boolean"
+    else: raise ValueError("Did not recognize the dtype '" + str(dtype) + "'")
+
+# -----------------------------------------------------------------
+
+def dtype_to_builtin(dtype):
+
+    """
+    This function ...
+    :param dtype:
+    :return:
+    """
+
+    if np.issubdtype(dtype, np.string_): return str
+    elif np.issubdtype(dtype, np.float): return float
+    elif np.issubdtype(dtype, np.int): return int
+    elif np.issubdtype(dtype, np.bool): return bool
+    else: raise ValueError("Did not recognize the dtype '" + str(dtype) + "'")
 
 # -----------------------------------------------------------------
 
@@ -2273,5 +2399,102 @@ def column_type_to_builtin(column_type):
     elif column_type == "integer": return int
     elif column_type == "real": return float
     else: raise ValueError("Unrecognized column type string: '" + column_type + "'")
+
+# -----------------------------------------------------------------
+
+def property_type_to_builtin(ptype, return_tostring=False):
+
+    """
+    This function ...
+    :param ptype:
+    :param return_tostring:
+    :return:
+    """
+
+    # Real numbers
+    if ptype.endswith("real"): real_type, tostring = float, False
+
+    # Integers
+    elif ptype.endswith("integer"): real_type, tostring = int, False
+
+    # Strings
+    elif ptype.endswith("string"): real_type, tostring = str, False
+
+    # Booleans
+    elif ptype.endswith("boolean"): real_type, tostring = bool, False
+
+    # Quantities
+    elif ptype.endswith("quantity"): real_type, tostring = float, False
+
+    # UNIT HAVE TO BE CONVERTED TO STRINGS
+    elif ptype.endswith("unit"): real_type, tostring = str, True
+
+    # FILTERS HAVE TO BE CONVERTED TO STRINGS
+    elif ptype.endswith("filter"): real_type, tostring = str, True
+
+    # SPECIAL CASE: WAS NONE FOR EACH COMPOSITE
+    elif ptype == "None": real_type, tostring = str, False
+
+    # LISTS OF THINGS -> STRINGS
+    elif ptype.endswith("_list"): real_type, tostring = str, True
+
+    # NOT RECOGNIZED
+    else: raise ValueError("Column type not recognized: " + str(ptype) + " (" + str(type(ptype)) + ")")
+
+    # Return
+    if return_tostring: return real_type, tostring
+    else: return real_type
+
+# -----------------------------------------------------------------
+
+def is_allowed_dtype_name(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    from ..tools import strings
+    return strings.startswith_any(name, dtype_name_startswith_strings)
+
+# -----------------------------------------------------------------
+
+def get_common_property_type(values):
+
+    """
+    This function ...
+    :param values:
+    :return:
+    """
+
+    from ..tools.stringify import stringify
+
+    types = []
+    units = []
+
+    # Loop over the values
+    for value in values:
+
+        if value is None: dtype = unit = None
+        else:
+
+            # Check whether there is a unit
+            if hasattr(value, "unit"): unit = value.unit
+            else: unit = None
+
+            # Get the type
+            dtype, string = stringify(value)
+
+        # Add the type and
+        types.append(dtype)
+        units.append(unit)
+
+    # Determine column type, unit and description
+    if sequences.all_equal_to(types, 'None') or sequences.all_none(types): ptype = 'None'
+    else: ptype = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
+
+    # Return the common type
+    return ptype
 
 # -----------------------------------------------------------------

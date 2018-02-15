@@ -74,21 +74,6 @@ class ExtinctionCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    # def wavelengths(self, unit=None, asarray=False, add_unit=True):
-    #
-    #     """
-    #     This function ...
-    #     :param unit:
-    #     :param asarray:
-    #     :param add_unit:
-    #     :return:
-    #     """
-    #
-    #     if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"))
-    #     else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"))
-
-    # -----------------------------------------------------------------
-
     def extinctions(self, asarray=False):
 
         """
