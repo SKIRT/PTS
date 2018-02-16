@@ -23,6 +23,9 @@ definition = ConfigurationDefinition()
 # Assignment file
 definition.add_positional_optional("assignment", "file_path", "path of assignment file")
 
+# Status file
+definition.add_optional("status", "file_path", "path of status file")
+
 # Remotes for which to find corresponding simulations
 definition.add_optional("remotes", "string_list", "remote hosts for which to look for matching simulations (not necessary when assignment is specified)", default=host_ids, choices=host_ids)
 
@@ -39,6 +42,15 @@ definition.add_flag("success", "success flag to fill in into the assignment tabl
 
 # -----------------------------------------------------------------
 
+# Move simulations
+definition.add_flag("move", "move simulations", False)
+definition.add_flag("move_running", "move running simulations", False)
+definition.add_optional("move_simulations", "string_list", "simulation names for moving")
+definition.add_optional("move_remotes", "string_list", "host IDs for moving simulations from")
+definition.add_flag("prompt_simulations_move", "prompt before moving a particular simulation", None)
+
+# -----------------------------------------------------------------
+
 # Showing
 definition.add_flag("show", "showing", True)
 definition.add_flag("show_assignment", "show the assignment scheme")
@@ -46,13 +58,19 @@ definition.add_flag("show_status", "show the simulation status")
 definition.add_flag("show_runtimes", "show runtimes")
 definition.add_flag("show_memory", "show memory")
 
+# -----------------------------------------------------------------
+
 # Plotting
 definition.add_flag("plot", "plotting", True)
 definition.add_flag("plot_runtimes", "plot runtimes")
 definition.add_flag("plot_memory", "plot memory usage")
 
+# -----------------------------------------------------------------
+
 # Writing
-definition.add_flag("write", "writing", False)
+definition.add_flag("write", "writing", True)
+definition.add_flag("write_assignment", "write the assignent scheme", None)
+definition.add_flag("write_status", False)
 
 # -----------------------------------------------------------------
 

@@ -283,30 +283,6 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
-    # @classmethod
-    # def from_old_file(cls, path):
-    #
-    #     """
-    #     This function ...
-    #     :param path:
-    #     :return:
-    #     """
-    #
-    #     # Read the table from file
-    #     fill_values = [('--', '0')]
-    #     table = Table.read(path, fill_values=fill_values, format="ascii.ecsv")
-    #
-    #     parameter_name = table.colnames[0]
-    #
-    #     # Get values
-    #     values = table[parameter_name]
-    #     frequencies = np.array(table["Probability"])
-    #
-    #     # Return
-    #     return cls.from_columns(parameter_name, values, frequencies)
-
-    # -----------------------------------------------------------------
-
     def add_row(self, *args, **kwargs):
 
         """
@@ -317,6 +293,19 @@ class Distribution(Curve):
         """
 
         raise RuntimeError("Cannot add rows to a distribution object")
+
+    # -----------------------------------------------------------------
+
+    def remove_row(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise RuntimeError("Cannot remove rows from a distribution object")
 
     # -----------------------------------------------------------------
 

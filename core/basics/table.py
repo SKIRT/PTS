@@ -338,42 +338,118 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_column_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.column_info) > 0
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def from_columns(cls, columns, names, units=None, dtypes=None, descriptions=None):
+    def from_columns(cls, *columns, **kwargs):
 
         """
         This function ...
         :param columns:
-        :param names:
-        :param units:
-        :param dtypes:
-        :param descriptions:
+        :param kwargs:
         :return:
         """
 
+        # Import tostr function
+        from ..tools.stringify import tostr
+
+        # Get number of columns
+        ncolumns = len(columns)
+        nrows = len(columns[0])
+
+        # Get options
+        names = kwargs.pop("names", None)
+        units = kwargs.pop("units", None)
+        dtypes = kwargs.pop("dtypes", None)
+        descriptions = kwargs.pop("descriptions", None)
+
+        # Get tostr kwargs
+        tostr_kwargs = kwargs.pop("tostr_kwargs", {})
+
         # Create the table
-        table = cls()
+        table = cls() # WILL ALREADY CREATE THE COLUMN INFO
+
+        has_info = table.has_column_info
+
+        # Get the names if necessary
+        if names is None:
+            if has_info: names = [info[0] for info in table.column_info]
+            elif hasattr(cls, "_column_info"): names = cls._column_info.keys()
+            else: names = ["col" + str(index) for index in range(ncolumns)]
+
+        #print("names:", names)
+
+        # The column units
+        #column_units = dict()
+
+        # Initialize list for the column names for which we have to convert the values to strings
+        to_string = []
 
         # Loop over the columns
         for index, name in enumerate(names):
 
             # Determine dtype
             if dtypes is not None and dtypes[index] is not None: dtype = dtypes[index]
-            else: pass
+            else:
+                ptype = get_common_property_type(columns[index])
+                dtype, needs_tostring = property_type_to_builtin(ptype, return_tostring=True)
+                if needs_tostring: to_string.append(name)
 
             # Determine the unit
             if units is not None and units[index] is not None: unit = units[index]
-            else: pass
+            else: unit = get_common_unit(columns[index])
+
+            # Set column unit?
+            #self.column_units[name] = unit
 
             # Determine the description
             if descriptions is not None and descriptions[index] is not None: description = descriptions[index]
             else: description = "no description"
 
             # Add the column
-            table.add_column_info(name, dtype, unit, description)
+            if not has_info: table.add_column_info(name, dtype, unit, description)
 
-        # Add the rows
-        #for
+        # Set None string
+        if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = string_column_none_default
+
+        # Setup the table
+        table.setup()
+
+        # Add the rows, using the Table add_row implementation directly
+        # because the add_row function may be prohibited in the actual class (because of lazy features)
+        #for value, frequency in zip(values, frequencies):
+        for i in range(nrows):
+
+            # row = []
+            # for j, name in enumerate(names):
+            #     unit = table.get_column_unit(name)
+            #     value = columns[j][i]
+            #     if name in to_string: value = tostr(value, **tostr_kwargs)
+            #     elif value is None: pass
+            #     elif unit is not None and hasattr(value, "unit"): value = value.to(unit).value
+            #     else: pass
+            #     row.append(value)
+
+            #row = [column[i] for column in columns]
+            row = []
+            for j, name in enumerate(names):
+                value = columns[j][i]
+                if name in to_string: value = tostr(value, **tostr_kwargs)
+                row.append(value)
+
+            # Add the row
+            #super(SmartTable, table).add_row(row)
+            SmartTable.add_row(table, row)
 
         # Return the table
         return table
@@ -955,6 +1031,8 @@ class SmartTable(Table):
 
         # Setup has already been called
         if len(self.colnames) != 0: return
+
+        #print(self.column_info)
 
         # Create the table names and types lists
         for entry in self.column_info:
@@ -2590,5 +2668,33 @@ def get_common_property_type(values):
 
     # Return the common type
     return ptype
+
+# -----------------------------------------------------------------
+
+def get_common_unit(values):
+
+    """
+    This function returns the common unit or first occuring unit
+    :param values:
+    :return:
+    """
+
+    units = []
+    for value in values:
+        if value is None: continue
+        if not hasattr(value, "unit"):
+            if len(units) == 0: continue # maybe none of the values have a unit
+            else: # at least some other has a unit
+                raise ValueError("Inconsistent values: some have units while others are scalar values")
+        units.append(value.unit)
+
+    # No units?
+    if len(units) == 0: return None
+
+    # Get
+    #unit = sequences.get_all_equal_value()
+
+    # Get first unit
+    return units[0]
 
 # -----------------------------------------------------------------

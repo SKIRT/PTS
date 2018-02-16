@@ -350,25 +350,39 @@ class lazyproperty(property):
     """
 
     def __init__(self, fget, fset=None, fdel=None, doc=None):
+
         super(lazyproperty, self).__init__(fget, fset, fdel, doc)
         self._key = self.fget.__name__
+        #print(self._key)
+
+    # -----------------------------------------------------------------
 
     def __get__(self, obj, owner=None):
-        try:
-            #print("TYPE", type(obj))
-            #print("DICT", obj.__dict__)
-            #print("KEY", self._key)
-            return obj.__dict__[self._key]
+
+        # print("TYPE", type(obj))
+        # print("DICT", obj.__dict__)
+        # print("KEY", self._key)
+        # obj is the instance of the class of which the method is decorated
+        # self is the decorator class instance
+
+        try: return obj.__dict__[self._key]
         except KeyError:
+
             val = self.fget(obj)
             obj.__dict__[self._key] = val
             return val
+
         except AttributeError:
-            if obj is None:
-                return self
+            if obj is None: return self
             raise
 
+    # -----------------------------------------------------------------
+
     def __set__(self, obj, val):
+
+        # obj is the instance of the class of which the method is decorated
+        # self is the decorator class instance
+
         obj_dict = obj.__dict__
         if self.fset:
             ret = self.fset(obj, val)
@@ -379,11 +393,25 @@ class lazyproperty(property):
                 return
         obj_dict[self._key] = val
 
+    # -----------------------------------------------------------------
+
     def __delete__(self, obj):
-        if self.fdel:
-            self.fdel(obj)
+
+        # obj is the instance of the class of which the method is decorated
+        # self is the decorator class instance
+
+        if self.fdel: self.fdel(obj)
         if self._key in obj.__dict__:
             del obj.__dict__[self._key]
+
+    # -----------------------------------------------------------------
+
+    # SOMETHING LIKE THIS CAN NEVER WORK: CALING A METHOD ON THE PROPERTY IS IMPOSSIBLE BECAUSE
+    # OBJ.PROPERTY_NAME GIVES THE RETURN VALUE, SO .RESET ON THIS VALUE DOESN'T EXIST
+    # USE THE KEYWORD 'DEL' (CALLING __DELETE__) ON THE PROPERTY TO RESET
+    # def reset(self, *args, **kwargs):
+    #     print(args)
+    #     print(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -668,7 +696,10 @@ def fibonacci(n):
 
 class memoize_method(object):
 
-    """cache the return value of a method
+    """
+    THIS ONE STORES THE CACHE IN THE CLASS OF WHICH THE METHOD IS DECORATED!
+
+    Cache the return value of a method
 
     This class is meant to be used as a decorator of methods. The return value
     from a given method invocation will be cached on the instance whose method
@@ -678,33 +709,85 @@ class memoize_method(object):
     If a memoized method is invoked directly on its class the result will not
     be cached. Instead the method will be invoked like a static method:
     class Obj(object):
+
         @memoize
         def add_to(self, arg):
             return self + arg
+
     Obj.add_to(1) # not enough arguments
     Obj.add_to(1, 2) # returns 3, result is not cached
     """
 
     def __init__(self, func):
+
         self.func = func
 
     def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self.func
+
+        if obj is None: return self.func
         return partial(self, obj)
 
     def __call__(self, *args, **kw):
+
         obj = args[0]
-        try:
-            cache = obj.__cache
-        except AttributeError:
-            cache = obj.__cache = {}
+
+        try: cache = obj.__cache
+        except AttributeError: cache = obj.__cache = {}
+
         key = (self.func, args[1:], frozenset(kw.items()))
-        try:
-            res = cache[key]
-        except KeyError:
-            res = cache[key] = self.func(*args, **kw)
+
+        try: res = cache[key]
+        except KeyError: res = cache[key] = self.func(*args, **kw)
+
         return res
+
+# -----------------------------------------------------------------
+
+class memoize_method_reset(object):
+
+   """
+   THIS ONE STORES THE CACHE INSIDE THE DECORATOR CLASS!
+   THIS ONE HAS A RESET METHOD
+
+   Decorator that caches a function's return value each time it is called.
+   If called later with the same arguments, the cached value is returned, and
+   not re-evaluated.
+   """
+
+   def __init__(self, func):
+
+      self.func = func
+      self.cache = {}
+
+   def __call__(self, *args):
+
+      try: return self.cache[args]
+      except KeyError:
+         value = self.func(*args)
+         self.cache[args] = value
+         return value
+      except TypeError:
+         # uncachable -- for instance, passing a list as an argument.
+         # Better to not cache than to blow up entirely.
+         return self.func(*args)
+
+   def __repr__(self):
+
+      """Return the function's docstring."""
+
+      return self.func.__doc__
+
+   def __get__(self, obj, objtype):
+
+      """Support instance methods."""
+
+      fn = partial(self.__call__, obj)
+      fn.reset = self._reset
+      return fn
+
+   def _reset(self):
+
+      self.cache = {}
 
 # -----------------------------------------------------------------
 

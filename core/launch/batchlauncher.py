@@ -39,7 +39,7 @@ from ..simulation.parallelization import Parallelization, get_possible_nprocesse
 from ..tools import monitoring
 from ..advanced.memoryestimator import estimate_memory
 from ..tools import sequences
-from ..tools.utils import lazyproperty
+from ..tools.utils import lazyproperty, memoize_method
 from ..basics.map import Map
 from ..advanced.parallelizationtool import determine_parallelization
 from ..tools import parallelization
@@ -50,6 +50,7 @@ from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools.serialization import write_list
 from ..tools import numbers
+from ..simulation.remote import is_finished_status, is_retrieved_status, is_running_status
 
 # -----------------------------------------------------------------
 
@@ -122,6 +123,231 @@ class DifferentNDustCells(Exception):
 
         # Call the base class constructor
         super(DifferentNDustCells, self).__init__(message)
+
+# -----------------------------------------------------------------
+
+class SimulationStatusTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Simulation name"] = (str, None, "name of the simulation")
+    _column_info["Status"] = (str, None, "status of the simulation")
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(SimulationStatusTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_all_column_info(self._column_info)
+
+    # -----------------------------------------------------------------
+
+    def add_row(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise RuntimeError("Cannot add rows to a simulation status table")
+
+    # -----------------------------------------------------------------
+
+    def remove_row(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise RuntimeError("Cannot remove rows from a simulation status table")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.simulation_names.index(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_status(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        return self.get_value("Status", index)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulation_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        nfinished = 0
+        for simulation_name in self.simulation_names:
+            status = self.get_status(simulation_name)
+            if is_finished_status(status): nfinished += 1
+        return nfinished
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nfinished) / float(self.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.relative_nfinished * 100.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nretrieved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        nretrieved = 0
+        for simulation_name in self.simulation_names:
+            status = self.get_status(simulation_name)
+            if is_retrieved_status(status): nretrieved += 1
+        return nretrieved
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nretrieved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nretrieved) / float(self.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nretrieved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.relative_nretrieved * 100.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nanalysed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        nanalysed = 0
+        for simulation_name in self.simulation_names:
+            status = self.get_status(simulation_name)
+            if status == "analysed": nanalysed += 1
+        return nanalysed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nanalysed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return float(self.nanalysed) / float(self.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nanalysed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.relative_nanalysed * 100.
 
 # -----------------------------------------------------------------
 

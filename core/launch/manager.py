@@ -18,8 +18,8 @@ from collections import OrderedDict, defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..basics.log import log
-from ..tools.stringify import stringify, tostr
-from .batchlauncher import SimulationAssignmentTable
+from ..tools.stringify import tostr
+from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
 from ..tools import formatting as fmt
 from .timing import TimingTable
 from .memory import MemoryTable
@@ -27,7 +27,7 @@ from ..tools import filesystem as fs
 from ..tools import numbers
 from ..basics.distribution import Distribution
 from ..plot.distribution import plot_distribution
-from ..tools.utils import lazyproperty, memoize_method
+from ..tools.utils import lazyproperty, memoize_method, memoize_method_reset
 from ..basics.configuration import prompt_proceed
 from .analyser import show_analysis_steps, analyse_simulation, reanalyse_simulation, has_analysed
 from ..simulation.remote import get_simulations_for_host
@@ -39,6 +39,8 @@ from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict
 from ..tools import sequences
 from ..basics.log import no_debugging
+from ..simulation.remote import is_finished_status, is_running_status
+from ..tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
@@ -63,8 +65,8 @@ class SimulationManager(Configurable):
         self.assignment = None
 
         # Flags: has the assignment scheme been adapted or created?
-        self._adapted = False
-        self._new = False
+        self._adapted_assignment = False
+        self._new_assignment = False
 
         # The simulations
         self.simulations = DefaultOrderedDict(OrderedDict)
@@ -72,6 +74,21 @@ class SimulationManager(Configurable):
         # Timing and memory table
         self.timing = None
         self.memory = None
+
+        # The moved simulations
+        self.moved = OrderedDict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_moving(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.move
 
     # -----------------------------------------------------------------
 
@@ -146,6 +163,9 @@ class SimulationManager(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Move simulations
+        if self.do_moving: self.move()
+
         # Show
         if self.do_showing: self.show()
 
@@ -174,11 +194,9 @@ class SimulationManager(Configurable):
         # Call the setup function of the base class
         super(SimulationManager, self).setup(**kwargs)
 
-        # Set the number of allowed open file handles
-        #fs.set_nallowed_open_files(1024)
-
         # Check options
         if self.config.prompt_simulations_reanalysis is None: self.config.prompt_simulations_reanalysis = self.config.reanalyse_simulations is None
+        if self.config.prompt_simulations_move is None: self.config.prompt_simulations_move = self.config.move_simulations is None
 
         # Initialize simulations and assignment scheme
         self.initialize(**kwargs)
@@ -188,6 +206,10 @@ class SimulationManager(Configurable):
 
         # Get memory table
         self.get_memory_table(**kwargs)
+
+        # Get the status
+        if "status" in kwargs: self.status = kwargs.pop("status")
+        elif self.config.status is not None: self.status = SimulationStatusTable.from_file(self.config.status)
 
     # -----------------------------------------------------------------
 
@@ -528,7 +550,7 @@ class SimulationManager(Configurable):
 
                         # Set local
                         self.assignment.set_local_for_simulation(simulation_name)
-                        self._adapted = True
+                        self._adapted_assignment = True
 
                     # Cannot assume local
                     else: raise ValueError("Cannot determine the host for simulation '" + simulation_name + "'")
@@ -547,7 +569,7 @@ class SimulationManager(Configurable):
 
                     # Change the host for this simulation
                     self.assignment.set_host_for_simulation(simulation_name, actual_host_id, cluster_name=cluster_name)
-                    self._adapted = True
+                    self._adapted_assignment = True
 
                     # Add the simulation
                     self.simulations[actual_host_id][simulation_name] = simulation
@@ -564,7 +586,7 @@ class SimulationManager(Configurable):
 
         # Initialize assignment table
         self.assignment = SimulationAssignmentTable()
-        self._new = True
+        self._new_assignment = True
 
         # Get list of simulations
         if types.is_dictionary(simulations): simulations = simulations.values()
@@ -599,7 +621,7 @@ class SimulationManager(Configurable):
 
         # Initialize assignment table
         self.assignment = SimulationAssignmentTable()
-        self._new = True
+        self._new_assignment = True
 
         # Loop over the simulation names and look for matches
         for simulation_name in simulation_names:
@@ -673,6 +695,310 @@ class SimulationManager(Configurable):
         """
 
         return self.assignment.names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize lists
+        status_list = []
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            # Get the simulation
+            simulation = self.get_simulation(simulation_name)
+
+            # Analysed
+            if simulation.analysed: simulation_status = "analysed"
+
+            # Retrieved
+            elif simulation.retrieved: simulation_status = "retrieved"
+
+            # Not yet retrieved
+            else:
+                host_id = simulation.host_id
+                screen_states = self.screen_states[host_id] if host_id in self.screen_states else None
+                jobs_status = self.jobs_status[host_id] if host_id in self.jobs_status else None
+                with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
+
+            # Add the status
+            status_list.append(simulation_status)
+
+        # Create the table and return
+        return SimulationStatusTable.from_columns(self.simulation_names, status_list)
+
+    # -----------------------------------------------------------------
+
+    def reset_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Restting the simulation status ...")
+
+        # Reset the jobs status
+        del self.jobs_status
+
+        # Reset the screen states
+        del self.screen_states
+
+        # Reset the simulation status table
+        del self.status
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "status" in self.__dict__
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def jobs_status(self):
+
+        """
+        This function gets the status of jobs
+        :return:
+        """
+
+        # Initialize dictionary
+        jobs_status_hosts = dict()
+
+        # Loop over the hosts
+        for host_id in self.simulations:
+            if not self.get_remote(host_id).scheduler: continue
+
+            # Get the status of the jobs
+            jobs_status_hosts[host_id] = self.get_remote(host_id).get_jobs_status()
+
+        # Return
+        return jobs_status_hosts
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def screen_states(self):
+
+        """
+        This function gets the status of screen sessions
+        :return:
+        """
+
+        # Initialize dictionary
+        screen_states_hosts = dict()
+
+        # Loop over the hosts
+        for host_id in self.simulations:
+            if self.get_remote(host_id).scheduler: continue
+
+            # Get the status of the screen sessions
+            screen_states_hosts[host_id] = self.get_remote(host_id).screen_states()
+
+        # Return
+        return screen_states_hosts
+
+    # -----------------------------------------------------------------
+
+    def get_status(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.get_status(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.nfinished
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.relative_nfinished
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.percentage_nfinished
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nretrieved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.nretrieved
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nretrieved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.relative_nretrieved
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nretrieved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.percentage_nretrieved
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nanalysed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.nanalysed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nanalysed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.relative_nanalysed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nanalysed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.percentage_nanalysed
+
+    # -----------------------------------------------------------------
+
+    def move(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Moving simulations ...")
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            # Get the simulation
+            simulation = self.get_simulation(simulation_name)
+
+            # Check remote
+            if self.config.move_remotes is not None and simulation.host_id not in self.config.move_remotes: continue
+
+            # Check simulation name
+            if self.config.move_simulations is not None and simulation_name not in self.config.move_simulations: continue
+
+            # Get the status
+            status = self.get_status(simulation_name)
+
+            # Skip finished and running
+            if is_finished_status(status): continue
+            if not self.config.move_running and is_running_status(status): continue
+
+            # Get display name
+            display_name = self.get_display_name(simulation, id_size=3)
+
+            # Move?
+            print(" - " + display_name + ": " + status)
+            if self.config.prompt_simulations_move and not prompt_proceed("move simulation " + display_name + "?"): continue
+
+            #nmoved += 1
+
+        # Reset status?
+        if self.has_moved: self.reset_status()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmoved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.moved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_moved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmoved > 0
 
     # -----------------------------------------------------------------
 
@@ -2286,6 +2612,43 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_display_name(self, simulation, add_quotes=False, id_size=None, host_id_size=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param add_quotes:
+        :param id_size:
+        :param host_id_size:
+        :return:
+        """
+
+        # Set simulation ID string
+        if id_size is not None: id_string = strings.integer(simulation.id, id_size)
+        else: id_string = simulation.id
+
+        # Set host ID string
+        if host_id_size is not None: host_string = strings.to_length(tostr(simulation.host), host_id_size)
+        else: host_string = tostr(simulation.host)
+
+        # Create name and return
+        if add_quotes: return "'" + simulation.name + "' (" + host_string + " " + id_string + ")"
+        else: return simulation.name + " (" + host_string + " " + id_string + ")"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nsimulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulation_names)
+
+    # -----------------------------------------------------------------
+
     def show_status(self):
 
         """
@@ -2296,64 +2659,32 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Showing the simulation status ...")
 
-        nfinished = 0
-
-
-
-        # Get status of jobs and screen sessions
-        screen_states_hosts = dict()
-        jobs_status_hosts = dict()
-        for host_id in self.simulations: # loop over the hosts for which we have simulations
-
-            if self.get_remote(host_id).scheduler: jobs_status_hosts[host_id] = self.get_remote(host_id).get_jobs_status()
-            else: screen_states_hosts[host_id] = self.get_remote(host_id).screen_states()
+        # Show
+        print("")
+        print(fmt.bold + "Total number of simulations: " + fmt.reset + str(self.nsimulations))
+        print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(self.nfinished) + " (" + tostr(self.percentage_nfinished, round=True, ndigits=2) + "%)")
+        print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(self.nretrieved) + " (" + tostr(self.percentage_nretrieved, round=True, ndigits=2) + "%)")
+        print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(self.nanalysed) + " (" + tostr(self.percentage_nanalysed, round=True, ndigits=2) + "%)")
+        print("")
 
         # Loop over the simulations
         for simulation_name in self.simulation_names:
 
             # Get the simulation
             simulation = self.get_simulation(simulation_name)
-            simulation_id = simulation.id
-            host_id = simulation.host_id
 
-            # Get extra info
-            ndigits = 3
-            id_string = strings.integer(simulation_id, ndigits)
-            host_string = strings.to_length(host_id, 5)
-            extra_string = " (" + host_string + " " + id_string + ")"
+            # Get display name
+            display_name = self.get_display_name(simulation, id_size=3) #host_id_size=10)
 
-            # Analysed
-            if simulation.analysed:
+            # Get the status
+            status = self.get_status(simulation_name)
 
-                # Finished
-                nfinished += 1
-
-                # Show
-                print(" - " + fmt.green + simulation_name + extra_string + ": analysed" + fmt.reset)
-
-            # Retrieved
-            elif simulation.retrieved:
-
-                nfinished += 1
-                print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
-
-            # Not retrieved yet
-            else:
-
-                # Not yet retrieved, what is the status?
-                #if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
-                #else: simulation_status = " unknown"
-                screen_states = screen_states_hosts[host_id] if host_id in screen_states_hosts else None
-                jobs_status = jobs_status_hosts[host_id] if host_id in jobs_status_hosts else None
-                with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
-
-                # Show
-                if simulation_status == "finished":
-                    nfinished += 1
-                    #print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
-                    print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + fmt.reset)
-                else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + fmt.reset)
-                    #print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+            # Show status
+            if status == "analysed": print(" - " + fmt.green + display_name + ": analysed" + fmt.reset)
+            elif status == "retrieved": print(" - " + fmt.yellow + display_name + ": retrieved" + fmt.reset)
+            elif status == "finished": print(" - " + fmt.yellow + display_name + ": finished" + fmt.reset)
+            elif "running" in status: print(" - " + display_name + ": " + status + fmt.reset)
+            else: print(" - " + fmt.red + display_name + ": " + status + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2618,7 +2949,10 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Showing runtimes ...")
 
+        # Loop over the hosts
         for host in self.average_total_times:
+
+            # Loop over the parallelization schemes
             for parallelization in self.average_total_times[host]:
 
                 total = self.average_total_times[host][parallelization]
@@ -2866,9 +3200,13 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Showing memory usage ...")
 
+        # Loop over the hosts
         for host in self.average_total_memories:
+
+            # Loop over the parallelization schemes
             for parallelization in self.average_total_memories[host]:
 
+                # Get average values
                 total = self.average_total_memories[host][parallelization]
                 setup = self.average_setup_memories[host][parallelization]
                 stellar = self.average_stellar_memories[host][parallelization]
@@ -2876,6 +3214,7 @@ class SimulationManager(Configurable):
                 dust = self.average_dust_memories[host][parallelization]
                 writing = self.average_writing_memories[host][parallelization]
 
+                # Get stddevs
                 total_err = self.stddev_total_memories[host][parallelization]
                 setup_err = self.stddev_setup_memories[host][parallelization]
                 stellar_err = self.stddev_stellar_memories[host][parallelization]
@@ -2883,6 +3222,7 @@ class SimulationManager(Configurable):
                 dust_err = self.stddev_dust_memories[host][parallelization]
                 writing_err = self.stddev_writing_memories[host][parallelization]
 
+                # Get number of measurements
                 ntotal = self.ntotal_memories[host][parallelization]
                 nsetup = self.nsetup_memories[host][parallelization]
                 nstellar = self.nstellar_memories[host][parallelization]
@@ -2890,6 +3230,7 @@ class SimulationManager(Configurable):
                 ndust = self.ndust_memories[host][parallelization]
                 nwriting = self.nwriting_memories[host][parallelization]
 
+                # Get number of outliers
                 total_noutliers = self.ntotal_memories_outliers[host][parallelization]
                 setup_noutliers = self.nsetup_memories_outliers[host][parallelization]
                 stellar_noutliers = self.nstellar_memories_outliers[host][parallelization]
@@ -2910,6 +3251,44 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_assignment(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.write_assignment is not None: return self.config.write_assignment
+        else: return self._adapted_assignment or self._new_assignment
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # use self.has_status?
+        return self.config.write_status
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_moved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write_moved and self.has_moved
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -2921,7 +3300,13 @@ class SimulationManager(Configurable):
         log.info("Writing ...")
 
         # Write the assignment scheme
-        self.write_assignment()
+        if self.do_write_assignment: self.write_assignment()
+
+        # Write the status
+        if self.do_write_status: self.write_status()
+
+        # Write the moved
+        if self.do_write_moved: self.write_moved()
 
     # -----------------------------------------------------------------
 
@@ -2940,6 +3325,42 @@ class SimulationManager(Configurable):
 
         # Write the assignment
         self.assignment.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the simulation status table ...")
+
+        # Determine path
+        path = self.output_path_file("status.dat")
+
+        # Write the table
+        self.status.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_moved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the moved simulations ...")
+
+        # Determine path
+        path = self.output_path_file("moved.dat")
+
+        # Write
+        write_dict(self.moved, path)
 
     # -----------------------------------------------------------------
 
@@ -3310,7 +3731,7 @@ class SimulationManager(Configurable):
             if not has_analysed(simulation, self.config.reanalyse, self.config.features_reanalysis): continue
 
             # Set display name
-            display_name = "'" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ")"
+            display_name = self.get_display_name(simulation, add_quotes=True)
 
             # Re-analyse?
             if self.config.prompt_simulations_reanalysis and not prompt_proceed("re-analyse simulation " + display_name + "?"): continue
@@ -3346,7 +3767,7 @@ class SimulationManager(Configurable):
             if simulation.analysed: continue
 
             # Set display name
-            display_name = "'" + simulation.name + "' (" + simulation.host_id + " " + str(simulation.id) + ")"
+            display_name = self.get_display_name(simulation, add_quotes=True)
 
             # Re-analyse?
             if self.config.prompt_simulations_analysis and not prompt_proceed("analyse simulation " + display_name + "?"): continue

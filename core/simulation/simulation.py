@@ -991,8 +991,8 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         from ..remote.host import load_host
-        if self._remote is not None: return self._remote.host_id
-        elif self.host_id is not None: return load_host(self.host_id)
+        if self._remote is not None: return self._remote.host
+        elif self.host_id is not None: return load_host(self.host_id, clustername=self.cluster_name)
         else: return None
 
     # -----------------------------------------------------------------

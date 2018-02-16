@@ -39,6 +39,18 @@ from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
+def is_retrieved_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat in ["retrieved", "analysed"]
+
+# -----------------------------------------------------------------
+
 def is_finished_status(stat):
 
     """
@@ -48,6 +60,18 @@ def is_finished_status(stat):
     """
 
     return stat in ["finished", "retrieved", "analysed"]
+
+# -----------------------------------------------------------------
+
+def is_running_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return "running" in stat
 
 # -----------------------------------------------------------------
 
@@ -2142,27 +2166,43 @@ class SKIRTRemote(Remote):
 
             status = dict()
 
+            # Get status for currently active cluster
+            active_cluster_name = self.active_cluster_name
+            status_active_cluster = self._get_jobs_status_cluster(active_cluster_name, check_swap=False, swap=False, reswap=False)
+            status.update(status_active_cluster)
+
             # Loop over the clusters
             for clustername in self.cluster_names:
-
-                status_cluster = self._get_jobs_status_cluster(clustername)
+                if clustername == active_cluster_name: continue # already done
+                status_cluster = self._get_jobs_status_cluster(clustername, check_swap=False, reswap=False)
                 status.update(status_cluster)
+
+            # Swap back to original
+            self.swap_cluster(active_cluster_name)
 
             # Return the status
             return status
 
     # -----------------------------------------------------------------
 
-    def _get_jobs_status_cluster(self, cluster_name):
+    def _get_jobs_status_cluster(self, cluster_name, check_swap=True, swap=True, reswap=True):
 
         """
         This function ...
         :param cluster_name:
+        :param check_swap:
+        :param swap:
+        :param reswap:
         :return:
         """
 
         # Swap cluster
-        if cluster_name != self.active_cluster_name:
+        if check_swap:
+            if cluster_name != self.active_cluster_name:
+                self.swap_cluster(cluster_name)
+                swapped = True
+            else: swapped = False
+        elif swap:
             self.swap_cluster(cluster_name)
             swapped = True
         else: swapped = False
@@ -2194,8 +2234,8 @@ class SKIRTRemote(Remote):
                 # Add the status of this job to the dictionary
                 queue_status[jobid] = jobstatus
 
-        # Swap back to original cluster
-        if swapped: self.swap_cluster(self.cluster_name)
+        # Swap back to original cluster?
+        if swapped and reswap: self.swap_cluster(self.cluster_name)
 
         # Return the queue status
         return queue_status
