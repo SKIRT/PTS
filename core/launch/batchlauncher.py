@@ -4112,11 +4112,17 @@ class BatchLauncher(Configurable):
         # Try starting the queue
         try:
 
+            if remote.scheduler:
+                if self.config.group_simulations: scheduling_method = "group"
+                else: scheduling_method = "separate"
+            else: scheduling_method = None
+
             jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-            handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
-                                         group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
-                                         local_script_path=local_script_path, screen_output_path=screen_output_path,
-                                         jobscripts_path=jobscripts_path, attached=self.config.attached, dry=self.config.dry)
+
+            handles = remote.start_queue(queue_name=queue_name, schedule_method=scheduling_method,
+                                         group_walltime=self.config.group_walltime, local_script_path=local_script_path,
+                                         screen_output_path=screen_output_path, jobscripts_path=jobscripts_path,
+                                         attached=self.config.attached, dry=self.config.dry)
 
             # SET THE EXECUTION HANDLES
             # Loop over the simulation for this remote
