@@ -33,6 +33,9 @@ definition.add_optional("remotes", "string_list", "remote hosts for which to loo
 definition.add_optional("timing", "file_path", "timing table path")
 definition.add_optional("memory", "file_path", "memory table path")
 
+# Interactive mode
+definition.add_flag("interactive", "use interactive mode")
+
 # -----------------------------------------------------------------
 
 # Flags
@@ -48,6 +51,7 @@ definition.add_flag("move_running", "move running simulations", False)
 definition.add_optional("move_simulations", "string_list", "simulation names for moving")
 definition.add_optional("move_remotes", "string_list", "host IDs for moving simulations from")
 definition.add_flag("prompt_simulations_move", "prompt before moving a particular simulation", None)
+definition.add_optional("move_to_host", "host", "move simulations to this remote host")
 
 # -----------------------------------------------------------------
 

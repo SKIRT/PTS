@@ -17,6 +17,7 @@ from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
+from ..basics.configuration import ConfigurationDefinition, parse_arguments
 from ..basics.log import log
 from ..tools.stringify import tostr
 from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
@@ -41,6 +42,16 @@ from ..tools import sequences
 from ..basics.log import no_debugging
 from ..simulation.remote import is_finished_status, is_running_status
 from ..tools.serialization import write_dict
+from ..basics.configuration import prompt_string, prompt_variable
+from ..remote.host import find_host_ids
+from ..simulation.shower import show_simulation, show_analysis
+#from ..simulation.adapter import
+from ..config.show_simulation_settings import definition as show_simulation_definition
+from ..config.show_analysis_options import definition as show_analysis_definition
+
+# -----------------------------------------------------------------
+
+all_host_ids = find_host_ids()
 
 # -----------------------------------------------------------------
 
@@ -77,6 +88,21 @@ class SimulationManager(Configurable):
 
         # The moved simulations
         self.moved = OrderedDict()
+
+        # The commands that have been executed
+        self.commands = []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_interactive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.interactive
 
     # -----------------------------------------------------------------
 
@@ -162,6 +188,9 @@ class SimulationManager(Configurable):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # Interactive
+        if self.do_interactive: self.interactive()
 
         # Move simulations
         if self.do_moving: self.move()
@@ -935,6 +964,239 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def interactive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Entering interactive mode ...")
+
+        # Enter loop
+        while True:
+
+            # Get next command, break if no command is given
+            command = prompt_string("command", "command to be executed")
+            if not command: break
+
+            # Process command
+            success = True
+            try: self.process_command(command)
+            except Exception as e:
+                log.warning(str(e))
+                success = False
+
+            # Add command, if succesful
+            if success: self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
+    def process_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Show simulation status
+        if command == "status": self.show_status()
+
+        # Move simulation
+        elif command.startswith("move"): self.move_simulation_command(command)
+
+        # Show log of simulation
+        elif command.startswith("log"): self.show_simulation_log_command(command)
+
+        # Show simulation settings
+        elif command.startswith("settings"): self.show_simulation_settings_command(command)
+
+        # Show analysis options
+        elif command.startswith("analysis"): self.show_analysis_options_command(command)
+
+        # Adapt simulation settings or analysis options
+        elif command.startswith("adapt"): self.adapt_simulation_command(command)
+
+        # Compare simulation settings or analysis options
+        elif command.startswith("compare"): self.compare_simulations_command(command)
+
+        # Analyse simulation
+        elif command.startswith("analyse"): self.analyse_simulation_command(command)
+
+        # Re-analyse simulation
+        elif command.startswith("reanalyse"): self.reanalyse_simulation_command(command)
+
+        # Invalid command
+        else: raise ValueError("Invalid command")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_log_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Get simulation name
+        index = int(splitted[1])
+        simulation_name = self.simulation_names[index]
+
+        # Check
+        #if not self.is_running_or_finished(simulation_name): raise ValueError("Simulation is not finished or running")
+
+        # Show
+        self.show_simulation_log(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_log(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing log output of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Simulation is retrieved
+        if simulation.retrieved:
+
+            # Determine the path to the simulation log file
+            local_log_file_path = simulation.log_file_path
+
+            # Read the log file
+            lines = fs.read_lines(local_log_file_path)
+
+        # Not yet retrieved
+        else:
+
+            # Get the remote
+            remote = self.get_remote(simulation.host_id)
+
+            # The path to the simulation log file
+            remote_log_file_path = simulation.remote_log_file_path
+
+            # Check whether the log file exists
+            if not remote.is_file(remote_log_file_path): raise RuntimeError("The log file does not (yet) exist remotely")
+
+            # Read the log file
+            lines = remote.read_lines(remote_log_file_path)
+
+        # Print the lines of the log file
+        print("")
+        for line in lines: print(line)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_settings_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulation", "integer_or_string", "simulation index or name")
+        definition.import_settings(show_simulation_definition, required_to="pos_optional")
+
+        # Parse arguments
+        config = parse_arguments("show_simulation_settings", definition, command=splitted[1:], error="exception")
+
+        # Get simulation name
+        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
+        else: simulation_name = config.pop("simulation")
+
+        # Show
+        self.show_simulation_settings(simulation_name, config=config)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_settings(self, simulation_name, config=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing settings of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Show
+        show_simulation(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
+    def show_analysis_options_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulation", "integer_or_string", "simulation index or name")
+        definition.import_settings(show_analysis_definition, required_to="pos_optional")
+
+        # Parse arguments
+        config = parse_arguments("show_analysis_options", definition, command=splitted[1:], error="exception")
+
+        # Get simulation name
+        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
+        else: simulation_name = config.pop("simulation")
+
+        # Show
+        self.show_analysis_options(simulation_name, config=config)
+
+    # -----------------------------------------------------------------
+
+    def show_analysis_options(self, simulation_name, config=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing analysis options for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Show
+        show_analysis(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
     def move(self):
 
         """
@@ -971,10 +1233,60 @@ class SimulationManager(Configurable):
             print(" - " + display_name + ": " + status)
             if self.config.prompt_simulations_move and not prompt_proceed("move simulation " + display_name + "?"): continue
 
-            #nmoved += 1
+            # To which host?
+            if self.config.move_to_host is not None: host = self.config.move_to_host
+            else: host = prompt_variable("host", "host", "remote host to move simulation '" + simulation_name + "' to", choices=all_host_ids)
+            if host == simulation.host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(host) + "'")
+
+            # Move simulation
+            self.move_simulation(simulation_name, host)
 
         # Reset status?
         if self.has_moved: self.reset_status()
+
+    # -----------------------------------------------------------------
+
+    def move_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Get simulation name
+        index = int(splitted[1])
+        simulation_name = self.simulation_names[index]
+
+        # Check status
+        status = self.get_status(simulation_name)
+        if is_finished_status(status): raise ValueError("Simulation is already finished")
+
+        # Get host and check
+        host = load_host(splitted[2])
+        if host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(host) + "'")
+
+        # Move simulation
+        self.move_simulation(simulation_name, host)
+
+    # -----------------------------------------------------------------
+
+    def move_simulation(self, simulation_name, host):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param host:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Moving simulation '" + simulation_name + "' to host '" + tostr(host) + "' ...")
+
+
 
     # -----------------------------------------------------------------
 
@@ -2689,6 +3001,9 @@ class SimulationManager(Configurable):
             elif "running" in status: print(" - " + index_string + display_name + ": " + status + fmt.reset)
             else: print(" - " + index_string + fmt.red + display_name + ": " + status + fmt.reset)
 
+        # End with empty line
+        print("")
+
     # -----------------------------------------------------------------
 
     def get_average_times(self, times_dict):
@@ -3739,11 +4054,30 @@ class SimulationManager(Configurable):
             # Re-analyse?
             if self.config.prompt_simulations_reanalysis and not prompt_proceed("re-analyse simulation " + display_name + "?"): continue
 
-            # Debugging
-            log.debug("Re-analysing simulation " + display_name + " ...")
+            # Re-analyse
+            self.reanalyse_simulation(simulation.name, steps=self.config.reanalyse, features=self.config.features_reanalysis, config=config)
 
-            # Reanalyse simulation
-            reanalyse_simulation(simulation, self.config.reanalyse, self.config.features_reanalysis, config=config)
+    # -----------------------------------------------------------------
+
+    def reanalyse_simulation(self, simulation_name, steps=None, features=None, config=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param steps:
+        :param features:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Re-analysing simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Reanalyse simulation
+        reanalyse_simulation(simulation, steps, features, config=config)
 
     # -----------------------------------------------------------------
 
@@ -3778,11 +4112,28 @@ class SimulationManager(Configurable):
             # Show steps that will be performed
             show_analysis_steps(simulation)
 
-            # Debugging
-            log.debug("Analysing simulation " + display_name + " ...")
+            # Analyse
+            self.analyse_simulation(simulation.name, config=self.config.analysis)
 
-            # Analyse the simulation
-            analyse_simulation(simulation, config=self.config.analysis)
+    # -----------------------------------------------------------------
+
+    def analyse_simulation(self, simulation_name, config=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Analysing simulation " + simulation_name + " ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Analyse the simulation
+        analyse_simulation(simulation, config=config)
 
 # -----------------------------------------------------------------
 

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
-import importlib
+from types import MethodType
 from abc import ABCMeta, abstractmethod
 from types import NoneType
 import sys
@@ -123,7 +123,7 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
 
 # -----------------------------------------------------------------
 
-def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True):
+def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True, command=None, error="exit"):
 
     """
     This function ...
@@ -132,12 +132,14 @@ def parse_arguments(name, definition, description=None, add_logging=True, add_cw
     :param description:
     :param add_logging:
     :param add_cwd:
+    :param command:
+    :param error:
     :return:
     """
 
     # Create the configuration
-    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd)
-    config = setter.run(definition)
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error)
+    config = setter.run(definition, command=command)
 
     # Initialize PTS
     from ...do.run import initialize_pts
@@ -1899,6 +1901,201 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def import_settings(self, definition, fixed=True, required=True, pos_optional=True, optional=True, flags=True,
+                        sections=True, recursive=False, required_to="required", pos_optional_to="pos_optional",
+                        optional_to="optional"):
+
+        """
+        This function ...
+        :param definition:
+        :param fixed:
+        :param required:
+        :param pos_optional:
+        :param optional:
+        :param flags:
+        :param sections:
+        :param recursive:
+        :param required_to:
+        :param pos_optional_to:
+        :param optional_to:
+        :return:
+        """
+
+        # Add fixed
+        if fixed: self.import_fixed(definition)
+
+        # Add required
+        if required: self.import_required(definition, to=required_to)
+
+        # Add positional optional
+        if pos_optional: self.import_pos_optional(definition, to=pos_optional_to)
+
+        # Add optional
+        if optional: self.import_optional(definition, to=optional_to)
+
+        # Add flags
+        if flags: self.import_flags(definition)
+
+        # Add sections
+        if sections:
+
+            # Loop over the to be imported sections
+            for name in definition.sections:
+
+                # Existing section
+                if name in self.sections:
+
+                    if recursive:
+                        self.sections[name].import_settings(definition.sections[name], fixed=fixed, required=required,
+                                                            pos_optional=pos_optional, optional=optional, flags=flags,
+                                                            sections=True, recursive=True, required_to=required_to,
+                                                            pos_optional_to=pos_optional_to, optional_to=optional_to)
+                    else: raise ValueError("Already a section '" + name + "' in this definition")
+
+                # New section
+                else:
+                    self.sections[name] = definition.sections[name].copy()
+                    self.section_descriptions[name] = definition.section_descriptions[name]
+
+    # -----------------------------------------------------------------
+
+    def import_fixed(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Loop over the settings
+        for name in definition.fixed:
+
+            if name in self.fixed: raise ValueError("Already fixed argument '" + name + "' in this definition")
+            self.fixed[name] = definition.fixed[name]
+
+    # -----------------------------------------------------------------
+
+    def import_required(self, definition, to="required"):
+
+        """
+        This function ...
+        :param definition:
+        :param to:
+        :return:
+        """
+
+        # Loop over the settings
+        for name in definition.required:
+
+            # To required
+            if to == "required":
+
+                if name in self.required: raise ValueError("Already required argument '" + name + "' in this definition")
+                self.required[name] = definition.required[name]
+
+            # To positional optional
+            elif to == "pos_optional":
+
+                if name in self.pos_optional: raise ValueError("Already positional optional argument '" + name + "' in this definition")
+                self.pos_optional[name] = definition.required[name]
+
+            # To optional
+            elif to == "optional":
+
+                if name in self.optional: raise ValueError("Already optional argument '" + name + "' in this definition")
+                self.optional[name] = definition.required[name]
+
+            # Invalid
+            else: raise ValueError("Invalid")
+
+    # -----------------------------------------------------------------
+
+    def import_pos_optional(self, definition, to="pos_optional"):
+
+        """
+        This function ...
+        :param definition:
+        :param to:
+        :return:
+        """
+
+        # Loop over the settings
+        for name in definition.pos_optional:
+
+            # To required
+            if to == "required":
+
+                if name in self.required: raise ValueError("Already required argument '" + name + "' in this definition")
+                self.required[name] = definition.pos_optional[name]
+
+            # To positional optional
+            elif to == "pos_optional":
+
+                if name in self.pos_optional: raise ValueError("Already positional optional argument '" + name + "' in this definition")
+                self.pos_optional[name] = definition.pos_optional[name]
+
+            # To optional
+            elif to == "optional":
+
+                if name in self.optional: raise ValueError("Already optional argument '" + name + "' in this definition")
+                self.optional[name] = definition.pos_optional[name]
+
+            # Invalid
+            else: raise ValueError("Invalid")
+
+    # -----------------------------------------------------------------
+
+    def import_optional(self, definition, to="optional"):
+
+        """
+        This function ...
+        :param definition:
+        :param to:
+        :return:
+        """
+
+        # Loop over the settings
+        for name in definition.optional:
+
+            # To required
+            if to == "required":
+
+                if name in self.required: raise ValueError("Already required argument '" + name + "' in this definition")
+                self.required[name] = definition.optional[name]
+
+            # Positional optional
+            elif to == "pos_optional":
+
+                if name in self.pos_optional: raise ValueError("Already positional optional argument '" + name + "' in this definition")
+                self.pos_optional[name] = definition.optional[name]
+
+            # Optional
+            elif to == "optional":
+
+                if name in self.optional: raise ValueError("Already optional argument '" + name + "' in this definition")
+                self.optional[name] = definition.optional[name]
+
+            # Invalid
+            else: raise ValueError("Invalid")
+
+    # -----------------------------------------------------------------
+
+    def import_flags(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Loop over the settings
+        for name in definition.flags:
+
+            if name in self.flags: raise ValueError("Already flag '" + name + "' in this definition")
+            self.flags[name] = definition.flags[name]
+
+    # -----------------------------------------------------------------
+
     def add_section(self, name, description):
 
         """
@@ -2495,13 +2692,25 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
 
 # -----------------------------------------------------------------
 
+def error_to_exception(self, message):
+
+    """
+    This function ...
+    :param message:
+    :return:
+    """
+
+    raise ValueError(message)
+
+# -----------------------------------------------------------------
+
 class ArgumentConfigurationSetter(ConfigurationSetter):
 
     """
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True, error="exit"):
 
         """
         This function ...
@@ -2510,6 +2719,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         :param add_logging:
         :param add_cwd:
         :param add_config_path:
+        :param error:
         """
 
         # Call the constructor of the base class
@@ -2518,8 +2728,16 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         # Create the command-line parser
         self.parser = argparse.ArgumentParser(prog=name, description=description)
 
+        # Set error handling
+        if error == "exit": pass
+        elif error == "exception": self.parser.error = MethodType(error_to_exception, self.parser) # change the function
+        else: raise ValueError("Invalid option for error handling")
+
         # The parsed arguments
         self.arguments = None
+
+        # The command as a string
+        self.command = None
 
     # -----------------------------------------------------------------
 
@@ -2535,16 +2753,18 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
 
     # -----------------------------------------------------------------
 
-    def run(self, definition):
+    def run(self, definition, command=None):
 
         """
         This function ...
         :param definition:
+        :param command:
         :return:
         """
 
         # Set definition
         self.definition = definition
+        self.command = command
 
         # Set logging and cwd
         self.set_logging_and_cwd()
@@ -2571,7 +2791,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         self.definition.set_arguments(self.parser)
 
         # Let the parser parse
-        self.arguments = self.parser.parse_args()
+        self.arguments = self.parser.parse_args(args=self.command)
 
     # -----------------------------------------------------------------
 

@@ -49,6 +49,19 @@ def any(argument):
 
 # -----------------------------------------------------------------
 
+def integer_or_string(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return integer(argument)
+    except ValueError: return string(argument)
+
+# -----------------------------------------------------------------
+
 def integer_or_real_or_string(argument):
 
     """
