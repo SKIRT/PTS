@@ -68,6 +68,7 @@ class TimeLineTable(SmartTable):
         :return:
         """
 
+        # Define column names and units
         names = ["Process rank", "Phase", "Start time", "End time", "Simulation phase", "Annotation"]
         units = [None, None, "s", "s", None, None]
 

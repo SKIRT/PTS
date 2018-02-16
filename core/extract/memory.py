@@ -65,31 +65,41 @@ class MemoryUsageTable(SmartTable):
         """
 
         names = ['Process rank', 'Phase', 'Simulation time', 'Memory usage']
-        data = [process_list, phase_list, seconds_list, memory_list]
+        #data = [process_list, phase_list, seconds_list, memory_list]
+
+        columns = [process_list, phase_list, seconds_list, memory_list]
+        units = [None, None, "s", "GB"]
 
         # Add column of allocated memory
         if delta_list is not None:
             names.append("Array (de)allocation")
-            data.append(delta_list)
+            #data.append(delta_list)
+            columns.append(delta_list)
+            units.append("GB")
 
         # Add column of allocation memory adresses
         if id_list is not None:
             names.append("Array ID")
-            data.append(id_list)
+            #data.append(id_list)
+            columns.append(id_list)
+            units.append(None)
 
         # Call the constructor of the base class
-        table = cls(data, names=names, masked=True)
+        #table = cls(data, names=names, masked=True)
 
         # Set the column units
-        table["Simulation time"].unit = "s"
-        table["Memory usage"].unit = "GB"
-        if table.has_allocation_info: table["Array (de)allocation"].unit = "GB"
+        #table["Simulation time"].unit = "s"
+        #table["Memory usage"].unit = "GB"
+        #if table.has_allocation_info: table["Array (de)allocation"].unit = "GB"
 
         # The path to the table file
-        table.path = None
+        #table.path = None
 
         # Return the table
-        return table
+        #return table
+
+        # NEW
+        return super(MemoryUsageTable, cls).from_columns(*columns, names=names, units=units)
 
     # -----------------------------------------------------------------
 

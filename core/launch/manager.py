@@ -2668,7 +2668,7 @@ class SimulationManager(Configurable):
         print("")
 
         # Loop over the simulations
-        for simulation_name in self.simulation_names:
+        for index, simulation_name in enumerate(self.simulation_names):
 
             # Get the simulation
             simulation = self.get_simulation(simulation_name)
@@ -2679,12 +2679,15 @@ class SimulationManager(Configurable):
             # Get the status
             status = self.get_status(simulation_name)
 
+            # Get index string
+            index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
+
             # Show status
-            if status == "analysed": print(" - " + fmt.green + display_name + ": analysed" + fmt.reset)
-            elif status == "retrieved": print(" - " + fmt.yellow + display_name + ": retrieved" + fmt.reset)
-            elif status == "finished": print(" - " + fmt.yellow + display_name + ": finished" + fmt.reset)
-            elif "running" in status: print(" - " + display_name + ": " + status + fmt.reset)
-            else: print(" - " + fmt.red + display_name + ": " + status + fmt.reset)
+            if status == "analysed": print(" - " + index_string + fmt.green + display_name + ": analysed" + fmt.reset)
+            elif status == "retrieved": print(" - "  + index_string + fmt.yellow + display_name + ": retrieved" + fmt.reset)
+            elif status == "finished": print(" - " + index_string + fmt.yellow + display_name + ": finished" + fmt.reset)
+            elif "running" in status: print(" - " + index_string + display_name + ": " + status + fmt.reset)
+            else: print(" - " + index_string + fmt.red + display_name + ": " + status + fmt.reset)
 
     # -----------------------------------------------------------------
 

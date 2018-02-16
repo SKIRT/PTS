@@ -90,7 +90,7 @@ class ParameterExplorer(FittingComponent):
         # The parameter ranges
         self.ranges = dict()
 
-        # Initf ngemgeg
+        # Fixed initial parameters
         self.fixed_initial_parameters = None
 
         # The generation index and name
