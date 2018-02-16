@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.units import dimensionless_angles
@@ -35,6 +36,21 @@ class DustGridsTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Type"] = (str, None, "grid type")
+    _column_info["Min x"] = (float, "pc", "minimum x")
+    _column_info["Max x"] = (float, "pc", "maximum x")
+    _column_info["Min y"] = (float, "pc", "minimum y")
+    _column_info["Max y"] = (float, "pc", "maximum y")
+    _column_info["Min z"] = (float, "pc", "minimum z")
+    _column_info["Max z"] = (float, "pc", "maximum z")
+    _column_info["Smallest scale"] = (float, "pc", "Smallest scale")
+    _column_info["Min level"] = (int, None, "Minimum level")
+    _column_info["Max mass fraction"] = (float, None, "Maximum mass fraction")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -47,16 +63,7 @@ class DustGridsTable(SmartTable):
         super(DustGridsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Type", str, None, "grid type")
-        self.add_column_info("Min x", float, "pc", "minimum x")
-        self.add_column_info("Max x", float, "pc", "maximum x")
-        self.add_column_info("Min y", float, "pc", "minimum y")
-        self.add_column_info("Max y", float, "pc", "maximum y")
-        self.add_column_info("Min z", float, "pc", "minimum z")
-        self.add_column_info("Max z", float, "pc", "maximum z")
-        self.add_column_info("Smallest scale", float, "pc", "Smallest scale")
-        self.add_column_info("Min level", int, None, "Minimum level")
-        self.add_column_info("Max mass fraction", float, None, "Maximum mass fraction")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

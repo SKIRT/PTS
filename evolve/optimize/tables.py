@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.table import SmartTable
@@ -27,6 +28,17 @@ class CrossoverTable(SmartTable):
     This function ...
     """
 
+    # Add column information
+    _column_info = OrderedDict()
+    _column_info["Mother"] = (str, None, "Mother individual name")
+    _column_info["Father"] = (str, None, "Father individual name")
+    _column_info["Sister"] = (str, None, "Sister individual name")
+    _column_info["Brother"] = (str, None, "Brother individual name")
+    _column_info["Crossover"] = (str, None, "Crossover method (if applied)")
+    _column_info["Details"] = (str, None, "Crossover details")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -38,13 +50,8 @@ class CrossoverTable(SmartTable):
         # Call the constructor of the base class
         super(CrossoverTable, self).__init__(*args, **kwargs)
 
-        # Add column information
-        self.add_column_info("Mother", str, None, "Mother individual name")
-        self.add_column_info("Father", str, None, "Father individual name")
-        self.add_column_info("Sister", str, None, "Sister individual name")
-        self.add_column_info("Brother", str, None, "Brother individual name")
-        self.add_column_info("Crossover", str, None, "Crossover method (if applied)")
-        self.add_column_info("Details", str, None, "Crossover details")
+        # Add column info
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -194,6 +201,17 @@ class RecurrenceTable(SmartTable):
     This class ...
     """
 
+    # Add column information
+    _column_info = OrderedDict()
+    _column_info["Individual ID"] = (str, None, "name or index of the individual that is recurrent")
+    _column_info["Generation"] = (int, None, "Generation index of the original individual")
+    _column_info["Original individual ID"] = (str, None, "name or index of the original individual")
+    _column_info["Score"] = (float, None, "Score of the original individual")
+    _column_info["Individual"] = (str, None, "representation of the individual")
+    _column_info["Original individual"] = (str, None, "representation of the original individual")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -205,13 +223,8 @@ class RecurrenceTable(SmartTable):
         # Call the constructor of the base class
         super(RecurrenceTable, self).__init__(*args, **kwargs)
 
-        # Add column information
-        self.add_column_info("Individual ID", str, None, "name or index of the individual that is recurrent")
-        self.add_column_info("Generation", int, None, "Generation index of the original individual")
-        self.add_column_info("Original individual ID", str, None, "name or index of the original individual")
-        self.add_column_info("Score", float, None, "Score of the original individual")
-        self.add_column_info("Individual", str, None, "representation of the individual")
-        self.add_column_info("Original individual", str, None, "representation of the original individual")
+        # Add column info
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -348,6 +361,23 @@ class ElitismTable(SmartTable):
     This class ...
     """
 
+    # Add column information
+    _column_info = OrderedDict()
+    _column_info["Generation"] = (int, None, "Generation index")
+    _column_info["Elitism replacement"] = (int, None, "# elitism replacement")
+    _column_info["Min_or_max"] = (str, None, "minimize or maximize")
+    _column_info["Old best raw score"] = (float, None, "raw score of best individual of the old population")
+    _column_info["Old best fitness"] = (float, None, "fitness of best individual of the old population")
+    _column_info["Old individual ID"] = (str, None, "ID of the best individual of the old population")
+    _column_info["New best raw score"] = (float, None, "raw score of best individual of the new population")
+    _column_info["New best fitness"] = (float, None, "fitness of best individual of the new population")
+    _column_info["Individual ID"] = (str, None, "name or index of the individual that is replaced")
+    _column_info["Elitism performed"] = (bool, None, "elitism condition was met")
+    _column_info["Replaced raw score"] = (float, None, "raw score of the individual that was replaced")
+    _column_info["Replaced fitness"] = (float, None, "fitness of the individual that was replaced")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -359,19 +389,8 @@ class ElitismTable(SmartTable):
         # Call the constructor of the base class
         super(ElitismTable, self).__init__(*args, **kwargs)
 
-        # Add column information
-        self.add_column_info("Generation", int, None, "Generation index")
-        self.add_column_info("Elitism replacement", int, None, "# elitism replacement")
-        self.add_column_info("Min_or_max", str, None, "minimize or maximize")
-        self.add_column_info("Old best raw score", float, None, "raw score of best individual of the old population")
-        self.add_column_info("Old best fitness", float, None, "fitness of best individual of the old population")
-        self.add_column_info("Old individual ID", str, None, "ID of the best individual of the old population")
-        self.add_column_info("New best raw score", float, None, "raw score of best individual of the new population")
-        self.add_column_info("New best fitness", float, None, "fitness of best individual of the new population")
-        self.add_column_info("Individual ID", str, None, "name or index of the individual that is replaced")
-        self.add_column_info("Elitism performed", bool, None, "elitism condition was met")
-        self.add_column_info("Replaced raw score", float, None, "raw score of the individual that was replaced")
-        self.add_column_info("Replaced fitness", float, None, "fitness of the individual that was replaced")
+        # Add column info
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -542,6 +561,13 @@ class ScoresTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Individual name"] = (str, None, "name of the individual")
+    _column_info["Score"] = (float, None, "individual's score")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -563,8 +589,7 @@ class ScoresTable(SmartTable):
         if not from_astropy:
 
             # Add column info
-            self.add_column_info("Individual name", str, None, "name of the individual")
-            self.add_column_info("Score", float, None, "individual's score")
+            self.add_all_column_info(self._column_info)
 
             # Initialize 'min_or_max' meta attribute
             self.meta["min_or_max"] = min_or_max

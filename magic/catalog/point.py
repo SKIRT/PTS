@@ -12,6 +12,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ...core.basics.log import log
@@ -30,6 +33,18 @@ class PointSourceCatalog(SmartTable):
     This class ...
     """
 
+    # Add columns
+    _column_info = OrderedDict()
+    _column_info["Catalog"] = (str, None, "Original catalog")
+    _column_info["ID"] = ( str, None, "ID in the catalog")
+    _column_info["RA"] = (float, "deg", "Right ascension")
+    _column_info["DEC"] = (float, "deg", "Declination")
+    _column_info["RA error"] = (float, "mas", "Error on right ascension")
+    _column_info["DEC error"] = (float, "mas", "Error on declination")
+    _column_info["Confidence"] = (int, None, "Confidence level")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -41,14 +56,8 @@ class PointSourceCatalog(SmartTable):
         # Call the constructor of the base class
         super(PointSourceCatalog, self).__init__(*args, **kwargs)
 
-        # Add columns
-        self.add_column_info("Catalog", str, None, "Original catalog")
-        self.add_column_info("ID", str, None, "ID in the catalog")
-        self.add_column_info("RA", float, "deg", "Right ascension")
-        self.add_column_info("DEC", float, "deg", "Declination")
-        self.add_column_info("RA error", float, "mas", "Error on right ascension")
-        self.add_column_info("DEC error", float, "mas", "Error on declination")
-        self.add_column_info("Confidence", int, None, "Confidence level")
+        # Add column info
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

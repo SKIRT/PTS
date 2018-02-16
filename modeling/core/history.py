@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
@@ -27,6 +28,14 @@ class ModelingHistory(SmartTable):
     """
     This class...
     """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Command"] = (str, None, "name of the modeling command")
+    _column_info["Start time"] = (str, None, "timestamp for start of command")
+    _column_info["End time"] = (str, None, "timestamp for end of command")
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -42,12 +51,8 @@ class ModelingHistory(SmartTable):
         # Call the constructor of the base class
         super(ModelingHistory, self).__init__(*args, **kwargs)
 
-        if not from_astropy:
-
-            # Add column info
-            self.add_column_info("Command", str, None, "name of the modeling command")
-            self.add_column_info("Start time", str, None, "timestamp for start of command")
-            self.add_column_info("End time", str, None, "timestamp for end of command")
+        # Add column info
+        if not from_astropy: self.add_all_column_info(self._column_info)
 
         # Clean
         # DOESN'T WORK HERE: TypeError: could not convert reader output to ModelingHistory class.

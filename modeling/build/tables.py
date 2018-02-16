@@ -25,7 +25,15 @@ from ...core.tools import filesystem as fs
 class RepresentationsTable(SmartTable):
         
     """
-    This class ..."""
+    This class ...
+    """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Name"] = (str, None, "name for the representation")
+    _column_info["Model name"] = (str, None, "name of the model")
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -39,8 +47,7 @@ class RepresentationsTable(SmartTable):
         super(RepresentationsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Name", str, None, "name for the representation")
-        self.add_column_info("Model name", str, None, "name of the model")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -109,6 +116,16 @@ class ModelMapsTable(SmartTable):
     This function ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Name"] = (str, None, "name for the model")
+    _column_info["Old stars map"] = (str, None, "name of the selected old stellar map")
+    _column_info["Young stars map"] = (str, None, "name of the selected young stellar map")
+    _column_info["Ionizing stars map"] = (str, None, "name of the selected ionizing stellar map")
+    _column_info["Dust map"] = (str, None, "name of the selected dust map")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -121,11 +138,7 @@ class ModelMapsTable(SmartTable):
         super(ModelMapsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Name", str, None, "name for the model")
-        self.add_column_info("Old stars map", str, None, "name of the selected old stellar map")
-        self.add_column_info("Young stars map", str, None, "name of the selected young stellar map")
-        self.add_column_info("Ionizing stars map", str, None, "name of the selected ionizing stellar map")
-        self.add_column_info("Dust map", str, None, "name of the selected dust map")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -231,6 +244,20 @@ class ModelsTable(SmartTable):
     This class...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Name"] = (str, None, "name for the model")
+    _column_info["Description"] = (str, None, "description of the model")
+    _column_info["Bulge path"] = (str, None, "source for the stellar bulge component")
+    _column_info["Old stars path"] = (str, None, "source for old stellar disk component")
+    _column_info["Young stars path"] = (str, None, "source for young stellar disk component")
+    _column_info["Ionizing stars path"] = (str, None, "source for ionizing stellar disk component")
+    _column_info["Additional stars paths"] = (str, None, "source(s) for additional stellar component(s)")
+    _column_info["Dust path"] = (str, None, "source for dust disk component")
+    _column_info["Additional dust paths"] = (str, None, "source(s) for additional dust component(s)")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -243,15 +270,7 @@ class ModelsTable(SmartTable):
         super(ModelsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Name", str, None, "name for the model")
-        self.add_column_info("Description", str, None, "description of the model")
-        self.add_column_info("Bulge path", str, None, "source for the stellar bulge component")
-        self.add_column_info("Old stars path", str, None, "source for old stellar disk component")
-        self.add_column_info("Young stars path", str, None, "source for young stellar disk component")
-        self.add_column_info("Ionizing stars path", str, None, "source for ionizing stellar disk component")
-        self.add_column_info("Additional stars paths", str, None, "source(s) for additional stellar component(s)")
-        self.add_column_info("Dust path", str, None, "source for dust disk component")
-        self.add_column_info("Additional dust paths", str, None, "source(s) for additional dust component(s)")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.modeling.models import Gaussian2D
@@ -47,6 +48,17 @@ class PointSourceTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["RA"] = (float, u("deg"), "right ascension")
+    _column_info["DEC"] = (float, u("deg"), "declination")
+    _column_info["Detected"] = (bool, None, "Has source detected")
+    _column_info["Flux"] = (float, u("Jy"), "flux for the point source")
+    _column_info["Flux error"] = (float, u("Jy"), "error on the flux value")
+    _column_info["FWHM"] = (float, u("arcsec"), "FWHM of the point source")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -59,12 +71,7 @@ class PointSourceTable(SmartTable):
         super(PointSourceTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("RA", float, u("deg"), "right ascension")
-        self.add_column_info("DEC", float, u("deg"), "declination")
-        self.add_column_info("Detected", bool, None, "Has source detected")
-        self.add_column_info("Flux", float, u("Jy"), "flux for the point source")
-        self.add_column_info("Flux error", float, u("Jy"), "error on the flux value")
-        self.add_column_info("FWHM", float, u("arcsec"), "FWHM of the point source")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

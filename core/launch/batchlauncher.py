@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 import traceback
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
@@ -131,6 +131,16 @@ class SimulationAssignmentTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Simulation name"] = (str, None, "name of the simulation")
+    _column_info["Host ID"] = (str, None, "remote host ID")
+    _column_info["Cluster"] = (str, None, "cluster name")
+    _column_info["ID"] = (int, None, "simulation ID")
+    _column_info["Success"] = (bool, None, "succesfully launched")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -143,11 +153,7 @@ class SimulationAssignmentTable(SmartTable):
         super(SimulationAssignmentTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Simulation name", str, None, "name of the simulation")
-        self.add_column_info("Host ID", str, None, "remote host ID")
-        self.add_column_info("Cluster", str, None, "cluster name")
-        self.add_column_info("ID", int, None, "simulation ID")
-        self.add_column_info("Success", bool, None, "succesfully launched")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
