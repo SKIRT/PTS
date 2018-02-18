@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
-from collections import OrderedDict
+from collections import OrderedDict, Set
 from functools import wraps, partial
 
 # -----------------------------------------------------------------
@@ -804,5 +804,106 @@ class memoize_method_reset(object):
 # t = Test()
 # assert t.inc_add(2) == t.inc_add(2)
 # assert Test.inc_add(t, 2) != Test.inc_add(t, 2)
+
+# -----------------------------------------------------------------
+
+# Source: https://programmingideaswithjake.wordpress.com/2015/05/23/python-decorator-for-simplifying-delegate-pattern/
+class DelegatedAttribute:
+
+    def __init__(self, delegate_name, attr_name):
+        self.attr_name = attr_name
+        self.delegate_name = delegate_name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        else:
+            # return instance.delegate.attr
+            return getattr(self.delegate(instance),  self.attr_name)
+
+    def __set__(self, instance, value):
+        # instance.delegate.attr = value
+        setattr(self.delegate(instance), self.attr_name, value)
+
+    def __delete__(self, instance):
+        delattr(self.delegate(instance), self.attr_name)
+
+    def delegate(self, instance):
+        return getattr(instance, self.delegate_name)
+
+    def __str__(self):
+        return ""
+
+# -----------------------------------------------------------------
+
+# EXAMPLE:
+
+# class Foo:
+#     def __init__(self):
+#         self.bar = 'bar in foo'
+#     def baz(self):
+#         return 'baz in foo'
+#
+# class Baz:
+#     def __init__(self):
+#         self.foo = Foo()
+#     bar = DelegatedAttribute('foo', 'bar')
+#     baz = DelegatedAttribute('foo', 'baz')
+#
+# x = Baz()
+# print(x.bar)  # prints 'bar in foo'
+# print(x.baz())  # prints 'baz in foo'
+
+# -----------------------------------------------------------------
+
+# You may have noticed the creation of something called a SimpleProperty, which won’t be shown.
+# It is simply a descriptor that holds and returns a value given to it, the most basic of properties.
+class SimpleProperty:
+
+    def __init__(self, initial_value=None):
+        self.value = initial_value
+
+    def __get__(self, obj, objtype):
+        return self.value
+
+    def __set__(self, obj, value):
+        self.value = value
+
+    def __delete__(self, obj):
+        self.value = None
+
+# -----------------------------------------------------------------
+
+def delegate_as(delegate_cls, to='delegate', include=frozenset(), ignore=frozenset()):
+
+    """
+    This decorator ...
+    :param delegate_cls:
+    :param to:
+    :param include:
+    :param ignore:
+    :return:
+    """
+
+    # turn include and ignore into sets, if they aren't already
+    if not isinstance(include, Set):
+        include = set(include)
+    if not isinstance(ignore, Set):
+        ignore = set(ignore)
+    delegate_attrs = set(delegate_cls.__dict__.keys())
+    attributes = include | delegate_attrs - ignore
+
+    def inner(cls):
+
+        # create property for storing the delegate
+        setattr(cls, to, SimpleProperty())
+        # don't bother adding attributes that the class already has
+        attrs = attributes - set(cls.__dict__.keys())
+        # set all the attributes
+        for attr in attrs:
+            setattr(cls, attr, DelegatedAttribute(to, attr))
+        return cls
+
+    return inner
 
 # -----------------------------------------------------------------

@@ -16,12 +16,12 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
-from pts.core.tools import strings
 from pts.core.tools.stringify import tostr
 from pts.core.simulation.remote import SKIRTRemote
 from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager
+from pts.core.launch.batchlauncher import SimulationStatusTable
 
 # -----------------------------------------------------------------
 
@@ -55,8 +55,9 @@ definition.add_flag("parameters", "show the parameter values")
 definition.add_flag("extra", "show extra info")
 
 # Flags
-definition.add_flag("offline", "offline modus")
-definition.add_flag("lazy", "lazy modus")
+definition.add_flag("offline", "offline mode")
+definition.add_flag("lazy", "lazy mode")
+definition.add_flag("interactive", "interactive simulation management mode")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -84,26 +85,26 @@ if not generation.has_assignment_table: raise RuntimeError("No assignment for th
 # Get number of simulations
 nsimulations = generation.nsimulations
 
-# Determine number of retrieved and analysed simulations
-if config.lazy:
-    nretrieved = generation.nretrieved_simulations_basic
-    nanalysed = generation.nanalysed_simulations_basic
-else:
-    nretrieved = generation.nretrieved_simulations
-    nanalysed = generation.nanalysed_simulations
-
-# -----------------------------------------------------------------
-
-# Determine fraction analysed
-fraction_retrieved = float(nretrieved) / nsimulations
-fraction_analysed = float(nanalysed) / nsimulations
-
-# Show
-print("")
-print(fmt.bold + "Total number of simulations: " + fmt.reset + str(nsimulations))
-print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(nretrieved) + " (" + tostr(fraction_retrieved*100, round=True, ndigits=2) + "%)")
-print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
-print("")
+# # Determine number of retrieved and analysed simulations
+# if config.lazy:
+#     nretrieved = generation.nretrieved_simulations_basic
+#     nanalysed = generation.nanalysed_simulations_basic
+# else:
+#     nretrieved = generation.nretrieved_simulations
+#     nanalysed = generation.nanalysed_simulations
+#
+# # -----------------------------------------------------------------
+#
+# # Determine fraction analysed
+# fraction_retrieved = float(nretrieved) / nsimulations
+# fraction_analysed = float(nanalysed) / nsimulations
+#
+# # Show
+# print("")
+# print(fmt.bold + "Total number of simulations: " + fmt.reset + str(nsimulations))
+# print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(nretrieved) + " (" + tostr(fraction_retrieved*100, round=True, ndigits=2) + "%)")
+# print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
+# print("")
 
 # -----------------------------------------------------------------
 
@@ -164,8 +165,126 @@ if config.parameters:
 
 # -----------------------------------------------------------------
 
+# # Loop over the simulations
+# nfinished = 0
+# for simulation_name in generation.simulation_names:
+#
+#     # Get the simulation
+#     if config.lazy or not generation.has_simulation(simulation_name):
+#
+#         # No simulation object
+#         simulation = None
+#
+#         # Get host ID and simulation ID from generation assignment table
+#         host_id = generation.get_host_id(simulation_name)
+#         simulation_id = generation.get_simulation_id(simulation_name)
+#
+#     # Simulation file is not present anymore
+#     else:
+#
+#         # Load the simulation
+#         simulation = generation.get_simulation(simulation_name)
+#
+#         # Get properties
+#         host_id = simulation.host_id
+#         simulation_id = simulation.id
+#
+#     # Get the parameter values
+#     if config.parameters: parameter_values = parameters.parameter_values_for_simulation(simulation_name)
+#     else: parameter_values = None
+#
+#     # Get parameter string
+#     if parameter_values is not None:
+#         parameter_strings = [tostr(parameter_values[label].value, scientific=True, decimal_places=3) + "  " for label in fitting_run.free_parameter_labels]
+#         parameters_string = "\t".join(parameter_strings)
+#     else: parameters_string = ""
+#
+#     # Get extra info
+#     if config.extra:
+#         ndigits = 3
+#         id_string = strings.integer(simulation_id, ndigits)
+#         host_string = strings.to_length(host_id, 5)
+#         extra_string = " (" + host_string + " " + id_string + ")"
+#     else: extra_string = ""
+#
+#     # No simulation object
+#     if simulation is None:
+#
+#         # Has chi squared
+#         if generation.is_analysed(simulation_name):
+#
+#             nfinished += 1
+#             chisq = chi_squared.chi_squared_for(simulation_name)
+#             print(" - " + fmt.green + simulation_name + extra_string + ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+#
+#         # Has miscellaneous output, but no chi squared
+#         elif generation.has_misc_output(simulation_name):
+#             nfinished += 1
+#             print(" - " + fmt.yellow + simulation_name + extra_string + ": no chisq" + "\t" + parameters_string + fmt.reset)
+#
+#         # Has plotting output
+#         elif generation.has_plotting_output(simulation_name):
+#             nfinished += 1
+#             print(" - " + fmt.yellow + simulation_name + extra_string + ": plotted" + "\t" + parameters_string + fmt.reset)
+#
+#         # Has extraction output
+#         elif generation.has_extraction_output(simulation_name):
+#             nfinished += 1
+#             print(" - " + fmt.yellow + simulation_name + extra_string + ": extracted" + "\t" + parameters_string + fmt.reset)
+#
+#         # Has simulation output
+#         elif generation.is_retrieved(simulation_name):
+#             nfinished += 1
+#             print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved" + "\t" + parameters_string + fmt.reset)
+#
+#         # No simulation output
+#         else: print(" - " + fmt.red + simulation_name + extra_string + ": unknown" + "\t"  + parameters_string + fmt.reset)
+#
+#     # Simulation object
+#     else:
+#
+#         # Already analysed
+#         if simulation.analysed:
+#
+#             # Finished
+#             nfinished += 1
+#
+#             # Get chi squared
+#             chisq = chi_squared.chi_squared_for(simulation_name)
+#             print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+#
+#         elif simulation.retrieved:
+#
+#             nfinished += 1
+#             print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+#
+#         else:
+#
+#             # Not yet retrieved, what is the status?
+#             if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
+#             else: simulation_status = " unknown"
+#
+#             # Show
+#             if simulation_status == "finished":
+#                 nfinished += 1
+#                 print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+#             else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+#
+# # -----------------------------------------------------------------
+#
+# # Show number of finished simulations
+# print("")
+# fraction_finished = float(nfinished) / nsimulations
+# print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(nfinished) + " (" + tostr(fraction_finished*100, round=True, ndigits=2) + "%)")
+
+# -----------------------------------------------------------------
+
+#simulation_names = []
+status_list = []
+
+# -----------------------------------------------------------------
+
 # Loop over the simulations
-nfinished = 0
 for simulation_name in generation.simulation_names:
 
     # Get the simulation
@@ -188,93 +307,68 @@ for simulation_name in generation.simulation_names:
         host_id = simulation.host_id
         simulation_id = simulation.id
 
-    # Get the parameter values
-    if config.parameters: parameter_values = parameters.parameter_values_for_simulation(simulation_name)
-    else: parameter_values = None
-
-    # Get parameter string
-    if parameter_values is not None:
-        parameter_strings = [tostr(parameter_values[label].value, scientific=True, decimal_places=3) + "  " for label in fitting_run.free_parameter_labels]
-        parameters_string = "\t".join(parameter_strings)
-    else: parameters_string = ""
-
-    # Get extra info
-    if config.extra:
-        ndigits = 3
-        id_string = strings.integer(simulation_id, ndigits)
-        host_string = strings.to_length(host_id, 5)
-        extra_string = " (" + host_string + " " + id_string + ")"
-    else: extra_string = ""
-
     # No simulation object
     if simulation is None:
 
+        has_misc = generation.has_misc_output(simulation_name)
+        has_plotting = generation.has_plotting_output(simulation_name)
+        has_extraction = generation.has_extraction_output(simulation_name)
+
         # Has chi squared
-        if generation.is_analysed(simulation_name):
+        if generation.is_analysed(simulation_name): simulation_status = "analysed"
 
-            nfinished += 1
-            chisq = chi_squared.chi_squared_for(simulation_name)
-            print(" - " + fmt.green + simulation_name + extra_string + ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+        # Has any analysis output
+        elif has_extraction or has_plotting or has_misc:
 
-        # Has miscellaneous output, but no chi squared
-        elif generation.has_misc_output(simulation_name):
-            nfinished += 1
-            print(" - " + fmt.yellow + simulation_name + extra_string + ": no chisq" + "\t" + parameters_string + fmt.reset)
-
-        # Has plotting output
-        elif generation.has_plotting_output(simulation_name):
-            nfinished += 1
-            print(" - " + fmt.yellow + simulation_name + extra_string + ": plotted" + "\t" + parameters_string + fmt.reset)
-
-        # Has extraction output
-        elif generation.has_extraction_output(simulation_name):
-            nfinished += 1
-            print(" - " + fmt.yellow + simulation_name + extra_string + ": extracted" + "\t" + parameters_string + fmt.reset)
+            analysed = []
+            if has_extraction: analysed.append("extraction")
+            if has_plotting: analysed.append("plotting")
+            if has_misc: analysed.append("misc")
+            simulation_status = "analysed: " + ", ".join(analysed)
 
         # Has simulation output
-        elif generation.is_retrieved(simulation_name):
-            nfinished += 1
-            print(" - " + fmt.yellow + simulation_name + extra_string + ": retrieved" + "\t" + parameters_string + fmt.reset)
+        elif generation.is_retrieved(simulation_name): simulation_status = "retrieved"
 
         # No simulation output
-        else: print(" - " + fmt.red + simulation_name + extra_string + ": unknown" + "\t"  + parameters_string + fmt.reset)
+        else: simulation_status = "unknown"
 
     # Simulation object
     else:
 
         # Already analysed
-        if simulation.analysed:
+        if simulation.analysed: simulation_status = "analysed"
 
-            # Finished
-            nfinished += 1
+        # Partly analysed
+        elif simulation.analysed_any:
 
-            # Get chi squared
-            chisq = chi_squared.chi_squared_for(simulation_name)
-            print(" - " + fmt.green + simulation_name + extra_string +  ": " + strings.number(chisq, chisq_ndecimal, chisq_ndigits, fill=" ") + "\t" + parameters_string + fmt.reset)
+            analysed = []
+            if simulation.analysed_all_extraction: analysed.append("extraction")
+            if simulation.analysed_all_plotting: analysed.append("plotting")
+            if simulation.analysed_all_misc: analysed.append("misc")
+            if simulation.analysed_batch: analysed.append("batch")
+            if simulation.analysed_scaling: analysed.append("scaling")
+            if simulation.analysed_all_extra: analysed.append("extra")
 
-        elif simulation.retrieved:
+            if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+            else: simulation_status = "analysed: started"
 
-            nfinished += 1
-            print(" - " + fmt.yellow + simulation_name + ": not analysed" + fmt.reset)
+        # Retrieved
+        elif simulation.retrieved: simulation_status = "retrieved"
 
+        # Not retrieved
         else:
 
             # Not yet retrieved, what is the status?
             if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
-            else: simulation_status = " unknown"
+            else: simulation_status = "unknown"
 
-            # Show
-            if simulation_status == "finished":
-                nfinished += 1
-                print(" - " + fmt.yellow + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
-            else: print(" - " + fmt.red + simulation_name + extra_string + ": " + simulation_status + "\t" + parameters_string + fmt.reset)
+    # Add the status
+    status_list.append(simulation_status)
 
 # -----------------------------------------------------------------
 
-# Show number of finished simulations
-print("")
-fraction_finished = float(nfinished) / nsimulations
-print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(nfinished) + " (" + tostr(fraction_finished*100, round=True, ndigits=2) + "%)")
+# Create the simulation status table
+status = SimulationStatusTable.from_columns(generation.simulation_names, status_list)
 
 # -----------------------------------------------------------------
 
@@ -282,13 +376,17 @@ print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(nfinished)
 manager = SimulationManager()
 
 # Set options
+manager.config.show_status = not config.interactive
 manager.config.show_runtimes = config.show_runtimes
 manager.config.show_memory = config.show_memory
 manager.config.plot_runtimes = config.plot_runtimes
 manager.config.plot_memory = config.plot_memory
+manager.config.interactive = config.interactive
+if config.interactive: manager.config.commands = "status"
 
 # Run the manager
-manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table)
+manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
+            status=status, info_tables=[parameters, chi_squared])
 
 # -----------------------------------------------------------------
 

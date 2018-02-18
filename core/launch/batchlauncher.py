@@ -50,7 +50,8 @@ from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools.serialization import write_list
 from ..tools import numbers
-from ..simulation.remote import is_finished_status, is_retrieved_status, is_running_status
+from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status, is_analysed_status
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -206,6 +207,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_status(self, simulation_name):
 
         """
@@ -232,6 +234,21 @@ class SimulationStatusTable(SmartTable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def finished_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for simulation_name in self.simulation_names:
+            if self.is_finished(simulation_name): names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nfinished(self):
 
         """
@@ -239,11 +256,7 @@ class SimulationStatusTable(SmartTable):
         :return:
         """
 
-        nfinished = 0
-        for simulation_name in self.simulation_names:
-            status = self.get_status(simulation_name)
-            if is_finished_status(status): nfinished += 1
-        return nfinished
+        return len(self.finished_names)
 
     # -----------------------------------------------------------------
 
@@ -272,6 +285,21 @@ class SimulationStatusTable(SmartTable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def retrieved_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for simulation_name in self.simulation_names:
+            if self.is_retrieved(simulation_name): names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nretrieved(self):
 
         """
@@ -279,11 +307,7 @@ class SimulationStatusTable(SmartTable):
         :return:
         """
 
-        nretrieved = 0
-        for simulation_name in self.simulation_names:
-            status = self.get_status(simulation_name)
-            if is_retrieved_status(status): nretrieved += 1
-        return nretrieved
+        return len(self.retrieved_names)
 
     # -----------------------------------------------------------------
 
@@ -312,6 +336,21 @@ class SimulationStatusTable(SmartTable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def analysed_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for simulation_name in self.simulation_names:
+            if self.is_analysed(simulation_name): names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nanalysed(self):
 
         """
@@ -319,11 +358,7 @@ class SimulationStatusTable(SmartTable):
         :return:
         """
 
-        nanalysed = 0
-        for simulation_name in self.simulation_names:
-            status = self.get_status(simulation_name)
-            if status == "analysed": nanalysed += 1
-        return nanalysed
+        return len(self.analysed_names)
 
     # -----------------------------------------------------------------
 
@@ -348,6 +383,88 @@ class SimulationStatusTable(SmartTable):
         """
 
         return self.relative_nanalysed * 100.
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_queued(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_queued_status(status)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_running(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_running_status(status)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_finished(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_finished_status(status)
+
+    # -----------------------------------------------------------------
+
+    def is_running_or_finished(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.is_running(simulation_name) or self.is_finished(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_retrieved(self, simulation_name):
+
+        """
+        This function ....
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_retrieved_status(status)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_analysed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_analysed_status(status)
 
 # -----------------------------------------------------------------
 
@@ -1365,6 +1482,18 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_queued(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_queued_local or self.has_queued_remotes
+
+    # -----------------------------------------------------------------
+
     def has_queued_remote(self, host_id):
 
         """
@@ -2140,6 +2269,13 @@ class BatchLauncher(Configurable):
 
         # Call the setup function of the base class
         super(BatchLauncher, self).setup(**kwargs)
+
+        # Remotes are passed as instances?
+        if "remotes" in kwargs:
+            remotes = kwargs.pop("remotes")
+            if types.is_dictionary(remotes): self.remotes = remotes.values()
+            elif types.is_sequence(remotes): self.remotes = remotes
+            else: raise ValueError("Invalid type for 'remotes'")
 
         # Setup the remote instances
         if not self.has_remotes: self.setup_remotes()

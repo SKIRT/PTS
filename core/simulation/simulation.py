@@ -241,6 +241,12 @@ class SkirtSimulation(object):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_extraction)
 
+    @property
+    def analysed_all_extraction(self):
+        from ..tools import sequences
+        from ..launch.options import extraction_names
+        return sequences.contains_all(self.analysed_extraction, extraction_names)
+
     ## Unset analysed plotting
     def unset_analysed_plotting(self):
 
@@ -257,6 +263,12 @@ class SkirtSimulation(object):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_plotting)
 
+    @property
+    def analysed_all_plotting(self):
+        from ..tools import sequences
+        from ..launch.options import plotting_names
+        return sequences.contains_all(self.analysed_plotting, plotting_names)
+
     ## Unset analysed misc
     def unset_analysed_misc(self):
 
@@ -272,6 +284,12 @@ class SkirtSimulation(object):
     def analysed_any_misc(self):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_misc)
+
+    @property
+    def analysed_all_misc(self):
+        from ..tools import sequences
+        from ..launch.options import misc_names
+        return sequences.contains_all(self.analysed_misc, misc_names)
 
     ## Unset analysed batch
     def unset_analysed_batch(self):
@@ -306,6 +324,17 @@ class SkirtSimulation(object):
     def analysed_any_extra(self):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_extra)
+
+    @property
+    def analysed_all_extra(self):
+        for analyser_class in self.analyser_classes:
+            class_name = analyser_class.__name__
+            if class_name not in self.analysed_extra: return False
+        return True
+
+    @property
+    def analysed_any(self):
+        return self.analysed_any_extraction or self.analysed_any_plotting or self.analysed_any_misc or self.analysed_batch or self.analysed_scaling or self.analysed_any_extra
 
     ## This property returns a SingleSimulationDefinition object
     @property

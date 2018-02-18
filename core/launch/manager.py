@@ -41,17 +41,115 @@ from ..basics.containers import create_nested_defaultdict
 from ..tools import sequences
 from ..basics.log import no_debugging
 from ..simulation.remote import is_finished_status, is_running_status
-from ..tools.serialization import write_dict
 from ..basics.configuration import prompt_string, prompt_variable
 from ..remote.host import find_host_ids
-from ..simulation.shower import show_simulation, show_analysis
-#from ..simulation.adapter import
+from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
+from ..simulation.adapter import adapt_simulation, adapt_analysis
 from ..config.show_simulation_settings import definition as show_simulation_definition
+from ..config.adapt_simulation_settings import definition as adapt_simulations_definition
 from ..config.show_analysis_options import definition as show_analysis_definition
+from .batchlauncher import BatchLauncher
+from ..basics.table import SmartTable
+from ..tools import tables
 
 # -----------------------------------------------------------------
 
 all_host_ids = find_host_ids()
+
+# -----------------------------------------------------------------
+
+plot_x_limits = (0., None)
+
+# -----------------------------------------------------------------
+
+class MovedSimulationsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Simulation name"] = (str, None, "name of the simulation")
+    _column_info["Original host ID"] = (str, None, "original host ID")
+    _column_info["Original clustername"] = (str, None, "original cluster name")
+    _column_info["Original ID"] = (int, None, "original simulation ID")
+    _column_info["New host ID"] = (str, None, "new host ID")
+    _column_info["New clustername"] = (str, None, "new cluster name")
+    _column_info["New ID"] = (int, None, "new simulation ID")
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(MovedSimulationsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_all_column_info(self._column_info)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        return tables.find_index(self, simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def add_simulation(self, simulation, new_host, new_id=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param new_host:
+        :param new_id:
+        :return:
+        """
+
+        # Set values
+        values = [simulation.name, simulation.host_id, simulation.cluster_name, simulation.id, new_host.id, new_host.cluster_name, new_id]
+
+        # Add the row
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def set_new_id(self, simulation_name, new_id):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param new_id:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        self.set_value("New ID", index, new_id)
 
 # -----------------------------------------------------------------
 
@@ -87,10 +185,112 @@ class SimulationManager(Configurable):
         self.memory = None
 
         # The moved simulations
-        self.moved = OrderedDict()
+        self.moved = MovedSimulationsTable()
 
         # The commands that have been executed
         self.commands = []
+
+        # The batch simulation launcher
+        self.launcher = BatchLauncher()
+
+        # Additional info tables
+        self.info = OrderedDict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_moving(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.move
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_showing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.show and (self.config.show_assignment or self.config.show_status or self.config.show_runtimes or self.config.show_memory)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot and (self.config.plot_runtimes or self.config.plot_memory)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_writing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write and (self.config.write_assignment and self.config.write_status)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_analysis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.analyse
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_reanalysis(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.reanalysis is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_any(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_moving or self.has_showing or self.has_plotting or self.has_writing or self.has_analysis or self.has_reanalysis
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.commands is not None and len(self.config.commands) > 0
 
     # -----------------------------------------------------------------
 
@@ -102,7 +302,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return self.config.interactive
+        if self.config.interactive is None: return not self.has_any
+        else: return self.config.interactive
 
     # -----------------------------------------------------------------
 
@@ -115,6 +316,18 @@ class SimulationManager(Configurable):
         """
 
         return self.config.move
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.has_queued
 
     # -----------------------------------------------------------------
 
@@ -189,11 +402,17 @@ class SimulationManager(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Run commands
+        if self.do_commands: self.run_commands()
+
         # Interactive
         if self.do_interactive: self.interactive()
 
         # Move simulations
         if self.do_moving: self.move()
+
+        # Launch
+        if self.do_launch: self.launch()
 
         # Show
         if self.do_showing: self.show()
@@ -227,6 +446,10 @@ class SimulationManager(Configurable):
         if self.config.prompt_simulations_reanalysis is None: self.config.prompt_simulations_reanalysis = self.config.reanalyse_simulations is None
         if self.config.prompt_simulations_move is None: self.config.prompt_simulations_move = self.config.move_simulations is None
 
+        # Get the status
+        if "status" in kwargs: self.status = kwargs.pop("status")
+        elif self.config.status is not None: self.status = SimulationStatusTable.from_file(self.config.status)
+
         # Initialize simulations and assignment scheme
         self.initialize(**kwargs)
 
@@ -236,9 +459,17 @@ class SimulationManager(Configurable):
         # Get memory table
         self.get_memory_table(**kwargs)
 
-        # Get the status
-        if "status" in kwargs: self.status = kwargs.pop("status")
-        elif self.config.status is not None: self.status = SimulationStatusTable.from_file(self.config.status)
+        # Get the info tables
+        if "info_tables" in kwargs:
+            tables = kwargs.pop("info_tables")
+            if types.is_dictionary(tables): self.info.update(tables)
+            elif types.is_sequence(tables):
+                for table in tables: self.info[table.filename] = table
+            else: raise ValueError("Invalid type for 'info_tables'")
+        elif self.config.info_tables is not None:
+            for path in self.config.info_tables:
+                filename = fs.strip_extension(fs.name(path))
+                self.info[filename] = SmartTable.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -747,6 +978,20 @@ class SimulationManager(Configurable):
             # Analysed
             if simulation.analysed: simulation_status = "analysed"
 
+            # Partly analysed
+            elif simulation.analysed_any:
+
+                analysed = []
+                if simulation.analysed_all_extraction: analysed.append("extraction")
+                if simulation.analysed_all_plotting: analysed.append("plotting")
+                if simulation.analysed_all_misc: analysed.append("misc")
+                if simulation.analysed_batch: analysed.append("batch")
+                if simulation.analysed_scaling: analysed.append("scaling")
+                if simulation.analysed_all_extra: analysed.append("extra")
+
+                if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+                else: simulation_status = "analysed: started"
+
             # Retrieved
             elif simulation.retrieved: simulation_status = "retrieved"
 
@@ -853,6 +1098,78 @@ class SimulationManager(Configurable):
         """
 
         return self.status.get_status(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_queued(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_queued(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_running(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_running(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_finished(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_finished(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_running_or_finished(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_running_or_finished(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_retrieved(self, simulation_name):
+
+        """
+        This function ....
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_retrieved(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_analysed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_analysed(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -964,6 +1281,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def run_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Running commands ...")
+
+        # Loop over the commands
+        for command in self.config.commands:
+
+            # Debugging
+            log.debug("Running '" + command + "' ...")
+
+            # Process command, give error if fails
+            self.process_command(command)
+
+            # Add command
+            self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
     def interactive(self):
 
         """
@@ -993,6 +1334,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ncommands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.commands)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ncommands > 0
+
+    # -----------------------------------------------------------------
+
     def process_command(self, command):
 
         """
@@ -1006,6 +1371,12 @@ class SimulationManager(Configurable):
 
         # Move simulation
         elif command.startswith("move"): self.move_simulation_command(command)
+
+        # Stop simulation?
+        elif command.startswith("stop"): self.stop_simulation_command(command)
+
+        # Relaunch simulation
+        elif command.startswith("relaunch"): self.relaunch_simulation_command(command)
 
         # Show log of simulation
         elif command.startswith("log"): self.show_simulation_log_command(command)
@@ -1049,7 +1420,7 @@ class SimulationManager(Configurable):
         simulation_name = self.simulation_names[index]
 
         # Check
-        #if not self.is_running_or_finished(simulation_name): raise ValueError("Simulation is not finished or running")
+        if not self.is_running_or_finished(simulation_name): raise ValueError("Simulation is not finished or running")
 
         # Show
         self.show_simulation_log(simulation_name)
@@ -1163,7 +1534,7 @@ class SimulationManager(Configurable):
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_required("simulation", "integer_or_string", "simulation index or name")
-        definition.import_settings(show_analysis_definition, required_to="pos_optional")
+        definition.import_settings(show_analysis_definition, required_to="optional")
 
         # Parse arguments
         config = parse_arguments("show_analysis_options", definition, command=splitted[1:], error="exception")
@@ -1194,6 +1565,163 @@ class SimulationManager(Configurable):
 
         # Show
         show_analysis(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
+    def adapt_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulation", "integer_or_string", "simulation index or name")
+        definition.import_settings(adapt_simulations_definition, required_to="optional")
+
+        # Parse arguments
+        config = parse_arguments("adapt_simulation", definition, command=splitted[2:], error="exception")
+
+        # Get simulation name
+        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
+        else: simulation_name = config.pop("simulation")
+
+        # Simulation
+        if splitted[1] == "simulation": self.adapt_simulation_settings(simulation_name, config)
+
+        # Analysis
+        elif splitted[1] == "analysis": self.adapt_analysis_options(simulation_name, config)
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+    # -----------------------------------------------------------------
+
+    def adapt_simulation_settings(self, simulation_name, config=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adapting simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Adapt
+        adapt_simulation(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
+    def adapt_analysis_options(self, simulation_name, config=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adapting analysis options of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Adapt
+        adapt_analysis(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
+    def compare_simulations_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulation_a", "integer_or_string", "simulation index or name")
+        definition.add_required("simulation_b", "integer_or_string", "simulation index or name")
+        definition.import_settings(show_analysis_definition, required_to="optional")
+
+        # Parse arguments
+        config = parse_arguments("compare_simulations", definition, command=splitted[2:], error="exception")
+
+        # Get simulation_a name
+        if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]
+        else: simulation_a_name = config.pop("simulation_a")
+
+        # Get simulation_b name
+        if types.is_integer_type(config.simulation_b): simulation_b_name = self.simulation_names[config.pop("simulation_b")]
+        else: simulation_b_name = config.pop("simulation_b")
+
+        # Compare simulation
+        if splitted[1] == "simulation": self.compare_simulation_settings(simulation_a_name, simulation_b_name, config)
+
+        # Compare analysis
+        elif splitted[1] == "analysis": self.compare_analysis_options(simulation_a_name, simulation_b_name, config)
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+    # -----------------------------------------------------------------
+
+    def compare_simulation_settings(self, simulation_a_name, simulation_b_name, config=None):
+
+        """
+        This function ...
+        :param simulation_a_name:
+        :param simulation_b_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Comparing simulations '" + simulation_a_name + "' and '" + simulation_b_name + "' ...")
+
+        # Get the simulations
+        simulation_a = self.get_simulation(simulation_a_name)
+        simulation_b = self.get_simulation(simulation_b_name)
+
+        # Compare
+        compare_simulations(simulation_a, simulation_b, config=config)
+
+    # -----------------------------------------------------------------
+
+    def compare_analysis_options(self, simulation_a_name, simulation_b_name, config=None):
+
+        """
+        This function ...
+        :param simulation_a_name:
+        :param simulation_b_name:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Comparing analysis options between simulations '" + simulation_a_name + "' and '" + simulation_b_name + "' ...")
+
+        # Get the simulations
+        simulation_a = self.get_simulation(simulation_a_name)
+        simulation_b = self.get_simulation(simulation_b_name)
+
+        # Compare
+        compare_analysis(simulation_a, simulation_b, config=config)
 
     # -----------------------------------------------------------------
 
@@ -1241,9 +1769,6 @@ class SimulationManager(Configurable):
             # Move simulation
             self.move_simulation(simulation_name, host)
 
-        # Reset status?
-        if self.has_moved: self.reset_status()
-
     # -----------------------------------------------------------------
 
     def move_simulation_command(self, command):
@@ -1262,8 +1787,8 @@ class SimulationManager(Configurable):
         simulation_name = self.simulation_names[index]
 
         # Check status
-        status = self.get_status(simulation_name)
-        if is_finished_status(status): raise ValueError("Simulation is already finished")
+        if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
+        if self.is_running(simulation_name): log.warning("Simulation is already running")
 
         # Get host and check
         host = load_host(splitted[2])
@@ -1286,7 +1811,11 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Moving simulation '" + simulation_name + "' to host '" + tostr(host) + "' ...")
 
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
 
+        # Add entry to moved table
+        self.moved.add_simulation(simulation, host)
 
     # -----------------------------------------------------------------
 
@@ -1311,6 +1840,53 @@ class SimulationManager(Configurable):
         """
 
         return self.nmoved > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def moved_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.moved.simulation_names
+
+    # -----------------------------------------------------------------
+
+    def is_moved(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self.moved_simulation_names
+
+    # -----------------------------------------------------------------
+
+    def launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching simulations ...")
+
+        # Run the launcher
+        self.launcher.run()
+
+        # Set moved IDs
+        for simulation in self.launcher.launched_simulations:
+            if not self.is_moved(simulation.name): continue
+            self.moved.set_new_id(simulation.name, simulation.id)
+
+        # Reset status?
+        if self.has_moved or self.has_relaunched: self.reset_status()
 
     # -----------------------------------------------------------------
 
@@ -3607,6 +4183,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write_commands and self.has_commands
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -3625,6 +4213,9 @@ class SimulationManager(Configurable):
 
         # Write the moved
         if self.do_write_moved: self.write_moved()
+
+        # Write the commands
+        if self.do_write_commands: self.write_commands()
 
     # -----------------------------------------------------------------
 
@@ -3678,7 +4269,25 @@ class SimulationManager(Configurable):
         path = self.output_path_file("moved.dat")
 
         # Write
-        write_dict(self.moved, path)
+        self.moved.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the commands ...")
+
+        # Determine the path
+        path = self.output_path_file("commands.dat")
+
+        # Write
+        fs.write_lines(path, self.commands)
 
     # -----------------------------------------------------------------
 
@@ -3846,42 +4455,205 @@ class SimulationManager(Configurable):
                 # Debugging
                 log.debug("Plotting the runtimes for the parallelization scheme '" + tostr(parallelization) + "' ...")
 
-                # Get the distributions
-                total = self.total_times_distributions[host][parallelization]
-                setup = self.setup_times_distributions[host][parallelization]
-                stellar = self.stellar_times_distributions[host][parallelization]
-                spectra = self.spectra_times_distributions[host][parallelization]
-                dust = self.dust_times_distributions[host][parallelization]
-                writing = self.writing_times_distributions[host][parallelization]
-                waiting = self.waiting_times_distributions[host][parallelization]
-                communication = self.communication_times_distributions[host][parallelization]
-                intermediate = self.intermediate_times_distributions[host][parallelization]
+                # Plot
+                if "total" in self.config.plot_runtimes_phases: self.plot_runtimes_total(host, parallelization)
+                if "setup" in self.config.plot_runtimes_phases: self.plot_runtimes_setup(host, parallelization)
+                if "stellar" in self.config.plot_runtimes_phases: self.plot_runtimes_stellar(host, parallelization)
+                if "spectra" in self.config.plot_runtimes_phases: self.plot_runtimes_spectra(host, parallelization)
+                if "dust" in self.config.plot_runtimes_phases: self.plot_runtimes_dust(host, parallelization)
+                if "writing" in self.config.plot_runtimes_phases: self.plot_runtimes_writing(host, parallelization)
+                if "waiting" in self.config.plot_runtimes_phases: self.plot_runtimes_waiting(host, parallelization)
+                if "communication" in self.config.plot_runtimes_phases: self.plot_runtimes_communication(host, parallelization)
+                if "intermediate" in self.config.plot_runtimes_phases: self.plot_runtimes_intermediate(host, parallelization)
 
-                # Get the averages
-                mean_total = self.average_total_times[host][parallelization]
-                mean_setup = self.average_setup_times[host][parallelization]
-                mean_stellar = self.average_stellar_times[host][parallelization]
-                mean_spectra = self.average_spectra_times[host][parallelization]
-                mean_dust = self.average_dust_times[host][parallelization]
-                mean_writing = self.average_writing_times[host][parallelization]
-                mean_waiting = self.average_waiting_times[host][parallelization]
-                mean_communication = self.average_communication_times[host][parallelization]
-                mean_intermediate = self.average_intermediate_times[host][parallelization]
+    # -----------------------------------------------------------------
 
-                print(self.total_times[host][parallelization])
-                print(self.total_times_clipped[host][parallelization])
+    def plot_runtimes_total(self, host, parallelization):
 
-                # Plot the distributions
-                x_limits = (0., None)
-                plot_distribution(total, title="Total runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_total)
-                plot_distribution(setup, title="Setup runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_setup)
-                plot_distribution(stellar, title="Stellar emission runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_stellar)
-                plot_distribution(spectra, title="Spectra calculation runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_spectra)
-                plot_distribution(dust, title="Dust emission runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_dust)
-                plot_distribution(writing, title="Writing runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_writing)
-                plot_distribution(waiting, title="Waiting runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_waiting)
-                plot_distribution(communication, title="Communication runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_communication)
-                plot_distribution(intermediate, title="Intermediate runtime", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_intermediate)
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        total = self.total_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_total = self.average_total_times[host][parallelization]
+
+        # Plot
+        plot_distribution(total, title="Total runtime", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_total)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_setup(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        setup = self.setup_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_setup = self.average_setup_times[host][parallelization]
+
+        # Plot
+        plot_distribution(setup, title="Setup runtime", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_setup)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_stellar(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        stellar = self.stellar_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_stellar = self.average_stellar_times[host][parallelization]
+
+        # Plot
+        plot_distribution(stellar, title="Stellar emission runtime", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_stellar)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_spectra(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        spectra = self.spectra_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_spectra = self.average_spectra_times[host][parallelization]
+
+        # Plot
+        plot_distribution(spectra, title="Spectra calculation runtime", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_spectra)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_dust(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        dust = self.dust_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_dust = self.average_dust_times[host][parallelization]
+
+        # Plot
+        plot_distribution(dust, title="Dust emission runtime", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_dust)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_writing(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        writing = self.writing_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_writing = self.average_writing_times[host][parallelization]
+
+        # Plot
+        plot_distribution(writing, title="Writing runtime", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_writing)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_waiting(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        waiting = self.waiting_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_waiting = self.average_waiting_times[host][parallelization]
+
+        # Plot
+        plot_distribution(waiting, title="Waiting runtime", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_waiting)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_communication(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        communication = self.communication_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_communication = self.average_communication_times[host][parallelization]
+
+        # Plot
+        plot_distribution(communication, title="Communication runtime", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_communication)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_intermediate(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the distribution
+        intermediate = self.intermediate_times_distributions[host][parallelization]
+
+        # Get the average runtime
+        mean_intermediate = self.average_intermediate_times[host][parallelization]
+
+        # Plot
+        plot_distribution(intermediate, title="Intermediate runtime", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_intermediate)
 
     # -----------------------------------------------------------------
 
@@ -3995,30 +4767,139 @@ class SimulationManager(Configurable):
                 # Debugging
                 log.debug("Plotting the memory usages for the parallelization scheme '" + tostr(parallelization) + "' ...")
 
-                # Get distributions
-                total = self.total_memories_distributions[host][parallelization]
-                setup = self.setup_memories_distributions[host][parallelization]
-                stellar = self.stellar_memories_distributions[host][parallelization]
-                spectra = self.spectra_memories_distributions[host][parallelization]
-                dust = self.dust_memories_distributions[host][parallelization]
-                writing = self.writing_memories_distributions[host][parallelization]
-
-                # Get the averages
-                mean_total = self.average_total_memories[host][parallelization]
-                mean_setup = self.average_setup_memories[host][parallelization]
-                mean_stellar = self.average_stellar_memories[host][parallelization]
-                mean_spectra = self.average_spectra_memories[host][parallelization]
-                mean_dust = self.average_dust_memories[host][parallelization]
-                mean_writing = self.average_writing_memories[host][parallelization]
-
                 # Plot
-                x_limits = (0., None)
-                plot_distribution(total, title="Total memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_total)
-                plot_distribution(setup, title="Setup memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_setup)
-                plot_distribution(stellar, title="Stellar emission memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_stellar)
-                plot_distribution(spectra, title="Spectra calculation memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_spectra)
-                plot_distribution(dust, title="Dust emission memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_dust)
-                plot_distribution(writing, title="Writing memory usage", x_limits=x_limits, soft_xmin=True, statistics=False, show_mean=True, mean=mean_writing)
+                if "total" in self.config.plot_memory_phases: self.plot_memory_total(host, parallelization)
+                if "setup" in self.config.plot_memory_phases: self.plot_memory_setup(host, parallelization)
+                if "stellar" in self.config.plot_memory_phases: self.plot_memory_stellar(host, parallelization)
+                if "spectra" in self.config.plot_memory_phases: self.plot_memory_spectra(host, parallelization)
+                if "dust" in self.config.plot_memory_phases: self.plot_memory_dust(host, parallelization)
+                if "writing" in self.config.plot_memory_phases: self.plot_memory_writing(host, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_total(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return: 
+        """
+
+        # Get distribution
+        total = self.total_memories_distributions[host][parallelization]
+
+        # Get the average memory usage
+        mean_total = self.average_total_memories[host][parallelization]
+
+        # Plot
+        plot_distribution(total, title="Total memory usage", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_total)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_setup(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get distribution
+        setup = self.setup_memories_distributions[host][parallelization]
+
+        # Get the average memory usage
+        mean_setup = self.average_setup_memories[host][parallelization]
+
+        # Plot
+        plot_distribution(setup, title="Setup memory usage", x_limits=plot_x_limits, soft_xmin=True, statistics=False,
+                          show_mean=True, mean=mean_setup)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_stellar(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get distribution
+        stellar = self.stellar_memories_distributions[host][parallelization]
+
+        # Get the average memory usage
+        mean_stellar = self.average_stellar_memories[host][parallelization]
+
+        # Plot
+        plot_distribution(stellar, title="Stellar emission memory usage", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_stellar)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_spectra(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get distribution
+        spectra = self.spectra_memories_distributions[host][parallelization]
+
+        # Get the average memory usage
+        mean_spectra = self.average_spectra_memories[host][parallelization]
+
+        # Plot
+        plot_distribution(spectra, title="Spectra calculation memory usage", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_spectra)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_dust(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get distribution
+        dust = self.dust_memories_distributions[host][parallelization]
+
+        # Get the average memory usage
+        mean_dust = self.average_dust_memories[host][parallelization]
+
+        # Plot
+        plot_distribution(dust, title="Dust emission memory usage", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_dust)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_writing(self, host, parallelization):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Get distribution
+        writing = self.writing_memories_distributions[host][parallelization]
+
+        # Get the average memory usage
+        mean_writing = self.average_writing_memories[host][parallelization]
+
+        # Plot
+        plot_distribution(writing, title="Writing memory usage", x_limits=plot_x_limits, soft_xmin=True,
+                          statistics=False, show_mean=True, mean=mean_writing)
 
     # -----------------------------------------------------------------
 

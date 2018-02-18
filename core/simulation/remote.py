@@ -39,6 +39,31 @@ from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
+queued_name = "queued"
+running_name = "running"
+finished_name = "finished"
+retrieved_name = "retrieved"
+analysed_name = "analysed"
+aborted_name = "aborted"
+cancelled_name = "cancelled"
+crashed_name = "crashed"
+unknown_name = "unknown"
+invalid_name = "invalid"
+
+# -----------------------------------------------------------------
+
+def is_analysed_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat.startswith(analysed_name)
+
+# -----------------------------------------------------------------
+
 def is_retrieved_status(stat):
 
     """
@@ -47,7 +72,7 @@ def is_retrieved_status(stat):
     :return:
     """
 
-    return stat in ["retrieved", "analysed"]
+    return stat == retrieved_name or is_analysed_status(stat)
 
 # -----------------------------------------------------------------
 
@@ -59,7 +84,19 @@ def is_finished_status(stat):
     :return:
     """
 
-    return stat in ["finished", "retrieved", "analysed"]
+    return stat == finished_name or is_retrieved_status(stat)
+
+# -----------------------------------------------------------------
+
+def is_queued_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat == queued_name
 
 # -----------------------------------------------------------------
 
@@ -71,7 +108,19 @@ def is_running_status(stat):
     :return:
     """
 
-    return "running" in stat
+    return running_name in stat
+
+# -----------------------------------------------------------------
+
+def is_invalid_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return invalid_name in stat
 
 # -----------------------------------------------------------------
 
@@ -296,7 +345,7 @@ def get_status_simulations(host_id):
 
             # Warning to get attention
             log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
-            entries.append((path, "running"))
+            entries.append((path, running_name))
 
         # Handle is defined
         else:
@@ -310,13 +359,13 @@ def get_status_simulations(host_id):
             #remote_log_file_path = simulation.remote_log_file_path
 
             # Check whether the simulation has already been analysed
-            if simulation.analysed: simulation_status = "analysed"
+            if simulation.analysed: simulation_status = analysed_name
 
             # Check whether the simulation has already been retrieved
-            elif simulation.retrieved: simulation_status = "retrieved"
+            elif simulation.retrieved: simulation_status = retrieved_name
 
             # Get the simulation status from the remote log file if not yet retrieved
-            else: simulation_status = "unknown"
+            else: simulation_status = unknown_name
 
             # Add the simulation properties to the list
             entries.append((path, simulation_status))
@@ -342,7 +391,7 @@ def get_retrieved_simulations(host_id):
 
         # Skip already retrieved and analysed simulations
         #if simulation_status == "analysed": continue
-        if simulation_status != "retrieved": continue
+        if simulation_status != retrieved_name: continue
 
         # If a simulation has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
         # simulations (again) so that its results can be analysed
@@ -385,13 +434,13 @@ def get_status_tasks(host_id):
         task = Task.from_file(path)
 
         # Check whether the task has already been analysed
-        if task.analysed: task_status = "analysed"
+        if task.analysed: task_status = analysed_name
 
         # Check whether the task has already been retrieved
-        elif task.retrieved: task_status = "retrieved"
+        elif task.retrieved: task_status = retrieved_name
 
         # Unknown
-        else: task_status = "unknown"
+        else: task_status = unknown_name
 
         # Add the task properties to the list
         entries.append((path, task_status))
@@ -418,7 +467,7 @@ def get_retrieved_tasks(host_id):
     for path, task_status in get_status_tasks(host_id):
 
         # Check status
-        if task_status != "retrieved": continue
+        if task_status != retrieved_name: continue
 
         # If a task has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
         # tasks (again) so that its results can be analysed
@@ -1781,12 +1830,22 @@ class SKIRTRemote(Remote):
         # Loop over the different entries of the status list
         for path, simulation_status in self.get_status():
 
-            # Skip already retrieved and analysed simulations
-            if simulation_status == "analysed": continue
+            # Skip already fully analysed simulations
+            if simulation_status == analysed_name: continue
+
+            # If a simulation is only partly analysed, add it to the list of retrieved simulations (again) so that
+            # the analysis can be completed
+            elif simulation_status.startswith(analysed_name):
+
+                # Open the simulation file
+                simulation = RemoteSimulation.from_file(path)
+
+                # Add the retrieved simulation to the list
+                simulations.append(simulation)
 
             # If a simulation has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
             # simulations (again) so that its results can be analysed
-            elif simulation_status == "retrieved":
+            elif simulation_status == retrieved_name:
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
@@ -1795,7 +1854,7 @@ class SKIRTRemote(Remote):
                 simulations.append(simulation)
 
             # Finished simulations
-            elif simulation_status == "finished":
+            elif simulation_status == finished_name:
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
@@ -1810,7 +1869,7 @@ class SKIRTRemote(Remote):
                 simulations.append(simulation)
 
             # Crashed simulations
-            elif "crashed" in simulation_status:
+            elif crashed_name in simulation_status:
 
                 # Do we need to bother looking?
                 if retrieve_crashed is None and not check_crashed: continue
@@ -2014,10 +2073,10 @@ class SKIRTRemote(Remote):
         remote_log_file_path = simulation.remote_log_file_path
 
         # Check whether the simulation has already been analysed
-        if simulation.analysed: simulation_status = "analysed"
+        if simulation.analysed: simulation_status = analysed_name
 
         # Check whether the simulation has already been retrieved
-        elif simulation.retrieved: simulation_status = "retrieved"
+        elif simulation.retrieved: simulation_status = retrieved_name
 
         # Get the simulation status from the remote log file if not yet retrieved
         else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name, screen_states=screen_states, remote_ski_path=simulation.remote_ski_path)
@@ -2043,10 +2102,10 @@ class SKIRTRemote(Remote):
         remote_log_file_path = simulation.remote_log_file_path
 
         # Check if the simulation has already been analysed
-        if simulation.analysed: simulation_status = "analysed"
+        if simulation.analysed: simulation_status = analysed_name
 
         # Check if the simulation has already been retrieved
-        elif simulation.retrieved: simulation_status = "retrieved"
+        elif simulation.retrieved: simulation_status = retrieved_name
 
         # Simulation is a job
         elif simulation.handle.type == "job":
@@ -2061,7 +2120,7 @@ class SKIRTRemote(Remote):
                 job_status = jobs_status[job_id]
 
                 # This simulation is still queued
-                if job_status == 'Q': simulation_status = "queued"
+                if job_status == 'Q': simulation_status = queued_name
 
                 # This simulation is currently running
                 elif job_status == 'R': simulation_status = self.running_status_from_log_file(remote_log_file_path)
@@ -2070,8 +2129,8 @@ class SKIRTRemote(Remote):
                 # (the simulation was running but was aborted) or the log file is not present (the simulation is cancelled)
                 elif job_status == "C":
 
-                    if self.is_file(remote_log_file_path): simulation_status = "aborted"
-                    else: simulation_status = "cancelled"
+                    if self.is_file(remote_log_file_path): simulation_status = aborted_name
+                    else: simulation_status = cancelled_name
 
                 # This simulation has an unknown status, check the log file
                 else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
@@ -2092,7 +2151,7 @@ class SKIRTRemote(Remote):
                 job_status = jobs_status[job_id]
 
                 # If the job is still queued, the simulation is also still queued
-                if job_status == 'Q': simulation_status = "queued"
+                if job_status == 'Q': simulation_status = queued_name
 
                 # If the job is running
                 elif job_status == 'R':
@@ -2110,19 +2169,19 @@ class SKIRTRemote(Remote):
                         else: last = output[1]
 
                         # Interpret the content of the last line
-                        if " Finished simulation " + ski_name in last: simulation_status = "finished"
+                        if " Finished simulation " + ski_name in last: simulation_status = finished_name
                         elif " *** Error: " in last: simulation_status = self.crashed_status_from_log_file(remote_log_file_path)
                         else: simulation_status = self.running_status_from_log_file(remote_log_file_path)
 
                     # The job is running but this simulation does not have a log file yet
-                    else: simulation_status = "queued"
+                    else: simulation_status = queued_name
 
                 # If the job has been cancelled
                 elif job_status == 'C':
 
                     # Check if the log file exists
                     if self.is_file(remote_log_file_path): simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
-                    else: simulation_status = "cancelled"
+                    else: simulation_status = cancelled_name
 
                 # This simulation has an unknown status, check the log file
                 else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
@@ -2400,7 +2459,7 @@ class SKIRTRemote(Remote):
 
                 # Warning to get attention
                 log.warning("Simulation '" + simulation.name + "' [" + str(simulation.id) + "] on remote host '" + self.host_id + "' doesn't appear to have an execution handle. Assuming it is still running in attached mode through another terminal.")
-                simulation_status = "running"
+                simulation_status = running_name
 
             # Handle is defined
             else: simulation_status = self._get_simulation_status_not_scheduler(simulation, screen_states=screen_states)
@@ -2435,7 +2494,7 @@ class SKIRTRemote(Remote):
             else: last = output[1]
 
             # Interpret the content of the last line
-            if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
+            if " Finished simulation " + simulation_prefix in last: simulation_status = finished_name
             elif " *** Error: " in last: simulation_status = self.crashed_status_from_log_file(file_path)
             else:
 
@@ -2452,14 +2511,14 @@ class SKIRTRemote(Remote):
 
                     # Get status of simulation
                     if active_screen: simulation_status = self.running_status_from_log_file(file_path)
-                    else: simulation_status = "aborted"
+                    else: simulation_status = aborted_name
 
                 # Attached terminal session
                 elif handle.type == "tty":
 
                     session_rank = handle.value
                     if session_rank in self.ttys: simulation_status = self.running_status_from_log_file(file_path)
-                    else: simulation_status = "aborted"
+                    else: simulation_status = aborted_name
 
                 # Invalid execution handle
                 else: raise ValueError("Invalid execution handle")
@@ -2515,17 +2574,17 @@ class SKIRTRemote(Remote):
                     # # NO INFORMATION FROM THE SCREEN: ASSUME STILL QUEUED
                     # else: simulation_status = "queued"
 
-                    simulation_status = "queued"
+                    simulation_status = queued_name
 
                 # Screen is not active anymore
-                else: simulation_status = "cancelled"
+                else: simulation_status = cancelled_name
 
             # Attached terminal session
             elif handle.type == "tty":
 
                 session_rank = handle.value
-                if session_rank in self.ttys: simulation_status = "queued"
-                else: simulation_status = "cancelled"
+                if session_rank in self.ttys: simulation_status = queued_name
+                else: simulation_status = cancelled_name
 
             # Invalid execution handle
             else: raise ValueError("Invalid execution handle")
@@ -2557,16 +2616,16 @@ class SKIRTRemote(Remote):
             else: last = output[1]
 
             # Interpret the content of the last line
-            if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
+            if " Finished simulation " + simulation_prefix in last: simulation_status = finished_name
             elif " *** Error: " in last: simulation_status = self.crashed_status_from_log_file(file_path)
 
             # The simulation cannot be running because we would have seen it in the qstat output
             # So with a partial log file, it must have been aborted
-            else: simulation_status = "aborted"
+            else: simulation_status = aborted_name
 
         # If the log file does not exist, the simulation has been cancelled (if it would just be still scheduled
         # we would have encountered its job ID in the qstat output)
-        else: simulation_status = "cancelled"
+        else: simulation_status = cancelled_name
 
         # Return the string that indicates the simulation status
         return simulation_status
@@ -2583,7 +2642,7 @@ class SKIRTRemote(Remote):
 
         # Return string from simulation status
         status_string = str(LogSimulationStatus(file_path, self))
-        if "crashed" not in status_string: raise RuntimeError("Something went wrong")
+        if crashed_name not in status_string: raise RuntimeError("Something went wrong")
         return status_string
 
     # -----------------------------------------------------------------
@@ -2597,7 +2656,7 @@ class SKIRTRemote(Remote):
 
         # Return string from simulation status
         status_string = str(LogSimulationStatus(file_path, self))
-        if "running" not in status_string: raise RuntimeError("Something went wrong")
+        if not is_running_status(status_string): raise RuntimeError("Something went wrong")
         return status_string
 
     # -----------------------------------------------------------------

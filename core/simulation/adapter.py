@@ -28,6 +28,42 @@ from ..tools import filesystem as fs
 from ..simulation.remote import get_simulations_for_host
 from ..tools import introspection
 from .shower import properties, get_common_ptype, get_values_for_simulations, get_value_for_simulation, get_analysis_values_for_simulations, get_analysis_value_for_simulation
+from ..tools import types
+from ..basics import containers
+
+# -----------------------------------------------------------------
+
+def adapt_simulation(simulation, config=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param config:
+    :return:
+    """
+
+    # Create adapter
+    adapter = SimulationAdapter(config=config)
+
+    # Run
+    adapter.run(simulation=simulation)
+
+# -----------------------------------------------------------------
+
+def adapt_analysis(simulation, config=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param config:
+    :return:
+    """
+
+    # Create adapter
+    adapter = AnalysisAdapter(config=config)
+
+    # Run
+    adapter.run(simulation=simulation)
 
 # -----------------------------------------------------------------
 
@@ -96,8 +132,30 @@ class SimulationAdapter(Configurable):
             if self.config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
             self.config.names = fs.directories_in_path(returns="name")
 
+        # Get simulations
+        if "simulations" in kwargs:
+            simulations = kwargs.pop("simulations")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            elif types.is_dictionary(simulations): self.simulations = simulations
+            else: raise ValueError("Simulations must be specified as sequence or dictionary")
+        elif "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.simulations[simulation.id] = simulation
+
         # Load the simulations
-        self.load_simulations()
+        if not self.has_simulations: self.load_simulations()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
 
     # -----------------------------------------------------------------
 
@@ -479,8 +537,30 @@ class AnalysisAdapter(Configurable):
             if self.config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
             self.config.names = fs.directories_in_path(returns="name")
 
+        # Get simulations
+        if "simulations" in kwargs:
+            simulations = kwargs.pop("simulations")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            elif types.is_dictionary(simulations): self.simulations = simulations
+            else: raise ValueError("Simulations must be specified as sequence or dictionary")
+        elif "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.simulations[simulation.id] = simulation
+
         # Load the simulations
-        self.load_simulations()
+        if not self.has_simulations: self.load_simulations()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
 
     # -----------------------------------------------------------------
 

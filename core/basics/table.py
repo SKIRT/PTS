@@ -1834,6 +1834,19 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: return None
+        return fs.strip_extension(fs.name(self.path))
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """

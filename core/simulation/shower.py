@@ -56,32 +56,34 @@ properties["retrieved"] = "retrieved flag"
 
 # -----------------------------------------------------------------
 
-def compare_simulations(*simulations):
+def compare_simulations(*simulations, **kwargs):
 
     """
     This function ...
     :param simulations:
+    :param kwargs:
     :return:
     """
 
     # Create shower
-    shower = SimulationShower()
+    shower = SimulationShower(config=kwargs.pop("config", None))
 
     # Run
     shower.run(simulations=simulations)
 
 # -----------------------------------------------------------------
 
-def compare_analysis(*simulations):
+def compare_analysis(*simulations, **kwargs):
 
     """
     This function ...
     :param simulations:
+    :param kwargs:
     :return:
     """
 
     # Create shower
-    shower = AnalysisShower()
+    shower = AnalysisShower(config=kwargs.pop("config", None))
 
     # Run
     shower.run(simulations=simulations)

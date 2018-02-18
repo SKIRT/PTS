@@ -33,8 +33,14 @@ definition.add_optional("remotes", "string_list", "remote hosts for which to loo
 definition.add_optional("timing", "file_path", "timing table path")
 definition.add_optional("memory", "file_path", "memory table path")
 
+# Commands to be run
+definition.add_optional("commands", "string_list", "commands to be run in interactive mode")
+
 # Interactive mode
 definition.add_flag("interactive", "use interactive mode")
+
+# Offline?
+definition.add_flag("offline", "offline mode")
 
 # -----------------------------------------------------------------
 
@@ -64,10 +70,15 @@ definition.add_flag("show_memory", "show memory")
 
 # -----------------------------------------------------------------
 
+runtimes_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication", "intermediate"]
+memory_phases = ["total", "setup", "stellar", "spectra", "dust", "writing"]
+
 # Plotting
 definition.add_flag("plot", "plotting", True)
 definition.add_flag("plot_runtimes", "plot runtimes")
+definition.add_optional("plot_runtimes_phases", "string_list", "simulation phases for which to plot the runtimes", runtimes_phases, choices=runtimes_phases)
 definition.add_flag("plot_memory", "plot memory usage")
+definition.add_optional("plot_memory_phases", "string_list", "simulation phases for which to plot the memory usage", memory_phases, choices=memory_phases)
 
 # -----------------------------------------------------------------
 
@@ -104,5 +115,9 @@ definition.import_section("analysis", "analyser options", analysis_definition)
 #  - misc: = rgb, animations, fluxes, fluxes_from_images, images
 definition.add_optional("reanalyse", "string_list", "apply re-analysis of these steps", choices=all_steps)
 definition.add_optional("features_reanalysis", "string_list", "re-analyse only certain features (if a single re-analysis step is defined)")
+
+# -----------------------------------------------------------------
+
+definition.add_optional("info_tables", "filepath_list", "tables with additional information for the simulations")
 
 # -----------------------------------------------------------------

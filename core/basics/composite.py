@@ -434,7 +434,7 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     def show_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
-                          startswith=None, endswith=None, required=True, label=None):
+                          startswith=None, endswith=None, label=None, bold=True):
 
         """
         This function ...
@@ -445,8 +445,8 @@ class SimplePropertyComposite(object):
         :param exact_not_name:
         :param startswith:
         :param endswith:
-        :param required:
         :param label:
+        :param bold:
         :return:
         """
 
@@ -482,7 +482,8 @@ class SimplePropertyComposite(object):
             if self.get_fixed(name): suffix = " FIXED"
             else: suffix = ""
 
-            print(" - " + name + " (" + description + "): " + tostr(default) + " [" + ptype + "]" + suffix)
+            if bold: print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + tostr(default) + " [" + ptype + "]" + suffix)
+            else: print(" - " + name + " (" + description + "): " + tostr(default) + " [" + ptype + "]" + suffix)
 
         # Recursive: also loop over the sections
         if recursive:
@@ -491,7 +492,7 @@ class SimplePropertyComposite(object):
             for name in self.section_names:
 
                 # Show the properties of the section
-                self.sections[name].show_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
+                self.sections[name].show_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name, bold=bold)
 
     # -----------------------------------------------------------------
 
