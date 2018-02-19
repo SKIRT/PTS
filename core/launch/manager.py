@@ -54,6 +54,7 @@ from ..tools import tables
 from ..tools import time
 from ..config.analyse_simulation import definition as analyse_simulation_definition
 from .analyser import all_steps
+from .options import LoggingOptions, SchedulingOptions
 
 # -----------------------------------------------------------------
 
@@ -254,6 +255,9 @@ class SimulationManager(Configurable):
 
         # Additional info tables
         self.info = OrderedDict()
+
+        # The used remotes
+        self.remotes = dict()
 
     # -----------------------------------------------------------------
 
@@ -530,9 +534,17 @@ class SimulationManager(Configurable):
                 filename = fs.strip_extension(fs.name(path))
                 self.info[filename] = SmartTable.from_file(path)
 
-        # Backup
-        #if self.config.backup_simulations:
-        #if self.config.backup_assignment:
+        # Get remotes
+        if "remotes" in kwargs:
+            remotes = kwargs.pop("remotes")
+            if types.is_dictionary(remotes):
+                for host_id in remotes: self.set_remote(remotes[host_id], host_id)
+            elif types.is_sequence(remotes):
+                for remote in remotes: self.set_remote(remote)
+            else: raise ValueError("Invalid type for 'remotes'")
+
+        # Set the working directory for the batch launcher
+        self.launcher.config.path = self.config.path
 
     # -----------------------------------------------------------------
 
@@ -547,8 +559,12 @@ class SimulationManager(Configurable):
         if self.config.backup_path is not None:
             if self.config.backup_dir_path is not None: raise ValueError("Cannot specify both 'backup_path' and 'backup_dir_path'")
             return self.config.backup_path
-        elif self.config.backup_dir_path is not None: return fs.create_directory_in(self.config.backup_dir_path, time.unique_name("manage"))
-        else: return self.output_path_directory(time.unique_name("manage"), create=True)
+        elif self.config.backup_dir_path is not None:
+            if self.config.backup_dirname is not None: return fs.create_directory_in(self.config.backup_dir_path, self.config.backup_dirname)
+            else: return fs.create_directory_in(self.config.backup_dir_path, time.unique_name("manage"))
+        else:
+            if self.config.backup_dirname is not None: return self.output_path_directory(self.config.backup_dirname, create=True)
+            else: return self.output_path_directory(time.unique_name("manage"), create=True)
 
     # -----------------------------------------------------------------
 
@@ -2016,28 +2032,37 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("host", "host", "remote host to move the simulation to")
+        definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme for the simulation")
+        definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
+        definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
+
         # Get the simulation name
-        splitted, simulation_name, config = self.parse_simulation_command(command, name="move_simulation")
+        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=definition, name="move_simulation")
 
         # Check status
         if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
         if self.is_running(simulation_name): log.warning("Simulation is already running")
 
         # Get host and check
-        host = load_host(splitted[2])
-        if host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(host) + "'")
+        if config.host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(config.host) + "'")
 
         # Move simulation
-        self.move_simulation(simulation_name, host)
+        self.move_simulation(simulation_name, config.host, config.parallelization, config.logging, config.scheduling)
 
     # -----------------------------------------------------------------
 
-    def move_simulation(self, simulation_name, host):
+    def move_simulation(self, simulation_name, host, parallelization=None, logging_options=None, scheduling_options=None):
 
         """
         This function ...
         :param simulation_name:
         :param host:
+        :param parallelization:
+        :param logging_options:
+        :param scheduling_options:
         :return:
         """
 
@@ -2047,8 +2072,23 @@ class SimulationManager(Configurable):
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
 
+        # Add to the queue
+        #new_simulation = remote.add_to_queue(simulation.definition, name=simulation_name, logging_options=logging,
+        #                                     parallelization=config.parallelization,
+        #                                     remote_input_path=remote_input_path,
+        #                                     clear_existing=True, dry=config.dry, scheduling_options=scheduling_options)
+
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host, parallelization=parallelization,
+                                   logging_options=logging_options, scheduling_options=scheduling_options,
+                                   analysis_options=simulation.analysis)
+
         # Add entry to moved table
         self.moved.add_simulation(simulation, host)
+
+        # Backup
+        #if self.config.backup_simulations:
+        #if self.config.backup_assignment:
 
     # -----------------------------------------------------------------
 
@@ -2182,6 +2222,8 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Relaunching simulation '" + simulation_name + "' ...")
+
+        #if self.config.backup_assignment:
 
     # -----------------------------------------------------------------
 
@@ -3829,7 +3871,8 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    #@memoize_method
+    # NO: we also want a setter (so that another class/script can pass its already initialized remotes)
     def get_remote(self, host_id):
 
         """
@@ -3838,7 +3881,30 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return SKIRTRemote(host_id=host_id)
+        #return SKIRTRemote(host_id=host_id)
+
+        # Initialize the remote if not yet in the dictinoary
+        if host_id not in self.remotes: self.remotes[host_id] = SKIRTRemote(host_id=host_id)
+
+        # Return the remote
+        return self.remotes[host_id]
+
+    # -----------------------------------------------------------------
+
+    def set_remote(self, remote, host_id=None):
+
+        """
+        This function ...
+        :param remote:
+        :param host_id:
+        :return:
+        """
+
+        # Set host ID
+        if host_id is None: host_id = remote.host_id
+
+        # Set the remote
+        self.remotes[host_id] = remote
 
     # -----------------------------------------------------------------
 

@@ -47,6 +47,7 @@ definition.add_flag("backup_simulations", "backup simulation files")
 definition.add_flag("backup_assignment", "backup assignment table")
 definition.add_optional("backup_path", "directory_path", "backup directory")
 definition.add_optional("backup_dir_path", "directory_path", "directory to contain the backup directory")
+definition.add_optional("backup_dirname", "string", "name of the backup directory")
 
 # -----------------------------------------------------------------
 

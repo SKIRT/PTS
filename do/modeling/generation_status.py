@@ -394,13 +394,17 @@ manager.config.plot_memory = config.plot_memory
 manager.config.interactive = config.interactive
 if config.interactive: manager.config.commands = ["status"]
 
-# Set backup path
-backup_path = fs.create_directory_in(fitting_run.generations_path, "backup_" + generation.name)
-manager.config.backup_dir_path = backup_path
+# Set paths
+manage_path = fs.create_directory_in(fitting_run.generations_path, "manage__" + generation.name)
+current_indices = fs.directories_in_path(manage_path, returns="name", convert=int)
+manage_current_path = fs.create_directory_in(manage_path, str(numbers.lowest_missing_integer(current_indices)))
+manager.config.path = manage_current_path
+manager.config.backup_dir_path = manage_current_path
+manager.config.backup_dirname = "backup"
 
 # Run the manager
 manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
-            status=status, info_tables=[parameters, chi_squared])
+            status=status, info_tables=[parameters, chi_squared], remotes=remotes)
 
 # -----------------------------------------------------------------
 

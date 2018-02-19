@@ -1335,7 +1335,8 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, definition, name, host_id=None, parallelization=None, analysis_options=None, local=False):
+    def add_to_queue(self, definition, name, host_id=None, parallelization=None, logging_options=None,
+                     scheduling_options=None, analysis_options=None, local=False):
 
         """
         This function ...
@@ -1343,6 +1344,8 @@ class BatchLauncher(Configurable):
         :param name: a name that is given to the simulation
         :param host_id: the host on which this simulation should be executed
         :param parallelization: individual parallelization scheme for this particular simulation (only allowed if host_id is also specified)
+        :param logging_options:
+        :param scheduling_options:
         :param analysis_options: analysis options (if None, analysis options will be created from batch launcher configuration)
         :param local:
         :return:
@@ -1359,37 +1362,74 @@ class BatchLauncher(Configurable):
         # Check whether the simulation name doesn't contain spaces
         if " " in name: raise ValueError("The simulation name cannot contain spaces")
 
+        # Checks
+        if (local or self.has_no_remotes) and host_id is not None: raise ValueError("Host ID cannot be specified for local execution")
+        if (local or self.has_no_remotes) and scheduling_options is not None: raise ValueError("Scheduling options cannot be specified for local execution")
+
         # Local execution
-        if local or self.has_no_remotes:
+        if local or self.has_no_remotes: self.add_to_local_queue(definition, name, parallelization, logging_options, analysis_options)
 
-            # Add to the local queue
-            self.local_queue.append((definition, name, analysis_options))
+        # Remote execution
+        else: self.add_to_remote_queue(definition, name, host_id, parallelization, logging_options, scheduling_options, analysis_options)
 
-            # If parallelization is specified, set it
-            if parallelization is not None: self.set_parallelization_for_simulation(name, parallelization)
+    # -----------------------------------------------------------------
 
-        # If a host ID is specified
-        elif host_id is not None:
+    def add_to_local_queue(self, definition, name, parallelization=None, logging_options=None, analysis_options=None):
 
-            # Check if this is a valid host ID
-            if not host_id in self.host_ids: raise ValueError("Invalid host ID")
+        """
+        This function ...
+        :param definition:
+        :param name:
+        :param parallelization:
+        :param logging_options:
+        :param scheduling_options:
+        :param analysis_options:
+        :return:
+        """
 
-            # Add to the queue of the specified host
-            self.queues[host_id].append((definition, name, analysis_options))
+        # Add to the local queue
+        self.local_queue.append((definition, name, analysis_options))
 
-            # If parallelization is specified, set it
-            if parallelization is not None: self.set_parallelization_for_simulation(name, parallelization)
+        # Set parallelization, logging options
+        if parallelization is not None: self.set_parallelization_for_simulation(name, parallelization)
+        if logging_options is not None: self.set_logging_options_for_simulation(name, logging_options)
 
-        else:
+    # -----------------------------------------------------------------
 
-            # Check whether, if parallelization is specified, that host ID is also specified
-            if parallelization is not None: raise ValueError("If parallelization is specified, host ID must also be specified")
+    def add_to_remote_queue(self, definition, name, host_id=None, parallelization=None, logging_options=None,
+                            scheduling_options=None, analysis_options=None):
 
-            # Determine the ID of the hosts with the shortest queue (or the first if the queues are equally long)
-            host_id = self.shortest_queue_host_id
+        """
+        This function ...
+        :param definition:
+        :param name:
+        :param host_id:
+        :param parallelization:
+        :param logging_options:
+        :param scheduling_options:
+        :param analysis_options:
+        :return:
+        """
 
-            # Add to the queue of the host
-            self.queues[host_id].append((definition, name, analysis_options))
+        # Checks
+        # Check whether, if parallelization is specified, that host ID is also specified
+        if host_id is None and parallelization is not None: raise ValueError("If parallelization is specified, host ID must also be specified")
+        if host_id is None and scheduling_options is not None: raise ValueError("If scheduling options are specified, host ID must also be specified")
+
+        # Check if this is a valid host ID
+        if host_id is not None and host_id not in self.host_ids: raise ValueError("Invalid host ID")
+
+        # Set host ID if undefined
+        # Determine the ID of the hosts with the shortest queue (or the first if the queues are equally long)
+        if host_id is None: host_id = self.shortest_queue_host_id
+
+        # Add to the queue of the specified host
+        self.queues[host_id].append((definition, name, analysis_options))
+
+        # Set parallelization, logging_options, scheduling options
+        if parallelization is not None: self.set_parallelization_for_simulation(name, parallelization)
+        if logging_options is not None: self.set_logging_options_for_simulation(name, logging_options)
+        if scheduling_options is not None: self.set_scheduling_options(host_id, name, scheduling_options)
 
     # -----------------------------------------------------------------
 
@@ -2459,6 +2499,24 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
+        log.info("Checking the input of the simulations ...")
+
+        # Local
+        if self.in_local_queue: self.check_input_local()
+
+        # Remote
+        if self.in_remote_queues: self.check_input_remotes()
+
+    # -----------------------------------------------------------------
+
+    def check_input_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
         log.info("Checking the input of the simulations that are run locally ...")
 
         # A dictionary with the simulation names for each input file that is shared
@@ -2577,6 +2635,18 @@ class BatchLauncher(Configurable):
 
             # Set the new ski path to the definition
             definition.ski_path = new_ski_path
+
+    # -----------------------------------------------------------------
+
+    def check_input_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("")
 
     # -----------------------------------------------------------------
 
@@ -4453,38 +4523,56 @@ class BatchLauncher(Configurable):
         else: screen_output_path = None
 
         # Try starting the queue
-        try:
-
-            if remote.scheduler:
-                if self.config.group_simulations: scheduling_method = "group"
-                else: scheduling_method = "separate"
-            else: scheduling_method = None
-
-            jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-
-            handles = remote.start_queue(queue_name=queue_name, schedule_method=scheduling_method,
-                                         group_walltime=self.config.group_walltime, local_script_path=local_script_path,
-                                         screen_output_path=screen_output_path, jobscripts_path=jobscripts_path,
-                                         attached=self.config.attached, dry=self.config.dry)
-
-            # SET THE EXECUTION HANDLES
-            # Loop over the simulation for this remote
-            for simulation in simulations_remote:
-
-                # If all simulations should have the same handle
-                if isinstance(handles, ExecutionHandle): simulation.handle = handles
-                else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
-                simulation.save()
+        try: self._start_queue(remote, simulations_remote, queue_name, screen_output_path, local_script_path)
 
         # An error occured
-        except Exception:
+        except Exception as e:
 
             # Print error
             log.error("Launching queue of simulations for remote host '" + remote.host_id + "' failed")
             traceback.print_exc()
+            log.error(str(e))
 
             # Set the assignment for all failed simulations
             self.set_assignment_failed_for_host(remote.host_id)
+
+    # -----------------------------------------------------------------
+
+    def _start_queue(self, remote, simulations, queue_name, screen_output_path, local_script_path):
+
+        """
+        This function ...
+        :param remote:
+        :param simulations:
+        :param queue_name:
+        :param screen_output_path:
+        :param local_script_path:
+        :return:
+        """
+
+        # Set scheduling method
+        if remote.scheduler:
+            if self.config.group_simulations: scheduling_method = "group"
+            else: scheduling_method = "separate"
+        else: scheduling_method = None
+
+        # Get jobscripts directory path
+        jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
+
+        # Start the queue on the remote host
+        handles = remote.start_queue(queue_name=queue_name, schedule_method=scheduling_method,
+                                     group_walltime=self.config.group_walltime, local_script_path=local_script_path,
+                                     screen_output_path=screen_output_path, jobscripts_path=jobscripts_path,
+                                     attached=self.config.attached, dry=self.config.dry)
+
+        # SET THE EXECUTION HANDLES
+        # Loop over the simulation for this remote
+        for simulation in simulations:
+
+            # If all simulations should have the same handle
+            if isinstance(handles, ExecutionHandle): simulation.handle = handles
+            else: simulation.handle = handles[simulation.name]  # get the handle for this particular simulation
+            simulation.save()
 
     # -----------------------------------------------------------------
 
