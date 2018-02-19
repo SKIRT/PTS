@@ -1020,10 +1020,11 @@ class Generation(object):
 
         host_id = self.get_host_id(name)
         simulation_id = self.get_simulation_id(name)
+        #print(name, host_id, simulation_id)
         if not has_simulation_for_host(host_id, simulation_id): return False
         else:
             simulation = get_simulation_for_host(host_id, simulation_id)
-            return simulation == name
+            return simulation.name == name
 
     # -----------------------------------------------------------------
 

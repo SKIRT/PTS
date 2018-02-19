@@ -52,6 +52,8 @@ from .batchlauncher import BatchLauncher
 from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools import time
+from ..config.analyse_simulation import definition as analyse_simulation_definition
+from .analyser import all_steps
 
 # -----------------------------------------------------------------
 
@@ -527,6 +529,10 @@ class SimulationManager(Configurable):
             for path in self.config.info_tables:
                 filename = fs.strip_extension(fs.name(path))
                 self.info[filename] = SmartTable.from_file(path)
+
+        # Backup
+        #if self.config.backup_simulations:
+        #if self.config.backup_assignment:
 
     # -----------------------------------------------------------------
 
@@ -1547,10 +1553,10 @@ class SimulationManager(Configurable):
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
 
         # Runtimes
-        if splitted[1] == "runtimes": self.plot_runtimes_command()
+        if splitted[1] == "runtimes": self.plot_runtimes_command(command)
 
         # Memory
-        elif splitted[1] == "memory": self.plot_memory_command()
+        elif splitted[1] == "memory": self.plot_memory_command(command)
 
         # Invalid
         else: raise ValueError("Invalid command")
@@ -5350,13 +5356,42 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def reanalyse_simulation(self, simulation_name, steps=None, features=None, config=None):
+    def reanalyse_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
+        definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
+        definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)
+        definition.add_optional("not_features", "string_list", "don't analyse these features (if a single not_step is defined)")
+
+        # Get simulation name and config
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=definition)
+        steps = config.steps
+        features = config.features
+        not_steps = config.not_steps
+        not_features = config.not_features
+
+        # Reanalyse the simulation
+        self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps, not_features=not_features)
+
+    # -----------------------------------------------------------------
+
+    def reanalyse_simulation(self, simulation_name, steps=None, features=None, not_steps=None, not_features=None, config=None):
 
         """
         This function ...
         :param simulation_name:
         :param steps:
         :param features:
+        :param not_steps:
+        :param not_features:
         :param config:
         :return:
         """
@@ -5368,7 +5403,7 @@ class SimulationManager(Configurable):
         simulation = self.get_simulation(simulation_name)
 
         # Reanalyse simulation
-        reanalyse_simulation(simulation, steps, features, config=config)
+        reanalyse_simulation(simulation, steps, features, not_steps=not_steps, not_features=not_features, config=config)
 
     # -----------------------------------------------------------------
 
@@ -5405,6 +5440,22 @@ class SimulationManager(Configurable):
 
             # Analyse
             self.analyse_simulation(simulation.name, config=self.config.analysis)
+
+    # -----------------------------------------------------------------
+
+    def analyse_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name and config
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=analyse_simulation_definition)
+
+        # Analyse
+        self.analyse_simulation(simulation_name, config=config)
 
     # -----------------------------------------------------------------
 

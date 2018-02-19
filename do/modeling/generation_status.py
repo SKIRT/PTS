@@ -127,7 +127,11 @@ if len(chi_squared) > 0:
 # -----------------------------------------------------------------
 
 remotes = dict()
-states = dict()
+screen_states = dict()
+jobs_status = dict()
+
+# -----------------------------------------------------------------
+
 if not config.offline:
 
     # Inform the user
@@ -137,7 +141,10 @@ if not config.offline:
     for host_id in generation.host_ids: remotes[host_id] = SKIRTRemote(host_id=host_id)
 
     # Get screen states
-    for host_id in remotes: states[host_id] = remotes[host_id].screen_states()
+    for host_id in remotes:
+
+        if remotes[host_id].scheduler: jobs_status[host_id] = remotes[host_id].get_jobs_status()
+        else: screen_states[host_id] = remotes[host_id].screen_states()
 
 # -----------------------------------------------------------------
 
@@ -360,7 +367,9 @@ for simulation_name in generation.simulation_names:
         else:
 
             # Not yet retrieved, what is the status?
-            if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=states[host_id])
+            screen_states_host = screen_states[host_id] if host_id in screen_states else None
+            jobs_status_host = jobs_status[host_id] if host_id in jobs_status else None
+            if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=screen_states_host, jobs_status=jobs_status_host)
             else: simulation_status = "unknown"
 
     # Add the status
