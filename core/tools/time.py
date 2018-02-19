@@ -291,11 +291,9 @@ def unique_name(name=None, separator="_", precision="milli"):
     elif precision == "micro" or precision == "microsecond": ndigits = 0
     else: raise ValueError("Invalid precision")
 
+    # Return the timestamped name
     if name is None: return strip_last_digits(filename_timestamp(), ndigits)
-    else:
-
-        # Add a timestamp accurate up to the millisecond to the passed name
-        return name + separator + strip_last_digits(filename_timestamp(), ndigits)
+    else: return name + separator + strip_last_digits(filename_timestamp(), ndigits)
 
 # -----------------------------------------------------------------
 

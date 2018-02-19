@@ -22,6 +22,7 @@ from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager
 from pts.core.launch.batchlauncher import SimulationStatusTable
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -153,15 +154,15 @@ parameters_ndigits = 3
 
 # -----------------------------------------------------------------
 
-# Print header
-if config.parameters:
-
-    if config.extra: nspaces = 52
-    else: nspaces = 40
-
-    # Print
-    print(" " * nspaces + "\t" + "\t".join(fitting_run.free_parameter_labels))
-    print(" " * nspaces + "\t" + "\t".join(["[" + tostr(unit) + "]   " for unit in parameter_units]))
+# # Print header
+# if config.parameters:
+#
+#     if config.extra: nspaces = 52
+#     else: nspaces = 40
+#
+#     # Print
+#     print(" " * nspaces + "\t" + "\t".join(fitting_run.free_parameter_labels))
+#     print(" " * nspaces + "\t" + "\t".join(["[" + tostr(unit) + "]   " for unit in parameter_units]))
 
 # -----------------------------------------------------------------
 
@@ -382,7 +383,11 @@ manager.config.show_memory = config.show_memory
 manager.config.plot_runtimes = config.plot_runtimes
 manager.config.plot_memory = config.plot_memory
 manager.config.interactive = config.interactive
-if config.interactive: manager.config.commands = "status"
+if config.interactive: manager.config.commands = ["status"]
+
+# Set backup path
+backup_path = fs.create_directory_in(fitting_run.generations_path, "backup_" + generation.name)
+manager.config.backup_dir_path = backup_path
 
 # Run the manager
 manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,

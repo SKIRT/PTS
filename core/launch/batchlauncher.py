@@ -50,7 +50,8 @@ from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools.serialization import write_list
 from ..tools import numbers
-from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status, is_analysed_status
+from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status
+from ..simulation.remote import is_analysed_status, is_aborted_status, is_cancelled_status, is_crashed_status
 from ..tools import types
 
 # -----------------------------------------------------------------
@@ -414,6 +415,18 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def is_queued_or_running(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.is_queued(simulation_name) or self.is_running(simulation_name)
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def is_finished(self, simulation_name):
 
@@ -465,6 +478,60 @@ class SimulationStatusTable(SmartTable):
 
         status = self.get_status(simulation_name)
         return is_analysed_status(status)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_aborted(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_aborted_status(status)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_cancelled(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_cancelled_status(status)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def is_crashed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        status = self.get_status(simulation_name)
+        return is_crashed_status(status)
+
+    # -----------------------------------------------------------------
+
+    def is_failed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.is_aborted(simulation_name) or self.is_cancelled(simulation_name) or self.is_crashed(simulation_name)
 
 # -----------------------------------------------------------------
 

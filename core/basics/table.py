@@ -1120,8 +1120,9 @@ class SmartTable(Table):
             if "ECSV" in first_line: format = "ecsv"
             elif "PTS data format" in first_line: format = "pts"
 
-        # Read lines
-        lines = fs.read_lines(path)
+        # Read lines: NO, astropy doesn't like generators: 'Input "table" must be a string (filename or data) or an iterable')
+        #lines = fs.read_lines(path)
+        lines = fs.get_lines(path)
 
         # Create table from the lines
         table = cls.from_lines(lines, format=format)
@@ -1146,7 +1147,7 @@ class SmartTable(Table):
 
         # If format is undefined, read the format from the first line
         if format is None:
-            lines = list(lines) # in case it is an iterator
+            #lines = list(lines) # in case it is an iterator (NOW WE ALWAYS PASS A LIST)
             first_line = lines[0]
             if "ECSV" in first_line: format = "ecsv"
             elif "PTS data format" in first_line: format = "pts"

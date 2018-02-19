@@ -124,6 +124,42 @@ def is_invalid_status(stat):
 
 # -----------------------------------------------------------------
 
+def is_aborted_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat == aborted_name
+
+# -----------------------------------------------------------------
+
+def is_cancelled_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat == cancelled_name
+
+# -----------------------------------------------------------------
+
+def is_crashed_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return crashed_name in stat
+
+# -----------------------------------------------------------------
+
 def get_simulation_path_for_host(host_id, simulation_id):
 
     """

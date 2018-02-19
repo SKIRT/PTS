@@ -51,6 +51,7 @@ from ..config.show_analysis_options import definition as show_analysis_definitio
 from .batchlauncher import BatchLauncher
 from ..basics.table import SmartTable
 from ..tools import tables
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -153,6 +154,59 @@ class MovedSimulationsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+class RelaunchedSimulationsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Simulation name"] = (str, None, "name of the simulation")
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RelaunchedSimulationsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_all_column_info(self._column_info)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        return tables.find_index(self, simulation_name)
+
+# -----------------------------------------------------------------
+
 class SimulationManager(Configurable):
 
     """
@@ -186,6 +240,9 @@ class SimulationManager(Configurable):
 
         # The moved simulations
         self.moved = MovedSimulationsTable()
+
+        # The relaunched simulations
+        self.relaunched = RelaunchedSimulationsTable()
 
         # The commands that have been executed
         self.commands = []
@@ -242,7 +299,7 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return self.config.write and (self.config.write_assignment and self.config.write_status)
+        return self.config.write and (self.config.write_assignment or self.config.write_status or self.config.write_moved)
 
     # -----------------------------------------------------------------
 
@@ -302,7 +359,7 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        if self.config.interactive is None: return not self.has_any
+        if self.config.interactive is None: return not self.has_any and not self.do_commands
         else: return self.config.interactive
 
     # -----------------------------------------------------------------
@@ -470,6 +527,22 @@ class SimulationManager(Configurable):
             for path in self.config.info_tables:
                 filename = fs.strip_extension(fs.name(path))
                 self.info[filename] = SmartTable.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def backup_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.backup_path is not None:
+            if self.config.backup_dir_path is not None: raise ValueError("Cannot specify both 'backup_path' and 'backup_dir_path'")
+            return self.config.backup_path
+        elif self.config.backup_dir_path is not None: return fs.create_directory_in(self.config.backup_dir_path, time.unique_name("manage"))
+        else: return self.output_path_directory(time.unique_name("manage"), create=True)
 
     # -----------------------------------------------------------------
 
@@ -1125,6 +1198,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def is_queued_or_running(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_queued_or_running(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def is_finished(self, simulation_name):
 
         """
@@ -1170,6 +1255,18 @@ class SimulationManager(Configurable):
         """
 
         return self.status.is_analysed(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_failed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_failed(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -1369,6 +1466,12 @@ class SimulationManager(Configurable):
         # Show simulation status
         if command == "status": self.show_status()
 
+        # Show things
+        elif command.startswith("show"): self.show_command(command)
+
+        # Plot things
+        elif command.startswith("plot"): self.plot_command(command)
+
         # Move simulation
         elif command.startswith("move"): self.move_simulation_command(command)
 
@@ -1400,7 +1503,164 @@ class SimulationManager(Configurable):
         elif command.startswith("reanalyse"): self.reanalyse_simulation_command(command)
 
         # Invalid command
+        else: raise ValueError("Invalid command: '" + command + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Assignment
+        if splitted[1] == "assignment": self.show_assignment()
+
+        # Status
+        elif splitted[1] == "status": self.show_status()
+
+        # Runtimes
+        elif splitted[1] == "runtimes": self.show_runtimes_command(command)
+
+        # Memory
+        elif splitted[1] == "memory": self.show_memory_command(command)
+
+        # Invalid
         else: raise ValueError("Invalid command")
+
+    # -----------------------------------------------------------------
+
+    def plot_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Runtimes
+        if splitted[1] == "runtimes": self.plot_runtimes_command()
+
+        # Memory
+        elif splitted[1] == "memory": self.plot_memory_command()
+
+        # Invalid
+        else: raise ValueError("Invalid command")
+
+    # -----------------------------------------------------------------
+
+    def parse_simulation_command(self, command, command_definition=None, name=None, index=1):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param index:
+        :param command_definition:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulation", "integer_or_string", "simulation index or name")
+        if command_definition is not None:
+            definition.import_settings(command_definition, required_to="optional")
+            parse_command = splitted[index:]
+        else: parse_command = splitted[index:index+1] # only simulation name
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception")
+
+        # Get simulation name
+        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
+        else: simulation_name = config.pop("simulation")
+
+        # Return
+        return splitted, simulation_name, config
+
+    # -----------------------------------------------------------------
+
+    def parse_two_simulations_command(self, command, command_definition=None, name=None, index=1):
+
+        """
+        This function ....
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulation_a", "integer_or_string", "simulation index or name")
+        definition.add_required("simulation_b", "integer_or_string", "simulation index or name")
+        definition.import_settings(command_definition, required_to="optional")
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=splitted[index:], error="exception")
+
+        # Get simulation_a name
+        if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]
+        else: simulation_a_name = config.pop("simulation_a")
+
+        # Get simulation_b name
+        if types.is_integer_type(config.simulation_b): simulation_b_name = self.simulation_names[config.pop("simulation_b")]
+        else: simulation_b_name = config.pop("simulation_b")
+
+        # Return
+        return splitted, simulation_a_name, simulation_b_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name_from_command(self, command, name=None):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :return:
+        """
+
+        # Parse the command
+        splitted, simulation_name, config = self.parse_simulation_command(command, name=name)
+
+        # Return the simulation name
+        return simulation_name
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :return:
+        """
+
+        # Parse the command
+        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=command_definition, name=name)
+
+        # Return simulation name and config
+        return simulation_name, config
 
     # -----------------------------------------------------------------
 
@@ -1412,12 +1672,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
         # Get simulation name
-        index = int(splitted[1])
-        simulation_name = self.simulation_names[index]
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Check
         if not self.is_running_or_finished(simulation_name): raise ValueError("Simulation is not finished or running")
@@ -1480,20 +1736,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulation", "integer_or_string", "simulation index or name")
-        definition.import_settings(show_simulation_definition, required_to="pos_optional")
-
-        # Parse arguments
-        config = parse_arguments("show_simulation_settings", definition, command=splitted[1:], error="exception")
-
-        # Get simulation name
-        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
-        else: simulation_name = config.pop("simulation")
+        # Get simulation name and config
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, show_simulation_definition, "show_simulation_settings")
 
         # Show
         self.show_simulation_settings(simulation_name, config=config)
@@ -1528,20 +1772,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulation", "integer_or_string", "simulation index or name")
-        definition.import_settings(show_analysis_definition, required_to="optional")
-
-        # Parse arguments
-        config = parse_arguments("show_analysis_options", definition, command=splitted[1:], error="exception")
-
-        # Get simulation name
-        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
-        else: simulation_name = config.pop("simulation")
+        # Get simulation name and config
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, show_analysis_definition, "show_analysis_options")
 
         # Show
         self.show_analysis_options(simulation_name, config=config)
@@ -1576,20 +1808,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulation", "integer_or_string", "simulation index or name")
-        definition.import_settings(adapt_simulations_definition, required_to="optional")
-
-        # Parse arguments
-        config = parse_arguments("adapt_simulation", definition, command=splitted[2:], error="exception")
-
-        # Get simulation name
-        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
-        else: simulation_name = config.pop("simulation")
+        # Parse the command
+        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=adapt_simulations_definition, name="adapt_simulation", index=2)
 
         # Simulation
         if splitted[1] == "simulation": self.adapt_simulation_settings(simulation_name, config)
@@ -1651,24 +1871,7 @@ class SimulationManager(Configurable):
         """
 
         # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulation_a", "integer_or_string", "simulation index or name")
-        definition.add_required("simulation_b", "integer_or_string", "simulation index or name")
-        definition.import_settings(show_analysis_definition, required_to="optional")
-
-        # Parse arguments
-        config = parse_arguments("compare_simulations", definition, command=splitted[2:], error="exception")
-
-        # Get simulation_a name
-        if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]
-        else: simulation_a_name = config.pop("simulation_a")
-
-        # Get simulation_b name
-        if types.is_integer_type(config.simulation_b): simulation_b_name = self.simulation_names[config.pop("simulation_b")]
-        else: simulation_b_name = config.pop("simulation_b")
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, show_simulation_definition, name="compare_simulations", index=2)
 
         # Compare simulation
         if splitted[1] == "simulation": self.compare_simulation_settings(simulation_a_name, simulation_b_name, config)
@@ -1779,12 +1982,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Get simulation name
-        index = int(splitted[1])
-        simulation_name = self.simulation_names[index]
+        # Get the simulation name
+        splitted, simulation_name, config = self.parse_simulation_command(command, name="move_simulation")
 
         # Check status
         if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
@@ -1864,6 +2063,115 @@ class SimulationManager(Configurable):
         """
 
         return simulation_name in self.moved_simulation_names
+
+    # -----------------------------------------------------------------
+
+    def stop_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Check whether queued or running
+        if not self.is_queued_or_running(simulation_name): raise ValueError("The simulation '" + simulation_name + "' is not queued or running")
+
+        # Stop the simulation
+        self.stop_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def stop_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Stopping simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    def relaunch_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Check simulation
+        if not self.is_failed(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
+
+        # # Relaunch finished simulations?
+        # if config.finished:
+        #
+        #     # Remove local output, if present
+        #     if simulation.retrieved:
+        #         fs.clear_directory(simulation.output_path)
+        #         simulation.set_retrieved(False)
+        #         simulation.save()
+        #     if simulation.analysed_any_extraction:
+        #         fs.clear_directory(simulation.analysis.extraction.path)
+        #         simulation.unset_analysed_extraction()
+        #         simulation.save()
+        #     if simulation.analysed_any_plotting:
+        #         fs.clear_directory(simulation.analysis.plotting.path)
+        #         simulation.unset_analysed_plotting()
+        #         simulation.save()
+        #     if simulation.analysed_any_misc:
+        #         fs.clear_directory(simulation.analysis.misc.path)
+        #         simulation.unset_analysed_misc()
+        #         simulation.save()
+
+        # Relaunch the simulation
+        self.relaunch_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def relaunch_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Relaunching simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrelaunched(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.relaunched)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_relaunched(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrelaunched > 0
 
     # -----------------------------------------------------------------
 
@@ -3833,6 +4141,16 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def show_runtimes_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def show_runtimes(self):
 
         """
@@ -3849,59 +4167,80 @@ class SimulationManager(Configurable):
             # Loop over the parallelization schemes
             for parallelization in self.average_total_times[host]:
 
-                total = self.average_total_times[host][parallelization]
-                setup = self.average_setup_times[host][parallelization]
-                stellar = self.average_stellar_times[host][parallelization]
-                spectra = self.average_spectra_times[host][parallelization]
-                dust = self.average_dust_times[host][parallelization]
-                writing = self.average_writing_times[host][parallelization]
-                waiting = self.average_waiting_times[host][parallelization]
-                communication = self.average_communication_times[host][parallelization]
-                intermediate = self.average_intermediate_times[host][parallelization]
-
-                total_err = self.stddev_total_times[host][parallelization]
-                setup_err = self.stddev_setup_times[host][parallelization]
-                stellar_err = self.stddev_stellar_times[host][parallelization]
-                spectra_err = self.stddev_spectra_times[host][parallelization]
-                dust_err = self.stddev_dust_times[host][parallelization]
-                writing_err = self.stddev_writing_times[host][parallelization]
-                waiting_err = self.stddev_waiting_times[host][parallelization]
-                communication_err = self.stddev_communication_times[host][parallelization]
-                intermediate_err = self.stddev_intermediate_times[host][parallelization]
-
-                ntotal = self.ntotal_times[host][parallelization]
-                nsetup = self.nsetup_times[host][parallelization]
-                nstellar = self.nstellar_times[host][parallelization]
-                nspectra = self.nspectra_times[host][parallelization]
-                ndust = self.ndust_times[host][parallelization]
-                nwriting = self.nwriting_times[host][parallelization]
-                nwaiting = self.nwaiting_times[host][parallelization]
-                ncommunication = self.ncommunication_times[host][parallelization]
-                nintermediate = self.nintermediate_times[host][parallelization]
-
-                total_noutliers = self.ntotal_times_outliers[host][parallelization]
-                setup_noutliers = self.nsetup_times_outliers[host][parallelization]
-                stellar_noutliers = self.nstellar_times_outliers[host][parallelization]
-                spectra_noutliers = self.nspectra_times_outliers[host][parallelization]
-                dust_noutliers = self.ndust_times_outliers[host][parallelization]
-                writing_noutliers = self.nwriting_times_outliers[host][parallelization]
-                waiting_noutliers = self.nwaiting_times_outliers[host][parallelization]
-                communication_noutliers = self.ncommunication_times_outliers[host][parallelization]
-                intermediate_noutliers = self.nintermediate_times_outliers[host][parallelization]
-
                 # Show
-                print("")
-                print(fmt.bold + "Runtimes:" + fmt.reset)
-                print("")
-                print(" - Total time: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") minutes [" + str(total_noutliers) + " outliers out of " + str(ntotal) + " data points]")
-                print(" - Setup time: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") minutes [" + str(setup_noutliers) + " outliers out of " + str(nsetup) + " data points]")
-                print(" - Stellar time: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True, ndigits=3) + ") minutes [" + str(stellar_noutliers) + " outliers out of " + str(nstellar) + " data points]")
-                print(" - Spectra time: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") minutes [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
-                print(" - Dust time: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") minutes [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
-                print(" - Writing time: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") minutes [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
-                print(" - Waiting time: (" + tostr(waiting, round=True, ndigits=3) + " ± " + tostr(waiting_err, round=True, ndigits=3) + ") minutes [" + str(waiting_noutliers) + " outliers out of " + str(nwaiting) + " data points]")
-                print(" - Communication time: (" + tostr(communication, round=True, ndigits=3) + " ± " + tostr(communication_err, round=True, ndigits=3) + ") minutes [" + str(communication_noutliers) + " outliers out of " + str(ncommunication) + " data points]")
-                print(" - Intermediate time: (" + tostr(intermediate, round=True, ndigits=3) + " ± " + tostr(intermediate_err, round=True, ndigits=3) + ") minutes [" + str(intermediate_noutliers) + " outliers out of " + str(nintermediate) + " data points]")
+                self.show_runtimes_host_parallelization(host, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def show_runtimes_host_parallelization(self, host, parallelization):
+
+        """
+        Thisf unction ...
+        :param host:
+        :param parallelization:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the runtimes for host '" + tostr(host) + "' and parallelization scheme '" + tostr(parallelization) + "' ...")
+
+        # Get average runtimes
+        total = self.average_total_times[host][parallelization]
+        setup = self.average_setup_times[host][parallelization]
+        stellar = self.average_stellar_times[host][parallelization]
+        spectra = self.average_spectra_times[host][parallelization]
+        dust = self.average_dust_times[host][parallelization]
+        writing = self.average_writing_times[host][parallelization]
+        waiting = self.average_waiting_times[host][parallelization]
+        communication = self.average_communication_times[host][parallelization]
+        intermediate = self.average_intermediate_times[host][parallelization]
+
+        # Get standard deviations
+        total_err = self.stddev_total_times[host][parallelization]
+        setup_err = self.stddev_setup_times[host][parallelization]
+        stellar_err = self.stddev_stellar_times[host][parallelization]
+        spectra_err = self.stddev_spectra_times[host][parallelization]
+        dust_err = self.stddev_dust_times[host][parallelization]
+        writing_err = self.stddev_writing_times[host][parallelization]
+        waiting_err = self.stddev_waiting_times[host][parallelization]
+        communication_err = self.stddev_communication_times[host][parallelization]
+        intermediate_err = self.stddev_intermediate_times[host][parallelization]
+
+        # Get numer of measurements
+        ntotal = self.ntotal_times[host][parallelization]
+        nsetup = self.nsetup_times[host][parallelization]
+        nstellar = self.nstellar_times[host][parallelization]
+        nspectra = self.nspectra_times[host][parallelization]
+        ndust = self.ndust_times[host][parallelization]
+        nwriting = self.nwriting_times[host][parallelization]
+        nwaiting = self.nwaiting_times[host][parallelization]
+        ncommunication = self.ncommunication_times[host][parallelization]
+        nintermediate = self.nintermediate_times[host][parallelization]
+
+        # Get number of outliers
+        total_noutliers = self.ntotal_times_outliers[host][parallelization]
+        setup_noutliers = self.nsetup_times_outliers[host][parallelization]
+        stellar_noutliers = self.nstellar_times_outliers[host][parallelization]
+        spectra_noutliers = self.nspectra_times_outliers[host][parallelization]
+        dust_noutliers = self.ndust_times_outliers[host][parallelization]
+        writing_noutliers = self.nwriting_times_outliers[host][parallelization]
+        waiting_noutliers = self.nwaiting_times_outliers[host][parallelization]
+        communication_noutliers = self.ncommunication_times_outliers[host][parallelization]
+        intermediate_noutliers = self.nintermediate_times_outliers[host][parallelization]
+
+        # Show
+        print("")
+        print(fmt.bold + "Runtimes:" + fmt.reset)
+        print("")
+        print(" - Total time: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") minutes [" + str(total_noutliers) + " outliers out of " + str(ntotal) + " data points]")
+        print(" - Setup time: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") minutes [" + str(setup_noutliers) + " outliers out of " + str(nsetup) + " data points]")
+        print(" - Stellar time: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True, ndigits=3) + ") minutes [" + str(stellar_noutliers) + " outliers out of " + str(nstellar) + " data points]")
+        print(" - Spectra time: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") minutes [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
+        print(" - Dust time: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") minutes [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
+        print(" - Writing time: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") minutes [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
+        print(" - Waiting time: (" + tostr(waiting, round=True, ndigits=3) + " ± " + tostr(waiting_err, round=True, ndigits=3) + ") minutes [" + str(waiting_noutliers) + " outliers out of " + str(nwaiting) + " data points]")
+        print(" - Communication time: (" + tostr(communication, round=True, ndigits=3) + " ± " + tostr(communication_err, round=True, ndigits=3) + ") minutes [" + str(communication_noutliers) + " outliers out of " + str(ncommunication) + " data points]")
+        print(" - Intermediate time: (" + tostr(intermediate, round=True, ndigits=3) + " ± " + tostr(intermediate_err, round=True, ndigits=3) + ") minutes [" + str(intermediate_noutliers) + " outliers out of " + str(nintermediate) + " data points]")
 
     # -----------------------------------------------------------------
 
@@ -4084,6 +4423,16 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def show_memory_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def show_memory(self):
 
         """
@@ -4100,48 +4449,65 @@ class SimulationManager(Configurable):
             # Loop over the parallelization schemes
             for parallelization in self.average_total_memories[host]:
 
-                # Get average values
-                total = self.average_total_memories[host][parallelization]
-                setup = self.average_setup_memories[host][parallelization]
-                stellar = self.average_stellar_memories[host][parallelization]
-                spectra = self.average_spectra_memories[host][parallelization]
-                dust = self.average_dust_memories[host][parallelization]
-                writing = self.average_writing_memories[host][parallelization]
-
-                # Get stddevs
-                total_err = self.stddev_total_memories[host][parallelization]
-                setup_err = self.stddev_setup_memories[host][parallelization]
-                stellar_err = self.stddev_stellar_memories[host][parallelization]
-                spectra_err = self.stddev_spectra_memories[host][parallelization]
-                dust_err = self.stddev_dust_memories[host][parallelization]
-                writing_err = self.stddev_writing_memories[host][parallelization]
-
-                # Get number of measurements
-                ntotal = self.ntotal_memories[host][parallelization]
-                nsetup = self.nsetup_memories[host][parallelization]
-                nstellar = self.nstellar_memories[host][parallelization]
-                nspectra = self.nspectra_memories[host][parallelization]
-                ndust = self.ndust_memories[host][parallelization]
-                nwriting = self.nwriting_memories[host][parallelization]
-
-                # Get number of outliers
-                total_noutliers = self.ntotal_memories_outliers[host][parallelization]
-                setup_noutliers = self.nsetup_memories_outliers[host][parallelization]
-                stellar_noutliers = self.nstellar_memories_outliers[host][parallelization]
-                spectra_noutliers = self.nspectra_memories_outliers[host][parallelization]
-                dust_noutliers = self.ndust_memories_outliers[host][parallelization]
-                writing_noutliers = self.nwriting_memories_outliers[host][parallelization]
-
                 # Show
-                print("")
-                print(fmt.bold + "Memory usage:" + fmt.reset)
-                print("")
-                print(" - Total memory: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") GB [" + str(total_noutliers) + " outliers out of " + str(ntotal) + " data points]")
-                print(" - Setup memory: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") GB [" + str(setup_noutliers) + " outliers out of " + str(nsetup) + " data points]")
-                print(" - Stellar memory: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True,ndigits=3) + ") GB [" + str(stellar_noutliers) + " outliers out of " + str(nstellar) + " data points]")
-                print(" - Spectra memory: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") GB [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
-                print(" - Dust memory: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") GB [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
-                print(" - Writing memory: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") GB [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
+                self.show_memory_host_parallelization(host, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def show_memory_host_parallelization(self, host, parallelization):
+
+        """
+        This function ...
+        :param host: 
+        :param parallelization: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Showing the memory usage for host '" + tostr(host) + "' and parallelization scheme '" + tostr(parallelization) + "' ...")
+
+        # Get average values
+        total = self.average_total_memories[host][parallelization]
+        setup = self.average_setup_memories[host][parallelization]
+        stellar = self.average_stellar_memories[host][parallelization]
+        spectra = self.average_spectra_memories[host][parallelization]
+        dust = self.average_dust_memories[host][parallelization]
+        writing = self.average_writing_memories[host][parallelization]
+
+        # Get stddevs
+        total_err = self.stddev_total_memories[host][parallelization]
+        setup_err = self.stddev_setup_memories[host][parallelization]
+        stellar_err = self.stddev_stellar_memories[host][parallelization]
+        spectra_err = self.stddev_spectra_memories[host][parallelization]
+        dust_err = self.stddev_dust_memories[host][parallelization]
+        writing_err = self.stddev_writing_memories[host][parallelization]
+
+        # Get number of measurements
+        ntotal = self.ntotal_memories[host][parallelization]
+        nsetup = self.nsetup_memories[host][parallelization]
+        nstellar = self.nstellar_memories[host][parallelization]
+        nspectra = self.nspectra_memories[host][parallelization]
+        ndust = self.ndust_memories[host][parallelization]
+        nwriting = self.nwriting_memories[host][parallelization]
+
+        # Get number of outliers
+        total_noutliers = self.ntotal_memories_outliers[host][parallelization]
+        setup_noutliers = self.nsetup_memories_outliers[host][parallelization]
+        stellar_noutliers = self.nstellar_memories_outliers[host][parallelization]
+        spectra_noutliers = self.nspectra_memories_outliers[host][parallelization]
+        dust_noutliers = self.ndust_memories_outliers[host][parallelization]
+        writing_noutliers = self.nwriting_memories_outliers[host][parallelization]
+
+        # Show
+        print("")
+        print(fmt.bold + "Memory usage:" + fmt.reset)
+        print("")
+        print(" - Total memory: (" + tostr(total, round=True, ndigits=3) + " ± " + tostr(total_err, round=True, ndigits=3) + ") GB [" + str(total_noutliers) + " outliers out of " + str(ntotal) + " data points]")
+        print(" - Setup memory: (" + tostr(setup, round=True, ndigits=3) + " ± " + tostr(setup_err, round=True, ndigits=3) + ") GB [" + str(setup_noutliers) + " outliers out of " + str(nsetup) + " data points]")
+        print(" - Stellar memory: (" + tostr(stellar, round=True, ndigits=3) + " ± " + tostr(stellar_err, round=True,ndigits=3) + ") GB [" + str(stellar_noutliers) + " outliers out of " + str(nstellar) + " data points]")
+        print(" - Spectra memory: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") GB [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
+        print(" - Dust memory: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") GB [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
+        print(" - Writing memory: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") GB [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
 
     # -----------------------------------------------------------------
 
@@ -4433,6 +4799,16 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def plot_runtimes_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def plot_runtimes(self):
 
         """
@@ -4446,25 +4822,37 @@ class SimulationManager(Configurable):
         # Loop over the hosts
         for host in self.total_times_distributions:
 
-            # Debugging
-            log.debug("Plotting the runtimes for host '" + tostr(host) + "' ...")
-
             # Loop over the parallelization schemes
             for parallelization in self.total_times_distributions[host]:
 
-                # Debugging
-                log.debug("Plotting the runtimes for the parallelization scheme '" + tostr(parallelization) + "' ...")
-
                 # Plot
-                if "total" in self.config.plot_runtimes_phases: self.plot_runtimes_total(host, parallelization)
-                if "setup" in self.config.plot_runtimes_phases: self.plot_runtimes_setup(host, parallelization)
-                if "stellar" in self.config.plot_runtimes_phases: self.plot_runtimes_stellar(host, parallelization)
-                if "spectra" in self.config.plot_runtimes_phases: self.plot_runtimes_spectra(host, parallelization)
-                if "dust" in self.config.plot_runtimes_phases: self.plot_runtimes_dust(host, parallelization)
-                if "writing" in self.config.plot_runtimes_phases: self.plot_runtimes_writing(host, parallelization)
-                if "waiting" in self.config.plot_runtimes_phases: self.plot_runtimes_waiting(host, parallelization)
-                if "communication" in self.config.plot_runtimes_phases: self.plot_runtimes_communication(host, parallelization)
-                if "intermediate" in self.config.plot_runtimes_phases: self.plot_runtimes_intermediate(host, parallelization)
+                self.plot_runtimes_host_parallelization(host, parallelization, phases=self.config.plot_runtimes_phases)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_host_parallelization(self, host, parallelization, phases=None):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :param phases:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the runtimes for host '" + tostr(host) + "' and parallelization scheme '" + tostr(parallelization) + "' ...")
+
+        # Plot for phases
+        if phases is None or "total" in phases: self.plot_runtimes_total(host, parallelization)
+        if phases is None or "setup" in phases: self.plot_runtimes_setup(host, parallelization)
+        if phases is None or "stellar" in phases: self.plot_runtimes_stellar(host, parallelization)
+        if phases is None or "spectra" in phases: self.plot_runtimes_spectra(host, parallelization)
+        if phases is None or "dust" in phases: self.plot_runtimes_dust(host, parallelization)
+        if phases is None or "writing" in phases: self.plot_runtimes_writing(host, parallelization)
+        if phases is None or "waiting" in phases: self.plot_runtimes_waiting(host, parallelization)
+        if phases is None or "communication" in phases: self.plot_runtimes_communication(host, parallelization)
+        if phases is None or "intermediate" in phases: self.plot_runtimes_intermediate(host, parallelization)
 
     # -----------------------------------------------------------------
 
@@ -4745,6 +5133,16 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def plot_memory_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def plot_memory(self):
 
         """
@@ -4758,22 +5156,34 @@ class SimulationManager(Configurable):
         # Loop over the hosts
         for host in self.total_memories_distributions:
 
-            # Debugging
-            log.debug("Plotting the memory usages for host '" + tostr(host) + "' ...")
-
             # Loop over the parallelization schemes
             for parallelization in self.total_memories_distributions[host]:
 
-                # Debugging
-                log.debug("Plotting the memory usages for the parallelization scheme '" + tostr(parallelization) + "' ...")
-
                 # Plot
-                if "total" in self.config.plot_memory_phases: self.plot_memory_total(host, parallelization)
-                if "setup" in self.config.plot_memory_phases: self.plot_memory_setup(host, parallelization)
-                if "stellar" in self.config.plot_memory_phases: self.plot_memory_stellar(host, parallelization)
-                if "spectra" in self.config.plot_memory_phases: self.plot_memory_spectra(host, parallelization)
-                if "dust" in self.config.plot_memory_phases: self.plot_memory_dust(host, parallelization)
-                if "writing" in self.config.plot_memory_phases: self.plot_memory_writing(host, parallelization)
+                self.plot_memory_host_parallelization(host, parallelization, phases=self.config.plot_memory_phases)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_host_parallelization(self, host, parallelization, phases=None):
+
+        """
+        This function ...
+        :param host:
+        :param parallelization:
+        :param phases:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the memory usages for host '" + tostr(host) + "' and parallelization scheme '" + tostr(parallelization) + "' ...")
+
+        # Plot for phases
+        if phases is None or "total" in phases: self.plot_memory_total(host, parallelization)
+        if phases is None or "setup" in phases: self.plot_memory_setup(host, parallelization)
+        if phases is None or "stellar" in phases: self.plot_memory_stellar(host, parallelization)
+        if phases is None or "spectra" in phases: self.plot_memory_spectra(host, parallelization)
+        if phases is None or "dust" in phases: self.plot_memory_dust(host, parallelization)
+        if phases is None or "writing" in phases: self.plot_memory_writing(host, parallelization)
 
     # -----------------------------------------------------------------
 

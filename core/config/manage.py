@@ -42,6 +42,12 @@ definition.add_flag("interactive", "use interactive mode")
 # Offline?
 definition.add_flag("offline", "offline mode")
 
+# Backup
+definition.add_flag("backup_simulations", "backup simulation files ")
+definition.add_flag("backup_assignment", "backup assignment table")
+definition.add_optional("backup_path", "directory_path", "backup directory")
+definition.add_optional("backup_dir_path", "directory_path", "directory to contain the backup directory")
+
 # -----------------------------------------------------------------
 
 # Flags
@@ -86,6 +92,8 @@ definition.add_optional("plot_memory_phases", "string_list", "simulation phases 
 definition.add_flag("write", "writing", True)
 definition.add_flag("write_assignment", "write the assignent scheme", None)
 definition.add_flag("write_status", False)
+definition.add_flag("write_moved", False)
+definition.add_flag("write_commands", False)
 
 # -----------------------------------------------------------------
 
