@@ -3995,8 +3995,7 @@ class BatchLauncher(Configurable):
         simulations = []
 
         # Loop over the simulation in the queue for this remote host
-        total_queued = len(self.local_queue)
-        for index in range(total_queued):
+        for index in range(self.in_local_queue):
 
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.local_queue.pop()
@@ -4015,76 +4014,143 @@ class BatchLauncher(Configurable):
             options_definition = original_definition if original_definition is not None else definition
             logging_options, analysis_options = self.generate_options(name, options_definition, analysis_options_item, local=True)
 
-            # Perform the simulation locally
-            try:
+            # Try launching the simulation
+            simulation = self._try_launching_simulation(index, name, definition, parallelization_item, logging_options,
+                                                        analysis_options, original_definition=original_definition)
 
-                # Inform the user
-                log.info("Launching simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
-
-                # Run the simulation
-                simulation = self.skirt.run(definition, logging_options=logging_options,
-                                            parallelization=parallelization_item, silent=(not log.is_debug()),
-                                            show_progress=self.config.show_progress)
-
-                # Overwrite the simulation object when the definition had been altered by this class
-                if original_definition is not None:
-
-                    # Get modified prefix and original prefix
-                    prefix = simulation.prefix()
-                    original_prefix = original_definition.prefix
-
-                    # Change the names of the output files so that they start with the right prefix (and not the timestamped prefix of the temporarily created ski file)
-                    for filename in fs.files_in_path(simulation.output_path, returns="name", extensions=True):
-                        if not filename.startswith(prefix): continue
-                        original_filename = filename.replace(prefix, original_prefix)
-                        fs.rename_file(simulation.output_path, filename, original_filename)
-
-                    # Create new simulation object
-                    arguments = SkirtArguments.from_definition(original_definition, logging_options, parallelization_item)
-                    simulation = arguments.simulations(simulation_name=name)
-
-                # Success
-                log.success("Finished simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
-
-                # Set the parallelization scheme
-                simulation.parallelization = parallelization_item
-
-                # Set the analysis options
-                simulation.set_analysis_options(analysis_options)
-
-                # Add analyser classes
-                if self.config.analysers is not None:
-                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
+            # Add the simulation if succesful
+            success = simulation is not None
+            if success:
 
                 # Add the simulation to the list
                 simulations.append(simulation)
 
-                # Also add the simulation directly to the list of simulations to be analysed
-                self.simulations.append(simulation)
+            # Something went wrong: cancel queue?
+            elif self.config.cancel_launching_after_fail:
 
-                # Add the simulation to the assignment table
-                self.assignment.add_local_simulation(name, success=True)
-
-            # Error occured during simulation
-            except Exception:
-
-                # Show error messages and traceback; cancel all following simulations
-                log.error("Launching simulation '" + name + "' failed:")
-                traceback.print_exc()
-                log.error("Cancelling following simulations in the queue ...")
-
-                # Add the failed simulation back to the queue
-                failed_item = (definition, name, analysis_options_item)
-                self.local_queue.append(failed_item)
+                # Show error message
+                log.error("Cancelling following simulations in the local queue ...")
 
                 # Set the assignment for all failed simulations
                 self.add_assignment_failed_local()
 
-                # Stop the loop
+                # Exit the loop
                 break
+
+            # Don't cancel queue
+            else:
+
+                # Show warning
+                log.warning("Tagging the simulation as unsuccesful but continuing trying to launch other simulations in the local queue ...")
+
+                # Set unsuccesful
+                self.assignment.add_local_simulation(name, success=False)
 
         # Return the list of simulations
         return simulations
+
+    # -----------------------------------------------------------------
+
+    def _try_launching_simulation(self, index, name, definition, parallelization, logging_options, analysis_options,
+                                  original_definition=None):
+
+        """
+        This function ...
+        :param index:
+        :param name:
+        :param definition:
+        :param parallelization:
+        :param logging_options:
+        :param analysis_options:
+        :return:
+        """
+
+        # Perform the simulation locally
+        try: simulation = self._launch_simulation(index, name, definition, parallelization, logging_options,
+                                                  analysis_options, original_definition=original_definition)
+
+        # Error occured during simulation
+        except Exception:
+
+            # Show error messages and traceback; cancel all following simulations
+            log.error("Launching simulation '" + name + "' failed:")
+            traceback.print_exc()
+
+            # Add the failed simulation back to the queue
+            failed_item = (definition, name, analysis_options) # was (definition, name, analysis_options_item)
+            self.local_queue.append(failed_item)
+
+            # Set the simulation to None
+            simulation = None
+
+        # Return the simulation
+        return simulation
+
+    # -----------------------------------------------------------------
+
+    def _launch_simulation(self, index, name, definition, parallelization, logging_options, analysis_options,
+                           original_definition=None):
+
+        """
+        This function ...
+        :param index:
+        :param name:
+        :param definition:
+        :param parallelization:
+        :param logging_options:
+        :param analysis_options:
+        :param original_definition:
+        :return:
+        """
+
+        nqueued = self.in_local_queue
+
+        # Inform the user
+        log.info("Launching simulation " + str(index + 1) + " out of " + str(nqueued) + " in the local queue ...")
+
+        # Run the simulation
+        simulation = self.skirt.run(definition, logging_options=logging_options,
+                                    parallelization=parallelization, silent=(not log.is_debug()),
+                                    show_progress=self.config.show_progress)
+
+        # Overwrite the simulation object when the definition had been altered by this class
+        if original_definition is not None:
+
+            # Get modified prefix and original prefix
+            prefix = simulation.prefix()
+            original_prefix = original_definition.prefix
+
+            # Change the names of the output files so that they start with the right prefix (and not the timestamped prefix of the temporarily created ski file)
+            for filename in fs.files_in_path(simulation.output_path, returns="name", extensions=True):
+                if not filename.startswith(prefix): continue
+                original_filename = filename.replace(prefix, original_prefix)
+                fs.rename_file(simulation.output_path, filename, original_filename)
+
+            # Create new simulation object
+            arguments = SkirtArguments.from_definition(original_definition, logging_options, parallelization)
+            simulation = arguments.simulations(simulation_name=name)
+
+        # Success
+        log.success("Finished simulation " + str(index + 1) + " out of " + str(nqueued) + " in the local queue ...")
+
+        # Set the parallelization scheme
+        simulation.parallelization = parallelization
+
+        # Set the analysis options
+        simulation.set_analysis_options(analysis_options)
+
+        # Add analyser classes
+        if self.config.analysers is not None:
+            for class_path in self.config.analysers: simulation.add_analyser(class_path)
+
+        # Also add the simulation directly to the list of simulations to be analysed
+        self.simulations.append(simulation)
+
+        # Add the simulation to the assignment table
+        self.assignment.add_local_simulation(name, success=True)
+
+        # Return the simulation
+        return simulation
 
     # -----------------------------------------------------------------
 
@@ -4174,12 +4240,8 @@ class BatchLauncher(Configurable):
         # Cache the simulation objects scheduled to the current remote
         simulations_remote = []
 
-        # Get cluster name
-        cluster_name = self.get_clustername_for_host(remote.host_id)
-
         # Loop over the simulation in the queue for this remote host
-        total_queued_host = len(self.queues[remote.host_id])
-        for index in range(total_queued_host):
+        for index in range(self.in_queue_for_host(remote.host_id)):
 
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.queues[remote.host_id].pop()
@@ -4195,69 +4257,147 @@ class BatchLauncher(Configurable):
             logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
 
             # Queue the simulation
-            try:
+            simulation = self._try_scheduling_simulation(index, name, definition, remote, parallelization_item,
+                                                         logging_options, analysis_options, scheduling_options)
 
-                # Inform the user
-                log.info("Adding simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id + " ...")
+            # Add the simulation if succesful
+            success = simulation is not None
+            if success:
 
-                # Add to the queue
-                simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
-                                                 scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                                 analysis_options=analysis_options, emulate=self.config.emulate)
+                # Add the simulation to list
                 simulations_remote.append(simulation)
-
-                # Success
-                log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
-
-                # Set the parallelization scheme of the simulation (important since SKIRTRemote does not know whether
-                # hyperthreading would be enabled if the user provided the parallelization_item when adding the
-                # simulation to the queue
-                simulation.parallelization = parallelization_item
 
                 # If the input directory is shared between the different simulations
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
-                # SET OPTIONS
+            # Something went wrong: cancel queue?
+            elif self.config.cancel_scheduling_after_fail:
 
-                # Remove remote files
-                simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
-                simulation.remove_remote_output = not self.config.keep
-                simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
-
-                # Retrieval
-                simulation.retrieve_types = self.config.retrieve_types
-
-                # Add analyser classes
-                if self.config.analysers is not None:
-                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
-
-                # Save the simulation object
-                simulation.save()
-
-                # Add to assignment
-                self.assignment.add_remote_simulation(name, remote.host_id, cluster_name=cluster_name, simulation_id=simulation.id, success=None) # We don't know yet whether launching will actually be succesful!
-
-            # Exception was raised
-            except Exception as e:
-
-                # Print error
-                log.error("Adding simulation '" + name + "' to the queue failed:")
-                traceback.print_exc()
-                log.error(str(e))
+                # Show error message
                 log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
-
-                # Add the failed simulation back to the queue
-                failed_item = (definition, name, analysis_options_item)
-                self.queues[remote.host_id].append(failed_item)
 
                 # Set the assignment for all failed simulations
                 self.add_assignment_failed_for_host(remote.host_id)
 
-                # Stop the loop
+                # Exit the loop
                 break
+
+            # Don't cancel queue
+            else:
+
+                # Show warning
+                log.warning("Tagging the simulation scheduling as unsuccesful but continuing trying to schedule other simulations in the queue of remote host '" + remote.host_id + "' ...")
+
+                # Add entry to assignment table
+                cluster_name = self.get_clustername_for_host(remote.host_id)
+                self.assignment.add_remote_simulation(name, remote.host_id, cluster_name=cluster_name, success=False)
 
         # Return the simulations scheduled for the host
         return simulations_remote
+
+    # -----------------------------------------------------------------
+
+    def _try_scheduling_simulation(self, index, name, definition, remote, parallelization, logging_options,
+                                   analysis_options, scheduling_options=None, remote_input_path=None):
+
+        """
+        This function ...
+        :param index:
+        :param name:
+        :param definition:
+        :param remote:
+        :param parallelization:
+        :param logging_options:
+        :param analysis_options:
+        :param scheduling_options:
+        :param remote_input_path:
+        :return:
+        """
+
+        # Try scheduling
+        try: simulation = self._schedule_simulation(index, name, definition, remote, parallelization, logging_options,
+                                                    analysis_options, scheduling_options, remote_input_path)
+
+        # Exception was raised
+        except Exception as e:
+
+            # Print error
+            log.error("Adding simulation '" + name + "' to the queue failed:")
+            traceback.print_exc()
+            log.error(str(e))
+
+            # Add the failed simulation back to the queue
+            failed_item = (definition, name, analysis_options) # was (definition, name, analysis_options_item)
+            self.queues[remote.host_id].append(failed_item)
+
+            # Set simulation to None
+            simulation = None
+
+        # Return the simulation
+        return simulation
+
+    # -----------------------------------------------------------------
+
+    def _schedule_simulation(self, index, name, definition, remote, parallelization, logging_options, analysis_options,
+                             scheduling_options=None, remote_input_path=None):
+
+        """
+        This function ...
+        :param index:
+        :param name:
+        :param definition:
+        :param remote:
+        :param parallelization:
+        :param logging_options:
+        :param analysis_options:
+        :param scheduling_options:
+        :param remote_input_path:
+        :return:
+        """
+
+        nqueued = self.in_queue_for_host(remote.host_id)
+
+        # Inform the user
+        log.info("Adding simulation " + str(index + 1) + " out of " + str(nqueued) + " to the queue of remote host " + remote.host_id + " ...")
+
+        # Add to the queue
+        simulation = remote.add_to_queue(definition, logging_options, parallelization, name=name,
+                                         scheduling_options=scheduling_options, remote_input_path=remote_input_path,
+                                         analysis_options=analysis_options, emulate=self.config.emulate)
+
+        # Success
+        log.success("Added simulation " + str(index + 1) + " out of " + str(nqueued) + " to the queue of remote host " + remote.host_id)
+
+        # Set the parallelization scheme of the simulation (important since SKIRTRemote does not know whether
+        # hyperthreading would be enabled if the user provided the parallelization_item when adding the
+        # simulation to the queue
+        simulation.parallelization = parallelization
+
+        # SET OPTIONS
+
+        # Remove remote files
+        simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
+        simulation.remove_remote_output = not self.config.keep
+        simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
+
+        # Retrieval
+        simulation.retrieve_types = self.config.retrieve_types
+
+        # Add analyser classes
+        if self.config.analysers is not None:
+            for class_path in self.config.analysers: simulation.add_analyser(class_path)
+
+        # Save the simulation object
+        simulation.save()
+
+        # Get cluster name
+        cluster_name = self.get_clustername_for_host(remote.host_id)
+
+        # Add to assignment
+        self.assignment.add_remote_simulation(name, remote.host_id, cluster_name=cluster_name, simulation_id=simulation.id, success=None)  # We don't know yet whether launching will actually be succesful!
+
+        # Return the simulation
+        return simulation
 
     # -----------------------------------------------------------------
 

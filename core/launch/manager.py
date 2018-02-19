@@ -1563,6 +1563,34 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_host_and_parallelization_from_command(self, command, name=None, index=1):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param index:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_positional_optional("host", "host", "remote host")
+        definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme")
+        parse_command = splitted[index:]
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception")
+
+        # Return
+        return config.host, config.parallelization
+
+    # -----------------------------------------------------------------
+
     def parse_simulation_command(self, command, command_definition=None, name=None, index=1):
 
         """
@@ -4155,6 +4183,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Get host and parallelization
+        host, parallelization = self.get_host_and_parallelization_from_command(command, name="show_runtimes")
+
+        # Show
+        if host is None: self.show_runtimes()
+        elif parallelization is None: self.show_runtimes_host(host)
+        else: self.show_runtimes_host_parallelization(host, parallelization)
+
     # -----------------------------------------------------------------
 
     def show_runtimes(self):
@@ -4170,11 +4206,24 @@ class SimulationManager(Configurable):
         # Loop over the hosts
         for host in self.average_total_times:
 
-            # Loop over the parallelization schemes
-            for parallelization in self.average_total_times[host]:
+            # Show
+            self.show_runtimes_host(host)
 
-                # Show
-                self.show_runtimes_host_parallelization(host, parallelization)
+    # -----------------------------------------------------------------
+
+    def show_runtimes_host(self, host):
+
+        """
+        This function ...
+        :param host: 
+        :return: 
+        """
+
+        # Loop over the parallelization schemes
+        for parallelization in self.average_total_times[host]:
+
+            # Show
+            self.show_runtimes_host_parallelization(host, parallelization)
 
     # -----------------------------------------------------------------
 
@@ -4437,6 +4486,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Get host and parallelization
+        host, parallelization = self.get_host_and_parallelization_from_command(command, name="show_memory")
+
+        # Show
+        if host is None: self.show_memory()
+        elif parallelization is None: self.show_memory_host(host)
+        else: self.show_memory_host_parallelization(host, parallelization)
+
     # -----------------------------------------------------------------
 
     def show_memory(self):
@@ -4452,11 +4509,24 @@ class SimulationManager(Configurable):
         # Loop over the hosts
         for host in self.average_total_memories:
 
-            # Loop over the parallelization schemes
-            for parallelization in self.average_total_memories[host]:
+            # Show
+            self.show_memory_host(host)
 
-                # Show
-                self.show_memory_host_parallelization(host, parallelization)
+    # -----------------------------------------------------------------
+
+    def show_memory_host(self, host):
+
+        """
+        This function ...
+        :param host:
+        :return:
+        """
+
+        # Loop over the parallelization schemes
+        for parallelization in self.average_total_memories[host]:
+
+            # Show
+            self.show_memory_host_parallelization(host, parallelization)
 
     # -----------------------------------------------------------------
 
@@ -4813,6 +4883,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Get host and parallelization
+        host, parallelization = self.get_host_and_parallelization_from_command(command, name="plot_runtimes")
+
+        # Plot
+        if host is None: self.plot_runtimes()
+        elif parallelization is None: self.plot_runtimes_host(host)
+        else: self.plot_runtimes_host_parallelization(host, parallelization)
+
     # -----------------------------------------------------------------
 
     def plot_runtimes(self):
@@ -4828,11 +4906,24 @@ class SimulationManager(Configurable):
         # Loop over the hosts
         for host in self.total_times_distributions:
 
-            # Loop over the parallelization schemes
-            for parallelization in self.total_times_distributions[host]:
+            # Plot for the host
+            self.plot_runtimes_host(host)
 
-                # Plot
-                self.plot_runtimes_host_parallelization(host, parallelization, phases=self.config.plot_runtimes_phases)
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_host(self, host):
+
+        """
+        This function ...
+        :param host:
+        :return:
+        """
+
+        # Loop over the parallelization schemes
+        for parallelization in self.total_times_distributions[host]:
+
+            # Plot
+            self.plot_runtimes_host_parallelization(host, parallelization, phases=self.config.plot_runtimes_phases)
 
     # -----------------------------------------------------------------
 
@@ -5147,6 +5238,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Get host and parallelization
+        host, parallelization = self.get_host_and_parallelization_from_command(command, name="plot_memory")
+
+        # Plot
+        if host is None: self.plot_memory()
+        elif parallelization is None: self.plot_memory_host(host)
+        else: self.plot_memory_host_parallelization(host, parallelization)
+
     # -----------------------------------------------------------------
 
     def plot_memory(self):
@@ -5162,11 +5261,24 @@ class SimulationManager(Configurable):
         # Loop over the hosts
         for host in self.total_memories_distributions:
 
-            # Loop over the parallelization schemes
-            for parallelization in self.total_memories_distributions[host]:
+            # Plot
+            self.plot_memory_host(host)
 
-                # Plot
-                self.plot_memory_host_parallelization(host, parallelization, phases=self.config.plot_memory_phases)
+    # -----------------------------------------------------------------
+
+    def plot_memory_host(self, host):
+
+        """
+        This function ...
+        :param host:
+        :return:
+        """
+
+        # Loop over the parallelization schemes
+        for parallelization in self.total_memories_distributions[host]:
+
+            # Plot
+            self.plot_memory_host_parallelization(host, parallelization, phases=self.config.plot_memory_phases)
 
     # -----------------------------------------------------------------
 

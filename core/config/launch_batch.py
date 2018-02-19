@@ -77,3 +77,8 @@ definition.add_optional("nsockets", "positive_integer", "use this number of sock
 definition.add_flag("allow_multisocket_processes", "allow using multiple sockets per process", False)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("cancel_scheduling_after_fail", "cancel the scheduling of simulations still in the queue of a remote host after the scheduling of a particular simulation was unsuccesful", True)
+definition.add_flag("cancel_launching_after_fail", "cancel the launching of simulations still in the local queue after launching a particular simulation was unsuccesful", True)
+
+# -----------------------------------------------------------------
