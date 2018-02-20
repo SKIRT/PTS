@@ -23,11 +23,17 @@ from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager
 from pts.core.launch.batchlauncher import SimulationStatusTable
 from pts.core.tools import filesystem as fs
+from pts.core.remote.host import find_host_ids
+from pts.core.simulation.remote import get_simulations_for_host
 
 # -----------------------------------------------------------------
 
 environment = load_modeling_environment_cwd()
 runs = environment.fitting_runs
+
+# -----------------------------------------------------------------
+
+all_host_ids = find_host_ids()
 
 # -----------------------------------------------------------------
 
@@ -59,6 +65,8 @@ definition.add_flag("extra", "show extra info")
 definition.add_flag("offline", "offline mode")
 definition.add_flag("lazy", "lazy mode")
 definition.add_flag("interactive", "interactive simulation management mode")
+definition.add_flag("find_simulations", "find missing simulations by searching on simulation name")
+definition.add_optional("find_remotes", "string_list", "find missing simulations in these remote hosts", default=all_host_ids, choices=all_host_ids)
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -287,26 +295,73 @@ parameters_ndigits = 3
 
 # -----------------------------------------------------------------
 
-#simulation_names = []
 status_list = []
+
+# -----------------------------------------------------------------
+
+# Initialize dictionary
+simulations_hosts = dict()
+
+# Get simulations for a remote host
+def get_simulations(host_id):
+
+    # Get the simulations
+    simulations_host = get_simulations_for_host(host_id, as_dict=True)
+
+    # Set the simulations
+    simulations_hosts[host_id] = simulations_host
+
+    # Return the simulations
+    return simulations_host
+
+# -----------------------------------------------------------------
+
+def find_simulation(simulation_name, host_ids):
+
+    """
+    This function ...
+    :param simulation_name:
+    :param host_ids:
+    :return:
+    """
+
+    the_host_id = None
+    the_simulation_id = None
+
+    # Loop over the remotes
+    for host_id in host_ids:
+
+        # Check whether the simulation name is in the
+        if simulation_name in get_simulations(host_id):
+            the_host_id = host_id
+            simulation = simulations_hosts[host_id][simulation_name]
+            the_simulation_id = simulation.id
+            break
+
+    # Return the host ID and simulation ID
+    return the_host_id, the_simulation_id
 
 # -----------------------------------------------------------------
 
 # Loop over the simulations
 for simulation_name in generation.simulation_names:
 
-    # Get the simulation
-    if config.lazy or not generation.has_simulation(simulation_name):
-
-        # No simulation object
-        simulation = None
-
-        # Get host ID and simulation ID from generation assignment table
+    load_simulation = True
+    if config.lazy: load_simulation = False
+    if not generation.has_simulation(simulation_name):
+        log.warning("The simulation file for '" + simulation_name + "' is not present anymore")
         host_id = generation.get_host_id(simulation_name)
         simulation_id = generation.get_simulation_id(simulation_name)
+        log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
+        if config.find_simulations:
+            log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")
+            host_id, simulation_id = find_simulation(simulation_name, config.find_remotes)
+            if host_id is None: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
+            else: log.warning("Simulation identified as '" + str(simulation_id) + "' for host '" + host_id + "'")
+        load_simulation = False
 
-    # Simulation file is not present anymore
-    else:
+    # Load the simulation
+    if load_simulation:
 
         # Load the simulation
         simulation = generation.get_simulation(simulation_name)
@@ -314,6 +369,16 @@ for simulation_name in generation.simulation_names:
         # Get properties
         host_id = simulation.host_id
         simulation_id = simulation.id
+
+    # Don't load the simulation
+    else:
+
+        # No simulation object
+        simulation = None
+
+        # Get host ID and simulation ID from generation assignment table
+        host_id = generation.get_host_id(simulation_name)
+        simulation_id = generation.get_simulation_id(simulation_name)
 
     # No simulation object
     if simulation is None:
@@ -369,6 +434,7 @@ for simulation_name in generation.simulation_names:
             # Not yet retrieved, what is the status?
             screen_states_host = screen_states[host_id] if host_id in screen_states else None
             jobs_status_host = jobs_status[host_id] if host_id in jobs_status else None
+            #print(host_id, remotes.keys())
             if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=screen_states_host, jobs_status=jobs_status_host)
             else: simulation_status = "unknown"
 

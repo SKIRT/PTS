@@ -145,6 +145,32 @@ def open_directory(path, wait=False):
 
 # -----------------------------------------------------------------
 
+def show_file_in_directory(path, wait=False):
+
+    """
+    This function ...
+    :param path:
+    :param wait:
+    :return:
+    """
+
+    # Check if existing
+    if not is_file(path): raise ValueError("The file '" + path + "' does not exist")
+
+    # Check system
+    if platform.system() != "Darwin": raise NotImplementedError("Not implemented for UNIX")
+
+    # Set command
+    command = ["open", "-n", "-a", "Finder", path, "-R"] # -R for revealing file in Finder, instead of opening
+
+    # Call the command
+    if wait:
+        subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+        time.wait(10)
+    else: subprocess.Popen(command)
+
+# -----------------------------------------------------------------
+
 def desktop():
 
     """

@@ -272,6 +272,30 @@ class SimulationInput(object):
         :return:
         """
 
+        return not self.has_single_directory
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.single_directory_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Determine the single directory where the input is placed
         dir_path = None
         scattered_input = False
@@ -289,7 +313,28 @@ class SimulationInput(object):
                 scattered_input = True
                 break
 
-        return scattered_input
+        #return scattered_input
+        if scattered_input: return None
+        else: return dir_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def directory_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = dict()
+
+        for name in self.paths:
+            path = self.paths[name]
+            dir_path = fs.directory_of(path)
+            paths[name] = dir_path
+
+        return paths
 
     # -----------------------------------------------------------------
 

@@ -1827,7 +1827,7 @@ class SimulationManager(Configurable):
             description = commands[command]
 
             # Show
-            print(" - " + fmt.bold + command + ": " + description)
+            print(" - " + fmt.bold + command + fmt.reset + ": " + description)
 
         print("")
 
@@ -2036,7 +2036,7 @@ class SimulationManager(Configurable):
 
         # Open
         if splitted[1] == "input": self.open_input(simulation_name, remote=config.remote)
-        elif splitted[1] == "output": self.open_input(simulation_name, remote=config.remote)
+        elif splitted[1] == "output": self.open_output(simulation_name, remote=config.remote)
         elif splitted[1] == "base": self.open_base(simulation_name, remote=config.remote)
         else: raise ValueError("Invalid command")
 
@@ -2057,14 +2057,31 @@ class SimulationManager(Configurable):
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
 
+        # Check whether the simulation has input
+        if not simulation.has_input:
+            log.warning("The simulation '" + simulation_name + "' has no input: skipping ...")
+            return
+
         # Set remote flag
         if remote is None: remote = False
 
         # On the remote
         if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_input_path)
 
-        # Local
-        else: fs.open_directory(simulation.input_path)
+        # Local, single output directory
+        elif simulation.has_input_directory: fs.open_directory(simulation.input_path)
+
+        # Local, input files in the same directory
+        elif self.get_input(simulation_name).has_single_directory: fs.open_directory(self.get_input(simulation_name).single_directory_path)
+
+        # Local, input files in different directories (scattered)
+        else:
+            log.warning("The input files for simulation '" + simulation_name + "' are in different directories: opening all directories ...")
+            #directory_paths = self.get_input(simulation_name).directory_paths
+            #for name in directory_paths:
+            #    path = directory_paths[name]
+            paths = self.get_input(simulation_name).paths
+            for name in paths: fs.show_file_in_directory(paths[name])
 
     # -----------------------------------------------------------------
 

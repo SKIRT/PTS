@@ -397,6 +397,20 @@ def get_status_simulations(host_id):
             # Check whether the simulation has already been analysed
             if simulation.analysed: simulation_status = analysed_name
 
+            # Partly analysed
+            elif simulation.analysed_any:
+
+                analysed = []
+                if simulation.analysed_all_extraction: analysed.append("extraction")
+                if simulation.analysed_all_plotting: analysed.append("plotting")
+                if simulation.analysed_all_misc: analysed.append("misc")
+                if simulation.analysed_batch: analysed.append("batch")
+                if simulation.analysed_scaling: analysed.append("scaling")
+                if simulation.analysed_all_extra: analysed.append("extra")
+
+                if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+                else: simulation_status = "analysed: started"
+
             # Check whether the simulation has already been retrieved
             elif simulation.retrieved: simulation_status = retrieved_name
 
@@ -2111,6 +2125,20 @@ class SKIRTRemote(Remote):
         # Check whether the simulation has already been analysed
         if simulation.analysed: simulation_status = analysed_name
 
+        # Partly analysed
+        elif simulation.analysed_any:
+
+            analysed = []
+            if simulation.analysed_all_extraction: analysed.append("extraction")
+            if simulation.analysed_all_plotting: analysed.append("plotting")
+            if simulation.analysed_all_misc: analysed.append("misc")
+            if simulation.analysed_batch: analysed.append("batch")
+            if simulation.analysed_scaling: analysed.append("scaling")
+            if simulation.analysed_all_extra: analysed.append("extra")
+
+            if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+            else: simulation_status = "analysed: started"
+
         # Check whether the simulation has already been retrieved
         elif simulation.retrieved: simulation_status = retrieved_name
 
@@ -2139,6 +2167,20 @@ class SKIRTRemote(Remote):
 
         # Check if the simulation has already been analysed
         if simulation.analysed: simulation_status = analysed_name
+
+        # Partly analysed
+        elif simulation.analysed_any:
+
+            analysed = []
+            if simulation.analysed_all_extraction: analysed.append("extraction")
+            if simulation.analysed_all_plotting: analysed.append("plotting")
+            if simulation.analysed_all_misc: analysed.append("misc")
+            if simulation.analysed_batch: analysed.append("batch")
+            if simulation.analysed_scaling: analysed.append("scaling")
+            if simulation.analysed_all_extra: analysed.append("extra")
+
+            if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+            else: simulation_status = "analysed: started"
 
         # Check if the simulation has already been retrieved
         elif simulation.retrieved: simulation_status = retrieved_name

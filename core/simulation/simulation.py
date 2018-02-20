@@ -354,6 +354,11 @@ class SkirtSimulation(object):
         elif isinstance(self.input_path, SimulationInput): return self.input_path
         else: return SimulationInput.from_any(self.input_path)
 
+    ## This property returns whether the simulation input is defined in terms of a single directory path
+    @property
+    def has_input_directory(self):
+        return self.input_path is not None and types.is_string_type(self.input_path)
+
     ## This function returns whether a ski or parameters file is found for this simulation
     @property
     def has_ski(self):
