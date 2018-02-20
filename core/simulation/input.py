@@ -42,7 +42,6 @@ class SimulationInput(object):
         # Add args
         for arg in args:
 
-            #print("ARG", arg)
             if fs.is_file(arg): self.add_file(arg)
             elif fs.is_directory(arg): self.add_directory(arg)
             else: self.add_relative_directory(arg) # probably a relative directory (e.g. 'in')  #raise IOError("The file or directory '" + arg + "' does not exist")
@@ -53,6 +52,19 @@ class SimulationInput(object):
             path = kwargs[name]
             if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
             self.add_file(path, name)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_paths(cls, paths):
+
+        """
+        This function ...
+        :param paths:
+        :return:
+        """
+
+        return cls(*paths)
 
     # -----------------------------------------------------------------
 
@@ -70,6 +82,35 @@ class SimulationInput(object):
         elif types.is_string_type(argument): return cls(argument)
         elif types.is_dictionary(argument): return cls(**argument)
         else: raise ValueError("Invalid input specification: should be list, dictionary, string or SimulationInput object")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path, prefix=None):
+
+        """
+        This function ...
+        :param path:
+        :param prefix:
+        :return:
+        """
+
+        return cls.from_paths(fs.files_in_path(path, startswith=prefix, not_extension="ski"))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_directory(cls, path, remote, prefix=None):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :param prefix:
+        :return:
+        """
+
+        return cls.from_paths(remote.files_in_path(path, startswith=prefix, not_extension="ski"))
 
     # -----------------------------------------------------------------
 
@@ -301,6 +342,45 @@ class SimulationInput(object):
             dir_path = temp_path
 
             return dir_path
+
+    # -----------------------------------------------------------------
+
+    def to_string(self, line_prefix=""):
+
+        """
+        This function ...
+        :param line_prefix:
+        :return:
+        """
+
+        from ..tools import formatting as fmt
+
+        lines = []
+
+        # Loop over the files
+        for name in self.names:
+
+            filepath = self.paths[name]
+            line = line_prefix + " - " + fmt.bold + name + fmt.reset + ": " + filepath
+            lines.append(line)
+
+        # Add new line
+        #lines.append(line_prefix)
+
+        # Return
+        return "\n".join(lines)
+
+    # -----------------------------------------------------------------
+
+    def show(self, line_prefix=""):
+
+        """
+        This function ...
+        :param line_prefix:
+        :return:
+        """
+
+        print(self.to_string(line_prefix=line_prefix))
 
 # -----------------------------------------------------------------
 

@@ -69,13 +69,6 @@ if not generation.has_assignment_table: raise RuntimeError("No assignment for th
 
 # -----------------------------------------------------------------
 
-# For each simulation:
-# Get parameter values
-# parameter_values = generation.get_parameter_values_for_simulation(simulation.name)
-# parameter_string = ", ".join(label + ": " + tostr(value) for label, value in parameter_values.items())
-
-# -----------------------------------------------------------------
-
 # Create simulation manager
 manager = SimulationManager()
 
@@ -85,9 +78,11 @@ manager.config.analysis = config.analysis
 manager.config.reanalyse = config.reanalyse
 manager.config.features_reanalysis = config.features
 manager.config.analyse_simulations = config.simulations
+manager.config.reanalyse_simulations = config.simulations
+manager.config.prompt_simulations_analysis = config.prompt_simulations
 manager.config.prompt_simulations_reanalysis = config.prompt_simulations
 
 # Run the manager
-manager.run(assignment=generation.assignment_table)
+manager.run(assignment=generation.assignment_table, info_tables=[generation.parameters_table, generation.chi_squared_table])
 
 # -----------------------------------------------------------------

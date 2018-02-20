@@ -2277,6 +2277,90 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_estimate_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.uses_schedulers and self.has_timing_table
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.show
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.testing
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_receive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.testing
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_show_finished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_simulations and self.config.show_finished
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_analyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_simulations
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -2295,25 +2379,25 @@ class BatchLauncher(Configurable):
         self.set_parallelization()
 
         # 4. Estimate the runtimes if necessary
-        if self.uses_schedulers and self.has_timing_table: self.estimate_runtimes()
+        if self.do_estimate_runtimes: self.estimate_runtimes()
 
         # 5. Show
-        if self.config.show: self.show()
+        if self.do_show: self.show()
 
         # 6. Launch the simulations
-        if not self.testing: self.launch()
+        if self.do_launch: self.launch()
 
         # 7. Write (before trying to receive and analyse)
-        if self.config.write: self.write()
+        if self.do_write: self.write()
 
         # 8. Retrieve the simulations that are finished
-        if not self.testing: self.try_retrieving()
+        if self.do_receive: self.try_retrieving()
 
         # 9. Show the simulations that are finished
-        if self.has_simulations and self.config.show_finished: self.show_finished()
+        if self.do_show_finished: self.show_finished()
 
         # 10. Analyse the output of the retrieved simulations
-        if self.has_simulations: self.try_analysing()
+        if self.do_analyse: self.try_analysing()
 
     # -----------------------------------------------------------------
 
@@ -2646,7 +2730,7 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Checking the input of the simulations that are run remotely ...")
 
     # -----------------------------------------------------------------
 

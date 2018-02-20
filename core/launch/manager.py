@@ -55,6 +55,10 @@ from ..tools import time
 from ..config.analyse_simulation import definition as analyse_simulation_definition
 from .analyser import all_steps
 from .options import LoggingOptions, SchedulingOptions
+from ..remote.load import show_status
+from ..remote.mounter import mount_remote
+from ..simulation.skifile import show_normalizations
+from ..prep.summarize import show_instrument, show_stellar_component, show_dust_component
 
 # -----------------------------------------------------------------
 
@@ -63,6 +67,35 @@ all_host_ids = find_host_ids()
 # -----------------------------------------------------------------
 
 plot_x_limits = (0., None)
+
+# -----------------------------------------------------------------
+
+# Define commands
+commands = OrderedDict()
+commands["help"] = "show help"
+commands["history"] = "show history of executed commands"
+commands["status"] = "show simulation status"
+commands["hosts"] = "show remote hosts of the simulations"
+commands["parallelizations"] = "show parallelization schemes used per host"
+commands["open"] = "open input, output or base simulation directory"
+commands["input"] = "show simulation input"
+commands["output"] = "show simuation output"
+commands["instruments"] = "show simulation instruments"
+commands["stellar"] = "show stellar components"
+commands["dust"] = "show dust components"
+commands["normalizations"] = "show normalizations"
+commands["show"] = "show"
+commands["plot"] = "plot"
+commands["move"] = "move simulations from one remote to another"
+commands["stop"] = "stop simulations"
+commands["relaunch"] = "relaunch simulations"
+commands["log"] = "show log output of a simulation"
+commands["settings"] = "show simulation settings"
+commands["analysis"] = "show analysis options"
+commands["adapt"] = "adapt simulation settings or analysis options"
+commands["compare"] = "compare simulation settings or analysis options between two simulations"
+commands["analyse"] = "analyse a simulation"
+commands["reanalyse"] = "re-analyse a simulation"
 
 # -----------------------------------------------------------------
 
@@ -258,6 +291,9 @@ class SimulationManager(Configurable):
 
         # The used remotes
         self.remotes = dict()
+
+        # Mount paths
+        self.mount_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -818,6 +854,153 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_input(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).input
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_remote_input(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        simulation = self.get_simulation(simulation_name)
+        return simulation.get_remote_input(remote=self.get_remote(simulation.host_id))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).output
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_remote_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        simulation = self.get_simulation(simulation_name)
+        return simulation.get_remote_output(remote=self.get_remote(simulation.host_id))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_skifile(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).ski_file
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_instrument_names(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get skifile
+        ski = self.get_skifile(simulation_name)
+
+        # Return the names
+        return ski.get_instrument_names()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_instruments(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Initialize instruments dictionary
+        instruments = OrderedDict()
+
+        # Get skifile
+        ski = self.get_skifile(simulation_name)
+
+        # Loop over the instrument names
+        for name in self.get_instrument_names(simulation_name):
+
+            # Get the instrument
+            instrument = ski.get_instrument_object(name)
+
+            # Add the instrument
+            instruments[name] = instrument
+
+        # Return the instruments dictionary
+        return instruments
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_stellar_component_ids(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get ski file
+        ski = self.get_skifile(simulation_name)
+
+        # Return names
+        return ski.get_stellar_component_ids()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_dust_component_ids(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get ski file
+        ski = self.get_skifile(simulation_name)
+
+        # Return names
+        return ski.get_dust_component_ids()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_host_for_simulation(self, simulation_name):
 
         """
@@ -843,6 +1026,33 @@ class SimulationManager(Configurable):
         # Get the simulation
         simulation = self.get_simulation(simulation_name) #, host_id=host_id)
         return simulation.parallelization
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_parallelizations_for_host(self, host):
+
+        """
+        This function ...
+        :param host:
+        :return:
+        """
+
+        parallelizations = set()
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            # Get the host for the simulation
+            host_simulation = self.get_host_for_simulation(simulation_name)
+            if host_simulation != host: continue
+
+            # Get the parallelization
+            parallelization = self.get_parallelization_for_simulation(simulation_name)
+            parallelizations.add(parallelization)
+
+        # Return
+        return list(parallelizations)
 
     # -----------------------------------------------------------------
 
@@ -1280,6 +1490,42 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def is_cancelled(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_cancelled(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_aborted(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_aborted(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def is_crashed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_crashed(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def is_failed(self, simulation_name):
 
         """
@@ -1485,8 +1731,41 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Help
+        if command == "help": self.show_help()
+
+        # History
+        elif command == "history": self.show_history()
+
         # Show simulation status
-        if command == "status": self.show_status()
+        elif command == "status": self.show_status()
+
+        # Show hosts
+        elif command.startswith("hosts"): self.show_hosts_command(command)
+
+        # Show parallelizations
+        elif command.startswith("parallelizations"): self.show_parallelizations_command(command)
+
+        # Open directories
+        elif command.startswith("open"): self.open_command(command)
+
+        # Show simulation input
+        elif command.startswith("input"): self.show_input_command(command)
+
+        # Show simulation output
+        elif command.startswith("output"): self.show_output_command(command)
+
+        # Show ski file instruments
+        elif command.startswith("instruments"): self.show_instruments_command(command)
+
+        # Show ski file stellar components
+        elif command.startswith("stellar"): self.show_stellar_components_command(command)
+
+        # Show ski file dust components
+        elif command.startswith("dust"): self.show_dust_components_command(command)
+
+        # Show ski file normalizations
+        elif command.startswith("normalizations"): self.show_normalizations_command(command)
 
         # Show things
         elif command.startswith("show"): self.show_command(command)
@@ -1526,6 +1805,624 @@ class SimulationManager(Configurable):
 
         # Invalid command
         else: raise ValueError("Invalid command: '" + command + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_help(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing help ...")
+
+        print("")
+
+        # Loop over the commands
+        for command in commands:
+
+            # Get description
+            description = commands[command]
+
+            # Show
+            print(" - " + fmt.bold + command + ": " + description)
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing history of commands ...")
+
+        print("")
+        for command in self.commands:
+            print(command)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_hosts_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing hosts ...")
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_flag("properties", "show host properties")
+        definition.add_flag("status", "show host status")
+
+        # Get the host
+        splitted, hosts, config = self.parse_hosts_command(command, command_definition=definition, name="show_parallelizations", required=False, choices=self.hosts)
+
+        print("")
+
+        # Loop over the hosts
+        for host in hosts: self.show_host(host, properties=config.properties, status=config.status)
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_host(self, host, properties=False, status=False):
+
+        """
+        This function ...
+        :param host:
+        :param properties:
+        :param status:
+        :return:
+        """
+
+        # Show name
+        print(fmt.blue + fmt.underlined + tostr(host) + fmt.reset)
+
+        # Show properties?
+        if properties:
+
+            # Show whether scheduler
+            print(" - " + fmt.bold + "uses scheduling system: " + fmt.reset + str(host.scheduler))
+
+            # Show cluster
+            if host.has_clusters:
+
+                info = host.cluster
+                numa_domains_per_node = info.numa_domains_per_node
+                cores_per_socket = info.cores_per_socket
+                sockets_per_node = info.sockets_per_node
+                multi_node_communication = info.multi_node_communication
+                memory = info.memory
+                nodes = info.nodes
+                threads_per_core = info.threads_per_core
+
+                # Show
+                print("    - " + fmt.bold + "number of NUMA domains per node: " + fmt.reset + str(numa_domains_per_node))
+                print("    - " + fmt.bold + "number of nodes: " + fmt.reset + str(nodes))
+                print("    - " + fmt.bold + "number of sockets per node: " + fmt.reset + str(sockets_per_node))
+                print("    - " + fmt.bold + "number of cores per socket: " + fmt.reset + str(cores_per_socket))
+                print("    - " + fmt.bold + "number of threads per core: " + fmt.reset + str(threads_per_core))
+                print("    - " + fmt.bold + "suitable for multinode communication: " + fmt.reset + str(multi_node_communication))
+                print("    - " + fmt.bold + "virtual memory per node: " + fmt.reset + str(memory))
+
+        # Show status?
+        if status: show_status(self.get_remote(host))
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_parallelizations_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get the host
+        host = self.get_host_from_command(command, name="show_parallelizations")
+
+        # Show
+        self.show_parallelizations(host)
+
+    # -----------------------------------------------------------------
+
+    def show_parallelizations(self, host):
+
+        """
+        This function ...
+        :param host:
+        :return:
+        """
+
+        # Get parallelizations
+        parallelizations = self.get_parallelizations_for_host(host)
+
+        print("")
+        for parallelization in parallelizations:
+            print(" - " + tostr(parallelization))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def mount_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Mount, if necessary
+        if host_id not in self.mount_paths: self.mount_paths[host_id] = mount_remote(host_id)
+
+        # Get paths
+        remote_home_path = self.get_home_path(host_id)
+        mount_path = self.mount_paths[host_id]
+
+        # Return
+        return mount_path, remote_home_path
+
+    # -----------------------------------------------------------------
+
+    def mount_remote_path(self, host_id, path):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        # Get mount path
+        mount_path, remote_home_path = self.mount_remote(host_id)
+
+        # Determine path relative to the home directory
+        relative_path = fs.relative_to(path, remote_home_path)
+
+        # Set the mounted path
+        mounted_path = fs.join(mount_path, relative_path)
+
+        # Return the mounted path
+        return mounted_path
+
+    # -----------------------------------------------------------------
+
+    def mount_and_open_path(self, host_id, path):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        # Get mount path
+        output_path = self.mount_remote_path(host_id, path)
+
+        # Open
+        fs.open_directory(output_path)
+
+    # -----------------------------------------------------------------
+
+    def open_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_flag("remote", "open on remote filesystem (determined automatically based on the simulation status by default)", None)
+
+        # Parse the command
+        splitted, simulation_name, config = self.parse_simulation_command(command, name="open", index=2)
+
+        # Open
+        if splitted[1] == "input": self.open_input(simulation_name, remote=config.remote)
+        elif splitted[1] == "output": self.open_input(simulation_name, remote=config.remote)
+        elif splitted[1] == "base": self.open_base(simulation_name, remote=config.remote)
+        else: raise ValueError("Invalid command")
+
+    # -----------------------------------------------------------------
+
+    def open_input(self, simulation_name, remote=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Opening the input directory of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set remote flag
+        if remote is None: remote = False
+
+        # On the remote
+        if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_input_path)
+
+        # Local
+        else: fs.open_directory(simulation.input_path)
+
+    # -----------------------------------------------------------------
+
+    def open_output(self, simulation_name, remote=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Opening the output directory of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set remote flag
+        if remote is None:
+            if self.is_retrieved(simulation_name): remote = False
+            elif self.is_running_or_finished(simulation_name): remote = True
+            elif self.is_crashed(simulation_name) or self.is_aborted(simulation_name):
+                log.warning("The simulation '" + simulation_name + "' is aborted or has crashed, the output may be partial or missing")
+                remote = True
+            else:
+                log.warning("The simulation '" + simulation_name + "' has no output yet, opening local output directory ...")
+                remote = False
+
+        # On the remote
+        if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_output_path)
+
+        # Locally
+        else: fs.open_directory(simulation.output_path)
+
+    # -----------------------------------------------------------------
+
+    def open_base(self, simulation_name, remote=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Opening the base directory of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set remote flag
+        if remote is None: remote = False
+
+        # On the remote
+        if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_simulation_path)
+
+        # Locally
+        else: fs.open_directory(simulation.base_path)
+
+    # -----------------------------------------------------------------
+
+    def show_input_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_flag("remote", "show remote input", False)
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition, name="show_input")
+
+        # Show
+        if config.remote: self.show_input_remote(simulation_name)
+        else: self.show_input_local(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_input_local(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing local input files of simulation '" + simulation_name + "' ...")
+
+        # Get the input
+        input = self.get_input(simulation_name)
+
+        # Print the simulation name
+        print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ":")
+        print("")
+
+        # Show the input
+        input.show(line_prefix="  ")
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_input_remote(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing remote input files of simulation '" + simulation_name + "' ...")
+
+        # Get the input
+        input = self.get_input(simulation_name)
+
+        # Print the simulation name
+        print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ":")
+        print("")
+
+        # Show the input
+        input.show(line_prefix="  ")
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_output_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_flag("remote", "show remote output", None)
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition, name="show_output")
+
+        # Set remote flag
+        if config.remote is None:
+            if self.is_retrieved(simulation_name): remote = False
+            elif self.is_running_or_finished(simulation_name): remote = True
+            elif self.is_crashed(simulation_name) or self.is_aborted(simulation_name):
+                log.warning("The simulation '" + simulation_name + "' is aborted or has crashed, the output may be partial or missing")
+                remote = True
+            else:
+                log.warning("The simulation '" + simulation_name + "' has no output yet, skipping ...")
+                return
+        else: remote = config.remote
+
+        # Show
+        if remote: self.show_output_remote(simulation_name)
+        else: self.show_output_local(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_output_local(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing local output files of simulation '" + simulation_name + "' ...")
+
+        # Get simulation output
+        output = self.get_output(simulation_name)
+
+        # Print the simulation name
+        print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ":")
+        print("")
+
+        # Show the output
+        output.show(line_prefix="  ")
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_output_remote(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing remote output files of simulation '" + simulation_name + "' ...")
+
+        # Get remote simulation output
+        output = self.get_remote_output(simulation_name)
+
+        # Print the simulation name
+        print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ":")
+        print("")
+
+        # Show the output
+        output.show(line_prefix="  ")
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_instruments_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Show instruments
+        self.show_instruments(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_instruments(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing instruments of simulation '" + simulation_name + "' ...")
+
+        print("")
+        #print(fmt.green + fmt.underlined + "Instruments:" + fmt.reset)
+        #print("")
+
+        # Get the instruments
+        #instruments = self.get_instruments(simulation_name)
+
+        # Loop over the instruments
+        ski = self.get_skifile(simulation_name)
+        for name in self.get_instrument_names(simulation_name): show_instrument(ski, name)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_stellar_components_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Show
+        self.show_stellar_components(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_stellar_components(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing stellar components of simulation '" + simulation_name + "' ...")
+
+        # Loop over the stellar components
+        ski = self.get_skifile(simulation_name)
+        for id in self.get_stellar_component_ids: show_stellar_component(ski, id)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_dust_components_command(self, command):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Show
+        self.show_dust_components(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_dust_components(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing dust components of simulation '" + simulation_name + "' ...")
+
+        # Loop over the dust components
+        ski = self.get_skifile(simulation_name)
+        for id in self.get_dust_component_ids: show_dust_component(ski, id)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_normalizations_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_optional("flux", "photometric_unit", "also show flux in a particular unit")
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition)
+
+        # Show
+        self.show_normalizations(simulation_name, flux_unit=config.flux)
+
+    # -----------------------------------------------------------------
+
+    def show_normalizations(self, simulation_name, flux_unit=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param flux_unit:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing normalizations of simulation '" + simulation_name + "' ...")
+
+        # Get the ski file
+        ski = self.get_skifile(simulation_name)
+
+        # Show
+        show_normalizations(ski, flux_unit=flux_unit)
 
     # -----------------------------------------------------------------
 
@@ -1576,6 +2473,91 @@ class SimulationManager(Configurable):
 
         # Invalid
         else: raise ValueError("Invalid command")
+
+    # -----------------------------------------------------------------
+
+    def get_host_from_command(self, command, name=None, index=1, required=True):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param index:
+        :param required:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        if required: definition.add_required("host", "host", "remote host")
+        else: definition.add_positional_optional("host", "host", "remote host")
+        parse_command = splitted[index:]
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception")
+
+        # Return
+        return config.host
+
+    # -----------------------------------------------------------------
+
+    def parse_hosts_command(self, command, command_definition=None, name=None, index=1, required=False, choices=None):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required:
+        :param choices:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        if required: definition.add_required("hosts", "host_list", "remote hosts", choices=choices)
+        else: definition.add_positional_optional("hosts", "host_list", "remote hosts", choices=choices)
+        if command_definition is not None:
+            definition.import_settings(command_definition, required_to="optional")
+            parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only host list
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception")
+
+        # Return
+        hosts = config.pop("hosts")
+        return splitted, hosts, config
+
+    # -----------------------------------------------------------------
+
+    def get_hosts_from_command(self, command, name=None, index=1, required=False, choices=None):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required:
+        :param choices:
+        :return:
+        """
+
+        # Parse command
+        splitted, hosts, config = self.parse_hosts_command(command, name=name, index=index, required=required, choices=choices)
+
+        # Return
+        return hosts
 
     # -----------------------------------------------------------------
 
@@ -2071,12 +3053,6 @@ class SimulationManager(Configurable):
 
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
-
-        # Add to the queue
-        #new_simulation = remote.add_to_queue(simulation.definition, name=simulation_name, logging_options=logging,
-        #                                     parallelization=config.parallelization,
-        #                                     remote_input_path=remote_input_path,
-        #                                     clear_existing=True, dry=config.dry, scheduling_options=scheduling_options)
 
         # Add the simulation to the queue
         self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host, parallelization=parallelization,
@@ -3888,6 +4864,18 @@ class SimulationManager(Configurable):
 
         # Return the remote
         return self.remotes[host_id]
+
+    # -----------------------------------------------------------------
+
+    def get_home_path(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.get_remote(host_id).home_directory
 
     # -----------------------------------------------------------------
 

@@ -412,3 +412,8 @@ manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_ta
 if config.plot_chisquared: chi_squared.distribution.plot(title="Chi squared values", xlogscale=True)
 
 # -----------------------------------------------------------------
+
+# Remove output directory if nothing was written
+if fs.is_empty(manage_current_path, recursive=True): fs.remove_directory(manage_current_path)
+
+# -----------------------------------------------------------------

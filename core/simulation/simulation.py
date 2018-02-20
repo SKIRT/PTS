@@ -1064,15 +1064,62 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    def get_remote_output(self, remote=None):
+
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Get remote
+        if remote is None: remote = self.remote
+        else: self.remote = remote
+
+        # Return the simulation output
+        return SimulationOutput.from_remote_directory(self.remote_output_path, remote, prefix=self.prefix())
+
+    # -----------------------------------------------------------------
+
     @property
-    def output(self):
+    def remote_output(self):
 
         """
         Thisf unction ...
         :return:
         """
 
-        return SimulationOutput.from_remote_directory(self.remote_output_path, self.remote, prefix=self.prefix())
+        return self.get_remote_output()
+
+    # -----------------------------------------------------------------
+
+    def get_remote_input(self, remote=None):
+
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Get remote
+        if remote is None: remote = self.remote
+        else: self.remote = remote
+
+        # Return the simulation input
+        if not self.has_input: return None
+        else: return SimulationInput.from_remote_directory(self.remote_input_path, remote, prefix=self.prefix())
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_remote_input()
 
     # -----------------------------------------------------------------
 

@@ -18,6 +18,44 @@ from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
+def show_status(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    from ..tools import formatting as fmt
+
+    multinode = remote.is_multinode
+
+    # Get status
+    status = get_status(remote)
+
+    # Show properties
+    print(" - " + fmt.bold + "architecture: " + fmt.reset + status.architecture)
+    print(" - " + fmt.bold + "platform: " + fmt.reset + status.os)
+    if status.cpu_model is not None: print(" - " + fmt.bold + "CPU model: " + fmt.reset + status.cpu_model)
+
+    # Show layout
+    print(" - " + fmt.bold + "number of nodes: " + fmt.reset + str(status.nnodes))
+    print(" - " + fmt.bold + "number of sockets per node: " + fmt.reset + str(status.nsockets))
+    print(" - " + fmt.bold + "cores per node: " + fmt.reset + str(status.ncores))
+    print(" - " + fmt.bold + "threads per core: " + fmt.reset + str(status.nthreads))
+    print(" - " + fmt.bold + "number of NUMA domains per node: " + fmt.reset + str(status.ndomains))
+    print(" - " + fmt.bold + "virtual memory per node: " + fmt.reset + str(status.memory))
+    if multinode: print(" - " + fmt.bold + "suitable for multinode communication: " + fmt.reset + str(remote.host.cluster.multi_node_communication))
+
+    # CPU load
+    print(" - " + fmt.bold + "number of free nodes: " + fmt.reset + str(status.nfreenodes))
+    if status.cpu_load is not None: print(" - " + fmt.bold + "CPU load: " + fmt.reset + str(status.cpu_load * 100) + "%")
+
+    # Memory load
+    if status.memory_load is not None: print(" - " + fmt.bold + "Memory load: " + fmt.reset + str(status.memory_load * 100) + "%")
+
+# -----------------------------------------------------------------
+
 def get_status(remote):
 
     """

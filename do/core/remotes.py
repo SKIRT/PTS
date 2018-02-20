@@ -17,7 +17,7 @@ from pts.core.remote.host import find_host_ids, find_hosts
 from pts.core.remote.remote import Remote
 from pts.core.tools import formatting as fmt
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.remote.load import get_status
+from pts.core.remote.load import show_status
 from pts.core.basics.log import log, setup_log
 
 # -----------------------------------------------------------------
@@ -67,37 +67,13 @@ for host in config.hosts:
     # Show clustername
     if remote.cluster_name is not None: print("Cluster name: " + remote.cluster_name)
 
-    multinode = remote.is_multinode
-
     print("")
     print(" - " + fmt.bold + "uses scheduling system: " + fmt.reset + str(remote.scheduler))
 
-    # Get status properties
-    status = get_status(remote)
-
-    # Show properties
-    print(" - " + fmt.bold + "architecture: " + fmt.reset + status.architecture)
-    print(" - " + fmt.bold + "platform: " + fmt.reset + status.os)
-    if status.cpu_model is not None: print(" - " + fmt.bold + "CPU model: " + fmt.reset + status.cpu_model)
-
-    # Show layout
-    print(" - " + fmt.bold + "number of nodes: " + fmt.reset + str(status.nnodes))
-    print(" - " + fmt.bold + "number of sockets per node: " + fmt.reset + str(status.nsockets))
-    print(" - " + fmt.bold + "cores per node: " + fmt.reset + str(status.ncores))
-    print(" - " + fmt.bold + "threads per core: " + fmt.reset + str(status.nthreads))
-    print(" - " + fmt.bold + "number of NUMA domains per node: " + fmt.reset + str(status.ndomains))
-    print(" - " + fmt.bold + "virtual memory per node: " + fmt.reset + str(status.memory))
-    if multinode: print(" - " + fmt.bold + "suitable for multinode communication: " + fmt.reset + str(host.cluster.multi_node_communication))
-
-    # CPU load
-    print(" - " + fmt.bold + "number of free nodes: " + fmt.reset + str(status.nfreenodes))
-    if status.cpu_load is not None: print(" - " + fmt.bold + "CPU load: " + fmt.reset + str(status.cpu_load*100) + "%")
-
-    # Memory load
-    if status.memory_load is not None: print(" - " + fmt.bold + "Memory load: " + fmt.reset + str(status.memory_load*100) + "%")
+    # Show status
+    show_status(remote)
 
     # Disk space
-
 
     # print(" - " + fmt.bold + "free memory: " + fmt.reset + str(remote.free_memory))
     #
