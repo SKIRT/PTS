@@ -19,7 +19,7 @@ import copy
 from ..tools import filesystem as fs
 from .skifile import SkiFile
 from ..tools.utils import lazyproperty
-from .tree import DustGridTree
+from .tree import DustGridTree, get_nleaves
 
 # -----------------------------------------------------------------
 
@@ -250,7 +250,7 @@ class SingleSimulationDefinition(SimulationDefinition):
         """
 
         if self.ski.treegrid_notfile(): return None # number of cells cannot be defined
-        elif self.ski.filetreegrid(): return self.dust_grid_tree.nleaves
+        elif self.ski.filetreegrid(): return get_nleaves(self.dust_grid_tree_path) #return self.dust_grid_tree.nleaves
         else: return self.ski.ncells()
 
     # -----------------------------------------------------------------

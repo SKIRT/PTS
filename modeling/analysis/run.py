@@ -49,6 +49,7 @@ from ..core.environment import ionizing_name as ionizing_maps_name
 from ..core.environment import dust_name as dust_maps_name
 from ...core.data.sed import ObservedSED, SED
 from ...magic.core.datacube import DataCube
+from ...core.simulation.tree import get_nleaves
 
 # -----------------------------------------------------------------
 
@@ -976,7 +977,8 @@ class AnalysisRunBase(object):
             log.debug("Determining the number of dust cells by reading the dust cell tree data file (this can take a while) ...")
 
             # Get the number of leave nodes
-            return self.dust_grid_tree.nleaves  # requires loading the entire tree file!
+            #return self.dust_grid_tree.nleaves  # requires loading the entire tree file!
+            return get_nleaves(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
 
