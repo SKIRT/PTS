@@ -295,6 +295,14 @@ parameters_ndigits = 3
 
 # -----------------------------------------------------------------
 
+# Set paths
+manage_path = fs.create_directory_in(fitting_run.generations_path, "manage__" + generation.name)
+current_indices = fs.directories_in_path(manage_path, returns="name", convert=int)
+manage_current_path = fs.create_directory_in(manage_path, str(numbers.lowest_missing_integer(current_indices)))
+backup_path = fs.join(manage_current_path, "backup")
+
+# -----------------------------------------------------------------
+
 status_list = []
 
 # -----------------------------------------------------------------
@@ -325,21 +333,29 @@ def find_simulation(simulation_name, host_ids):
     :return:
     """
 
-    the_host_id = None
-    the_simulation_id = None
+    simulation = None
 
     # Loop over the remotes
     for host_id in host_ids:
 
         # Check whether the simulation name is in the
         if simulation_name in get_simulations(host_id):
-            the_host_id = host_id
+            #the_host_id = host_id
             simulation = simulations_hosts[host_id][simulation_name]
-            the_simulation_id = simulation.id
+            assert simulation.host_id == host_id # check that the simulation object has the correct host ID as attribute
+            #the_simulation_id = simulation.id
             break
 
     # Return the host ID and simulation ID
-    return the_host_id, the_simulation_id
+    #return the_host_id, the_simulation_id
+
+    # Return the simulation
+    return simulation
+
+# -----------------------------------------------------------------
+
+# Initialize flag for when assignment scheme is changed
+changed_assignment = False
 
 # -----------------------------------------------------------------
 
@@ -355,10 +371,18 @@ for simulation_name in generation.simulation_names:
         log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
         if config.find_simulations:
             log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")
-            host_id, simulation_id = find_simulation(simulation_name, config.find_remotes)
-            if host_id is None: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
-            else: log.warning("Simulation identified as '" + str(simulation_id) + "' for host '" + host_id + "'")
-        load_simulation = False
+            #host_id, simulation_id = find_simulation(simulation_name, config.find_remotes)
+            simulation = find_simulation(simulation_name, config.find_remotes)
+            if simulation is None: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
+            actual_host_id = simulation.host_id
+            actual_id = simulation.id
+            cluster_name = simulation.cluster_name
+            log.warning("Simulation identified as '" + str(actual_id) + "' for host '" + actual_host_id + "'")
+            log.warning("Fixing assignment table ...")
+            generation.set_id_and_host_for_simulation(simulation_name, actual_id, actual_host_id, cluster_name=cluster_name)
+            changed_assignment = True
+            load_simulation = True
+        else: load_simulation = False
 
     # Load the simulation
     if load_simulation:
@@ -434,12 +458,18 @@ for simulation_name in generation.simulation_names:
             # Not yet retrieved, what is the status?
             screen_states_host = screen_states[host_id] if host_id in screen_states else None
             jobs_status_host = jobs_status[host_id] if host_id in jobs_status else None
-            #print(host_id, remotes.keys())
             if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=screen_states_host, jobs_status=jobs_status_host)
             else: simulation_status = "unknown"
 
     # Add the status
     status_list.append(simulation_status)
+
+# -----------------------------------------------------------------
+
+# Save the assignment table if it has been adapted
+if changed_assignment:
+    log.debug("Saving the changed assignment table for the generation ...")
+    generation.assignment_table.save()
 
 # -----------------------------------------------------------------
 
@@ -461,9 +491,6 @@ manager.config.interactive = config.interactive
 if config.interactive: manager.config.commands = ["status"]
 
 # Set paths
-manage_path = fs.create_directory_in(fitting_run.generations_path, "manage__" + generation.name)
-current_indices = fs.directories_in_path(manage_path, returns="name", convert=int)
-manage_current_path = fs.create_directory_in(manage_path, str(numbers.lowest_missing_integer(current_indices)))
 manager.config.path = manage_current_path
 manager.config.backup_dir_path = manage_current_path
 manager.config.backup_dirname = "backup"

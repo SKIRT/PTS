@@ -398,6 +398,48 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def set_id_for_simulation(self, simulation_name, id):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param id:
+        :return:
+        """
+
+        self.assignment_table.set_id_for_simulation(simulation_name, id)
+
+    # -----------------------------------------------------------------
+
+    def set_host_for_simulation(self, simulation_name, host_id, cluster_name=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param host_id:
+        :param cluster_name:
+        :return:
+        """
+
+        self.assignment_table.set_host_for_simulation(simulation_name, host_id, cluster_name=cluster_name)
+
+    # -----------------------------------------------------------------
+
+    def set_id_and_host_for_simulation(self, simulation_name, id, host_id, cluster_name=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param id:
+        :param host_id:
+        :param cluster_name:
+        :return:
+        """
+
+        self.assignment_table.set_id_and_host_for_simulation(simulation_name, id, host_id, cluster_name=cluster_name)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def simulation_names(self):
 

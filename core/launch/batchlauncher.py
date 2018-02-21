@@ -651,7 +651,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return tables.find_index(self, simulation_name, "Simulation name")
+        return self.find_index(simulation_name, "Simulation name")
 
     # -----------------------------------------------------------------
 
@@ -687,7 +687,11 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
+        # Get simulation index
         index = self.get_index_for_simulation(simulation_name)
+
+        # Set values
+        self.set_value("ID", index, None)
         self.set_value("Host ID", index, None)
         self.set_value("Cluster", index, None)
 
@@ -702,7 +706,10 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
+        # Get simulation index
         index = self.get_index_for_simulation(simulation_name)
+
+        # Set value
         self.set_value("Host ID", index, host_id)
 
     # -----------------------------------------------------------------
@@ -716,7 +723,10 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
+        # Get simulation index
         index = self.get_index_for_simulation(simulation_name)
+
+        # Set value
         self.set_value("Cluster", index, cluster_name)
 
     # -----------------------------------------------------------------
@@ -731,6 +741,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
+        # Get index
         index = self.get_index_for_simulation(simulation_name)
 
         # Set values
@@ -748,8 +759,32 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
+        # Get index
         index = self.get_index_for_simulation(simulation_name)
+
+        # Set value
         self.set_value("ID", index, id)
+
+    # -----------------------------------------------------------------
+
+    def set_id_and_host_for_simulation(self, simulation_name, id, host_id, cluster_name=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param id:
+        :param host_id:
+        :param cluster_name:
+        :return:
+        """
+
+        # Get the index
+        index = self.get_index_for_simulation(simulation_name)
+
+        # Set values
+        self.set_value("ID", index, id)
+        self.set_value("Host ID", index, host_id)
+        self.set_value("Cluster", index, cluster_name)
 
     # -----------------------------------------------------------------
 
@@ -1245,8 +1280,11 @@ class BatchLauncher(Configurable):
         self.nprocesses_hosts = dict()
         self.nprocesses_per_node_hosts = dict()
 
-        # THe parallelization scheme for the different simulations
+        # The parallelization scheme for the different simulations
         self.parallelization_simulations = dict()
+
+        # The logging options for the different simulations
+        self.logging_simulations = dict()
 
         # The paths to the directories for placing the (screen/job) scripts (for manual inspection) for the different remote hosts
         self.script_paths = dict()
@@ -1922,6 +1960,58 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_logging_options_for_simulation(self, name, logging_options):
+
+        """
+        This function ...
+        :param name:
+        :param logging_options:
+        :return:
+        """
+
+        # Set the logging options for this simulation
+        self.logging_simulations[name] = logging_options
+
+    # -----------------------------------------------------------------
+
+    def has_logging_options_for_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.logging_simulations and self.logging_simulations[name] is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_logging_options_for_any_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation_name in self.all_simulation_names:
+            if self.has_logging_options_for_simulation(simulation_name): return True
+        return False
+
+    # -----------------------------------------------------------------
+
+    def get_logging_options_for_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.logging_simulations[name] if name in self.logging_simulations else None
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_for_local(self, parallelization):
 
         """
@@ -1971,21 +2061,8 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        # Set the parallelization for this host and this simulation
+        # Set the parallelization for this simulation
         self.parallelization_simulations[name] = parallelization
-
-    # -----------------------------------------------------------------
-
-    def get_parallelization_for_simulation(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        if not self.has_parallelization_for_simulation(name): raise ValueError("Parallelization is not defined for simulation '" + name + "'")
-        return self.parallelization_simulations[name]
 
     # -----------------------------------------------------------------
 
@@ -2190,7 +2267,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parallelization_for_simulation(self, name):
+    def get_parallelization_for_simulation(self, name):
 
         """
         This function ...
@@ -2198,6 +2275,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        #if not self.has_parallelization_for_simulation(name): raise ValueError("Parallelization is not defined for simulation '" + name + "'")
         return self.parallelization_simulations[name] if name in self.parallelization_simulations else None
 
     # -----------------------------------------------------------------
@@ -4155,7 +4233,7 @@ class BatchLauncher(Configurable):
             definition, name, analysis_options_item = self.local_queue.pop()
 
             # Get the parallelization scheme that has been defined for this simulation
-            parallelization_item = self.parallelization_for_simulation(name)
+            parallelization_item = self.get_parallelization_for_simulation(name)
             if parallelization_item is not None: pass # OK
             elif self.parallelization_local is not None: parallelization_item = self.parallelization_local
             else: raise RuntimeError("Parallelization has not been defined for local simulation '" + name + "' and no general parallelization scheme has been set for local execution")
@@ -4366,7 +4444,7 @@ class BatchLauncher(Configurable):
         """
 
         # Get the parallelization scheme that has been defined for this simulation
-        parallelization_item = self.parallelization_for_simulation(simulation_name)
+        parallelization_item = self.get_parallelization_for_simulation(simulation_name)
 
         # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
         # defined for the current remote host
@@ -4726,7 +4804,8 @@ class BatchLauncher(Configurable):
         if analysis_options_item is None:
 
             # Get a copy of the default logging options, create the default analysis options and adjust logging options according to the analysis options
-            logging_options = self.logging_options.copy()
+            if self.has_logging_options_for_simulation(name): logging_options = self.get_logging_options_for_simulation(name)
+            else: logging_options = self.logging_options.copy()
 
             # Create analysis options
             analysis_options_item = self.create_analysis_options(definition, name, logging_options, add_timing=add_timing, add_memory=add_memory)
@@ -4735,7 +4814,8 @@ class BatchLauncher(Configurable):
         elif isinstance(analysis_options_item, AnalysisOptions):
 
             # Get the default logging options
-            logging_options = self.logging_options
+            if self.has_logging_options_for_simulation(name): logging_options = self.get_logging_options_for_simulation(name)
+            else: logging_options = self.logging_options
 
         # Dict-like analysis options
         elif isinstance(analysis_options_item, dict):
@@ -4750,7 +4830,8 @@ class BatchLauncher(Configurable):
             analysis_options_item = default_analysis_options
 
             # Get logging options
-            logging_options = self.logging_options.copy()
+            if self.has_logging_options_for_simulation(name): logging_options = self.get_logging_options_for_simulation(name)
+            else: logging_options = self.logging_options.copy()
 
             # Check the analysis options
             analysis_options_item.check(logging_options)

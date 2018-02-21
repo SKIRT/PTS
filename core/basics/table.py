@@ -2191,6 +2191,21 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def find_index(self, key, column_name=None, where=None):
+
+        """
+        This function ...
+        :param key:
+        :param column_name:
+        :param where:
+        :return:
+        """
+
+        from ..tools import tables
+        return tables.find_index(self, key, column_name, where=where)
+
+    # -----------------------------------------------------------------
+
     def to_html(self):
 
         """

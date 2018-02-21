@@ -1129,11 +1129,14 @@ class SimulationManager(Configurable):
                     # Get the simulation for the actual host ID
                     simulation = self.simulations_for_hosts[actual_host_id][simulation_name]
 
+                    # Get simulation ID
+                    actual_id = simulation.id
+
                     # Get cluster name
                     cluster_name = simulation.cluster_name
 
-                    # Change the host for this simulation
-                    self.assignment.set_host_for_simulation(simulation_name, actual_host_id, cluster_name=cluster_name)
+                    # Change the host and simulation ID for this simulation
+                    self.assignment.set_id_and_host_for_simulation(simulation_name, actual_id, actual_host_id, cluster_name=cluster_name)
                     self._adapted_assignment = True
 
                     # Add the simulation
