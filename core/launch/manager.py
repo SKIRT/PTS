@@ -5908,6 +5908,7 @@ class SimulationManager(Configurable):
                         if name not in info: string = "--"
                         else: string = tostr(info[name])
                         parts.append(string)
+                        # [tostr(parameter_values[label].value, scientific=True, decimal_places=3)
 
                 # Add the simulation status
                 parts.append(status)
