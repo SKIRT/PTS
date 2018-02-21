@@ -40,7 +40,7 @@ from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict
 from ..tools import sequences
 from ..basics.log import no_debugging
-from ..simulation.remote import is_finished_status, is_running_status
+from ..simulation.remote import is_finished_status, is_running_status, finished_name
 from ..basics.configuration import prompt_string, prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
@@ -95,12 +95,15 @@ commands["move"] = "move simulations from one remote to another"
 commands["stop"] = "stop simulations"
 commands["remove"] = "remove simulation"
 commands["clear"] = "clear simulation output/input/analysis"
+commands["unretrieve"] = "unretrieve simulation"
+commands["unanalyse"] = "unanalyse simulation"
 commands["relaunch"] = "relaunch simulations"
 commands["log"] = "show log output of a simulation"
 commands["settings"] = "show simulation settings"
 commands["analysis"] = "show analysis options"
 commands["adapt"] = "adapt simulation settings or analysis options"
 commands["compare"] = "compare simulation settings or analysis options between two simulations"
+commands["retrieve"] = "retrieve a simulation"
 commands["analyse"] = "analyse a simulation"
 commands["reanalyse"] = "re-analyse a simulation"
 
@@ -305,6 +308,118 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def ninfo(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.info)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ninfo > 0
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_info_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Initialize dictionary for the info
+        info = OrderedDict()
+
+        # Loop over the tables
+        for name in self.info:
+
+            # Get the table
+            table = self.info[name]
+
+            # Check
+            if "Simulation name" not in table.column_names:
+                log.warning("Table '" + name + "' does not contain a column with the simulation names: skipping ...")
+                continue
+
+            # Find the index of the simulation
+            index = table.find_index(simulation_name, column_name="Simulation name")
+            if index is None: continue  # skip this table
+
+            # Loop over the column names
+            for column_name in table.column_names:
+
+                # Check column name
+                if column_name == "Simulation name": continue
+                if column_name in info:
+                    log.warning("Already obtained the '" + column_name + "' parameter from another table: skipping ...")
+                    continue
+
+                # Get the value
+                value = table.get_value(column_name, index)
+
+                # Set the value
+                info[column_name] = value
+
+        # Return the info for the simulation
+        return info
+
+    # -----------------------------------------------------------------
+
+    def ninfo_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return len(self.get_info_for_simulation(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def has_info_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.ninfo_for_simulation(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def info_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = DefaultOrderedDict(int)
+        for simulation_name in self.simulation_names:
+            if not self.has_info_for_simulation(simulation_name): continue
+            info = self.get_info_for_simulation(simulation_name)
+            for name in info: names[name] += 1
+        return names.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_moving(self):
 
         """
@@ -434,6 +549,18 @@ class SimulationManager(Configurable):
         """
 
         return self.launcher.has_queued
+
+    # -----------------------------------------------------------------
+
+    # @property
+    # def do_retrieve(self):
+    #
+    #     """
+    #     This function ..
+    #     :return:
+    #     """
+    #
+    #     return self.config.retrieve
 
     # -----------------------------------------------------------------
 
@@ -1386,16 +1513,58 @@ class SimulationManager(Configurable):
 
             # Not yet retrieved
             else:
+
                 host_id = simulation.host_id
                 screen_states = self.screen_states[host_id] if host_id in self.screen_states else None
                 jobs_status = self.jobs_status[host_id] if host_id in self.jobs_status else None
                 with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
+
+                # Retrieve finished simulations?
+                if simulation_status == finished_name and self.config.retrieve:
+                    self.retrieve_simulation(simulation_name)
+                    simulation_status = "retrieved"
 
             # Add the status
             status_list.append(simulation_status)
 
         # Create the table and return
         return SimulationStatusTable.from_columns(self.simulation_names, status_list)
+
+    # -----------------------------------------------------------------
+
+    def retrieve_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get the simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="retrieve_simulation")
+
+        # Retrieve
+        self.retrieve_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def retrieve_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Retrieving simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Get the remote and retrieve the simulation
+        remote = self.get_remote(simulation.host_id)
+        remote.retrieve_simulation(simulation)
 
     # -----------------------------------------------------------------
 
@@ -1872,6 +2041,12 @@ class SimulationManager(Configurable):
         # Clear simulation output/input/analysis
         elif command.startswith("clear"): self.clear_simulation_command(command)
 
+        # Unretrieve simulation
+        elif command.startswith("unretrieve"): self.unretrieve_simulation_command(command)
+
+        # Unanalyse simulation
+        elif command.startswith("unanalyse"): self.unanalyse_simulation_command(command)
+
         # Relaunch simulation
         elif command.startswith("relaunch"): self.relaunch_simulation_command(command)
 
@@ -1889,6 +2064,9 @@ class SimulationManager(Configurable):
 
         # Compare simulation settings or analysis options
         elif command.startswith("compare"): self.compare_simulations_command(command)
+
+        # Retrieve simulation
+        elif command.startswith("retrieve"): self.retrieve_simulation_command(command)
 
         # Analyse simulation
         elif command.startswith("analyse"): self.analyse_simulation_command(command)
@@ -2060,6 +2238,12 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="show_info")
+
+        # Show info
+        self.show_simulation_info(simulation_name)
+
     # -----------------------------------------------------------------
 
     def show_simulation_info(self, simulation_name):
@@ -2072,6 +2256,23 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Showing info for simulation '" + simulation_name + "' ...")
+
+        # Check whether info is defined
+        if not self.has_info_for_simulation(simulation_name): print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ": no info")
+
+        # Info is defined
+        else:
+
+            # Show simulation name
+            print(fmt.blue + fmt.underlined + simulation_name + fmt.reset)
+            print("")
+
+            # Get the info
+            info = self.get_info_for_simulation(simulation_name)
+
+            # Show the info
+            for name in info: print(" - " + fmt.bold + name + fmt.reset + ": " + tostr(info[name]))
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -3284,6 +3485,9 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Stopping simulation '" + simulation_name + "' ...")
 
+        # Not implemented yet
+        raise NotImplementedError("Not yet implemented")
+
     # -----------------------------------------------------------------
 
     def remove_simulation_command(self, command):
@@ -3395,6 +3599,22 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Clearing local input of simulation '" + simulation_name + "' ...")
 
+        # Get simulation and check
+        simulation = self.get_simulation(simulation_name)
+        if not simulation.has_input:
+            log.warning("The simulation '" + simulation_name + "' has no input")
+            return
+
+        # Local, single output directory
+        if simulation.has_input_directory: fs.clear_directory(simulation.input_path)
+
+        # Local, input file paths
+        else:
+            paths = self.get_input(simulation_name).paths
+            for name in paths:
+                path = paths[name]
+                fs.remove_file(path)
+
     # -----------------------------------------------------------------
 
     def clear_simulation_input_remote(self, simulation_name):
@@ -3407,6 +3627,34 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Clearing remote input of simulation '" + simulation_name + "' ...")
+
+        # Get simulation
+        simulation = self.get_simulation(simulation_name)
+        if not simulation.has_input:
+            log.warning("The simulation '" + simulation_name + "' has no input")
+            return
+
+        # Get the remote
+        remote = self.get_remote(simulation.host_id)
+
+        # Clear the input directory
+        remote.clear_directory(simulation.remote_input_path)
+
+    # -----------------------------------------------------------------
+
+    def unretrieve_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Unretrieve
+        self.unretrieve_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -3480,11 +3728,32 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def unanalyse_simulation(self, simulation_name):
+    def unanalyse_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_positional_optional("steps", "analysis steps to revert", choices=clear_analysis_steps)
+
+        # Parse
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition, name="unanalyse_simulation")
+
+        # Unanalyse
+        self.unanalyse_simulation(simulation_name, steps=config.steps)
+
+    # -----------------------------------------------------------------
+
+    def unanalyse_simulation(self, simulation_name, steps=None):
 
         """
         This function ...
         :param simulation_name:
+        :param steps:
         :return:
         """
 
@@ -3494,14 +3763,19 @@ class SimulationManager(Configurable):
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
 
+        # Set flags
+        extraction = simulation.analysed_any_extraction and (steps is None or "extraction" in steps)
+        plotting = simulation.analysed_any_plotting and (steps is None or "plotting" in steps)
+        misc = simulation.analysed_any_misc and (steps is None or "misc" in steps)
+
         # Extraction
-        if simulation.analysed_any_extraction: self.unanalyse_extraction(simulation_name)
+        if extraction: self.unanalyse_extraction(simulation_name)
 
         # Plotting
-        if simulation.analysed_any_plotting: self.unanalyse_plotting(simulation_name)
+        if plotting: self.unanalyse_plotting(simulation_name)
 
         # Misc
-        if simulation.analysed_any_misc: self.unanalyse_misc(simulation_name)
+        if misc: self.unanalyse_misc(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -5547,6 +5821,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def status_column_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = ["", "", "Name", "Host", "ID"]
+        if self.has_info: names.extend(self.info_names)
+        names.append("Status")
+        return names
+
+    # -----------------------------------------------------------------
+
     def show_status(self):
 
         """
@@ -5565,27 +5854,66 @@ class SimulationManager(Configurable):
         print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(self.nanalysed) + " (" + tostr(self.percentage_nanalysed, round=True, ndigits=2) + "%)")
         print("")
 
-        # Loop over the simulations
-        for index, simulation_name in enumerate(self.simulation_names):
+        # Print in columns
+        with fmt.print_in_columns() as print_row:
 
-            # Get the simulation
-            simulation = self.get_simulation(simulation_name)
+            # Show the header
+            print_row(*self.status_column_names)
 
-            # Get display name
-            display_name = self.get_display_name(simulation, id_size=3) #host_id_size=10)
+            # Loop over the simulations
+            for index, simulation_name in enumerate(self.simulation_names):
 
-            # Get the status
-            status = self.get_status(simulation_name)
+                # Get the simulation
+                simulation = self.get_simulation(simulation_name)
 
-            # Get index string
-            index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
+                # Get display name
+                #display_name = self.get_display_name(simulation, id_size=3) #host_id_size=10)
 
-            # Show status
-            if status == "analysed": print(" - " + index_string + fmt.green + display_name + ": analysed" + fmt.reset)
-            elif status == "retrieved": print(" - "  + index_string + fmt.yellow + display_name + ": retrieved" + fmt.reset)
-            elif status == "finished": print(" - " + index_string + fmt.yellow + display_name + ": finished" + fmt.reset)
-            elif "running" in status: print(" - " + index_string + display_name + ": " + status + fmt.reset)
-            else: print(" - " + index_string + fmt.red + display_name + ": " + status + fmt.reset)
+                # Get the status
+                status = self.get_status(simulation_name)
+
+                # Get index string
+                index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
+
+                # Show status
+                #if status == "analysed": print(" - " + index_string + fmt.green + display_name + ": analysed" + fmt.reset)
+                #elif status == "retrieved": print(" - "  + index_string + fmt.yellow + display_name + ": retrieved" + fmt.reset)
+                #elif status == "finished": print(" - " + index_string + fmt.yellow + display_name + ": finished" + fmt.reset)
+                #elif "running" in status: print(" - " + index_string + display_name + ": " + status + fmt.reset)
+                #else: print(" - " + index_string + fmt.red + display_name + ": " + status + fmt.reset)
+
+                # Set color
+                if status == "analysed": color = "green"
+                elif status == "retrieved": color = "yellow"
+                elif status == "finished": color = "yellow"
+                elif is_running_status(status): color = None
+                else: color = "red"
+
+                # Create strings
+                host_string = tostr(simulation.host)
+                id_string = tostr(simulation.id)
+
+                # Set parts
+                parts = []
+                parts.append(" - ")
+                parts.append(index_string)
+                parts.append(simulation_name)
+                parts.append(host_string)
+                parts.append(id_string)
+
+                # Add info
+                if self.has_info:
+                    for name in self.info_names:
+                        info = self.get_info_for_simulation(simulation_name)
+                        if name not in info: string = "--"
+                        else: string = tostr(info[name])
+                        parts.append(string)
+
+                # Add the simulation status
+                parts.append(status)
+
+                # Print the row
+                print_row(*parts, color=color)
 
         # End with empty line
         print("")

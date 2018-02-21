@@ -378,6 +378,7 @@ def print_columns(*columns, **kwargs):
     delimiter = kwargs.pop("delimiter", "  ")
     indent = kwargs.pop("indent", "")
     tostr_kwargs = kwargs.pop("tostr_kwargs", {})
+    colors = kwargs.pop("colors", None)
 
     # Check sizes
     if not equal_sizes(*columns): raise ValueError("Columns must have equal lengths")
@@ -400,8 +401,11 @@ def print_columns(*columns, **kwargs):
         string_columns.append(new_column)
 
     ncolumns = len(string_columns)
+    nrows = len(columns[0])
+    if colors is not None and len(colors) != nrows: raise ValueError("Colors must be defined per row")
 
-    for i in range(len(columns[0])):
+    # Loop over the rows and print them
+    for i in range(nrows):
 
         row = ""
 
@@ -417,8 +421,14 @@ def print_columns(*columns, **kwargs):
 
                 row += spaces
 
+        # Print in specified color
+        if colors is not None:
+            color = colors[i]
+            color_code = get_color_code(color)
+            print(color_code + indent + row + reset)
+
         # Print
-        print(indent + row)
+        else: print(indent + row)
 
 # -----------------------------------------------------------------
 
@@ -428,18 +438,36 @@ class print_in_columns(object):
     This function ...
     """
 
-    def __init__(self, ncolumns, delimiter=" ", indent="", tostr_kwargs=None):
+    def __init__(self, ncolumns=None, delimiter=" ", indent="", tostr_kwargs=None):
 
         """
         This function ...
         :param ncolumns:
         :param delimiter:
+        :param indent:
+        :param tostr_kwargs:
         """
 
-        self.columns = [[] for _ in range(ncolumns)]
+        # Set columns
+        self.columns = None
+        if ncolumns is not None: self.initialize_columns(ncolumns)
+
+        self.colors = []
         self.delimiter = delimiter
         self.indent = indent
         self.tostr_kwargs = tostr_kwargs if tostr_kwargs is not None else {}
+
+    # -----------------------------------------------------------------
+
+    def initialize_columns(self, ncolumns):
+
+        """
+        This function ...
+        :param ncolumns:
+        :return:
+        """
+
+        self.columns = [[] for _ in range(ncolumns)]
 
     # -----------------------------------------------------------------
 
@@ -466,18 +494,26 @@ class print_in_columns(object):
 
     # -----------------------------------------------------------------
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
 
         """
         This function ...
         :param args:
+        :param kwargs:
         :return:
         """
 
+        # Initialize the columns if the number of columns was not yet defined
+        if self.columns is None: self.initialize_columns(len(args))
+
+        # Loop over the columns
         for index in range(self.ncolumns):
 
             arg = args[index] if len(args) > index else ""
             self.columns[index].append(arg)
+
+        color = kwargs.pop("color", None)
+        self.colors.append(color)
 
     # -----------------------------------------------------------------
 
@@ -491,7 +527,7 @@ class print_in_columns(object):
         :return:
         """
 
-        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent, tostr_kwargs=self.tostr_kwargs)
+        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent, tostr_kwargs=self.tostr_kwargs, colors=self.colors)
 
 # -----------------------------------------------------------------
 

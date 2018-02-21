@@ -101,6 +101,11 @@ definition.add_flag("write_commands", False)
 
 # -----------------------------------------------------------------
 
+# Retrieve?
+definition.add_flag("retrieve", "retrieve finished simulations", False)
+
+# -----------------------------------------------------------------
+
 # Analyse?
 definition.add_flag("analyse", "analysis", False)
 
