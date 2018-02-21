@@ -836,6 +836,12 @@ class SimulationManager(Configurable):
         self.launcher.config.analyse = False
         self.launcher.config.shared_input = self.config.shared_input
 
+        # Showing
+        self.launcher.config.show = True
+        self.launcher.config.show_info = True
+        self.launcher.config.show_status = False
+        self.launcher.config.show_parallelizations = True
+
         # Writing
         self.launcher.config.write = True
         self.launcher.config.write_assignment = False

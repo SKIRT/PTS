@@ -88,3 +88,10 @@ definition.add_flag("cancel_scheduling_after_fail", "cancel the scheduling of si
 definition.add_flag("cancel_launching_after_fail", "cancel the launching of simulations still in the local queue after launching a particular simulation was unsuccesful", True)
 
 # -----------------------------------------------------------------
+
+# Showing
+definition.add_flag("show_info", "show queue info", True)
+definition.add_flag("show_status", "show remote status", True)
+definition.add_flag("show_parallelizations", "show parallelization schemes", True)
+
+# -----------------------------------------------------------------

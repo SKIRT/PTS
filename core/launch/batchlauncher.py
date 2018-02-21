@@ -2225,6 +2225,20 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_parallelization_for_all_simulations_of_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        for simulation_name in self.get_simulation_names_for_host(host_id):
+            if not self.has_parallelization_for_simulation(simulation_name): return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def nprocesses_for_host(self, host_id):
 
         """
@@ -3793,6 +3807,9 @@ class BatchLauncher(Configurable):
         # Loop over the different remote hosts
         for host_id in self.host_ids:
 
+            # Check if any simulation needs a parallelization
+            if self.has_parallelization_for_all_simulations_of_host(host_id): continue
+
             # Debugging
             log.debug("Setting parallelization scheme(s) for remote host '" + host_id + "' ...")
 
@@ -4360,8 +4377,11 @@ class BatchLauncher(Configurable):
         # Initialize a list of simulations
         simulations = []
 
+        # Get the number of simulations in the local queue
+        nqueued = self.in_local_queue
+
         # Loop over the simulation in the queue for this remote host
-        for index in range(self.in_local_queue):
+        for index in range(nqueued):
 
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.local_queue.pop()
@@ -4381,7 +4401,7 @@ class BatchLauncher(Configurable):
             logging_options, analysis_options = self.generate_options(name, options_definition, analysis_options_item, local=True)
 
             # Try launching the simulation
-            simulation = self._try_launching_simulation(index, name, definition, parallelization_item, logging_options,
+            simulation = self._try_launching_simulation(index, nqueued, name, definition, parallelization_item, logging_options,
                                                         analysis_options, original_definition=original_definition)
 
             # Add the simulation if succesful
@@ -4417,7 +4437,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _try_launching_simulation(self, index, name, definition, parallelization, logging_options, analysis_options,
+    def _try_launching_simulation(self, index, nqueued, name, definition, parallelization, logging_options, analysis_options,
                                   original_definition=None):
 
         """
@@ -4432,7 +4452,7 @@ class BatchLauncher(Configurable):
         """
 
         # Perform the simulation locally
-        try: simulation = self._launch_simulation(index, name, definition, parallelization, logging_options,
+        try: simulation = self._launch_simulation(index, nqueued, name, definition, parallelization, logging_options,
                                                   analysis_options, original_definition=original_definition)
 
         # Error occured during simulation
@@ -4454,7 +4474,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _launch_simulation(self, index, name, definition, parallelization, logging_options, analysis_options,
+    def _launch_simulation(self, index, nqueued, name, definition, parallelization, logging_options, analysis_options,
                            original_definition=None):
 
         """
@@ -4468,8 +4488,6 @@ class BatchLauncher(Configurable):
         :param original_definition:
         :return:
         """
-
-        nqueued = self.in_local_queue
 
         # Inform the user
         log.info("Launching simulation " + str(index + 1) + " out of " + str(nqueued) + " in the local queue ...")
@@ -4624,8 +4642,11 @@ class BatchLauncher(Configurable):
         # Cache the simulation objects scheduled to the current remote
         simulations_remote = []
 
+        # Get the number of queued simulations for this host
+        nqueued = self.in_queue_for_host(remote.host_id)
+
         # Loop over the simulation in the queue for this remote host
-        for index in range(self.in_queue_for_host(remote.host_id)):
+        for index in range(nqueued):
 
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.queues[remote.host_id].pop()
@@ -4641,7 +4662,7 @@ class BatchLauncher(Configurable):
             logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
 
             # Queue the simulation
-            simulation = self._try_scheduling_simulation(index, name, definition, remote, parallelization_item,
+            simulation = self._try_scheduling_simulation(index, nqueued, name, definition, remote, parallelization_item,
                                                          logging_options, analysis_options, scheduling_options)
 
             # Add the simulation if succesful
@@ -4681,12 +4702,13 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _try_scheduling_simulation(self, index, name, definition, remote, parallelization, logging_options,
+    def _try_scheduling_simulation(self, index, nqueued, name, definition, remote, parallelization, logging_options,
                                    analysis_options, scheduling_options=None, remote_input_path=None):
 
         """
         This function ...
         :param index:
+        :param nqueued:
         :param name:
         :param definition:
         :param remote:
@@ -4699,7 +4721,7 @@ class BatchLauncher(Configurable):
         """
 
         # Try scheduling
-        try: simulation = self._schedule_simulation(index, name, definition, remote, parallelization, logging_options,
+        try: simulation = self._schedule_simulation(index, nqueued, name, definition, remote, parallelization, logging_options,
                                                     analysis_options, scheduling_options, remote_input_path)
 
         # Exception was raised
@@ -4722,12 +4744,13 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _schedule_simulation(self, index, name, definition, remote, parallelization, logging_options, analysis_options,
-                             scheduling_options=None, remote_input_path=None):
+    def _schedule_simulation(self, index, nqueued, name, definition, remote, parallelization, logging_options,
+                             analysis_options, scheduling_options=None, remote_input_path=None):
 
         """
         This function ...
         :param index:
+        :param nqueued:
         :param name:
         :param definition:
         :param remote:
@@ -4738,8 +4761,6 @@ class BatchLauncher(Configurable):
         :param remote_input_path:
         :return:
         """
-
-        nqueued = self.in_queue_for_host(remote.host_id)
 
         # Inform the user
         log.info("Adding simulation " + str(index + 1) + " out of " + str(nqueued) + " to the queue of remote host " + remote.host_id + " ...")
@@ -5070,13 +5091,13 @@ class BatchLauncher(Configurable):
         log.info("Showing ...")
 
         # Showing basic info
-        self.show_info()
+        if self.config.show_info: self.show_info()
 
         # Show remote status
-        if self.uses_remotes: self.show_status()
+        if self.config.show_status and self.uses_remotes: self.show_status()
 
         # Show parallelizations
-        self.show_parallelization()
+        if self.config.show_parallelizations: self.show_parallelization()
 
     # -----------------------------------------------------------------
 
