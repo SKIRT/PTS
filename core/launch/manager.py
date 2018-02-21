@@ -663,18 +663,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    # @property
-    # def do_retrieve(self):
-    #
-    #     """
-    #     This function ..
-    #     :return:
-    #     """
-    #
-    #     return self.config.retrieve
-
-    # -----------------------------------------------------------------
-
     @property
     def do_showing(self):
 
@@ -3124,7 +3112,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_simulation_command(self, command, command_definition=None, name=None, index=1):
+    def parse_simulation_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
 
         """
         This function ...
@@ -3132,6 +3120,7 @@ class SimulationManager(Configurable):
         :param name:
         :param index:
         :param command_definition:
+        :param required_to_optional:
         :return:
         """
 
@@ -3143,7 +3132,8 @@ class SimulationManager(Configurable):
         definition = ConfigurationDefinition()
         definition.add_required("simulation", "integer_or_string", "simulation index or name")
         if command_definition is not None:
-            definition.import_settings(command_definition, required_to="optional")
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
             parse_command = splitted[index:]
         else: parse_command = splitted[index:index+1] # only simulation name
 
@@ -3557,7 +3547,7 @@ class SimulationManager(Configurable):
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
         # Get the simulation name
-        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=definition, name="move_simulation")
+        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=definition, name="move_simulation", required_to_optional=False)
 
         # Check status
         if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
@@ -3589,8 +3579,11 @@ class SimulationManager(Configurable):
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
 
+        # TODO: support different clusters
+        host_id = host.id
+
         # Add the simulation to the queue
-        self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host, parallelization=parallelization,
+        self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id, parallelization=parallelization,
                                    logging_options=logging_options, scheduling_options=scheduling_options,
                                    analysis_options=simulation.analysis)
 
@@ -4230,6 +4223,31 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_simulation_options_from_original(self, simulation):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # Get the original simulation
+        original_simulation = self.get_simulation(simulation.name)
+
+        # Analyser paths
+        simulation.analyser_paths = original_simulation.analyser_paths
+
+        # Options for retrieval
+        simulation.retrieve_types = original_simulation.retrieve_types
+
+        # Options for removing remote or local input and output
+        simulation.remove_remote_input = original_simulation.remove_remote_input
+        simulation.remove_remote_output = original_simulation.remove_remote_output  # After retrieval
+        simulation.remove_remote_simulation_directory = original_simulation.remove_remote_simulation_directory  # After retrieval
+        simulation.remove_local_output = original_simulation.remove_local_output  # After analysis
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -4240,17 +4258,33 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Launching simulations ...")
 
+        # Get remotes
+        remotes = []
+        for host_id in self.launcher.queue_host_ids: remotes.append(self.get_remote(host_id))
+
         # Run the launcher
-        self.launcher.run()
+        self.launcher.run(remotes=remotes)
 
         # Set moved IDs
         for simulation in self.moved_simulations:
+
+            # Set options
+            self.set_simulation_options_from_original(simulation)
+
+            # Save the new simulation
+            simulation.save()
 
             # Set the new ID of the moved simulation
             self.moved.set_new_id(simulation.name, simulation.id)
 
         # Set relaunched IDs
         for simulation in self.relaunched_simulations:
+
+            # Set options
+            self.set_simulation_options_from_original(simulation)
+
+            # Save the new simulation
+            simulation.save()
 
             # Set the new ID of the relaunched simulation
             self.relaunched.set_new_id(simulation.name, simulation.id)

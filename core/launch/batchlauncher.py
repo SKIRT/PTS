@@ -1364,7 +1364,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return len(self.queues[host_id])
+        return len(self.queues[host_id]) if host_id in self.queues else 0
 
     # -----------------------------------------------------------------
 
@@ -1776,6 +1776,18 @@ class BatchLauncher(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def queue_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [host_id for host_id in self.queues.keys() if self.has_queued_remote(host_id)]
+
+    # -----------------------------------------------------------------
+
+    @property
     def hosts(self):
 
         """
@@ -1788,6 +1800,7 @@ class BatchLauncher(Configurable):
 
             # Create the list of hosts
             hosts = []
+            #self.get_clustername_for_host(host_id)
             for host_id in self.host_ids: hosts.append(load_host(host_id))
 
             # Return the list of hosts
@@ -2567,6 +2580,9 @@ class BatchLauncher(Configurable):
 
         # Call the setup function of the base class
         super(BatchLauncher, self).setup(**kwargs)
+
+        # Restrict remotes only to the remotes for which there are queued simulations
+        self.config.remotes = self.queue_host_ids
 
         # Remotes are passed as instances?
         if "remotes" in kwargs:
