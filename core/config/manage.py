@@ -97,6 +97,7 @@ definition.add_flag("write", "writing", True)
 definition.add_flag("write_assignment", "write the assignent scheme", None)
 definition.add_flag("write_status", False)
 definition.add_flag("write_moved", False)
+definition.add_flag("write_relaunched", False)
 definition.add_flag("write_commands", False)
 
 # -----------------------------------------------------------------
@@ -136,5 +137,15 @@ definition.add_optional("features_reanalysis", "string_list", "re-analyse only c
 # -----------------------------------------------------------------
 
 definition.add_optional("info_tables", "filepath_list", "tables with additional information for the simulations")
+
+# -----------------------------------------------------------------
+
+definition.add_flag("info_scientific", "use scientific notation for formatting info values (default is automatic)", None)
+definition.add_optional("info_ndecimal_places", "positive_integer", "number of decimal places for formatting info values", 3)
+
+# -----------------------------------------------------------------
+
+# Shared input?
+definition.add_flag("shared_input", "whether the different simulations share their input files", None)
 
 # -----------------------------------------------------------------

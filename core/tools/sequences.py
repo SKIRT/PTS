@@ -1368,6 +1368,22 @@ def in_all(item, sequences):
 
 # -----------------------------------------------------------------
 
+def get_values_in_all(*sequences):
+
+    """
+    This function ...
+    :param sequences:
+    :return:
+    """
+
+    values = []
+    first_sequence = sequences[0]
+    for value in first_sequence:
+        if in_all(value, sequences): values.append(value)
+    return values
+
+# -----------------------------------------------------------------
+
 def in_one(item, sequences, allow_more=True):
 
     """

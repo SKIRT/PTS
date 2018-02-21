@@ -26,7 +26,7 @@ definition.add_optional("nnodes", "integer", "number of computing nodes to be us
 definition.add_optional("nnodes_per_host", "string_integer_dictionary", "number of computing nodes to be used, per scheduling remote")
 
 # Advanced options
-definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
+definition.add_flag("shared_input", "whether the different simulations share their input folder", None)
 definition.add_flag("group_simulations", "group multiple simulations in one job", False)
 definition.add_optional("group_walltime", "real", "preferred walltime per job of grouped simulations")
 definition.add_flag("progress_bar", "use progress bars to show progress")

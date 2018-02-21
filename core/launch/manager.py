@@ -59,6 +59,10 @@ from ..remote.load import show_status
 from ..remote.mounter import mount_remote
 from ..simulation.skifile import show_normalizations
 from ..prep.summarize import show_instrument, show_stellar_component, show_dust_component
+from ..units.unit import get_common_unit
+from ..plot.sed import SEDPlotter
+from ..data.sed import load_multiple_seds
+from ..misc.fluxes import get_sed_instrument_name
 
 # -----------------------------------------------------------------
 
@@ -209,6 +213,8 @@ class RelaunchedSimulationsTable(SmartTable):
     # Add column info
     _column_info = OrderedDict()
     _column_info["Simulation name"] = (str, None, "name of the simulation")
+    _column_info["Original ID"] = (int, None, "original simulation ID")
+    _column_info["New ID"] = (int, None, "new simulation ID")
 
     # -----------------------------------------------------------------
 
@@ -250,6 +256,37 @@ class RelaunchedSimulationsTable(SmartTable):
 
         # Find index of the simulation
         return tables.find_index(self, simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def add_simulation(self, simulation, new_id=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param new_id:
+        :return:
+        """
+
+        # Set values
+        values = [simulation.name, simulation.id, new_id]
+
+        # Add the row
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def set_new_id(self, simulation_name, new_id):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param new_id:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        self.set_value("New ID", index, new_id)
 
 # -----------------------------------------------------------------
 
@@ -416,6 +453,80 @@ class SimulationManager(Configurable):
             info = self.get_info_for_simulation(simulation_name)
             for name in info: names[name] += 1
         return names.keys()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_info_values(self, name):
+
+        """
+        This function returns the info value for a particular info property name, for each simulation
+        :param name:
+        :return:
+        """
+
+        values = dict()
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            # Get the value (or None if not defined)
+            if self.has_info_for_simulation(simulation_name):
+                info = self.get_info_for_simulation(simulation_name)
+                if name in info: value = info[name]
+                else: value = None
+            else: value = None
+
+            # Set the value
+            values[simulation_name] = value
+
+        # Return the values
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def info_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        units = dict()
+
+        # Loop over the info properties
+        for name in self.info_names:
+
+            # Get the values for the different simulations
+            values = self.get_info_values(name)
+
+            # Get the common unit
+            unit = get_common_unit(values.values())
+
+            # Set the unit
+            units[name] = unit
+
+        # Return the units
+        return units
+
+    # -----------------------------------------------------------------
+
+    @property
+    def info_unit_strings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        strings = []
+        for name in self.info_names:
+            unit = self.info_units[name]
+            if unit is None: string = ""
+            else: string = tostr(unit)
+            strings.append(string)
+        return strings
 
     # -----------------------------------------------------------------
 
@@ -635,31 +746,31 @@ class SimulationManager(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Run commands
+        # 2. Run commands
         if self.do_commands: self.run_commands()
 
-        # Interactive
+        # 3. Interactive
         if self.do_interactive: self.interactive()
 
-        # Move simulations
+        # 4. Move simulations
         if self.do_moving: self.move()
 
-        # Launch
+        # 5. Launch
         if self.do_launch: self.launch()
 
-        # Show
+        # 6. Show
         if self.do_showing: self.show()
 
-        # 3. Write
+        # 7. Write
         if self.do_writing: self.write()
 
-        # Plotting
+        # 8. Plotting
         if self.do_plotting: self.plot()
 
-        # Re-analyse
+        # 9. Re-analyse
         if self.do_reanalysis: self.reanalyse()
 
-        # Analyse
+        # 10. Analyse
         if self.do_analysis: self.analyse()
 
     # -----------------------------------------------------------------
@@ -735,6 +846,7 @@ class SimulationManager(Configurable):
         self.launcher.config.dry = self.config.dry
         self.launcher.config.retrieve = False
         self.launcher.config.analyse = False
+        self.launcher.config.shared_input = self.config.shared_input
 
         # Writing
         self.launcher.config.write = True
@@ -772,6 +884,18 @@ class SimulationManager(Configurable):
         """
 
         return fs.create_directory_in(self.backup_path, "simulations")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def backup_assignment_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.backup_path, "assignment.dat")
 
     # -----------------------------------------------------------------
 
@@ -1034,6 +1158,18 @@ class SimulationManager(Configurable):
 
         # Get the simulation
         return self.simulations[host_id][simulation_name]
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_prefix(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).prefix()
 
     # -----------------------------------------------------------------
 
@@ -2005,6 +2141,9 @@ class SimulationManager(Configurable):
         # Open directories
         elif command.startswith("open"): self.open_command(command)
 
+        # Plot SED
+        elif command.startswith("sed"): self.plot_seds_command(command)
+
         # Show simulation input
         elif command.startswith("input"): self.show_input_command(command)
 
@@ -2459,6 +2598,68 @@ class SimulationManager(Configurable):
 
         # Locally
         else: fs.open_directory(simulation.base_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_seds_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="plot_seds")
+
+        # Plot
+        self.plot_simulation_seds(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulation_seds(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting simulated SEDs for simulation '" + simulation_name + "' ...")
+
+        # Get simulation prefix
+        prefix = self.get_simulation_prefix(simulation_name)
+
+        # Get simulation output
+        output = self.get_output(simulation_name)
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Plot the SEDs
+        for path in output.seds:
+
+            # Get instrument name
+            instr_name = get_sed_instrument_name(path, prefix)
+
+            # Load SEDs
+            seds = load_multiple_seds(path, as_dict=True)
+
+            # Loop over the SEDs
+            for contribution in seds:
+
+                # Determine label
+                label = instr_name + " " + contribution
+
+                # Get the SED
+                sed = seds[contribution]
+
+                # Add the SED to the plotter
+                plotter.add_sed(sed, label=label)
+
+        # Run the plotter
+        plotter.run()
 
     # -----------------------------------------------------------------
 
@@ -3402,9 +3603,6 @@ class SimulationManager(Configurable):
         # Don't remove
         else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
 
-        # Backup
-        #if self.config.backup_assignment:
-
     # -----------------------------------------------------------------
 
     @property
@@ -3973,7 +4171,14 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Relaunching simulation '" + simulation_name + "' ...")
 
-        #if self.config.backup_assignment:
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Add simulation to the relaunched table
+        self.relaunched.add_simulation(simulation)
+
+        # Not yet implemented
+        raise NotImplementedError("Needs to be implemented")
 
     # -----------------------------------------------------------------
 
@@ -4039,7 +4244,25 @@ class SimulationManager(Configurable):
         self.launcher.run()
 
         # Set moved IDs
-        for simulation in self.moved_simulations: self.moved.set_new_id(simulation.name, simulation.id)
+        for simulation in self.moved_simulations:
+
+            # Set the new ID of the moved simulation
+            self.moved.set_new_id(simulation.name, simulation.id)
+
+        # Set relaunched IDs
+        for simulation in self.relaunched_simulations:
+
+            # Set the new ID of the relaunched simulation
+            self.relaunched.set_new_id(simulation.name, simulation.id)
+
+        # Backup assignment?
+        if self.config.backup_assignment: self.assignment.saveto(self.backup_assignment_path)
+
+        # Change assignment
+        for simulation in self.launched_simulations: self.assignment.update_simulation(simulation)
+
+        # Set that the assignment has changed
+        self._adapted_assignment = True
 
         # Reset status?
         if self.has_moved or self.has_relaunched: self.reset_status()
@@ -5836,6 +6059,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def status_column_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        units = ["", "", "", "", ""]
+        if self.has_info: units.extend(self.info_unit_strings)
+        units.append("")
+        return units
+
+    # -----------------------------------------------------------------
+
     def show_status(self):
 
         """
@@ -5859,6 +6097,7 @@ class SimulationManager(Configurable):
 
             # Show the header
             print_row(*self.status_column_names)
+            if self.has_info: print_row(*self.status_column_units)
 
             # Loop over the simulations
             for index, simulation_name in enumerate(self.simulation_names):
@@ -5866,21 +6105,11 @@ class SimulationManager(Configurable):
                 # Get the simulation
                 simulation = self.get_simulation(simulation_name)
 
-                # Get display name
-                #display_name = self.get_display_name(simulation, id_size=3) #host_id_size=10)
-
                 # Get the status
                 status = self.get_status(simulation_name)
 
                 # Get index string
                 index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
-
-                # Show status
-                #if status == "analysed": print(" - " + index_string + fmt.green + display_name + ": analysed" + fmt.reset)
-                #elif status == "retrieved": print(" - "  + index_string + fmt.yellow + display_name + ": retrieved" + fmt.reset)
-                #elif status == "finished": print(" - " + index_string + fmt.yellow + display_name + ": finished" + fmt.reset)
-                #elif "running" in status: print(" - " + index_string + display_name + ": " + status + fmt.reset)
-                #else: print(" - " + index_string + fmt.red + display_name + ": " + status + fmt.reset)
 
                 # Set color
                 if status == "analysed": color = "green"
@@ -5904,11 +6133,16 @@ class SimulationManager(Configurable):
                 # Add info
                 if self.has_info:
                     for name in self.info_names:
+
                         info = self.get_info_for_simulation(simulation_name)
                         if name not in info: string = "--"
-                        else: string = tostr(info[name])
+                        else:
+                            value = info[name]
+                            unit = self.info_units[name]
+                            if unit is not None: value = value.to(unit).value
+                            string = tostr(value, scientific=self.config.info_scientific, decimal_places=self.config.info_ndecimal_places)
+
                         parts.append(string)
-                        # [tostr(parameter_values[label].value, scientific=True, decimal_places=3)
 
                 # Add the simulation status
                 parts.append(status)
@@ -6623,6 +6857,18 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_relaunched(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write_relaunched and self.has_relaunched
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_commands(self):
 
         """
@@ -6652,6 +6898,9 @@ class SimulationManager(Configurable):
 
         # Write the moved
         if self.do_write_moved: self.write_moved()
+
+        # Write the relaunched
+        if self.do_write_relaunched: self.write_relaunched()
 
         # Write the commands
         if self.do_write_commands: self.write_commands()
@@ -6709,6 +6958,24 @@ class SimulationManager(Configurable):
 
         # Write
         self.moved.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_relaunched(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the relaunched simulations ...")
+
+        # Determine path
+        path = self.output_path_file("relaunched.dat")
+
+        # Write
+        self.relaunched.saveto(path)
 
     # -----------------------------------------------------------------
 

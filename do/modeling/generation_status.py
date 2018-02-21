@@ -95,27 +95,6 @@ if not generation.has_assignment_table: raise RuntimeError("No assignment for th
 # Get number of simulations
 nsimulations = generation.nsimulations
 
-# # Determine number of retrieved and analysed simulations
-# if config.lazy:
-#     nretrieved = generation.nretrieved_simulations_basic
-#     nanalysed = generation.nanalysed_simulations_basic
-# else:
-#     nretrieved = generation.nretrieved_simulations
-#     nanalysed = generation.nanalysed_simulations
-#
-# # -----------------------------------------------------------------
-#
-# # Determine fraction analysed
-# fraction_retrieved = float(nretrieved) / nsimulations
-# fraction_analysed = float(nanalysed) / nsimulations
-#
-# # Show
-# print("")
-# print(fmt.bold + "Total number of simulations: " + fmt.reset + str(nsimulations))
-# print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(nretrieved) + " (" + tostr(fraction_retrieved*100, round=True, ndigits=2) + "%)")
-# print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(nanalysed) + " (" + tostr(fraction_analysed*100, round=True, ndigits=2) + "%)")
-# print("")
-
 # -----------------------------------------------------------------
 
 if len(chi_squared) > 0:
@@ -365,6 +344,11 @@ manager.config.plot_memory = config.plot_memory
 manager.config.interactive = config.interactive
 if config.interactive: manager.config.commands = ["status"]
 manager.config.dry = config.dry
+manager.config.shared_input = True
+manager.config.write_status = True
+manager.config.write_moved = True
+manager.config.write_relaunched = True
+manager.config.write_commands = True
 
 # Set paths
 manager.config.path = manage_current_path

@@ -789,6 +789,19 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def update_simulation(self, simulation):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # Set
+        self.set_id_and_host_for_simulation(simulation.name, simulation.id, simulation.host_id, simulation.cluster_name)
+
+    # -----------------------------------------------------------------
+
     def get_host_id_for_simulation(self, simulation_name):
 
         """
@@ -1313,6 +1326,9 @@ class BatchLauncher(Configurable):
 
         # The simulation assignment table
         self.assignment = None
+
+        # Groups of simulations with shared input
+        self.shared_input_groups = []
 
     # -----------------------------------------------------------------
 
@@ -2357,6 +2373,18 @@ class BatchLauncher(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def do_check_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.shared_input is None
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_estimate_runtimes(self):
 
         """
@@ -2452,7 +2480,7 @@ class BatchLauncher(Configurable):
         self.setup(**kwargs)
 
         # 2. Check the input files for all simulations
-        self.check_input()
+        if self.do_check_input: self.check_input()
 
         # 3. Set the parallelization scheme for the remote hosts for which this was not specified by the user
         self.set_parallelization()
@@ -2810,6 +2838,95 @@ class BatchLauncher(Configurable):
 
         # Inform the user
         log.info("Checking the input of the simulations that are run remotely ...")
+
+        # Loop over the remotes
+        for host_id in self.host_ids: self.check_input_for_remote(host_id)
+
+    # -----------------------------------------------------------------
+
+    def check_input_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # A dictionary with the simulation names for each input file that is shared
+        shared_input = defaultdict(list)
+
+        # Check which definitions in the queue of the remote host use the same input
+        for definition, simulation_name, analysis_options_item in self.queues[host_id]:
+
+            # Skip simulations without input
+            if definition.input_path is None: continue
+
+            # Convert definition input to actual SimulationInput object
+            simulation_input = SimulationInput.from_any(definition.input_path)
+
+            # Loop over the input files
+            for filename, filepath in simulation_input:
+
+                # Set
+                shared_input[filepath].append((simulation_name, filename))
+
+            # Set the simulation input object
+            definition.input_path = simulation_input
+
+        # List of participating simulations (simulations with a file that is shared with at least one other simulation)
+        participating_simulations = set()
+
+        # List of truly shared (at least 2 simulations) input files
+        truly_shared_filepaths = []
+
+        # Loop over the filepaths that are shared
+        for filepath in shared_input:
+
+            # Not shared
+            if len(shared_input[filepath]) < 2: continue
+
+            # Add all corresponding simulations to the list of participating simulations
+            for simulation_name, _ in shared_input[filepath]: participating_simulations.add(simulation_name)
+
+            # Add filepath
+            truly_shared_filepaths.append(filepath)
+
+        # Loop over the participating simulations
+        for definition, simulation_name, analysis_options_item in self.queues[host_id]:
+            if simulation_name not in participating_simulations: continue
+
+            # If at least one input file is not shared with others, skip the simulation
+            simulation_input = definition.input_path
+            if not all_input_files_are_shared(simulation_input, truly_shared_filepaths): continue
+
+            # For each input file, get the simulation names that share the file
+            shared_simulations = defaultdict(list)
+            for filename, filepath in simulation_input:
+                for sim_name, sim_filename in shared_input[filepath]:
+                    if sim_name == simulation_name: continue
+                    shared_simulations[filepath].append(sim_name)
+
+            # Check if there are other simulations that share all of the input files
+            other_simulation_names = sequences.get_values_in_all(*shared_simulations.values())
+            if len(other_simulation_names) == 0: continue
+
+            # Set list of shared simulations
+            shared_simulation_names = [simulation_name] + other_simulation_names
+
+            # Set group of simulations with shared input
+            self.set_shared_input_group(shared_simulation_names)
+
+    # -----------------------------------------------------------------
+
+    def set_shared_input_group(self, simulation_names):
+
+        """
+        This function ...
+        :param simulation_names:
+        :return:
+        """
+
+        self.shared_input_groups.append(simulation_names)
 
     # -----------------------------------------------------------------
 
@@ -5413,5 +5530,20 @@ class BatchLauncher(Configurable):
 
         # Return the analysis options
         return analysis_options
+
+# -----------------------------------------------------------------
+
+def all_input_files_are_shared(simulation_input, shared_filepaths):
+
+    """
+    This function ...
+    :param simulation_input:
+    :param shared_filepaths:
+    :return:
+    """
+
+    for filename, filepath in simulation_input:
+        if filepath not in shared_filepaths: return False
+    return True
 
 # -----------------------------------------------------------------

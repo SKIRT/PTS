@@ -22,7 +22,7 @@ from collections import OrderedDict, defaultdict
 from astropy.table import Table, MaskedColumn
 
 # Import the relevant PTS classes and modules
-from ..units.unit import PhotometricUnit
+from ..units.unit import PhotometricUnit, get_common_unit
 from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 from ..tools import types
@@ -2697,33 +2697,5 @@ def get_common_property_type(values):
 
     # Return the common type
     return ptype
-
-# -----------------------------------------------------------------
-
-def get_common_unit(values):
-
-    """
-    This function returns the common unit or first occuring unit
-    :param values:
-    :return:
-    """
-
-    units = []
-    for value in values:
-        if value is None: continue
-        if not hasattr(value, "unit"):
-            if len(units) == 0: continue # maybe none of the values have a unit
-            else: # at least some other has a unit
-                raise ValueError("Inconsistent values: some have units while others are scalar values")
-        units.append(value.unit)
-
-    # No units?
-    if len(units) == 0: return None
-
-    # Get
-    #unit = sequences.get_all_equal_value()
-
-    # Get first unit
-    return units[0]
 
 # -----------------------------------------------------------------
