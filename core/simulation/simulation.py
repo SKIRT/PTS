@@ -805,6 +805,18 @@ class SkirtSimulation(object):
     def from_modeling(self):
         return self.analysis.modeling_path is not None
 
+    @property
+    def has_extraction_output(self):
+        return self.analysis.extraction.path is not None and fs.is_directory(self.analysis.extraction.path) and not fs.is_empty(self.analysis.extraction.path)
+
+    @property
+    def has_plotting_output(self):
+        return self.analysis.plotting.path is not None and fs.is_directory(self.analysis.plotting.path) and not fs.is_empty(self.analysis.plotting.path)
+
+    @property
+    def has_misc_output(self):
+        return self.analysis.misc.path is not None and fs.is_directory(self.analysis.misc.path) and not fs.is_empty(self.analysis.misc.path)
+
     ## This function adds an analyser class to the simulation
     def add_analyser(self, clspath):
         self.analyser_paths.append(clspath)

@@ -63,6 +63,8 @@ definition.add_flag("check_parallelization", "check the specified parallelizatio
 
 # Write?
 definition.add_flag("write", "enable writing", False)
+definition.add_flag("write_assignment", "write assignment scheme", True)
+definition.add_flag("write_queues", "write queues", True)
 
 # -----------------------------------------------------------------
 

@@ -201,6 +201,42 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_retrieve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.retrieve and self.config.remote
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.show
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_analyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.analyse and self.has_simulations
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -212,25 +248,20 @@ class SKIRTLauncher(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Create the simulation definition (if necessary)
-        if self.definition is None: self.create_definition()
-
-        # 2. Set the parallelization scheme
-        if not self.has_parallelization: self.set_parallelization()
-        elif self.config.check_parallelization: self.check_parallelization()
+        # 2. Set or check parallelization scheme
+        self.set_or_check_parallelization()
 
         # 3. Launch the simulation
         self.launch()
 
         # 4. Retrieve the simulations that are finished
-        if self.config.remote: self.retrieve()
-        else: self.simulations.append(self.simulation) # add the locally run simulation to the list of simulations to be analysed
+        if self.do_retrieve: self.retrieve()
 
-        # Show
-        if self.config.show: self.show()
+        # 5. Show
+        if self.do_show: self.show()
 
-        # 5. Analyse the output of the retrieved simulations
-        if self.has_simulations: self.analyse()
+        # 6. Analyse the output of the retrieved simulations
+        if self.do_analyse: self.analyse()
 
     # -----------------------------------------------------------------
 
@@ -309,6 +340,11 @@ class SKIRTLauncher(Configurable):
 
         # Get the number of dust cells if given
         if "ncells" in kwargs: self.ncells = kwargs.pop("ncells")
+
+        ##
+
+        # Create the simulation definition (if necessary)
+        if self.definition is None: self.create_definition()
 
     # -----------------------------------------------------------------
 
@@ -389,6 +425,21 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_or_check_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the parallelization scheme
+        if not self.has_parallelization: self.set_parallelization()
+
+        # Check
+        elif self.config.check_parallelization: self.check_parallelization()
+
+    # -----------------------------------------------------------------
+
     def set_parallelization(self):
 
         """
@@ -399,8 +450,10 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Setting the parallelization scheme ...")
 
-        # Set parallelization
+        # Remote
         if self.config.remote: self.set_parallelization_remote()
+
+        # Local
         else: self.set_parallelization_local()
 
     # -----------------------------------------------------------------
@@ -753,8 +806,10 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulation ...")
 
-        # Launch remotely or locally
+        # Launch remotely
         if self.config.remote is not None: self.launch_remote()
+
+        # Launch locally
         else: self.launch_local()
 
     # -----------------------------------------------------------------
@@ -780,6 +835,9 @@ class SKIRTLauncher(Configurable):
 
         # Set the analysis options for the simulation
         self.simulation.analysis = self.analysis_options
+
+        # Add the locally run simulation to the list of simulations to be analysed
+        self.simulations.append(self.simulation)
 
     # -----------------------------------------------------------------
 

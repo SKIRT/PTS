@@ -51,9 +51,7 @@ class SkirtExec:
         self._path = path if path is not None else ""
         if not self._path.endswith("skirt"): self._path = os.path.join(self._path, "skirt")
         if self._path != "skirt": self._path = os.path.realpath(os.path.expanduser(self._path))
-
         if self._path == "skirt":
-
             if introspection.skirt_is_present(): self._path = introspection.skirt_path
             else: raise EnvironmentError("SKIRT is not installed or not in the PATH environment variable")
 
@@ -66,6 +64,10 @@ class SkirtExec:
         # Temporary files to fetch standard and error output
         self._output_file = None
         self._error_file = None
+
+    @property
+    def path(self):
+        return self._path
 
     @property
     def has_pexpect(self):
@@ -147,6 +149,26 @@ class SkirtExec:
         # Run SKIRT with the specified parameters
         return self.run(arguments, wait=wait, silent=silent)
 
+    ## This function returns the MPI executable command
+    @property
+    def mpi_command(self):
+
+        # Determine the MPI command based on MPI style
+        if self.mpi_style == "lsf": mpi_command = "mpirun -lsf"
+        elif self.mpi_style == "srun": mpi_command = "mpirun -srun"
+        elif self.mpi_style == "generic": mpi_command = "mpirun"
+        else: raise ValueError("Invalid MPI style")
+
+    ## This property returns whether the target system uses a scheduling system
+    @property
+    def scheduler(self):
+
+        # Based on MPI style
+        if self.mpi_style == "lsf": return True
+        elif self.mpi_style == "srun": return True
+        elif self.mpi_style == "generic": return False
+        else: raise ValueError("Invalid MPI style")
+
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True,
             silent=False, show_progress=False, finish_at=None, finish_after=None, debug_output=False):
@@ -182,20 +204,8 @@ class SkirtExec:
             log.warning("No mpirun executable: skipping simulations")
             return []
 
-        # Determine the MPI command
-        if self.mpi_style == "lsf":
-            scheduler = True
-            mpi_command = "mpirun -lsf"
-        elif self.mpi_style == "srun":
-            scheduler = True
-            mpi_command = "mpirun -srun"
-        elif self.mpi_style == "generic":
-            scheduler = False
-            mpi_command = "mpirun"
-        else: raise ValueError("Invalid MPI style")
-
         # Get the command string
-        command = arguments.to_command(scheduler, skirt_path=self._path, mpirun_path=mpi_command)
+        command = arguments.to_command(self.scheduler, skirt_path=self._path, mpirun_path=self.mpi_command)
 
         # Not waiting and progress_bar don't go together!
         if show_progress and not wait: raise ValueError("Cannot show progress when 'wait' is False")

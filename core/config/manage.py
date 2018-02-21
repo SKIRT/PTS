@@ -42,6 +42,9 @@ definition.add_flag("interactive", "use interactive mode")
 # Offline?
 definition.add_flag("offline", "offline mode")
 
+# Dry: don't actually launch any simulation
+definition.add_flag("dry", "dry mode")
+
 # Backup
 definition.add_flag("backup_simulations", "backup simulation files")
 definition.add_flag("backup_assignment", "backup assignment table")

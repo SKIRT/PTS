@@ -67,6 +67,7 @@ definition.add_flag("lazy", "lazy mode")
 definition.add_flag("interactive", "interactive simulation management mode")
 definition.add_flag("find_simulations", "find missing simulations by searching on simulation name")
 definition.add_optional("find_remotes", "string_list", "find missing simulations in these remote hosts", default=all_host_ids, choices=all_host_ids)
+definition.add_flag("dry", "run in dry mode")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -489,6 +490,7 @@ manager.config.plot_runtimes = config.plot_runtimes
 manager.config.plot_memory = config.plot_memory
 manager.config.interactive = config.interactive
 if config.interactive: manager.config.commands = ["status"]
+manager.config.dry = config.dry
 
 # Set paths
 manager.config.path = manage_current_path

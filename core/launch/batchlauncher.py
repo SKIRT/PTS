@@ -53,6 +53,7 @@ from ..tools import numbers
 from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status
 from ..simulation.remote import is_analysed_status, is_aborted_status, is_cancelled_status, is_crashed_status
 from ..tools import types
+from ..simulation.simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 
@@ -2404,14 +2405,14 @@ class BatchLauncher(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def do_receive(self):
+    def do_retrieve(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.testing
+        return self.config.retrieve and not self.testing
 
     # -----------------------------------------------------------------
 
@@ -2435,7 +2436,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return self.has_simulations
+        return self.config.analyse and self.has_simulations
 
     # -----------------------------------------------------------------
 
@@ -2469,7 +2470,7 @@ class BatchLauncher(Configurable):
         if self.do_write: self.write()
 
         # 8. Retrieve the simulations that are finished
-        if self.do_receive: self.try_retrieving()
+        if self.do_retrieve: self.try_retrieving()
 
         # 9. Show the simulations that are finished
         if self.do_show_finished: self.show_finished()
@@ -4340,10 +4341,28 @@ class BatchLauncher(Configurable):
         # Inform the user
         log.info("Launching simulation " + str(index + 1) + " out of " + str(nqueued) + " in the local queue ...")
 
+        # Dry: don't actually run the simulation
+        if self.config.dry:
+
+            # Show warning
+            log.warning("[DRY] Not actually launching simulation '" + name + "' in dry mode")
+
+            # Create the arguments
+            arguments = SkirtArguments.from_definition(definition, logging_options, parallelization)
+
+            # Get the command string
+            command = arguments.to_command(self.skirt.scheduler, skirt_path=self.skirt.path, mpirun_path=self.skirt.mpi_command)
+
+            # Show the command
+            log.warning("[DRY] To launch the simulation, the command is: '" + command + "'")
+
+            # Create the simulation object
+            simulation = SkirtSimulation(definition.prefix, inpath=arguments.input_path, outpath=arguments.output_path, ski_path=definition.ski_path, name=name)
+
         # Run the simulation
-        simulation = self.skirt.run(definition, logging_options=logging_options,
-                                    parallelization=parallelization, silent=(not log.is_debug()),
-                                    show_progress=self.config.show_progress)
+        else: simulation = self.skirt.run(definition, logging_options=logging_options,
+                                        parallelization=parallelization, silent=(not log.is_debug()),
+                                        show_progress=self.config.show_progress)
 
         # Overwrite the simulation object when the definition had been altered by this class
         if original_definition is not None:
@@ -4595,7 +4614,7 @@ class BatchLauncher(Configurable):
         # Add to the queue
         simulation = remote.add_to_queue(definition, logging_options, parallelization, name=name,
                                          scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                         analysis_options=analysis_options, emulate=self.config.emulate)
+                                         analysis_options=analysis_options, emulate=self.config.emulate, dry=self.config.dry)
 
         # Success
         log.success("Added simulation " + str(index + 1) + " out of " + str(nqueued) + " to the queue of remote host " + remote.host_id)
@@ -4734,7 +4753,10 @@ class BatchLauncher(Configurable):
             # If all simulations should have the same handle
             if isinstance(handles, ExecutionHandle): simulation.handle = handles
             else: simulation.handle = handles[simulation.name]  # get the handle for this particular simulation
-            simulation.save()
+
+            # Save the simulation with the execution handle
+            if not self.config.dry: simulation.save()
+            else: log.warning("[DRY] Not saving the simulation object ...")
 
     # -----------------------------------------------------------------
 
@@ -5215,10 +5237,10 @@ class BatchLauncher(Configurable):
         log.info("Writing ...")
 
         # Write the simulation assignment
-        self.write_assignment()
+        if self.config.write_assignment: self.write_assignment()
 
         # Write queues
-        self.write_queues()
+        if self.config.write_queues: self.write_queues()
 
     # -----------------------------------------------------------------
 

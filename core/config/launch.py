@@ -45,3 +45,9 @@ definition.add_flag("show", "show", True)
 definition.add_flag("show_finished", "show the output of finished simulations", False)
 
 # -----------------------------------------------------------------
+
+# Retrieve and analyse finished simulations?
+definition.add_flag("retrieve", "retrieve finished simulations", True)
+definition.add_flag("analyse", "analyse retrieved simulations", True)
+
+# -----------------------------------------------------------------

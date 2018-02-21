@@ -70,6 +70,10 @@ plot_x_limits = (0., None)
 
 # -----------------------------------------------------------------
 
+clear_analysis_steps = ["extraction", "plotting", "misc"]
+
+# -----------------------------------------------------------------
+
 # Define commands
 commands = OrderedDict()
 commands["help"] = "show help"
@@ -77,6 +81,7 @@ commands["history"] = "show history of executed commands"
 commands["status"] = "show simulation status"
 commands["hosts"] = "show remote hosts of the simulations"
 commands["parallelizations"] = "show parallelization schemes used per host"
+commands["info"] = "show info about the simulation (if defined in info tables)"
 commands["open"] = "open input, output or base simulation directory"
 commands["input"] = "show simulation input"
 commands["output"] = "show simuation output"
@@ -88,6 +93,8 @@ commands["show"] = "show"
 commands["plot"] = "plot"
 commands["move"] = "move simulations from one remote to another"
 commands["stop"] = "stop simulations"
+commands["remove"] = "remove simulation"
+commands["clear"] = "clear simulation output/input/analysis"
 commands["relaunch"] = "relaunch simulations"
 commands["log"] = "show log output of a simulation"
 commands["settings"] = "show simulation settings"
@@ -579,8 +586,33 @@ class SimulationManager(Configurable):
                 for remote in remotes: self.set_remote(remote)
             else: raise ValueError("Invalid type for 'remotes'")
 
+        # Set launcher options
+        self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    def set_launcher_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting options for the batch simulation launcher ...")
+
         # Set the working directory for the batch launcher
         self.launcher.config.path = self.config.path
+
+        # Set options
+        self.launcher.config.dry = self.config.dry
+        self.launcher.config.retrieve = False
+        self.launcher.config.analyse = False
+
+        # Writing
+        self.launcher.config.write = True
+        self.launcher.config.write_assignment = False
+        self.launcher.config.write_queues = True
 
     # -----------------------------------------------------------------
 
@@ -601,6 +633,31 @@ class SimulationManager(Configurable):
         else:
             if self.config.backup_dirname is not None: return self.output_path_directory(self.config.backup_dirname, create=True)
             else: return self.output_path_directory(time.unique_name("manage"), create=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def backup_simulations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.backup_path, "simulations")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_backup_simulations_path_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return fs.create_directory_in(self.backup_simulations_path, host_id)
 
     # -----------------------------------------------------------------
 
@@ -850,6 +907,30 @@ class SimulationManager(Configurable):
 
         # Get the simulation
         return self.simulations[host_id][simulation_name]
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).path
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_host_id(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).host_id
 
     # -----------------------------------------------------------------
 
@@ -1749,6 +1830,9 @@ class SimulationManager(Configurable):
         # Show parallelizations
         elif command.startswith("parallelizations"): self.show_parallelizations_command(command)
 
+        # Show info
+        elif command.startswith("info"): self.show_info_command(command)
+
         # Open directories
         elif command.startswith("open"): self.open_command(command)
 
@@ -1781,6 +1865,12 @@ class SimulationManager(Configurable):
 
         # Stop simulation?
         elif command.startswith("stop"): self.stop_simulation_command(command)
+
+        # Remove simulation?
+        elif command.startswith("remove"): self.remove_simulation_command(command)
+
+        # Clear simulation output/input/analysis
+        elif command.startswith("clear"): self.clear_simulation_command(command)
 
         # Relaunch simulation
         elif command.startswith("relaunch"): self.relaunch_simulation_command(command)
@@ -1959,6 +2049,29 @@ class SimulationManager(Configurable):
         for parallelization in parallelizations:
             print(" - " + tostr(parallelization))
         print("")
+
+    # -----------------------------------------------------------------
+
+    def show_info_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_info(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing info for simulation '" + simulation_name + "' ...")
 
     # -----------------------------------------------------------------
 
@@ -3082,8 +3195,13 @@ class SimulationManager(Configurable):
         # Add entry to moved table
         self.moved.add_simulation(simulation, host)
 
+        # Remove original simulation?
+        if not self.config.dry: self.remove_simulation(simulation_name) # backup is done here
+
+        # Don't remove
+        else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
+
         # Backup
-        #if self.config.backup_simulations:
         #if self.config.backup_assignment:
 
     # -----------------------------------------------------------------
@@ -3168,7 +3286,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def relaunch_simulation_command(self, command):
+    def remove_simulation_command(self, command):
 
         """
         This function ...
@@ -3177,31 +3295,393 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, name="remove_simulation")
+
+        # Remove
+        self.remove_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def remove_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the simulation path
+        path = self.get_simulation_path(simulation_name)
+
+        # Make backup of the simulation file?
+        if self.config.backup_simulations:
+            host_id = self.get_simulation_host_id(simulation_name)
+            log.debug("Making backup of the simulation '" + simulation_name + "' ...")
+            fs.copy_file(path, self.get_backup_simulations_path_for_host(host_id))
+
+        # Remove the simulation file
+        fs.remove_file(path)
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_positional_optional("analysis_steps", "string_list", "analysis steps for which to clear the output", choices=clear_analysis_steps)
+        definition.add_flag("remote", "clear on the remote host", False)
+
+        # Parse command
+        splitted, simulation_name, config = self.parse_simulation_command(command, definition, name="clear_simulation", index=2)
+
+        # Input
+        if splitted[1] == "input":
+
+            if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
+            if config.remote: self.clear_simulation_input_remote(simulation_name)
+            else: self.clear_simulation_input_local(simulation_name)
+
+        # Output
+        elif splitted[1] == "output":
+
+            if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
+            if config.remote: self.clear_simulation_output_remote(simulation_name)
+            else: self.clear_simulation_output_local(simulation_name)
+
+        # Analysis
+        elif splitted[1] == "analysis":
+
+            if config.remote: raise ValueError("Cannot enable 'remote' when clearing analysis")
+            self.clear_simulation_analysis(simulation_name, steps=config.analysis_steps)
+
+        # Invalid
+        else: raise ValueError("Invalid command")
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_input(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing input of simulation '" + simulation_name + "' ...")
+
+        # Local
+        self.clear_simulation_input_local(simulation_name)
+
+        # Remote
+        self.clear_simulation_input_remote(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_input_local(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing local input of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_input_remote(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing remote input of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    def unretrieve_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unretrieving simulation '" + simulation_name + "' ...")
+
+        # Clear local output
+        self.clear_simulation_output_local(simulation_name)
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set not retrieved
+        simulation.set_retrieved(False)
+
+        # Save the simulation
+        simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing output of simulation '" + simulation_name + "' ...")
+
+        # Local
+        self.clear_simulation_output_local(simulation_name)
+
+        # Remote
+        self.clear_simulation_output_remote(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_output_local(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing local output of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_output_remote(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing remote output of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    def unanalyse_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unanalysing simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Extraction
+        if simulation.analysed_any_extraction: self.unanalyse_extraction(simulation_name)
+
+        # Plotting
+        if simulation.analysed_any_plotting: self.unanalyse_plotting(simulation_name)
+
+        # Misc
+        if simulation.analysed_any_misc: self.unanalyse_misc(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def unanalyse_extraction(self, simulation_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unanalysing extraction of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Clear the extraction
+        self.clear_extraction(simulation_name)
+
+        # Unset flag
+        simulation.unset_analysed_extraction()
+
+        # Save simulation
+        simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def unanalyse_plotting(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unanalysing plotting of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Clear the plotting
+        self.clear_plotting(simulation_name)
+
+        # Unset flag
+        simulation.unset_analysed_plotting()
+
+        # Save simulation
+        simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def unanalyse_misc(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unanalysing misc analysis of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Clear the misc analysis
+        self.clear_misc(simulation_name)
+
+        # Unset flag
+        simulation.unset_analysed_misc()
+
+        # Save simulation
+        simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_analysis(self, simulation_name, steps=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param steps:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing analysis of simulation '" + simulation_name + "' ...")
+
+        # Extraction
+        if steps is None or "extraction" in steps: self.clear_extraction(simulation_name)
+
+        # Plotting
+        if steps is None or "plotting" in steps: self.clear_plotting(simulation_name)
+
+        # Misc
+        if steps is None or "misc" in steps: self.clear_misc(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def clear_extraction(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing extraction analysis output for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Clear
+        if simulation.has_extraction_output: fs.clear_directory(simulation.analysis.extraction.path)
+
+    # -----------------------------------------------------------------
+
+    def clear_plotting(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing plotting analysis output for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Clear
+        if simulation.has_plotting_output: fs.clear_directory(simulation.analysis.plotting.path)
+
+    # -----------------------------------------------------------------
+
+    def clear_misc(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Clearing misc analysis output for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Clear
+        if simulation.has_misc_output: fs.clear_directory(simulation.analysis.misc.path)
+
+    # -----------------------------------------------------------------
+
+    def relaunch_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_flag("finished", "relaunch already finished simulations", False)
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition)
 
         # Check simulation
-        if not self.is_failed(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
-
-        # # Relaunch finished simulations?
-        # if config.finished:
-        #
-        #     # Remove local output, if present
-        #     if simulation.retrieved:
-        #         fs.clear_directory(simulation.output_path)
-        #         simulation.set_retrieved(False)
-        #         simulation.save()
-        #     if simulation.analysed_any_extraction:
-        #         fs.clear_directory(simulation.analysis.extraction.path)
-        #         simulation.unset_analysed_extraction()
-        #         simulation.save()
-        #     if simulation.analysed_any_plotting:
-        #         fs.clear_directory(simulation.analysis.plotting.path)
-        #         simulation.unset_analysed_plotting()
-        #         simulation.save()
-        #     if simulation.analysed_any_misc:
-        #         fs.clear_directory(simulation.analysis.misc.path)
-        #         simulation.unset_analysed_misc()
-        #         simulation.save()
+        if not self.is_failed(simulation_name):
+            if config.finished and self.is_finished(simulation_name):
+                log.info("Simulation '" + simulation_name + "' is already finished, removing local and remote output and undoing analysis ...")
+                if self.is_retrieved(simulation_name): self.unretrieve_simulation(simulation_name)
+                self.clear_simulation_output_remote(simulation_name)
+                self.unanalyse_simulation(simulation_name)
+            else: raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
 
         # Relaunch the simulation
         self.relaunch_simulation(simulation_name)
@@ -3247,6 +3727,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def relaunched_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.relaunched.simulation_names
+
+    # -----------------------------------------------------------------
+
+    def is_relaunched(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self.relaunched_simulation_names
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -3261,12 +3765,102 @@ class SimulationManager(Configurable):
         self.launcher.run()
 
         # Set moved IDs
-        for simulation in self.launcher.launched_simulations:
-            if not self.is_moved(simulation.name): continue
-            self.moved.set_new_id(simulation.name, simulation.id)
+        for simulation in self.moved_simulations: self.moved.set_new_id(simulation.name, simulation.id)
 
         # Reset status?
         if self.has_moved or self.has_relaunched: self.reset_status()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def launched_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.launched_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nlaunched_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.launched_simulations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def launched_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [simulation.name for simulation in self.launched_simulations]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def moved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        simulations = []
+        for simulation in self.launched_simulations:
+            if not self.is_moved(simulation.name): continue
+            simulations.append(simulation)
+        return simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmoved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.moved_simulations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def relaunched_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        simulations = []
+        for simulation in self.launched_simulations:
+            if not self.is_relaunched(simulation.name): continue
+            simulations.append(simulation)
+        return simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrelaunched_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.relaunched_simulations)
 
     # -----------------------------------------------------------------
 
