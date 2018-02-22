@@ -2816,41 +2816,8 @@ class Generation(object):
                             other_remote_input_path = other_simulation.remote_input_path
                             simulation = produce_simulation_from_other(other_simulation, simulation_name, simulation_id, cluster_name)
 
-                            # Check local paths
-                            if simulation.has_input_directory and (not fs.is_directory(simulation.input_path) or fs.is_empty(simulation.input_path)): raise IOError("Local input directory '" + simulation.input_path + "' is missing or empty")
-                            if not fs.is_directory(simulation.output_path): raise IOError("Local output directory '" + simulation.output_path + "' is missing")
-                            if not fs.is_directory(simulation.base_path): raise IOError("Local simulation directory '" + simulation.base_path + "' is missing")
-                            if not fs.is_file(simulation.ski_path): raise IOError("Local ski file '" + simulation.ski_path + "' is missing")
-                            if simulation_name not in simulation.output_path: raise RuntimeError("Something went wrong")
-                            if simulation_name not in simulation.base_path: raise RuntimeError("Something went wrong")
-                            if simulation_name not in simulation.ski_path: raise RuntimeError("Something went wrong")
-
-                            # Check analysis paths
-                            if simulation.analysis.extraction.path is not None:
-                                path = simulation.analysis.extraction.path
-                                if not fs.is_directory(path): raise IOError("Extraction directory '" + path + "' is missing")
-                                if simulation_name not in path: raise RuntimeError("Something went wrong")
-                            if simulation.analysis.plotting.path is not None:
-                                path = simulation.analysis.plotting.path
-                                if not fs.is_directory(path): raise IOError("Plotting directory '" + path + "' is missing")
-                                if simulation_name not in path: raise RuntimeError("Something went wrong")
-                            if simulation.analysis.misc.path is not None:
-                                path = simulation.analysis.misc.path
-                                if not fs.is_directory(path): raise IOError("Misc directory '" + path + "' is missing")
-                                if simulation_name not in path: raise RuntimeError("Something went wrong")
-
-                            # Check remote paths
-                            remote = remotes[host_id]
-                            if not remote.is_file(simulation.remote_ski_path): raise IOError("Remote ski file '" + simulation.remote_ski_path + "' is missing")
-                            if not remote.is_directory(simulation.remote_simulation_path): raise IOError("Remote simulation path '" + simulation.remote_simulation_path + "' is missing")
-                            if not remote.is_directory(simulation.remote_input_path) or remote.is_empty(simulation.remote_input_path):
-                                if remote.is_directory(other_remote_input_path) and not remote.is_empty(other_remote_input_path):
-                                    simulation.remote_input_path = other_remote_input_path
-                                else: raise IOError("Remote input path for simulation '" + simulation_name + "' is not found")
-                            if not remote.is_directory(simulation.remote_output_path): raise IOError("Remote output path '" + simulation.remote_output_path + "' is missing")
-                            if simulation_name not in simulation.remote_ski_path: raise RuntimeError("Something went wrong")
-                            if simulation_name not in simulation.remote_simulation_path: raise RuntimeError("Something went wrong")
-                            if simulation_name not in simulation.remote_output_path: raise RuntimeError("Something went wrong")
+                            # Check simulation paths
+                            check_simulation_paths(simulation, remote=remotes[host_id], other_remote_input_path=other_remote_input_path)
 
                             # Save the simulation
                             simulation.save()
@@ -3040,6 +3007,9 @@ def produce_simulation_from_other(other_simulation, simulation_name, simulation_
     :return:
     """
 
+    # Debugging
+    log.debug("Producing simulation '" + simulation_name + "' from simulation '" + other_simulation.name + "' ...")
+
     # Determine simulations directories
     simulation_path = other_simulation.path
     simulation_dirpath = fs.directory_of(simulation_path)
@@ -3063,6 +3033,8 @@ def produce_simulation_from_other(other_simulation, simulation_name, simulation_
     adapt_config = dict()
     adapt_config["contains"] = "path"
     adapt_config["replace_string"] = (other_simulation_name, simulation_name)
+    adapt_config["types"] = ["string"]
+    adapt_config["only_replacements"] = True
 
     # Adapt all paths in the simulation file
     adapt_simulation(simulation, adapt_config)
@@ -3070,5 +3042,55 @@ def produce_simulation_from_other(other_simulation, simulation_name, simulation_
 
     # Return the simulation
     return simulation
+
+# -----------------------------------------------------------------
+
+def check_simulation_paths(simulation, remote=None, other_remote_input_path=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param remote:
+    :param other_remote_input_path:
+    :return:
+    """
+
+    # Get simulation name
+    simulation_name = simulation.name
+
+    # Check local paths
+    if simulation.has_input_directory and (not fs.is_directory(simulation.input_path) or fs.is_empty(simulation.input_path)): raise IOError("Local input directory '" + simulation.input_path + "' is missing or empty")
+    if not fs.is_directory(simulation.output_path): raise IOError("Local output directory '" + simulation.output_path + "' is missing")
+    if not fs.is_directory(simulation.base_path): raise IOError("Local simulation directory '" + simulation.base_path + "' is missing")
+    if not fs.is_file(simulation.ski_path): raise IOError("Local ski file '" + simulation.ski_path + "' is missing")
+    if simulation_name not in simulation.output_path: raise RuntimeError("Something went wrong")
+    if simulation_name not in simulation.base_path: raise RuntimeError("Something went wrong")
+    if simulation_name not in simulation.ski_path: raise RuntimeError("Something went wrong")
+
+    # Check analysis paths
+    if simulation.analysis.extraction.path is not None:
+        path = simulation.analysis.extraction.path
+        if not fs.is_directory(path): raise IOError("Extraction directory '" + path + "' is missing")
+        if simulation_name not in path: raise RuntimeError("Something went wrong")
+    if simulation.analysis.plotting.path is not None:
+        path = simulation.analysis.plotting.path
+        if not fs.is_directory(path): raise IOError("Plotting directory '" + path + "' is missing")
+        if simulation_name not in path: raise RuntimeError("Something went wrong")
+    if simulation.analysis.misc.path is not None:
+        path = simulation.analysis.misc.path
+        if not fs.is_directory(path): raise IOError("Misc directory '" + path + "' is missing")
+        if simulation_name not in path: raise RuntimeError("Something went wrong")
+
+    # Check remote paths
+    if remote is not None:
+        if not remote.is_file(simulation.remote_ski_path): raise IOError("Remote ski file '" + simulation.remote_ski_path + "' is missing")
+        if not remote.is_directory(simulation.remote_simulation_path): raise IOError("Remote simulation path '" + simulation.remote_simulation_path + "' is missing")
+        if not remote.is_directory(simulation.remote_input_path) or remote.is_empty(simulation.remote_input_path):
+            if other_remote_input_path is not None and remote.is_directory(other_remote_input_path) and not remote.is_empty(other_remote_input_path): simulation.remote_input_path = other_remote_input_path
+            else: raise IOError("Remote input path for simulation '" + simulation_name + "' is not found")
+        if not remote.is_directory(simulation.remote_output_path): raise IOError("Remote output path '" + simulation.remote_output_path + "' is missing")
+        if simulation_name not in simulation.remote_ski_path: raise RuntimeError("Something went wrong")
+        if simulation_name not in simulation.remote_simulation_path: raise RuntimeError("Something went wrong")
+        if simulation_name not in simulation.remote_output_path: raise RuntimeError("Something went wrong")
 
 # -----------------------------------------------------------------

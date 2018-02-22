@@ -341,12 +341,18 @@ class SimulationAdapter(Configurable):
             # Check ptype
             if ptype is None: ptype = "any"
 
+            # Check types
+            if self.config.types is not None and ptype not in self.config.types: continue
+
             # Replace?
-            if ptype == "string" and self.config.replace_string is not None and self.config.replace_string[0] in default:
+            if ptype == "string" and self.config.replace_string is not None and default is not None and self.config.replace_string[0] in default:
 
                 #print(default)
                 value = default.replace(self.config.replace_string[0], self.config.replace_string[1])
                 #print(value)
+
+            # No replacements: skip
+            elif self.config.only_replacements: continue
 
             # No replacements: prompt for new value
             else:
@@ -432,6 +438,9 @@ class SimulationAdapter(Configurable):
                 ptype = get_common_ptype(unique_values)
                 choices = None
                 suggestions = unique_values
+
+            # Check types
+            if self.config.types is not None and ptype not in self.config.types: continue
 
             # Ask for the new value
             value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
@@ -812,7 +821,8 @@ class AnalysisAdapter(Configurable):
         # Check whether analysis options are defined
         has_changed = self.single_simulation.analysis.prompt_properties(contains=self.config.contains, not_contains=self.config.not_contains,
                                               exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                              startswith=self.config.startswith, endswith=self.config.endswith, replace_string=self.config.replace_string)
+                                              startswith=self.config.startswith, endswith=self.config.endswith, replace_string=self.config.replace_string,
+                                              types=self.config.types, only_replacements=self.config.only_replacements)
 
         # Set changed flag
         self.single_changed = has_changed
@@ -875,6 +885,9 @@ class AnalysisAdapter(Configurable):
 
             # Get the ptype
             ptype = self.get_ptype(name)
+
+            # Check types
+            if self.config.types is not None and ptype not in self.config.types: continue
 
             # Only one unique value
             if len(unique_values) == 1:
@@ -955,6 +968,9 @@ class AnalysisAdapter(Configurable):
 
                 # Get the ptype
                 ptype = self.get_ptype(name, section_name)
+
+                # Check types
+                if self.config.types is not None and ptype not in self.config.types: continue
 
                 # Only one unique value
                 if len(unique_values) == 1:
@@ -1038,6 +1054,8 @@ def set_analysis_value_for_simulation(simulation, name, value, section=None):
     # Debugging
     log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
     if section is not None: log.debug("in section '" + section + "'")
+    if section is not None: log.debug("Original value: '" + tostr(simulation.analysis[section][name]) + "'")
+    else: log.debug("Original value: '" + tostr(simulation.analysis[name]) + "'")
 
     #print(simulation.analysis[section][name])
     #print(value)
@@ -1067,6 +1085,9 @@ def set_analysis_value_for_simulations(simulations, name, value, section=None):
 
     # Loop over the simulations
     for simulation_id in simulations:
+
+        # Debugging
+        #log.debug("Original value: '" + get_analysis_value_for_simulation(simulations[simulation_id], name, section=section) + "'")
 
         # Set value
         set_analysis_value_for_simulation(simulations[simulation_id], name, value, section=section)
@@ -1127,6 +1148,7 @@ def set_value_for_simulation(simulation, name, value):
 
     # Debugging
     log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+    log.debug("Original value: '" + tostr(getattr(simulation, name)) + "' ...")
 
     # Set the new value
     setattr(simulation, name, value)

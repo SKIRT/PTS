@@ -33,6 +33,8 @@ definition.add_optional("endswith", "string", "only adapt properties whose name 
 
 # -----------------------------------------------------------------
 
+definition.add_optional("types", "string_list", "only adapt properties of these types")
 definition.add_optional("replace_string", "string_replacement", "replace strings")
+definition.add_flag("only_replacements", "only do replacements (don't prompt for other properties)")
 
 # -----------------------------------------------------------------

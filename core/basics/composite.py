@@ -498,7 +498,7 @@ class SimplePropertyComposite(object):
 
     def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
                           startswith=None, endswith=None, required=True, label=None, suggestions=None,
-                          add_suggestions=False, replace_string=None):
+                          add_suggestions=False, replace_string=None, types=None, only_replacements=False):
 
         """
         This function ...
@@ -514,6 +514,8 @@ class SimplePropertyComposite(object):
         :param suggestions:
         :param add_suggestions:
         :param replace_string:
+        :param types:
+        :param only_replacements:
         :return:
         """
 
@@ -540,6 +542,9 @@ class SimplePropertyComposite(object):
             default = self.get_value(name)
             choices = self.get_choices(name)
 
+            # Check type
+            if types is not None and ptype not in types: continue
+
             # Get suggestions
             suggestns = suggestions[name] if suggestions is not None and name in suggestions else None
 
@@ -552,7 +557,10 @@ class SimplePropertyComposite(object):
                 continue
 
             # Replace?
-            if ptype == "string" and replace_string is not None and replace_string[0] in default: value = default.replace(replace_string[0], replace_string[1])
+            if ptype == "string" and replace_string is not None and default is not None and replace_string[0] in default: value = default.replace(replace_string[0], replace_string[1])
+
+            # No replacement: skip
+            elif only_replacements: continue
 
             # No replacement: prompt for value
             else:
@@ -566,6 +574,7 @@ class SimplePropertyComposite(object):
 
                 # Debugging
                 log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+                log.debug("Original value: '" + tostr(default) + "'")
 
                 # Set the new value
                 self.set_property(name, value)
@@ -580,7 +589,12 @@ class SimplePropertyComposite(object):
             for name in self.section_names:
 
                 # Prompt the settings of the section
-                has_changed_section = self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name)
+                has_changed_section = self.sections[name].prompt_properties(recursive=True, contains=contains, not_contains=not_contains,
+                                                                            exact_name=exact_name, exact_not_name=exact_not_name,
+                                                                            startswith=startswith, endswith=endswith,
+                                                                            required=required, label=label, suggestions=suggestions,
+                                                                            add_suggestions=add_suggestions, replace_string=replace_string,
+                                                                            types=types, only_replacements=only_replacements)
                 if has_changed_section: has_changed = True
 
         # Add suggested

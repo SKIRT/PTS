@@ -1390,6 +1390,7 @@ def prompt_mapping(parameters, contains=None, not_contains=None, exact_name=None
 
             # Debugging
             log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+            log.debug("Original value: '" + string + "'")
 
             # Set the new value
             parameters[name] = value
