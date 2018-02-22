@@ -1150,6 +1150,10 @@ class SimulationManager(Configurable):
         # Get the host ID if necessary
         if host_id is None: host_id = self.host_id_for_simulation(simulation_name)
 
+        # Checks
+        if host_id not in self.simulations: raise ValueError("No simulations for host '" + host_id + "'")
+        if simulation_name not in self.simulations[host_id]: raise ValueError("Simulation '" + simulation_name + "' not in simulations for host '" + host_id + "'")
+
         # Get the simulation
         return self.simulations[host_id][simulation_name]
 
@@ -3588,6 +3592,7 @@ class SimulationManager(Configurable):
         # TODO: support different clusters
         host_id = host.id
 
+        #print(scheduling_options)
         # Add the simulation to the queue
         self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id, parallelization=parallelization,
                                    logging_options=logging_options, scheduling_options=scheduling_options,
@@ -4278,7 +4283,7 @@ class SimulationManager(Configurable):
             self.set_simulation_options_from_original(simulation)
 
             # Save the new simulation
-            simulation.save()
+            if not self.config.dry: simulation.save()
 
             # Set the new ID of the moved simulation
             self.moved.set_new_id(simulation.name, simulation.id)
@@ -4290,7 +4295,7 @@ class SimulationManager(Configurable):
             self.set_simulation_options_from_original(simulation)
 
             # Save the new simulation
-            simulation.save()
+            if not self.config.dry: simulation.save()
 
             # Set the new ID of the relaunched simulation
             self.relaunched.set_new_id(simulation.name, simulation.id)
@@ -6865,6 +6870,10 @@ class SimulationManager(Configurable):
         This function ...
         :return:
         """
+
+        if self.config.dry:
+            log.warning("[DRY] Not writing new assignment scheme in dry mode")
+            return False
 
         if self.config.write_assignment is not None: return self.config.write_assignment
         else: return self._adapted_assignment or self._new_assignment

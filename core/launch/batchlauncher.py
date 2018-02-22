@@ -4157,7 +4157,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return host_id in self.scheduling_options and name in self.scheduling_options[name]
+        return host_id in self.scheduling_options and name in self.scheduling_options[host_id]
 
     # -----------------------------------------------------------------
 
@@ -4793,7 +4793,8 @@ class BatchLauncher(Configurable):
             for class_path in self.config.analysers: simulation.add_analyser(class_path)
 
         # Save the simulation object
-        simulation.save()
+        if not self.config.dry: simulation.save()
+        else: log.warning("[DRY] Not saving the simulation object ...")
 
         # Get cluster name
         cluster_name = self.get_clustername_for_host(remote.host_id)
