@@ -7048,7 +7048,10 @@ class SimulationManager(Configurable):
         # Determine path
         path = self.output_path_file("assignment.dat")
 
-        # Write the assignment
+        # Overwrite the original assignment table
+        if self.assignment.path is not None: self.assignment.save()
+
+        # Write the assignment to the output directory
         self.assignment.saveto(path)
 
     # -----------------------------------------------------------------
