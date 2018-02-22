@@ -3031,7 +3031,7 @@ class SimulationManager(Configurable):
         parse_command = splitted[index:]
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception")
+        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
 
         # Return
         return config.host
@@ -3065,7 +3065,7 @@ class SimulationManager(Configurable):
         else: parse_command = splitted[index:index + 1]  # only host list
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception")
+        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
 
         # Return
         hosts = config.pop("hosts")
@@ -3115,7 +3115,7 @@ class SimulationManager(Configurable):
         parse_command = splitted[index:]
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception")
+        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
 
         # Return
         return config.host, config.parallelization
@@ -3148,7 +3148,7 @@ class SimulationManager(Configurable):
         else: parse_command = splitted[index:index+1] # only simulation name
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception")
+        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
 
         # Get simulation name
         if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
@@ -3181,7 +3181,7 @@ class SimulationManager(Configurable):
         definition.import_settings(command_definition, required_to="optional")
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=splitted[index:], error="exception")
+        config = parse_arguments(name, definition, command=splitted[index:], error="exception", initialize=False)
 
         # Get simulation_a name
         if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]

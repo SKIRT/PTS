@@ -123,7 +123,7 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
 
 # -----------------------------------------------------------------
 
-def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True, command=None, error="exit"):
+def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True, command=None, error="exit", initialize=True):
 
     """
     This function ...
@@ -134,6 +134,7 @@ def parse_arguments(name, definition, description=None, add_logging=True, add_cw
     :param add_cwd:
     :param command:
     :param error:
+    :param initialize:
     :return:
     """
 
@@ -142,8 +143,9 @@ def parse_arguments(name, definition, description=None, add_logging=True, add_cw
     config = setter.run(definition, command=command)
 
     # Initialize PTS
-    from ...do.run import initialize_pts
-    initialize_pts(config)
+    if initialize:
+        from ...do.run import initialize_pts
+        initialize_pts(config)
 
     # Return the configuration
     return config
