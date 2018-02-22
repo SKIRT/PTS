@@ -497,7 +497,8 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     def prompt_properties(self, recursive=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
-                          startswith=None, endswith=None, required=True, label=None, suggestions=None, add_suggestions=False):
+                          startswith=None, endswith=None, required=True, label=None, suggestions=None,
+                          add_suggestions=False, replace_string=None):
 
         """
         This function ...
@@ -512,6 +513,7 @@ class SimplePropertyComposite(object):
         :param label:
         :param suggestions:
         :param add_suggestions:
+        :param replace_string:
         :return:
         """
 
@@ -549,9 +551,15 @@ class SimplePropertyComposite(object):
                 value = prompt_fixed(name, description, self.get_value(name))
                 continue
 
-            # Ask for the new value
-            value = prompt_variable(name, ptype, description, choices=choices, default=default, required=required, suggestions=suggestns)
-            if default is None and value == "": continue
+            # Replace?
+            if ptype == "string" and replace_string is not None and replace_string[0] in default: value = default.replace(replace_string[0], replace_string[1])
+
+            # No replacement: prompt for value
+            else:
+
+                # Ask for the new value
+                value = prompt_variable(name, ptype, description, choices=choices, default=default, required=required, suggestions=suggestns)
+                if default is None and value == "": continue
 
             # Set the property
             if value != default:

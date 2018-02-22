@@ -961,6 +961,41 @@ class SkirtSimulation(object):
 
 # -----------------------------------------------------------------
 
+# Dictionary of default attribute values of remote simulation
+default_remote_attributes = dict()
+
+# Properties of the remote host on which the simulation was run
+default_remote_attributes["host_id"] = None
+default_remote_attributes["cluster_name"] = None
+
+# Basic properties
+default_remote_attributes["id"] = None
+default_remote_attributes["remote_ski_path"] = None
+default_remote_attributes["remote_simulation_path"] = None
+default_remote_attributes["remote_input_path"] = None
+default_remote_attributes["remote_output_path"] = None
+default_remote_attributes["submitted_at"] = None
+
+# Options for retrieval
+default_remote_attributes["retrieve_types"] = None
+
+# Options for removing remote or local input and output
+default_remote_attributes["remove_remote_input"] = True                 # After retrieval
+default_remote_attributes["remove_remote_output"] = True                # After retrieval
+default_remote_attributes["remove_remote_simulation_directory"] = True  # After retrieval
+default_remote_attributes["remove_local_output"] = False                # After analysis
+
+# The execution handle
+default_remote_attributes["handle"] = None
+
+# Flag indicating whether this simulation has finished or not
+default_remote_attributes["finished"] = False
+
+# Flag indicating whether this simulation has been retrieved or not
+default_remote_attributes["retrieved"] = False
+
+# -----------------------------------------------------------------
+
 class RemoteSimulation(SkirtSimulation):
 
     """
@@ -1006,11 +1041,43 @@ class RemoteSimulation(SkirtSimulation):
         # The execution handle
         self.handle = None
 
+        # Flag indicating whether this simulation has finished or not
+        self.finished = False
+
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
 
         # Remote
         self._remote = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load from file
+        simulation = super(RemoteSimulation, cls).from_file(path)
+
+        # Loop over the attribute names, check if defined
+        for attr_name in default_remote_attributes:
+
+            # This attribute is present: OK
+            if hasattr(simulation, attr_name): continue
+
+            # Get the default value
+            value = copy.copy(default_remote_attributes[attr_name])
+
+            # Set the attribute
+            setattr(simulation, attr_name, value)
+
+        # Return the remote simulation
+        return simulation
 
     # -----------------------------------------------------------------
 

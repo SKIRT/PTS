@@ -21,13 +21,12 @@ from pts.core.simulation.remote import SKIRTRemote
 from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager
-from pts.core.launch.batchlauncher import SimulationStatusTable
 from pts.core.tools import filesystem as fs
 from pts.core.remote.host import find_host_ids
-from pts.core.simulation.remote import get_simulations_for_host
 
 # -----------------------------------------------------------------
 
+# Load the fitting runs
 environment = load_modeling_environment_cwd()
 runs = environment.fitting_runs
 
@@ -70,6 +69,8 @@ definition.add_optional("find_remotes", "string_list", "find missing simulations
 definition.add_flag("dry", "run in dry mode")
 definition.add_flag("write_status", "write the status", False)
 definition.add_flag("write_commands", "write the commands", False)
+definition.add_flag("retrieve", "retrieve finished simulations", False)
+definition.add_flag("produce_missing", "produce missing simulation files", False)
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -159,178 +160,10 @@ backup_path = fs.join(manage_current_path, "backup")
 
 # -----------------------------------------------------------------
 
-status_list = []
-
-# -----------------------------------------------------------------
-
-# Initialize dictionary
-simulations_hosts = dict()
-
-# Get simulations for a remote host
-def get_simulations(host_id):
-
-    # Get the simulations
-    simulations_host = get_simulations_for_host(host_id, as_dict=True)
-
-    # Set the simulations
-    simulations_hosts[host_id] = simulations_host
-
-    # Return the simulations
-    return simulations_host
-
-# -----------------------------------------------------------------
-
-def find_simulation(simulation_name, host_ids):
-
-    """
-    This function ...
-    :param simulation_name:
-    :param host_ids:
-    :return:
-    """
-
-    simulation = None
-
-    # Loop over the remotes
-    for host_id in host_ids:
-
-        # Check whether the simulation name is in the
-        if simulation_name in get_simulations(host_id):
-            #the_host_id = host_id
-            simulation = simulations_hosts[host_id][simulation_name]
-            assert simulation.host_id == host_id # check that the simulation object has the correct host ID as attribute
-            #the_simulation_id = simulation.id
-            break
-
-    # Return the host ID and simulation ID
-    #return the_host_id, the_simulation_id
-
-    # Return the simulation
-    return simulation
-
-# -----------------------------------------------------------------
-
-# Initialize flag for when assignment scheme is changed
-changed_assignment = False
-
-# -----------------------------------------------------------------
-
-# Loop over the simulations
-for simulation_name in generation.simulation_names:
-
-    load_simulation = True
-    if config.lazy: load_simulation = False
-    if not generation.has_simulation(simulation_name):
-        log.warning("The simulation file for '" + simulation_name + "' is not present anymore")
-        host_id = generation.get_host_id(simulation_name)
-        simulation_id = generation.get_simulation_id(simulation_name)
-        log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
-        if config.find_simulations:
-            log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")
-            #host_id, simulation_id = find_simulation(simulation_name, config.find_remotes)
-            simulation = find_simulation(simulation_name, config.find_remotes)
-            if simulation is None: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
-            actual_host_id = simulation.host_id
-            actual_id = simulation.id
-            cluster_name = simulation.cluster_name
-            log.warning("Simulation identified as '" + str(actual_id) + "' for host '" + actual_host_id + "'")
-            log.warning("Fixing assignment table ...")
-            generation.set_id_and_host_for_simulation(simulation_name, actual_id, actual_host_id, cluster_name=cluster_name)
-            changed_assignment = True
-            load_simulation = True
-        else: load_simulation = False
-
-    # Load the simulation
-    if load_simulation:
-
-        # Load the simulation
-        simulation = generation.get_simulation(simulation_name)
-
-        # Get properties
-        host_id = simulation.host_id
-        simulation_id = simulation.id
-
-    # Don't load the simulation
-    else:
-
-        # No simulation object
-        simulation = None
-
-        # Get host ID and simulation ID from generation assignment table
-        host_id = generation.get_host_id(simulation_name)
-        simulation_id = generation.get_simulation_id(simulation_name)
-
-    # No simulation object
-    if simulation is None:
-
-        has_misc = generation.has_misc_output(simulation_name)
-        has_plotting = generation.has_plotting_output(simulation_name)
-        has_extraction = generation.has_extraction_output(simulation_name)
-
-        # Has chi squared
-        if generation.is_analysed(simulation_name): simulation_status = "analysed"
-
-        # Has any analysis output
-        elif has_extraction or has_plotting or has_misc:
-
-            analysed = []
-            if has_extraction: analysed.append("extraction")
-            if has_plotting: analysed.append("plotting")
-            if has_misc: analysed.append("misc")
-            simulation_status = "analysed: " + ", ".join(analysed)
-
-        # Has simulation output
-        elif generation.is_retrieved(simulation_name): simulation_status = "retrieved"
-
-        # No simulation output
-        else: simulation_status = "unknown"
-
-    # Simulation object
-    else:
-
-        # Already analysed
-        if simulation.analysed: simulation_status = "analysed"
-
-        # Partly analysed
-        elif simulation.analysed_any:
-
-            analysed = []
-            if simulation.analysed_all_extraction: analysed.append("extraction")
-            if simulation.analysed_all_plotting: analysed.append("plotting")
-            if simulation.analysed_all_misc: analysed.append("misc")
-            if simulation.analysed_batch: analysed.append("batch")
-            if simulation.analysed_scaling: analysed.append("scaling")
-            if simulation.analysed_all_extra: analysed.append("extra")
-
-            if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
-            else: simulation_status = "analysed: started"
-
-        # Retrieved
-        elif simulation.retrieved: simulation_status = "retrieved"
-
-        # Not retrieved
-        else:
-
-            # Not yet retrieved, what is the status?
-            screen_states_host = screen_states[host_id] if host_id in screen_states else None
-            jobs_status_host = jobs_status[host_id] if host_id in jobs_status else None
-            if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=screen_states_host, jobs_status=jobs_status_host)
-            else: simulation_status = "unknown"
-
-    # Add the status
-    status_list.append(simulation_status)
-
-# -----------------------------------------------------------------
-
-# Save the assignment table if it has been adapted
-if changed_assignment:
-    log.debug("Saving the changed assignment table for the generation ...")
-    generation.assignment_table.save()
-
-# -----------------------------------------------------------------
-
-# Create the simulation status table
-status = SimulationStatusTable.from_columns(generation.simulation_names, status_list)
+# Get the status of the simulations
+status = generation.get_status(remotes, lazy=config.lazy, find_simulations=config.find_simulations,
+                               find_remotes=config.find_remotes, produce_missing=config.produce_missing,
+                               retrieve=config.retrieve, screen_states=screen_states, jobs_status=jobs_status)
 
 # -----------------------------------------------------------------
 

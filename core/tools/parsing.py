@@ -2711,3 +2711,15 @@ def host_list(argument):
     return [host(arg) for arg in string_list(argument)]
 
 # -----------------------------------------------------------------
+
+def string_replacement(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return string_tuple(argument.replace(":", ","))
+
+# -----------------------------------------------------------------

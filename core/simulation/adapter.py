@@ -341,9 +341,19 @@ class SimulationAdapter(Configurable):
             # Check ptype
             if ptype is None: ptype = "any"
 
-            # Ask for the new value
-            value = prompt_variable(name, ptype, description, default=default, required=True)
-            if default is None and value == "": continue
+            # Replace?
+            if ptype == "string" and self.config.replace_string is not None and self.config.replace_string[0] in default:
+
+                #print(default)
+                value = default.replace(self.config.replace_string[0], self.config.replace_string[1])
+                #print(value)
+
+            # No replacements: prompt for new value
+            else:
+
+                # Ask for the new value
+                value = prompt_variable(name, ptype, description, default=default, required=True)
+                if default is None and value == "": continue
 
             # Set the property
             if value == default: continue
@@ -802,7 +812,7 @@ class AnalysisAdapter(Configurable):
         # Check whether analysis options are defined
         has_changed = self.single_simulation.analysis.prompt_properties(contains=self.config.contains, not_contains=self.config.not_contains,
                                               exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                              startswith=self.config.startswith, endswith=self.config.endswith)
+                                              startswith=self.config.startswith, endswith=self.config.endswith, replace_string=self.config.replace_string)
 
         # Set changed flag
         self.single_changed = has_changed

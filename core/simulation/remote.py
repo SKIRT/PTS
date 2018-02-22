@@ -112,6 +112,18 @@ def is_running_status(stat):
 
 # -----------------------------------------------------------------
 
+def is_unknown_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return stat == unknown_name
+
+# -----------------------------------------------------------------
+
 def is_invalid_status(stat):
 
     """
@@ -121,6 +133,18 @@ def is_invalid_status(stat):
     """
 
     return invalid_name in stat
+
+# -----------------------------------------------------------------
+
+def is_invalid_or_unknown_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return is_invalid_status(stat) or is_unknown_status(stat)
 
 # -----------------------------------------------------------------
 
@@ -2153,6 +2177,9 @@ class SKIRTRemote(Remote):
         # Check whether the simulation has already been retrieved
         elif simulation.retrieved: simulation_status = retrieved_name
 
+        # Check whether the simulation has finished
+        elif simulation.finished: simulation_status = "finished"
+
         # Get the simulation status from the remote log file if not yet retrieved
         else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name, screen_states=screen_states, remote_ski_path=simulation.remote_ski_path)
 
@@ -2195,6 +2222,9 @@ class SKIRTRemote(Remote):
 
         # Check if the simulation has already been retrieved
         elif simulation.retrieved: simulation_status = retrieved_name
+
+        # Simulation is finished
+        elif simulation.finished: simulation_status = "finished"
 
         # Simulation is a job
         elif simulation.handle.type == "job":
@@ -2552,6 +2582,11 @@ class SKIRTRemote(Remote):
 
             # Handle is defined
             else: simulation_status = self._get_simulation_status_not_scheduler(simulation, screen_states=screen_states)
+
+        # If the simulation is finished, set the flag if necessary
+        if is_finished_status(simulation_status) and not simulation.finished:
+            simulation.finished = True
+            simulation.save()
 
         # Return the status
         return simulation_status

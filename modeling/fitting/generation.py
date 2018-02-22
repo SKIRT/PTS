@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from copy import deepcopy
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -38,6 +39,11 @@ from ...core.data.sed import ObservedSED, SED
 from ...core.simulation.logfile import LogFile
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...magic.core.datacube import DataCube
+from ...core.basics.log import log
+from ...core.simulation.remote import get_simulations_for_host
+from ...core.simulation.remote import finished_name
+from ...core.launch.batchlauncher import SimulationStatusTable
+from ...core.simulation.adapter import adapt_simulation, adapt_analysis
 
 # -----------------------------------------------------------------
 
@@ -1098,6 +1104,18 @@ class Generation(object):
         """
 
         return self.assignment_table.get_host_id_for_simulation(name)
+
+    # -----------------------------------------------------------------
+
+    def get_cluster_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.assignment_table.get_cluster_name_for_simulation(name)
 
     # -----------------------------------------------------------------
 
@@ -2730,5 +2748,327 @@ class Generation(object):
         """
 
         return Configuration.from_file(self.optimizer_config_path)
+
+    # -----------------------------------------------------------------
+
+    def get_status(self, remotes, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
+                   retrieve=False, screen_states=None, jobs_status=None):
+
+        """
+        This function gets the status of the simulations
+        :param remotes:
+        :param lazy:
+        :param find_simulations:
+        :param find_remotes:
+        :param produce_missing:
+        :param retrieve:
+        :param screen_states:
+        :param jobs_status:
+        :return:
+        """
+
+        status_list = []
+
+        # Initialize flag for when assignment scheme is changed
+        changed_assignment = False
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            load_simulation = True
+            if lazy: load_simulation = False
+            if not self.has_simulation(simulation_name):
+
+                # Give warning
+                log.warning("The simulation file for '" + simulation_name + "' is not present anymore")
+
+                # Get host ID and simulation ID
+                host_id = self.get_host_id(simulation_name)
+                simulation_id = self.get_simulation_id(simulation_name)
+
+                # Give warning
+                log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
+
+                # Find simulation on other host?
+                if find_simulations:
+
+                    # Give warning
+                    log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")
+                    # host_id, simulation_id = find_simulation(simulation_name, config.find_remotes)
+                    simulation = find_simulation(simulation_name, find_remotes)
+
+                    # Simulation is not found
+                    if simulation is None:
+
+                        # Produce missing simulation file?
+                        if produce_missing:
+
+                            # Find first other simulation for this host that exists
+                            other_simulation = None
+                            for other_simulation_name in self.get_simulation_names_for_host(host_id):
+                                if not self.has_simulation(other_simulation_name): continue
+                                other_simulation = self.get_simulation(other_simulation_name)
+                                break
+                            if other_simulation is None: raise RuntimeError("Cannot produce missing simulation file: no other existing simulation file for host '" + host_id + "'")
+
+                            # Produce the simulation from the other simulation
+                            cluster_name = self.get_cluster_name(simulation_name)
+                            other_remote_input_path = other_simulation.remote_input_path
+                            simulation = produce_simulation_from_other(other_simulation, simulation_name, simulation_id, cluster_name)
+
+                            # Check local paths
+                            if simulation.has_input_directory and (not fs.is_directory(simulation.input_path) or fs.is_empty(simulation.input_path)): raise IOError("Local input directory '" + simulation.input_path + "' is missing or empty")
+                            if not fs.is_directory(simulation.output_path): raise IOError("Local output directory '" + simulation.output_path + "' is missing")
+                            if not fs.is_directory(simulation.base_path): raise IOError("Local simulation directory '" + simulation.base_path + "' is missing")
+                            if not fs.is_file(simulation.ski_path): raise IOError("Local ski file '" + simulation.ski_path + "' is missing")
+                            if simulation_name not in simulation.output_path: raise RuntimeError("Something went wrong")
+                            if simulation_name not in simulation.base_path: raise RuntimeError("Something went wrong")
+                            if simulation_name not in simulation.ski_path: raise RuntimeError("Something went wrong")
+
+                            # Check analysis paths
+                            if simulation.analysis.extraction.path is not None:
+                                path = simulation.analysis.extraction.path
+                                if not fs.is_directory(path): raise IOError("Extraction directory '" + path + "' is missing")
+                                if simulation_name not in path: raise RuntimeError("Something went wrong")
+                            if simulation.analysis.plotting.path is not None:
+                                path = simulation.analysis.plotting.path
+                                if not fs.is_directory(path): raise IOError("Plotting directory '" + path + "' is missing")
+                                if simulation_name not in path: raise RuntimeError("Something went wrong")
+                            if simulation.analysis.misc.path is not None:
+                                path = simulation.analysis.misc.path
+                                if not fs.is_directory(path): raise IOError("Misc directory '" + path + "' is missing")
+                                if simulation_name not in path: raise RuntimeError("Something went wrong")
+
+                            # Check remote paths
+                            remote = remotes[host_id]
+                            if not remote.is_file(simulation.remote_ski_path): raise IOError("Remote ski file '" + simulation.remote_ski_path + "' is missing")
+                            if not remote.is_directory(simulation.remote_simulation_path): raise IOError("Remote simulation path '" + simulation.remote_simulation_path + "' is missing")
+                            if not remote.is_directory(simulation.remote_input_path) or remote.is_empty(simulation.remote_input_path):
+                                if remote.is_directory(other_remote_input_path) and not remote.is_empty(other_remote_input_path):
+                                    simulation.remote_input_path = other_remote_input_path
+                                else: raise IOError("Remote input path for simulation '" + simulation_name + "' is not found")
+                            if not remote.is_directory(simulation.remote_output_path): raise IOError("Remote output path '" + simulation.remote_output_path + "' is missing")
+                            if simulation_name not in simulation.remote_ski_path: raise RuntimeError("Something went wrong")
+                            if simulation_name not in simulation.remote_simulation_path: raise RuntimeError("Something went wrong")
+                            if simulation_name not in simulation.remote_output_path: raise RuntimeError("Something went wrong")
+
+                            # Save the simulation
+                            simulation.save()
+
+                            # Set flag
+                            load_simulation = True
+
+                        # Don't produce: give error for missing simulation file
+                        else: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
+
+                    # Simulation is found
+                    else:
+
+                        actual_host_id = simulation.host_id
+                        actual_id = simulation.id
+                        cluster_name = simulation.cluster_name
+                        log.warning("Simulation identified as '" + str(actual_id) + "' for host '" + actual_host_id + "'")
+                        log.warning("Fixing assignment table ...")
+                        self.set_id_and_host_for_simulation(simulation_name, actual_id, actual_host_id, cluster_name=cluster_name)
+                        changed_assignment = True
+                        load_simulation = True
+
+                # Don't load the simulation
+                else: load_simulation = False
+
+            # Load the simulation
+            if load_simulation:
+
+                # Load the simulation
+                simulation = self.get_simulation(simulation_name)
+
+                # Get properties
+                host_id = simulation.host_id
+                simulation_id = simulation.id
+
+            # Don't load the simulation
+            else:
+
+                # No simulation object
+                simulation = None
+
+                # Get host ID and simulation ID from generation assignment table
+                host_id = self.get_host_id(simulation_name)
+                simulation_id = self.get_simulation_id(simulation_name)
+
+            # No simulation object
+            if simulation is None:
+
+                has_misc = self.has_misc_output(simulation_name)
+                has_plotting = self.has_plotting_output(simulation_name)
+                has_extraction = self.has_extraction_output(simulation_name)
+
+                # Has chi squared
+                if self.is_analysed(simulation_name): simulation_status = "analysed"
+
+                # Has any analysis output
+                elif has_extraction or has_plotting or has_misc:
+
+                    analysed = []
+                    if has_extraction: analysed.append("extraction")
+                    if has_plotting: analysed.append("plotting")
+                    if has_misc: analysed.append("misc")
+                    simulation_status = "analysed: " + ", ".join(analysed)
+
+                # Has simulation output
+                elif self.is_retrieved(simulation_name): simulation_status = "retrieved"
+
+                # No simulation output
+                else: simulation_status = "unknown"
+
+            # Simulation object
+            else:
+
+                # Already analysed
+                if simulation.analysed: simulation_status = "analysed"
+
+                # Partly analysed
+                elif simulation.analysed_any:
+
+                    analysed = []
+                    if simulation.analysed_all_extraction: analysed.append("extraction")
+                    if simulation.analysed_all_plotting: analysed.append("plotting")
+                    if simulation.analysed_all_misc: analysed.append("misc")
+                    if simulation.analysed_batch: analysed.append("batch")
+                    if simulation.analysed_scaling: analysed.append("scaling")
+                    if simulation.analysed_all_extra: analysed.append("extra")
+
+                    if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+                    else: simulation_status = "analysed: started"
+
+                # Retrieved
+                elif simulation.retrieved: simulation_status = "retrieved"
+
+                # Finished
+                elif simulation.finished: simulation_status = finished_name
+
+                # Not retrieved
+                else:
+
+                    # Not yet retrieved, what is the status?
+                    screen_states_host = screen_states[host_id] if screen_states is not None and host_id in screen_states else None
+                    jobs_status_host = jobs_status[host_id] if jobs_status is not None and host_id in jobs_status else None
+                    if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation,
+                                                                                   screen_states=screen_states_host,
+                                                                                   jobs_status=jobs_status_host)
+                    else: simulation_status = "unknown"
+
+                # Retrieve finished simulations?
+                if simulation_status == finished_name and retrieve:
+                    remotes[host_id].retrieve_simulation(simulation_name)
+                    simulation_status = "retrieved"
+
+            # Add the status
+            status_list.append(simulation_status)
+
+        # Save the assignment table if it has been adapted
+        if changed_assignment:
+
+            log.debug("Saving the changed assignment table for the generation ...")
+            self.assignment_table.save()
+
+        # Create the simulation status table
+        status = SimulationStatusTable.from_columns(self.simulation_names, status_list)
+
+        # Return the status table
+        return status
+
+# -----------------------------------------------------------------
+
+# Initialize dictionary
+simulations_hosts = dict()
+
+# -----------------------------------------------------------------
+
+def get_simulations(host_id):
+
+    """
+    This function gets simulations for a remote host
+    :param host_id:
+    :return:
+    """
+
+    # Get the simulations
+    simulations_host = get_simulations_for_host(host_id, as_dict=True)
+
+    # Set the simulations
+    simulations_hosts[host_id] = simulations_host
+
+    # Return the simulations
+    return simulations_host
+
+# -----------------------------------------------------------------
+
+def find_simulation(simulation_name, host_ids):
+
+    """
+    This function ...
+    :param simulation_name:
+    :param host_ids:
+    :return:
+    """
+
+    simulation = None
+
+    # Loop over the remotes
+    for host_id in host_ids:
+
+        # Check whether the simulation name is in the
+        if simulation_name in get_simulations(host_id):
+            simulation = simulations_hosts[host_id][simulation_name]
+            assert simulation.host_id == host_id # check that the simulation object has the correct host ID as attribute
+            break
+
+    # Return the simulation
+    return simulation
+
+# -----------------------------------------------------------------
+
+def produce_simulation_from_other(other_simulation, simulation_name, simulation_id, cluster_name):
+
+    """
+    This function ...
+    :param other_simulation:
+    :param simulation_name:
+    :param simulation_id:
+    :param cluster_name:
+    :return:
+    """
+
+    # Determine simulations directories
+    simulation_path = other_simulation.path
+    simulation_dirpath = fs.directory_of(simulation_path)
+
+    # Determine other simulation name
+    other_simulation_name = other_simulation.name
+
+    # Copy the simulation
+    simulation = deepcopy(other_simulation)
+
+    # Set the new path for the simulation
+    simulation.path = fs.join(simulation_dirpath, str(simulation_id) + ".sim")
+
+    # Set the simulation name, ID, host ID and cluster name
+    simulation.name = simulation_name
+    simulation.id = simulation_id
+    #simulation.host_id =  # SAME HOST ID
+    simulation.cluster_name = cluster_name
+
+    # Create config for adapting
+    adapt_config = dict()
+    adapt_config["contains"] = "path"
+    adapt_config["replace_string"] = (other_simulation_name, simulation_name)
+
+    # Adapt all paths in the simulation file
+    adapt_simulation(simulation, adapt_config)
+    adapt_analysis(simulation, adapt_config)
+
+    # Return the simulation
+    return simulation
 
 # -----------------------------------------------------------------

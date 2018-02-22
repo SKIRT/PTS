@@ -15,7 +15,7 @@ from pts.core.remote.host import find_host_ids
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
+definition.add_positional_optional("remote", "string", "name of the remote host", choices=find_host_ids())
 definition.add_positional_optional("matching", "string", "only adapt settings with a name matching this string")
 definition.add_positional_optional("ids", "integer_list", "simulation IDs (if none specified, all simulation IDs will be used)")
 definition.add_optional("names", "string_list", "simulation names")
@@ -30,5 +30,9 @@ definition.add_optional("exact_name", "string", "only adapt properties with this
 definition.add_optional("exact_not_name", "string", "don't adapt properties with this exact string as their name")
 definition.add_optional("startswith", "string", "only adapt properties whose name starts with this string")
 definition.add_optional("endswith", "string", "only adapt properties whose name starts with this string")
+
+# -----------------------------------------------------------------
+
+definition.add_optional("replace_string", "string_replacement", "replace strings")
 
 # -----------------------------------------------------------------

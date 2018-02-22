@@ -1645,6 +1645,9 @@ class SimulationManager(Configurable):
             # Retrieved
             elif simulation.retrieved: simulation_status = "retrieved"
 
+            # Finished
+            elif simulation.finished: simulation_status = "finished"
+
             # Not yet retrieved
             else:
 
@@ -1653,10 +1656,10 @@ class SimulationManager(Configurable):
                 jobs_status = self.jobs_status[host_id] if host_id in self.jobs_status else None
                 with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
 
-                # Retrieve finished simulations?
-                if simulation_status == finished_name and self.config.retrieve:
-                    self.retrieve_simulation(simulation_name)
-                    simulation_status = "retrieved"
+            # Retrieve finished simulations?
+            if simulation_status == finished_name and self.config.retrieve:
+                self.retrieve_simulation(simulation_name)
+                simulation_status = "retrieved"
 
             # Add the status
             status_list.append(simulation_status)
@@ -2167,10 +2170,10 @@ class SimulationManager(Configurable):
         elif command.startswith("plot"): self.plot_command(command)
 
         # Move simulation
-        elif command.startswith("move"): self.move_simulation_command(command)
+        elif command.startswith("move"): self.move_simulations_command(command)
 
         # Stop simulation?
-        elif command.startswith("stop"): self.stop_simulation_command(command)
+        elif command.startswith("stop"): self.stop_simulations_command(command)
 
         # Remove simulation?
         elif command.startswith("remove"): self.remove_simulation_command(command)
@@ -3159,6 +3162,43 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def parse_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("simulations", "integer_list", "simulation indices")
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+            parse_command = splitted[index:]
+        else: parse_command = splitted[index:index+1] # only simulation indices
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
+
+        # Get simulation names
+        simulation_names = []
+        for index in config.simulations: simulation_names.append(self.simulation_names[index])
+
+        # Return
+        return splitted, simulation_names, config
+
+    # -----------------------------------------------------------------
+
     def parse_two_simulations_command(self, command, command_definition=None, name=None, index=1):
 
         """
@@ -3193,6 +3233,23 @@ class SimulationManager(Configurable):
 
         # Return
         return splitted, simulation_a_name, simulation_b_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_names_from_command(self, command, name=None):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :return:
+        """
+
+        # Parse the command
+        splitted, simulation_names, config = self.parse_simulations_command(command, name=name)
+
+        # Return the simulation names
+        return simulation_names
 
     # -----------------------------------------------------------------
 
@@ -3541,7 +3598,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def move_simulation_command(self, command):
+    def move_simulations_command(self, command):
 
         """
         This function ...
@@ -3556,18 +3613,21 @@ class SimulationManager(Configurable):
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
-        # Get the simulation name
-        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=definition, name="move_simulation", required_to_optional=False)
+        # Get the simulation names
+        splitted, simulation_names, config = self.parse_simulations_command(command, definition, name="move_simulations", required_to_optional=False)
 
-        # Check status
-        if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
-        if self.is_running(simulation_name): log.warning("Simulation is already running")
+        # Loop over the simulation names
+        for simulation_name in simulation_names:
 
-        # Get host and check
-        if config.host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(config.host) + "'")
+            # Check status
+            if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
+            if self.is_running(simulation_name): log.warning("Simulation is already running")
 
-        # Move simulation
-        self.move_simulation(simulation_name, config.host, config.parallelization, config.logging, config.scheduling)
+            # Get host and check
+            if config.host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(config.host) + "'")
+
+            # Move simulation
+            self.move_simulation(simulation_name, config.host, config.parallelization, config.logging, config.scheduling)
 
     # -----------------------------------------------------------------
 
@@ -3657,7 +3717,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def stop_simulation_command(self, command):
+    def stop_simulations_command(self, command):
 
         """
         This function ...
@@ -3666,13 +3726,16 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_names = self.get_simulation_name_from_command(command)
 
-        # Check whether queued or running
-        if not self.is_queued_or_running(simulation_name): raise ValueError("The simulation '" + simulation_name + "' is not queued or running")
+        # Loop over the simulations
+        for simulation_name in simulation_names:
 
-        # Stop the simulation
-        self.stop_simulation(simulation_name)
+            # Check whether queued or running
+            if not self.is_queued_or_running(simulation_name): raise ValueError("The simulation '" + simulation_name + "' is not queued or running")
+
+            # Stop the simulation
+            self.stop_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
