@@ -1250,8 +1250,19 @@ class SKIRTRemote(Remote):
             skifile_name = fs.name(definition.ski_path).split(".ski")[0]
             remote_simulation_name = time.unique_name(skifile_name, separator="__")
 
+        # If an output path is defined in the remote host configuration file, use it for the simulation directory (input and output)
+        if self.host.output_path is not None:
+
+            # Get the output directory path
+            output_path = self.absolute_path(self.host.output_path)
+
+            # Get the simulation directory path
+            remote_simulation_path = fs.join(output_path, remote_simulation_name)
+
         # Determine the full path of the simulation directory on the remote system
-        remote_simulation_path = fs.join(self.skirt_run_dir, remote_simulation_name)
+        else: remote_simulation_path = fs.join(self.skirt_run_dir, remote_simulation_name)
+
+        # Check whether the simulation directory will contain input
         if remote_input_path is not None: contains_input = self.is_subdirectory(remote_input_path, remote_simulation_path)
         else: contains_input = False
         if self.is_directory(remote_simulation_path) and not contains_input:

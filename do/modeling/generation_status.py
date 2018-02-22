@@ -356,6 +356,8 @@ manager.config.write_commands = config.write_commands
 manager.config.path = manage_current_path
 manager.config.backup_dir_path = manage_current_path
 manager.config.backup_dirname = "backup"
+manager.config.backup_simulations = True
+manager.config.backup_assignment = True
 
 # Run the manager
 manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
