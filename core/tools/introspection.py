@@ -2265,7 +2265,8 @@ def all_modules():
 
         # Get subproject
         subproject = path.split("pts/")[1].split("/")[0]
-
+        #print(path, subproject)
+        if subproject.endswith(".py"): continue
         is_config = path.split(subproject + "/")[1].split("/")[0] == "config"
 
         #if subproject != "do" and not is_config:
