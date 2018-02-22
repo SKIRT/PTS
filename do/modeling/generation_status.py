@@ -192,6 +192,30 @@ manager.config.backup_dirname = "backup"
 manager.config.backup_simulations = True
 manager.config.backup_assignment = True
 
+# Set remote input path for each host
+if not config.lazy:
+
+    # Set remote input path for each host ID
+    for host_id in generation.host_ids:
+
+        remote_input_path = None
+        remote = remotes[host_id]
+        # Find remote input path
+        # Loop over the simulations
+        for simulation_name in generation.get_simulation_names_for_host(host_id):
+            if not generation.has_simulation(simulation_name): continue
+            simulation = generation.get_simulation(simulation_name)
+            if remote.is_directory(simulation.remote_input_path) and not remote.is_empty(simulation.remote_input_path):
+                remote_input_path = simulation.remote_input_path
+                break
+
+        # Show
+        if remote_input_path is None: continue
+        else: log.debug("The remote input for host '" + host_id + "' is '" + remote_input_path + "'")
+
+        # Set remote input path
+        manager.set_remote_input_path_for_host(host_id, remote_input_path)
+
 # Run the manager
 manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
             status=status, info_tables=[parameters, chi_squared], remotes=remotes)

@@ -1330,6 +1330,9 @@ class BatchLauncher(Configurable):
         # Groups of simulations with shared input
         self.shared_input_groups = []
 
+        # Remote input paths
+        self.remote_input_paths_hosts = dict()
+
     # -----------------------------------------------------------------
 
     @property
@@ -1987,6 +1990,43 @@ class BatchLauncher(Configurable):
         """
 
         return self.nremotes == 1
+
+    # -----------------------------------------------------------------
+
+    def set_remote_input_path_for_host(self, host_id, path):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        self.remote_input_paths_hosts[host_id] = path
+
+    # -----------------------------------------------------------------
+
+    def has_remote_input_path_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return host_id in self.remote_input_paths_hosts and self.remote_input_paths_hosts[host_id] is not None
+
+    # -----------------------------------------------------------------
+
+    def get_remote_input_path_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.remote_input_paths_hosts[host_id]
 
     # -----------------------------------------------------------------
 
@@ -4637,7 +4677,8 @@ class BatchLauncher(Configurable):
         log.info("Scheduling simulations on remote host '" + remote.host_id + "' ...")
 
         # The remote input path
-        remote_input_path = None
+        if self.has_remote_input_path_for_host(remote.host_id): remote_input_path = self.get_remote_input_path_for_host(remote.host_id)
+        else: remote_input_path = None
 
         # Cache the simulation objects scheduled to the current remote
         simulations_remote = []
@@ -4663,7 +4704,8 @@ class BatchLauncher(Configurable):
 
             # Queue the simulation
             simulation = self._try_scheduling_simulation(index, nqueued, name, definition, remote, parallelization_item,
-                                                         logging_options, analysis_options, scheduling_options)
+                                                         logging_options, analysis_options, scheduling_options,
+                                                         remote_input_path=remote_input_path)
 
             # Add the simulation if succesful
             success = simulation is not None
@@ -4768,7 +4810,8 @@ class BatchLauncher(Configurable):
         # Add to the queue
         simulation = remote.add_to_queue(definition, logging_options, parallelization, name=name,
                                          scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                         analysis_options=analysis_options, emulate=self.config.emulate, dry=self.config.dry)
+                                         analysis_options=analysis_options, emulate=self.config.emulate, dry=self.config.dry,
+                                         clear_existing=self.config.clear_existing)
 
         # Success
         log.success("Added simulation " + str(index + 1) + " out of " + str(nqueued) + " to the queue of remote host " + remote.host_id)

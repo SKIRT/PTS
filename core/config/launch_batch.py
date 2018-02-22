@@ -95,3 +95,8 @@ definition.add_flag("show_status", "show remote status", True)
 definition.add_flag("show_parallelizations", "show parallelization schemes", True)
 
 # -----------------------------------------------------------------
+
+# Other
+definition.add_flag("clear_existing", "clear existing directories on the remote (otherwise error is thrown)", False)
+
+# -----------------------------------------------------------------

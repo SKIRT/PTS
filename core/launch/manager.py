@@ -847,6 +847,22 @@ class SimulationManager(Configurable):
         self.launcher.config.write_assignment = False
         self.launcher.config.write_queues = True
 
+        # Clear existing (for moving and relaunching)
+        self.launcher.config.clear_existing = True
+
+    # -----------------------------------------------------------------
+
+    def set_remote_input_path_for_host(self, host_id, path):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        self.launcher.set_remote_input_path_for_host(host_id, path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1713,7 +1729,7 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Restting the simulation status ...")
+        log.debug("Resetting the simulation status ...")
 
         # Reset the jobs status
         del self.jobs_status

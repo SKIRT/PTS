@@ -2777,7 +2777,7 @@ class Generation(object):
 
             load_simulation = True
             if lazy: load_simulation = False
-            if not self.has_simulation(simulation_name):
+            elif not self.has_simulation(simulation_name):
 
                 # Give warning
                 log.warning("The simulation file for '" + simulation_name + "' is not present anymore")
