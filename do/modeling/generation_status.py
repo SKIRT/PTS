@@ -71,6 +71,8 @@ definition.add_flag("write_status", "write the status", False)
 definition.add_flag("write_commands", "write the commands", False)
 definition.add_flag("retrieve", "retrieve finished simulations", False)
 definition.add_flag("produce_missing", "produce missing simulation files", False)
+definition.add_flag("check_paths", "check simulation paths", False)
+definition.add_flag("fix_success", "check success flags in assignment table")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -163,7 +165,8 @@ backup_path = fs.join(manage_current_path, "backup")
 # Get the status of the simulations
 status = generation.get_status(remotes, lazy=config.lazy, find_simulations=config.find_simulations,
                                find_remotes=config.find_remotes, produce_missing=config.produce_missing,
-                               retrieve=config.retrieve, screen_states=screen_states, jobs_status=jobs_status)
+                               retrieve=config.retrieve, screen_states=screen_states, jobs_status=jobs_status,
+                               check_paths=config.check_paths, fix_success=config.fix_success)
 
 # -----------------------------------------------------------------
 

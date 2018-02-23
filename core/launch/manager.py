@@ -40,7 +40,7 @@ from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict
 from ..tools import sequences
 from ..basics.log import no_debugging
-from ..simulation.remote import is_finished_status, is_running_status, finished_name
+from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status
 from ..basics.configuration import prompt_string, prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
@@ -1671,6 +1671,11 @@ class SimulationManager(Configurable):
                 screen_states = self.screen_states[host_id] if host_id in self.screen_states else None
                 jobs_status = self.jobs_status[host_id] if host_id in self.jobs_status else None
                 with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
+
+            # Check success flag in assignment
+            if self.config.fix_success and not self.assignment.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
+                log.warning("Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
+                self.assignment.set_success_for_simulation(simulation.name)
 
             # Retrieve finished simulations?
             if simulation_status == finished_name and self.config.retrieve:

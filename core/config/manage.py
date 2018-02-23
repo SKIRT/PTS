@@ -45,6 +45,9 @@ definition.add_flag("offline", "offline mode")
 # Dry: don't actually launch any simulation
 definition.add_flag("dry", "dry mode")
 
+# Fix success flags
+definition.add_flag("fix_success", "fix success flags in assignment table if necessary")
+
 # Backup
 definition.add_flag("backup_simulations", "backup simulation files")
 definition.add_flag("backup_assignment", "backup assignment table")

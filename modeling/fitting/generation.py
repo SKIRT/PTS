@@ -30,7 +30,7 @@ from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
 from ...core.tools.utils import lazyproperty
 from ...core.launch.batchlauncher import SimulationAssignmentTable
-from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host, get_simulation_path_for_host
+from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host, get_simulation_path_for_host, is_invalid_or_unknown_status
 from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
 from ...core.simulation.simulation import SkirtSimulation
@@ -2752,7 +2752,7 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     def get_status(self, remotes, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
-                   retrieve=False, screen_states=None, jobs_status=None):
+                   retrieve=False, screen_states=None, jobs_status=None, check_paths=False, fix_success=True):
 
         """
         This function gets the status of the simulations
@@ -2764,6 +2764,8 @@ class Generation(object):
         :param retrieve:
         :param screen_states:
         :param jobs_status:
+        :param check_paths:
+        :param fix_success:
         :return:
         """
 
@@ -2853,6 +2855,9 @@ class Generation(object):
                 host_id = simulation.host_id
                 simulation_id = simulation.id
 
+                # Check paths
+                if check_paths: check_simulation_paths(simulation, remote=remotes[host_id])
+
             # Don't load the simulation
             else:
 
@@ -2924,6 +2929,11 @@ class Generation(object):
                                                                                    screen_states=screen_states_host,
                                                                                    jobs_status=jobs_status_host)
                     else: simulation_status = "unknown"
+
+                # Check success flag in assignment
+                if fix_success and not self.assignment_table.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
+                    log.warning("Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
+                    self.assignment_table.set_success_for_simulation(simulation.name)
 
                 # Retrieve finished simulations?
                 if simulation_status == finished_name and retrieve:
