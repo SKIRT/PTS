@@ -1061,8 +1061,6 @@ def integer_list(argument):
     # Split the string
     splitted = argument.split('-')
 
-    #print("SPLITTED", splitted)
-
     if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
 

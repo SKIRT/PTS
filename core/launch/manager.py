@@ -63,6 +63,7 @@ from ..units.unit import get_common_unit
 from ..plot.sed import SEDPlotter
 from ..data.sed import load_multiple_seds
 from ..misc.fluxes import get_sed_instrument_name
+from ..simulation.status import show_log_summary
 
 # -----------------------------------------------------------------
 
@@ -1211,6 +1212,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_execution_handle(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).handle
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_input(self, simulation_name):
 
@@ -1937,6 +1950,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def is_running_or_finished_or_aborted_or_crashed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.status.is_running_or_finished_or_aborted_or_crashed(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def is_failed(self, simulation_name):
 
         """
@@ -2213,6 +2238,9 @@ class SimulationManager(Configurable):
 
         # Show log of simulation
         elif command.startswith("log"): self.show_simulation_log_command(command)
+
+        # Show error output of simulation
+        elif command.startswith("error"): self.show_simulation_errors_command(command)
 
         # Show simulation settings
         elif command.startswith("settings"): self.show_simulation_settings_command(command)
@@ -3317,22 +3345,29 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_flag("summarize", "show summarized log output")
+
+        # Get simulation name and config
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition, name="show_simulation_log")
 
         # Check
-        if not self.is_running_or_finished(simulation_name): raise ValueError("Simulation is not finished or running")
+        if not self.is_running_or_finished_or_aborted_or_crashed(simulation_name): raise ValueError("Simulation '" + simulation_name + "' cannot have log output (yet)")
+        if self.is_running(simulation_name): log.warning("Simulation '" + simulation_name + "' is still running")
+        elif self.is_failed(simulation_name): log.warning("Simulation '" + simulation_name + "' has not finished succesfully")
 
         # Show
-        self.show_simulation_log(simulation_name)
+        self.show_simulation_log(simulation_name, summarize=config.summarize)
 
     # -----------------------------------------------------------------
 
-    def show_simulation_log(self, simulation_name):
+    def show_simulation_log(self, simulation_name, summarize=False):
 
         """
         This function ...
         :param simulation_name:
+        :param summarize:
         :return:
         """
 
@@ -3368,8 +3403,61 @@ class SimulationManager(Configurable):
 
         # Print the lines of the log file
         print("")
-        for line in lines: print(line)
+        if summarize: show_log_summary(lines, debug_output=True)
+        else:
+            for line in lines: print(line)
         print("")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_errors_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="show_simulation_errors")
+
+        # Show
+        self.show_simulation_errors(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_errors(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Show error output of simulation '" + simulation_name + "'...")
+
+        # Get the simulation execution handle
+        handle = self.get_execution_handle(simulation_name)
+
+        # Screen
+        if handle.is_screen:
+
+            name = handle.value
+            remote_output_path = handle.remote_screen_output_path
+            remote_screen_path = handle.remote_screen_script_path
+
+            print("screen", name, remote_output_path, remote_screen_path)
+
+        # Job
+        elif handle.is_job:
+
+            job_id = handle.value
+            remote_script_path = handle.remote_job_script_path
+            print("job", job_id, remote_script_path)
+
+        # Not supported
+        else: raise NotImplementedError("Execution handle not supported")
 
     # -----------------------------------------------------------------
 

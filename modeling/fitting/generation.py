@@ -2937,7 +2937,7 @@ class Generation(object):
 
                 # Retrieve finished simulations?
                 if simulation_status == finished_name and retrieve:
-                    remotes[host_id].retrieve_simulation(simulation_name)
+                    remotes[host_id].retrieve_simulation(simulation)
                     simulation_status = "retrieved"
 
             # Add the status

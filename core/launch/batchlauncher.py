@@ -524,6 +524,18 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def is_running_or_finished_or_aborted_or_crashed(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.is_running(simulation_name) or self.is_finished(simulation_name) or self.is_aborted(simulation_name) or self.is_crashed(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def is_failed(self, simulation_name):
 
         """

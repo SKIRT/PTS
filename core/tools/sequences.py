@@ -1824,7 +1824,10 @@ def contains_any(lst, other):
     """
 
     for item in other:
-        if item in lst: return True
+        if isinstance(item, tuple):
+            if contains_all(lst, item): return True
+        else:
+            if item in lst: return True
     return False
 
 # -----------------------------------------------------------------

@@ -64,6 +64,18 @@ class ExecutionHandle(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == local
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def postponed(cls, host_id):
 
@@ -73,6 +85,18 @@ class ExecutionHandle(object):
         """
 
         return cls(postponed, host_id=host_id)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_postponed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == postponed
 
     # -----------------------------------------------------------------
 
@@ -87,6 +111,18 @@ class ExecutionHandle(object):
         """
 
         return cls(tty, session_number, host_id)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_tty(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == tty
 
     # -----------------------------------------------------------------
 
@@ -109,6 +145,18 @@ class ExecutionHandle(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_screen(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == screen
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def job(cls, job_id, host_id, remote_script_path=None):
 
@@ -123,6 +171,18 @@ class ExecutionHandle(object):
         handle = cls(job, job_id, host_id)
         handle.remote_job_script_path = remote_script_path
         return handle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_job(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == job
 
     # -----------------------------------------------------------------
 
@@ -143,6 +203,18 @@ class ExecutionHandle(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_group_job(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == group_job
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def sql(cls, name, host_id):
 
@@ -154,6 +226,18 @@ class ExecutionHandle(object):
         """
 
         return cls(sql, name, host_id)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_sql(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.type == sql
 
     # -----------------------------------------------------------------
 
