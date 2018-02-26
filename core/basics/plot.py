@@ -3687,7 +3687,8 @@ class MPLFigure(Figure):
         # Save the figure
         if tight: bbox_inches = "tight"
         else: bbox_inches = None
-        plt.savefig(path, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
+        #plt.savefig(path, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
+        self.figure.savefig(path, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
 
     # -----------------------------------------------------------------
 
@@ -3706,7 +3707,8 @@ class MPLFigure(Figure):
         # Save to buffer
         if tight: bbox_inches = "tight"
         else: bbox_inches = None
-        plt.savefig(buf, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
+        #plt.savefig(buf, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
+        self.figure.savefig(buf, pad_inches=0.25, transparent=self.transparent, format=self.format, bbox_inches=bbox_inches)
 
     # -----------------------------------------------------------------
 
@@ -3717,7 +3719,7 @@ class MPLFigure(Figure):
         :return:
         """
 
-        plt.close()
+        plt.close(self.figure)
 
 # -----------------------------------------------------------------
 

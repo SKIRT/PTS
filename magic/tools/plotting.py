@@ -606,21 +606,26 @@ def plot_cube(cube, **kwargs):
     transparent = kwargs.pop("transparent", False)
 
     # Create figure
-    #figure, ax = plt.subplots()
-    #figure = plt.figure()
-    #axes = figure.gca()
-    #plt.subplots_adjust(left=0.25, bottom=0.25)
-
-    #figure, (axes, sliderax) = plt.subplots(2, 1)
-    #figsize = None
     figsize = (5, 8)
     figure = plt.figure(figsize=figsize)
     gs = gridspec.GridSpec(2, 1, height_ratios=[10, 1])
     axes = plt.subplot(gs[0])
     sliderax = plt.subplot(gs[1])
 
-    # Plot
-    vmin, vmax, image, norm = plot_box(cube[0], axes=axes, return_image=True, return_normalization=True, **kwargs)
+    # Determine intervals
+    if not share_normalization:
+        intervals = []
+        for index in range(nplanes):
+            data = cube[index]
+            vmin, vmax = get_vmin_vmax(data, **kwargs)
+            intervals.append((vmin, vmax))
+    else: intervals = None
+
+    # Plot first plane
+    if share_normalization: vmin, vmax, image, norm = plot_box(cube[0], axes=axes, return_image=True, return_normalization=True, **kwargs)
+    else:
+        vmin, vmax, image = plot_box(cube[0], axes=axes, return_image=True, interval=intervals[0], **kwargs)
+        vmin = vmax = None
 
     # Show axis?
     if not show_axes: axes.axis('off')
@@ -637,20 +642,24 @@ def plot_cube(cube, **kwargs):
     else: t = None
 
     # Create slider
-    #axcolor = 'lightgoldenrodyellow'
-    #sliderax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
     slider = DiscreteSlider(sliderax, slider_name, 0, nplanes-1, increment=1, valinit=0)
 
     # Create update function
     def update(index):
+
         if share_normalization: image.set_data(cube[index])
         else:
-            vmin, vmax, new_image, norm = plot_box(cube[index], axes=axes, return_image=True, return_normalization=True, **kwargs)
+            #vmin, vmax, new_image, norm = plot_box(cube[index], axes=axes, return_image=True, return_normalization=True, **kwargs)
+            #if colorbar:
+            #    cb.set_clim(vmin=vmin,vmax=vmax)
+            #    cb.draw_all()
+
+            image.set_data(cube[index])
+            image.set_clim(vmin=intervals[index][0], vmax=intervals[index][1])
             if colorbar:
-                #cb.remove()
-                #cb = plt.colorbar(new_image)
-                cb.set_clim(vmin=vmin,vmax=vmax)
+                cb.set_clim(vmin=intervals[index][0], vmax=intervals[index][1])
                 cb.draw_all()
+
         if labels is not None: t.set_text(labels[index])
         figure.canvas.draw_idle()
 
@@ -686,42 +695,21 @@ def plot_frame(frame, **kwargs):
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
-             around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
-             transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1., region=None,
-             regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
-             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True):
+def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, normalize_in=None, soft_min=False,
+                  soft_max=False, soft_min_scaling=1., soft_max_scaling=1., symmetric_method="mean",
+                  check_around_zero=True, wcs=None):
 
     """
     This function ...
-    :param box:
-    :param title:
-    :param path:
-    :param format:
-    :param scale:
+    :param data:
     :param interval:
-    :param cmap:
-    :param colorbar:
     :param around_zero:
     :param symmetric:
     :param normalize_in:
-    :param scale_parameter:
-    :param show_axes:
-    :param transparent:
     :param soft_min:
     :param soft_max:
     :param soft_min_scaling:
     :param soft_max_scaling:
-    :param region:
-    :param regions:
-    :param axes:
-    :param xsize:
-    :param ysize:
-    :param interpolation:
-    :param alpha:
-    :param return_image:
-    :param return_normalization:
-    :param aspect:
     :param symmetric_method:
     :param check_around_zero:
     :return:
@@ -732,22 +720,14 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
     # Other new colormaps: plasma, magma, inferno
 
-    # Get the data
-    if isinstance(box, np.ndarray): data = box
-    else: data = box.data
-
-    # Get dimension
-    nxpix = data.shape[1]
-    nypix = data.shape[0]
-
     # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
     from ..region.region import SkyRegion, PixelRegion
 
     # Normalize_in is passed
     if normalize_in is not None:
         if isinstance(normalize_in, SkyRegion):
-            if not hasattr(box, "wcs"): raise ValueError("Cannot give sky region when the passed data doesn't have a coordinate system")
-            normalize_in = normalize_in.to_pixel(box.wcs)
+            if wcs is None: raise ValueError("Cannot give sky region when the passed data doesn't have a coordinate system")
+            normalize_in = normalize_in.to_pixel(wcs)
         if isinstance(normalize_in, PixelRegion): normalize_in = normalize_in.to_mask(data.shape[1], data.shape[0])
 
         # Get the mask data
@@ -868,6 +848,70 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     # Other
     else: raise ValueError("Invalid option for 'interval'")  # INVALID
 
+    # Return the interval
+    return vmin, vmax
+
+# -----------------------------------------------------------------
+
+def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis", colorbar=False,
+             around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
+             transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1.,
+             region=None, regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
+             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True):
+
+    """
+    This function ...
+    :param box:
+    :param title:
+    :param path:
+    :param format:
+    :param scale:
+    :param interval:
+    :param cmap:
+    :param colorbar:
+    :param around_zero:
+    :param symmetric:
+    :param normalize_in:
+    :param scale_parameter:
+    :param show_axes:
+    :param transparent:
+    :param soft_min:
+    :param soft_max:
+    :param soft_min_scaling:
+    :param soft_max_scaling:
+    :param region:
+    :param regions:
+    :param axes:
+    :param xsize:
+    :param ysize:
+    :param interpolation:
+    :param alpha:
+    :param return_image:
+    :param return_normalization:
+    :param aspect:
+    :param symmetric_method:
+    :param check_around_zero:
+    :return:
+    """
+
+    # Get the data
+    if isinstance(box, np.ndarray): data = box
+    else: data = box.data
+
+    # Get coordinate system
+    if hasattr(box, "wcs"): wcs = box.wcs
+    else: wcs = None
+
+    # Get dimension
+    nxpix = data.shape[1]
+    nypix = data.shape[0]
+
+    # Get interval
+    vmin, vmax = get_vmin_vmax(data, interval=interval, around_zero=around_zero, symmetric=symmetric,
+                               normalize_in=normalize_in, soft_min=soft_min, soft_max=soft_max,
+                               soft_min_scaling=soft_min_scaling, soft_max_scaling=soft_max_scaling,
+                               symmetric_method=symmetric_method, check_around_zero=check_around_zero, wcs=wcs)
+
     # Get the normalization
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
 
@@ -881,27 +925,6 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     else: only_axes = True
 
     # Show the data
-    #aspect = 1
-    #aspect = None
-    #aspect = 'auto'
-    #aspect = "equal"
-    # if nxpix > nypix:
-    #     diff = nxpix - nypix
-    #     from ...core.tools import numbers
-    #     diffa, diffb = numbers.equal_parts(diff)
-    #     bottom = -diffa
-    #     top = nypix + diffb
-    #     left = 0
-    #     right = nxpix
-    # else:
-    #     diff = nypix - nxpix
-    #     from ...core.tools import numbers
-    #     diffa, diffb = numbers.equal_parts(diff)
-    #     left = -diffa
-    #     right = nxpix + diffb
-    #     bottom = 0
-    #     top = nypix
-    # extent = (left, right, bottom, top)
     extent = None
     image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap,
                 alpha=alpha, aspect=aspect, extent=extent)

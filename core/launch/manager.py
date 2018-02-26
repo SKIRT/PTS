@@ -66,6 +66,7 @@ from ..data.sed import load_multiple_seds
 from ..misc.fluxes import get_sed_instrument_name
 from ..misc.images import get_datacube_instrument_name
 from ..simulation.status import show_log_summary
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -2291,7 +2292,7 @@ class SimulationManager(Configurable):
                     # Get description
                     _, _, show_description = show_commands[show_key]
 
-                    print("    * " + fmt.bold + key + fmt.reset + ": " + show_description)
+                    print("    * " + fmt.bold + show_key + fmt.reset + ": " + show_description)
 
             elif key == "plot":
 
@@ -2300,7 +2301,7 @@ class SimulationManager(Configurable):
                     # Get description
                     _, _, plot_description = plot_commands[plot_key]
 
-                    print("    * " + fmt.bold + key + fmt.reset + ": " + plot_description)
+                    print("    * " + fmt.bold + plot_key + fmt.reset + ": " + plot_description)
 
         print("")
 
@@ -2721,8 +2722,16 @@ class SimulationManager(Configurable):
                 # Add the SED to the plotter
                 plotter.add_sed(sed, label=label)
 
+        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
+
+        # Set filepath
+        filepath = fs.join(introspection.pts_temp_dir, "seds.pdf")
+
         # Run the plotter
-        plotter.run()
+        plotter.run(output=filepath)
+
+        # Open the file
+        fs.open_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -3114,12 +3123,6 @@ class SimulationManager(Configurable):
         log.debug("Showing instruments of simulation '" + simulation_name + "' ...")
 
         print("")
-        #print(fmt.green + fmt.underlined + "Instruments:" + fmt.reset)
-        #print("")
-
-        # Get the instruments
-        #instruments = self.get_instruments(simulation_name)
-
         # Loop over the instruments
         ski = self.get_skifile(simulation_name)
         for name in self.get_instrument_names(simulation_name): show_instrument(ski, name)
