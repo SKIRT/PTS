@@ -168,9 +168,10 @@ def get_usage(name, definition, description=None, add_logging=True, add_cwd=True
     """
 
     # Create the configuration
-    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd,
+                                         error=error, exit_on_help=exit_on_help)
 
-    # Return the usage
+    # Return the usage info lines
     return setter.get_usage(definition)
 
 # -----------------------------------------------------------------
@@ -190,10 +191,34 @@ def print_usage(name, definition, description=None, add_logging=True, add_cwd=Tr
     """
 
     # Create the configuration
-    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd,
+                                         error=error, exit_on_help=exit_on_help)
 
     # Print the usage info
     return setter.print_usage(definition)
+
+# -----------------------------------------------------------------
+
+def get_help(name, definition, description=None, add_logging=True, add_cwd=True, error="exit", exit_on_help=True):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param description:
+    :param add_logging:
+    :param add_cwd:
+    :param error:
+    :param exit_on_help:
+    :return:
+    """
+
+    # Create the configuration
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd,
+                                         error=error, exit_on_help=exit_on_help)
+
+    # Return the help info lines
+    return setter.get_help(definition)
 
 # -----------------------------------------------------------------
 
@@ -212,7 +237,8 @@ def print_help(name, definition, description=None, add_logging=True, add_cwd=Tru
     """
 
     # Create the configuration
-    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd,
+                                         error=error, exit_on_help=exit_on_help)
 
     # Print the help info
     return setter.print_help(definition)
@@ -2842,7 +2868,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         else: raise ValueError("Invalid option for error handling")
 
         # Set help handling
-        if not exit_on_help: self.parser.register('action', 'help', NoExitHelpAction)
+        if not exit_on_help: self.parser.register('action', 'help', NoExitHelpAction) # DOESN'T WORK??
 
         # The parsed arguments
         self.arguments = None
@@ -2861,6 +2887,46 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         """
 
         return sys.argv[1:]
+
+    # -----------------------------------------------------------------
+
+    def get_help(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set logging and cwd
+        self.set_logging_and_cwd(definition)
+
+        # Set arguments
+        definition.set_arguments(self.parser)
+
+        # Return the help lines
+        lines = self.parser.format_help().split("\n")
+        return [line for line in lines if line] # ignore empty lines
+
+    # -----------------------------------------------------------------
+
+    def get_usage(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set logging and cwd
+        self.set_logging_and_cwd(definition)
+
+        # Set arguments
+        definition.set_arguments(self.parser)
+
+        # Return the usage lines
+        lines = self.parser.format_usage().split("\n")
+        return [line for line in lines if line]  # ignore empty lines
 
     # -----------------------------------------------------------------
 
@@ -2899,25 +2965,6 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
 
         # Print the help
         return self.parser.print_usage()
-
-    # -----------------------------------------------------------------
-
-    def get_usage(self, definition):
-
-        """
-        This function ...
-        :param definition:
-        :return:
-        """
-
-        # Set logging and cwd
-        self.set_logging_and_cwd(definition)
-
-        # Set arguments
-        definition.set_arguments(self.parser)
-
-        # Return the usage
-        return self.parser.usage
 
     # -----------------------------------------------------------------
 

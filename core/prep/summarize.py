@@ -35,9 +35,13 @@ def show_instrument(ski, name):
     :return:
     """
 
+    # Get the instrument
+    instrument = ski.get_instrument_object(name)
 
+    # Get the instrument class name
     instr_class = str(type(instrument).__name__)
 
+    # Show
     print(" - " + fmt.bold + name + fmt.reset + " (" + instr_class + "):")
     print("")
     print(instrument.to_string(line_prefix="  ", bullet="*", bold=False))
