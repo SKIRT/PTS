@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import operator
 import itertools
 from functools import partial
+from collections import OrderedDict
 
 # -----------------------------------------------------------------
 
@@ -923,7 +924,8 @@ def elements_not_in_other(sequence_a, sequence_b, check_existing=False):
     :return: 
     """
 
-    elements = set()
+    #elements = set()
+    elements = OrderedDict() # Ordered Dict used as ordered SET
 
     # Check whether each item in sequence_b exists in sequence_a
     if check_existing:
@@ -931,10 +933,10 @@ def elements_not_in_other(sequence_a, sequence_b, check_existing=False):
             if element not in sequence_a: raise ValueError("The element '" + str(element) + "' from the second sequence is not in the first sequence (" + str(sequence_a) + ")")
 
     for element in sequence_a:
+        if element not in sequence_b: elements[element] = 1 #elements.add(element)
 
-        if element not in sequence_b: elements.add(element)
-
-    return list(elements)
+    #return list(elements)
+    return elements.keys()
 
 # -----------------------------------------------------------------
 
@@ -1970,6 +1972,38 @@ def sort_with_first_last(sequence, first=None, last=None):
 
     # Return the combined new list
     return firsts + between + lasts
+
+# -----------------------------------------------------------------
+
+def find_startswith(sequence, startswith):
+
+    """
+    This function ...
+    :param sequence:
+    :param startswith:
+    :return:
+    """
+
+    result = []
+    for item in sequence:
+        if item.startswith(startswith): result.append(item)
+    return result
+
+# -----------------------------------------------------------------
+
+def find_unique_startswith(sequence, startswith):
+
+    """
+    This function ...
+    :param sequence:
+    :param startswith:
+    :return:
+    """
+
+    result = find_startswith(sequence, startswith)
+    if len(result) == 0: raise ValueError("None found")
+    elif len(result) > 1: raise ValueError("Not unique: '" + startswith + "' in " + str(sequence))
+    else: return result[0]
 
 # -----------------------------------------------------------------
 

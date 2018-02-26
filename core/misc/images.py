@@ -33,7 +33,7 @@ from ..prep.deploy import Deployer
 from ..tools import strings
 from ..tools.stringify import tostr
 from ..tools import numbers
-from .datacubes import DatacubesMiscMaker
+from .datacubes import DatacubesMiscMaker, get_datacube_instrument_name
 
 # -----------------------------------------------------------------
 
@@ -2141,22 +2141,5 @@ class ObservedImageMaker(DatacubesMiscMaker):
         log.info("Clearing intermediate results ...")
 
         # TODO
-
-# -----------------------------------------------------------------
-
-def get_datacube_instrument_name(datacube_path, prefix):
-
-    """
-    This function ...
-    :param datacube_path:
-    :param prefix:
-    :return:
-    """
-
-    # ONLY FOR TOTAL
-    # return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
-
-    # For all
-    return fs.name(datacube_path).split(prefix + "_")[1].rsplit("_", 1)[0]
 
 # -----------------------------------------------------------------

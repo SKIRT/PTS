@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import traceback
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
@@ -63,7 +64,30 @@ from ..units.unit import get_common_unit
 from ..plot.sed import SEDPlotter
 from ..data.sed import load_multiple_seds
 from ..misc.fluxes import get_sed_instrument_name
+from ..misc.images import get_datacube_instrument_name
 from ..simulation.status import show_log_summary
+
+# -----------------------------------------------------------------
+
+class InvalidCommandError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, command):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param command:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(InvalidCommandError, self).__init__(message)
+
+        # The command
+        self.command = command
 
 # -----------------------------------------------------------------
 
@@ -81,36 +105,39 @@ clear_analysis_steps = ["extraction", "plotting", "misc"]
 
 # Define commands
 commands = OrderedDict()
-commands["help"] = "show help"
-commands["history"] = "show history of executed commands"
-commands["status"] = "show simulation status"
-commands["hosts"] = "show remote hosts of the simulations"
-commands["parallelizations"] = "show parallelization schemes used per host"
-commands["info"] = "show info about the simulation (if defined in info tables)"
-commands["open"] = "open input, output or base simulation directory"
-commands["input"] = "show simulation input"
-commands["output"] = "show simuation output"
-commands["instruments"] = "show simulation instruments"
-commands["stellar"] = "show stellar components"
-commands["dust"] = "show dust components"
-commands["normalizations"] = "show normalizations"
-commands["show"] = "show"
-commands["plot"] = "plot"
-commands["move"] = "move simulations from one remote to another"
-commands["stop"] = "stop simulations"
-commands["remove"] = "remove simulation"
-commands["clear"] = "clear simulation output/input/analysis"
-commands["unretrieve"] = "unretrieve simulation"
-commands["unanalyse"] = "unanalyse simulation"
-commands["relaunch"] = "relaunch simulations"
-commands["log"] = "show log output of a simulation"
-commands["settings"] = "show simulation settings"
-commands["analysis"] = "show analysis options"
-commands["adapt"] = "adapt simulation settings or analysis options"
-commands["compare"] = "compare simulation settings or analysis options between two simulations"
-commands["retrieve"] = "retrieve a simulation"
-commands["analyse"] = "analyse a simulation"
-commands["reanalyse"] = "re-analyse a simulation"
+commands["help"] = ("show_help", False, "show help")
+commands["history"] = ("show_history", False, "show history of executed commands")
+commands["status"] = ("show_status", False, "show simulation status")
+commands["hosts"] = ("show_hosts_command", True, "show remote hosts of the simulations")
+commands["parallelizations"] = ("show_parallelizations_command", True, "show parallelization schemes used per host")
+commands["info"] = ("show_info_command", True, "show info about the simulation (if defined in info tables)")
+commands["open"] = ("open_command", True, "open input, output or base simulation directory")
+commands["sed"] = ("plot_seds_command", True, "plot SED(s) of a simulation")
+commands["datacube"] = ("show_datacubes_command", True, "plot datacube(s) of a simulation")
+commands["input"] = ("show_input_command", True, "show simulation input")
+commands["output"] = ("show_output_command", True, "show simuation output")
+commands["instruments"] = ("show_instruments_command", True, "show simulation instruments")
+commands["stellar"] = ("show_stellar_components_command", True, "show stellar components")
+commands["dust"] = ("show_dust_components_command", True, "show dust components")
+commands["normalizations"] = ("show_normalizations_command", True, "show normalizations")
+commands["show"] = ("show_command", True, "show")
+commands["plot"] = ("plot_command", True, "plot")
+commands["move"] = ("move_simulations_command", True, "move simulations from one remote to another")
+commands["stop"] = ("stop_simulations_command", True, "stop simulations")
+commands["remove"] = ("remove_simulation_command", True, "remove simulation")
+commands["clear"] = ("clear_simulation_command", True, "clear simulation output/input/analysis")
+commands["unretrieve"] = ("unretrieve_simulation_command", True, "unretrieve simulation")
+commands["unanalyse"] = ("unanalyse_simulation_command", True, "unanalyse simulation")
+commands["relaunch"] = ("relaunch_simulation_command", True, "relaunch simulations")
+commands["log"] = ("show_simulation_log_command", True, "show log output of a simulation")
+commands["error"] = ("show_simulation_errors_command", True, "show error output of a simulation")
+commands["settings"] = ("show_simulation_settings_command", True, "show simulation settings")
+commands["analysis"] = ("show_analysis_options_command", True, "show analysis options")
+commands["adapt"] = ("adapt_simulation_command", True, "adapt simulation settings or analysis options")
+commands["compare"] = ("compare_simulations_command", True, "compare simulation settings or analysis options between two simulations")
+commands["retrieve"] = ("retrieve_simulation_command", True, "retrieve a simulation")
+commands["analyse"] = ("analyse_simulation_command", True, "analyse a simulation")
+commands["reanalyse"] = ("reanalyse_simulation_command", True, "re-analyse a simulation")
 
 # -----------------------------------------------------------------
 
@@ -1279,6 +1306,21 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_wavelength_grid(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        ski = self.get_skifile(simulation_name)
+        input_paths = self.get_input(simulation_name)
+        return ski.get_wavelengths(input_paths, as_grid=True)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_skifile(self, simulation_name):
 
         """
@@ -2126,8 +2168,12 @@ class SimulationManager(Configurable):
             # Process command
             success = True
             try: self.process_command(command)
+            except InvalidCommandError as e:
+                log.warning("Invalid command: '" + e.command + "'")
+                success = False
             except Exception as e:
-                log.warning(str(e))
+                traceback.print_exc()
+                log.error(str(e))
                 success = False
 
             # Add command, if succesful
@@ -2167,104 +2213,19 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Help
-        if command == "help": self.show_help()
+        # Find key
+        key = strings.get_unique_startswith(command, commands.keys(), return_none=True)
+        if key is None: raise InvalidCommandError("Invalid command: '" + command + "'", command)
 
-        # History
-        elif command == "history": self.show_history()
+        # Get function name and description
+        function_name, pass_command, description = commands[key]
 
-        # Show simulation status
-        elif command == "status": self.show_status()
+        # Get the function
+        function = getattr(self, function_name)
 
-        # Show hosts
-        elif command.startswith("hosts"): self.show_hosts_command(command)
-
-        # Show parallelizations
-        elif command.startswith("parallelizations"): self.show_parallelizations_command(command)
-
-        # Show info
-        elif command.startswith("info"): self.show_info_command(command)
-
-        # Open directories
-        elif command.startswith("open"): self.open_command(command)
-
-        # Plot SED
-        elif command.startswith("sed"): self.plot_seds_command(command)
-
-        # Show simulation input
-        elif command.startswith("input"): self.show_input_command(command)
-
-        # Show simulation output
-        elif command.startswith("output"): self.show_output_command(command)
-
-        # Show ski file instruments
-        elif command.startswith("instruments"): self.show_instruments_command(command)
-
-        # Show ski file stellar components
-        elif command.startswith("stellar"): self.show_stellar_components_command(command)
-
-        # Show ski file dust components
-        elif command.startswith("dust"): self.show_dust_components_command(command)
-
-        # Show ski file normalizations
-        elif command.startswith("normalizations"): self.show_normalizations_command(command)
-
-        # Show things
-        elif command.startswith("show"): self.show_command(command)
-
-        # Plot things
-        elif command.startswith("plot"): self.plot_command(command)
-
-        # Move simulation
-        elif command.startswith("move"): self.move_simulations_command(command)
-
-        # Stop simulation?
-        elif command.startswith("stop"): self.stop_simulations_command(command)
-
-        # Remove simulation?
-        elif command.startswith("remove"): self.remove_simulation_command(command)
-
-        # Clear simulation output/input/analysis
-        elif command.startswith("clear"): self.clear_simulation_command(command)
-
-        # Unretrieve simulation
-        elif command.startswith("unretrieve"): self.unretrieve_simulation_command(command)
-
-        # Unanalyse simulation
-        elif command.startswith("unanalyse"): self.unanalyse_simulation_command(command)
-
-        # Relaunch simulation
-        elif command.startswith("relaunch"): self.relaunch_simulation_command(command)
-
-        # Show log of simulation
-        elif command.startswith("log"): self.show_simulation_log_command(command)
-
-        # Show error output of simulation
-        elif command.startswith("error"): self.show_simulation_errors_command(command)
-
-        # Show simulation settings
-        elif command.startswith("settings"): self.show_simulation_settings_command(command)
-
-        # Show analysis options
-        elif command.startswith("analysis"): self.show_analysis_options_command(command)
-
-        # Adapt simulation settings or analysis options
-        elif command.startswith("adapt"): self.adapt_simulation_command(command)
-
-        # Compare simulation settings or analysis options
-        elif command.startswith("compare"): self.compare_simulations_command(command)
-
-        # Retrieve simulation
-        elif command.startswith("retrieve"): self.retrieve_simulation_command(command)
-
-        # Analyse simulation
-        elif command.startswith("analyse"): self.analyse_simulation_command(command)
-
-        # Re-analyse simulation
-        elif command.startswith("reanalyse"): self.reanalyse_simulation_command(command)
-
-        # Invalid command
-        else: raise ValueError("Invalid command: '" + command + "'")
+        # Call the function
+        if pass_command: function(command)
+        else: function()
 
     # -----------------------------------------------------------------
 
@@ -2281,13 +2242,13 @@ class SimulationManager(Configurable):
         print("")
 
         # Loop over the commands
-        for command in commands:
+        for key in commands:
 
             # Get description
-            description = commands[command]
+            _, _, description = commands[key]
 
             # Show
-            print(" - " + fmt.bold + command + fmt.reset + ": " + description)
+            print(" - " + fmt.bold + key + fmt.reset + ": " + description)
 
         print("")
 
@@ -2713,6 +2674,216 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def show_datacubes_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Create definition
+        contributions = ["total", "direct", "scattered", "dust", "dustscattered", "transparent"]
+        default_contributions = ["total"]
+        definition = ConfigurationDefinition()
+        definition.add_positional_optional("contributions", "string_list", "contributions for which to plot the datacubes", default_contributions, choices=contributions)
+        definition.add_optional("instruments", "string_list", "instruments for which to plot the datacubes")
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition, name="show_datacubes")
+
+        # Plot
+        self.show_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_datacubes(self, simulation_name, contributions=None, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param contributions:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing simulated datacubes for simulation '" + simulation_name + "' ...")
+
+        # Total
+        if contributions is None or "total" in contributions: self.show_total_datacubes(simulation_name, instruments=instruments)
+
+        # Direct
+        if contributions is None or "direct" in contributions: self.show_direct_datacubes(simulation_name, instruments=instruments)
+
+        # Transparent
+        if contributions is None or "transparent" in contributions: self.show_transparent_datacubes(simulation_name, instruments=instruments)
+
+        # Scattered
+        if contributions is None or "scattered" in contributions: self.show_scattered_datacubes(simulation_name, instruments=instruments)
+
+        # Dust
+        if contributions is None or "dust" in contributions: self.show_dust_datacubes(simulation_name, instruments=instruments)
+
+        # Dust-scattered
+        if contributions is None or "dustscattered" in contributions: self.show_dustscattered_datacubes(simulation_name, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    def _show_datacubes(self, simulation_name, paths, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param paths:
+        :param instruments:
+        :return:
+        """
+
+        from ...magic.tools import plotting
+        from ...magic.core.datacube import DataCube
+
+        # Get simulation prefix
+        prefix = self.get_simulation_prefix(simulation_name)
+
+        # Get the wavelength grid
+        wavelength_grid = self.get_wavelength_grid(simulation_name)
+
+        # Show the datacubes
+        for path in paths:
+
+            # Get instrument name
+            instr_name = get_datacube_instrument_name(path, prefix)
+            if instruments is not None and instr_name not in instruments: continue
+
+            # Load the datacube
+            datacube = DataCube.from_file(path, wavelength_grid)
+
+            # Plot
+            plotting.plot_datacube(datacube, title=instr_name, share_normalization=False, show_axes=False)
+
+    # -----------------------------------------------------------------
+
+    def show_total_datacubes(self, simulation_name, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing total datacubes for simulation '" + simulation_name + "' ...")
+
+        # Get simulation output
+        output = self.get_output(simulation_name)
+
+        # Show the datacubes
+        self._show_datacubes(simulation_name, output.total_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    def show_direct_datacubes(self, simulation_name, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing direct datacubes for simulation '" + simulation_name + "' ...")
+
+        # Get simulation output
+        output = self.get_output(simulation_name)
+
+        # Show the datacubes
+        self._show_datacubes(simulation_name, output.direct_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    def show_transparent_datacubes(self, simulation_name, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing transparent datacubes for simulation '" + simulation_name + "' ...")
+
+        # Get simulation output
+        output = self.get_output(simulation_name)
+
+        # Show the datacubes
+        self._show_datacubes(simulation_name, output.transparent_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    def show_scattered_datacubes(self, simulation_name, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing scattered datacubes for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation output
+        output = self.get_output(simulation_name)
+
+        # Show the datacubes
+        self._show_datacubes(simulation_name, output.scattered_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    def show_dust_datacubes(self, simulation_name, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing dust datacubes for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation output
+        output = self.get_output(simulation_name)
+
+        # Show the datacubes
+        self._show_datacubes(simulation_name, output.dust_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    def show_dustscattered_datacubes(self, simulation_name, instruments=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param instruments:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing dust-scattered datacubes for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation output
+        output = self.get_output(simulation_name)
+
+        # Show
+        self._show_datacubes(simulation_name, output.dust_scattered_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
     def show_input_command(self, command):
 
         """
@@ -3083,7 +3254,7 @@ class SimulationManager(Configurable):
         parse_command = splitted[index:]
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
 
         # Return
         return config.host
@@ -3117,7 +3288,7 @@ class SimulationManager(Configurable):
         else: parse_command = splitted[index:index + 1]  # only host list
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
 
         # Return
         hosts = config.pop("hosts")
@@ -3167,7 +3338,7 @@ class SimulationManager(Configurable):
         parse_command = splitted[index:]
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
 
         # Return
         return config.host, config.parallelization
@@ -3200,7 +3371,7 @@ class SimulationManager(Configurable):
         else: parse_command = splitted[index:index+1] # only simulation name
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
 
         # Get simulation name
         if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
@@ -3237,7 +3408,7 @@ class SimulationManager(Configurable):
         else: parse_command = splitted[index:index+1] # only simulation indices
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
 
         # Get simulation names
         simulation_names = []
@@ -3270,7 +3441,7 @@ class SimulationManager(Configurable):
         definition.import_settings(command_definition, required_to="optional")
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=splitted[index:], error="exception", initialize=False)
+        config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False)
 
         # Get simulation_a name
         if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]

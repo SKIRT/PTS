@@ -942,7 +942,7 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def add_column_info(self, name, dtype, unit, description):
+    def add_column_info(self, name, dtype, unit, description, index=None):
 
         """
         This function ...
@@ -950,11 +950,14 @@ class SmartTable(Table):
         :param dtype:
         :param unit:
         :param description:
+        :param index:
         :return:
         """
 
         if types.is_string_type(unit): unit = u(unit)
-        self.column_info.append((name, dtype, unit, description))
+
+        if index is not None: self.column_info.insert(index, (name, dtype, unit, description))
+        else: self.column_info.append((name, dtype, unit, description))
 
     # -----------------------------------------------------------------
 
@@ -970,7 +973,6 @@ class SmartTable(Table):
         for column_name in info_dict:
 
             info = info_dict[column_name]
-            #print(column_name, info)
             self.add_column_info(column_name, info[0], info[1], info[2])
 
     # -----------------------------------------------------------------
@@ -1158,24 +1160,6 @@ class SmartTable(Table):
         # PTS format
         if format == "pts":
 
-            # Read the lines
-            #lines = fs.read_lines(path)
-
-            #header.append("PTS data format")
-            # for name in masks: header.append(name + " mask: " + tostr(masks[name])) # WILL BE READ FROM THE QUOTE CHARACTERS in the data lines
-
-            # Set density and brightness lists
-            #if "density" in self.meta and len(self.meta["density"]) > 0: header.append("density: " + tostr(self.meta["density"]))
-            #if "brightness" in self.meta and len(self.meta["brightness"]) > 0: header.append("brightness: " + tostr(self.meta["brightness"]))
-
-            # Set unit string line for the header
-            #unit_string = ""
-            #for name in self.column_names:
-            #    unit = self.column_unit(name)
-            #    if unit is None: unit_string += ' ""'
-            #    else: unit_string += " " + tostr(unit)
-            #header.append(unit_string.strip())
-
             # Initialize the data lines and header lines
             data_lines = []
             header = []
@@ -1185,23 +1169,11 @@ class SmartTable(Table):
 
                 # Header line
                 if line.startswith("#"): header.append(line[2:])
-                else:
-                    #line = line.replace('""', "--")
-                    data_lines.append(line)
+                else: data_lines.append(line)
 
             # Put last header line (colum names) as first data line (and remove it from the header)
             sequences.prepend(data_lines, "# " + header[-1])
             header = header[:-1]
-
-            #print("DATA")
-            #for line in data_lines: print(line)
-            #print("")
-            #print("HEADER")
-            #for line in header: print(line)
-            #print("")
-
-            #filehandle = StringIO.StringIO()
-            #for line in data_lines: filehandle.write(line + "\n")
 
             # Search for density and brightness, set meta info
             index = -1
@@ -1215,14 +1187,12 @@ class SmartTable(Table):
 
                     density_string = line.split("density: ")[1]
                     string = "[" + ",".join('"' + s + '"' for s in density_string.split(",")) + "]"
-                    #table.meta["density"] = eval(string)
                     density = eval(string)
 
                 elif line.startswith("brightness:"):
 
                     brightness_string = line.split("brightness: ")[1]
                     string = "[" + ",".join('"' + s + '"' for s in brightness_string.split(",")) + "]"
-                    #table.meta["brightness"] = eval(string)
                     brightness = eval(string)
 
                 else: break
@@ -1244,13 +1214,8 @@ class SmartTable(Table):
             # Invalid
             else: raise IOError("Something is wrong with the file")
 
-            #print(data_lines)
-            #print(len(data_lines))
             ndata_lines = len(data_lines)
             nrows = ndata_lines - 1
-            #print(nrows)
-
-            #print(data_lines)
 
             # Call the constructor from Astropy, to read in plain ascii format
             if nrows == 0:
@@ -1258,13 +1223,7 @@ class SmartTable(Table):
                 colnames_string = data_lines[0][2:]
                 from ..tools import strings
                 column_names = strings.split_except_within_double_quotes(colnames_string, add_quotes=False)
-                #print("COLNAMES:", column_names)
-                #print("COLTYPES:", column_types)
                 table = cls(data=None, names=column_names, masked=True, dtype=column_types, copy=True)
-                #from ..tools import tables
-                #table2 = tables.new(names=column_names, dtypes=column_types)
-                #print(repr(table2))
-                #for k, column_name in enumerate(column_names): table[column_name] = table[column_name].astype(column_types[k])
             else:
                 # Was just to check:
                 #from ..tools import strings
@@ -1829,7 +1788,7 @@ class SmartTable(Table):
         first = self[column_name][0]
         #print(first)
         for i in range(len(self[column_name])):
-            print(self[column_name][i])
+            #print(self[column_name][i])
             if self[column_name][i] != first: return False
         return True
 
@@ -2501,7 +2460,6 @@ def reorder_columns(table):
     :return:
     """
 
-    #print(table.colnames)
     if not hasattr(table, "_column_info"): return
     #print(table._column_info)
 
@@ -2512,13 +2470,13 @@ def reorder_columns(table):
     if table.column_names == column_names_ordered: return
 
     # Check whether the table contains the same columns as it should
-    if not sequences.same_contents(table.column_names, column_names_ordered): raise ValueError("Table does not contain the correct columns")
+    #if not sequences.same_contents(table.column_names, column_names_ordered): raise ValueError("Table does not contain the correct columns")
+    extra_columns = sequences.elements_not_in_other(table.column_names, column_names_ordered, check_existing=True)
+    #print(extra_columns)
 
     # Give warning
     warnings.warn("The order of the columns does not correspond to the order of the columns as defined by the table subclass: re-ordering the columns ...")
-
-    # Reset all column info
-    table.column_info = []
+    if len(extra_columns) > 0: warnings.warn("The following extra columns exist: '" + ",".join(extra_columns) + "'. Assumed to be the last columns in this order.")
 
     # Loop over the column names in the desired order
     for index, column_name in enumerate(column_names_ordered):
@@ -2528,9 +2486,10 @@ def reorder_columns(table):
         del table[column_name]
         table.add_column(column, index=index)
 
-        # Add the column info
+        # Remove and re-add the column info
         info = table._column_info[column_name]
-        table.add_column_info(column_name, info[0], info[1], info[2])
+        table.column_info.pop(index)
+        table.add_column_info(column_name, info[0], info[1], info[2], index=index)
 
 # -----------------------------------------------------------------
 

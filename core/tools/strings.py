@@ -568,6 +568,76 @@ def split_in_lines(string, length=60, as_list=False):
 
 # -----------------------------------------------------------------
 
+def get_startswith(line, patterns):
+
+    """
+    This function ...
+    :param line:
+    :param patterns:
+    :return:
+    """
+
+    result = []
+    for pattern in patterns:
+        if line.startswith(pattern): result.append(pattern)
+    return result
+
+# -----------------------------------------------------------------
+
+def get_unique_startswith(line, patterns, return_none=False):
+
+    """
+    This function ...
+    :param line:
+    :param patterns:
+    :param return_none:
+    :return:
+    """
+
+    result = get_startswith(line, patterns)
+    if len(result) == 0:
+        if return_none: return None
+        else: raise ValueError("No match")
+    elif len(result) > 1: raise ValueError("Line '" + line + "' starts with multiple patterns: '" + str(result) + "'")
+    else: return result[0]
+
+# -----------------------------------------------------------------
+
+def get_endswith(line, patterns):
+
+    """
+    This function ...
+    :param line:
+    :param patterns:
+    :return:
+    """
+
+    result = []
+    for pattern in patterns:
+        if line.endswith(pattern): result.append(pattern)
+    return result
+
+# -----------------------------------------------------------------
+
+def get_unique_endswith(line, patterns, return_none=False):
+
+    """
+    This function ...
+    :param line:
+    :param patterns:
+    :param return_none:
+    :return:
+    """
+
+    result = get_endswith(line, patterns)
+    if len(result) == 0:
+        if return_none: return None
+        else: raise ValueError("No match")
+    elif len(result) > 1: raise ValueError("Line '" + line + "' ends with multiple patterns: '" + str(result) + "'")
+    else: return result[0]
+
+# -----------------------------------------------------------------
+
 def startswith_any(line, patterns):
 
     """
