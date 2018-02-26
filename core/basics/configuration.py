@@ -123,7 +123,7 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
 
 # -----------------------------------------------------------------
 
-def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True, command=None, error="exit", initialize=True):
+def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True, command=None, error="exit", exit_on_help=True, initialize=True):
 
     """
     This function ...
@@ -134,12 +134,13 @@ def parse_arguments(name, definition, description=None, add_logging=True, add_cw
     :param add_cwd:
     :param command:
     :param error:
+    :param exit_on_help:
     :param initialize:
     :return:
     """
 
     # Create the configuration
-    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error)
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
     config = setter.run(definition, command=command)
 
     # Initialize PTS
@@ -149,6 +150,72 @@ def parse_arguments(name, definition, description=None, add_logging=True, add_cw
 
     # Return the configuration
     return config
+
+# -----------------------------------------------------------------
+
+def get_usage(name, definition, description=None, add_logging=True, add_cwd=True, error="exit", exit_on_help=True):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param description:
+    :param add_logging:
+    :param add_cwd:
+    :param error:
+    :param exit_on_help:
+    :return:
+    """
+
+    # Create the configuration
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
+
+    # Return the usage
+    return setter.get_usage(definition)
+
+# -----------------------------------------------------------------
+
+def print_usage(name, definition, description=None, add_logging=True, add_cwd=True, error="exit", exit_on_help=True):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param description:
+    :param add_logging:
+    :param add_cwd:
+    :param error:
+    :param exit_on_help:
+    :return:
+    """
+
+    # Create the configuration
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
+
+    # Print the usage info
+    return setter.print_usage(definition)
+
+# -----------------------------------------------------------------
+
+def print_help(name, definition, description=None, add_logging=True, add_cwd=True, error="exit", exit_on_help=True):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param description:
+    :param add_logging:
+    :param add_cwd:
+    :param error:
+    :param exit_on_help:
+    :return:
+    """
+
+    # Create the configuration
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, error=error, exit_on_help=exit_on_help)
+
+    # Print the help info
+    return setter.print_help(definition)
 
 # -----------------------------------------------------------------
 
@@ -2574,12 +2641,14 @@ class ConfigurationSetter(object):
 
     # -----------------------------------------------------------------
 
-    def set_logging_and_cwd(self):
+    def set_logging_and_cwd(self, definition=None):
 
         """
         This function ...
         :return:
         """
+
+        if definition is None: definition = self.definition
 
         cwd_path = fs.cwd()
 
@@ -2587,32 +2656,32 @@ class ConfigurationSetter(object):
         if self.add_logging:
 
             # Log path to absolute path
-            log_path = fs.absolute_or_in(self.definition.log_path, cwd_path) if self.definition.log_path is not None else cwd_path # set absolute log path
+            log_path = fs.absolute_or_in(definition.log_path, cwd_path) if definition.log_path is not None else cwd_path # set absolute log path
 
-            self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
-            self.definition.add_flag("debug", "enable debug output", letter="d")
-            self.definition.add_flag("brief", "brief output", letter="b")
+            definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
+            definition.add_flag("debug", "enable debug output", letter="d")
+            definition.add_flag("brief", "brief output", letter="b")
 
             # Report?
-            if self.definition.log_path is not None: self.definition.add_fixed("report", "write a report file", True) # if log path is defined in definition, always report
-            else: self.definition.add_flag("report", "write a report file")  # otherwise, ask
+            if definition.log_path is not None: definition.add_fixed("report", "write a report file", True) # if log path is defined in definition, always report
+            else: definition.add_flag("report", "write a report file")  # otherwise, ask
 
         # Add config path
-        if self.add_config_path and self.definition.write_config:
+        if self.add_config_path and definition.write_config:
 
             # Set the path to the directory where the configuration file should be saved
-            if self.definition.config_path is not None: self.definition.add_fixed("config_path", "directory for the configuration file to be written to", self.definition.config_path)
-            else: self.definition.add_optional("config_path", "directory_path", "directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
+            if definition.config_path is not None: definition.add_fixed("config_path", "directory for the configuration file to be written to", definition.config_path)
+            else: definition.add_optional("config_path", "directory_path", "directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
 
             # Write config?
-            if self.definition.config_path is not None: self.definition.add_fixed("write_config", "write the configuration", True) # if config path is defined in the definition, always write
-            else: self.definition.add_flag("write_config", "write the configuration") # otherwise, ask
+            if definition.config_path is not None: definition.add_fixed("write_config", "write the configuration", True) # if config path is defined in the definition, always write
+            else: definition.add_flag("write_config", "write the configuration") # otherwise, ask
 
         # Add timestamp?
-        if self.definition.write_config and self.definition.add_timestamp: self.definition.add_fixed("add_timestamp", "add timestamp to configuration file", True)
+        if definition.write_config and definition.add_timestamp: definition.add_fixed("add_timestamp", "add timestamp to configuration file", True)
 
         # Add the path to the current working directory
-        if self.add_cwd: self.definition.add_fixed("path", "the working directory", cwd_path)
+        if self.add_cwd: definition.add_fixed("path", "the working directory", cwd_path)
 
 # -----------------------------------------------------------------
 
@@ -2707,13 +2776,48 @@ def error_to_exception(self, message):
 
 # -----------------------------------------------------------------
 
+class NoExitHelpAction(argparse.Action):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
+
+        """
+        The constructor ...
+        :param option_strings:
+        :param dest:
+        :param default:
+        :param help:
+        """
+
+        super(NoExitHelpAction, self).__init__( option_strings=option_strings, dest=dest, default=default, nargs=0, help=help)
+
+    # -----------------------------------------------------------------
+
+    def __call__(self, parser, namespace, values, option_string=None):
+
+        """
+        This function ...
+        :param parser:
+        :param namespace:
+        :param values:
+        :param option_string:
+        :return:
+        """
+
+        parser.print_help()
+
+# -----------------------------------------------------------------
+
 class ArgumentConfigurationSetter(ConfigurationSetter):
 
     """
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True, error="exit"):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True, error="exit", exit_on_help=True):
 
         """
         This function ...
@@ -2723,6 +2827,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         :param add_cwd:
         :param add_config_path:
         :param error:
+        :param exit_on_help:
         """
 
         # Call the constructor of the base class
@@ -2735,6 +2840,9 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         if error == "exit": pass
         elif error == "exception": self.parser.error = MethodType(error_to_exception, self.parser) # change the function
         else: raise ValueError("Invalid option for error handling")
+
+        # Set help handling
+        if not exit_on_help: self.parser.register('action', 'help', NoExitHelpAction)
 
         # The parsed arguments
         self.arguments = None
@@ -2753,6 +2861,63 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         """
 
         return sys.argv[1:]
+
+    # -----------------------------------------------------------------
+
+    def print_help(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set logging and cwd
+        self.set_logging_and_cwd(definition)
+
+        # Set arguments
+        definition.set_arguments(self.parser)
+
+        # Print the help
+        return self.parser.print_help()
+
+    # -----------------------------------------------------------------
+
+    def print_usage(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set logging and cwd
+        self.set_logging_and_cwd(definition)
+
+        # Set arguments
+        definition.set_arguments(self.parser)
+
+        # Print the help
+        return self.parser.print_usage()
+
+    # -----------------------------------------------------------------
+
+    def get_usage(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set logging and cwd
+        self.set_logging_and_cwd(definition)
+
+        # Set arguments
+        definition.set_arguments(self.parser)
+
+        # Return the usage
+        return self.parser.usage
 
     # -----------------------------------------------------------------
 

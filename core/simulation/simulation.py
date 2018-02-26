@@ -1017,35 +1017,14 @@ class RemoteSimulation(SkirtSimulation):
 
         # -- Attributes --
 
-        # Properties of the remote host on which the simulation was run
-        self.host_id = None
-        self.cluster_name = None
+        # Set default values for other attributes
+        for attr_name in default_remote_attributes:
 
-        # Basic properties
-        self.id = None
-        self.remote_ski_path = None
-        self.remote_simulation_path = None
-        self.remote_input_path = None
-        self.remote_output_path = None
-        self.submitted_at = None
+            # Create a copy
+            value = copy.copy(default_remote_attributes[attr_name])
 
-        # Options for retrieval
-        self.retrieve_types = None
-
-        # Options for removing remote or local input and output
-        self.remove_remote_input = True                 # After retrieval
-        self.remove_remote_output = True                # After retrieval
-        self.remove_remote_simulation_directory = True  # After retrieval
-        self.remove_local_output = False                # After analysis
-
-        # The execution handle
-        self.handle = None
-
-        # Flag indicating whether this simulation has finished or not
-        self.finished = False
-
-        # Flag indicating whether this simulation has been retrieved or not
-        self.retrieved = False
+            # Set the attribute
+            setattr(self, attr_name, value)
 
         # Remote
         self._remote = None

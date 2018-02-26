@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
+from matplotlib.widgets import Slider
 
 # Import astronomical modules
 from astropy.visualization.stretch import SqrtStretch, LogStretch, LinearStretch, HistEqStretch, AsinhStretch
@@ -511,6 +512,160 @@ def create_prepared_mask(mask, **kwargs):
 
     # Return the new mask
     return mask, kwargs
+
+# -----------------------------------------------------------------
+
+def plot_datacube(datacube, **kwargs):
+
+    """
+    This function ...
+    :param datacube:
+    :param kwargs:
+    :return:
+    """
+
+    # Get the frames
+    cube = datacube.asarray(axis=0)
+
+    # Set options
+    wavelengths = datacube.wavelengths(unit="micron", add_unit=True)
+    kwargs["labels"] = [str(wavelength) for wavelength in wavelengths]
+    kwargs["slider_name"] = "Wavelength index"
+
+    # Plot
+    plot_cube(cube, **kwargs)
+
+# -----------------------------------------------------------------
+
+class DiscreteSlider(Slider):
+
+    """A matplotlib slider widget with discrete steps."""
+
+    def __init__(self, *args, **kwargs):
+
+        """Identical to Slider.__init__, except for the "increment" kwarg.
+        "increment" specifies the step size that the slider will be discritized
+        to.
+        """
+
+        kwargs["valfmt"] = "%d"
+
+        self.inc = kwargs.pop('increment', 0.5)
+        Slider.__init__(self, *args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_val(self, val):
+
+        """
+        This function ...
+        :param val:
+        :return:
+        """
+
+        discrete_val = int(val / self.inc) * self.inc
+        # We can't just call Slider.set_val(self, discrete_val), because this
+        # will prevent the slider from updating properly (it will get stuck at
+        # the first step and not "slide"). Instead, we'll keep track of the
+        # the continuous value as self.val and pass in the discrete value to
+        # everything else.
+        xy = self.poly.xy
+        xy[2] = discrete_val, 1
+        xy[3] = discrete_val, 0
+        self.poly.xy = xy
+        self.valtext.set_text(self.valfmt % discrete_val)
+        if self.drawon: self.ax.figure.canvas.draw()
+        self.val = val
+        if not self.eventson: return
+        for cid, func in self.observers.iteritems(): func(discrete_val)
+
+# -----------------------------------------------------------------
+
+def plot_cube(cube, **kwargs):
+
+    """
+    This function ...
+    :param kwargs:
+    :return:
+    """
+
+    # Get the number of planes
+    nplanes = cube.shape[0]
+    xsize = cube[0].shape[1]
+    ysize = cube[1].shape[0]
+
+    # Get settings
+    labels = kwargs.pop("labels", None)
+    slider_name = kwargs.pop("slider_name", "Index")
+    if labels is not None and len(labels) != nplanes: raise ValueError("Number of labels must be equal to number of planes in the cube")
+    share_normalization = kwargs.pop("share_normalization", True)
+    title = kwargs.pop("title", None)
+    colorbar = kwargs.pop("colorbar", True)
+    show_axes = kwargs.pop("show_axes", True)
+    path = kwargs.pop("path", None)
+    transparent = kwargs.pop("transparent", False)
+
+    # Create figure
+    #figure, ax = plt.subplots()
+    #figure = plt.figure()
+    #axes = figure.gca()
+    #plt.subplots_adjust(left=0.25, bottom=0.25)
+
+    #figure, (axes, sliderax) = plt.subplots(2, 1)
+    #figsize = None
+    figsize = (5, 8)
+    figure = plt.figure(figsize=figsize)
+    gs = gridspec.GridSpec(2, 1, height_ratios=[10, 1])
+    axes = plt.subplot(gs[0])
+    sliderax = plt.subplot(gs[1])
+
+    # Plot
+    vmin, vmax, image, norm = plot_box(cube[0], axes=axes, return_image=True, return_normalization=True, **kwargs)
+
+    # Show axis?
+    if not show_axes: axes.axis('off')
+
+    # Add title
+    if title is not None: axes.set_title(title)
+
+    # Add colorbar?
+    if colorbar: cb = plt.colorbar(image, ax=axes)
+    else: cb = None
+
+    # Add text
+    if labels is not None: t = axes.text(0.5 * xsize, 0.01 * ysize, labels[0], verticalalignment='bottom', horizontalalignment='center', color="white")
+    else: t = None
+
+    # Create slider
+    #axcolor = 'lightgoldenrodyellow'
+    #sliderax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    slider = DiscreteSlider(sliderax, slider_name, 0, nplanes-1, increment=1, valinit=0)
+
+    # Create update function
+    def update(index):
+        if share_normalization: image.set_data(cube[index])
+        else:
+            vmin, vmax, new_image, norm = plot_box(cube[index], axes=axes, return_image=True, return_normalization=True, **kwargs)
+            if colorbar:
+                #cb.remove()
+                #cb = plt.colorbar(new_image)
+                cb.set_clim(vmin=vmin,vmax=vmax)
+                cb.draw_all()
+        if labels is not None: t.set_text(labels[index])
+        figure.canvas.draw_idle()
+
+    # Set update function
+    slider.on_changed(update)
+
+    # Tight layout
+    plt.tight_layout()
+
+    # Show or save as file
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format, transparent=transparent)
+
+    # Close the figure
+    plt.close()
 
 # -----------------------------------------------------------------
 

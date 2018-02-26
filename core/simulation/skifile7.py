@@ -2139,13 +2139,16 @@ class SkiFile7:
         return self.get_quantity(self.get_wavelength_grid(), "minWavelength")
 
     ## This function returns a list of the wavelengths as Quantities, sorted from lowest to highest
-    def get_wavelengths(self, input_path):
+    def get_wavelengths(self, input_path=None, as_grid=False):
 
         from .wavelengthgrid import WavelengthGrid
         from ..units.parsing import parse_unit as u
 
         # Wavelengths file
         if self.uses_wavelength_file:
+
+            # Check that input path is specified
+            if input_path is None: raise ValueError("Input path(s) should be specified")
 
             # Determine wavelengths file path
             path = self.wavelengthsfile(input_path)
@@ -2154,10 +2157,14 @@ class SkiFile7:
             grid = WavelengthGrid.from_skirt_input(path)
 
             # Return the wavelengths as a list
-            return sorted(grid.wavelengths(unit="micron"))
+            if as_grid: return grid
+            else: return sorted(grid.wavelengths(unit="micron"))
 
         # Wavelengths defined in ski file
-        else: return sorted([wavelength * u("micron") for wavelength in self.wavelengths()])
+        else:
+
+            if as_grid: return WavelengthGrid.from_wavelengths(self.wavelengths(), "micron", sort=True)
+            else: return sorted([wavelength * u("micron") for wavelength in self.wavelengths()])
 
     ## This function returns the minimum wavelength in the grid, but also works when the wavelengths are defined in a file
     def get_min_wavelength(self, input_path):

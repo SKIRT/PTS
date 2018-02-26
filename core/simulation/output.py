@@ -1573,6 +1573,18 @@ class SimulationOutput(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def has_single_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return output_types.parameters in self.paths and self.nparameters == 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def parameters(self):
 
         """
@@ -1585,7 +1597,19 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
+    @lazyproperty
+    def single_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_single_parameters: raise IOError("Not a single parameters file")
+        else: return self.parameters[0]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def nother(self):
 

@@ -18,7 +18,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..basics.log import log
-from .datacubes import DatacubesMiscMaker, get_instrument_name
+from .datacubes import DatacubesMiscMaker, get_datacube_instrument_name
 from ..basics.animation import Animation
 
 # -----------------------------------------------------------------

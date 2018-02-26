@@ -263,6 +263,22 @@ class GenerationsTable(SmartTable):
     This class ...
     """
 
+    _column_info = OrderedDict()
+    _column_info["Generation name"] = (str, None, "name for the generation")
+    _column_info["Generation index"] = (int, None, "index of the generation")
+    _column_info["Launching time"] = (str, None, "time of launching the generation simulations")
+    _column_info["Method"] = (str, None, "method used for model generation")
+    _column_info["Wavelength grid name"] = (str, None, "name of the wavelength gid")
+    _column_info["Model representation"] = (str, None, "representation of the model")
+    _column_info["Number of simulations"] = (int, None, "number of simulations (individuals) in the generation")
+    _column_info["Number of photon packages"] = (int, None, "number of photon packages per wavelength")
+    _column_info["Self-absorption"] = (bool, None, "dust self-absorption enabled")
+    _column_info["Transient heating"] = (bool, None, "transient heating enabled")
+    _column_info["Spectral convolution"] = (bool, None, "spectral convolution enabled")
+    _column_info["Use images"] = (bool, None, "use images")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -287,21 +303,8 @@ class GenerationsTable(SmartTable):
         # If not called from astropy
         if not from_astropy:
 
-            # name, index, timestamp, method, wavelength_grid_name, representation, nsimulations,
-            # npackages, selfabsorption, transientheating, spectralconvolution, use_images
-
-            self.add_column_info("Generation name", str, None, "name for the generation")
-            self.add_column_info("Generation index", int, None, "index of the generation")
-            self.add_column_info("Launching time", str, None, "time of launching the generation simulations")
-            self.add_column_info("Method", str, None, "method used for model generation")
-            self.add_column_info("Wavelength grid name", str, None, "name of the wavelength gid")
-            self.add_column_info("Model representation", str, None, "representation of the model")
-            self.add_column_info("Number of simulations", int, None, "number of simulations (individuals) in the generation")
-            self.add_column_info("Number of photon packages", int, None, "number of photon packages per wavelength")
-            self.add_column_info("Self-absorption", bool, None, "dust self-absorption enabled")
-            self.add_column_info("Transient heating", bool, None, "transient heating enabled")
-            self.add_column_info("Spectral convolution", bool, None, "spectral convolution enabled")
-            self.add_column_info("Use images", bool, None, "use images")
+            # Add column info
+            self.add_all_column_info(self._column_info)
 
             # RANGES
             # Loop over the parameters

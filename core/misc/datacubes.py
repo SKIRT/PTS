@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from abc import ABCMeta
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
@@ -22,6 +23,285 @@ from ..simulation.simulation import createsimulations
 from ..tools import filesystem as fs
 from ..tools.utils import lazyproperty
 from ..simulation.wavelengthgrid import WavelengthGrid
+from ..simulation.output import SimulationOutput
+from ..simulation.skifile import SkiFile
+from ..basics.containers import DefaultOrderedDict
+
+# -----------------------------------------------------------------
+
+all_contributions = ["total", "direct", "scattered", "dust", "dustscattered", "transparent", "counts"]
+
+# -----------------------------------------------------------------
+
+def find_datacubes_in_cwd(return_prefix=False, contributions=("total")):
+
+    """
+    This function ...
+    :param return_prefix:
+    :param contributions:
+    :return:
+    """
+
+    return find_datacubes(fs.cwd(), return_prefix=return_prefix, contributions=contributions)
+
+# -----------------------------------------------------------------
+
+def find_datacubes(output_path, return_prefix=False, contributions=("total")):
+
+    """
+    This function ...
+    :param output_path:
+    :param return_prefix:
+    :param contributions:
+    :return:
+    """
+
+    # Create simulation output
+    output = SimulationOutput.from_directory(output_path)
+
+    # Return the paths
+    paths = []
+    if "total" in contributions: paths.extend(output.total_images)
+    if "direct" in contributions: paths.extend(output.direct_images)
+    if "scattered" in contributions: paths.extend(output.scattered_images)
+    if "dust" in contributions: paths.extend(output.dust_images)
+    if "dustscattered" in contributions: paths.extend(output.dust_scattered_images)
+    if "transparent" in contributions: paths.extend(output.transparent_images)
+    if "counts" in contributions: paths.extend(output.count_images)
+
+    # Show the datacubes
+    log.debug("Found datacubes:")
+    for path in paths:
+        filename = fs.name(path)
+        log.debug(" - " + filename)
+
+    # Return the paths
+    if return_prefix: return paths, output.prefix
+    else: return paths
+
+# -----------------------------------------------------------------
+
+def find_seds_in_cwd(return_prefix=False):
+
+    """
+    This function ...
+    :param return_prefix:
+    :return:
+    """
+
+    return find_seds(fs.cwd(), return_prefix=return_prefix)
+
+# -----------------------------------------------------------------
+
+def find_seds(output_path, return_prefix=False):
+
+    """
+    This function ...
+    :param output_path:
+    :param return_prefix:
+    :return:
+    """
+
+    # Create simulation output
+    output = SimulationOutput.from_directory(output_path)
+    paths = output.seds
+
+    # Show the SEDs
+    log.debug("Found SEDS:")
+    for path in paths:
+        filename = fs.name(path)
+        log.debug(" - " + filename)
+
+    # Return the paths
+    if return_prefix: return paths, output.prefix
+    else: return paths
+
+# -----------------------------------------------------------------
+
+def load_wavelength_grid_in_cwd(input_path=None):
+
+    """
+    This function ...
+    :param input_path:
+    :return:
+    """
+
+    return load_wavelength_grid(fs.cwd(), input_path=input_path)
+
+# -----------------------------------------------------------------
+
+def load_wavelength_grid(output_path, input_path=None):
+
+    """
+    This function finds the wavelengths of a simulation from the output directory
+    :param output_path:
+    :param input_path:
+    :return:
+    """
+
+    from ..data.sed import load_sed
+
+    # Create simulation output
+    output = SimulationOutput.from_directory(output_path)
+
+    # Has wavelengths file in the output
+    if output.has_single_wavelengths: return WavelengthGrid.from_skirt_output(output.single_wavelengths)
+
+    # Has SED
+    elif output.has_seds:
+
+        sed = load_sed(output.seds[0])
+        return WavelengthGrid.from_sed(sed)
+
+    # Has parameters
+    elif output.has_single_parameters:
+
+        # Get ski
+        parameters_path = output.single_parameters
+        ski = SkiFile(parameters_path)
+        return ski.get_wavelengths(input_path, as_grid=True)
+
+    # Nothing
+    else: raise IOError("No wavelength grid information can be found")
+
+# -----------------------------------------------------------------
+
+def load_wavelengths_in_cwd(unit="micron", input_path=None):
+
+    """
+    This function ...
+    :param unit:
+    :param input_path:
+    :return:
+    """
+
+    return load_wavelengths(fs.cwd(), unit=unit, input_path=input_path)
+
+# -----------------------------------------------------------------
+
+def load_wavelengths(output_path, unit="micron", input_path=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param unit:
+    :param input_path:
+    :return:
+    """
+
+    # Get the grid
+    grid = load_wavelength_grid(output_path, input_path=input_path)
+
+    # Return the wavelengths as an array
+    return grid.wavelengths(asarray=True, unit=unit)
+
+# -----------------------------------------------------------------
+
+def load_seds_in_cwd(contributions=("total"), wavelength_unit=None, photometry_unit=None):
+
+    """
+    This function ...
+    :param contributions:
+    :param wavelength_unit:
+    :param photometry_unit:
+    :return:
+    """
+
+    return load_seds(fs.cwd(), contributions=contributions, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+
+# -----------------------------------------------------------------
+
+def load_seds(output_path, contributions=("total"), wavelength_unit=None, photometry_unit=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param contributions:
+    :param wavelength_unit:
+    :param photometry_unit:
+    :return:
+    """
+
+    from ..data.sed import load_multiple_seds
+    from .fluxes import get_sed_instrument_name
+
+    # Find paths
+    paths, prefix = find_seds(output_path, return_prefix=True)
+
+    # Create dictionary for the SEDs
+    seds = DefaultOrderedDict(OrderedDict)
+
+    # Loop over the paths
+    for path in paths:
+
+        # Get instrument name
+        instr_name = get_sed_instrument_name(path, prefix=prefix)
+
+        # Load SEDs in this file
+        seds_instrument = load_multiple_seds(path, as_dict=True, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+
+        # Loop over the SEDs
+        for contribution in seds_instrument:
+            if contribution not in contributions: continue
+            seds[instr_name][contribution] = seds_instrument[contribution]
+
+    # Return the SEDs
+    return seds
+
+# -----------------------------------------------------------------
+
+def load_datacubes_in_cwd(contributions=("total"), input_path=None):
+
+    """
+    Thisn function ...
+    :param contributions:
+    :param input_path:
+    :return:
+    """
+
+    return load_datacubes(fs.cwd(), contributions=contributions, input_path=input_path)
+
+# -----------------------------------------------------------------
+
+def load_datacubes(output_path, contributions=("total"), input_path=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param contributions:
+    :param input_path:
+    :return:
+    """
+
+    # Load datacube class
+    from ...magic.core.datacube import DataCube
+
+    # Find paths
+    paths, prefix = find_datacubes(output_path, return_prefix=True, contributions=contributions)
+
+    # Find wavelength grid
+    wavelength_grid = load_wavelength_grid(output_path, input_path=input_path)
+
+    # Create dictionary to contain the datacubes
+    datacubes = DefaultOrderedDict(OrderedDict)
+
+    # Loop over the paths
+    for path in paths:
+
+        # Get instrument name
+        instr_name = get_datacube_instrument_name(path, prefix)
+
+        # Get the contribution
+        contribution = get_datacube_contribution(path)
+
+        # Load the datacube
+        datacube = DataCube.from_file(path, wavelength_grid)
+
+        # Add the datacube
+        datacubes[instr_name][contribution] = datacube
+
+    # Return the dictionary of datacubes
+    return datacubes
 
 # -----------------------------------------------------------------
 
@@ -150,7 +430,7 @@ class DatacubesMiscMaker(Configurable):
             for path in self.total_datacube_paths:
 
                 # Get the name of the instrument
-                instr_name = get_instrument_name(path, self.simulation_prefix)
+                instr_name = get_datacube_instrument_name(path, self.simulation_prefix)
 
                 # Get the distance
                 distance = ski.get_instrument_distance(instr_name)
@@ -186,48 +466,11 @@ class DatacubesMiscMaker(Configurable):
         # Debugging
         log.debug("Looking for total datacube files in directory '" + output_path + "' ...")
 
-        # Get datacube paths
-        #datacube_paths = fs.files_in_path(self.config.path, extension="fits")
-        total_datacube_paths = fs.files_in_path(output_path, extension="fits", endswith="_total")
-
-        # Get SED paths
-        sed_paths = fs.files_in_path(output_path, extension="dat", endswith="_sed")
-
-        # Determine prefix
-        prefix = None
-        for path in total_datacube_paths:
-
-            filename = fs.strip_extension(fs.name(path))
-
-            # Determine the prefix
-            first = filename.rsplit("_total", 1)[0]
-            simulation_prefix, instr_name = first.rsplit("_", 1)
-
-            if prefix is None: prefix = simulation_prefix
-            elif prefix != simulation_prefix: raise IOError("Not all datacubes have the same simulation prefix")
-
-        if prefix is None: raise IOError("No datacubes were found")
-
-        # Show the datacubes
-        log.debug("Found datacubes:")
-        for path in total_datacube_paths:
-            filename = fs.name(path)
-            log.debug(" - " + filename)
-
         # Set the paths to the total FITS files created by the simulation
-        self.datacube_paths = total_datacube_paths
-
-        from ..data.sed import load_sed
-
-        # Load one of the SEDs
-        if len(sed_paths) == 0: raise IOError("No SED files") # TODO: look for wavelength grid
-        sed = load_sed(sed_paths[0])
+        self.datacube_paths, self.simulation_prefix = find_datacube_paths(output_path, return_prefix=True)
 
         # Set the list of wavelengths for the simulation
-        self.wavelengths = sed.wavelengths(asarray=True, unit="micron")
-
-        # Set the simulation prefix
-        self.simulation_prefix = prefix
+        self.wavelengths = find_wavelengths(output_path)
 
     # -----------------------------------------------------------------
 
@@ -353,13 +596,24 @@ def is_total_datacube(datacube_path):
     :return:
     """
 
-    name = fs.strip_extension(fs.name(datacube_path))
-    if name.endswith("_total"): return True
-    else: return False
+    return get_datacube_contribution(datacube_path) == "total"
 
 # -----------------------------------------------------------------
 
-def get_instrument_name(datacube_path, prefix):
+def get_datacube_contribution(datacube_path):
+
+    """
+    This function ...
+    :param datacube_path:
+    :return:
+    """
+
+    name = fs.strip_extension(fs.name(datacube_path))
+    return name.split("_")[-1]
+
+# -----------------------------------------------------------------
+
+def get_datacube_instrument_name(datacube_path, prefix):
 
     """
     This function ...
@@ -367,9 +621,6 @@ def get_instrument_name(datacube_path, prefix):
     :param prefix:
     :return:
     """
-
-    # ONLY FOR TOTAL
-    #return fs.name(datacube_path).split("_total.fits")[0].split(prefix + "_")[1]
 
     # For all
     return fs.name(datacube_path).split(prefix + "_")[1].rsplit("_", 1)[0]
