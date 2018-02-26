@@ -68,21 +68,27 @@ class TimeLineTable(SmartTable):
         :return:
         """
 
+        # Define column names and units
         names = ["Process rank", "Phase", "Start time", "End time", "Simulation phase", "Annotation"]
-        data = [process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list]
+        units = [None, None, "s", "s", None, None]
 
-        # Call the constructor of the base class
-        table = cls(data, names=names, masked=True)
+        # data = [process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list]
+        #
+        # # Call the constructor of the base class
+        # table = cls(data, names=names, masked=True)
+        #
+        # # Set the column units
+        # table["Start time"].unit = "s"
+        # table["End time"].unit = "s"
+        #
+        # # The path to the table file
+        # table.path = None
+        #
+        # # Return the table
+        # return table
 
-        # Set the column units
-        table["Start time"].unit = "s"
-        table["End time"].unit = "s"
-
-        # The path to the table file
-        table.path = None
-
-        # Return the table
-        return table
+        # NEW
+        return super(TimeLineTable, cls).from_columns(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list, names=names, units=units)
 
     # -----------------------------------------------------------------
 

@@ -49,6 +49,19 @@ def any(argument):
 
 # -----------------------------------------------------------------
 
+def integer_or_string(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return integer(argument)
+    except ValueError: return string(argument)
+
+# -----------------------------------------------------------------
+
 def integer_or_real_or_string(argument):
 
     """
@@ -1047,8 +1060,6 @@ def integer_list(argument):
 
     # Split the string
     splitted = argument.split('-')
-
-    #print("SPLITTED", splitted)
 
     if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
@@ -2696,5 +2707,17 @@ def host_list(argument):
     """
 
     return [host(arg) for arg in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def string_replacement(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return string_tuple(argument.replace(":", ","))
 
 # -----------------------------------------------------------------

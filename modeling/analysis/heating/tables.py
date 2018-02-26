@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ....core.basics.table import SmartTable
 from ....core.tools import arrays
@@ -26,6 +29,18 @@ class AbsorptionTable(SmartTable):
     """
     This class ...
     """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["x"] = (float, "pc", "X coordinate of cell center")
+    _column_info["y"] = (float, "pc", "Y coordinate of cell center")
+    _column_info["z"] = (float, "pc", "Z coordinate of cell center")
+    _column_info["total"] = (float, "W", "absorbed bolometric luminosity of the total stellar population")
+    _column_info["old"] = (float, "W", "absorbed bolometric luminosity of the old stellar population")
+    _column_info["young"] = (float, "W", "absorbed bolometric luminosity of the young stellar population")
+    _column_info["ionizing"] = (float, "W", "absorbed bolometric luminosity of the ionizing stellar population")
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -52,13 +67,7 @@ class AbsorptionTable(SmartTable):
         # Absorbed bolometric luminosity of the ionizing stellar population
 
         # Add column info
-        self.add_column_info("x", float, "pc", "X coordinate of cell center")
-        self.add_column_info("y", float, "pc", "Y coordinate of cell center")
-        self.add_column_info("z", float, "pc", "Z coordinate of cell center")
-        self.add_column_info("total", float, "W", "absorbed bolometric luminosity of the total stellar population")
-        self.add_column_info("old", float, "W", "absorbed bolometric luminosity of the old stellar population")
-        self.add_column_info("young", float, "W", "absorbed bolometric luminosity of the young stellar population")
-        self.add_column_info("ionizing", float, "W", "absorbed bolometric luminosity of the ionizing stellar population")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

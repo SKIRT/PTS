@@ -26,6 +26,84 @@ from ..basics.log import log
 
 # -----------------------------------------------------------------
 
+def show_instrument(ski, name):
+
+    """
+    This function ...
+    :param ski:
+    :param name:
+    :return:
+    """
+
+
+    instr_class = str(type(instrument).__name__)
+
+    print(" - " + fmt.bold + name + fmt.reset + " (" + instr_class + "):")
+    print("")
+    print(instrument.to_string(line_prefix="  ", bullet="*", bold=False))
+
+# -----------------------------------------------------------------
+
+def show_stellar_component(ski, name):
+
+    """
+    This function ...
+    :param ski:
+    :param name:
+    :return:
+    """
+
+    print(fmt.red + fmt.underlined + str(name) + fmt.reset)
+    print("")
+
+    properties = ski.get_stellar_component_properties(name)
+    # print(properties)
+
+    # Get normalization
+    lum, wavelength_or_filter = ski.get_stellar_component_luminosity(name)
+
+    # Print
+    if isinstance(wavelength_or_filter, Filter):
+        print(" - filter: " + str(wavelength_or_filter))
+        print(" - (neutral) spectral luminosity: " + represent_quantity(lum, scientific=True))
+    elif isinstance(wavelength_or_filter, Quantity):
+        print(" - wavelength: " + represent_quantity(wavelength_or_filter, scientific=True))
+        print(" - spectral luminosity: " + represent_quantity(lum, scientific=True))
+    elif wavelength_or_filter is None: print(" - bolometric luminosity: " + represent_quantity(lum, scientific=True))
+    else: raise ValueError("Unrecognized filter or wavelength: " + str(wavelength_or_filter))
+
+    # print(" - geometry: " + ski.get_stellar_component_geometry(name).tag)
+
+    print(" - geometry: " + " > ".join(ski.get_stellar_component_geometry_hierarchy_names(name)))
+    print(" - sed: " + ski.get_stellar_component_sed(name).tag)
+
+    print("")
+
+# -----------------------------------------------------------------
+
+def show_dust_component(ski, name):
+
+    """
+    This function ...
+    :param ski:
+    :param name:
+    :return:
+    """
+
+    print(fmt.red + fmt.underlined + str(name) + fmt.reset)
+    print("")
+
+    mass = ski.get_dust_component_mass(name)
+    print(" - mass: " + represent_quantity(mass, scientific=True))
+    print(" - geometry: " + " > ".join(ski.get_dust_component_geometry_hierarchy_names(name)))
+    print(" - mix: " + ski.get_dust_component_mix(name).tag)
+    if ski.transient_dust_emissivity: print(" - emissivity: transient")
+    if ski.grey_body_dust_emissivity: print(" - emissivity: grey body")
+
+    print("")
+
+# -----------------------------------------------------------------
+
 class SkiSummarizer(Configurable):
 
     """
@@ -145,52 +223,13 @@ class SkiSummarizer(Configurable):
         print("")
 
         # Loop over the stellar components
-        for name in self.ski.get_stellar_component_ids():
-
-            print(fmt.red + fmt.underlined + str(name) + fmt.reset)
-            print("")
-
-            properties = self.ski.get_stellar_component_properties(name)
-            #print(properties)
-
-            # Get normalization
-            lum, wavelength_or_filter = self.ski.get_stellar_component_luminosity(name)
-
-            # Print
-            if isinstance(wavelength_or_filter, Filter):
-                print(" - filter: " + str(wavelength_or_filter))
-                print(" - (neutral) spectral luminosity: " + represent_quantity(lum, scientific=True))
-            elif isinstance(wavelength_or_filter, Quantity):
-                print(" - wavelength: " + represent_quantity(wavelength_or_filter, scientific=True))
-                print(" - spectral luminosity: " + represent_quantity(lum, scientific=True))
-            elif wavelength_or_filter is None:
-                print(" - bolometric luminosity: " + represent_quantity(lum, scientific=True))
-            else: raise ValueError("Unrecognized filter or wavelength: " + str(wavelength_or_filter))
-
-            #print(" - geometry: " + ski.get_stellar_component_geometry(name).tag)
-
-            print(" - geometry: " + " > ".join(self.ski.get_stellar_component_geometry_hierarchy_names(name)))
-            print(" - sed: " + self.ski.get_stellar_component_sed(name).tag)
-
-            print("")
+        for name in self.ski.get_stellar_component_ids(): show_stellar_component(self.ski, name)
 
         print(fmt.yellow + "DUST COMPONENTS:" + fmt.reset)
         print("")
 
         # Loop over the dust components
-        for name in self.ski.get_dust_component_ids():
-
-            print(fmt.red + fmt.underlined + str(name) + fmt.reset)
-            print("")
-
-            mass = self.ski.get_dust_component_mass(name)
-            print(" - mass: " + represent_quantity(mass, scientific=True))
-            print(" - geometry: " + " > ".join(self.ski.get_dust_component_geometry_hierarchy_names(name)))
-            print(" - mix: " + self.ski.get_dust_component_mix(name).tag)
-            if self.ski.transient_dust_emissivity: print(" - emissivity: transient")
-            if self.ski.grey_body_dust_emissivity: print(" - emissivity: grey body")
-
-            print("")
+        for name in self.ski.get_dust_component_ids(): show_dust_component(self.ski, name)
 
         print(fmt.yellow + "DUST GRID:" + fmt.reset)
         print("")

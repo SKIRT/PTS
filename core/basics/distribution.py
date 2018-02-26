@@ -75,6 +75,8 @@ class Distribution(Curve):
         # Call the constructor of the base class
         super(Distribution, self).__init__(*args, **kwargs)
 
+        #print(self.column_unit(self.x_name), self.x_name)
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -226,8 +228,20 @@ class Distribution(Curve):
             else: raise ValueError("Values are not sorted")
 
         # Set data
-        distr[name] = np.array(values)
-        distr[y_name] = np.array(frequencies)
+        #print(distr.unit)
+        #print(name)
+        #print(len(distr[name]))
+        #print(len(values))
+
+        # BY DOING IT LIKE THIS, THE UNIT OF THE COLUMNS GET LOST (COLUMNS ARE REPLACED BY THE NEW ARRAYS)
+        # ALSO: WHEN ACCESSING ANY COLUMN BEFORE THESE LINES, (E.G. print(distr[name]) or self.get_column_unit(name) ...)
+        # THESE LINES FAIL BECAUSE THEY ARE THEN INITIALIZED WITH LENGTH 0 AND SETTING ARRAY TO EXISTING COLUMN GIVES INCORRECT SHAPE ERROR
+        #distr[name] = np.array(values)
+        #distr[y_name] = np.array(frequencies)
+
+        # Add the rows
+        for value, frequency in zip(values, frequencies):
+            super(Distribution, distr).add_row([value, frequency]) # because the add_row function is prohibited in the Distribution class (because of its lazy features)
 
         # Return the distribution
         return distr
@@ -269,30 +283,6 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
-    # @classmethod
-    # def from_old_file(cls, path):
-    #
-    #     """
-    #     This function ...
-    #     :param path:
-    #     :return:
-    #     """
-    #
-    #     # Read the table from file
-    #     fill_values = [('--', '0')]
-    #     table = Table.read(path, fill_values=fill_values, format="ascii.ecsv")
-    #
-    #     parameter_name = table.colnames[0]
-    #
-    #     # Get values
-    #     values = table[parameter_name]
-    #     frequencies = np.array(table["Probability"])
-    #
-    #     # Return
-    #     return cls.from_columns(parameter_name, values, frequencies)
-
-    # -----------------------------------------------------------------
-
     def add_row(self, *args, **kwargs):
 
         """
@@ -303,6 +293,19 @@ class Distribution(Curve):
         """
 
         raise RuntimeError("Cannot add rows to a distribution object")
+
+    # -----------------------------------------------------------------
+
+    def remove_row(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        raise RuntimeError("Cannot remove rows from a distribution object")
 
     # -----------------------------------------------------------------
 
@@ -326,7 +329,7 @@ class Distribution(Curve):
         :return:
         """
 
-        return self.get_x(asarray=True)
+        return self.get_x(asarray=True, unit=self.x_unit)
 
     # -----------------------------------------------------------------
 
@@ -367,7 +370,7 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def mean(self):
+    def mean_value(self):
 
         """
         This function ...
@@ -375,9 +378,33 @@ class Distribution(Curve):
         """
 
         from ..tools import numbers
-        value = numbers.weighed_arithmetic_mean(self.values, weights=self.frequencies)
-        if self.has_unit: return value * self.unit
-        else: return value
+        return numbers.weighed_arithmetic_mean(self.values, weights=self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.mean_value * self.unit
+        else: return self.mean_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        return numbers.weighed_standard_deviation(self.values, weights=self.frequencies)
 
     # -----------------------------------------------------------------
 
@@ -389,10 +416,21 @@ class Distribution(Curve):
         :return:
         """
 
+        if self.has_unit: return self.stddev_value * self.unit
+        else: return self.stddev_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def geometric_mean_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         from ..tools import numbers
-        value = numbers.weighed_standard_deviation(self.values, weights=self.frequencies)
-        if self.has_unit: return value * self.unit
-        else: return value
+        return numbers.weighed_geometric_mean(self.values, weights=self.frequencies)
 
     # -----------------------------------------------------------------
 
@@ -404,10 +442,21 @@ class Distribution(Curve):
         :return:
         """
 
+        if self.has_unit: return self.geometric_mean_value * self.unit
+        else: return self.geometric_mean_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def median_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         from ..tools import numbers
-        value = numbers.weighed_geometric_mean(self.values, weights=self.frequencies)
-        if self.has_unit: return value * self.unit
-        else: return value
+        return numbers.median(self.values)
 
     # -----------------------------------------------------------------
 
@@ -419,10 +468,20 @@ class Distribution(Curve):
         :return:
         """
 
-        from ..tools import numbers
-        value = numbers.median(self.values)
-        if self.has_unit: return value * self.unit
-        else: return value
+        if self.has_unit: return self.median_value * self.unit
+        else: return self.median_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def percentile_16_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return find_percentile_16(self.values, self.frequencies)
 
     # -----------------------------------------------------------------
 
@@ -434,9 +493,20 @@ class Distribution(Curve):
         :return:
         """
 
-        value = find_percentile_16(self.values, self.frequencies)
-        if self.has_unit: return value * self.unit
-        else: return value
+        if self.has_unit: return self.percentile_16_value * self.unit
+        else: return self.percentile_16_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def percentile_84_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return find_percentile_84(self.values, self.frequencies)
 
     # -----------------------------------------------------------------
 
@@ -448,9 +518,34 @@ class Distribution(Curve):
         :return:
         """
 
-        value = find_percentile_84(self.values, self.frequencies)
-        if self.has_unit: return value * self.unit
-        else: return value
+        if self.has_unit: return self.percentile_84_value * self.unit
+        else: return self.percentile_84_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fwhm_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import numbers
+        return numbers.fwhm(self.values, self.frequencies)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.fwhm_value * self.unit
+        else: return self.fwhm_value
 
     # -----------------------------------------------------------------
 
@@ -591,7 +686,7 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def most_frequent(self):
+    def most_frequent_value(self):
 
         """
         This function ...
@@ -599,6 +694,19 @@ class Distribution(Curve):
         """
 
         return self.values[self.most_frequent_index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def most_frequent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.most_frequent_value * self.unit
+        else: return self.most_frequent_value
 
     # -----------------------------------------------------------------
 
@@ -615,7 +723,7 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def least_frequent(self):
+    def least_frequent_value(self):
 
         """
         This function ...
@@ -627,7 +735,20 @@ class Distribution(Curve):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def least_frequent_non_zero(self):
+    def least_frequent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.least_frequent_value * self.unit
+        else: return self.least_frequent_value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def least_frequent_value_non_zero(self):
 
         """
         This function ...
@@ -637,6 +758,19 @@ class Distribution(Curve):
         ma = np.ma.masked_equal(self.frequencies, 0.0, copy=False)
         index = np.argmin(ma)
         return self.values[index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def least_frequent_non_zero(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.least_frequent_value_non_zero * self.unit
+        else: return self.least_frequent_value_non_zero
 
     # -----------------------------------------------------------------
 
@@ -820,6 +954,19 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def first(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.first_value * self.unit
+        else: return self.first_value
+
+    # -----------------------------------------------------------------
+
     @property
     def min_value(self):
 
@@ -844,6 +991,19 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def second(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.second_value * self.unit
+        else: return self.second_value
+
+    # -----------------------------------------------------------------
+
     @property
     def last_value(self):
 
@@ -853,6 +1013,19 @@ class Distribution(Curve):
         """
 
         return self.values[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.has_unit: return self.last_value * self.unit
+        else: return self.last_value
 
     # -----------------------------------------------------------------
 
@@ -877,6 +1050,19 @@ class Distribution(Curve):
         """
 
         return self.values[-2]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def second_last(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unit: return self.second_last_value * self.unit
+        else: return self.second_last_value
 
     # -----------------------------------------------------------------
 

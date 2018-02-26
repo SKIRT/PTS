@@ -1097,7 +1097,7 @@ def multiply_all_integers(lst):
 def all_in(sequence, target):
 
     """
-    Thisf unction ...
+    This function returns whether all elements in 'sequence' are also in 'target'
     :param sequence: 
     :param target: 
     :return: 
@@ -1112,7 +1112,7 @@ def all_in(sequence, target):
 def any_in(sequence, target):
 
     """
-    This function ...
+    This function returns whether any element in 'sequence' is also in 'target'
     :param sequence: 
     :param target: 
     :return: 
@@ -1365,6 +1365,22 @@ def in_all(item, sequences):
     for sequence in sequences:
         if item not in sequence: return False
     return True
+
+# -----------------------------------------------------------------
+
+def get_values_in_all(*sequences):
+
+    """
+    This function ...
+    :param sequences:
+    :return:
+    """
+
+    values = []
+    first_sequence = sequences[0]
+    for value in first_sequence:
+        if in_all(value, sequences): values.append(value)
+    return values
 
 # -----------------------------------------------------------------
 
@@ -1789,7 +1805,7 @@ def is_unique(sequence, value):
 def has_any(lst):
 
     """
-    This function ...
+    This function returns whether 'lst' contains any elements
     :param lst:
     :return:
     """
@@ -1801,14 +1817,17 @@ def has_any(lst):
 def contains_any(lst, other):
 
     """
-    This function ...
+    This function returns whether 'lst' contains any item from 'other'
     :param lst:
     :param other:
     :return:
     """
 
     for item in other:
-        if item in lst: return True
+        if isinstance(item, tuple):
+            if contains_all(lst, item): return True
+        else:
+            if item in lst: return True
     return False
 
 # -----------------------------------------------------------------
@@ -1816,7 +1835,7 @@ def contains_any(lst, other):
 def contains_all(lst, other):
 
     """
-    This function ...
+    This function returns whether 'lst' contains all items from 'other'
     :param lst:
     :param other:
     :return:

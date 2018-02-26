@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 
@@ -22,6 +25,20 @@ class FluxErrorTable(SmartTable):
     """
     This class...
     """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Instrument"] = (str, None, "name of the instrument")
+    _column_info["Band"] = (str, None, "name of the band")
+    _column_info["Calibration error-"] = (float, None, "calibration error lower")
+    _column_info["Calibration error+"] = (float, None, "calibration error upper")
+    _column_info["Aperture noise-"] = (float, None, "aperture noise lower")
+    _column_info["Aperture noise+"] = (float, None, "aperture noise upper")
+    _column_info["Total error-"] = (float, None, "total error lower")
+    _column_info["Total error+"] = (float, None, "total error upper")
+    _column_info["Total relative error"] = (float, None, "total relative error")
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -35,15 +52,7 @@ class FluxErrorTable(SmartTable):
         super(FluxErrorTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Instrument", str, None, "name of the instrument")
-        self.add_column_info("Band", str, None, "name of the band")
-        self.add_column_info("Calibration error-", float, None, "calibration error lower")
-        self.add_column_info("Calibration error+", float, None, "calibration error upper")
-        self.add_column_info("Aperture noise-", float, None, "aperture noise lower")
-        self.add_column_info("Aperture noise+", float, None, "aperture noise upper")
-        self.add_column_info("Total error-", float, None, "total error lower")
-        self.add_column_info("Total error+", float, None, "total error upper")
-        self.add_column_info("Total relative error", float, None, "total relative error")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

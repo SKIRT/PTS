@@ -22,7 +22,7 @@ from collections import OrderedDict, defaultdict
 from astropy.table import Table, MaskedColumn
 
 # Import the relevant PTS classes and modules
-from ..units.unit import PhotometricUnit
+from ..units.unit import PhotometricUnit, get_common_unit
 from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 from ..tools import types
@@ -338,42 +338,118 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_column_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.column_info) > 0
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def from_columns(cls, columns, names, units=None, dtypes=None, descriptions=None):
+    def from_columns(cls, *columns, **kwargs):
 
         """
         This function ...
         :param columns:
-        :param names:
-        :param units:
-        :param dtypes:
-        :param descriptions:
+        :param kwargs:
         :return:
         """
 
+        # Import tostr function
+        from ..tools.stringify import tostr
+
+        # Get number of columns
+        ncolumns = len(columns)
+        nrows = len(columns[0])
+
+        # Get options
+        names = kwargs.pop("names", None)
+        units = kwargs.pop("units", None)
+        dtypes = kwargs.pop("dtypes", None)
+        descriptions = kwargs.pop("descriptions", None)
+
+        # Get tostr kwargs
+        tostr_kwargs = kwargs.pop("tostr_kwargs", {})
+
         # Create the table
-        table = cls()
+        table = cls() # WILL ALREADY CREATE THE COLUMN INFO
+
+        has_info = table.has_column_info
+
+        # Get the names if necessary
+        if names is None:
+            if has_info: names = [info[0] for info in table.column_info]
+            elif hasattr(cls, "_column_info"): names = cls._column_info.keys()
+            else: names = ["col" + str(index) for index in range(ncolumns)]
+
+        #print("names:", names)
+
+        # The column units
+        #column_units = dict()
+
+        # Initialize list for the column names for which we have to convert the values to strings
+        to_string = []
 
         # Loop over the columns
         for index, name in enumerate(names):
 
             # Determine dtype
             if dtypes is not None and dtypes[index] is not None: dtype = dtypes[index]
-            else: pass
+            else:
+                ptype = get_common_property_type(columns[index])
+                dtype, needs_tostring = property_type_to_builtin(ptype, return_tostring=True)
+                if needs_tostring: to_string.append(name)
 
             # Determine the unit
             if units is not None and units[index] is not None: unit = units[index]
-            else: pass
+            else: unit = get_common_unit(columns[index])
+
+            # Set column unit?
+            #self.column_units[name] = unit
 
             # Determine the description
             if descriptions is not None and descriptions[index] is not None: description = descriptions[index]
             else: description = "no description"
 
             # Add the column
-            table.add_column_info(name, dtype, unit, description)
+            if not has_info: table.add_column_info(name, dtype, unit, description)
 
-        # Add the rows
-        #for
+        # Set None string
+        if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = string_column_none_default
+
+        # Setup the table
+        table.setup()
+
+        # Add the rows, using the Table add_row implementation directly
+        # because the add_row function may be prohibited in the actual class (because of lazy features)
+        #for value, frequency in zip(values, frequencies):
+        for i in range(nrows):
+
+            # row = []
+            # for j, name in enumerate(names):
+            #     unit = table.get_column_unit(name)
+            #     value = columns[j][i]
+            #     if name in to_string: value = tostr(value, **tostr_kwargs)
+            #     elif value is None: pass
+            #     elif unit is not None and hasattr(value, "unit"): value = value.to(unit).value
+            #     else: pass
+            #     row.append(value)
+
+            #row = [column[i] for column in columns]
+            row = []
+            for j, name in enumerate(names):
+                value = columns[j][i]
+                if name in to_string: value = tostr(value, **tostr_kwargs)
+                row.append(value)
+
+            # Add the row
+            #super(SmartTable, table).add_row(row)
+            SmartTable.add_row(table, row)
 
         # Return the table
         return table
@@ -882,6 +958,23 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def add_all_column_info(self, info_dict):
+
+        """
+        This function ...
+        :param info_dict:
+        :return:
+        """
+
+        # Loop over the columns
+        for column_name in info_dict:
+
+            info = info_dict[column_name]
+            #print(column_name, info)
+            self.add_column_info(column_name, info[0], info[1], info[2])
+
+    # -----------------------------------------------------------------
+
     def has_column_unit(self, column_name):
 
         """
@@ -939,6 +1032,8 @@ class SmartTable(Table):
         # Setup has already been called
         if len(self.colnames) != 0: return
 
+        #print(self.column_info)
+
         # Create the table names and types lists
         for entry in self.column_info:
 
@@ -985,33 +1080,24 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_remote_file(cls, path, remote):
+    def from_remote_file(cls, path, remote, format=None):
 
         """
         This function ...
         :param path:
         :param remote:
+        :param format:
         :return:
         """
 
-        fill_values = [('--', '0')]
+        # Check if file exists
+        if not remote.is_file(path): raise IOError("The file '" + path + "' does not exist")
 
-        # Get the contents
-        contents = remote.get_text(path)
+        # Get the lines
+        lines = remote.get_lines(path)
 
-        # Read the table from file
-        table = super(SmartTable, cls).read(contents, fill_values=fill_values, format="ascii.ecsv")
-
-        # Set masks
-        set_table_masks(table)
-
-        ## Don't set the (remote) path
-
-        # Initialize
-        initialize_table(table)
-
-        # Return the table
-        return table
+        # Get the table from the lines and return
+        return cls.from_lines(lines, format=format)
 
     # -----------------------------------------------------------------
 
@@ -1025,23 +1111,55 @@ class SmartTable(Table):
         :return:
         """
 
+        # Check the path
+        if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
+
         # Guess the format
         if format is None:
             first_line = fs.get_first_line(path)
             if "ECSV" in first_line: format = "ecsv"
             elif "PTS data format" in first_line: format = "pts"
 
-        #fill_values = [('--', '0')]
-        fill_values = [('--', '0')]
+        # Read lines: NO, astropy doesn't like generators: 'Input "table" must be a string (filename or data) or an iterable')
+        #lines = fs.read_lines(path)
+        lines = fs.get_lines(path)
 
-        # Check the path
-        if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
+        # Create table from the lines
+        table = cls.from_lines(lines, format=format)
+
+        # Set the path
+        table.path = path
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_lines(cls, lines, format=None):
+
+        """
+        This function ...
+        :param lines:
+        :param format:
+        :return:
+        """
+
+        # If format is undefined, read the format from the first line
+        if format is None:
+            #lines = list(lines) # in case it is an iterator (NOW WE ALWAYS PASS A LIST)
+            first_line = lines[0]
+            if "ECSV" in first_line: format = "ecsv"
+            elif "PTS data format" in first_line: format = "pts"
+
+        # fill_values = [('--', '0')]
+        fill_values = [('--', '0')]
 
         # PTS format
         if format == "pts":
 
             # Read the lines
-            lines = fs.read_lines(path)
+            #lines = fs.read_lines(path)
 
             #header.append("PTS data format")
             # for name in masks: header.append(name + " mask: " + tostr(masks[name])) # WILL BE READ FROM THE QUOTE CHARACTERS in the data lines
@@ -1132,6 +1250,8 @@ class SmartTable(Table):
             nrows = ndata_lines - 1
             #print(nrows)
 
+            #print(data_lines)
+
             # Call the constructor from Astropy, to read in plain ascii format
             if nrows == 0:
                 if column_types is None: raise IOError("The table file doesn't contain the column types and neither does it have any rows")
@@ -1145,7 +1265,15 @@ class SmartTable(Table):
                 #table2 = tables.new(names=column_names, dtypes=column_types)
                 #print(repr(table2))
                 #for k, column_name in enumerate(column_names): table[column_name] = table[column_name].astype(column_types[k])
-            else: table = super(SmartTable, cls).read(data_lines, format="ascii.commented_header")
+            else:
+                # Was just to check:
+                #from ..tools import strings
+                #colnames_string = data_lines[0][2:]
+                #column_names = strings.split_except_within_double_quotes(colnames_string, add_quotes=False)
+                #first_row_strings = strings.split_except_within_double_quotes(data_lines[1])
+                #print(len(column_names), len(first_row_strings))
+                #for line in data_lines: print(line)
+                table = super(SmartTable, cls).read(data_lines, format="ascii.commented_header")
 
             # Set density and brightness meta
             if density is not None: table.meta["density"] = density
@@ -1200,14 +1328,18 @@ class SmartTable(Table):
                         boolean = eval(value)
                     booleans.append(boolean)
                 # remove original column
-                table.remove_column(column_name)
-                table[column_name] = booleans
+                #print(table.colnames.index(column_name))
+                #table.remove_column(column_name)
+                #table[column_name] = booleans
+                #print(table.colnames.index(column_name))
+                table.replace_column(column_name, booleans)  # TO AVOID CHANGING THE ORDER OF COLUMNS
+                #print(table.colnames.index(column_name))
 
         # ECSV format (with masks and units in the meta info)
         elif format == "ecsv":
 
             # Read
-            table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.ecsv")
+            table = super(SmartTable, cls).read(lines, fill_values=fill_values, format="ascii.ecsv")
 
             # Set masks
             set_table_masks(table)
@@ -1219,22 +1351,22 @@ class SmartTable(Table):
             fix_nones(table)
 
         # Write the table in the desired format (by Astropy)
-        elif format == "csv": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.csv")
+        elif format == "csv": table = super(SmartTable, cls).read(lines, fill_values=fill_values, format="ascii.csv")
 
         # HTML
-        elif format == "html": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.html")
+        elif format == "html": table = super(SmartTable, cls).read(lines, fill_values=fill_values, format="ascii.html")
 
         # Latex
-        elif format == "latex": table = super(SmartTable, cls).read(path, fill_values=fill_values, format="ascii.latex")
+        elif format == "latex": table = super(SmartTable, cls).read(lines, fill_values=fill_values, format="ascii.latex")
 
         # All other
-        else: table = super(SmartTable, cls).read(path, fill_values=fill_values, format=format)
-
-        # Set the path
-        table.path = path
+        else: table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
 
         # Initialize
         initialize_table(table)
+
+        # Re-order the columns
+        reorder_columns(table)
 
         # Return the table
         return table
@@ -1703,6 +1835,19 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: return None
+        return fs.strip_extension(fs.name(self.path))
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """
@@ -2046,6 +2191,21 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def find_index(self, key, column_name=None, where=None):
+
+        """
+        This function ...
+        :param key:
+        :param column_name:
+        :param where:
+        :return:
+        """
+
+        from ..tools import tables
+        return tables.find_index(self, key, column_name, where=where)
+
+    # -----------------------------------------------------------------
+
     def to_html(self):
 
         """
@@ -2330,6 +2490,47 @@ def initialize_table(table):
 
         # Initialize "brightness" meta
         if "brightness" not in table.meta: table.meta["brightness"] = []
+
+# -----------------------------------------------------------------
+
+def reorder_columns(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    #print(table.colnames)
+    if not hasattr(table, "_column_info"): return
+    #print(table._column_info)
+
+    # Get the column names in the intended order
+    column_names_ordered = table._column_info.keys()
+
+    # Check if the table has its columns in the right order
+    if table.column_names == column_names_ordered: return
+
+    # Check whether the table contains the same columns as it should
+    if not sequences.same_contents(table.column_names, column_names_ordered): raise ValueError("Table does not contain the correct columns")
+
+    # Give warning
+    warnings.warn("The order of the columns does not correspond to the order of the columns as defined by the table subclass: re-ordering the columns ...")
+
+    # Reset all column info
+    table.column_info = []
+
+    # Loop over the column names in the desired order
+    for index, column_name in enumerate(column_names_ordered):
+
+        # Delete column and readd at right index
+        column = table[column_name]
+        del table[column_name]
+        table.add_column(column, index=index)
+
+        # Add the column info
+        info = table._column_info[column_name]
+        table.add_column_info(column_name, info[0], info[1], info[2])
 
 # -----------------------------------------------------------------
 

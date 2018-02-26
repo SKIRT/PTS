@@ -71,6 +71,24 @@ class WavelengthGridsTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Label"] = (str, None, "wavelength grid label")
+    _column_info["EUV points"] = (int, None, "number of points in EUV spectrum (range: " + str(ranges[euv]) + ")")
+    _column_info["Stellar points"] = (int, None, "number of points in stellar spectrum (range: " + str(ranges[stellar]) + ")")
+    _column_info["Aromatic points"] = (int, None, "number of points in aromatic spectrum (range: " + str(ranges[aromatic]) + ")")
+    _column_info["Thermal points"] = (int, None, "number of points in thermal spectrum (range: " + str(ranges[thermal]) + ")")
+    _column_info["Microwave points"] = (int, None, "number of points in microwave spectrum (range: " + str(ranges[microwave]) + ")")
+    _column_info["Broad band filters"] = (str, None, "broad band filters for which the wavelength range was resampled")
+    _column_info["Narrow band filters"] = (str, None, "narrow band filters for which the wavelength was added")
+    _column_info["Adjusted points"] = (int, None, "number of points that were adjuted")
+    _column_info["New points"] = (int, None, "number of new points")
+    _column_info["Emission lines"] = (int, None, "number of emission lines")
+    _column_info["Fixed points"] = (int, None, "number of fixed points")
+    _column_info["Total points"] = (int, None, "total number of points")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -83,19 +101,7 @@ class WavelengthGridsTable(SmartTable):
         super(WavelengthGridsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Label", str, None, "wavelength grid label")
-        self.add_column_info("EUV points", int, None, "number of points in EUV spectrum (range: " + str(ranges[euv]) + ")")
-        self.add_column_info("Stellar points", int, None, "number of points in stellar spectrum (range: " + str(ranges[stellar]) + ")")
-        self.add_column_info("Aromatic points", int, None, "number of points in aromatic spectrum (range: " + str(ranges[aromatic]) + ")")
-        self.add_column_info("Thermal points", int, None, "number of points in thermal spectrum (range: " + str(ranges[thermal]) + ")")
-        self.add_column_info("Microwave points", int, None, "number of points in microwave spectrum (range: " + str(ranges[microwave]) + ")")
-        self.add_column_info("Broad band filters", str, None, "broad band filters for which the wavelength range was resampled")
-        self.add_column_info("Narrow band filters", str, None, "narrow band filters for which the wavelength was added")
-        self.add_column_info("Adjusted points", int, None, "number of points that were adjuted")
-        self.add_column_info("New points", int, None, "number of new points")
-        self.add_column_info("Emission lines", int, None, "number of emission lines")
-        self.add_column_info("Fixed points", int, None, "number of fixed points")
-        self.add_column_info("Total points", int, None, "total number of points")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

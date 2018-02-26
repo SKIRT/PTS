@@ -3446,3 +3446,34 @@ class EnergyDensityUnit(CompositeUnit):
         super(EnergyDensityUnit, self).__init__(unit.scale, unit.bases, unit.powers)
 
 # -----------------------------------------------------------------
+
+def get_common_unit(values):
+
+    """
+    This function returns the common unit or first occuring unit
+    :param values:
+    :return:
+    """
+
+    units = []
+
+    # Loop over the values
+    for value in values:
+
+        if value is None: continue
+        if not hasattr(value, "unit"):
+            if len(units) == 0: continue # maybe none of the values have a unit
+            else: # at least some other has a unit
+                raise ValueError("Inconsistent values: some have units while others are scalar values")
+        units.append(value.unit)
+
+    # No units?
+    if len(units) == 0: return None
+
+    # Get
+    #unit = sequences.get_all_equal_value()
+
+    # Get first unit
+    return units[0]
+
+# -----------------------------------------------------------------

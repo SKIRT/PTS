@@ -1438,16 +1438,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def swap_cluster(self, cluster_name):
+    def swap_cluster(self, cluster_name, check_modules=False):
 
         """
         This function ...
         :param cluster_name:
+        :param check_modules:
         :return:
         """
 
         # Check if not already the loaded cluster
-        if "cluster/" + cluster_name in self.loaded_modules: return
+        if check_modules and "cluster/" + cluster_name in self.loaded_modules: return
 
         # Swap to requested cluster
         self.execute("module swap cluster/" + cluster_name)

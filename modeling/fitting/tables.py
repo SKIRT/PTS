@@ -35,6 +35,13 @@ class RunsTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Run name"] = (str, None, "Name for the fitting run")
+    _column_info["Model name"] = (str, None, "Name of the model used")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -47,8 +54,7 @@ class RunsTable(SmartTable):
         super(RunsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Run name", str, None, "Name for the fitting run")
-        self.add_column_info("Model name", str, None, "Name of the model used")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -1522,6 +1528,13 @@ class ParameterProbabilitiesTable(SmartTable):
     This class ...
     """
 
+    # Set column info
+    _column_info = OrderedDict()
+    _column_info["Value"] = (float, None, "value of the parameter")
+    _column_info["Probability"] = (float, None, "probability for this parameter value")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -1533,9 +1546,8 @@ class ParameterProbabilitiesTable(SmartTable):
         # Call the constructor of the base class
         super(ParameterProbabilitiesTable, self).__init__(*args, **kwargs)
 
-        # Set column info
-        self.add_column_info("Value", float, None, "value of the parameter")
-        self.add_column_info("Probability", float, None, "probability for this parameter value")
+        # Add column info
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

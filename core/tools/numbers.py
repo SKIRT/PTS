@@ -1644,3 +1644,43 @@ def sigma_clip(values, sigma_level=3.0, return_nmasked=False):
     else: return clipped
 
 # -----------------------------------------------------------------
+
+def fwhm(values, probabilities):
+
+    """
+    This function ...
+    :param values:
+    :param probabilities: frequencies/probabilities/counts
+    :return:
+    """
+
+    # Check if sorted
+    if not sequences.is_sorted(values): raise ValueError("Values must be sorted")
+
+    # Get the height of the half maximum
+    max_probability_index = np.argmax(probabilities)
+    max_probability = probabilities[max_probability_index]
+    half_max_probability = 0.5 * max_probability
+
+    # Initialize variables for the minimum and maximum value of the FWHM span
+    min_value_fwhm = None
+    max_value_fwhm = None
+
+    # Find the minimum value
+    for value, probability in zip(values, probabilities):
+        if probability > half_max_probability:
+            min_value_fwhm = value
+            break
+    if min_value_fwhm is None: raise RuntimeError("Something went wrong")
+
+    # Find the maximum value
+    for value, probability in zip(reversed(values), reversed(probabilities)):
+        if probability > half_max_probability:
+            max_value_fwhm = value
+            break
+    if max_value_fwhm is None: raise RuntimeError("Something went wrong")
+
+    # Return the FWHm
+    return max_value_fwhm - min_value_fwhm
+
+# -----------------------------------------------------------------

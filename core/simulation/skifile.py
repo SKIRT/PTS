@@ -13,6 +13,9 @@
 
 # Import standard modules
 from lxml import etree
+from collections import defaultdict
+
+# Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..tools import types
 from .skifile7 import SkiFile7
@@ -214,3 +217,130 @@ def get_label(value):
     return label
 
 #-----------------------------------------------------------------
+
+def get_normalizations(ski):
+
+    """
+    This function ...
+    :param ski:
+    :return:
+    """
+
+    from ..filter.filter import Filter
+
+    # Get stellar component IDs
+    stellar_component_ids = ski.get_stellar_component_ids()
+
+    wavelengths = defaultdict(dict)
+    filters = defaultdict(dict)
+
+    # Loop over the stellar components
+    for component_id in stellar_component_ids:
+
+        # Get normalization filter/wavelength and luminosity
+        filter_or_wavelength = ski.get_stellar_component_normalization_wavelength_or_filter(component_id)
+        luminosity = ski.get_stellar_component_luminosity(component_id, return_wavelength=False)
+
+        # Add to dict
+        if isinstance(filter_or_wavelength, Filter): filters[filter_or_wavelength][component_id] = luminosity
+        else: wavelengths[filter_or_wavelength][component_id] = luminosity
+
+    # Return normalizations
+    return wavelengths, filters
+
+# -----------------------------------------------------------------
+
+def show_normalizations(ski, flux_unit=None):
+
+    """
+    This function ...
+    :param ski:
+    :param flux_unit:
+    :return:
+    """
+
+    # Import tools
+    from ..tools import formatting as fmt
+    from ..tools.stringify import tostr
+
+    # Get normalizations
+    wavelengths, filters = get_normalizations(ski)
+
+    nwavelengths = len(wavelengths)
+    nfilters = len(filters)
+    has_wavelengths = nwavelengths > 0
+    has_filters = nfilters > 0
+
+    # Get distance (returns None if couldn't define)
+    distance = ski.get_distance(return_none=True)
+
+    # Show wavelength normalizations
+    if has_wavelengths:
+
+        print("")
+        print(fmt.underlined + fmt.blue + "Wavelength normalizations:" + fmt.reset)
+        print("")
+
+        # Loop over the wavelengths
+        for wavelength in wavelengths:
+
+            print(fmt.bold + fmt.green + tostr(wavelength) + fmt.reset + ":")
+            print("")
+
+            total_luminosity = 0.
+
+            # Loop over the components
+            for component_id in wavelengths[wavelength]:
+
+                luminosity = wavelengths[wavelength][component_id]
+                if flux_unit is not None: flux = luminosity.to(flux_unit, distance=distance, wavelength=wavelength)
+                else: flux = None
+                if flux is not None: print(" - " + fmt.bold + component_id + fmt.reset + ": " + tostr(luminosity) + " (" + tostr(flux) + ")")
+                else: print(" - " + fmt.bold + component_id + fmt.reset + ": " + tostr(luminosity))
+                total_luminosity += luminosity
+
+            if flux_unit is not None: total_flux = total_luminosity.to(flux_unit, distance=distance, wavelength=wavelength)
+            else: total_flux = None
+
+            print("")
+            if total_flux is not None: print(" - TOTAL: " + tostr(total_luminosity) + " (" + tostr(total_flux) + ")")
+            else: print(" - TOTAL: " + tostr(total_luminosity))
+            print("")
+
+    # Show filter normalizations
+    if has_filters:
+
+        print("")
+        print(fmt.underlined + fmt.blue + "Filter normalizations:" + fmt.reset)
+        print("")
+
+        # Loop over the filters
+        for fltr in filters:
+
+            print(fmt.bold + fmt.green + str(fltr) + fmt.reset + ":")
+            print("")
+
+            # Get wavelength
+            wavelength = fltr.wavelength
+
+            total_luminosity = 0.
+
+            # Loop over the components
+            for component_id in filters[fltr]:
+
+                luminosity = filters[fltr][component_id]
+                if flux_unit is not None: flux = luminosity.to(flux_unit, distance=distance, wavelength=wavelength)
+                else: flux = None
+                if flux is not None: print(" - " + fmt.bold + component_id + fmt.reset + ": " + tostr(luminosity) + " (" + tostr(flux) + ")")
+                else: print(" - " + fmt.bold + component_id + fmt.reset + ": " + tostr(luminosity))
+                total_luminosity += luminosity
+
+            if flux_unit is not None: total_flux = total_luminosity.to(flux_unit, distance=distance, wavelength=wavelength)
+            else: total_flux = None
+
+            print("")
+            if total_flux is not None: print(" - TOTAL: " + tostr(total_luminosity) + " (" + tostr(total_flux) + ")")
+            else: print(" - TOTAL: " + tostr(total_luminosity))
+            print("")
+
+# -----------------------------------------------------------------

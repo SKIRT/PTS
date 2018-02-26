@@ -11,6 +11,10 @@ from pts.core.config.launch import definition
 
 # -----------------------------------------------------------------
 
+all_host_ids = find_host_ids()
+
+# -----------------------------------------------------------------
+
 # Flags
 definition.add_flag("recursive", "look for ski files recursively")
 
@@ -18,7 +22,7 @@ definition.add_flag("recursive", "look for ski files recursively")
 definition.add_flag("load_queues", "load queue files found in the working directory")
 
 # Settings for the remote
-if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=find_host_ids(), default=find_host_ids())
+if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=all_host_ids, default=all_host_ids)
 else: definition.add_fixed("remotes", "remote hosts", [])
 
 # Parallelization options
@@ -26,7 +30,7 @@ definition.add_optional("nnodes", "integer", "number of computing nodes to be us
 definition.add_optional("nnodes_per_host", "string_integer_dictionary", "number of computing nodes to be used, per scheduling remote")
 
 # Advanced options
-definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
+definition.add_flag("shared_input", "whether the different simulations share their input folder", None)
 definition.add_flag("group_simulations", "group multiple simulations in one job", False)
 definition.add_optional("group_walltime", "real", "preferred walltime per job of grouped simulations")
 definition.add_flag("progress_bar", "use progress bars to show progress")
@@ -63,6 +67,8 @@ definition.add_flag("check_parallelization", "check the specified parallelizatio
 
 # Write?
 definition.add_flag("write", "enable writing", False)
+definition.add_flag("write_assignment", "write assignment scheme", True)
+definition.add_flag("write_queues", "write queues", True)
 
 # -----------------------------------------------------------------
 
@@ -75,5 +81,22 @@ definition.add_flag("test", "test mode", False)
 definition.add_flag("all_sockets", "use all sockets, not just the determined number of 'free' sockets", False)
 definition.add_optional("nsockets", "positive_integer", "use this number of sockets")
 definition.add_flag("allow_multisocket_processes", "allow using multiple sockets per process", False)
+
+# -----------------------------------------------------------------
+
+definition.add_flag("cancel_scheduling_after_fail", "cancel the scheduling of simulations still in the queue of a remote host after the scheduling of a particular simulation was unsuccesful", True)
+definition.add_flag("cancel_launching_after_fail", "cancel the launching of simulations still in the local queue after launching a particular simulation was unsuccesful", True)
+
+# -----------------------------------------------------------------
+
+# Showing
+definition.add_flag("show_info", "show queue info", True)
+definition.add_flag("show_status", "show remote status", True)
+definition.add_flag("show_parallelizations", "show parallelization schemes", True)
+
+# -----------------------------------------------------------------
+
+# Other
+definition.add_flag("clear_existing", "clear existing directories on the remote (otherwise error is thrown)", False)
 
 # -----------------------------------------------------------------

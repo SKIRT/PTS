@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import imp
 import importlib
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -38,6 +38,14 @@ class PTSTestsTable(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Name"] = (str, None, "name of the test")
+    _column_info["Start time"] = (str, None, "timestamp for start of command")
+    _column_info["End time"] = (str, None, "timestamp for end of command")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -50,9 +58,7 @@ class PTSTestsTable(SmartTable):
         super(PTSTestsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Name", str, None, "name of the test")
-        self.add_column_info("Start time", str, None, "timestamp for start of command")
-        self.add_column_info("End time", str, None, "timestamp for end of command")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 
@@ -65,7 +71,6 @@ class PTSTestsTable(SmartTable):
         """
 
         values = []
-
         self.add_row(values)
 
 # -----------------------------------------------------------------

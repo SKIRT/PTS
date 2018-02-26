@@ -13,12 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.log import log
-from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments, prompt_proceed
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
-from pts.core.launch.analyser import reanalyse_simulation, all_steps, analyse_simulation, show_analysis_steps
+from pts.core.launch.analyser import all_steps
 from pts.core.config.analyse_simulation import definition as analysis_definition
-from pts.core.tools.stringify import tostr
 from pts.core.launch.manager import SimulationManager
 
 # -----------------------------------------------------------------
@@ -71,16 +69,20 @@ if not generation.has_assignment_table: raise RuntimeError("No assignment for th
 
 # -----------------------------------------------------------------
 
-
-
-# -----------------------------------------------------------------
-
 # Create simulation manager
 manager = SimulationManager()
 
 # Set options
+manager.config.analyse = True
+manager.config.analysis = config.analysis
+manager.config.reanalyse = config.reanalyse
+manager.config.features_reanalysis = config.features
+manager.config.analyse_simulations = config.simulations
+manager.config.reanalyse_simulations = config.simulations
+manager.config.prompt_simulations_analysis = config.prompt_simulations
+manager.config.prompt_simulations_reanalysis = config.prompt_simulations
 
 # Run the manager
-manager.run()
+manager.run(assignment=generation.assignment_table, info_tables=[generation.parameters_table, generation.chi_squared_table])
 
 # -----------------------------------------------------------------

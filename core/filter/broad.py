@@ -897,23 +897,11 @@ class BroadBandFilter(Filter):
 
         # Calculate the FWHM
         # difference between the two wavelengths for which filter transmission is half maximum
-        max_transmission_index = np.argmax(transmissions)
-        max_transmission = transmissions[max_transmission_index]
-        half_max_transmission = 0.5 * max_transmission
-        min_wavelength_fwhm = None
-        max_wavelength_fwhm = None
-        for wavelength, transmission in zip(wavelengths, transmissions):
-            if transmission > half_max_transmission:
-                min_wavelength_fwhm = wavelength
-                break
-        for wavelength, transmission in zip(reversed(wavelengths), reversed(transmissions)):
-            if transmission > half_max_transmission:
-                max_wavelength_fwhm = wavelength
-                break
-        fwhm = max_wavelength_fwhm - min_wavelength_fwhm
-        self._FWHM = fwhm
+        from ..tools import numbers
+        self._FWHM = numbers.fwhm(wavelengths, transmissions)
 
         # Set peak wavelength
+        max_transmission_index = np.argmax(transmissions)
         self._WavelengthPeak = wavelengths[max_transmission_index]
 
     # ---------- Retrieving information -------------------------------

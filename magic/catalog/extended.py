@@ -12,6 +12,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import astronomical modules
 from astropy.coordinates import Angle
 
@@ -35,6 +38,26 @@ class ExtendedSourceCatalog(SmartTable):
     This class ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Name"] = (str, None, "Name of the galaxy")
+    _column_info["RA"] = (float, "deg", "Right ascension")
+    _column_info["DEC"] = (float, "deg", "Declination")
+    _column_info["Redshift"] = (float, None, "Redshift")
+    _column_info["Type"] = (str, None, "Galaxy type")
+    _column_info["Names"] = (str, None, "Alternative names")
+    _column_info["Distance"] = (float, "Mpc", "distance")
+    _column_info["Incl"] = (float, "deg", "inclination")
+    _column_info["D25"] = (float, "arcmin", "D25")
+    _column_info["Major"] = (float, "arcmin", "Major axis length")
+    _column_info["Minor"] = (float, "arcmin", "Minor axis length")
+    _column_info["Posangle"] = (float, "deg", "Position angle")
+    _column_info["Principal"] = (bool, None, "Is principal galaxy")
+    _column_info["Companions"] = (str, None, "Companion galaxies")
+    _column_info["Parent"] = (str, None, "Parent galaxy (is companion galaxy)")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -47,21 +70,7 @@ class ExtendedSourceCatalog(SmartTable):
         super(ExtendedSourceCatalog, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Name", str, None, "Name of the galaxy")
-        self.add_column_info("RA", float, "deg", "Right ascension")
-        self.add_column_info("DEC", float, "deg", "Declination")
-        self.add_column_info("Redshift", float, None, "Redshift")
-        self.add_column_info("Type", str, None, "Galaxy type")
-        self.add_column_info("Names", str, None, "Alternative names")
-        self.add_column_info("Distance", float, "Mpc", "distance")
-        self.add_column_info("Incl", float, "deg", "inclination")
-        self.add_column_info("D25", float, "arcmin", "D25")
-        self.add_column_info("Major", float, "arcmin", "Major axis length")
-        self.add_column_info("Minor", float, "arcmin", "Minor axis length")
-        self.add_column_info("Posangle", float, "deg", "Position angle")
-        self.add_column_info("Principal", bool, None, "Is principal galaxy")
-        self.add_column_info("Companions", str, None, "Companion galaxies")
-        self.add_column_info("Parent", str, None, "Parent galaxy (is companion galaxy)")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

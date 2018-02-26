@@ -59,6 +59,15 @@ class DataSetTable(SmartTable):
     This function ...
     """
 
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Name"] = (str, None, "Name for the fitting run")
+    _column_info["Path"] = (str, None, "Name of the model used")
+    _column_info["Error path"] = (str, None, "Path of the error map")
+    _column_info["Mask path"] = (str, None, "Path of the mask")
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
@@ -67,17 +76,11 @@ class DataSetTable(SmartTable):
         :param kwargs:
         """
 
-        #print(args)
-        #print(kwargs)
-
         # Call the constructor of the base class
         super(DataSetTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("Name", str, None, "Name for the fitting run")
-        self.add_column_info("Path", str, None, "Name of the model used")
-        self.add_column_info("Error path", str, None, "Path of the error map")
-        self.add_column_info("Mask path", str, None, "Path of the mask")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

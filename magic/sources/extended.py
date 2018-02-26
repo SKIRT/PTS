@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import traceback
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -30,7 +31,6 @@ from ...core.basics.log import log
 from ...core.basics.table import SmartTable
 from ..core.mask import Mask
 from ..basics.coordinate import SkyCoordinate
-from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -39,6 +39,16 @@ class ExtendedSourceTable(SmartTable):
     """
     This class ...
     """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["RA"] = (float, "deg", "right ascension")
+    _column_info["DEC"] = (float, "deg", "declination")
+    _column_info["Detected"] = (bool, None, "Has source detected")
+    _column_info["Flux"] = (float, "Jy", "flux for the point source")
+    _column_info["Flux error"] = (float, "Jy", "error on the flux value")
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -52,11 +62,7 @@ class ExtendedSourceTable(SmartTable):
         super(ExtendedSourceTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("RA", float, u("deg"), "right ascension"),
-        self.add_column_info("DEC", float, u("deg"), "declination"),
-        self.add_column_info("Detected", bool, None, "Has source detected"),
-        self.add_column_info("Flux", float, u("Jy"), "flux for the point source"),
-        self.add_column_info("Flux error", float, u("Jy"), "error on the flux value")
+        self.add_all_column_info(self._column_info)
 
     # -----------------------------------------------------------------
 

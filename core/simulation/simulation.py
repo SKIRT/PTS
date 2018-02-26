@@ -241,6 +241,12 @@ class SkirtSimulation(object):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_extraction)
 
+    @property
+    def analysed_all_extraction(self):
+        from ..tools import sequences
+        from ..launch.options import extraction_names
+        return sequences.contains_all(self.analysed_extraction, extraction_names)
+
     ## Unset analysed plotting
     def unset_analysed_plotting(self):
 
@@ -257,6 +263,12 @@ class SkirtSimulation(object):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_plotting)
 
+    @property
+    def analysed_all_plotting(self):
+        from ..tools import sequences
+        from ..launch.options import plotting_names
+        return sequences.contains_all(self.analysed_plotting, plotting_names)
+
     ## Unset analysed misc
     def unset_analysed_misc(self):
 
@@ -272,6 +284,12 @@ class SkirtSimulation(object):
     def analysed_any_misc(self):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_misc)
+
+    @property
+    def analysed_all_misc(self):
+        from ..tools import sequences
+        from ..launch.options import misc_names
+        return sequences.contains_all(self.analysed_misc, misc_names)
 
     ## Unset analysed batch
     def unset_analysed_batch(self):
@@ -307,6 +325,17 @@ class SkirtSimulation(object):
         from ..tools import sequences
         return not sequences.is_empty(self.analysed_extra)
 
+    @property
+    def analysed_all_extra(self):
+        for analyser_class in self.analyser_classes:
+            class_name = analyser_class.__name__
+            if class_name not in self.analysed_extra: return False
+        return True
+
+    @property
+    def analysed_any(self):
+        return self.analysed_any_extraction or self.analysed_any_plotting or self.analysed_any_misc or self.analysed_batch or self.analysed_scaling or self.analysed_any_extra
+
     ## This property returns a SingleSimulationDefinition object
     @property
     def definition(self):
@@ -324,6 +353,11 @@ class SkirtSimulation(object):
         if not self.has_input: return None
         elif isinstance(self.input_path, SimulationInput): return self.input_path
         else: return SimulationInput.from_any(self.input_path)
+
+    ## This property returns whether the simulation input is defined in terms of a single directory path
+    @property
+    def has_input_directory(self):
+        return self.input_path is not None and types.is_string_type(self.input_path)
 
     ## This function returns whether a ski or parameters file is found for this simulation
     @property
@@ -771,6 +805,18 @@ class SkirtSimulation(object):
     def from_modeling(self):
         return self.analysis.modeling_path is not None
 
+    @property
+    def has_extraction_output(self):
+        return self.analysis.extraction.path is not None and fs.is_directory(self.analysis.extraction.path) and not fs.is_empty(self.analysis.extraction.path)
+
+    @property
+    def has_plotting_output(self):
+        return self.analysis.plotting.path is not None and fs.is_directory(self.analysis.plotting.path) and not fs.is_empty(self.analysis.plotting.path)
+
+    @property
+    def has_misc_output(self):
+        return self.analysis.misc.path is not None and fs.is_directory(self.analysis.misc.path) and not fs.is_empty(self.analysis.misc.path)
+
     ## This function adds an analyser class to the simulation
     def add_analyser(self, clspath):
         self.analyser_paths.append(clspath)
@@ -915,6 +961,41 @@ class SkirtSimulation(object):
 
 # -----------------------------------------------------------------
 
+# Dictionary of default attribute values of remote simulation
+default_remote_attributes = dict()
+
+# Properties of the remote host on which the simulation was run
+default_remote_attributes["host_id"] = None
+default_remote_attributes["cluster_name"] = None
+
+# Basic properties
+default_remote_attributes["id"] = None
+default_remote_attributes["remote_ski_path"] = None
+default_remote_attributes["remote_simulation_path"] = None
+default_remote_attributes["remote_input_path"] = None
+default_remote_attributes["remote_output_path"] = None
+default_remote_attributes["submitted_at"] = None
+
+# Options for retrieval
+default_remote_attributes["retrieve_types"] = None
+
+# Options for removing remote or local input and output
+default_remote_attributes["remove_remote_input"] = True                 # After retrieval
+default_remote_attributes["remove_remote_output"] = True                # After retrieval
+default_remote_attributes["remove_remote_simulation_directory"] = True  # After retrieval
+default_remote_attributes["remove_local_output"] = False                # After analysis
+
+# The execution handle
+default_remote_attributes["handle"] = None
+
+# Flag indicating whether this simulation has finished or not
+default_remote_attributes["finished"] = False
+
+# Flag indicating whether this simulation has been retrieved or not
+default_remote_attributes["retrieved"] = False
+
+# -----------------------------------------------------------------
+
 class RemoteSimulation(SkirtSimulation):
 
     """
@@ -960,11 +1041,43 @@ class RemoteSimulation(SkirtSimulation):
         # The execution handle
         self.handle = None
 
+        # Flag indicating whether this simulation has finished or not
+        self.finished = False
+
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
 
         # Remote
         self._remote = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load from file
+        simulation = super(RemoteSimulation, cls).from_file(path)
+
+        # Loop over the attribute names, check if defined
+        for attr_name in default_remote_attributes:
+
+            # This attribute is present: OK
+            if hasattr(simulation, attr_name): continue
+
+            # Get the default value
+            value = copy.copy(default_remote_attributes[attr_name])
+
+            # Set the attribute
+            setattr(simulation, attr_name, value)
+
+        # Return the remote simulation
+        return simulation
 
     # -----------------------------------------------------------------
 
@@ -991,8 +1104,8 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         from ..remote.host import load_host
-        if self._remote is not None: return self._remote.host_id
-        elif self.host_id is not None: return load_host(self.host_id)
+        if self._remote is not None: return self._remote.host
+        elif self.host_id is not None: return load_host(self.host_id, clustername=self.cluster_name)
         else: return None
 
     # -----------------------------------------------------------------
@@ -1035,15 +1148,62 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    def get_remote_output(self, remote=None):
+
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Get remote
+        if remote is None: remote = self.remote
+        else: self.remote = remote
+
+        # Return the simulation output
+        return SimulationOutput.from_remote_directory(self.remote_output_path, remote, prefix=self.prefix())
+
+    # -----------------------------------------------------------------
+
     @property
-    def output(self):
+    def remote_output(self):
 
         """
         Thisf unction ...
         :return:
         """
 
-        return SimulationOutput.from_remote_directory(self.remote_output_path, self.remote, prefix=self.prefix())
+        return self.get_remote_output()
+
+    # -----------------------------------------------------------------
+
+    def get_remote_input(self, remote=None):
+
+        """
+        This function ...
+        :param remote:
+        :return:
+        """
+
+        # Get remote
+        if remote is None: remote = self.remote
+        else: self.remote = remote
+
+        # Return the simulation input
+        if not self.has_input: return None
+        else: return SimulationInput.from_remote_directory(self.remote_input_path, remote, prefix=self.prefix())
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_remote_input()
 
     # -----------------------------------------------------------------
 

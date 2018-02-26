@@ -51,6 +51,7 @@ manager.config.from_directories = config.from_directories
 manager.config.local = config.local
 manager.config.success = config.success
 manager.config.show_assignment = config.show
+manager.config.write_assignment = True
 
 # Run the manager
 manager.run()

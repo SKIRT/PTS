@@ -27,6 +27,7 @@ from ..basics.handle import ExecutionHandle
 from ..tools import terminal
 from ..tools import strings
 from ..tools import formatting as fmt
+from ..tools.sequences import contains_any
 
 # -----------------------------------------------------------------
 
@@ -48,7 +49,7 @@ ndebug_output_whitespaces = 55
 
 # -----------------------------------------------------------------
 
-similarity_threshold = 0.90
+default_similarity_threshold = 0.90
 
 # -----------------------------------------------------------------
 
@@ -540,7 +541,7 @@ class LogSimulationStatus(SimulationStatus):
 
     # -----------------------------------------------------------------
 
-    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None, similar_log_frequency=10):
+    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None, similar_log_frequency=10, similarity_threshold=default_similarity_threshold):
 
         """
         This function ...
@@ -548,6 +549,7 @@ class LogSimulationStatus(SimulationStatus):
         :param finish_at:
         :param finish_after:
         :param similar_log_frequency:
+        :param similarity_threshold:
         :return:
         """
 
@@ -794,7 +796,8 @@ class SpawnSimulationStatus(SimulationStatus):
 
     # -----------------------------------------------------------------
 
-    def track_progress(self, show=False, finish_at=None, finish_after=None, refresh_frequency=5, similar_log_frequency=10):
+    def track_progress(self, show=False, finish_at=None, finish_after=None, refresh_frequency=5,
+                       similar_log_frequency=10, similarity_threshold=default_similarity_threshold):
 
         """
         This function ...
@@ -803,6 +806,7 @@ class SpawnSimulationStatus(SimulationStatus):
         :param finish_after:
         :param refresh_frequency:
         :param similar_log_frequency:
+        :param similarity_threshold:
         :return:
         """
 
@@ -1371,21 +1375,6 @@ def get_phase_info(lines):
 
 # -----------------------------------------------------------------
 
-def contains_any(string, patterns):
-
-    """
-    Thisf unction ...
-    :param string:
-    :param patterns:
-    :return:
-    """
-
-    for pattern in patterns:
-        if pattern in string: return True
-    return False
-
-# -----------------------------------------------------------------
-
 def get_message_type_symbol(line):
 
     """
@@ -1472,5 +1461,290 @@ def is_regular_line(line):
 
     if line[2] == "/" and line[5] == "/" and line[13] == ":" and line[16]: return True
     else: return False
+
+# -----------------------------------------------------------------
+
+default_ignore_output = ["Adding dust population", "Grain sizes range from", "Grain composition grid",
+                         "Reading heat capacity data", "Reading grain composition", "closed.", "Reading SED data",
+                         "Reading FITS file", "Frame dimensions:", "Writing grain size information", "created.",
+                         "Writing optical dust population", "Writing dust population masses",
+                         "Writing combined dust mix properties", "Reading wavelength grid data",
+                         "Number of leaf cells of each level:", "    Level", ("wavelengths from", "micron to"),
+                         ("grain sizes from", "micron to"), ("temperatures from", "K to")]
+
+# -----------------------------------------------------------------
+
+new_default_similarity_threshold = 0.73 # decreased till similarity between 'Computing density for cell' messages was reached
+
+# -----------------------------------------------------------------
+
+def show_log_summary(lines, debug_output=False, ignore_output=default_ignore_output, refresh_frequency=5, similar_log_frequency=10,
+                     similarity_threshold=new_default_similarity_threshold):
+
+    """
+    This function ...
+    :param lines:
+    :param debug_output:
+    :param ignore_output:
+    :param refresh_frequency:
+    :param similar_log_frequency:
+    :param similarity_threshold:
+    :return:
+    """
+
+    #break_after_next_line = False
+
+    # The status
+    status = None
+
+    # The phase
+    phase = None
+
+    # The simulation phase
+    simulation_phase = None
+
+    # The stage (if applicable)
+    stage = None
+
+    # The cycle (if applicable)
+    cycle = None
+
+    # The progress (if applicable)
+    progress = None
+
+    # More info
+    extra = None
+
+    # Progress bar where needed
+    _bar = None
+
+    # Get current number of columns of the shell
+    total_ncolumns = terminal.ncolumns()
+    usable_ncolumns = total_ncolumns - 26 - len(skirt_debug_output_prefix) - len(
+        skirt_debug_output_suffix) - ndebug_output_whitespaces
+    if usable_ncolumns < 20: usable_ncolumns = 20
+
+    # Initialize
+    last_phase = None
+    last_stage = None
+    last_cycle = None
+    last_extra = None
+
+    last_message = None
+
+    # Loop over the lines
+    log_lines = []
+    nsimilar = 0
+    current_nsimilar = 0
+    ignored_previous = False
+    for line in lines:
+
+        # Get the log message
+        message = get_message(line)
+
+        # Show the SKIRT line if debug_output is enabled and we are not in the middle of a progress bar
+        if debug_output and progress is None:
+
+            # The current message is similar to the previous message
+            if last_message is not None: similarity = strings.similarity(message, last_message)
+            else: similarity = None
+            #print(similarity)
+            if last_message is not None and similarity > similarity_threshold:
+
+                nsimilar += 1
+                current_nsimilar += 1
+
+                # print(nsimilar, increase_similarity_after * similar_log_frequency)
+                if nsimilar > increase_similarity_after * similar_log_frequency:  # there have been 10 messages allowed through already
+
+                    # print(str(increase_similarity_after) + " messages have been allowed to pass through")
+                    similar_log_frequency *= increase_similarity_factor
+
+                # We currently don't want to show the log messages
+                if current_nsimilar % similar_log_frequency != 0:
+
+                    # sys.stdout.write("\r" + fmt.blue + skirt_debug_output_prefix + "." * nsimilar + skirt_debug_output_suffix + fmt.reset)
+                    if current_nsimilar > usable_ncolumns:
+                        ndots = usable_ncolumns
+                        nspaces = 0
+                    else:
+                        ndots = current_nsimilar
+                        nspaces = usable_ncolumns - ndots
+                    total_length = ndots + nspaces
+                    # print(nsimilar, current_nsimilar, total_length)
+                    sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
+                    sys.stdout.flush()
+                    # print(ndots)
+                    continue
+
+                else: print("")
+
+            # The current message is not similar to the previous message
+            else: nsimilar = 0
+
+            # Debug output is allowed through, reset current nsimilar
+            current_nsimilar = 0
+
+            # Show only if not want to be ignored
+            if ignore_output is not None and contains_any(message, ignore_output):
+                ignored_previous = True
+                continue
+            if ignored_previous and message.startswith("  "): continue  # ignore sub-messages
+            if not message.startswith("  "): ignored_previous = False
+            # print(list(line))
+            message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
+            # log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
+            print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + message + skirt_debug_output_suffix + fmt.reset)
+
+        # Add the line
+        log_lines.append(line)
+        last_message = message
+        #nlines += 1
+        nlines = len(log_lines)
+
+        # CHECK WHETHER WE HAVE TO BREAK
+        # if break_after_next_line:
+        #
+        #     status = "finished"
+        #     # break
+        #     # return
+        #     log.success("Simulation finished")
+        #     return True
+
+        # CONTINUE 'JUST EXPECTING' AND FILLING LOG_LINES UNTIL WE ACTUALLY HAVE TO DO THE WORK OF CHECKING THE PHASE AND STUFF
+        if nlines % refresh_frequency != 0: continue
+
+        # Interpret the content of the last line
+        if " Finished simulation " in line:
+
+            # print("FOUND FINISHED SIMULATION IN LAST LOG LINE [" + last + "]")
+            status = "finished"
+            # return
+            # break
+            log.success("Simulation finished")
+            return True
+
+        elif " *** Error: " in line:
+
+            # print("FOUND ERROR IN LAST LOG LINE [" + last + "]")
+            # print("LINES:")
+            # for line in lines: print("  " + line)
+            status = "crashed"
+            # return
+            # break
+            log.error("Simulation crashed")
+
+            # Get the info
+            phase, simulation_phase, stage, cycle, progress, extra = get_phase_info(log_lines)
+
+            # Return fail
+            return False
+
+        # Running
+        else:
+
+            # Check if the child is alive
+            #if not self.child.isalive():
+            #    self.status = "aborted"
+            #    # break
+            #    log.error("Simulation has been aborted")
+            #    return False
+
+            # Running
+            status = "running"
+
+            # Get the info
+            phase, simulation_phase, stage, cycle, progress, extra = get_phase_info(log_lines)
+
+        # New phase
+        # elif last_phase is None or self.phase != last_phase:
+        if last_phase is None or phase != last_phase:
+
+            last_phase = phase
+            if last_phase is None: continue
+            else:
+                if simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + simulation_phase.lower() + " phase ...")
+                else: log.info("Starting " + phase_descriptions[last_phase] + " ...")
+
+        # Self absorption phase
+        if phase == "dust" and simulation_phase == "DUST SELF-ABSORPTION":
+
+            # print("DUST SELF-ABSORPTION")
+
+            total_length = 100
+
+            if stage is None:
+                # self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                continue
+
+            if last_stage is None or stage != last_stage:
+                log.info("Starting stage " + str(stage + 1) + " ...")
+                last_stage = stage
+
+            if cycle is None:
+                # self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+                continue
+
+            if last_cycle is None or cycle != last_cycle:
+
+                log.info("Starting cycle " + str(cycle) + " ...")
+                last_cycle = cycle
+
+                # Progress bar
+                if _bar is None: _bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                                                      filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
+                                                      add_datetime=True)
+
+                if stage != last_stage:
+                    _bar.show(100)  # make sure it always ends on 100%
+                    _bar.__exit__(None, None, None)
+
+                if cycle != last_cycle:
+                    _bar.show(100)  # make sure it always ends on 100%
+                    _bar.__exit__(None, None, None)
+
+                if progress is None:
+                    _bar.show(100)
+                    # self._bar.__exit__(None, None, None) # ?
+
+                else: _bar.show(int(progress))
+                # self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+
+                # self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
+                continue
+
+            else: continue
+            # self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
+
+        # Stellar emission, dust emission or spectra calculation: show progress bar
+        elif phase == "stellar" or phase == "spectra" or phase == "dust":
+
+            total_length = 100
+
+            # Progress bar
+            if _bar is None: _bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                                          filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
+                                          add_datetime=True)
+            # Loop
+            # while True:
+
+            if phase != last_phase:
+                _bar.show(100)  # make sure it always ends on 100%
+                _bar.__exit__(None, None, None)
+
+            if progress is None:
+                _bar.show(100)
+                _bar.__exit__(None, None, None)
+
+            else: _bar.show(int(progress))
+            # self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
+            continue
+
+        # Same phase
+        else:
+
+            if extra is not None:
+                if last_extra is None or last_extra != extra: log.info(extra)
+                last_extra = extra
 
 # -----------------------------------------------------------------

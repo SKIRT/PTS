@@ -28,6 +28,42 @@ from ..tools import filesystem as fs
 from ..simulation.remote import get_simulations_for_host
 from ..tools import introspection
 from .shower import properties, get_common_ptype, get_values_for_simulations, get_value_for_simulation, get_analysis_values_for_simulations, get_analysis_value_for_simulation
+from ..tools import types
+from ..basics import containers
+
+# -----------------------------------------------------------------
+
+def adapt_simulation(simulation, config=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param config:
+    :return:
+    """
+
+    # Create adapter
+    adapter = SimulationAdapter(config=config)
+
+    # Run
+    adapter.run(simulation=simulation)
+
+# -----------------------------------------------------------------
+
+def adapt_analysis(simulation, config=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param config:
+    :return:
+    """
+
+    # Create adapter
+    adapter = AnalysisAdapter(config=config)
+
+    # Run
+    adapter.run(simulation=simulation)
 
 # -----------------------------------------------------------------
 
@@ -96,8 +132,30 @@ class SimulationAdapter(Configurable):
             if self.config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
             self.config.names = fs.directories_in_path(returns="name")
 
+        # Get simulations
+        if "simulations" in kwargs:
+            simulations = kwargs.pop("simulations")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            elif types.is_dictionary(simulations): self.simulations = simulations
+            else: raise ValueError("Simulations must be specified as sequence or dictionary")
+        elif "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.simulations[simulation.id] = simulation
+
         # Load the simulations
-        self.load_simulations()
+        if not self.has_simulations: self.load_simulations()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
 
     # -----------------------------------------------------------------
 
@@ -283,9 +341,25 @@ class SimulationAdapter(Configurable):
             # Check ptype
             if ptype is None: ptype = "any"
 
-            # Ask for the new value
-            value = prompt_variable(name, ptype, description, default=default, required=True)
-            if default is None and value == "": continue
+            # Check types
+            if self.config.types is not None and ptype not in self.config.types: continue
+
+            # Replace?
+            if ptype == "string" and self.config.replace_string is not None and default is not None and self.config.replace_string[0] in default:
+
+                #print(default)
+                value = default.replace(self.config.replace_string[0], self.config.replace_string[1])
+                #print(value)
+
+            # No replacements: skip
+            elif self.config.only_replacements: continue
+
+            # No replacements: prompt for new value
+            else:
+
+                # Ask for the new value
+                value = prompt_variable(name, ptype, description, default=default, required=True)
+                if default is None and value == "": continue
 
             # Set the property
             if value == default: continue
@@ -364,6 +438,9 @@ class SimulationAdapter(Configurable):
                 ptype = get_common_ptype(unique_values)
                 choices = None
                 suggestions = unique_values
+
+            # Check types
+            if self.config.types is not None and ptype not in self.config.types: continue
 
             # Ask for the new value
             value = prompt_variable(name, ptype, description, default=default, required=True, choices=choices, suggestions=suggestions)
@@ -479,8 +556,30 @@ class AnalysisAdapter(Configurable):
             if self.config.names is not None: raise ValueError("Cannot specify names with 'from_directories' enabled")
             self.config.names = fs.directories_in_path(returns="name")
 
+        # Get simulations
+        if "simulations" in kwargs:
+            simulations = kwargs.pop("simulations")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            elif types.is_dictionary(simulations): self.simulations = simulations
+            else: raise ValueError("Simulations must be specified as sequence or dictionary")
+        elif "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.simulations[simulation.id] = simulation
+
         # Load the simulations
-        self.load_simulations()
+        if not self.has_simulations: self.load_simulations()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsimulations > 0
 
     # -----------------------------------------------------------------
 
@@ -722,7 +821,8 @@ class AnalysisAdapter(Configurable):
         # Check whether analysis options are defined
         has_changed = self.single_simulation.analysis.prompt_properties(contains=self.config.contains, not_contains=self.config.not_contains,
                                               exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
-                                              startswith=self.config.startswith, endswith=self.config.endswith)
+                                              startswith=self.config.startswith, endswith=self.config.endswith, replace_string=self.config.replace_string,
+                                              types=self.config.types, only_replacements=self.config.only_replacements)
 
         # Set changed flag
         self.single_changed = has_changed
@@ -785,6 +885,9 @@ class AnalysisAdapter(Configurable):
 
             # Get the ptype
             ptype = self.get_ptype(name)
+
+            # Check types
+            if self.config.types is not None and ptype not in self.config.types: continue
 
             # Only one unique value
             if len(unique_values) == 1:
@@ -865,6 +968,9 @@ class AnalysisAdapter(Configurable):
 
                 # Get the ptype
                 ptype = self.get_ptype(name, section_name)
+
+                # Check types
+                if self.config.types is not None and ptype not in self.config.types: continue
 
                 # Only one unique value
                 if len(unique_values) == 1:
@@ -948,6 +1054,8 @@ def set_analysis_value_for_simulation(simulation, name, value, section=None):
     # Debugging
     log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
     if section is not None: log.debug("in section '" + section + "'")
+    if section is not None: log.debug("Original value: '" + tostr(simulation.analysis[section][name]) + "'")
+    else: log.debug("Original value: '" + tostr(simulation.analysis[name]) + "'")
 
     #print(simulation.analysis[section][name])
     #print(value)
@@ -977,6 +1085,9 @@ def set_analysis_value_for_simulations(simulations, name, value, section=None):
 
     # Loop over the simulations
     for simulation_id in simulations:
+
+        # Debugging
+        #log.debug("Original value: '" + get_analysis_value_for_simulation(simulations[simulation_id], name, section=section) + "'")
 
         # Set value
         set_analysis_value_for_simulation(simulations[simulation_id], name, value, section=section)
@@ -1037,6 +1148,7 @@ def set_value_for_simulation(simulation, name, value):
 
     # Debugging
     log.debug("Changing the value of '" + name + "' to '" + tostr(value) + "' ...")
+    log.debug("Original value: '" + tostr(getattr(simulation, name)) + "' ...")
 
     # Set the new value
     setattr(simulation, name, value)

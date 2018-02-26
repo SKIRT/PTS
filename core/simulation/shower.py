@@ -56,35 +56,71 @@ properties["retrieved"] = "retrieved flag"
 
 # -----------------------------------------------------------------
 
-def compare_simulations(*simulations):
+def compare_simulations(*simulations, **kwargs):
 
     """
     This function ...
     :param simulations:
+    :param kwargs:
     :return:
     """
 
     # Create shower
-    shower = SimulationShower()
+    shower = SimulationShower(config=kwargs.pop("config", None))
 
     # Run
     shower.run(simulations=simulations)
 
 # -----------------------------------------------------------------
 
-def compare_analysis(*simulations):
+def compare_analysis(*simulations, **kwargs):
 
     """
     This function ...
     :param simulations:
+    :param kwargs:
     :return:
     """
 
     # Create shower
-    shower = AnalysisShower()
+    shower = AnalysisShower(config=kwargs.pop("config", None))
 
     # Run
     shower.run(simulations=simulations)
+
+# -----------------------------------------------------------------
+
+def show_simulation(simulation, config=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param config:
+    :return:
+    """
+
+    # Create shower
+    shower = SimulationShower(config=config)
+
+    # Show
+    shower.run(simulation=simulation)
+
+# -----------------------------------------------------------------
+
+def show_analysis(simulation, config=None):
+
+    """
+    This function ...
+    :param simulation:
+    :param config:
+    :return:
+    """
+
+    # Create shower
+    shower = AnalysisShower(config=config)
+
+    # Show
+    shower.run(simulation=simulation)
 
 # -----------------------------------------------------------------
 
@@ -153,6 +189,9 @@ class SimulationShower(Configurable):
             if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
             elif types.is_dictionary(simulations): self.simulations = simulations
             else: raise ValueError("Simulations must be specified as sequence or dictionary")
+        elif "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.simulations[simulation.id] = simulation
 
         # Load the simulations
         if not self.has_simulations: self.load_simulations()
@@ -347,7 +386,8 @@ class SimulationShower(Configurable):
             if default is not None:
 
                 ptype, pstring = stringify(default)
-                print(" - " + fmt.bold + name + fmt.reset + "(" + description + "): " + pstring + " [" + ptype + "]")
+                type_string = " [" + ptype + "]" if ptype is not None else ""
+                print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + pstring + type_string)
 
             else: print(" - " + fmt.bold + name + fmt.reset + "(" + description +  "): None")
 
@@ -415,7 +455,8 @@ class SimulationShower(Configurable):
             if nunique_values == 1:
 
                 ptype, string = stringify(unique_values[0])
-                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + " [" + ptype + "]" + fmt.reset)
+                type_string = " [" + ptype + "]" if ptype is not None else ""
+                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
 
             else:
 
@@ -423,7 +464,8 @@ class SimulationShower(Configurable):
 
                 for value in unique_values:
                     ptype, string = stringify(value)
-                    print("   * " + string + " [" + ptype + "]")
+                    type_string = " [" + ptype + "]" if ptype is not None else ""
+                    print("   * " + string + type_string)
 
 # -----------------------------------------------------------------
 
@@ -492,6 +534,9 @@ class AnalysisShower(Configurable):
             if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
             elif types.is_dictionary(simulations): self.simulations = simulations
             else: raise ValueError("Simulations must be specified as sequence or dictionary")
+        elif "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.simulations[simulation.id] = simulation
 
         # Load the simulations
         if not self.has_simulations: self.load_simulations()
@@ -821,8 +866,8 @@ class AnalysisShower(Configurable):
 
                 default = unique_values[0]
                 ptype, string = stringify(default)
-
-                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + " [" + ptype + "]" + fmt.reset)
+                type_string = " [" + ptype + "]" if ptype is not None else ""
+                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
 
             # Multiple unique values
             else:
@@ -840,7 +885,8 @@ class AnalysisShower(Configurable):
                 for value in unique_values:
 
                     ptype, string = stringify(value)
-                    print("   * " + string + " [" + ptype + "]")
+                    type_string = " [" + ptype + "]" if ptype is not None else ""
+                    print("   * " + string + type_string)
 
     # -----------------------------------------------------------------
 
@@ -900,8 +946,8 @@ class AnalysisShower(Configurable):
 
                     default = unique_values[0]
                     ptype, string = stringify(default)
-
-                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + " [" + ptype + "]" + fmt.reset)
+                    type_string = " [" + ptype + "]" if ptype is not None else ""
+                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
 
                 # Multiple unique values
                 else:
@@ -911,7 +957,8 @@ class AnalysisShower(Configurable):
                     for value in unique_values:
 
                         ptype, string = stringify(value)
-                        print("    * " + string + " [" + ptype + "]")
+                        type_string = " [" + ptype + "]" if ptype is not None else ""
+                        print("    * " + string + type_string)
 
 # -----------------------------------------------------------------
 

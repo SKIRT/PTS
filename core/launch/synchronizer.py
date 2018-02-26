@@ -27,6 +27,7 @@ from ..tools import introspection
 from ..simulation.status import LogSimulationStatus
 from ..basics.log import no_debugging
 from ..simulation.remote import get_retrieved_simulations, get_retrieved_tasks, get_status_simulations, get_status_tasks
+from ..simulation.remote import queued_name, running_name, finished_name, retrieved_name, analysed_name, aborted_name, cancelled_name, crashed_name, unknown_name, invalid_name
 
 # -----------------------------------------------------------------
 
@@ -699,11 +700,11 @@ class RemoteSynchronizer(Configurable):
                 tag = "[" + str(simulation.id) + "]"
 
                 # Finished, retrieved and analysed simulation (remote output has already been removed, if requested)
-                if simulation_status == "analysed":
+                if simulation_status.startswith(analysed_name):
 
                     if (self.config.ids is not None and (
                             host_id in self.config.ids and simulation.id in self.config.ids[host_id])) \
-                            or (self.config.statuses is not None and "retrieved" in self.config.statuses):
+                            or (self.config.statuses is not None and analysed_name in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -713,10 +714,10 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.green
 
                 # Finished and retrieved simulation (remote output has already been removed, if requested)
-                elif simulation_status == "retrieved":
+                elif simulation_status == retrieved_name:
 
                     if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
-                            or (self.config.statuses is not None and "retrieved" in self.config.statuses):
+                            or (self.config.statuses is not None and retrieved_name in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -726,11 +727,11 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.green
 
                 # Finished, but not yet retrieved simulation
-                elif simulation_status == "finished":
+                elif simulation_status == finished_name:
 
                     if (self.config.ids is not None and (
                             host_id in self.config.ids and simulation.id in self.config.ids[host_id])) \
-                            or (self.config.statuses is not None and "finished" in self.config.statuses):
+                            or (self.config.statuses is not None and finished_name in self.config.statuses):
                         log.warning(
                             "The simulation with ID " + str(simulation.id) + " has finished, but has not been"
                                                                              " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
@@ -741,13 +742,13 @@ class RemoteSynchronizer(Configurable):
                     simulation_status += " (do 'pts status' again to retrieve)"
 
                 # Running simulation
-                elif "running" in simulation_status:
+                elif running_name in simulation_status:
 
                     # ADD TO RUNNNING SIMULATIONS
                     self.running_simulations.append(simulation)
 
                     if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
-                            or (self.config.statuses is not None and "running" in self.config.statuses):
+                            or (self.config.statuses is not None and running_name in self.config.statuses):
 
                         if remote.host.scheduler:
 
@@ -771,20 +772,20 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.reset
 
                 # Simulations with invalid state
-                elif "invalid" in simulation_status:
+                elif invalid_name in simulation_status:
 
                     formatter = fmt.red + fmt.bold
 
                 # Simulations with unknown status (because offline)
-                elif simulation_status == "unknown":
+                elif simulation_status == unknown_name:
 
                     formatter = fmt.lightyellow
 
                 # Crashed simulation
-                elif "crashed" in simulation_status:
+                elif crashed_name in simulation_status:
 
                     if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
-                            or (self.config.statuses is not None and "crashed" in self.config.statuses):
+                            or (self.config.statuses is not None and crashed_name in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -799,10 +800,10 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.lightred
 
                 # Cancelled simulation
-                elif simulation_status == "cancelled":
+                elif simulation_status == cancelled_name:
 
                     if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
-                            or (self.config.statuses is not None and "cancelled" in self.config.statuses):
+                            or (self.config.statuses is not None and cancelled_name in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -817,10 +818,10 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.lightyellow
 
                 # Aborted simulation
-                elif simulation_status == "aborted":
+                elif simulation_status == aborted_name:
 
                     if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
-                            or (self.config.statuses is not None and "aborted" in self.config.statuses):
+                            or (self.config.statuses is not None and aborted_name in self.config.statuses):
 
                         tag = "[ X ]"
 
@@ -835,10 +836,10 @@ class RemoteSynchronizer(Configurable):
                     formatter = fmt.lightyellow
 
                 # Queued simulation
-                elif simulation_status == "queued":
+                elif simulation_status == queued_name:
 
                     if (self.config.ids is not None and (host_id in self.config.ids and simulation.id in self.config.ids[host_id]))\
-                            or (self.config.statuses is not None and "queued" in self.config.statuses):
+                            or (self.config.statuses is not None and queued_name in self.config.statuses):
 
                         if remote.host.scheduler:
 
