@@ -66,6 +66,7 @@ from ..data.sed import load_multiple_seds
 from ..misc.fluxes import get_sed_instrument_name
 from ..misc.images import get_datacube_instrument_name
 from ..simulation.status import show_log_summary
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -138,6 +139,22 @@ commands["compare"] = ("compare_simulations_command", True, "compare simulation 
 commands["retrieve"] = ("retrieve_simulation_command", True, "retrieve a simulation")
 commands["analyse"] = ("analyse_simulation_command", True, "analyse a simulation")
 commands["reanalyse"] = ("reanalyse_simulation_command", True, "re-analyse a simulation")
+
+# -----------------------------------------------------------------
+
+# Define show commands
+show_commands = OrderedDict()
+show_commands["assignment"] = ("show_assignment", False, "show the simulation assignment scheme")
+show_commands["status"] = ("show_status", False, "show the simulation status")
+show_commands["runtimes"] = ("show_runtimes_command", True, "show the simulation runtimes")
+show_commands["memory"] = ("show_memory_command", True, "show the simulation memory usages")
+
+# -----------------------------------------------------------------
+
+# Define plot commands
+plot_commands = OrderedDict()
+plot_commands["runtimes"] = ("plot_runtimes_command", True, "plot simulation runtimes")
+plot_commands["memory"] = ("plot_memory_command", True, "plot simulation memory usages")
 
 # -----------------------------------------------------------------
 
@@ -2205,6 +2222,35 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def _run_command(self, command, cmds, key=None):
+
+        """
+        This function ...
+        :param command:
+        :param cmds:
+        :param key:
+        :return:
+        """
+
+        # Set key
+        if key is None: key = command
+
+        # Find key
+        key = strings.get_unique_startswith(key, cmds.keys(), return_none=True)
+        if key is None: raise InvalidCommandError("Invalid command: '" + command + "'", command)
+
+        # Get function name and description
+        function_name, pass_command, description = cmds[key]
+
+        # Get the function
+        function = getattr(self, function_name)
+
+        # Call the function
+        if pass_command: function(command)
+        else: function()
+
+    # -----------------------------------------------------------------
+
     def process_command(self, command):
 
         """
@@ -2213,19 +2259,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Find key
-        key = strings.get_unique_startswith(command, commands.keys(), return_none=True)
-        if key is None: raise InvalidCommandError("Invalid command: '" + command + "'", command)
-
-        # Get function name and description
-        function_name, pass_command, description = commands[key]
-
-        # Get the function
-        function = getattr(self, function_name)
-
-        # Call the function
-        if pass_command: function(command)
-        else: function()
+        # Run the command
+        self._run_command(command, commands)
 
     # -----------------------------------------------------------------
 
@@ -2249,6 +2284,24 @@ class SimulationManager(Configurable):
 
             # Show
             print(" - " + fmt.bold + key + fmt.reset + ": " + description)
+
+            if key == "show":
+
+                for show_key in show_commands:
+
+                    # Get description
+                    _, _, show_description = show_commands[show_key]
+
+                    print("    * " + fmt.bold + show_key + fmt.reset + ": " + show_description)
+
+            elif key == "plot":
+
+                for plot_key in plot_commands:
+
+                    # Get description
+                    _, _, plot_description = plot_commands[plot_key]
+
+                    print("    * " + fmt.bold + plot_key + fmt.reset + ": " + plot_description)
 
         print("")
 
@@ -2669,8 +2722,16 @@ class SimulationManager(Configurable):
                 # Add the SED to the plotter
                 plotter.add_sed(sed, label=label)
 
+        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
+
+        # Set filepath
+        filepath = fs.join(introspection.pts_temp_dir, "seds.pdf")
+
         # Run the plotter
-        plotter.run()
+        plotter.run(output=filepath)
+
+        # Open the file
+        fs.open_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -3062,12 +3123,6 @@ class SimulationManager(Configurable):
         log.debug("Showing instruments of simulation '" + simulation_name + "' ...")
 
         print("")
-        #print(fmt.green + fmt.underlined + "Instruments:" + fmt.reset)
-        #print("")
-
-        # Get the instruments
-        #instruments = self.get_instruments(simulation_name)
-
         # Loop over the instruments
         ski = self.get_skifile(simulation_name)
         for name in self.get_instrument_names(simulation_name): show_instrument(ski, name)
@@ -3104,7 +3159,7 @@ class SimulationManager(Configurable):
 
         # Loop over the stellar components
         ski = self.get_skifile(simulation_name)
-        for id in self.get_stellar_component_ids: show_stellar_component(ski, id)
+        for id in self.get_stellar_component_ids(simulation_name): show_stellar_component(ski, id)
         print("")
 
     # -----------------------------------------------------------------
@@ -3137,7 +3192,7 @@ class SimulationManager(Configurable):
 
         # Loop over the dust components
         ski = self.get_skifile(simulation_name)
-        for id in self.get_dust_component_ids: show_dust_component(ski, id)
+        for id in self.get_dust_component_ids(simulation_name): show_dust_component(ski, id)
         print("")
 
     # -----------------------------------------------------------------
@@ -3193,20 +3248,8 @@ class SimulationManager(Configurable):
         # Parse
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
 
-        # Assignment
-        if splitted[1] == "assignment": self.show_assignment()
-
-        # Status
-        elif splitted[1] == "status": self.show_status()
-
-        # Runtimes
-        elif splitted[1] == "runtimes": self.show_runtimes_command(command)
-
-        # Memory
-        elif splitted[1] == "memory": self.show_memory_command(command)
-
-        # Invalid
-        else: raise ValueError("Invalid command")
+        # Run the command
+        self._run_command(command, show_commands, splitted[1])
 
     # -----------------------------------------------------------------
 
@@ -3221,14 +3264,8 @@ class SimulationManager(Configurable):
         # Parse
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
 
-        # Runtimes
-        if splitted[1] == "runtimes": self.plot_runtimes_command(command)
-
-        # Memory
-        elif splitted[1] == "memory": self.plot_memory_command(command)
-
-        # Invalid
-        else: raise ValueError("Invalid command")
+        # Run
+        self._run_command(command, plot_commands, splitted[1])
 
     # -----------------------------------------------------------------
 

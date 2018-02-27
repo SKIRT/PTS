@@ -196,7 +196,7 @@ manager.config.backup_simulations = True
 manager.config.backup_assignment = True
 
 # Set remote input path for each host
-if not config.lazy:
+if not (config.lazy or config.offline):
 
     # Set remote input path for each host ID
     for host_id in generation.host_ids:
