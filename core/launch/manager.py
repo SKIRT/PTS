@@ -18,7 +18,7 @@ from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..basics.configuration import ConfigurationDefinition, parse_arguments
+from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help
 from ..basics.log import log
 from ..tools.stringify import tostr
 from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
@@ -107,90 +107,90 @@ clear_analysis_steps = ["extraction", "plotting", "misc"]
 
 # Define commands
 commands = OrderedDict()
-commands["help"] = ("show_help", False, "show help")
-commands["history"] = ("show_history", False, "show history of executed commands")
-commands["status"] = ("show_status", False, "show simulation status")
-commands["hosts"] = ("show_hosts_command", True, "show remote hosts of the simulations")
-commands["parallelizations"] = ("show_parallelizations_command", True, "show parallelization schemes used per host")
-commands["info"] = ("show_info_command", True, "show info about the simulation (if defined in info tables)")
-commands["open"] = ("open_command", True, "open input, output or base simulation directory")
-commands["sed"] = ("plot_seds_command", True, "plot SED(s) of a simulation")
-commands["datacube"] = ("show_datacubes_command", True, "plot datacube(s) of a simulation")
-commands["input"] = ("show_input_command", True, "show simulation input")
-commands["output"] = ("show_output_command", True, "show simuation output")
-commands["extraction"] = ("show_extraction_command", True, "show simulation extraction output")
-commands["plotting"] = ("show_plotting_command", True, "show simulation plotting output")
-commands["misc"] = ("show_misc_command", True, "show simulation misc output")
-commands["instruments"] = ("show_instruments_command", True, "show simulation instruments")
-commands["stellar"] = ("show_stellar_components_command", True, "show stellar components")
-commands["dust"] = ("show_dust_components_command", True, "show dust components")
-commands["normalizations"] = ("show_normalizations_command", True, "show normalizations")
-commands["show"] = ("show_command", True, "show")
-commands["plot"] = ("plot_command", True, "plot")
-commands["move"] = ("move_simulations_command", True, "move simulations from one remote to another")
-commands["stop"] = ("stop_simulations_command", True, "stop simulations")
-commands["remove"] = ("remove_simulation_command", True, "remove simulation")
-commands["clear"] = ("clear_simulation_command", True, "clear simulation output/input/analysis")
-commands["unretrieve"] = ("unretrieve_simulation_command", True, "unretrieve simulation")
-commands["unanalyse"] = ("unanalyse_simulation_command", True, "unanalyse simulation")
-commands["relaunch"] = ("relaunch_simulation_command", True, "relaunch simulations")
-commands["log"] = ("show_simulation_log_command", True, "show log output of a simulation")
-commands["error"] = ("show_simulation_errors_command", True, "show error output of a simulation")
-commands["settings"] = ("show_simulation_settings_command", True, "show simulation settings")
-commands["analysis"] = ("show_analysis_options_command", True, "show analysis options")
-commands["adapt"] = ("adapt_simulation_command", True, "adapt simulation settings or analysis options")
-commands["compare"] = ("compare_simulations_command", True, "compare simulation settings or analysis options between two simulations")
-commands["retrieve"] = ("retrieve_simulation_command", True, "retrieve a simulation")
-commands["analyse"] = ("analyse_simulation_command", True, "analyse a simulation")
-commands["reanalyse"] = ("reanalyse_simulation_command", True, "re-analyse a simulation")
+commands["help"] = ("show_help", False, "show help", None)
+commands["history"] = ("show_history", False, "show history of executed commands", None)
+commands["status"] = ("show_status", False, "show simulation status", None)
+commands["hosts"] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
+commands["parallelizations"] = ("show_parallelizations_command", True, "show parallelization schemes used per host", "host")
+commands["info"] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
+commands["open"] = ("open_command", True, "open input, output or base simulation directory", "simulation")
+commands["sed"] = ("plot_seds_command", True, "plot SED(s) of a simulation", "simulation")
+commands["datacube"] = ("show_datacubes_command", True, "plot datacube(s) of a simulation", "simulation")
+commands["input"] = ("show_input_command", True, "show simulation input", "simulation")
+commands["output"] = ("show_output_command", True, "show simuation output", "simulation")
+commands["extraction"] = ("show_extraction_command", True, "show simulation extraction output", "simulation")
+commands["plotting"] = ("show_plotting_command", True, "show simulation plotting output", "simulation")
+commands["misc"] = ("show_misc_command", True, "show simulation misc output", "simulation")
+commands["instruments"] = ("show_instruments_command", True, "show simulation instruments", "simulation")
+commands["stellar"] = ("show_stellar_components_command", True, "show stellar components", "simulation")
+commands["dust"] = ("show_dust_components_command", True, "show dust components", "simulation")
+commands["normalizations"] = ("show_normalizations_command", True, "show normalizations", "simulation")
+commands["show"] = ("show_command", True, "show", None)
+commands["plot"] = ("plot_command", True, "plot", None)
+commands["move"] = ("move_simulations_command", True, "move simulations from one remote to another", "simulations")
+commands["stop"] = ("stop_simulations_command", True, "stop simulations", "simulation")
+commands["remove"] = ("remove_simulation_command", True, "remove simulation", "simulation")
+commands["clear"] = ("clear_simulation_command", True, "clear simulation output/input/analysis", "simulation")
+commands["unretrieve"] = ("unretrieve_simulation_command", True, "unretrieve simulation", "simulation")
+commands["unanalyse"] = ("unanalyse_simulation_command", True, "unanalyse simulation", "simulation")
+commands["relaunch"] = ("relaunch_simulation_command", True, "relaunch simulations", "simulation")
+commands["log"] = ("show_simulation_log_command", True, "show log output of a simulation", "simulation")
+commands["error"] = ("show_simulation_errors_command", True, "show error output of a simulation", "simulation")
+commands["settings"] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
+commands["analysis"] = ("show_analysis_options_command", True, "show analysis options", "simulation")
+commands["adapt"] = ("adapt_simulation_command", True, "adapt simulation settings or analysis options", "simulation")
+commands["compare"] = ("compare_simulations_command", True, "compare simulation settings or analysis options between two simulations", "two_simulations")
+commands["retrieve"] = ("retrieve_simulation_command", True, "retrieve a simulation", "simulation")
+commands["analyse"] = ("analyse_simulation_command", True, "analyse a simulation", "simulation")
+commands["reanalyse"] = ("reanalyse_simulation_command", True, "re-analyse a simulation", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define show commands
 show_commands = OrderedDict()
-show_commands["assignment"] = ("show_assignment", False, "show the simulation assignment scheme")
-show_commands["status"] = ("show_status", False, "show the simulation status")
-show_commands["runtimes"] = ("show_runtimes_command", True, "show the simulation runtimes")
-show_commands["memory"] = ("show_memory_command", True, "show the simulation memory usages")
+show_commands["assignment"] = ("show_assignment", False, "show the simulation assignment scheme", None)
+show_commands["status"] = ("show_status", False, "show the simulation status", None)
+show_commands["runtimes"] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
+show_commands["memory"] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
 
 # -----------------------------------------------------------------
 
 # Define plot commands
 plot_commands = OrderedDict()
-plot_commands["runtimes"] = ("plot_runtimes_command", True, "plot simulation runtimes")
-plot_commands["memory"] = ("plot_memory_command", True, "plot simulation memory usages")
+plot_commands["runtimes"] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
+plot_commands["memory"] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
 
 # -----------------------------------------------------------------
 
 # Define open commands
 open_commands = OrderedDict()
-open_commands["base"] = ("open_base", "simulation_name", "open simulation base directory")
-open_commands["input"] = ("open_input", "simulation_name", "open simulation input directory")
-open_commands["output"] = ("open_output", "simulation_name", "open simulation output directory")
-open_commands["extraction"] = ("open_extraction", "simulation_name", "open simulation extraction output directory")
-open_commands["plotting"] = ("open_plotting", "simulation_name", "open simulation plotting output directory")
-open_commands["misc"] = ("open_misc", "simulation_name", "open simulation miscellaneous output directory")
+open_commands["base"] = ("open_base", "simulation_name", "open simulation base directory", "simulation")
+open_commands["input"] = ("open_input", "simulation_name", "open simulation input directory", "simulation")
+open_commands["output"] = ("open_output", "simulation_name", "open simulation output directory", "simulation")
+open_commands["extraction"] = ("open_extraction", "simulation_name", "open simulation extraction output directory", "simulation")
+open_commands["plotting"] = ("open_plotting", "simulation_name", "open simulation plotting output directory", "simulation")
+open_commands["misc"] = ("open_misc", "simulation_name", "open simulation miscellaneous output directory", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define adapt commands
 adapt_commands = OrderedDict()
-adapt_commands["simulation"] = ("adapt_simulation_settings", "simulation_name", "adapt simulation settings")
-adapt_commands["analysis"] = ("adapt_analysis_options", "simulation_name", "adapt analysis options")
+adapt_commands["simulation"] = ("adapt_simulation_settings", "simulation_name", "adapt simulation settings", "simulation")
+adapt_commands["analysis"] = ("adapt_analysis_options", "simulation_name", "adapt analysis options", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define compare commands
 compare_commands = OrderedDict()
-compare_commands["simulation"] = ("compare_simulation_settings", "2simulation_names", "compare simulation settings")
-compare_commands["analysis"] = ("compare_analysis_options", "2simulation_names", "compare analysis options")
+compare_commands["simulation"] = ("compare_simulation_settings", "2simulation_names", "compare simulation settings", "two_simulations")
+compare_commands["analysis"] = ("compare_analysis_options", "2simulation_names", "compare analysis options", "two_simulations")
 
 # -----------------------------------------------------------------
 
 clear_commands = OrderedDict()
-clear_commands["input"] = ("clear_simulation_input_remote/local", "simulation_name", "clear simulation input")
-clear_commands["output"] = ("clear_simulation_output_remote/local", "simulation_name", "clear simulation output")
-clear_commands["analysis"] = ("clear_simulation_analysis", "simulatio_name", "clear simulation analysis output")
+clear_commands["input"] = ("clear_simulation_input_remote/local", "simulation_name", "clear simulation input", "simulation")
+clear_commands["output"] = ("clear_simulation_output_remote/local", "simulation_name", "clear simulation output", "simulation")
+clear_commands["analysis"] = ("clear_simulation_analysis", "simulatio_name", "clear simulation analysis output", "simulation")
 
 # -----------------------------------------------------------------
 
@@ -2347,13 +2347,11 @@ class SimulationManager(Configurable):
         if first is None: first = command.split(" ")[0]
 
         # Find key
-        #key = strings.get_unique_startswith(first, cmds.keys(), return_none=True)
-        #if key is None: raise InvalidCommandError("Invalid command: '" + command + "'", command)
         if first not in cmds: raise InvalidCommandError("Invalid command: '" + first + "'", command)
         key = first
 
         # Get function name and description
-        function_name, pass_command, description = cmds[key]
+        function_name, pass_command, description, subject = cmds[key]
 
         # Get the function
         function = getattr(self, function_name)
@@ -2393,10 +2391,29 @@ class SimulationManager(Configurable):
         for key in commands:
 
             # Get description
-            _, _, description = commands[key]
+            function_name, pass_command, description, subject = commands[key]
 
             # Show
             print(" - " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if pass_command and subject is not None:
+
+                # Get definition
+                definition_property_name = function_name.split("_command")[0] + "_definition"
+                definition = getattr(self, definition_property_name, None)
+
+                # Get usage lines
+                if subject == "simulation": usage = self.get_usage_simulation_command(definition, name=key)
+                elif subject == "simulations": usage = self.get_usage_simulations_command(definition, name=key)
+                elif subject == "two_simulations": usage = self.get_usage_two_simulations_command(definition, name=key)
+                elif subject == "host": usage = self.get_usage_host_command(definition, name=key)
+                elif subject == "hosts": usage = self.get_usage_hosts_command(definition, name=key)
+                elif subject == "host_parallelization": usage = self.get_usage_host_and_parallelization_command(definition, name=key)
+                else: raise ValueError("Invalid subject '" + subject + "'")
+
+                # Show
+                for line in usage: print("    " + fmt.blue + line + fmt.reset)
 
             # Show
             if key == "show": self.show_help_show()
@@ -2431,7 +2448,7 @@ class SimulationManager(Configurable):
         for key in show_commands:
 
             # Get description
-            _, _, description = show_commands[key]
+            _, _, description, _ = show_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
@@ -2449,7 +2466,7 @@ class SimulationManager(Configurable):
         for key in plot_commands:
 
             # Get description
-            _, _, description = plot_commands[key]
+            _, _, description, _ = plot_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
@@ -2467,7 +2484,7 @@ class SimulationManager(Configurable):
         for key in open_commands:
 
             # Get description
-            _, _, description = open_commands[key]
+            _, _, description, _ = open_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
@@ -2485,7 +2502,7 @@ class SimulationManager(Configurable):
         for key in adapt_commands:
 
             # Get description
-            _, _, description = adapt_commands[key]
+            _, _, description, _ = adapt_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
@@ -2503,7 +2520,7 @@ class SimulationManager(Configurable):
         for key in compare_commands:
 
             # Get description
-            _, _, description = compare_commands[key]
+            _, _, description, _ = compare_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
@@ -2521,7 +2538,7 @@ class SimulationManager(Configurable):
         for key in clear_commands:
 
             # Get description
-            _, _, description = clear_commands[key]
+            _, _, description, _ = clear_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
@@ -2554,7 +2571,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("properties", "show host properties")
         definition.add_flag("status", "show host status")
 
@@ -2782,7 +2799,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("remote", "open on remote filesystem (determined automatically based on the simulation status by default)", None)
 
         # Return
@@ -3083,7 +3100,7 @@ class SimulationManager(Configurable):
         # Create definition
         contributions = ["total", "direct", "scattered", "dust", "dustscattered", "transparent"]
         default_contributions = ["total"]
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("contributions", "string_list", "contributions for which to plot the datacubes", default_contributions, choices=contributions)
         definition.add_optional("instruments", "string_list", "instruments for which to plot the datacubes")
 
@@ -3304,7 +3321,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("remote", "show remote input", False)
 
         # Get simulation name
@@ -3373,7 +3390,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("remote", "show remote output", None)
 
         # Return
@@ -3689,7 +3706,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_optional("flux", "photometric_unit", "also show flux in a particular unit")
 
         # Return
@@ -3765,14 +3782,46 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_host_from_command(self, command, name=None, index=1, required=True):
+    def get_host_command_definition(self, command_definition=None, required=True, choices=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required:
+        :param choices:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add host setting
+        if required: definition.add_required("host", "host", "remote host", choices=choices)
+        else: definition.add_positional_optional("host", "host", "remote host", choices=choices)
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_host_command(self, command, command_definition=None, name=None, index=1, required=True, choices=None,
+                           required_to_optional=True):
 
         """
         This function ...
         :param command:
+        :param command_definition:
         :param name:
         :param index:
         :param required:
+        :param choices:
+        :param required_to_optional:
         :return:
         """
 
@@ -3780,17 +3829,105 @@ class SimulationManager(Configurable):
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
         if name is None: name = splitted[0]
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        if required: definition.add_required("host", "host", "remote host")
-        else: definition.add_positional_optional("host", "host", "remote host")
+        # Set parse command
         parse_command = splitted[index:]
 
+        # Get the definition
+        definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+
+        # Get the host
+        host = config.pop("host")
 
         # Return
-        return config.host
+        return splitted, host, config
+
+    # -----------------------------------------------------------------
+
+    def get_usage_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required:
+        :param choices:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required:
+        :param choices:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the efinition
+        definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
+
+        # Return the help info
+        return get_help(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_host_from_command(self, command, name=None, index=1, required=True, choices=None):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param index:
+        :param required:
+        :param choices:
+        :return:
+        """
+
+        # Parse
+        splitted, host, config = self.parse_host_command(command, name=name, index=index, required=required, choices=choices)
+
+        # Return the host
+        return host
+
+    # -----------------------------------------------------------------
+
+    def get_hosts_command_definition(self, command_definition=None, required=False, choices=None):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required:
+        :param choices:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Hosts setting
+        if required: definition.add_required("hosts", "host_list", "remote hosts", choices=choices)
+        else: definition.add_positional_optional("hosts", "host_list", "remote hosts", choices=choices)
+
+        # Add definition settings
+        if command_definition is not None: definition.import_settings(command_definition, required_to="optional")
+
+        # Return the definition
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -3811,21 +3948,57 @@ class SimulationManager(Configurable):
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
         if name is None: name = splitted[0]
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        if required: definition.add_required("hosts", "host_list", "remote hosts", choices=choices)
-        else: definition.add_positional_optional("hosts", "host_list", "remote hosts", choices=choices)
-        if command_definition is not None:
-            definition.import_settings(command_definition, required_to="optional")
-            parse_command = splitted[index:]
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
         else: parse_command = splitted[index:index + 1]  # only host list
 
+        # Get the definition
+        definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Return
         hosts = config.pop("hosts")
         return splitted, hosts, config
+
+    # -----------------------------------------------------------------
+
+    def get_usage_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required:
+        :param choices:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
+
+        # Return usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required:
+        :param choices:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
+
+        # Return the help info
+        return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -3850,6 +4023,102 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_host_and_parallelization_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Host and parallelization
+        definition.add_positional_optional("host", "host", "remote host")
+        definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_host_and_parallelization_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        parse_command = splitted[index:]
+
+        # Get the definition
+        definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+
+        # Get host and parallelization
+        host = config.pop("host")
+        parallelization = config.pop("parallelization")
+
+        # Return
+        return splitted, host, parallelization, config
+
+    # -----------------------------------------------------------------
+
+    def get_usage_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the help info
+        return get_help(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
     def get_host_and_parallelization_from_command(self, command, name=None, index=1):
 
         """
@@ -3861,20 +4130,33 @@ class SimulationManager(Configurable):
         """
 
         # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-        if name is None: name = splitted[0]
-
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_positional_optional("host", "host", "remote host")
-        definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme")
-        parse_command = splitted[index:]
-
-        # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
+        splitted, host, parallelization, config = self.parse_host_and_parallelization_command(command, name=name, index=index)
 
         # Return
-        return config.host, config.parallelization
+        return host, parallelization
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("simulation", "integer_or_string", "simulation index or name")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -3894,17 +4176,15 @@ class SimulationManager(Configurable):
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
         if name is None: name = splitted[0]
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulation", "integer_or_string", "simulation index or name")
-        if command_definition is not None:
-            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
-            else: definition.import_settings(command_definition)
-            parse_command = splitted[index:]
-        else: parse_command = splitted[index:index+1] # only simulation name
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only simulation name
+
+        # Get the definition
+        definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation name
         if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
@@ -3912,6 +4192,65 @@ class SimulationManager(Configurable):
 
         # Return
         return splitted, simulation_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_usage_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the help info
+        return get_help(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_simulations_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("simulations", "integer_list", "simulation indices")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -3931,17 +4270,15 @@ class SimulationManager(Configurable):
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
         if name is None: name = splitted[0]
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulations", "integer_list", "simulation indices")
-        if command_definition is not None:
-            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
-            else: definition.import_settings(command_definition)
-            parse_command = splitted[index:]
-        else: parse_command = splitted[index:index+1] # only simulation indices
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only simulation indices
+
+        # Get definition
+        definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False)
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation names
         simulation_names = []
@@ -3952,7 +4289,67 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_two_simulations_command(self, command, command_definition=None, name=None, index=1):
+    def get_usage_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the help info
+        return get_help(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_two_simulations_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("simulation_a", "integer_or_string", "simulation index or name")
+        definition.add_required("simulation_b", "integer_or_string", "simulation index or name")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_two_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
 
         """
         This function ....
@@ -3960,6 +4357,7 @@ class SimulationManager(Configurable):
         :param command_definition:
         :param name:
         :param index:
+        :param required_to_optional:
         :return:
         """
 
@@ -3967,14 +4365,11 @@ class SimulationManager(Configurable):
         splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
         if name is None: name = splitted[0]
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("simulation_a", "integer_or_string", "simulation index or name")
-        definition.add_required("simulation_b", "integer_or_string", "simulation index or name")
-        definition.import_settings(command_definition, required_to="optional")
+        # Get the definition
+        definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Parse arguments
-        config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False)
+        config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation_a name
         if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]
@@ -3986,6 +4381,42 @@ class SimulationManager(Configurable):
 
         # Return
         return splitted, simulation_a_name, simulation_b_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_usage_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Get the definition
+        definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param name:
+        :param required_to_optional:
+        :return:
+        """
+        
+        # Get the definition
+        definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Return the help info
+        return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -4050,7 +4481,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("summarize", "show summarized log output")
 
         # Return the definition
@@ -4433,7 +4864,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_required("host", "host", "remote host to move the simulation to")
         definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme for the simulation")
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
@@ -4640,7 +5071,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("analysis_steps", "string_list", "analysis steps for which to clear the output", choices=clear_analysis_steps)
         definition.add_flag("remote", "clear on the remote host", False)
 
@@ -4853,8 +5284,8 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_positional_optional("steps", "analysis steps to revert", choices=clear_analysis_steps)
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("steps", "string_list", "analysis steps to revert", choices=clear_analysis_steps)
 
         # Return
         return definition
@@ -5071,7 +5502,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("finished", "relaunch already finished simulations", False)
 
         # Return
@@ -8733,7 +9164,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
         definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
         definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)
