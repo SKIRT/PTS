@@ -359,7 +359,7 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         labels = []
 
@@ -907,7 +907,7 @@ class IndividualsTable(SmartTable):
         :return:
         """
 
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         # Set the values
         values = [simulation_name, individual_name]
@@ -1088,7 +1088,7 @@ class ParametersTable(SmartTable):
         :return:
         """
 
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         values = [name]
 
@@ -1447,7 +1447,7 @@ class ModelProbabilitiesTable(SmartTable):
         :return:
         """
 
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         # Set the values
         values = [simulation_name]

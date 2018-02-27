@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
@@ -194,6 +197,12 @@ manager.config.backup_dir_path = manage_current_path
 manager.config.backup_dirname = "backup"
 manager.config.backup_simulations = True
 manager.config.backup_assignment = True
+
+# Set reference SEDs for plotting simulated SEDS
+reference_sed_paths = OrderedDict()
+reference_sed_paths["Observed clipped fluxes"] = environment.observed_sed_path
+reference_sed_paths["Observed truncated fluxes"] = environment.truncated_sed_path
+manager.config.reference_seds = reference_sed_paths
 
 # Set remote input path for each host
 if not (config.lazy or config.offline):

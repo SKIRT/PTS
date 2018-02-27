@@ -87,7 +87,7 @@ class AbsorptionTable(SmartTable):
         """
 
         new = cls()
-        new.setup()
+        new._setup()
 
         new.remove_columns(["x", "y", "z", "total", "old", "young", "ionizing"])
 

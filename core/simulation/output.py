@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -173,7 +174,7 @@ def get_output_type(filename):
     elif filename.endswith("_parameters.xml") or filename.endswith("_parameters.tex"): return output_types.parameters
 
     # No match
-    return None
+    else: return None
 
 # -----------------------------------------------------------------
 
@@ -204,11 +205,80 @@ other_name = "other"
 
 # -----------------------------------------------------------------
 
-class SimulationOutput(object):
+class Output(object):
 
     """
-    This class ...
+    This function ...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def get_type(filename):
+
+        """
+        This function ...
+        :param filename:
+        :return:
+        """
+
+        raise RuntimeError("This method should be implemented in the derived class")
+
+    # -----------------------------------------------------------------
+
+    def load_files(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Get flag
+        get_prefix = kwargs.pop("get_prefix", False)
+
+        prefix = None
+
+        # Loop over the filepaths, categorize
+        for filepath in args:
+
+            # Get filename
+            filename = fs.name(filepath)
+
+            # Get prefix
+            if get_prefix:
+                file_prefix = filename.split("_")[0]
+
+                # Set and check prefix
+                if prefix is None: prefix = file_prefix
+                elif prefix != file_prefix: raise ValueError("Cannot add files with different simulation prefixes")
+
+            # Get the output type
+            output_type = self.get_type(filename)
+
+            # Add the type
+            if output_type is None: self.files[other_name].append(filepath)
+            else: self.files[output_type].append(filepath)
+
+        # Return the prefix
+        if get_prefix: return prefix
+
+    # -----------------------------------------------------------------
+
+    def load_directories(self, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args):
 
@@ -217,21 +287,45 @@ class SimulationOutput(object):
         :param args:
         """
 
-        # The simulation prefix
-        self.prefix = None
-
         # Dictionary of filepaths
-        self.paths = defaultdict(list)
+        self.files = defaultdict(list)
 
-        # Loop over the filepaths, categorize
-        for filepath in args:
-            filename = fs.name(filepath)
-            prefix = filename.split("_")[0]
-            if self.prefix is None: self.prefix = prefix
-            elif self.prefix != prefix: raise ValueError("Cannot add files with different simulation prefixes")
-            output_type = get_output_type(filename)
-            if output_type is None: self.paths[other_name].append(filepath)
-            else: self.paths[output_type].append(filepath)
+        # Dictionary of directory paths
+        self.directories = defaultdict(list)
+
+# -----------------------------------------------------------------
+
+class SimulationOutput(Output):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args):
+
+        """
+        This function ...
+        :param args:
+        """
+
+        # Call the constructor of the base class
+        super(SimulationOutput, self).__init__()
+
+        # Load the file paths, set the simulation prefix
+        self.prefix = self.load_files(*args, get_prefix=True)
+
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def get_type(filename):
+
+        """
+        This function ...
+        :param filename:
+        :return:
+        """
+
+        return get_output_type(filename)
 
     # -----------------------------------------------------------------
 
@@ -364,7 +458,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nisrf(self):
 
@@ -373,11 +466,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.isrf])
+        return len(self.files[output_types.isrf])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_isrf(self):
 
@@ -386,7 +478,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.isrf in self.paths and self.nisrf > 0
+        return output_types.isrf in self.files and self.nisrf > 0
 
     # -----------------------------------------------------------------
 
@@ -398,11 +490,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.isrf in self.paths and self.nisrf == 1
+        return output_types.isrf in self.files and self.nisrf == 1
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def isrf(self):
 
@@ -412,7 +503,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_isrf: return []
-        return self.paths[output_types.isrf]
+        return self.files[output_types.isrf]
 
     # -----------------------------------------------------------------
 
@@ -429,7 +520,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nabsorption(self):
 
@@ -438,11 +528,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.absorption])
+        return len(self.files[output_types.absorption])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_absorption(self):
 
@@ -451,7 +540,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.absorption in self.paths and self.nabsorption > 0
+        return output_types.absorption in self.files and self.nabsorption > 0
 
     # -----------------------------------------------------------------
 
@@ -463,11 +552,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.absorption in self.paths and self.nabsorption == 1
+        return output_types.absorption in self.files and self.nabsorption == 1
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def absorption(self):
 
@@ -477,7 +565,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_absorption: return []
-        return self.paths[output_types.absorption]
+        return self.files[output_types.absorption]
 
     # -----------------------------------------------------------------
 
@@ -494,7 +582,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ntemperature(self):
 
@@ -503,11 +590,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.temperature])
+        return len(self.files[output_types.temperature])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_temperature(self):
 
@@ -516,11 +602,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.temperature in self.paths and self.ntemperature > 0
+        return output_types.temperature in self.files and self.ntemperature > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def temperature(self):
 
@@ -530,11 +615,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_temperature: return []
-        return self.paths[output_types.temperature]
+        return self.files[output_types.temperature]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nseds(self):
 
@@ -543,11 +627,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.seds])
+        return len(self.files[output_types.seds])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_seds(self):
 
@@ -556,7 +639,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.seds in self.paths and self.nseds > 0
+        return output_types.seds in self.files and self.nseds > 0
 
     # -----------------------------------------------------------------
 
@@ -568,11 +651,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.seds in self.paths and self.nseds == 1
+        return output_types.seds in self.files and self.nseds == 1
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def seds(self):
 
@@ -582,7 +664,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_seds: return []
-        return self.paths[output_types.seds]
+        return self.files[output_types.seds]
 
     # -----------------------------------------------------------------
 
@@ -599,7 +681,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nimages(self):
 
@@ -620,7 +701,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_images(self):
 
@@ -633,7 +713,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def images(self):
 
@@ -654,7 +733,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ntotal_images(self):
 
@@ -663,11 +741,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.total_images])
+        return len(self.files[output_types.total_images])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_total_images(self):
 
@@ -676,11 +753,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.total_images in self.paths and self.ntotal_images > 0
+        return output_types.total_images in self.files and self.ntotal_images > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def total_images(self):
 
@@ -690,7 +766,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_total_images: return []
-        else: return self.paths[output_types.total_images]
+        else: return self.files[output_types.total_images]
 
     # -----------------------------------------------------------------
 
@@ -702,7 +778,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.count_images])
+        return len(self.files[output_types.count_images])
 
     # -----------------------------------------------------------------
 
@@ -714,7 +790,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.count_images in self.paths and self.ncount_images > 0
+        return output_types.count_images in self.files and self.ncount_images > 0
 
     # -----------------------------------------------------------------
 
@@ -727,11 +803,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_count_images: return []
-        else: return self.paths[output_types.count_images]
+        else: return self.files[output_types.count_images]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ndirect_images(self):
 
@@ -740,11 +815,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.direct_images])
+        return len(self.files[output_types.direct_images])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_direct_images(self):
 
@@ -753,11 +827,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.direct_images in self.paths and self.ndirect_images > 0
+        return output_types.direct_images in self.files and self.ndirect_images > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def direct_images(self):
 
@@ -767,11 +840,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_direct_images: return []
-        else: return self.paths[output_types.direct_images]
+        else: return self.files[output_types.direct_images]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ntransparent_images(self):
 
@@ -780,11 +852,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.transparent_images])
+        return len(self.files[output_types.transparent_images])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_transparent_images(self):
 
@@ -793,11 +864,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.transparent_images in self.paths and self.ntransparent_images > 0
+        return output_types.transparent_images in self.files and self.ntransparent_images > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def transparent_images(self):
 
@@ -807,11 +877,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_transparent_images: return []
-        else: return self.paths[output_types.transparent_images]
+        else: return self.files[output_types.transparent_images]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nscattered_images(self):
 
@@ -820,11 +889,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.scattered_images])
+        return len(self.files[output_types.scattered_images])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_scattered_images(self):
 
@@ -833,11 +901,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.scattered_images in self.paths and self.nscattered_images > 0
+        return output_types.scattered_images in self.files and self.nscattered_images > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def scattered_images(self):
 
@@ -847,11 +914,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_scattered_images: return []
-        else: return self.paths[output_types.scattered_images]
+        else: return self.files[output_types.scattered_images]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ndust_images(self):
 
@@ -860,11 +926,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.dust_images])
+        return len(self.files[output_types.dust_images])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_dust_images(self):
 
@@ -873,11 +938,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.dust_images in self.paths and self.ndust_images > 0
+        return output_types.dust_images in self.files and self.ndust_images > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def dust_images(self):
 
@@ -887,11 +951,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_dust_images: return []
-        else: return self.paths[output_types.dust_images]
+        else: return self.files[output_types.dust_images]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ndust_scattered_images(self):
 
@@ -900,11 +963,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.dust_scattered_images])
+        return len(self.files[output_types.dust_scattered_images])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_dust_scattered_images(self):
 
@@ -913,11 +975,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.dust_scattered_images in self.paths and self.ndust_scattered_images > 0
+        return output_types.dust_scattered_images in self.files and self.ndust_scattered_images > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def dust_scattered_images(self):
 
@@ -927,11 +988,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_dust_scattered_images: return []
-        else: return self.paths[output_types.dust_scattered_images]
+        else: return self.files[output_types.dust_scattered_images]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ncell_temperature(self):
 
@@ -940,11 +1000,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.cell_temperature])
+        return len(self.files[output_types.cell_temperature])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_cell_temperature(self):
 
@@ -953,11 +1012,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.cell_temperature in self.paths and self.ncell_temperature > 0
+        return output_types.cell_temperature in self.files and self.ncell_temperature > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def cell_temperature(self):
 
@@ -967,11 +1025,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_cell_temperature: return []
-        else: return self.paths[output_types.cell_temperature]
+        else: return self.files[output_types.cell_temperature]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nlogfiles(self):
 
@@ -980,11 +1037,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.logfiles])
+        return len(self.files[output_types.logfiles])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_logfiles(self):
 
@@ -993,11 +1049,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.logfiles in self.paths and self.nlogfiles > 0
+        return output_types.logfiles in self.files and self.nlogfiles > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def logfiles(self):
 
@@ -1007,11 +1062,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_logfiles: return []
-        else: return self.paths[output_types.logfiles]
+        else: return self.files[output_types.logfiles]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nwavelengths(self):
 
@@ -1020,11 +1074,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.wavelengths])
+        return len(self.files[output_types.wavelengths])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_wavelengths(self):
 
@@ -1033,7 +1086,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.wavelengths in self.paths and self.nwavelengths > 0
+        return output_types.wavelengths in self.files and self.nwavelengths > 0
 
     # -----------------------------------------------------------------
 
@@ -1045,11 +1098,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.wavelengths in self.paths and self.nwavelengths == 1
+        return output_types.wavelengths in self.files and self.nwavelengths == 1
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def wavelengths(self):
 
@@ -1059,7 +1111,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_wavelengths: return []
-        else: return self.paths[output_types.wavelengths]
+        else: return self.files[output_types.wavelengths]
 
     # -----------------------------------------------------------------
 
@@ -1076,7 +1128,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ngrid(self):
 
@@ -1085,11 +1136,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.grid])
+        return len(self.files[output_types.grid])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_grid(self):
 
@@ -1098,11 +1148,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.grid in self.paths and self.ngrid > 0
+        return output_types.grid in self.files and self.ngrid > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def grid(self):
 
@@ -1112,11 +1161,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_grid: return []
-        else: return self.paths[output_types.grid]
+        else: return self.files[output_types.grid]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ngdensity(self):
 
@@ -1125,11 +1173,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.gdensity])
+        return len(self.files[output_types.gdensity])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_gdensity(self):
 
@@ -1138,11 +1185,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.gdensity in self.paths and self.ngdensity > 0
+        return output_types.gdensity in self.files and self.ngdensity > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def gdensity(self):
 
@@ -1152,11 +1198,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_gdensity: return []
-        else: return self.paths[output_types.gdensity]
+        else: return self.files[output_types.gdensity]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ntdensity(self):
 
@@ -1165,11 +1210,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.tdensity])
+        return len(self.files[output_types.tdensity])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_tdensity(self):
 
@@ -1178,11 +1222,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.tdensity in self.paths and self.ntdensity > 0
+        return output_types.tdensity in self.files and self.ntdensity > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def tdensity(self):
 
@@ -1192,7 +1235,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_tdensity: return []
-        else: return self.paths[output_types.tdensity]
+        else: return self.files[output_types.tdensity]
 
     # -----------------------------------------------------------------
 
@@ -1204,7 +1247,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.cell_properties])
+        return len(self.files[output_types.cell_properties])
 
     # -----------------------------------------------------------------
 
@@ -1216,7 +1259,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.cell_properties in self.paths and self.ncell_properties > 0
+        return output_types.cell_properties in self.files and self.ncell_properties > 0
 
     # -----------------------------------------------------------------
 
@@ -1228,7 +1271,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.cell_properties in self.paths and self.ncell_properties == 1
+        return output_types.cell_properties in self.files and self.ncell_properties == 1
 
     # -----------------------------------------------------------------
 
@@ -1241,7 +1284,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_cell_properties: return []
-        else: return self.paths[output_types.cell_properties]
+        else: return self.files[output_types.cell_properties]
 
     # -----------------------------------------------------------------
 
@@ -1266,7 +1309,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.stellar_density])
+        return len(self.files[output_types.stellar_density])
 
     # -----------------------------------------------------------------
 
@@ -1278,7 +1321,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.stellar_density in self.paths and self.nstellar_density > 0
+        return output_types.stellar_density in self.files and self.nstellar_density > 0
 
     # -----------------------------------------------------------------
 
@@ -1290,7 +1333,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.stellar_density in self.paths and self.nstellar_density == 1
+        return output_types.stellar_density in self.files and self.nstellar_density == 1
 
     # -----------------------------------------------------------------
 
@@ -1303,7 +1346,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_stellar_density: return []
-        else: return self.paths[output_types.stellar_density]
+        else: return self.files[output_types.stellar_density]
 
     # -----------------------------------------------------------------
 
@@ -1320,7 +1363,6 @@ class SimulationOutput(object):
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def ntree(self):
 
@@ -1329,11 +1371,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.tree])
+        return len(self.files[output_types.tree])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_tree(self):
 
@@ -1342,11 +1383,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.tree in self.paths and self.ntree > 0
+        return output_types.tree in self.files and self.ntree > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def tree(self):
 
@@ -1356,11 +1396,10 @@ class SimulationOutput(object):
         """
 
         if not self.has_tree: return []
-        else: return self.paths[output_types.tree]
+        else: return self.files[output_types.tree]
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def nconvergence(self):
 
@@ -1369,11 +1408,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.convergence])
+        return len(self.files[output_types.convergence])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_convergence(self):
 
@@ -1382,11 +1420,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.convergence in self.paths and self.nconvergence > 0
+        return output_types.convergence in self.files and self.nconvergence > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def convergence(self):
 
@@ -1396,7 +1433,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_convergence: return []
-        else: return self.paths[output_types.convergence]
+        else: return self.files[output_types.convergence]
 
     # -----------------------------------------------------------------
 
@@ -1408,7 +1445,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.dust_mass])
+        return len(self.files[output_types.dust_mass])
 
     # -----------------------------------------------------------------
 
@@ -1420,7 +1457,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.dust_mass in self.paths and self.ndust_mass > 0
+        return output_types.dust_mass in self.files and self.ndust_mass > 0
 
     # -----------------------------------------------------------------
 
@@ -1433,7 +1470,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_dust_mass: return []
-        else: return self.paths[output_types.dust_mass]
+        else: return self.files[output_types.dust_mass]
 
     # -----------------------------------------------------------------
 
@@ -1445,7 +1482,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.dust_mix_properties])
+        return len(self.files[output_types.dust_mix_properties])
 
     # -----------------------------------------------------------------
 
@@ -1457,7 +1494,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.dust_mix_properties in self.paths and self.ndust_mix_properties > 0
+        return output_types.dust_mix_properties in self.files and self.ndust_mix_properties > 0
 
     # -----------------------------------------------------------------
 
@@ -1470,7 +1507,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_dust_mix_properties: return []
-        else: return self.paths[output_types.dust_mix_properties]
+        else: return self.files[output_types.dust_mix_properties]
 
     # -----------------------------------------------------------------
 
@@ -1482,7 +1519,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.dust_optical_properties])
+        return len(self.files[output_types.dust_optical_properties])
 
     # -----------------------------------------------------------------
 
@@ -1494,7 +1531,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.dust_optical_properties in self.paths and self.ndust_optical_properties > 0
+        return output_types.dust_optical_properties in self.files and self.ndust_optical_properties > 0
 
     # -----------------------------------------------------------------
 
@@ -1507,7 +1544,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_dust_optical_properties: return []
-        else: return self.paths[output_types.dust_optical_properties]
+        else: return self.files[output_types.dust_optical_properties]
 
     # -----------------------------------------------------------------
 
@@ -1519,7 +1556,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.dust_grain_sizes])
+        return len(self.files[output_types.dust_grain_sizes])
 
     # -----------------------------------------------------------------
 
@@ -1531,7 +1568,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.dust_grain_sizes in self.paths and self.ndust_grain_sizes > 0
+        return output_types.dust_grain_sizes in self.files and self.ndust_grain_sizes > 0
 
     # -----------------------------------------------------------------
 
@@ -1544,7 +1581,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_dust_grain_sizes: return []
-        else: return self.paths[output_types.dust_grain_sizes]
+        else: return self.files[output_types.dust_grain_sizes]
 
     # -----------------------------------------------------------------
 
@@ -1556,7 +1593,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[output_types.parameters])
+        return len(self.files[output_types.parameters])
 
     # -----------------------------------------------------------------
 
@@ -1568,7 +1605,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.parameters in self.paths and self.nparameters > 0
+        return output_types.parameters in self.files and self.nparameters > 0
 
     # -----------------------------------------------------------------
 
@@ -1580,7 +1617,7 @@ class SimulationOutput(object):
         :return:
         """
 
-        return output_types.parameters in self.paths and self.nparameters == 1
+        return output_types.parameters in self.files and self.nparameters == 1
 
     # -----------------------------------------------------------------
 
@@ -1593,7 +1630,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_parameters: return []
-        else: return self.paths[output_types.parameters]
+        else: return self.files[output_types.parameters]
 
     # -----------------------------------------------------------------
 
@@ -1618,11 +1655,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return len(self.paths[other_name])
+        return len(self.files[other_name])
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def has_other(self):
 
@@ -1631,11 +1667,10 @@ class SimulationOutput(object):
         :return:
         """
 
-        return other_name in self.paths and self.nother > 0
+        return other_name in self.files and self.nother > 0
 
     # -----------------------------------------------------------------
 
-    #@property
     @lazyproperty
     def other(self):
 
@@ -1645,7 +1680,7 @@ class SimulationOutput(object):
         """
 
         if not self.has_other: return []
-        else: return self.paths[other_name]
+        else: return self.files[other_name]
 
     # -----------------------------------------------------------------
 
@@ -2112,5 +2147,181 @@ class SimulationOutput(object):
         """
 
         print(self.to_string(line_prefix=line_prefix))
+
+# -----------------------------------------------------------------
+
+# The various extraction output types
+extraction_output_types = Map()
+extraction_output_types.timeline = "timeline"
+extraction_output_types.memory = "memory"
+
+# -----------------------------------------------------------------
+
+# Description of the extraction output types
+extraction_output_type_choices = dict()
+extraction_output_type_choices[extraction_output_types.timeline] = "simulation phase timeline table"
+extraction_output_type_choices[extraction_output_types.memory] = "simulation phase memory usage table"
+
+# -----------------------------------------------------------------
+
+def get_extraction_output_type(filename):
+
+    """
+    This function ...
+    :param filename:
+    :return:
+    """
+
+    ## Timeline
+    if filename == "timeline.dat": return extraction_output_types.timeline
+
+    ## Memory
+    elif filename == "memory.dat": return extraction_output_types.memory
+
+    # No match
+    else: return None
+
+# -----------------------------------------------------------------
+
+class ExtractionOutput(Output):
+
+    """
+    This class ...
+    """
+
+    @staticmethod
+    def get_type(filename):
+
+        """
+        This function ...
+        :param filename:
+        :return:
+        """
+
+        return get_extraction_output_type(filename)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+# The various plotting output types
+plotting_output_types = Map()
+plotting_output_types.seds = "seds"
+
+# Description of the plotting output types
+plotting_output_type_choices = dict()
+plotting_output_type_choices[plotting_output_types.seds] = "plots of the simulated SEDs"
+
+# -----------------------------------------------------------------
+
+def get_plotting_output_type(filename):
+
+    """
+    This function ...
+    :param filename:
+    :return:
+    """
+
+    # SEDs
+    if "sed" in filename and (filename.endswith("png") or filename.endswith("pdf")): return plotting_output_types.seds
+
+    # No match
+    else: return None
+
+# -----------------------------------------------------------------
+
+class PlottingOutput(Output):
+
+    """
+    This function ...
+    """
+
+    @staticmethod
+    def get_type(filename):
+
+        """
+        This function ...
+        :param filename:
+        :return:
+        """
+
+        return get_plotting_output_type(filename)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+# The various misc output types
+misc_output_types = Map()
+misc_output_types.fluxes = "fluxes"
+misc_output_types.image_fluxes = "image fluxes"
+misc_output_types.images = "images"
+
+# Description of the misc output types
+misc_output_type_choices = dict()
+misc_output_type_choices[misc_output_types.fluxes] = "mock fluxes"
+misc_output_type_choices[misc_output_types.image_fluxes] = "mock fluxes from images"
+misc_output_type_choices[misc_output_types.images] = "mock images"
+
+# -----------------------------------------------------------------
+
+def get_misc_output_type(filename):
+
+    """
+    This function ...
+    :param filename:
+    :return:
+    """
+
+    # No match
+    #else: return None
+
+# -----------------------------------------------------------------
+
+class MiscOutput(Output):
+
+    """
+    This function ...
+    """
+
+    @staticmethod
+    def get_type(filename):
+
+        """
+        This function ...
+        :param filename:
+        :return:
+        """
+
+        return get_misc_output_type(filename)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
 
 # -----------------------------------------------------------------

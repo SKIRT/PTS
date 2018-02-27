@@ -713,7 +713,7 @@ class ObservedSED(FilterCurve):
 
         # Create sed
         sed = cls(wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
-        sed.setup()
+        sed._setup()
 
         # Add points
         nrows = len(table)

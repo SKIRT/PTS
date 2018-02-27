@@ -161,7 +161,7 @@ def show_file_in_directory(path, wait=False):
     if platform.system() != "Darwin": raise NotImplementedError("Not implemented for UNIX")
 
     # Set command
-    command = ["open", "-n", "-a", "Finder", path, "-R"] # -R for revealing file in Finder, instead of opening
+    command = ["open", "-F", "-R", "-a", "Finder", path, "-R"] # -R for revealing file in Finder, instead of opening
 
     # Call the command
     if wait:

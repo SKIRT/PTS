@@ -69,7 +69,7 @@ class ModelingHistory(SmartTable):
         """
 
         # Setup the table
-        self.setup()
+        self._setup()
 
         # Loop over all commands
         for command in single_commands:

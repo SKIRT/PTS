@@ -93,6 +93,9 @@ definition.add_optional("plot_runtimes_phases", "string_list", "simulation phase
 definition.add_flag("plot_memory", "plot memory usage")
 definition.add_optional("plot_memory_phases", "string_list", "simulation phases for which to plot the memory usage", memory_phases, choices=memory_phases)
 
+# Observed SEDs as reference for plotting simulation SEDs
+definition.add_optional("reference_seds", "string_filepath_dictionary", "file paths of SEDs to use as reference for plotting simulated SEDs")
+
 # -----------------------------------------------------------------
 
 # Writing
