@@ -182,15 +182,18 @@ adapt_commands["analysis"] = ("adapt_analysis_options", "simulation_name", "adap
 
 # Define compare commands
 compare_commands = OrderedDict()
-compare_commands["simulation"] = ("compare_simulation_settings", "2simulation_names", "compare simulation settings", "two_simulations")
-compare_commands["analysis"] = ("compare_analysis_options", "2simulation_names", "compare analysis options", "two_simulations")
+compare_commands["simulation"] = ("compare_simulation_settings_command", True, "compare simulation settings", "two_simulations")
+compare_commands["analysis"] = ("compare_analysis_options_command", True, "compare analysis options", "two_simulations")
 
 # -----------------------------------------------------------------
 
 clear_commands = OrderedDict()
-clear_commands["input"] = ("clear_simulation_input_remote/local", "simulation_name", "clear simulation input", "simulation")
-clear_commands["output"] = ("clear_simulation_output_remote/local", "simulation_name", "clear simulation output", "simulation")
-clear_commands["analysis"] = ("clear_simulation_analysis", "simulatio_name", "clear simulation analysis output", "simulation")
+clear_commands["input"] = ("clear_simulation_input_command", True, "clear simulation input", "simulation")
+clear_commands["output"] = ("clear_simulation_output_command", True, "clear simulation output", "simulation")
+clear_commands["analysis"] = ("clear_simulation_analysis_command", True, "clear simulation analysis output", "simulation")
+clear_commands["extraction"] = ("clear_extraction_command", True, "clear simulation extraction output", "simulation")
+clear_commands["plotting"] = ("clear_plotting_command", True, "clear simulation plotting output", "simulation")
+clear_commands["misc"] = ("clear_misc_command", True, "clear simulation misc output", "simulation")
 
 # -----------------------------------------------------------------
 
@@ -2868,7 +2871,9 @@ class SimulationManager(Configurable):
             #for name in directory_paths:
             #    path = directory_paths[name]
             paths = self.get_input(simulation_name).paths
-            for name in paths: fs.show_file_in_directory(paths[name])
+            for name in paths:
+                fs.show_file_in_directory(paths[name])
+                time.wait(1) # wait one second to avoid errors
 
     # -----------------------------------------------------------------
 
@@ -4752,16 +4757,52 @@ class SimulationManager(Configurable):
         """
 
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, show_simulation_definition, name="compare_simulations", index=2)
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
 
-        # Compare simulation
-        if splitted[1] == "simulation": self.compare_simulation_settings(simulation_a_name, simulation_b_name, config)
+        # Run
+        self._run_command(command, compare_commands, splitted[1])
 
-        # Compare analysis
-        elif splitted[1] == "analysis": self.compare_analysis_options(simulation_a_name, simulation_b_name, config)
+    # -----------------------------------------------------------------
 
-        # Invalid
-        else: raise ValueError("Invalid argument")
+    @lazyproperty
+    def compare_simulation_settings_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return show_simulation_definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def compare_simulation_settings_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["index"] = 2
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def compare_simulation_settings_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name="compare simulation", **self.compare_simulation_settings_kwargs)
+
+        # Compare
+        self.compare_simulation_settings(simulation_a_name, simulation_b_name, config=config)
 
     # -----------------------------------------------------------------
 
@@ -4784,6 +4825,49 @@ class SimulationManager(Configurable):
 
         # Compare
         compare_simulations(simulation_a, simulation_b, config=config)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def compare_analysis_options_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return show_analysis_definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def compare_analysis_options_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["index"] = 2
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def compare_analysis_options_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name="compare simulation", **self.compare_analysis_options_kwargs)
+
+        # Compare
+        self.compare_analysis_options(simulation_a_name, simulation_b_name, config=config)
 
     # -----------------------------------------------------------------
 
@@ -4806,6 +4890,7 @@ class SimulationManager(Configurable):
 
         # Compare
         compare_analysis(simulation_a, simulation_b, config=config)
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -4875,6 +4960,20 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def move_simulations_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
     def move_simulations_command(self, command):
 
         """
@@ -4884,7 +4983,7 @@ class SimulationManager(Configurable):
         """
 
         # Get the simulation names
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, name="move_simulations", required_to_optional=False)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, name="move_simulations", **self.move_simulations_kwargs)
 
         # Loop over the simulation names
         for simulation_name in simulation_names:
@@ -5062,8 +5161,95 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def clear_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+        # Run
+        self._run_command(command, clear_commands, splitted[1])
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
-    def clear_simulations_definition(self):
+    def clear_simulation_input_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_flag("remote", "clear on the remote host", False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_input_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse command
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_input_definition, name="clear input", index=2)
+
+        # Execute the command
+        if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
+        if config.remote: self.clear_simulation_input_remote(simulation_name)
+        else: self.clear_simulation_input_local(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def clear_simulation_output_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_flag("remote", "clear on the remote host", False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def clear_simulation_output_command(self, command):
+
+        """
+        This function ...
+        :param self:
+        :param command:
+        :return:
+        """
+
+        # Parse command
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_output_definition, name="clear output", index=2)
+
+        # Execute the command
+        if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
+        if config.remote: self.clear_simulation_output_remote(simulation_name)
+        else: self.clear_simulation_output_local(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def clear_simulation_analysis_definition(self):
 
         """
         This function ...
@@ -5073,14 +5259,13 @@ class SimulationManager(Configurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("analysis_steps", "string_list", "analysis steps for which to clear the output", choices=clear_analysis_steps)
-        definition.add_flag("remote", "clear on the remote host", False)
 
         # Return the definition
         return definition
 
     # -----------------------------------------------------------------
 
-    def clear_simulation_command(self, command):
+    def clear_simulation_analysis_command(self, command):
 
         """
         This function ...
@@ -5089,30 +5274,10 @@ class SimulationManager(Configurable):
         """
 
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulations_definition, name="clear_simulation", index=2)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_analysis_definition, name="clear analysis")
 
-        # Input
-        if splitted[1] == "input":
-
-            if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
-            if config.remote: self.clear_simulation_input_remote(simulation_name)
-            else: self.clear_simulation_input_local(simulation_name)
-
-        # Output
-        elif splitted[1] == "output":
-
-            if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
-            if config.remote: self.clear_simulation_output_remote(simulation_name)
-            else: self.clear_simulation_output_local(simulation_name)
-
-        # Analysis
-        elif splitted[1] == "analysis":
-
-            if config.remote: raise ValueError("Cannot enable 'remote' when clearing analysis")
-            self.clear_simulation_analysis(simulation_name, steps=config.analysis_steps)
-
-        # Invalid
-        else: raise ValueError("Invalid command")
+        # Execute
+        self.clear_simulation_analysis(simulation_name, steps=config.analysis_steps)
 
     # -----------------------------------------------------------------
 
@@ -5436,6 +5601,22 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def clear_extraction_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="clear extraction")
+
+        # Clear
+        self.clear_extraction(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def clear_extraction(self, simulation_name):
 
         """
@@ -5455,6 +5636,22 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def clear_plotting_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="clear plotting")
+
+        # Clear
+        self.clear_plotting(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def clear_plotting(self, simulation_name):
 
         """
@@ -5471,6 +5668,22 @@ class SimulationManager(Configurable):
 
         # Clear
         if simulation.has_plotting_output: fs.clear_directory(simulation.analysis.plotting.path)
+
+    # -----------------------------------------------------------------
+
+    def clear_misc_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name="clear misc")
+
+        # Clear
+        self.clear_misc(simulation_name)
 
     # -----------------------------------------------------------------
 
