@@ -231,7 +231,7 @@ class AnalysisOptions(Options):
         self.plotting.add_property("memory", "boolean", "plot the memory consumption as a function of time", False)
         self.plotting.add_property("seds", "boolean", "make plots of the simulated SEDs", False)
         self.plotting.add_property("grids", "boolean", "make plots of the dust grid", False)
-        self.plotting.add_property("reference_seds", "filepath_list", "path to a reference SED file against which the simulated SKIRT SEDs should be plotted", None)
+        self.plotting.add_property("reference_seds", "filepath_list", "paths to reference SED files against which the simulated SKIRT SEDs should be plotted", None)
         self.plotting.add_property("ignore_filters", "filter_list", "filters to ignore for the plotting", [])
         self.plotting.add_property("library", "string", "plotting library", default_value=mpl, choices=plotting_libraries)
 

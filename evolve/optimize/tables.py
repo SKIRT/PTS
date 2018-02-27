@@ -70,7 +70,7 @@ class CrossoverTable(SmartTable):
         table = cls()
 
         # Setup
-        table.setup()
+        table._setup()
 
         # Loop over the entries
         for entry in data:
@@ -407,7 +407,7 @@ class ElitismTable(SmartTable):
         table = cls()
 
         # Setup
-        table.setup()
+        table._setup()
 
         # Add the rows
         length = len(data["Generation"])
@@ -608,7 +608,7 @@ class ScoresTable(SmartTable):
 
         # Create table
         table = cls(**kwargs)
-        table.setup()
+        table._setup()
 
         # Loop over the keys
         for key in data: table.add_entry(key, data[key])

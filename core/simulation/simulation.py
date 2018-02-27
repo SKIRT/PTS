@@ -30,7 +30,7 @@ from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
 from .status import LogSimulationStatus
 from .input import SimulationInput
-from .output import SimulationOutput
+from .output import SimulationOutput, ExtractionOutput, PlottingOutput, MiscOutput
 from ..tools import types
 from ..tools.stringify import tostr
 
@@ -416,8 +416,37 @@ class SkirtSimulation(object):
     # -----------------------------------------------------------------
 
     @property
+    def extraction_path(self):
+        return self.analysis.extraction.path
+
+    @property
+    def plotting_path(self):
+        return self.analysis.plotting.path
+
+    @property
+    def misc_path(self):
+        return self.analysis.misc.path
+
+    # -----------------------------------------------------------------
+
+    @property
     def output(self):
         return SimulationOutput.from_directory(self.outpath(), prefix=self.prefix())
+
+    @property
+    def extraction_output(self):
+        if self.has_extraction_output is not None: return ExtractionOutput.from_directory(self.extraction_path)
+        else: return None
+
+    @property
+    def plotting_output(self):
+        if self.has_plotting_output is not None: return PlottingOutput.from_directory(self.plotting_path)
+        else: return None
+
+    @property
+    def misc_output(self):
+        if self.has_misc_output is not None: return MiscOutput.from_directory(self.misc_path)
+        else: return None
 
     # -----------------------------------------------------------------
 
@@ -807,15 +836,15 @@ class SkirtSimulation(object):
 
     @property
     def has_extraction_output(self):
-        return self.analysis.extraction.path is not None and fs.is_directory(self.analysis.extraction.path) and not fs.is_empty(self.analysis.extraction.path)
+        return self.extraction_path is not None and fs.is_directory(self.extraction_path) and not fs.is_empty(self.extraction_path)
 
     @property
     def has_plotting_output(self):
-        return self.analysis.plotting.path is not None and fs.is_directory(self.analysis.plotting.path) and not fs.is_empty(self.analysis.plotting.path)
+        return self.plotting_path is not None and fs.is_directory(self.plotting_path) and not fs.is_empty(self.plotting_path)
 
     @property
     def has_misc_output(self):
-        return self.analysis.misc.path is not None and fs.is_directory(self.analysis.misc.path) and not fs.is_empty(self.analysis.misc.path)
+        return self.misc_path is not None and fs.is_directory(self.misc_path) and not fs.is_empty(self.misc_path)
 
     ## This function adds an analyser class to the simulation
     def add_analyser(self, clspath):

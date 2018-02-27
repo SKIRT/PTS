@@ -202,7 +202,7 @@ def merge_tables(*tables, **kwargs):
                     new_column_names[rel_difference_column_name] = tableids
 
     # All columns are added
-    merged.setup()
+    merged._setup()
     column_names = merged.column_names
 
     # Loop over all reference values
@@ -423,7 +423,7 @@ class SmartTable(Table):
         if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = string_column_none_default
 
         # Setup the table
-        table.setup()
+        table._setup()
 
         # Add the rows, using the Table add_row implementation directly
         # because the add_row function may be prohibited in the actual class (because of lazy features)
@@ -482,7 +482,7 @@ class SmartTable(Table):
         # Add the column info
         table.add_column_info(key_label, str, None, key_description)
         table.add_column_info(value_label, str, None, value_description)
-        table.setup()
+        table._setup()
 
         for label in dictionary:
 
@@ -617,7 +617,7 @@ class SmartTable(Table):
         # Add the column info
         table.add_column_info(key_label, str, None, key_description)
         table.add_column_info(value_label, str, None, value_description)
-        table.setup()
+        table._setup()
 
         #print(table.column_info)
 
@@ -1022,7 +1022,7 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def _setup(self):
 
         """
         This function ...
@@ -1074,7 +1074,7 @@ class SmartTable(Table):
         """
 
         # Run the setup if not yet performed
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         # Call the implementation of the base class
         return super(SmartTable, self).__getitem__(item)
@@ -1646,7 +1646,7 @@ class SmartTable(Table):
         """
 
         # Setup if necessary
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         #print(len(self.colnames))
         #print(len(values))
@@ -1834,7 +1834,7 @@ class SmartTable(Table):
         from ..tools.stringify import tostr
 
         # Setup if necessary
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         # If the file already exists, remove
         if fs.is_file(path): fs.remove_file(path)

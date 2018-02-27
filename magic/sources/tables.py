@@ -117,7 +117,7 @@ class GalaxyTable(SmartTable):
         """
 
         # Setup if necessary
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         values = []
 
@@ -204,7 +204,7 @@ class StarTable(SmartTable):
         :return:
         """
 
-        if len(self.colnames) == 0: self.setup()
+        if len(self.colnames) == 0: self._setup()
 
         values = []
 

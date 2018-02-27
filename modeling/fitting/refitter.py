@@ -338,7 +338,7 @@ class Refitter(FittingComponent):
 
         # Initialize best parameters table
         self.best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
-        self.best_parameters_table.setup()
+        self.best_parameters_table._setup()
 
         # As run: create run directory
         if self.as_run: self.create_fitting_run()

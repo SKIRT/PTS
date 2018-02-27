@@ -191,7 +191,7 @@ class PhotoMeter(PhotometryComponent):
         if self.has_differences: self.differences_table = FluxDifferencesTable.from_file(self.differences_path)
         else:
             self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
-            self.differences_table.setup()
+            self.differences_table._setup()
 
         # Setup the remote PTS launcher
         if self.config.remote is not None:
