@@ -41,7 +41,7 @@ from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict
 from ..tools import sequences
 from ..basics.log import no_debugging
-from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status
+from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status, retrieved_name, analysed_name
 from ..basics.configuration import prompt_string, prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
@@ -131,6 +131,7 @@ _show_command_name = "show"
 _plot_command_name = "plot"
 _move_command_name = "move"
 _stop_command_name = "stop"
+_cancel_command_name = "cancel"
 _remove_command_name = "remove"
 _clear_command_name = "clear"
 _unretrieve_command_name = "unretrieve"
@@ -158,7 +159,7 @@ _simulation_command_name = "simulation"
 commands = OrderedDict()
 commands[_help_command_name] = ("show_help", False, "show help", None)
 commands[_history_command_name] = ("show_history", False, "show history of executed commands", None)
-commands[_status_command_name] = ("show_status", False, "show simulation status", None)
+commands[_status_command_name] = ("show_status_command", True, "show simulation status", None)
 commands[_hosts_command_name] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
 commands[_parallelizations_command_name] = ("show_parallelizations_command", True, "show parallelization schemes used per host", "host")
 commands[_info_command_name] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
@@ -178,7 +179,8 @@ commands[_show_command_name] = (None, None, "show", None)
 commands[_plot_command_name] = (None, None, "plot", None)
 commands[_move_command_name] = ("move_simulations_command", True, "move simulations from one remote to another", "simulations")
 commands[_stop_command_name] = ("stop_simulations_command", True, "stop simulations", "simulation")
-commands[_remove_command_name] = ("remove_simulation_command", True, "remove simulation", "simulation")
+commands[_cancel_command_name] = ("cancel_simulations_command", True, "cancel simulations", "simulations")
+commands[_remove_command_name] = ("remove_simulation_command", True, "remove simulation", "simulations")
 commands[_clear_command_name] = (None, None, "clear simulation output/input/analysis", "simulation")
 commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "unretrieve simulation", "simulation")
 commands[_unanalyse_command_name] = ("unanalyse_simulation_command", True, "unanalyse simulation", "simulation")
@@ -431,6 +433,38 @@ class RelaunchedSimulationsTable(SmartTable):
 
         index = self.index_for_simulation(simulation_name)
         self.set_value("New ID", index, new_id)
+
+# -----------------------------------------------------------------
+
+_screen_extra_name = "screen"
+_job_extra_name = "job"
+_disk_extra_name = "disk"
+_runtime_extra_name = "runtime"
+_memory_extra_name = "memory"
+
+# -----------------------------------------------------------------
+
+# Define extra columns
+extra_columns = OrderedDict()
+extra_columns[_screen_extra_name] = "screen session name"
+extra_columns[_job_extra_name] = "job ID"
+extra_columns[_disk_extra_name] = "simulation output disk size"
+extra_columns[_runtime_extra_name] = "total simulation runtime"
+extra_columns[_memory_extra_name] = "peak simulation memory usage"
+
+# Define extra column names
+extra_column_names = dict()
+extra_column_names[_screen_extra_name] = "Screen name"
+extra_column_names[_job_extra_name] = "Job ID"
+extra_column_names[_disk_extra_name] = "Disk size"
+extra_column_names[_runtime_extra_name] = "Runtime"
+extra_column_names[_memory_extra_name] = "Peak memory"
+
+# Define extra column units
+extra_column_units = dict()
+extra_column_units[_disk_extra_name] = "GB"
+extra_column_units[_runtime_extra_name] = "h"
+extra_column_units[_memory_extra_name] = "GB"
 
 # -----------------------------------------------------------------
 
@@ -1364,6 +1398,109 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).handle
+
+    # -----------------------------------------------------------------
+
+    def is_screen_execution(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_execution_handle(simulation_name).is_screen
+
+    # -----------------------------------------------------------------
+
+    def is_job_execution(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_execution_handle(simulation_name).is_job
+
+    # -----------------------------------------------------------------
+
+    def get_screen_name(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Not screen
+        if not self.is_screen_execution(simulation_name): return None
+
+        # Return the screen name
+        return self.get_execution_handle(simulation_name).value
+
+    # -----------------------------------------------------------------
+
+    def get_remote_screen_output_path(self, simulation_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Not screen
+        if not self.is_screen_execution(simulation_name): return None
+
+        # Return the output path
+        return self.get_execution_handle(simulation_name).remote_screen_output_path
+
+    # -----------------------------------------------------------------
+
+    def get_remote_screen_script_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Not screen
+        if not self.is_screen_execution(simulation_name): return None
+
+        # Return the output path
+        return self.get_execution_handle(simulation_name).remote_screen_script_path
+
+    # -----------------------------------------------------------------
+
+    def get_job_id(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Not job
+        if not self.is_job_execution(simulation_name): return None
+
+        # Return the job ID
+        return self.get_execution_handle(simulation_name).value
+
+    # -----------------------------------------------------------------
+
+    def get_remote_job_script_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Not job
+        if not self.is_job_execution(simulation_name): return None
+
+        # Return the script path
+        return self.get_execution_handle(simulation_name).remote_job_script_path
 
     # -----------------------------------------------------------------
 
@@ -2594,7 +2731,7 @@ class SimulationManager(Configurable):
 
         # Get properties
         function_name, pass_command, description, subject = cmds[key]
-        if subject is None: return None # no usage for this command (simple command that doesn't need input)
+        #if subject is None: return None # no usage for this command (simple command that doesn't need input)
 
         # Get the definition
         definition = self.get_definition_for_function_name(function_name)
@@ -2607,7 +2744,8 @@ class SimulationManager(Configurable):
         else: name = main_command + " " + key
 
         # Get usage lines
-        if subject == _simulation_subject_name: usage = self.get_usage_simulation_command(definition, name=name, **kwargs)
+        if subject is None: usage = self.get_usage_command(definition, name=name)
+        elif subject == _simulation_subject_name: usage = self.get_usage_simulation_command(definition, name=name, **kwargs)
         elif subject == _simulations_subject_name: usage = self.get_usage_simulations_command(definition, name=name, **kwargs)
         elif subject == _two_simulations_subject_name: usage = self.get_usage_two_simulations_command(definition, name=name, **kwargs)
         elif subject == _host_subject_name: usage = self.get_usage_host_command(definition, name=name, **kwargs)
@@ -2645,7 +2783,8 @@ class SimulationManager(Configurable):
         else: name = main_command + " " + key
 
         # Get help lines
-        if subject == _simulation_subject_name: help = self.get_help_simulation_command(definition, name=name, **kwargs)
+        if subject is None: help = self.get_help_command(definition, name=name)
+        elif subject == _simulation_subject_name: help = self.get_help_simulation_command(definition, name=name, **kwargs)
         elif subject == _simulations_subject_name: help = self.get_help_simulations_command(definition, name=name, **kwargs)
         elif subject == _two_simulations_subject_name: help = self.get_help_two_simulations_command(definition, name=name, **kwargs)
         elif subject == _host_subject_name: help = self.get_help_host_command(definition, name=name, **kwargs)
@@ -2682,7 +2821,7 @@ class SimulationManager(Configurable):
             if function_name is None and not self.has_subcommands(key): raise RuntimeError("Something went wrong")
 
             # Show usage
-            if pass_command and subject is not None:
+            if pass_command:
 
                 # Get usage
                 usage = self.get_usage_for_key(key, commands)
@@ -2690,23 +2829,44 @@ class SimulationManager(Configurable):
                 # Show
                 for line in usage: print("    " + fmt.blue + line + fmt.reset)
 
-            # Show
-            if key == _show_command_name: self.show_help_show()
+            # Command with subcommands
+            elif self.has_subcommands(key):
 
-            # Plot
-            elif key == _plot_command_name: self.show_help_plot()
+                # Set subcommands with descriptions
+                subcommands = self.get_subcommands(key)
+                subcommands_descriptions = OrderedDict()
+                for subkey in subcommands:
+                    function_name, pass_command, description, subject = subcommands[subkey]
+                    subcommands_descriptions[subkey] = description
 
-            # Open
-            elif key == _open_command_name: self.show_help_open()
+                # Create definition for the subcommands
+                definition = ConfigurationDefinition(write_config=False)
+                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                usage = get_usage(key, definition, add_logging=False, add_cwd=False)
 
-            # Adapt
-            elif key == _adapt_command_name: self.show_help_adapt()
+                # Show usage
+                for line in usage: print("    " + fmt.blue + line + fmt.reset)
 
-            # Compare
-            elif key == _compare_command_name: self.show_help_compare()
+                # Show
+                if key == _show_command_name: self.show_help_show()
 
-            # Clear
-            elif key == _clear_command_name: self.show_help_clear()
+                # Plot
+                elif key == _plot_command_name: self.show_help_plot()
+
+                # Open
+                elif key == _open_command_name: self.show_help_open()
+
+                # Adapt
+                elif key == _adapt_command_name: self.show_help_adapt()
+
+                # Compare
+                elif key == _compare_command_name: self.show_help_compare()
+
+                # Clear
+                elif key == _clear_command_name: self.show_help_clear()
+
+            # No input needed
+            else: print("    " + fmt.blue + "no input" + fmt.reset)
 
         print("")
 
@@ -2729,13 +2889,17 @@ class SimulationManager(Configurable):
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            if not pass_command or subject is None: continue
+            #if not pass_command or subject is None: continue
+            if pass_command:
 
-            # Get usage
-            usage = self.get_usage_for_key(key, show_commands, main_command=_show_command_name)
+                # Get usage
+                usage = self.get_usage_for_key(key, show_commands, main_command=_show_command_name)
 
-            # Show
-            for line in usage: print("      " + fmt.blue + line + fmt.reset)
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2756,13 +2920,17 @@ class SimulationManager(Configurable):
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            if not pass_command or subject is None: continue
+            #if not pass_command or subject is None: continue
+            if pass_command:
 
-            # Get usage
-            usage = self.get_usage_for_key(key, plot_commands, main_command=_plot_command_name)
+                # Get usage
+                usage = self.get_usage_for_key(key, plot_commands, main_command=_plot_command_name)
 
-            # Show
-            for line in usage: print("      " + fmt.blue + line + fmt.reset)
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2783,14 +2951,18 @@ class SimulationManager(Configurable):
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            if not pass_command or subject is None: continue
+            #if not pass_command or subject is None: continue
+            if pass_command:
 
-            # Get usage
-            usage = self.get_usage_for_key(key, open_commands, main_command=_open_command_name)
+                # Get usage
+                usage = self.get_usage_for_key(key, open_commands, main_command=_open_command_name)
+    
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
-            # Show
-            for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
+    
     # -----------------------------------------------------------------
 
     def show_help_adapt(self):
@@ -2810,13 +2982,17 @@ class SimulationManager(Configurable):
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            if not pass_command or subject is None: continue
+            #if not pass_command or subject is None: continue
+            if pass_command:
 
-            # Get usage
-            usage = self.get_usage_for_key(key, adapt_commands, main_command=_adapt_command_name)
+                # Get usage
+                usage = self.get_usage_for_key(key, adapt_commands, main_command=_adapt_command_name)
 
-            # Show
-            for line in usage: print("      " + fmt.blue + line + fmt.reset)
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2837,13 +3013,17 @@ class SimulationManager(Configurable):
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            if not pass_command or subject is None: continue
+            #if not pass_command or subject is None: continue
+            if pass_command:
 
-            # Get usage
-            usage = self.get_usage_for_key(key, compare_commands, main_command=_compare_command_name)
+                # Get usage
+                usage = self.get_usage_for_key(key, compare_commands, main_command=_compare_command_name)
 
-            # Show
-            for line in usage: print("      " + fmt.blue + line + fmt.reset)
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2864,13 +3044,17 @@ class SimulationManager(Configurable):
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            if not pass_command or subject is None: continue
+            #if not pass_command or subject is None: continue
+            if pass_command:
 
-            # Get usage
-            usage = self.get_usage_for_key(key, clear_commands, main_command=_clear_command_name)
+                # Get usage
+                usage = self.get_usage_for_key(key, clear_commands, main_command=_clear_command_name)
 
-            # Show
-            for line in usage: print("      " + fmt.blue + line + fmt.reset)
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -4222,6 +4406,61 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_config_from_command(self, command, definition, name=None, index=1):
+
+        """
+        This function ...
+        :param command:
+        :param definition:
+        :param name:
+        :param index:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        parse_command = splitted[index:]
+
+        # Parse arguments
+        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
+                                 initialize=False, add_logging=False, add_cwd=False)
+
+        # Return the configuration
+        return config
+
+    # -----------------------------------------------------------------
+
+    def get_usage_command(self, definition, name):
+
+        """
+        This function ...
+        :param definition:
+        :param name:
+        :return:
+        """
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_command(self, definition, name):
+
+        """
+        This function ...
+        :param definition:
+        :param name:
+        :return:
+        """
+
+        # Return the usage
+        return get_help(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
     def get_host_command_definition(self, command_definition=None, required=True, choices=None, required_to_optional=True):
 
         """
@@ -5025,23 +5264,19 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Show error output of simulation '" + simulation_name + "'...")
 
-        # Get the simulation execution handle
-        handle = self.get_execution_handle(simulation_name)
+        # Executed in screen
+        if self.is_screen_execution(simulation_name):
 
-        # Screen
-        if handle.is_screen:
+            name = self.get_screen_name(simulation_name)
+            remote_output_path = self.get_remote_screen_output_path(simulation_name)
+            remote_script_path = self.get_remote_screen_script_path(simulation_name)
+            print("screen", name, remote_output_path, remote_script_path)
 
-            name = handle.value
-            remote_output_path = handle.remote_screen_output_path
-            remote_screen_path = handle.remote_screen_script_path
+        # Executed in job
+        elif self.is_job_execution(simulation_name):
 
-            print("screen", name, remote_output_path, remote_screen_path)
-
-        # Job
-        elif handle.is_job:
-
-            job_id = handle.value
-            remote_script_path = handle.remote_job_script_path
+            job_id = self.get_job_id(simulation_name)
+            remote_script_path = self.get_remote_job_script_path(simulation_name)
             print("job", job_id, remote_script_path)
 
         # Not supported
@@ -5522,6 +5757,70 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def cancel_simulations_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation names
+        simulation_names = self.get_simulation_names_from_command(command)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names:
+
+            # Check whether queued
+            if not self.is_queued(simulation_name): raise ValueError("The simulation '" + simulation_name + "' is not queued")
+
+            # Cancel the simulation
+            self.cancel_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cancel_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Cancelling simulation '" + simulation_name + "' ...")
+
+        # Screen
+        if self.is_screen_execution(simulation_name): self.cancel_simulation_screen(simulation_name)
+
+        # Job
+        elif self.is_job_execution(simulation_name): self.cancel_simulation_job(simulation_name)
+
+        # Not supported
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    def cancel_simulation_screen(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def cancel_simulation_job(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def stop_simulations_command(self, command):
 
         """
@@ -5531,13 +5830,13 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_names = self.get_simulation_name_from_command(command)
+        simulation_names = self.get_simulation_names_from_command(command)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
 
-            # Check whether queued or running
-            if not self.is_queued_or_running(simulation_name): raise ValueError("The simulation '" + simulation_name + "' is not queued or running")
+            # Check whether running
+            if not self.is_running(simulation_name): raise ValueError("The simulation '" + simulation_name + "' is not running")
 
             # Stop the simulation
             self.stop_simulation(simulation_name)
@@ -5555,8 +5854,37 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Stopping simulation '" + simulation_name + "' ...")
 
-        # Not implemented yet
-        raise NotImplementedError("Not yet implemented")
+        # Screen
+        if self.is_screen_execution(simulation_name): self.stop_simulation_screen(simulation_name)
+
+        # Job
+        elif self.is_job_execution(simulation_name): self.stop_simulation_job(simulation_name)
+
+        # Not supported
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    def stop_simulation_screen(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Give warning
+        log.warning("Stopping a running simulation within a screen session is not supported")
+
+    # -----------------------------------------------------------------
+
+    def stop_simulation_job(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -6297,7 +6625,7 @@ class SimulationManager(Configurable):
         for host_id in self.launcher.queue_host_ids: remotes.append(self.get_remote(host_id))
 
         # Run the launcher
-        self.launcher.run(remotes=remotes)
+        self.launcher.run(remotes=remotes, timing=self.timing, memory=self.memory)
 
         # Set moved IDs
         for simulation in self.moved_simulations:
@@ -8142,10 +8470,44 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_status(self):
+    @lazyproperty
+    def show_status_definition(self):
 
         """
         This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_positional_optional("extra_columns", "string_list", "extra columns to show", choices=extra_columns)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_status_command(self, command):
+        
+        """
+        This function ...
+        :param command: 
+        :return: 
+        """
+
+        # Get the config
+        config = self.get_config_from_command(command, self.show_status_definition)
+
+        # Show
+        self.show_status(extra=config.extra_columns)
+        
+    # -----------------------------------------------------------------
+
+    def show_status(self, extra=None):
+
+        """
+        This function ...
+        :param extra:
         :return:
         """
 
@@ -8163,9 +8525,19 @@ class SimulationManager(Configurable):
         # Print in columns
         with fmt.print_in_columns() as print_row:
 
+            # Set the column names and units
+            column_names = []
+            column_units = []
+            for name in self.status_column_names: column_names.append(name)
+            for unit in self.status_column_units: column_units.append(unit)
+            if extra is not None:
+               for col in extra:
+                   column_names.append(extra_column_names[col])
+                   column_units.append(extra_column_units[col] if col in extra_column_units else None)
+
             # Show the header
-            print_row(*self.status_column_names)
-            if self.has_info: print_row(*self.status_column_units)
+            print_row(*column_names)
+            if self.has_info: print_row(*column_units)
 
             # Loop over the simulations
             for index, simulation_name in enumerate(self.simulation_names):
@@ -8180,9 +8552,9 @@ class SimulationManager(Configurable):
                 index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
 
                 # Set color
-                if status == "analysed": color = "green"
-                elif status == "retrieved": color = "yellow"
-                elif status == "finished": color = "yellow"
+                if status == analysed_name: color = "green"
+                elif status == retrieved_name: color = "yellow"
+                elif status == finished_name: color = "yellow"
                 elif is_running_status(status): color = None
                 else: color = "red"
 
@@ -8214,6 +8586,19 @@ class SimulationManager(Configurable):
 
                 # Add the simulation status
                 parts.append(status)
+
+                # Add extra columns
+                if extra is not None:
+                    for col in extra:
+                        if col == _screen_extra_name: value = self.get_screen_name(simulation_name)
+                        elif col == _job_extra_name: value = self.get_job_id(simulation_name)
+                        elif col == _disk_extra_name: value = self.get_disk_size(simulation_name)
+                        elif col == _runtime_extra_name: value = self.get_runtime(simulation_name)
+                        elif col == _memory_extra_name: value = self.get_peak_memory(simulation_name).to
+                        else: raise ValueError("Invalid extra column name: '" + col + "'")
+                        if col in extra_column_units: value = value.to(extra_column_units[col]).value
+                        string = tostr(value)
+                        parts.append(string)
 
                 # Print the row
                 print_row(*parts, color=color)

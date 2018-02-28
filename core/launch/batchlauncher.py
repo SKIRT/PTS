@@ -1346,6 +1346,10 @@ class BatchLauncher(Configurable):
         # Remote input paths
         self.remote_input_paths_hosts = dict()
 
+        # The timing and memory table
+        self.timing_table = None
+        self.memory_table = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -2378,18 +2382,6 @@ class BatchLauncher(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def timing_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return TimingTable.from_file(self.config.timing_table_path) if self.config.timing_table_path is not None else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def runtime_estimator(self):
 
         """
@@ -2412,19 +2404,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return self.config.timing_table_path is not None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def memory_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return MemoryTable.from_file(self.config.memory_table_path) if self.config.memory_table_path is not None else None
+        return self.timing_table is not None
 
     # -----------------------------------------------------------------
 
@@ -2436,7 +2416,7 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return self.config.memory_table_path is not None
+        return self.memory_table is not None
 
     # -----------------------------------------------------------------
 
@@ -2693,6 +2673,38 @@ class BatchLauncher(Configurable):
 
         # Initialize the simulation assignment table
         self.assignment = SimulationAssignmentTable()
+
+        # Get timing table
+        self.get_timing_table(**kwargs)
+
+        # Get memory table
+        self.get_memory_table(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def get_timing_table(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        if "timing" in kwargs: self.timing_table = kwargs.pop("timing")
+        elif self.config.timing_table_path is not None: self.timing_table = TimingTable.from_file(self.config.timing_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_memory_table(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        if "memory" in kwargs: self.memory_table = kwargs.pop("memory")
+        elif self.config.memory_table_path is not None: self.memory_table = MemoryTable.from_file(self.config.memory_table_path)
 
     # -----------------------------------------------------------------
 
@@ -5598,10 +5610,13 @@ class BatchLauncher(Configurable):
         else: analysis_options.misc.path = None
 
         # Set timing and memory table paths (if specified for this batch launcher)
-        if self.config.timing_table_path is not None and add_timing:
+        if self.has_timing_table and add_timing:
+
+            # Check path
+            if self.timing_table.path is None: raise ValueError("Path of the timing table is undefined")
 
             # Set the table path
-            analysis_options.timing_table_path = self.config.timing_table_path
+            analysis_options.timing_table_path = self.timing_table.path
 
             # Check whether the extract timing option has been enabled
             if not analysis_options.extraction.timeline:
@@ -5609,10 +5624,13 @@ class BatchLauncher(Configurable):
                 analysis_options.extraction.timeline = True
 
         # Set memory table path
-        if self.config.memory_table_path is not None and add_memory:
+        if self.has_memory_table and add_memory:
+
+            # Check path
+            if self.memory_table.path is None: raise ValueError("Path of the memory table is undefined")
 
             # Set
-            analysis_options.memory_table_path = self.config.memory_table_path
+            analysis_options.memory_table_path = self.memory_table.path
 
             # Check whether the extract memory option has been enabled
             if not analysis_options.extraction.memory:
