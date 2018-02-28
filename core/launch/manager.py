@@ -49,6 +49,7 @@ from ..simulation.adapter import adapt_simulation, adapt_analysis
 from ..config.show_simulation_settings import definition as show_simulation_definition
 from ..config.adapt_simulation_settings import definition as adapt_simulations_definition
 from ..config.show_analysis_options import definition as show_analysis_definition
+from ..config.adapt_analysis_options import definition as adapt_analysis_definition
 from .batchlauncher import BatchLauncher
 from ..basics.table import SmartTable
 from ..tools import tables
@@ -68,6 +69,9 @@ from ..misc.images import get_datacube_instrument_name
 from ..simulation.status import show_log_summary
 from ..tools import introspection
 from ..data.sed import ObservedSED
+from ..plot.timeline import plot_timeline
+from ..extract.timeline import TimeLineTable
+from ..extract.memory import MemoryUsageTable
 
 # -----------------------------------------------------------------
 
@@ -105,95 +109,151 @@ clear_analysis_steps = ["extraction", "plotting", "misc"]
 
 # -----------------------------------------------------------------
 
+_help_command_name = "help"
+_history_command_name = "history"
+_status_command_name = "status"
+_hosts_command_name = "hosts"
+_parallelizations_command_name = "parallelizations"
+_info_command_name = "info"
+_open_command_name = "open"
+_sed_command_name = "sed"
+_datacube_command_name = "datacube"
+_input_command_name = "input"
+_output_command_name = "output"
+_extraction_command_name = "extraction"
+_plotting_command_name = "plotting"
+_misc_command_name = "misc"
+_instruments_command_name = "instruments"
+_stellar_command_name = "stellar"
+_dust_command_name = "dust"
+_normalizations_command_name = "normalizations"
+_show_command_name = "show"
+_plot_command_name = "plot"
+_move_command_name = "move"
+_stop_command_name = "stop"
+_remove_command_name = "remove"
+_clear_command_name = "clear"
+_unretrieve_command_name = "unretrieve"
+_unanalyse_command_name = "unanalyse"
+_relaunch_command_name = "relaunch"
+_log_command_name = "log"
+_error_command_name = "error"
+_settings_command_name = "settings"
+_analysis_command_name = "analysis"
+_adapt_command_name = "adapt"
+_compare_command_name = "compare"
+_retrieve_command_name = "retrieve"
+_analyse_command_name = "analyse"
+_reanalyse_command_name = "reanalyse"
+_assignment_command_name = "assignment"
+_runtimes_command_name = "runtimes"
+_memory_command_name = "memory"
+_timeline_command_name = "timeline"
+_base_command_name = "base"
+_simulation_command_name = "simulation"
+
+# -----------------------------------------------------------------
+
 # Define commands
 commands = OrderedDict()
-commands["help"] = ("show_help", False, "show help", None)
-commands["history"] = ("show_history", False, "show history of executed commands", None)
-commands["status"] = ("show_status", False, "show simulation status", None)
-commands["hosts"] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
-commands["parallelizations"] = ("show_parallelizations_command", True, "show parallelization schemes used per host", "host")
-commands["info"] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
-commands["open"] = ("open_command", True, "open input, output or base simulation directory", "simulation")
-commands["sed"] = ("plot_seds_command", True, "plot SED(s) of a simulation", "simulation")
-commands["datacube"] = ("show_datacubes_command", True, "plot datacube(s) of a simulation", "simulation")
-commands["input"] = ("show_input_command", True, "show simulation input", "simulation")
-commands["output"] = ("show_output_command", True, "show simuation output", "simulation")
-commands["extraction"] = ("show_extraction_command", True, "show simulation extraction output", "simulation")
-commands["plotting"] = ("show_plotting_command", True, "show simulation plotting output", "simulation")
-commands["misc"] = ("show_misc_command", True, "show simulation misc output", "simulation")
-commands["instruments"] = ("show_instruments_command", True, "show simulation instruments", "simulation")
-commands["stellar"] = ("show_stellar_components_command", True, "show stellar components", "simulation")
-commands["dust"] = ("show_dust_components_command", True, "show dust components", "simulation")
-commands["normalizations"] = ("show_normalizations_command", True, "show normalizations", "simulation")
-commands["show"] = ("show_command", True, "show", None)
-commands["plot"] = ("plot_command", True, "plot", None)
-commands["move"] = ("move_simulations_command", True, "move simulations from one remote to another", "simulations")
-commands["stop"] = ("stop_simulations_command", True, "stop simulations", "simulation")
-commands["remove"] = ("remove_simulation_command", True, "remove simulation", "simulation")
-commands["clear"] = ("clear_simulation_command", True, "clear simulation output/input/analysis", "simulation")
-commands["unretrieve"] = ("unretrieve_simulation_command", True, "unretrieve simulation", "simulation")
-commands["unanalyse"] = ("unanalyse_simulation_command", True, "unanalyse simulation", "simulation")
-commands["relaunch"] = ("relaunch_simulation_command", True, "relaunch simulations", "simulation")
-commands["log"] = ("show_simulation_log_command", True, "show log output of a simulation", "simulation")
-commands["error"] = ("show_simulation_errors_command", True, "show error output of a simulation", "simulation")
-commands["settings"] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
-commands["analysis"] = ("show_analysis_options_command", True, "show analysis options", "simulation")
-commands["adapt"] = ("adapt_simulation_command", True, "adapt simulation settings or analysis options", "simulation")
-commands["compare"] = ("compare_simulations_command", True, "compare simulation settings or analysis options between two simulations", "two_simulations")
-commands["retrieve"] = ("retrieve_simulation_command", True, "retrieve a simulation", "simulation")
-commands["analyse"] = ("analyse_simulation_command", True, "analyse a simulation", "simulation")
-commands["reanalyse"] = ("reanalyse_simulation_command", True, "re-analyse a simulation", "simulation")
+commands[_help_command_name] = ("show_help", False, "show help", None)
+commands[_history_command_name] = ("show_history", False, "show history of executed commands", None)
+commands[_status_command_name] = ("show_status", False, "show simulation status", None)
+commands[_hosts_command_name] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
+commands[_parallelizations_command_name] = ("show_parallelizations_command", True, "show parallelization schemes used per host", "host")
+commands[_info_command_name] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
+commands[_open_command_name] = (None, None, "open input, output or base simulation directory", "simulation")
+commands[_sed_command_name] = ("plot_seds_command", True, "plot SED(s) of a simulation", "simulation")
+commands[_datacube_command_name] = ("show_datacubes_command", True, "plot datacube(s) of a simulation", "simulation")
+commands[_input_command_name] = ("show_input_command", True, "show simulation input", "simulation")
+commands[_output_command_name] = ("show_output_command", True, "show simuation output", "simulation")
+commands[_extraction_command_name] = ("show_extraction_command", True, "show simulation extraction output", "simulation")
+commands[_plotting_command_name] = ("show_plotting_command", True, "show simulation plotting output", "simulation")
+commands[_misc_command_name] = ("show_misc_command", True, "show simulation misc output", "simulation")
+commands[_instruments_command_name] = ("show_instruments_command", True, "show simulation instruments", "simulation")
+commands[_stellar_command_name] = ("show_stellar_components_command", True, "show stellar components", "simulation")
+commands[_dust_command_name] = ("show_dust_components_command", True, "show dust components", "simulation")
+commands[_normalizations_command_name] = ("show_normalizations_command", True, "show normalizations", "simulation")
+commands[_show_command_name] = (None, None, "show", None)
+commands[_plot_command_name] = (None, None, "plot", None)
+commands[_move_command_name] = ("move_simulations_command", True, "move simulations from one remote to another", "simulations")
+commands[_stop_command_name] = ("stop_simulations_command", True, "stop simulations", "simulation")
+commands[_remove_command_name] = ("remove_simulation_command", True, "remove simulation", "simulation")
+commands[_clear_command_name] = (None, None, "clear simulation output/input/analysis", "simulation")
+commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "unretrieve simulation", "simulation")
+commands[_unanalyse_command_name] = ("unanalyse_simulation_command", True, "unanalyse simulation", "simulation")
+commands[_relaunch_command_name] = ("relaunch_simulation_command", True, "relaunch simulations", "simulation")
+commands[_log_command_name] = ("show_simulation_log_command", True, "show log output of a simulation", "simulation")
+commands[_error_command_name] = ("show_simulation_errors_command", True, "show error output of a simulation", "simulation")
+commands[_settings_command_name] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
+commands[_analysis_command_name] = ("show_analysis_options_command", True, "show analysis options", "simulation")
+commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulation")
+commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between two simulations", "two_simulations")
+commands[_retrieve_command_name] = ("retrieve_simulation_command", True, "retrieve a simulation", "simulation")
+commands[_analyse_command_name] = ("analyse_simulation_command", True, "analyse a simulation", "simulation")
+commands[_reanalyse_command_name] = ("reanalyse_simulation_command", True, "re-analyse a simulation", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define show commands
 show_commands = OrderedDict()
-show_commands["assignment"] = ("show_assignment", False, "show the simulation assignment scheme", None)
-show_commands["status"] = ("show_status", False, "show the simulation status", None)
-show_commands["runtimes"] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
-show_commands["memory"] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
+show_commands[_assignment_command_name] = ("show_assignment", False, "show the simulation assignment scheme", None)
+show_commands[_status_command_name] = ("show_status", False, "show the simulation status", None)
+show_commands[_runtimes_command_name] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
+show_commands[_memory_command_name] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
 
 # -----------------------------------------------------------------
 
 # Define plot commands
 plot_commands = OrderedDict()
-plot_commands["runtimes"] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
-plot_commands["memory"] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
+plot_commands[_runtimes_command_name] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
+plot_commands[_memory_command_name] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
+plot_commands[_timeline_command_name] = ("plot_timeline_command", True, "plot simulation timeline", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define open commands
 open_commands = OrderedDict()
-open_commands["base"] = ("open_base", "simulation_name", "open simulation base directory", "simulation")
-open_commands["input"] = ("open_input", "simulation_name", "open simulation input directory", "simulation")
-open_commands["output"] = ("open_output", "simulation_name", "open simulation output directory", "simulation")
-open_commands["extraction"] = ("open_extraction", "simulation_name", "open simulation extraction output directory", "simulation")
-open_commands["plotting"] = ("open_plotting", "simulation_name", "open simulation plotting output directory", "simulation")
-open_commands["misc"] = ("open_misc", "simulation_name", "open simulation miscellaneous output directory", "simulation")
+open_commands[_base_command_name] = ("open_base_command", True, "open simulation base directory", "simulation")
+open_commands[_input_command_name] = ("open_input_command", True, "open simulation input directory", "simulation")
+open_commands[_output_command_name] = ("open_output_command", True, "open simulation output directory", "simulation")
+open_commands[_extraction_command_name] = ("open_extraction_command", True, "open simulation extraction output directory", "simulation")
+open_commands[_plotting_command_name] = ("open_plotting_command", True, "open simulation plotting output directory", "simulation")
+open_commands[_misc_command_name] = ("open_misc_command", True, "open simulation miscellaneous output directory", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define adapt commands
 adapt_commands = OrderedDict()
-adapt_commands["simulation"] = ("adapt_simulation_settings", "simulation_name", "adapt simulation settings", "simulation")
-adapt_commands["analysis"] = ("adapt_analysis_options", "simulation_name", "adapt analysis options", "simulation")
+adapt_commands[_simulation_command_name] = ("adapt_simulation_settings_command", True, "adapt simulation settings", "simulation")
+adapt_commands[_analysis_command_name] = ("adapt_analysis_options_command", True, "adapt analysis options", "simulation")
 
 # -----------------------------------------------------------------
 
 # Define compare commands
 compare_commands = OrderedDict()
-compare_commands["simulation"] = ("compare_simulation_settings_command", True, "compare simulation settings", "two_simulations")
-compare_commands["analysis"] = ("compare_analysis_options_command", True, "compare analysis options", "two_simulations")
+compare_commands[_simulation_command_name] = ("compare_simulation_settings_command", True, "compare simulation settings", "two_simulations")
+compare_commands[_analysis_command_name] = ("compare_analysis_options_command", True, "compare analysis options", "two_simulations")
 
 # -----------------------------------------------------------------
 
+# Define clear commands
 clear_commands = OrderedDict()
-clear_commands["input"] = ("clear_simulation_input_command", True, "clear simulation input", "simulation")
-clear_commands["output"] = ("clear_simulation_output_command", True, "clear simulation output", "simulation")
-clear_commands["analysis"] = ("clear_simulation_analysis_command", True, "clear simulation analysis output", "simulation")
-clear_commands["extraction"] = ("clear_extraction_command", True, "clear simulation extraction output", "simulation")
-clear_commands["plotting"] = ("clear_plotting_command", True, "clear simulation plotting output", "simulation")
-clear_commands["misc"] = ("clear_misc_command", True, "clear simulation misc output", "simulation")
+clear_commands[_input_command_name] = ("clear_simulation_input_command", True, "clear simulation input", "simulation")
+clear_commands[_output_command_name] = ("clear_simulation_output_command", True, "clear simulation output", "simulation")
+clear_commands[_analysis_command_name] = ("clear_simulation_analysis_command", True, "clear simulation analysis output", "simulation")
+clear_commands[_extraction_command_name] = ("clear_extraction_command", True, "clear simulation extraction output", "simulation")
+clear_commands[_plotting_command_name] = ("clear_plotting_command", True, "clear simulation plotting output", "simulation")
+clear_commands[_misc_command_name] = ("clear_misc_command", True, "clear simulation misc output", "simulation")
+
+# -----------------------------------------------------------------
+
+_simulation_subject_name = "simulation"
+_simulations_subject_name = "simulations"
+_two_simulations_subject_name = "two_simulations"
+_host_subject_name = "host"
+_hosts_subject_name = "hosts"
+_host_parallelization_subject_name = "host_parallelization"
 
 # -----------------------------------------------------------------
 
@@ -1397,6 +1457,34 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_timeline(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        extraction = self.get_extraction_output(simulation_name)
+        return TimeLineTable.from_file(extraction.single_timeline)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_memory(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        extraction = self.get_extraction_output(simulation_name)
+        return MemoryUsageTable.from_file(extraction.single_memory)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_plotting_output(self, simulation_name):
 
         """
@@ -1885,7 +1973,7 @@ class SimulationManager(Configurable):
         """
 
         # Get the simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="retrieve_simulation")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Retrieve
         self.retrieve_simulation(simulation_name)
@@ -2336,32 +2424,114 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _run_command(self, command, cmds, first=None):
+    def has_subcommands(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        return command in [_show_command_name, _plot_command_name, _open_command_name, _adapt_command_name, _compare_command_name, _clear_command_name]
+
+    # -----------------------------------------------------------------
+
+    def get_subcommands(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        if command == _show_command_name: return show_commands
+        elif command == _plot_command_name: return plot_commands
+        elif command == _open_command_name: return open_commands
+        elif command == _adapt_command_name: return adapt_commands
+        elif command == _compare_command_name: return compare_commands
+        elif command == _clear_command_name: return clear_commands
+        else: raise InvalidCommandError("Invalid command: '" + command + "'", command)
+
+    # -----------------------------------------------------------------
+
+    def _run_command(self, command, cmds, main_command=None):
 
         """
         This function ...
         :param command:
         :param cmds:
-        :param key:
+        :param main_command:
         :return:
         """
 
         # Set first word
-        if first is None: first = command.split(" ")[0]
+        first = command.split(" ")[0]
 
         # Find key
         if first not in cmds: raise InvalidCommandError("Invalid command: '" + first + "'", command)
         key = first
 
-        # Get function name and description
-        function_name, pass_command, description, subject = cmds[key]
+        # Has subcommands
+        if self.has_subcommands(key):
 
-        # Get the function
-        function = getattr(self, function_name)
+            # Get the possible subcommands
+            subcommands = self.get_subcommands(key)
 
-        # Call the function
-        if pass_command: function(command)
-        else: function()
+            # Get command without main command
+            subcommand = strings.split_at_first(command, key)[1].strip()
+
+            # No subcommand?
+            if not strings.startswith_any(subcommand, subcommands):
+
+                # Show help for the main command
+                if "-h" in subcommand or "--help" in subcommand:
+
+                    # Set subcommands with descriptions
+                    subcommands_descriptions = OrderedDict()
+                    for subkey in subcommands:
+                        function_name, pass_command, description, subject = subcommands[subkey]
+                        subcommands_descriptions[subkey] = description
+
+                    # Create definition for the subcommands
+                    definition = ConfigurationDefinition(write_config=False)
+                    definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                    help = get_help(key, definition, add_logging=False, add_cwd=False)
+
+                    # Show help
+                    for line in help: print(fmt.red + line + fmt.reset)
+
+                # Invalid command
+                else: raise InvalidCommandError("Invalid command: '" + subcommand + "'", command)
+
+            # Run the command
+            else: self._run_command(subcommand, subcommands, main_command=key)
+
+        # Regular command
+        else:
+
+            # Get function name and description
+            function_name, pass_command, description, subject = cmds[key]
+
+            # Show help for the command
+            if "-h" in command or "--help" in command:
+
+                # Get the help info
+                help = self.get_help_for_key(key, cmds, main_command=main_command)
+
+                # Show help
+                if help is None: print(fmt.red + "no input required" + fmt.reset)
+                else:
+                    for line in help: print(fmt.red + line + fmt.reset)
+
+            # Actually run
+            else:
+
+                # Get the function
+                function = getattr(self, function_name)
+
+                # Call the function
+                if pass_command: function(command)
+                else: function()
 
     # -----------------------------------------------------------------
 
@@ -2375,6 +2545,116 @@ class SimulationManager(Configurable):
 
         # Run the command
         self._run_command(command, commands)
+
+    # -----------------------------------------------------------------
+
+    def get_definition_for_function_name(self, function_name):
+
+        """
+        This function ...
+        :param function_name:
+        :return:
+        """
+
+        # Get definition
+        definition_property_name = function_name.split("_command")[0] + "_definition"
+        definition = getattr(self, definition_property_name, None)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def get_kwargs_for_function_name(self, function_name):
+
+        """
+        This function ...
+        :param function_name:
+        :return:
+        """
+
+        # Get kwargs
+        kwargs_property_name = function_name.split("_command")[0] + "_kwargs"
+        kwargs = getattr(self, kwargs_property_name, {})
+
+        # Return
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def get_usage_for_key(self, key, cmds, main_command=None):
+
+        """
+        This function ...
+        :param key:
+        :param cmds:
+        :param main_command:
+        :return:
+        """
+
+        # Get properties
+        function_name, pass_command, description, subject = cmds[key]
+        if subject is None: return None # no usage for this command (simple command that doesn't need input)
+
+        # Get the definition
+        definition = self.get_definition_for_function_name(function_name)
+
+        # Get the kwargs
+        kwargs = self.get_kwargs_for_function_name(function_name)
+
+        # Set command name
+        if main_command is None: name = key
+        else: name = main_command + " " + key
+
+        # Get usage lines
+        if subject == _simulation_subject_name: usage = self.get_usage_simulation_command(definition, name=name, **kwargs)
+        elif subject == _simulations_subject_name: usage = self.get_usage_simulations_command(definition, name=name, **kwargs)
+        elif subject == _two_simulations_subject_name: usage = self.get_usage_two_simulations_command(definition, name=name, **kwargs)
+        elif subject == _host_subject_name: usage = self.get_usage_host_command(definition, name=name, **kwargs)
+        elif subject == _hosts_subject_name: usage = self.get_usage_hosts_command(definition, name=name, **kwargs)
+        elif subject == _host_parallelization_subject_name: usage = self.get_usage_host_and_parallelization_command(definition, name=name, **kwargs)
+        else: raise ValueError("Invalid subject '" + subject + "'")
+
+        # Return the usage info
+        return usage
+
+    # -----------------------------------------------------------------
+
+    def get_help_for_key(self, key, cmds, main_command=None):
+
+        """
+        This function ...
+        :param key:
+        :param cmds:
+        :param main_command:
+        :return:
+        """
+
+        # Get properties
+        function_name, pass_command, description, subject = cmds[key]
+        if subject is None: return None # no help for this command (simple command that doesn't need input)
+
+        # Get the definition
+        definition = self.get_definition_for_function_name(function_name)
+
+        # Get the kwargs
+        kwargs = self.get_kwargs_for_function_name(function_name)
+
+        # Set command name
+        if main_command is None: name = key
+        else: name = main_command + " " + key
+
+        # Get help lines
+        if subject == _simulation_subject_name: help = self.get_help_simulation_command(definition, name=name, **kwargs)
+        elif subject == _simulations_subject_name: help = self.get_help_simulations_command(definition, name=name, **kwargs)
+        elif subject == _two_simulations_subject_name: help = self.get_help_two_simulations_command(definition, name=name, **kwargs)
+        elif subject == _host_subject_name: help = self.get_help_host_command(definition, name=name, **kwargs)
+        elif subject == _hosts_subject_name: help = self.get_help_hosts_command(definition, name=name, **kwargs)
+        elif subject == _host_parallelization_subject_name: help = self.get_help_host_and_parallelization_command(definition, name=name, **kwargs)
+        else: raise ValueError("Invalid subject '" + subject + "'")
+
+        # Return the help info
+        return help
 
     # -----------------------------------------------------------------
 
@@ -2393,48 +2673,40 @@ class SimulationManager(Configurable):
         # Loop over the commands
         for key in commands:
 
-            # Get description
+            # Get properties
             function_name, pass_command, description, subject = commands[key]
 
             # Show
             print(" - " + fmt.bold + key + fmt.reset + ": " + description)
 
+            if function_name is None and not self.has_subcommands(key): raise RuntimeError("Something went wrong")
+
             # Show usage
             if pass_command and subject is not None:
 
-                # Get definition
-                definition_property_name = function_name.split("_command")[0] + "_definition"
-                definition = getattr(self, definition_property_name, None)
-
-                # Get usage lines
-                if subject == "simulation": usage = self.get_usage_simulation_command(definition, name=key)
-                elif subject == "simulations": usage = self.get_usage_simulations_command(definition, name=key)
-                elif subject == "two_simulations": usage = self.get_usage_two_simulations_command(definition, name=key)
-                elif subject == "host": usage = self.get_usage_host_command(definition, name=key)
-                elif subject == "hosts": usage = self.get_usage_hosts_command(definition, name=key)
-                elif subject == "host_parallelization": usage = self.get_usage_host_and_parallelization_command(definition, name=key)
-                else: raise ValueError("Invalid subject '" + subject + "'")
+                # Get usage
+                usage = self.get_usage_for_key(key, commands)
 
                 # Show
                 for line in usage: print("    " + fmt.blue + line + fmt.reset)
 
             # Show
-            if key == "show": self.show_help_show()
+            if key == _show_command_name: self.show_help_show()
 
             # Plot
-            elif key == "plot": self.show_help_plot()
+            elif key == _plot_command_name: self.show_help_plot()
 
             # Open
-            elif key == "open": self.show_help_open()
+            elif key == _open_command_name: self.show_help_open()
 
             # Adapt
-            elif key == "adapt": self.show_help_adapt()
+            elif key == _adapt_command_name: self.show_help_adapt()
 
             # Compare
-            elif key == "compare": self.show_help_compare()
+            elif key == _compare_command_name: self.show_help_compare()
 
             # Clear
-            elif key == "clear": self.show_help_clear()
+            elif key == _clear_command_name: self.show_help_clear()
 
         print("")
 
@@ -2451,10 +2723,19 @@ class SimulationManager(Configurable):
         for key in show_commands:
 
             # Get description
-            _, _, description, _ = show_commands[key]
+            function_name, pass_command, description, subject = show_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if not pass_command or subject is None: continue
+
+            # Get usage
+            usage = self.get_usage_for_key(key, show_commands, main_command=_show_command_name)
+
+            # Show
+            for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2469,10 +2750,19 @@ class SimulationManager(Configurable):
         for key in plot_commands:
 
             # Get description
-            _, _, description, _ = plot_commands[key]
+            function_name, pass_command, description, subject = plot_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if not pass_command or subject is None: continue
+
+            # Get usage
+            usage = self.get_usage_for_key(key, plot_commands, main_command=_plot_command_name)
+
+            # Show
+            for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2487,10 +2777,19 @@ class SimulationManager(Configurable):
         for key in open_commands:
 
             # Get description
-            _, _, description, _ = open_commands[key]
+            function_name, pass_command, description, subject = open_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if not pass_command or subject is None: continue
+
+            # Get usage
+            usage = self.get_usage_for_key(key, open_commands, main_command=_open_command_name)
+
+            # Show
+            for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2505,10 +2804,19 @@ class SimulationManager(Configurable):
         for key in adapt_commands:
 
             # Get description
-            _, _, description, _ = adapt_commands[key]
+            function_name, pass_command, description, subject = adapt_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if not pass_command or subject is None: continue
+
+            # Get usage
+            usage = self.get_usage_for_key(key, adapt_commands, main_command=_adapt_command_name)
+
+            # Show
+            for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2523,10 +2831,19 @@ class SimulationManager(Configurable):
         for key in compare_commands:
 
             # Get description
-            _, _, description, _ = compare_commands[key]
+            function_name, pass_command, description, subject = compare_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if not pass_command or subject is None: continue
+
+            # Get usage
+            usage = self.get_usage_for_key(key, compare_commands, main_command=_compare_command_name)
+
+            # Show
+            for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2541,10 +2858,19 @@ class SimulationManager(Configurable):
         for key in clear_commands:
 
             # Get description
-            _, _, description, _ = clear_commands[key]
+            function_name, pass_command, description, subject = clear_commands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            if not pass_command or subject is None: continue
+
+            # Get usage
+            usage = self.get_usage_for_key(key, clear_commands, main_command=_clear_command_name)
+
+            # Show
+            for line in usage: print("      " + fmt.blue + line + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -2583,6 +2909,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def show_hosts_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required"] = False
+        kwargs["choices"] = self.hosts
+        return kwargs
+
+    # -----------------------------------------------------------------
+
     def show_hosts_command(self, command):
 
         """
@@ -2595,7 +2936,7 @@ class SimulationManager(Configurable):
         log.info("Showing hosts ...")
 
         # Get the host
-        splitted, hosts, config = self.parse_hosts_command(command, command_definition=self.show_hosts_definition, name="show_parallelizations", required=False, choices=self.hosts)
+        splitted, hosts, config = self.parse_hosts_command(command, command_definition=self.show_hosts_definition, **self.show_hosts_kwargs)
 
         print("")
 
@@ -2662,7 +3003,7 @@ class SimulationManager(Configurable):
         """
 
         # Get the host
-        host = self.get_host_from_command(command, name="show_parallelizations")
+        host = self.get_host_from_command(command)
 
         # Show
         self.show_parallelizations(host)
@@ -2696,7 +3037,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="show_info")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Show info
         self.show_simulation_info(simulation_name)
@@ -2794,7 +3135,7 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def open_definition(self):
+    def open_base_definition(self):
 
         """
         This function ...
@@ -2810,7 +3151,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_command(self, command):
+    def open_base_command(self, command):
 
         """
         This function ...
@@ -2818,17 +3159,76 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _open_command_name + " " + _base_command_name
+
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, name="open", index=2)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_base_definition, name=name)
 
         # Open
-        if splitted[1] == "base": self.open_base(simulation_name, remote=config.remote)
-        elif splitted[1] == "input": self.open_input(simulation_name, remote=config.remote)
-        elif splitted[1] == "output": self.open_output(simulation_name, remote=config.remote)
-        elif splitted[1] == "extraction": self.open_extraction(simulation_name)
-        elif splitted[1] == "plotting": self.open_plotting(simulation_name)
-        elif splitted[1] == "misc": self.open_misc(simulation_name)
-        else: raise ValueError("Invalid command")
+        self.open_base(simulation_name, remote=config.remote)
+
+    # -----------------------------------------------------------------
+
+    def open_base(self, simulation_name, remote=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Opening the base directory of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set remote flag
+        if remote is None: remote = False
+
+        # On the remote
+        if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_simulation_path)
+
+        # Locally
+        else: fs.open_directory(simulation.base_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def open_input_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_flag("remote", "open on remote filesystem (determined automatically based on the simulation status by default)", None)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def open_input_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set name
+        name = _open_command_name + " " + _input_command_name
+
+        # Parse the command
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_input_definition, name=name)
+
+        # Open
+        self.open_input(simulation_name, remote=config.remote)
 
     # -----------------------------------------------------------------
 
@@ -2877,6 +3277,42 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def open_output_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_flag("remote", "open on remote filesystem (determined automatically based on the simulation status by default)", None)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def open_output_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set name
+        name = _open_command_name + " " + _output_command_name
+
+        # Parse the command
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_output_definition, name=name)
+
+        # Open
+        self.open_output(simulation_name, remote=config.remote)
+
+    # -----------------------------------------------------------------
+
     def open_output(self, simulation_name, remote=None):
 
         """
@@ -2910,30 +3346,23 @@ class SimulationManager(Configurable):
         else: fs.open_directory(simulation.output_path)
 
     # -----------------------------------------------------------------
-
-    def open_base(self, simulation_name, remote=None):
+    
+    def open_extraction_command(self, command):
 
         """
         This function ...
-        :param simulation_name:
-        :param remote:
-        :return:
+        :param command: 
+        :return: 
         """
 
-        # Debugging
-        log.debug("Opening the base directory of simulation '" + simulation_name + "' ...")
+        # Set command name
+        name = _open_command_name + " " + _extraction_command_name
 
-        # Get the simulation
-        simulation = self.get_simulation(simulation_name)
+        # Parse the command
+        simulation_name = self.get_simulation_name_from_command(command, name=name)
 
-        # Set remote flag
-        if remote is None: remote = False
-
-        # On the remote
-        if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_simulation_path)
-
-        # Locally
-        else: fs.open_directory(simulation.base_path)
+        # Open
+        self.open_extraction(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -2956,6 +3385,25 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def open_plotting_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _open_command_name + " " + _plotting_command_name
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name=name)
+
+        # Open
+        self.open_plotting(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def open_plotting(self, simulation_name):
 
         """
@@ -2972,6 +3420,25 @@ class SimulationManager(Configurable):
 
         # Open
         fs.open_directory(path)
+
+    # -----------------------------------------------------------------
+
+    def open_misc_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _open_command_name + " " + _misc_command_name
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, name=name)
+
+        # Open
+        self.open_misc(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -3003,7 +3470,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="plot_seds")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Plot
         self.plot_simulation_seds(simulation_name)
@@ -3123,7 +3590,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_datacubes_definition, name="show_datacubes")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_datacubes_definition)
 
         # Plot
         self.show_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments)
@@ -3330,7 +3797,7 @@ class SimulationManager(Configurable):
         definition.add_flag("remote", "show remote input", False)
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition, name="show_input")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition)
 
         # Show
         if config.remote: self.show_input_remote(simulation_name)
@@ -3412,7 +3879,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_output_definition, name="show_output")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_output_definition)
 
         # Set remote flag
         if config.remote is None:
@@ -3489,7 +3956,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="show_extraction")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Show
         self.show_extraction(simulation_name)
@@ -3529,7 +3996,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="show_plotting")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Show
         self.show_plotting(simulation_name)
@@ -3569,7 +4036,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="show_misc")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Show
         self.show_misc(simulation_name)
@@ -3752,38 +4219,6 @@ class SimulationManager(Configurable):
 
         # Show
         show_normalizations(ski, flux_unit=flux_unit)
-
-    # -----------------------------------------------------------------
-
-    def show_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Run the command
-        self._run_command(command, show_commands, splitted[1])
-
-    # -----------------------------------------------------------------
-
-    def plot_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Run
-        self._run_command(command, plot_commands, splitted[1])
 
     # -----------------------------------------------------------------
 
@@ -4686,7 +5121,19 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def adapt_simulation_command(self, command):
+    @lazyproperty
+    def adapt_simulation_settings_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return adapt_simulations_definition
+
+    # -----------------------------------------------------------------
+
+    def adapt_simulation_settings_command(self, command):
 
         """
         This function ...
@@ -4694,17 +5141,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=adapt_simulations_definition, name="adapt_simulation", index=2)
+        # Set command name
+        name = _adapt_command_name + " " + _simulation_command_name
 
-        # Simulation
-        if splitted[1] == "simulation": self.adapt_simulation_settings(simulation_name, config)
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_simulation_settings_definition, name=name)
 
-        # Analysis
-        elif splitted[1] == "analysis": self.adapt_analysis_options(simulation_name, config)
-
-        # Invalid
-        else: raise ValueError("Invalid argument")
+        # Adapt
+        self.adapt_simulation_settings(simulation_name, config=config)
 
     # -----------------------------------------------------------------
 
@@ -4728,6 +5172,37 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def adapt_analysis_options_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return adapt_analysis_definition
+
+    # -----------------------------------------------------------------
+
+    def adapt_analysis_options_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _adapt_command_name + " " + _analysis_command_name
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_analysis_options_definition, name=name)
+
+        # Adapt
+        self.adapt_analysis_options(simulation_name, config=config)
+
+    # -----------------------------------------------------------------
+
     def adapt_analysis_options(self, simulation_name, config=None):
 
         """
@@ -4748,22 +5223,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def compare_simulations_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Run
-        self._run_command(command, compare_commands, splitted[1])
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def compare_simulation_settings_definition(self):
 
@@ -4776,20 +5235,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def compare_simulation_settings_kwargs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        kwargs = dict()
-        kwargs["index"] = 2
-        return kwargs
-
-    # -----------------------------------------------------------------
-
     def compare_simulation_settings_command(self, command):
 
         """
@@ -4798,8 +5243,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _compare_command_name + " " + _simulation_command_name
+
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name="compare simulation", **self.compare_simulation_settings_kwargs)
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name=name)
 
         # Compare
         self.compare_simulation_settings(simulation_a_name, simulation_b_name, config=config)
@@ -4841,20 +5289,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def compare_analysis_options_kwargs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        kwargs = dict()
-        kwargs["index"] = 2
-        return kwargs
-
-    # -----------------------------------------------------------------
-
     def compare_analysis_options_command(self, command):
 
         """
@@ -4863,8 +5297,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _compare_command_name + " " + _simulation_command_name
+
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name="compare simulation", **self.compare_analysis_options_kwargs)
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name=name)
 
         # Compare
         self.compare_analysis_options(simulation_a_name, simulation_b_name, config=config)
@@ -4983,7 +5420,7 @@ class SimulationManager(Configurable):
         """
 
         # Get the simulation names
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, name="move_simulations", **self.move_simulations_kwargs)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, **self.move_simulations_kwargs)
 
         # Loop over the simulation names
         for simulation_name in simulation_names:
@@ -5161,22 +5598,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_simulation_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-
-        # Run
-        self._run_command(command, clear_commands, splitted[1])
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def clear_simulation_input_definition(self):
 
@@ -5202,8 +5623,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _clear_command_name + " " + _input_command_name
+
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_input_definition, name="clear input", index=2)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_input_definition, name=name)
 
         # Execute the command
         if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
@@ -5238,8 +5662,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set the command name
+        name = _clear_command_name + " " + _output_command_name
+
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_output_definition, name="clear output", index=2)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_output_definition, name=name)
 
         # Execute the command
         if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
@@ -5273,8 +5700,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _clear_command_name + " " + _analysis_command_name
+
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_analysis_definition, name="clear analysis")
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_analysis_definition, name=name)
 
         # Execute
         self.clear_simulation_analysis(simulation_name, steps=config.analysis_steps)
@@ -5466,7 +5896,7 @@ class SimulationManager(Configurable):
         """
 
         # Parse
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.unanalyse_simulation_definition, name="unanalyse_simulation")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.unanalyse_simulation_definition)
 
         # Unanalyse
         self.unanalyse_simulation(simulation_name, steps=config.steps)
@@ -5609,8 +6039,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _clear_command_name + " " + _extraction_command_name
+
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="clear extraction")
+        simulation_name = self.get_simulation_name_from_command(command, name=name)
 
         # Clear
         self.clear_extraction(simulation_name)
@@ -5644,8 +6077,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _clear_command_name + " " + _plotting_command_name
+
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="clear plotting")
+        simulation_name = self.get_simulation_name_from_command(command, name=name)
 
         # Clear
         self.clear_plotting(simulation_name)
@@ -5679,8 +6115,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Set command name
+        name = _clear_command_name + " " + _misc_command_name
+
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="clear misc")
+        simulation_name = self.get_simulation_name_from_command(command, name=name)
 
         # Clear
         self.clear_misc(simulation_name)
@@ -9328,6 +9767,62 @@ class SimulationManager(Configurable):
         # Plot
         plot_distribution(writing, title="Writing memory usage", x_limits=plot_x_limits, soft_xmin=True,
                           statistics=False, show_mean=True, mean=mean_writing)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_timeline_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_optional("path", "string", "output path")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_timeline_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _plot_command_name + " " + _timeline_command_name
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_timeline_definition, name=name)
+
+        # Plot
+        self.plot_timeline(simulation_name, path=config.path)
+
+    # -----------------------------------------------------------------
+
+    def plot_timeline(self, simulation_name, path=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting timeline for simulation '" + simulation_name + "' ...")
+
+        # Get the timeline of the simulation
+        timeline = self.get_timeline(simulation_name)
+
+        # Plot the timeline
+        plot_timeline(timeline, path=path)
 
     # -----------------------------------------------------------------
 

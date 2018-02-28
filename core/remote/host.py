@@ -526,6 +526,6 @@ class Host(SimplePropertyComposite):
         elif isinstance(other, Host): return self.id == other.id and self.cluster_name == other.cluster_name
 
         # Invalid input
-        else: raise ValueError("Invalid input: must be string or Host")
+        else: return False #raise ValueError("Invalid input: must be string or Host") # NO, JUST RETURN FALSE
 
 # -----------------------------------------------------------------

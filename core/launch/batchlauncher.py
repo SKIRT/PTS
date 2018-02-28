@@ -652,6 +652,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
+        #print(self.hosts)
         return sequences.unique_values(self.hosts, ignore=[None])
 
     # -----------------------------------------------------------------

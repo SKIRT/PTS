@@ -58,6 +58,26 @@ phase_label_names = {"setup": "setup",
 
 # -----------------------------------------------------------------
 
+def plot_timeline(timeline, path=None):
+
+    """
+    This function ...
+    :param timeline:
+    :param path:
+    :return:
+    """
+
+    # Create a TimeLinePlotter object
+    plotter = TimeLinePlotter()
+
+    # Set the output path
+    plotter.config.output = path
+
+    # Run the timeline plotter
+    plotter.run(timeline=timeline)
+
+# -----------------------------------------------------------------
+
 class TimeLinePlotter(Configurable):
 
     """
