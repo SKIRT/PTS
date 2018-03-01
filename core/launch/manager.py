@@ -72,6 +72,7 @@ from ..data.sed import ObservedSED
 from ..plot.timeline import plot_timeline
 from ..extract.timeline import TimeLineTable
 from ..extract.memory import MemoryUsageTable
+from ..units.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -1374,6 +1375,144 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).path
+
+    # -----------------------------------------------------------------
+
+    def get_log_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).log_file_path
+
+    # -----------------------------------------------------------------
+
+    def has_logfile(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).has_logfile
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_logfile(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).log_file
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_timeline(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_runtime(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).total_runtime * u("s")
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_peak_memory(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).peak_memory * u("GB")
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_disk_size(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        output = self.get_output_disk_size(simulation_name)
+        extraction = self.get_extraction_disk_size(simulation_name)
+        plotting = self.get_plotting_disk_size(simulation_name)
+        misc = self.get_misc_disk_size(simulation_name)
+        return output + extraction + plotting + misc
+
+    # -----------------------------------------------------------------
+
+    def get_output_disk_size(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_output(simulation_name).disk_size
+
+    # -----------------------------------------------------------------
+
+    def get_extraction_disk_size(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_extraction_output(simulation_name).disk_size
+
+    # -----------------------------------------------------------------
+
+    def get_plotting_disk_size(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_plotting_output(simulation_name).disk_size
+
+    # -----------------------------------------------------------------
+
+    def get_misc_disk_size(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).disk_size
 
     # -----------------------------------------------------------------
 
@@ -2864,6 +3003,9 @@ class SimulationManager(Configurable):
 
                 # Clear
                 elif key == _clear_command_name: self.show_help_clear()
+
+                # Error
+                else: raise RuntimeError("Something went wrong")
 
             # No input needed
             else: print("    " + fmt.blue + "no input" + fmt.reset)
@@ -8594,10 +8736,10 @@ class SimulationManager(Configurable):
                         elif col == _job_extra_name: value = self.get_job_id(simulation_name)
                         elif col == _disk_extra_name: value = self.get_disk_size(simulation_name)
                         elif col == _runtime_extra_name: value = self.get_runtime(simulation_name)
-                        elif col == _memory_extra_name: value = self.get_peak_memory(simulation_name).to
+                        elif col == _memory_extra_name: value = self.get_peak_memory(simulation_name)
                         else: raise ValueError("Invalid extra column name: '" + col + "'")
-                        if col in extra_column_units: value = value.to(extra_column_units[col]).value
-                        string = tostr(value)
+                        if col in extra_column_units and value is not None: value = value.to(extra_column_units[col]).value
+                        string = tostr(value) if value is not None else "--"
                         parts.append(string)
 
                 # Print the row
