@@ -22,6 +22,7 @@ import subprocess
 import datetime
 import filecmp
 from collections import OrderedDict
+from itertools import takewhile
 
 # Import the relevant PTS classes and modules
 from . import time
@@ -1247,6 +1248,18 @@ def find_file_in_path(path, **kwargs):
         if return_none: return None
         else: raise ValueError("Not found")
     else: raise ValueError("Multiple files found")
+
+# -----------------------------------------------------------------
+
+def directories_in_cwd(**kwargs):
+
+    """
+    This function ...
+    :param kwargs:
+    :return:
+    """
+
+    return directories_in_path(cwd(), **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -3071,5 +3084,24 @@ def equal_files_hash(filepath_a, filepath_b):
     """
 
     return get_file_hash(filepath_a) == get_file_hash(filepath_b)
+
+# -----------------------------------------------------------------
+
+def allnamesequal(name):
+	return all(n==name[0] for n in name[1:])
+
+# -----------------------------------------------------------------
+
+def common_directory(paths, sep='/'):
+
+    """
+    This function ...
+    :param paths:
+    :param sep:
+    :return:
+    """
+
+    bydirectorylevels = zip(*[p.split(sep) for p in paths])
+    return sep.join(x[0] for x in takewhile(allnamesequal, bydirectorylevels))
 
 # -----------------------------------------------------------------

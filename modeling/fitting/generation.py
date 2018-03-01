@@ -2752,7 +2752,7 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     def get_status(self, remotes, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
-                   retrieve=False, screen_states=None, jobs_status=None, check_paths=False, fix_success=True):
+                   retrieve=False, analyse=False, screen_states=None, jobs_status=None, check_paths=False, fix_success=True):
 
         """
         This function gets the status of the simulations
@@ -2762,6 +2762,7 @@ class Generation(object):
         :param find_remotes:
         :param produce_missing:
         :param retrieve:
+        :param analyse:
         :param screen_states:
         :param jobs_status:
         :param check_paths:

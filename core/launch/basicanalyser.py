@@ -1514,20 +1514,6 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    # @lazyproperty
-    # def fluxes_from_images_reference_sed(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     from ..data.sed import ObservedSED
-    #     if self.misc_options.plot_fluxes_from_images_reference_sed is None: return None
-    #     else: return ObservedSED.from_file(self.misc_options.plot_fluxes_from_images_reference_sed)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def fluxes_from_images_reference_seds(self):
 

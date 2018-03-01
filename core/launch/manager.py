@@ -1627,6 +1627,20 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_job_id_string(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        job_id = self.get_job_id(simulation_name)
+        if job_id is None: return None
+        else: return str(job_id)
+
+    # -----------------------------------------------------------------
+
     def get_remote_job_script_path(self, simulation_name):
 
         """
@@ -5407,22 +5421,42 @@ class SimulationManager(Configurable):
         log.debug("Show error output of simulation '" + simulation_name + "'...")
 
         # Executed in screen
-        if self.is_screen_execution(simulation_name):
-
-            name = self.get_screen_name(simulation_name)
-            remote_output_path = self.get_remote_screen_output_path(simulation_name)
-            remote_script_path = self.get_remote_screen_script_path(simulation_name)
-            print("screen", name, remote_output_path, remote_script_path)
+        if self.is_screen_execution(simulation_name): self.show_simulation_errors_screen(simulation_name)
 
         # Executed in job
-        elif self.is_job_execution(simulation_name):
-
-            job_id = self.get_job_id(simulation_name)
-            remote_script_path = self.get_remote_job_script_path(simulation_name)
-            print("job", job_id, remote_script_path)
+        elif self.is_job_execution(simulation_name): self.show_simulation_errors_job(simulation_name)
 
         # Not supported
         else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_errors_screen(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        name = self.get_screen_name(simulation_name)
+        remote_output_path = self.get_remote_screen_output_path(simulation_name)
+        remote_script_path = self.get_remote_screen_script_path(simulation_name)
+        print("screen", name, remote_output_path, remote_script_path)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_errors_job(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        job_id = self.get_job_id(simulation_name)
+        remote_script_path = self.get_remote_job_script_path(simulation_name)
+        print("job", job_id, remote_script_path)
 
     # -----------------------------------------------------------------
 
@@ -8623,6 +8657,7 @@ class SimulationManager(Configurable):
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_positional_optional("extra_columns", "string_list", "extra columns to show", choices=extra_columns)
+        definition.add_optional("path", "string", "save the status information as a table at this path")
 
         # Return the definition
         return definition
@@ -8645,11 +8680,12 @@ class SimulationManager(Configurable):
         
     # -----------------------------------------------------------------
 
-    def show_status(self, extra=None):
+    def show_status(self, extra=None, path=None):
 
         """
         This function ...
         :param extra:
+        :param path:
         :return:
         """
 
@@ -8663,6 +8699,11 @@ class SimulationManager(Configurable):
         print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(self.nretrieved) + " (" + tostr(self.percentage_nretrieved, round=True, ndigits=2) + "%)")
         print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(self.nanalysed) + " (" + tostr(self.percentage_nanalysed, round=True, ndigits=2) + "%)")
         print("")
+
+        # If path is given, initialize table
+        #if path is not None: table = SmartTable()
+        #else: table = None
+        table = None
 
         # Print in columns
         with fmt.print_in_columns() as print_row:
@@ -8680,6 +8721,10 @@ class SimulationManager(Configurable):
             # Show the header
             print_row(*column_names)
             if self.has_info: print_row(*column_units)
+
+            # Initialize columns
+            if path is not None: columns = [[] for _ in column_names]
+            else: columns = None
 
             # Loop over the simulations
             for index, simulation_name in enumerate(self.simulation_names):
@@ -8733,7 +8778,7 @@ class SimulationManager(Configurable):
                 if extra is not None:
                     for col in extra:
                         if col == _screen_extra_name: value = self.get_screen_name(simulation_name)
-                        elif col == _job_extra_name: value = self.get_job_id(simulation_name)
+                        elif col == _job_extra_name: value = self.get_job_id_string(simulation_name)
                         elif col == _disk_extra_name: value = self.get_disk_size(simulation_name)
                         elif col == _runtime_extra_name: value = self.get_runtime(simulation_name)
                         elif col == _memory_extra_name: value = self.get_peak_memory(simulation_name)
@@ -8745,8 +8790,21 @@ class SimulationManager(Configurable):
                 # Print the row
                 print_row(*parts, color=color)
 
+                # Add to the columns
+                if columns is not None:
+                    for j, part in enumerate(parts): columns[j].append(part)
+
+            # Debugging
+            log.debug("Creating status info table ...")
+
+            # Create table from the columns
+            if columns is not None: table = SmartTable.from_columns(*columns, names=column_names, units=column_units)
+
         # End with empty line
         print("")
+
+        # Save the table
+        if table is not None and path is not None: table.saveto(path)
 
     # -----------------------------------------------------------------
 

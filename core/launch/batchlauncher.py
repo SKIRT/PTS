@@ -5358,6 +5358,22 @@ class BatchLauncher(Configurable):
         print(fmt.green + fmt.underlined + "Simulation parallelization schemes:" + fmt.reset)
         print("")
 
+        # Loca:
+        if self.has_queued_local: self.show_parallelization_simulations_local()
+
+        # Remote
+        if self.has_queued_remotes: self.show_parallelization_simulations_remote()
+
+    # -----------------------------------------------------------------
+
+    def show_parallelization_simulations_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Show 'LOCAL'
         print(fmt.yellow + fmt.bold + "LOCAL" + fmt.reset)
         print("")
 
@@ -5367,28 +5383,57 @@ class BatchLauncher(Configurable):
             # Check whether has parallelization
             if not self.has_parallelization_for_simulation(simulation_name): continue
 
+            # Show simulation name
+            print(fmt.blue + fmt.underlined + simulation_name + fmt.reset)
+
             # Show parallelization
             parallelization = self.get_parallelization_for_simulation(simulation_name)
             print(parallelization)
             print("")
 
+    # -----------------------------------------------------------------
+
+    def show_parallelization_simulations_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the hosts
         for host_id in self.host_ids:
+            if not self.has_queued_remote(host_id): continue
 
-            # Show host name
-            print(fmt.yellow + fmt.bold + host_id.upper() + fmt.reset)
+            # Show
+            self.show_parallelization_simulations_for_remote(host_id)
+
+    # -----------------------------------------------------------------
+
+    def show_parallelization_simulations_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Show host name
+        print(fmt.yellow + fmt.bold + host_id.upper() + fmt.reset)
+        print("")
+
+        # Loop over the simulations in the queue
+        for simulation_name in self.get_simulation_names_for_host(host_id):
+
+            # Check whether has parallelization
+            if not self.has_parallelization_for_simulation(simulation_name): continue
+
+            # Show simulation name
+            print(fmt.blue + fmt.underlined + simulation_name + fmt.reset)
+
+            # Show parallelization
+            parallelization = self.get_parallelization_for_simulation(simulation_name)
+            print(parallelization)
             print("")
-
-            # Loop over the simulations in the queue
-            for simulation_name in self.get_simulation_names_for_host(host_id):
-
-                # Check whether has parallelization
-                if not self.has_parallelization_for_simulation(simulation_name): continue
-
-                # Show parallelization
-                parallelization = self.get_parallelization_for_simulation(simulation_name)
-                print(parallelization)
-                print("")
 
     # -----------------------------------------------------------------
 

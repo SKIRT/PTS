@@ -23,7 +23,7 @@ from pts.core.tools.stringify import tostr
 from pts.core.simulation.remote import SKIRTRemote
 from pts.core.basics.log import log
 from pts.core.tools import numbers
-from pts.core.launch.manager import SimulationManager
+from pts.core.launch.manager import SimulationManager, extra_columns
 from pts.core.tools import filesystem as fs
 from pts.core.remote.host import find_host_ids
 
@@ -60,8 +60,7 @@ definition.add_flag("show_runtimes", "show runtimes")
 definition.add_flag("show_memory", "show memory")
 
 # Show parameters
-definition.add_flag("parameters", "show the parameter values")
-definition.add_flag("extra", "show extra info")
+definition.add_optional("extra", "string_list", "show extra info", choices=extra_columns)
 
 # Flags
 definition.add_flag("offline", "offline mode")
@@ -73,6 +72,7 @@ definition.add_flag("dry", "run in dry mode")
 definition.add_flag("write_status", "write the status", False)
 definition.add_flag("write_commands", "write the commands", False)
 definition.add_flag("retrieve", "retrieve finished simulations", False)
+definition.add_flag("analyse", "analyse retrieved simulations", False)
 definition.add_flag("produce_missing", "produce missing simulation files", False)
 definition.add_flag("check_paths", "check simulation paths", False)
 definition.add_flag("fix_success", "check success flags in assignment table")
@@ -168,7 +168,7 @@ backup_path = fs.join(manage_current_path, "backup")
 # Get the status of the simulations
 status = generation.get_status(remotes, lazy=config.lazy, find_simulations=config.find_simulations,
                                find_remotes=config.find_remotes, produce_missing=config.produce_missing,
-                               retrieve=config.retrieve, screen_states=screen_states, jobs_status=jobs_status,
+                               retrieve=config.retrieve, analyse=config.analyse, screen_states=screen_states, jobs_status=jobs_status,
                                check_paths=config.check_paths, fix_success=config.fix_success)
 
 # -----------------------------------------------------------------
@@ -176,14 +176,22 @@ status = generation.get_status(remotes, lazy=config.lazy, find_simulations=confi
 # Create simulation manager
 manager = SimulationManager()
 
+# Set the status command
+if config.extra is not None: status_command = "status " + ",".join(config.extra)
+else: status_command = "status"
+
 # Set options
-manager.config.show_status = not config.interactive
+#manager.config.show_status = not config.interactive
 manager.config.show_runtimes = config.show_runtimes
 manager.config.show_memory = config.show_memory
 manager.config.plot_runtimes = config.plot_runtimes
 manager.config.plot_memory = config.plot_memory
 manager.config.interactive = config.interactive
-if config.interactive: manager.config.commands = ["status"]
+
+# Set status command
+#if config.interactive: manager.config.commands = ["status"]
+manager.config.commands = [status_command]
+
 manager.config.dry = config.dry
 manager.config.shared_input = True
 manager.config.write_status = config.write_status
