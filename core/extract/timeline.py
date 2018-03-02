@@ -26,6 +26,25 @@ from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
+def extract_timeline(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    # Create a TimeLineExtractor instance
+    extractor = TimeLineExtractor()
+
+    # Run the timeline extractor
+    extractor.run(simulation)
+
+    # Return the timeline
+    return extractor.table
+
+# -----------------------------------------------------------------
+
 class NoTimingData(Exception):
 
     """

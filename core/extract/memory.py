@@ -133,6 +133,25 @@ class MemoryUsageTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+def extract_memory(simulation):
+
+    """
+    This function ...
+    :param simulation:
+    :return:
+    """
+
+    # Create a new MemoryExtractor instance
+    extractor = MemoryExtractor()
+
+    # Run the extractor and get the memory table
+    extractor.run(simulation)
+
+    # Return the table
+    return extractor.table
+
+# -----------------------------------------------------------------
+
 def extract_memory_cwd():
 
     """
@@ -145,15 +164,8 @@ def extract_memory_cwd():
     # Create a SkirtSimulation object based on a log file present in the current working directory
     simulation = createsimulations(single=True)
 
-    # Create a new MemoryExtractor instance
-    extractor = MemoryExtractor()
-
-    # Run the extractor and get the memory table
-    extractor.run(simulation)
-    table = extractor.table
-
-    # Return the table
-    return table
+    # Extract
+    return extract_memory(simulation)
 
 # -----------------------------------------------------------------
 

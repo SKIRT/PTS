@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from collections import defaultdict
 from collections import Callable
-#from types import FunctionType
 from string import ascii_lowercase
 from matplotlib import rc
 
@@ -37,7 +36,7 @@ from ..tools import filesystem as fs
 from ..basics.configurable import Configurable
 from ..launch.timing import TimingTable
 from ..launch.memory import MemoryTable
-from ..extract.timeline import TimeLineExtractor
+from ..extract.timeline import TimeLineExtractor, extract_timeline
 from ..simulation.discover import SimulationDiscoverer
 from ..basics.range import RealRange
 from ..tools import tables
@@ -636,12 +635,8 @@ class ScalingPlotter(Configurable):
             # If timing has to be extracted
             if extract_timing:
 
-                # Create a TimeLineExtractor instance
-                extractor = TimeLineExtractor()
-
-                # Run the timeline extractor
-                extractor.run(simulation)
-                timeline = extractor.table
+                # Get the timeline
+                timeline = extract_timing(simulation)
 
                 # Add an entry to the timing table
                 unique_name = self.timing.add_from_simulation(simulation, ski, log_file, timeline, parameters=parameters)

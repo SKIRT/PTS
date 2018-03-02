@@ -21,10 +21,9 @@ from matplotlib import rc
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from .plotter import Plotter
 from ..basics.log import log
 from ..tools import filesystem as fs
-from ..extract.timeline import TimeLineExtractor
+from ..extract.timeline import TimeLineExtractor, extract_timeline
 from ..basics.configurable import Configurable
 from ..simulation.discover import SimulationDiscoverer
 from ..tools.serialization import write_dict, write_data_tuple
@@ -223,12 +222,8 @@ class TimeLinePlotter(Configurable):
         # Loop over the simulations
         for simulation in self.simulations:
 
-            # Create a TimeLineExtractor instance
-            extractor = TimeLineExtractor()
-
-            # Run the timeline extractor
-            extractor.run(simulation)
-            timeline = extractor.table
+            # Get the timeline
+            timeline = extract_timeline(simulation)
 
             # Get the simulation output path
             output_path = simulation.output_path

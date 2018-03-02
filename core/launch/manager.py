@@ -70,8 +70,8 @@ from ..simulation.status import show_log_summary
 from ..tools import introspection
 from ..data.sed import ObservedSED
 from ..plot.timeline import plot_timeline
-from ..extract.timeline import TimeLineTable
-from ..extract.memory import MemoryUsageTable
+from ..extract.timeline import TimeLineTable, extract_timeline
+from ..extract.memory import MemoryUsageTable, extract_memory
 from ..units.unit import parse_unit as u
 
 # -----------------------------------------------------------------
@@ -1419,6 +1419,19 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_logfiles(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).logfiles()
+
+    # -----------------------------------------------------------------
+
     def get_runtime(self, simulation_name):
 
         """
@@ -1761,8 +1774,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        extraction = self.get_extraction_output(simulation_name)
-        return TimeLineTable.from_file(extraction.single_timeline)
+        # Timeline has already been created
+        if self.has_timeline_for_simulation(simulation_name):
+
+            extraction = self.get_extraction_output(simulation_name)
+            return TimeLineTable.from_file(extraction.single_timeline)
+
+        # Create timeline
+        else: return extract_timeline(self.get_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -1788,8 +1807,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        extraction = self.get_extraction_output(simulation_name)
-        return MemoryUsageTable.from_file(extraction.single_memory)
+        # Memory table has already been created
+        if self.has_memory_for_simulation(simulation_name):
+
+            extraction = self.get_extraction_output(simulation_name)
+            return MemoryUsageTable.from_file(extraction.single_memory)
+
+        # Create memory table
+        else: return extract_memory(self.get_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -4159,7 +4184,7 @@ class SimulationManager(Configurable):
 
         # Check whether plot file is present
         if from_file is None: from_file = self.has_sed_plots_for_simulation(simulation_name)
-        elif from_file and not self.has_sed_plots_for_simulation(simulation_name)
+        elif from_file and not self.has_sed_plots_for_simulation(simulation_name): raise IOError("Plot file not present")
 
         # Use file plot
         if from_file: self.get_sed_plots_for_simulation(simulation_name, path=path)
@@ -6574,6 +6599,10 @@ class SimulationManager(Configurable):
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
 
+        # Cancel or stop the simulation
+        if self.is_running(simulation_name): self.stop_simulation(simulation_name)
+        elif self.is_queued(simulation_name): self.cancel_simulation(simulation_name)
+
         # TODO: support different clusters
         host_id = host.id
 
@@ -6693,6 +6722,12 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Get screen name
+        screen_name = self.get_screen_name(simulation_name)
+
+        # Debugging
+        log.debug("Cancelling simulation '" + simulation_name + "' queued in screen session '" + screen_name + "' ...")
+
     # -----------------------------------------------------------------
 
     def cancel_simulation_job(self, simulation_name):
@@ -6702,6 +6737,12 @@ class SimulationManager(Configurable):
         :param simulation_name:
         :return:
         """
+
+        # Get job ID
+        job_id = self.get_job_id(simulation_name)
+
+        # Debugging
+        log.debug("Cancelling simulation '" + simulation_name + "' by deleting job '" + str(job_id) + "' ...")
 
     # -----------------------------------------------------------------
 
@@ -6769,6 +6810,12 @@ class SimulationManager(Configurable):
         :param simulation_name:
         :return:
         """
+
+        # Get job ID
+        job_id = self.get_job_id(simulation_name)
+
+        # Debugging
+        log.debug("Stopping simulation by aborting job '" + str(job_id) + "'...")
 
     # -----------------------------------------------------------------
 
