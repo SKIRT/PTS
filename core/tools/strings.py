@@ -1476,3 +1476,26 @@ def number(real, ndecimal, ndigits, fill="0"):
 
 # -----------------------------------------------------------------
 
+def get_shortest(strings):
+
+    """
+    This function ...
+    :param strings:
+    :return:
+    """
+
+    return min(strings, key=len)
+
+# -----------------------------------------------------------------
+
+def get_longest(strings):
+
+    """
+    This function ...
+    :param strings:
+    :return:
+    """
+
+    return max(strings, key=len)
+
+# -----------------------------------------------------------------

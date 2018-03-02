@@ -376,7 +376,59 @@ def contains_path(directory, path):
     path = absolute_path(path)
 
     # Check whether directory path is contained within the other path
-    return directory in path
+    #return directory in path # NO: returns TRUE for contains_path("/test/path/ol", "/test/path/ola")
+
+    # If the paths are the same: doesn't CONTAIN
+    if directory == path: return False
+
+    # Split
+    directory_parts = directory.split("/")
+    path_parts = path.split("/")
+
+    #print(directory_parts)
+    #print(path_parts)
+
+    # Check each part
+    #for index, part in enumerate(path_parts):
+        #if part not in directory_parts: return False
+    #return True
+
+    # Loop over the directory parts
+    for index, part in enumerate(directory_parts):
+        path_part = path_parts[index]
+        #print(part, path_part)
+        if path_part != part: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def any_contains_path(directories, path):
+
+    """
+    This function ...
+    :param directories:
+    :param path:
+    :return:
+    """
+
+    for directory in directories:
+        if contains_path(directory, path): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def contains_any_path(directory, paths):
+
+    """
+    This function ...
+    :param directory:
+    :param paths:
+    :return:
+    """
+
+    for path in paths:
+        if contains_path(directory, path): return True
+    return False
 
 # -----------------------------------------------------------------
 
@@ -3087,11 +3139,6 @@ def equal_files_hash(filepath_a, filepath_b):
 
 # -----------------------------------------------------------------
 
-def allnamesequal(name):
-	return all(n==name[0] for n in name[1:])
-
-# -----------------------------------------------------------------
-
 def common_directory(paths, sep='/'):
 
     """
@@ -3102,6 +3149,6 @@ def common_directory(paths, sep='/'):
     """
 
     bydirectorylevels = zip(*[p.split(sep) for p in paths])
-    return sep.join(x[0] for x in takewhile(allnamesequal, bydirectorylevels))
+    return sep.join(x[0] for x in takewhile(sequences.all_equal, bydirectorylevels))
 
 # -----------------------------------------------------------------

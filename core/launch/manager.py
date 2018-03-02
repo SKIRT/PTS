@@ -119,6 +119,8 @@ _info_command_name = "info"
 _open_command_name = "open"
 _sed_command_name = "sed"
 _datacube_command_name = "datacube"
+_fluxes_command_name = "fluxes"
+_images_command_name = "images"
 _input_command_name = "input"
 _output_command_name = "output"
 _extraction_command_name = "extraction"
@@ -166,7 +168,9 @@ commands[_parallelizations_command_name] = ("show_parallelizations_command", Tru
 commands[_info_command_name] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
 commands[_open_command_name] = (None, None, "open input, output or base simulation directory", "simulation")
 commands[_sed_command_name] = ("plot_seds_command", True, "plot SED(s) of a simulation", "simulation")
-commands[_datacube_command_name] = ("show_datacubes_command", True, "plot datacube(s) of a simulation", "simulation")
+commands[_datacube_command_name] = ("plot_datacubes_command", True, "plot datacube(s) of a simulation", "simulation")
+commands[_fluxes_command_name] = ("plot_fluxes_command", True, "plot mock fluxes calculated for a simulation", "simulation")
+commands[_images_command_name] = ("plot_images_command", True, "plot mock images created for a simulation", "simulation")
 commands[_input_command_name] = ("show_input_command", True, "show simulation input", "simulation")
 commands[_output_command_name] = ("show_output_command", True, "show simuation output", "simulation")
 commands[_extraction_command_name] = ("show_extraction_command", True, "show simulation extraction output", "simulation")
@@ -1415,17 +1419,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_timeline(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
     def get_runtime(self, simulation_name):
 
         """
@@ -1746,8 +1739,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_timeline_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        extraction = self.get_extraction_output(simulation_name)
+        return extraction.has_single_timeline
+
+    # -----------------------------------------------------------------
+
     @memoize_method
-    def get_timeline(self, simulation_name):
+    def get_timeline_for_simulation(self, simulation_name):
 
         """
         This function ...
@@ -1760,8 +1766,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_memory_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        extraction = self.get_extraction_output(simulation_name)
+        return extraction.has_single_memory
+
+    # -----------------------------------------------------------------
+
     @memoize_method
-    def get_memory(self, simulation_name):
+    def get_memory_for_simulation(self, simulation_name):
 
         """
         This function ...
@@ -1787,6 +1806,32 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_sed_plots_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        plotting = self.get_plotting_output(simulation_name)
+        return plotting.has_seds
+
+    # -----------------------------------------------------------------
+
+    def get_sed_plot_paths_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        plotting = self.get_plotting_output(simulation_name)
+        return plotting.seds
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_misc_output(self, simulation_name):
 
@@ -1797,6 +1842,244 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).misc_output
+
+    # -----------------------------------------------------------------
+
+    def has_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_fluxes
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return ObservedSED.from_file(misc.single_fluxes)
+
+    # -----------------------------------------------------------------
+
+    def has_image_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_image_fluxes
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_image_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return ObservedSED.from_file(misc.single_image_fluxes)
+
+    # -----------------------------------------------------------------
+
+    def has_images_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_images
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        from ...magic.core.frame import Frame
+
+        # Initialize a dictionary for the images
+        images = OrderedDict()
+
+        # Get misc output
+        misc = self.get_misc_output(simulation_name)
+
+        # Loop over the files
+        for filepath in misc.images:
+            name = fs.strip_extension(fs.name(filepath))
+            frame = Frame.from_file(filepath)
+            images[name] = frame
+
+        # Return the dictionary of images
+        return images
+
+    # -----------------------------------------------------------------
+
+    def has_images_for_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_images_for_fluxes
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        from ...magic.core.frame import Frame
+
+        # Initialize a dictionary for the images
+        images = OrderedDict()
+
+        # Get misc output
+        misc = self.get_misc_output(simulation_name)
+
+        # Loop over the files
+        for filepath in misc.images_for_fluxes:
+            name = fs.strip_extension(fs.name(filepath))
+            frame = Frame.from_file(filepath)
+            images[name] = frame
+
+        # Return the dictionary of images
+        return images
+
+    # -----------------------------------------------------------------
+
+    def has_fluxes_plot_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes_plot_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.single_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def has_image_fluxes_plot_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_images_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def get_image_fluxes_plot_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.single_images_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def has_images_plot_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_images_plot
+
+    # -----------------------------------------------------------------
+
+    def get_images_plot_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.single_images_plot
+
+    # -----------------------------------------------------------------
+
+    def has_images_for_fluxes_plot_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_images_for_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_fluxes_plot_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.single_images_for_fluxes_plot
 
     # -----------------------------------------------------------------
 
@@ -3801,22 +4084,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_seds_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
-
-        # Plot
-        self.plot_simulation_seds(simulation_name)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def reference_seds(self):
 
@@ -3846,7 +4113,63 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_simulation_seds(self, simulation_name, path=None):
+    @lazyproperty
+    def plot_seds_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition()
+        definition.add_flag("from_file", "use SED plot from file", None)
+        definition.add_optional("path", "string", "destination filepath")
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_seds_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_seds_definition)
+
+        # Plot
+        self.plot_simulation_seds(simulation_name, path=config.path, from_file=config.from_file)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulation_seds(self, simulation_name, path=None, from_file=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param path:
+        :param from_file:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting simulated SEDs for simulation '" + simulation_name + "' ...")
+
+        # Check whether plot file is present
+        if from_file is None: from_file = self.has_sed_plots_for_simulation(simulation_name)
+        elif from_file and not self.has_sed_plots_for_simulation(simulation_name)
+
+        # Use file plot
+        if from_file: self.get_sed_plots_for_simulation(simulation_name, path=path)
+
+        # Make plots
+        else: self.make_sed_plots_for_simulation(simulation_name, path=path)
+
+    # -----------------------------------------------------------------
+
+    def get_sed_plots_for_simulation(self, simulation_name, path=None):
 
         """
         This function ...
@@ -3855,8 +4178,26 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Debugging
-        log.debug("Plotting simulated SEDs for simulation '" + simulation_name + "' ...")
+        # Get the paths
+        filepaths = self.get_sed_plot_paths_for_simulation(simulation_name)
+        filepath = strings.get_shortest(filepaths)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_sed_plots_for_simulation(self, simulation_name, path=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param path:
+        :return:
+        """
 
         # Get simulation prefix
         prefix = self.get_simulation_prefix(simulation_name)
@@ -3866,6 +4207,11 @@ class SimulationManager(Configurable):
 
         # Create SED plotter
         plotter = SEDPlotter()
+
+        # Add reference SEDs
+        for name in self.reference_seds:
+            sed = self.reference_seds[name]
+            plotter.add_sed(sed, label=name)
 
         # Plot the SEDs
         for path in output.seds:
@@ -3891,18 +4237,19 @@ class SimulationManager(Configurable):
         # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
 
         # Set filepath
-        filepath = fs.join(introspection.pts_temp_dir, "seds.pdf")
+        if path is not None: filepath = path
+        else: filepath = fs.join(introspection.pts_temp_dir, "seds.pdf")
 
         # Run the plotter
         plotter.run(output=filepath)
 
-        # Open the file
-        fs.open_file(filepath)
+        # Open the file, if path was not specified
+        if path is None: fs.open_file(filepath)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_datacubes_definition(self):
+    def plot_datacubes_definition(self):
 
         """
         This function ...
@@ -3921,7 +4268,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_datacubes_command(self, command):
+    def plot_datacubes_command(self, command):
 
         """
         This function ...
@@ -3930,14 +4277,14 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_datacubes_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_datacubes_definition)
 
         # Plot
-        self.show_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments)
+        self.plot_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments)
 
     # -----------------------------------------------------------------
 
-    def show_simulation_datacubes(self, simulation_name, contributions=None, instruments=None):
+    def plot_simulation_datacubes(self, simulation_name, contributions=None, instruments=None):
 
         """
         This function ...
@@ -3948,29 +4295,29 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Showing simulated datacubes for simulation '" + simulation_name + "' ...")
+        log.debug("Plotting simulated datacubes for simulation '" + simulation_name + "' ...")
 
         # Total
-        if contributions is None or "total" in contributions: self.show_total_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "total" in contributions: self.plot_total_datacubes(simulation_name, instruments=instruments)
 
         # Direct
-        if contributions is None or "direct" in contributions: self.show_direct_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "direct" in contributions: self.plot_direct_datacubes(simulation_name, instruments=instruments)
 
         # Transparent
-        if contributions is None or "transparent" in contributions: self.show_transparent_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "transparent" in contributions: self.plot_transparent_datacubes(simulation_name, instruments=instruments)
 
         # Scattered
-        if contributions is None or "scattered" in contributions: self.show_scattered_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "scattered" in contributions: self.plot_scattered_datacubes(simulation_name, instruments=instruments)
 
         # Dust
-        if contributions is None or "dust" in contributions: self.show_dust_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "dust" in contributions: self.plot_dust_datacubes(simulation_name, instruments=instruments)
 
         # Dust-scattered
-        if contributions is None or "dustscattered" in contributions: self.show_dustscattered_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "dustscattered" in contributions: self.plot_dustscattered_datacubes(simulation_name, instruments=instruments)
 
     # -----------------------------------------------------------------
 
-    def _show_datacubes(self, simulation_name, paths, instruments=None):
+    def _plot_datacubes(self, simulation_name, paths, instruments=None):
 
         """
         This function ...
@@ -4004,7 +4351,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_total_datacubes(self, simulation_name, instruments=None):
+    def plot_total_datacubes(self, simulation_name, instruments=None):
 
         """
         This function ...
@@ -4019,12 +4366,12 @@ class SimulationManager(Configurable):
         # Get simulation output
         output = self.get_output(simulation_name)
 
-        # Show the datacubes
-        self._show_datacubes(simulation_name, output.total_images, instruments=instruments)
+        # Plot the datacubes
+        self._plot_datacubes(simulation_name, output.total_images, instruments=instruments)
 
     # -----------------------------------------------------------------
 
-    def show_direct_datacubes(self, simulation_name, instruments=None):
+    def plot_direct_datacubes(self, simulation_name, instruments=None):
 
         """
         This function ...
@@ -4034,17 +4381,17 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Showing direct datacubes for simulation '" + simulation_name + "' ...")
+        log.debug("Plotting direct datacubes for simulation '" + simulation_name + "' ...")
 
         # Get simulation output
         output = self.get_output(simulation_name)
 
-        # Show the datacubes
-        self._show_datacubes(simulation_name, output.direct_images, instruments=instruments)
+        # Plot the datacubes
+        self._plot_datacubes(simulation_name, output.direct_images, instruments=instruments)
 
     # -----------------------------------------------------------------
 
-    def show_transparent_datacubes(self, simulation_name, instruments=None):
+    def plot_transparent_datacubes(self, simulation_name, instruments=None):
 
         """
         This function ...
@@ -4054,17 +4401,17 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Showing transparent datacubes for simulation '" + simulation_name + "' ...")
+        log.debug("Plotting transparent datacubes for simulation '" + simulation_name + "' ...")
 
         # Get simulation output
         output = self.get_output(simulation_name)
 
-        # Show the datacubes
-        self._show_datacubes(simulation_name, output.transparent_images, instruments=instruments)
+        # Plot the datacubes
+        self._plot_datacubes(simulation_name, output.transparent_images, instruments=instruments)
 
     # -----------------------------------------------------------------
 
-    def show_scattered_datacubes(self, simulation_name, instruments=None):
+    def plot_scattered_datacubes(self, simulation_name, instruments=None):
 
         """
         This function ...
@@ -4074,17 +4421,17 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Showing scattered datacubes for simulation '" + simulation_name + "' ...")
+        log.debug("Plotting scattered datacubes for simulation '" + simulation_name + "' ...")
 
         # Get the simulation output
         output = self.get_output(simulation_name)
 
-        # Show the datacubes
-        self._show_datacubes(simulation_name, output.scattered_images, instruments=instruments)
+        # Plot the datacubes
+        self._plot_datacubes(simulation_name, output.scattered_images, instruments=instruments)
 
     # -----------------------------------------------------------------
 
-    def show_dust_datacubes(self, simulation_name, instruments=None):
+    def plot_dust_datacubes(self, simulation_name, instruments=None):
 
         """
         This function ...
@@ -4094,17 +4441,17 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Showing dust datacubes for simulation '" + simulation_name + "' ...")
+        log.debug("Plotting dust datacubes for simulation '" + simulation_name + "' ...")
 
         # Get the simulation output
         output = self.get_output(simulation_name)
 
-        # Show the datacubes
-        self._show_datacubes(simulation_name, output.dust_images, instruments=instruments)
+        # Plot the datacubes
+        self._plot_datacubes(simulation_name, output.dust_images, instruments=instruments)
 
     # -----------------------------------------------------------------
 
-    def show_dustscattered_datacubes(self, simulation_name, instruments=None):
+    def plot_dustscattered_datacubes(self, simulation_name, instruments=None):
 
         """
         This function ...
@@ -4114,13 +4461,374 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Showing dust-scattered datacubes for simulation '" + simulation_name + "' ...")
+        log.debug("Plotting dust-scattered datacubes for simulation '" + simulation_name + "' ...")
 
         # Get the simulation output
         output = self.get_output(simulation_name)
 
         # Show
-        self._show_datacubes(simulation_name, output.dust_scattered_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.dust_scattered_images, instruments=instruments)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_fluxes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition()
+        definition.add_flag("from_images", "plot the fluxes calculated from images (by default, determined automatically)", None)
+        definition.add_flag("from_file", "use an already existing plot file (by default, determined automatically)", None)
+        definition.add_optional("path", "string", "destination filepath")
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get the simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_fluxes_definition)
+
+        # Determine flag
+        if config.from_images is None:
+
+            config.pop("from_images")
+
+            # Plot already present?
+            if self.has_fluxes_plot_for_simulation(simulation_name): from_images = False
+            elif self.has_image_fluxes_plot_for_simulation(simulation_name): from_images = True
+
+            # Plot not yet present, but fluxes are present?
+            elif self.has_fluxes_for_simulation(simulation_name): from_images = False
+            elif self.has_image_fluxes_for_simulation(simulation_name): from_images = True
+
+            # Neither is present
+            else: raise RuntimeError("No fluxes for simulation '" + simulation_name + "'")
+
+        else: from_images = config.pop("from_images")
+
+        # From images
+        if from_images: self.plot_simulation_fluxes_from_images(simulation_name, **config)
+
+        # Regular
+        else: self.plot_simulation_fluxes(simulation_name, **config)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulation_fluxes(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting mock fluxes for simulation '" + simulation_name + "' ...")
+
+        # Check whether plot is already present
+        from_plot_file = kwargs.pop("from_file", None)
+        if from_plot_file is None: from_plot_file = self.has_fluxes_plot_for_simulation(simulation_name)
+        elif from_plot_file and not self.has_fluxes_plot_for_simulation(simulation_name): raise IOError("Plot file not present")
+
+        # Use file plot
+        if from_plot_file: self.get_fluxes_plot_for_simulation(simulation_name, **kwargs)
+
+        # Make the plot
+        else: self.make_fluxes_plot_for_simulation(simulation_name, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the plot path
+        filepath = self.get_fluxes_plot_path_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_fluxes_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the fluxes
+        fluxes = self.get_fluxes_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulation_fluxes_from_images(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting mock fluxes from images for simulation '" + simulation_name + "' ...")
+
+        # Check whether plot is already present
+        from_plot_file = kwargs.pop("from_file", None)
+        if from_plot_file is None: from_plot_file = self.has_image_fluxes_plot_for_simulation(simulation_name)
+        elif from_plot_file and not self.has_image_fluxes_plot_for_simulation(simulation_name): raise IOError("Plot file not present")
+
+        # Use file plot
+        if from_plot_file: self.get_image_fluxes_plot_for_simulation(simulation_name, **kwargs)
+
+        # Make the plot
+        else: self.make_image_fluxes_plot_for_simulation(simulation_name, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def get_image_fluxes_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the plot path
+        filepath = self.get_image_fluxes_plot_path_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_image_fluxes_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the fluxes
+        fluxes = self.get_image_fluxes_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_images_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition()
+        definition.add_flag("for_fluxes", "plot the images created for calculating fluxes (by default, determined automatically)", None)
+        definition.add_flag("from_file", "use an already existing plot file (by default, determined automatically)", None)
+        definition.add_optional("path", "string", "destination filepath")
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_images_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get the simulation name
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_images_definition)
+
+        # Determine flag
+        if config.for_fluxes is None:
+
+            config.pop("for_fluxes")
+
+            # Check if plots are already created
+            if self.has_images_plot_for_simulation(simulation_name): for_fluxes = False
+            elif self.has_images_for_fluxes_plot_for_simulation(simulation_name): for_fluxes = True
+
+            # Check if images are present
+            elif self.has_images_for_simulation(simulation_name): for_fluxes = False
+            elif self.has_images_for_fluxes_for_simulation(simulation_name): for_fluxes = True
+
+            # Neither is present
+            else: raise RuntimeError("No images for simulation '" + simulation_name + "'")
+
+        # Flag is passed
+        else: for_fluxes = config.pop("for_fluxes")
+
+        # For fluxes
+        if for_fluxes: self.plot_simulation_images_for_fluxes(simulation_name, **config)
+
+        # Regular
+        else: self.plot_simulation_images(simulation_name, **config)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulation_images(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting mock images for simulation '" + simulation_name + "' ...")
+
+        # Check whether the plot is already present
+        from_plot_file = kwargs.pop("from_file", None)
+        if from_plot_file is None: from_plot_file = self.has_images_plot_for_simulation(simulation_name)
+        elif from_plot_file and not self.has_images_plot_for_simulation(simulation_name): raise IOError("Plot file not present")
+
+        # Use file plot
+        if from_plot_file: self.get_images_plot_for_simulation(simulation_name, **kwargs)
+
+        # Make plot
+        else: self.make_images_plot_for_simulation(simulation_name, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def get_images_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the plot path
+        filepath = self.get_images_plot_path_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_images_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the images
+        images = self.get_images_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def plot_simulation_images_for_fluxes(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting mock images (for fluxes) for simulation '" + simulation_name + "' ...")
+
+        # Check whether the plot is already present
+        from_plot_file = kwargs.pop("from_file", None)
+        if from_plot_file is None: from_plot_file = self.has_images_for_fluxes_plot_for_simulation(simulation_name)
+        elif from_plot_file and not self.has_images_for_fluxes_plot_for_simulation(simulation_name): raise IOError("Plot file not present")
+
+        # Use file plot
+        if from_plot_file: self.get_images_for_fluxes_plot_for_simulation(simulation_name, **kwargs)
+
+        # Make plot
+        else: self.make_images_for_fluxes_plot_for_simulation(simulation_name, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_fluxes_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the plot path
+        filepath = self.get_images_for_fluxes_plot_path_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_images_for_fluxes_plot_for_simulation(self, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the images
+        images = self.get_images_for_fluxes_for_simulation(simulation_name)
+
+        # Get destination path
+        path = kwargs.pop("path", None)
 
     # -----------------------------------------------------------------
 
@@ -10404,7 +11112,7 @@ class SimulationManager(Configurable):
         log.debug("Plotting timeline for simulation '" + simulation_name + "' ...")
 
         # Get the timeline of the simulation
-        timeline = self.get_timeline(simulation_name)
+        timeline = self.get_timeline_for_simulation(simulation_name)
 
         # Plot the timeline
         plot_timeline(timeline, path=path)

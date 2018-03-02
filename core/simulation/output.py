@@ -639,10 +639,11 @@ class Output(object):
         # Initialize the total size
         size = 0. * u("byte")
 
-        # Loop over the output types
-        for output_type in self.files:
-            paths = self.files[output_type]
-            for path in paths: size += fs.file_size(path)
+        # Loop over all the directories not inside another directory
+        for dirpath in self.all_directory_paths_not_in_directory: size += fs.directory_size(dirpath)
+
+        # Loop over all the files not inside a directory (loose files)
+        for filepath in self.loose_file_paths: size += fs.file_size(filepath)
 
         # Return the total size
         return size
@@ -791,7 +792,7 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def all_paths(self):
 
         """
@@ -800,6 +801,156 @@ class Output(object):
         """
 
         return list(self.__iter__())
+
+    # -----------------------------------------------------------------
+
+    def iter_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for output_type in self.files:
+            for path in self.files[output_type]: yield path
+
+    # -----------------------------------------------------------------
+
+    def iter_files_not_in_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all file paths
+        for path in self.iter_files():
+
+            # Skip files that are contained by any of the directories
+            if fs.any_contains_path(self.all_directory_paths, path): continue
+
+            # Give the file path
+            yield path
+
+    # -----------------------------------------------------------------
+
+    def iter_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for output_type in self.directories:
+            for path in self.directories[output_type]: yield path
+
+    # -----------------------------------------------------------------
+
+    def iter_directories_not_with_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all directory paths
+        for path in self.iter_directories():
+
+            # Skip directories that contain any of the files
+            if fs.contains_any_path(path, self.all_file_paths): continue
+
+            # Give the directory path
+            yield path
+
+    # -----------------------------------------------------------------
+
+    def iter_directories_not_in_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all directory paths
+        for path in self.iter_directories():
+
+            # Skip directories that are contained by any of the (other) directories
+            if fs.any_contains_path(self.all_directory_paths, path): continue
+
+            # Give the directory path
+            yield path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_file_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.iter_files())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_file_paths_not_in_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.iter_files_not_in_directory())
+
+    # -----------------------------------------------------------------
+
+    @property
+    def loose_file_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.all_file_paths_not_in_directory
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_directory_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.iter_directories())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_directory_paths_not_with_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.iter_directories_not_with_file())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_directory_paths_not_in_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.iter_directories_not_in_directory())
 
     # -----------------------------------------------------------------
 
@@ -2274,6 +2425,126 @@ class ExtractionOutput(Output):
         # Load
         return cls(*filepaths)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def ntimeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.timeline)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.timeline)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.timeline)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.timeline)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_timeline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.timeline)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmemory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.memory)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.memory)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.memory)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.memory)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.memory)
+
 # -----------------------------------------------------------------
 
 # The various plotting output types
@@ -2369,6 +2640,42 @@ class PlottingOutput(Output):
         filepaths = fs.files_in_path(path, extension=["pdf", "png"])
         return cls(*filepaths)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def nseds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.seds)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.seds)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.seds)
+
 # -----------------------------------------------------------------
 
 # The various misc output types
@@ -2377,6 +2684,10 @@ misc_output_types.fluxes = "fluxes"
 misc_output_types.image_fluxes = "image fluxes"
 misc_output_types.images = "images"
 misc_output_types.images_for_fluxes = "images for fluxes"
+misc_output_types.fluxes_plot = "fluxes plot"
+misc_output_types.images_fluxes_plot = "image fluxes plot"
+misc_output_types.images_plot = "images plot"
+misc_output_types.images_for_fluxes_plot = "images for fluxes plot"
 
 # Description of the misc output types
 misc_output_type_choices = dict()
@@ -2384,6 +2695,10 @@ misc_output_type_choices[misc_output_types.fluxes] = "mock fluxes"
 misc_output_type_choices[misc_output_types.image_fluxes] = "mock fluxes from images"
 misc_output_type_choices[misc_output_types.images] = "mock images"
 misc_output_type_choices[misc_output_types.images_for_fluxes] = "images created for mock fluxes"
+misc_output_type_choices[misc_output_types.fluxes_plot] = "plots of the mock fluxes"
+misc_output_type_choices[misc_output_types.images_fluxes_plot] = "plots of the mock fluxes from images"
+misc_output_type_choices[misc_output_types.images_plot] = "plot of the mock images"
+misc_output_type_choices[misc_output_types.images_for_fluxes_plot] = "plot of the images created for mock fluxes"
 
 # -----------------------------------------------------------------
 
@@ -2420,6 +2735,14 @@ def get_misc_output_type(filename, directory):
 
         if dirdirdirname == "image fluxes": return misc_output_types.images_for_fluxes
         else: return misc_output_types.images
+
+    # SED plot
+    elif "fluxes" in filename and (filename.endswith(".png") or filename.endswith(".pdf")):
+
+        # From simulated fluxes or images?
+        if dirname == "fluxes": return misc_output_types.fluxes_plot
+        elif dirname == "image fluxes": return misc_output_types.images_fluxes_plot
+        else: return None
 
     # No match
     else: return None
@@ -2529,5 +2852,437 @@ class MiscOutput(Output):
 
         # Create the object
         return cls(filepaths, dirpaths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimage_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.image_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.image_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.image_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.image_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.image_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.images)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.images)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.images)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimages_for_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.images_for_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_for_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.images_for_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_for_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.images_for_fluxes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimages_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.images_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_fluxes_plot(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.images_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_images_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.images_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.images_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_images_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.images_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimages_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.images_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.images_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_images_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.images_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.images_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_images_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.images_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimages_for_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_nfiles(self._output_types.images_for_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images_for_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_files(self._output_types.images_for_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_images_for_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.images_for_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_for_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_files(self._output_types.images_for_fluxes_plot)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_images_for_fluxes_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.images_for_fluxes_plot)
 
 # -----------------------------------------------------------------

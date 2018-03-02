@@ -588,6 +588,19 @@ def all_none(lst):
 
 # -----------------------------------------------------------------
 
+# Short implementation:
+# def all_equal(lst):
+#
+#     """
+#     This function ...
+#     :param lst:
+#     :return:
+#     """
+#
+# 	return all(n==lst[0] for n in lst[1:])
+
+# -----------------------------------------------------------------
+
 def all_equal(lst, ignore_none=False, ignore=None):
 
     """
