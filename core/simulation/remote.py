@@ -1656,8 +1656,15 @@ class SKIRTRemote(Remote):
         modules = []
         # module spider mympirun
         #modules.append("vsc-mympirun/3.4.3-intel-2016b-Python-2.7.12")
-        modules.append("iimpi/2016b") # this loads GCC, icc, impi, python, iimpi, vsc-base, vsc-mympirun etc.
-        modules.append("vsc-mympirun") # this loads mympirun
+
+        local_skirt_version = introspection.skirt_main_version()
+        if local_skirt_version == 7:
+            modules.append("iimpi/2016b") # this loads GCC, icc, impi, python, iimpi, vsc-base, vsc-mympirun etc.
+            modules.append("vsc-mympirun") # this loads mympirun
+        elif local_skirt_version == 8:
+            modules.append("intel")
+            modules.append("CMake/3.10.1-GCCcore-6.4.0")
+        else: raise ValueError("Invalid version")
 
         # Create a job script next to the (local) simulation's ski file
         jobscript_name = fs.name(local_jobscript_path)
