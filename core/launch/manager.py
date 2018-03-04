@@ -73,6 +73,7 @@ from ..plot.timeline import plot_timeline
 from ..extract.timeline import TimeLineTable, extract_timeline
 from ..extract.memory import MemoryUsageTable, extract_memory
 from ..units.unit import parse_unit as u
+from ..simulation.output import write_cache_path
 
 # -----------------------------------------------------------------
 
@@ -7387,6 +7388,9 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Caching output of simulation '" + simulation_name + "' ...")
+
+        # Set
+        write_cache_path(directory_path, cache_path)
 
     # -----------------------------------------------------------------
 

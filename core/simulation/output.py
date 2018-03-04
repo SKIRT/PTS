@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+from abc import ABCMeta, abstractproperty
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -22,6 +22,45 @@ from ..basics.map import Map
 from ..tools.utils import lazyproperty, memoize_method
 from ..units.unit import parse_unit as u
 from ..basics.log import log
+
+# -----------------------------------------------------------------
+
+cached_filename = "cached.dat"
+cached_type_name = "cached"
+
+# -----------------------------------------------------------------
+
+def get_cache_path(directory_path):
+
+    """
+    This function ...
+    :param directory_path:
+    :return:
+    """
+
+    # Determine file path
+    filepath = fs.join(directory_path, cached_filename)
+    if not fs.is_file(filepath): return None
+
+    # Get the cache path
+    return fs.get_first_line(filepath)
+
+# -----------------------------------------------------------------
+
+def write_cache_path(directory_path, cache_path):
+
+    """
+    This function ...
+    :param directory_path:
+    :param cache_path:
+    :return:
+    """
+
+    # Determine file path
+    filepath = fs.join(directory_path, cached_filename)
+
+    # Write
+    fs.write_line(filepath, cache_path)
 
 # -----------------------------------------------------------------
 
@@ -235,8 +274,11 @@ def get_output_type(filename):
     :return:
     """
 
+    # Cached file
+    if filename == cached_filename: return cached_type_name
+
     ## ISRF
-    if filename.endswith("_ds_isrf.dat"): return output_types.isrf
+    elif filename.endswith("_ds_isrf.dat"): return output_types.isrf
 
     ## Absorption
     elif filename.endswith("_ds_abs.dat"): return output_types.absorption
@@ -354,6 +396,10 @@ class Output(object):
     __metaclass__ = ABCMeta
     _output_types = None
     _output_type_choices = None
+    _with_directories = False
+    _with_extensions = None
+    _without_extensions = None
+    _recursive = False
 
     # -----------------------------------------------------------------
 
@@ -401,6 +447,9 @@ class Output(object):
         get_prefix = kwargs.pop("get_prefix", False)
         prefix = None
 
+        # Path of cached directory
+        cached_path = None
+
         # Loop over the filepaths, categorize
         for filepath in args:
 
@@ -419,9 +468,28 @@ class Output(object):
             # Get the output type
             output_type = self.get_type(filename, directory=directory)
 
+            # Cached?
+            if output_type == cached_type_name:
+                if cached_path is not None: raise RuntimeError("Something went wrong")
+                cached_path = get_cache_path(directory)
+                continue
+
             # Add the type
             if output_type is None: self.files[other_name].append(filepath)
             else: self.files[output_type].append(filepath)
+
+        # Load cached files and directories
+        if cached_path is not None:
+
+            # Files
+            filepaths = fs.files_in_path(cached_path, startswith=prefix, extension=self._with_extensions,
+                                         not_extension=self._without_extensions, recursive=self._recursive)
+            self.load_files(*filepaths, get_prefix=get_prefix)
+
+            # Directories
+            if self._with_directories:
+                dirpaths = fs.directories_in_path(cached_path, recursive=self._recursive)
+                self.load_directories(*dirpaths)
 
         # Return the prefix
         if get_prefix: return prefix
@@ -1090,6 +1158,7 @@ class SimulationOutput(Output):
 
     _output_types = output_types
     _output_type_choices = output_type_choices
+    _without_extensions = "ski"
 
     # -----------------------------------------------------------------
 
@@ -1146,7 +1215,7 @@ class SimulationOutput(Output):
         :return:
         """
 
-        filepaths = fs.files_in_path(path, startswith=prefix, not_extension="ski")
+        filepaths = fs.files_in_path(path, startswith=prefix, not_extension=cls._without_extensions)
         return cls(*filepaths)
 
     # -----------------------------------------------------------------
@@ -1162,7 +1231,7 @@ class SimulationOutput(Output):
         :return:
         """
 
-        filepaths = remote.files_in_path(path, startswith=prefix, not_extension="ski")
+        filepaths = remote.files_in_path(path, startswith=prefix, not_extension=cls._without_extensions)
         return cls(*filepaths)
 
     # -----------------------------------------------------------------
@@ -2345,8 +2414,11 @@ def get_extraction_output_type(filename):
     :return:
     """
 
+    # Cached file
+    if filename == cached_filename: return cached_type_name
+
     ## Timeline
-    if filename == "timeline.dat": return extraction_output_types.timeline
+    elif filename == "timeline.dat": return extraction_output_types.timeline
 
     ## Memory
     elif filename == "memory.dat": return extraction_output_types.memory
@@ -2565,8 +2637,11 @@ def get_plotting_output_type(filename):
     :return:
     """
 
+    # Cached file
+    if filename == cached_filename: return cached_type_name
+
     # SEDs
-    if "sed" in filename and (filename.endswith("png") or filename.endswith("pdf")): return plotting_output_types.seds
+    elif "sed" in filename and (filename.endswith("png") or filename.endswith("pdf")): return plotting_output_types.seds
 
     # No match
     else: return None
@@ -2581,6 +2656,7 @@ class PlottingOutput(Output):
 
     _output_types = plotting_output_types
     _output_type_choices = plotting_output_type_choices
+    _with_extensions = ["pdf", "png"]
 
     # -----------------------------------------------------------------
 
@@ -2637,7 +2713,7 @@ class PlottingOutput(Output):
         """
 
         # Get files
-        filepaths = fs.files_in_path(path, extension=["pdf", "png"])
+        filepaths = fs.files_in_path(path, extension=cls._with_extensions)
         return cls(*filepaths)
 
     # -----------------------------------------------------------------
@@ -2710,6 +2786,9 @@ def get_misc_output_type(filename, directory):
     :param directory:
     :return:
     """
+
+    # Cached file
+    if filename == cached_filename: return cached_type_name
 
     # Check whether directory is defined
     if directory is None: raise ValueError("Cannot determine misc output type if directory path is not specified")
@@ -2787,6 +2866,8 @@ class MiscOutput(Output):
 
     _output_types = misc_output_types
     _output_type_choices = misc_output_type_choices
+    _with_directories = True
+    _recursive = True
 
     # -----------------------------------------------------------------
 
@@ -2847,8 +2928,8 @@ class MiscOutput(Output):
         """
 
         # Get paths
-        filepaths = fs.files_in_path(path, recursive=True)
-        dirpaths = fs.directories_in_path(path, recursive=True)
+        filepaths = fs.files_in_path(path, recursive=cls._recursive)
+        dirpaths = fs.directories_in_path(path, recursive=cls._recursive)
 
         # Create the object
         return cls(filepaths, dirpaths)
