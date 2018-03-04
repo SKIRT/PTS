@@ -484,11 +484,15 @@ class Output(object):
             # Files
             filepaths = fs.files_in_path(cached_path, startswith=prefix, extension=self._with_extensions,
                                          not_extension=self._without_extensions, recursive=self._recursive)
+            nfiles = len(filepaths)
+            if nfiles > 0: self.has_cached_files = True
             self.load_files(*filepaths, get_prefix=get_prefix)
 
             # Directories
             if self._with_directories:
                 dirpaths = fs.directories_in_path(cached_path, recursive=self._recursive)
+                ndirs = len(dirpaths)
+                if ndirs > 0: self.has_cached_directories = True
                 self.load_directories(*dirpaths)
 
         # Return the prefix
@@ -530,11 +534,27 @@ class Output(object):
         :param args:
         """
 
+        # Flags
+        self.has_cached_files = False
+        self.has_cached_directories = False
+
         # Dictionary of filepaths
         self.files = defaultdict(list)
 
         # Dictionary of directory paths
         self.directories = defaultdict(list)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cached(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_cached_files or self.has_cached_directories
 
     # -----------------------------------------------------------------
 

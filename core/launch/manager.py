@@ -1739,6 +1739,54 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_output_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).output_path
+
+    # -----------------------------------------------------------------
+
+    def get_extraction_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).extraction_path
+
+    # -----------------------------------------------------------------
+
+    def get_plotting_path(self, simulation_name):
+
+        """
+        THis function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).plotting_path
+
+    # -----------------------------------------------------------------
+
+    def get_misc_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).misc_path
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_output(self, simulation_name):
 
@@ -1749,6 +1797,43 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).output
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_noutput(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return len(self.get_output(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def has_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_noutput(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    def is_cached_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_output(simulation_name).has_cached
 
     # -----------------------------------------------------------------
 
@@ -7346,6 +7431,65 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def _cache_output(self, output, directory_path, cache_path):
+
+        """
+        This function ...
+        :param output:
+        :param directory_path: local output directory
+        :param cache_path: cache directory path
+        :return:
+        """
+
+        # Loop over the directories
+        for dirpath in output.all_directory_paths_not_in_directory:
+
+            # Determine relative directory path
+            relpath = fs.relative_to(dirpath, directory_path)
+
+            # Determine new path
+            new_path = fs.join(cache_path, relpath)
+
+            # Get directory name and containing directory
+            dirname = fs.name(dirpath)
+            cache_directory_path = fs.directory_of(dirpath)
+            if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
+
+            # Copy the directory
+            fs.copy_directory(dirpath, cache_directory_path)
+
+            # Check whether the directory is present
+            if not fs.is_directory(new_path): raise RuntimeError("Something went wrong")
+
+        # Loop over the files
+        for filepath in output.all_file_paths_not_in_directory:
+
+            # Determine relative file path
+            relpath = fs.relative_to(filepath, directory_path)
+
+            # Determine the new path
+            new_path = fs.join(cache_path, relpath)
+
+            # Get filename and containing directory
+            filename = fs.name(filepath)
+            cache_directory_path = fs.directory_of(dirpath)
+            if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
+
+            # Copy the file
+            fs.copy_file(filepath, cache_directory_path)
+
+            # Check whether the file is present
+            if not fs.is_file(new_path): raise RuntimeError("Something went wrong")
+
+        # Set
+        write_cache_path(directory_path, cache_path)
+
+        # Remove output files and directories
+        fs.remove_directories(output.all_directory_paths_not_in_directory)
+        fs.remove_files(output.all_file_paths_not_in_directory)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def cache_simulations_output_definition(self):
 
@@ -7374,7 +7518,53 @@ class SimulationManager(Configurable):
         splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_output_definition, name=name)
 
         # Loop over the simulations
-        for simulation_name in simulation_names: self.cache_simulation_output(simulation_name)
+        for simulation_name in simulation_names:
+
+            # Check whether there is output
+            if not self.has_output(simulation_name):
+                log.warning("No output for simulation '" + simulation_name + "': skipping ...")
+                continue
+
+            # Check whether already cached
+            if self.is_cached_output(simulation_name):
+                log.warning("Output for simulation '" + simulation_name + "' is already cached: skipping ...")
+                continue
+
+            # Cache
+            self.cache_simulation_output(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_cache_output_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Root path is given
+        if self.config.cache_root is not None:
+
+            # Get the relative simulation output path
+            simulation_output_path = self.get_output_path(simulation_name)
+            relative_output_path = fs.relative_to(simulation_output_path, self.config.cache_root)
+
+            # Determine the output cache path
+            output_cache_path = fs.create_directory_in(self.config.cache_path, relative_output_path, recursive=True)
+
+        # Root path is not given: create directory for the simulation in the given cache path
+        else:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(self.config.cache_path, simulation_name)
+
+            # Create output cache path
+            output_cache_path = fs.create_directory_in(simulation_cache_path, "out")
+
+        # Return the path
+        return output_cache_path
 
     # -----------------------------------------------------------------
 
@@ -7389,8 +7579,17 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Caching output of simulation '" + simulation_name + "' ...")
 
-        # Set
-        write_cache_path(directory_path, cache_path)
+        # Get the simulation output path
+        output_path = self.get_output_path(simulation_name)
+
+        # Get the simulation output
+        output = self.get_output(simulation_name)
+
+        # Get the cache output path
+        cache_output_path = self.get_cache_output_path_for_simulation(simulation_name)
+
+        # Cache
+        self._cache_output(output, output_path, cache_output_path)
 
     # -----------------------------------------------------------------
 
@@ -7422,7 +7621,12 @@ class SimulationManager(Configurable):
         splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_analysis_definition, name=name)
 
         # Loop over the simulations
-        for simulation_name in simulation_names: self.cache_simulation_analysis(simulation_name)
+        for simulation_name in simulation_names:
+
+            # Check whether there is analysis output
+
+            # Cache
+            self.cache_simulation_analysis(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -7438,13 +7642,16 @@ class SimulationManager(Configurable):
         log.debug("Caching analysis output of simulation '" + simulation_name + "' ...")
 
         # Extraction
-        self.cache_simulation_extraction(simulation_name)
+        if not self.is_cached_extraction(simulation_name): self.cache_simulation_extraction(simulation_name)
+        else: log.warning("Extraction output of simulation '" + simulation_name + "' is already cached: skipping ...")
 
         # Plotting
-        self.cache_simulation_plotting(simulation_name)
+        if not self.is_cached_plotting(simulation_name): self.cache_simulation_plotting(simulation_name)
+        else: log.warning("Plotting output of simulation '" + simulation_name + "' is already cached: skipping ...")
 
         # Misc
-        self.cache_simulation_misc(simulation_name)
+        if not self.is_cached_misc(simulation_name): self.cache_simulation_misc(simulation_name)
+        else: log.warning("Misc output of simulation '" + simulation_name + "' is already cached: skipping ...")
 
     # -----------------------------------------------------------------
 

@@ -98,6 +98,13 @@ definition.add_optional("reference_seds", "string_filepath_dictionary", "file pa
 
 # -----------------------------------------------------------------
 
+# Caching simulation output
+definition.add_optional("cache_path", "directory_path", "path to be used for caching")
+definition.add_optional("cache_root", "directory_path", "path of directory up in the hierarchy with respect to the simulation directories that should be set equivalent to the 'cache_path' and the intermediate directory structure should be created if necessary")
+definition.add_flag("cache_misc", "cache the misc output of analysed simulations")
+
+# -----------------------------------------------------------------
+
 # Writing
 definition.add_flag("write", "writing", True)
 definition.add_flag("write_assignment", "write the assignent scheme", None)

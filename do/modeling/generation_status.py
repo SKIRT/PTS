@@ -79,6 +79,7 @@ definition.add_flag("fix_success", "check success flags in assignment table")
 
 # Caching
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
+definition.add_flag("cache_misc", "cache the misc output of analysed simulations")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -184,7 +185,6 @@ if config.extra is not None: status_command = "status " + ",".join(config.extra)
 else: status_command = "status"
 
 # Set options
-#manager.config.show_status = not config.interactive
 manager.config.show_runtimes = config.show_runtimes
 manager.config.show_memory = config.show_memory
 manager.config.plot_runtimes = config.plot_runtimes
@@ -192,7 +192,6 @@ manager.config.plot_memory = config.plot_memory
 manager.config.interactive = config.interactive
 
 # Set status command
-#if config.interactive: manager.config.commands = ["status"]
 manager.config.commands = [status_command]
 
 manager.config.dry = config.dry
@@ -208,6 +207,12 @@ manager.config.backup_dir_path = manage_current_path
 manager.config.backup_dirname = "backup"
 manager.config.backup_simulations = True
 manager.config.backup_assignment = True
+
+# Set cache path
+if config.cache_volume is not None:
+    manager.config.cache_path = fs.get_volume_path(config.cache_volume)
+    manager.config.cache_misc = config.cache_misc
+    manager.config.cache_root = environment.path # set modeling path as cache root path
 
 # Set reference SEDs for plotting simulated SEDS
 reference_sed_paths = OrderedDict()
