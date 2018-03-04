@@ -137,6 +137,7 @@ _stop_command_name = "stop"
 _cancel_command_name = "cancel"
 _remove_command_name = "remove"
 _clear_command_name = "clear"
+_cache_command_name = "cache"
 _unretrieve_command_name = "unretrieve"
 _unanalyse_command_name = "unanalyse"
 _relaunch_command_name = "relaunch"
@@ -187,6 +188,7 @@ commands[_stop_command_name] = ("stop_simulations_command", True, "stop simulati
 commands[_cancel_command_name] = ("cancel_simulations_command", True, "cancel simulations", "simulations")
 commands[_remove_command_name] = ("remove_simulation_command", True, "remove simulation", "simulations")
 commands[_clear_command_name] = (None, None, "clear simulation output/input/analysis", "simulation")
+commands[_cache_command_name] = (None, None, "cache simulation/analysis output", "simulations")
 commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "unretrieve simulation", "simulation")
 commands[_unanalyse_command_name] = ("unanalyse_simulation_command", True, "unanalyse simulation", "simulation")
 commands[_relaunch_command_name] = ("relaunch_simulation_command", True, "relaunch simulations", "simulation")
@@ -252,6 +254,16 @@ clear_commands[_analysis_command_name] = ("clear_simulation_analysis_command", T
 clear_commands[_extraction_command_name] = ("clear_extraction_command", True, "clear simulation extraction output", "simulation")
 clear_commands[_plotting_command_name] = ("clear_plotting_command", True, "clear simulation plotting output", "simulation")
 clear_commands[_misc_command_name] = ("clear_misc_command", True, "clear simulation misc output", "simulation")
+
+# -----------------------------------------------------------------
+
+# Define cache commands
+cache_commands = OrderedDict()
+cache_commands[_output_command_name] = ("cache_simulations_output_command", True, "cache simulation output", "simulations")
+cache_commands[_analysis_command_name] = ("cache_simulations_analysis_command", True, "cache simulation analysis output", "simulations")
+cache_commands[_extraction_command_name] = ("cache_simulations_extraction_command", True, "cache simulation extraction output", "simulations")
+cache_commands[_plotting_command_name] = ("cache_simulations_plotting_command", True, "cache simulation plotting output", "simulations")
+cache_commands[_misc_command_name] = ("cache_simulations_misc_command", True, "cache simulation misc output", "simulations")
 
 # -----------------------------------------------------------------
 
@@ -2150,6 +2162,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_skifile_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).ski_path
+
+    # -----------------------------------------------------------------
+
+    def get_remote_skifile_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).remote_ski_path
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_instrument_names(self, simulation_name):
 
@@ -2227,6 +2263,42 @@ class SimulationManager(Configurable):
 
         # Return names
         return ski.get_dust_component_ids()
+
+    # -----------------------------------------------------------------
+
+    def get_host_id_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).host_id
+
+    # -----------------------------------------------------------------
+
+    def get_cluster_name_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).cluster_name
+
+    # -----------------------------------------------------------------
+
+    def get_remote_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_remote(self.get_host_id_for_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -3030,7 +3102,7 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return command in [_show_command_name, _plot_command_name, _open_command_name, _adapt_command_name, _compare_command_name, _clear_command_name]
+        return command in [_show_command_name, _plot_command_name, _open_command_name, _adapt_command_name, _compare_command_name, _clear_command_name, _cache_command_name]
 
     # -----------------------------------------------------------------
 
@@ -3048,6 +3120,7 @@ class SimulationManager(Configurable):
         elif command == _adapt_command_name: return adapt_commands
         elif command == _compare_command_name: return compare_commands
         elif command == _clear_command_name: return clear_commands
+        elif command == _cache_command_name: return cache_commands
         else: raise InvalidCommandError("Invalid command: '" + command + "'", command)
 
     # -----------------------------------------------------------------
@@ -3308,26 +3381,8 @@ class SimulationManager(Configurable):
                 # Show usage
                 for line in usage: print("    " + fmt.blue + line + fmt.reset)
 
-                # Show
-                if key == _show_command_name: self.show_help_show()
-
-                # Plot
-                elif key == _plot_command_name: self.show_help_plot()
-
-                # Open
-                elif key == _open_command_name: self.show_help_open()
-
-                # Adapt
-                elif key == _adapt_command_name: self.show_help_adapt()
-
-                # Compare
-                elif key == _compare_command_name: self.show_help_compare()
-
-                # Clear
-                elif key == _clear_command_name: self.show_help_clear()
-
-                # Error
-                else: raise RuntimeError("Something went wrong")
+                # Show help for subcommands
+                self._show_help_subcommands(subcommands, key)
 
             # No input needed
             else: print("    " + fmt.blue + "no input" + fmt.reset)
@@ -3336,183 +3391,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_help_show(self):
+    def _show_help_subcommands(self, subcommands, main_command):
 
         """
         This function ...
+        :param subcommands:
+        :param main_command:
         :return:
         """
 
         # Loop over the commands
-        for key in show_commands:
+        for key in subcommands:
 
             # Get description
-            function_name, pass_command, description, subject = show_commands[key]
+            function_name, pass_command, description, subject = subcommands[key]
 
             # Show
             print("    * " + fmt.bold + key + fmt.reset + ": " + description)
 
             # Show usage
-            #if not pass_command or subject is None: continue
+            # if not pass_command or subject is None: continue
             if pass_command:
 
                 # Get usage
-                usage = self.get_usage_for_key(key, show_commands, main_command=_show_command_name)
-
-                # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
-            # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
-
-    # -----------------------------------------------------------------
-
-    def show_help_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the commands
-        for key in plot_commands:
-
-            # Get description
-            function_name, pass_command, description, subject = plot_commands[key]
-
-            # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
-
-            # Show usage
-            #if not pass_command or subject is None: continue
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, plot_commands, main_command=_plot_command_name)
-
-                # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
-            # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
-
-    # -----------------------------------------------------------------
-
-    def show_help_open(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the commands
-        for key in open_commands:
-
-            # Get description
-            function_name, pass_command, description, subject = open_commands[key]
-
-            # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
-
-            # Show usage
-            #if not pass_command or subject is None: continue
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, open_commands, main_command=_open_command_name)
-    
-                # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
-            # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
-    
-    # -----------------------------------------------------------------
-
-    def show_help_adapt(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the commands
-        for key in adapt_commands:
-
-            # Get description
-            function_name, pass_command, description, subject = adapt_commands[key]
-
-            # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
-
-            # Show usage
-            #if not pass_command or subject is None: continue
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, adapt_commands, main_command=_adapt_command_name)
-
-                # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
-            # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
-
-    # -----------------------------------------------------------------
-
-    def show_help_compare(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the commands
-        for key in compare_commands:
-
-            # Get description
-            function_name, pass_command, description, subject = compare_commands[key]
-
-            # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
-
-            # Show usage
-            #if not pass_command or subject is None: continue
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, compare_commands, main_command=_compare_command_name)
-
-                # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
-            # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
-
-    # -----------------------------------------------------------------
-
-    def show_help_clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the commands
-        for key in clear_commands:
-
-            # Get description
-            function_name, pass_command, description, subject = clear_commands[key]
-
-            # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
-
-            # Show usage
-            #if not pass_command or subject is None: continue
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, clear_commands, main_command=_clear_command_name)
+                usage = self.get_usage_for_key(key, subcommands, main_command=main_command)
 
                 # Show
                 for line in usage: print("      " + fmt.blue + line + fmt.reset)
@@ -4146,7 +4048,7 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("from_file", "use SED plot from file", None)
         definition.add_optional("path", "string", "destination filepath")
         return definition
@@ -4504,7 +4406,7 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("from_images", "plot the fluxes calculated from images (by default, determined automatically)", None)
         definition.add_flag("from_file", "use an already existing plot file (by default, determined automatically)", None)
         definition.add_optional("path", "string", "destination filepath")
@@ -4684,7 +4586,7 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("for_fluxes", "plot the images created for calculating fluxes (by default, determined automatically)", None)
         definition.add_flag("from_file", "use an already existing plot file (by default, determined automatically)", None)
         definition.add_optional("path", "string", "destination filepath")
@@ -6728,6 +6630,18 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Cancelling simulation '" + simulation_name + "' queued in screen session '" + screen_name + "' ...")
 
+        # Get the remote
+        remote = self.get_remote_for_simulation(simulation_name)
+
+        # Get the remote ski file path
+        ski_path = self.get_remote_skifile_path(simulation_name)
+
+        # Debugging
+        log.debug("Removing the ski file '" + ski_path + "' from remote host '" + remote.host_id + "' ...")
+
+        # Remove the remote ski file
+        remote.remove_file(ski_path)
+
     # -----------------------------------------------------------------
 
     def cancel_simulation_job(self, simulation_name):
@@ -6743,6 +6657,24 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Cancelling simulation '" + simulation_name + "' by deleting job '" + str(job_id) + "' ...")
+
+        # Get the cluster name
+        cluster_name = self.get_cluster_name_for_simulation(simulation_name)
+
+        # Get the remote
+        remote = self.get_remote_for_simulation(simulation_name)
+
+        # Stop the job
+        remote.kill_job(job_id, cluster_name=cluster_name, show_output=True)
+
+        # Get the remote ski file path
+        ski_path = self.get_remote_skifile_path(simulation_name)
+
+        # Debugging
+        log.debug("Removing the ski file '" + ski_path + "' from remote host '" + remote.host_id + "' ...")
+
+        # Remove the remote ski file
+        remote.remove_file(ski_path)
 
     # -----------------------------------------------------------------
 
@@ -6816,6 +6748,15 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Stopping simulation by aborting job '" + str(job_id) + "'...")
+
+        # Get the remote
+        remote = self.get_remote_for_simulation(simulation_name)
+
+        # Get the cluster name
+        cluster_name = self.get_cluster_name_for_simulation(simulation_name)
+
+        # Stop the job
+        remote.kill_job(job_id, cluster_name=cluster_name, show_output=True)
 
     # -----------------------------------------------------------------
 
@@ -7401,6 +7342,240 @@ class SimulationManager(Configurable):
 
         # Clear
         if simulation.has_misc_output: fs.clear_directory(simulation.analysis.misc.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_simulations_output_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def cache_simulations_output_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _cache_command_name + " " + _output_command_name
+
+        # Parse
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_output_definition, name=name)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names: self.cache_simulation_output(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Caching output of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_simulations_analysis_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def cache_simulations_analysis_command(self, command):
+
+        """
+        This function ...
+        :param command: 
+        :return: 
+        """
+
+        # Set command name
+        name = _cache_command_name + " " + _analysis_command_name
+
+        # Parse
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_analysis_definition, name=name)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names: self.cache_simulation_analysis(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_analysis(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Caching analysis output of simulation '" + simulation_name + "' ...")
+
+        # Extraction
+        self.cache_simulation_extraction(simulation_name)
+
+        # Plotting
+        self.cache_simulation_plotting(simulation_name)
+
+        # Misc
+        self.cache_simulation_misc(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_simulations_extraction_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def cache_simulations_extraction_command(self, command):
+        
+        """
+        This function ...
+        :param command: 
+        :return: 
+        """
+
+        # Set command name
+        name = _cache_command_name + " " + _extraction_command_name
+
+        # Parse
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_extraction_definition, name=name)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names: self.cache_simulation_extraction(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_extraction(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Caching extraction output of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_simulations_plotting_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def cache_simulations_plotting_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _cache_command_name + " " + _plotting_command_name
+
+        # Parse
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_plotting_definition, name=name)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names: self.cache_simulation_plotting(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_plotting(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Caching plotting output of simulation '" + simulation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_simulations_misc_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def cache_simulations_misc_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Set command name
+        name = _cache_command_name + " " + _misc_command_name
+
+        # Parse
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_misc_definition, name=name)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names: self.cache_simulation_misc(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_misc(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Caching misc output of simulation '" + simulation_name + "' ...")
 
     # -----------------------------------------------------------------
 
@@ -9410,7 +9585,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("extra_columns", "string_list", "extra columns to show", choices=extra_columns)
         definition.add_optional("path", "string", "save the status information as a table at this path")
 
@@ -11119,7 +11294,7 @@ class SimulationManager(Configurable):
         """
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
         definition.add_optional("path", "string", "output path")
 
         # Return the definition

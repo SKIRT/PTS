@@ -2061,16 +2061,29 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def kill_job(self, id):
+    def kill_job(self, job_id, cluster_name=None, show_output=False):
 
         """
         This function ...
-        :param id:
+        :param job_id:
+        :param cluster_name:
+        :param show_output:
         :return:
         """
 
+        # If cluster name is given, switch
+        original_cluster_name = None
+        if cluster_name is not None:
+            active_cluster = self.active_cluster_name
+            if active_cluster != cluster_name:
+                original_cluster_name = active_cluster
+                self.swap_cluster(cluster_name)
+
         # Stop the job with the specified ID
-        self.execute("qdel " + str(id), output=False)
+        self.execute("qdel " + str(job_id), output=False, show_output=show_output)
+
+        # Swap back to the original cluster?
+        if original_cluster_name is not None: self.swap_cluster(original_cluster_name)
 
     # -----------------------------------------------------------------
 

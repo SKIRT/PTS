@@ -3152,3 +3152,18 @@ def common_directory(paths, sep='/'):
     return sep.join(x[0] for x in takewhile(sequences.all_equal, bydirectorylevels))
 
 # -----------------------------------------------------------------
+
+def get_volume_path(volname):
+
+    """
+    This function ...
+    :param volname:
+    :return:
+    """
+
+    from .introspection import is_linux, is_macos
+    if is_macos(): return join("/Volumes", volname)
+    elif is_linux(): return join("/media", volname)
+    else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
+
+# -----------------------------------------------------------------

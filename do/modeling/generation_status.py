@@ -77,6 +77,9 @@ definition.add_flag("produce_missing", "produce missing simulation files", False
 definition.add_flag("check_paths", "check simulation paths", False)
 definition.add_flag("fix_success", "check success flags in assignment table")
 
+# Caching
+definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
+
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
 
