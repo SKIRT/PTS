@@ -6620,6 +6620,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def show_simulation_settings_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return show_simulation_definition
+
+    # -----------------------------------------------------------------
+
     def show_simulation_settings_command(self, command):
 
         """
@@ -6629,7 +6641,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, show_simulation_definition, "show_simulation_settings")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_simulation_settings_definition)
 
         # Show
         self.show_simulation_settings(simulation_name, config=config)
@@ -6656,6 +6668,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def show_analysis_options_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return show_analysis_definition
+
+    # -----------------------------------------------------------------
+
     def show_analysis_options_command(self, command):
 
         """
@@ -6665,7 +6689,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, show_analysis_definition, "show_analysis_options")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_analysis_options_definition)
 
         # Show
         self.show_analysis_options(simulation_name, config=config)

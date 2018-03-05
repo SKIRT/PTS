@@ -415,7 +415,7 @@ def any_contains_path(directories, path):
     """
 
     for directory in directories:
-        print(directory, path)
+        #print(directory, path)
         if contains_path(directory, path): return True
     return False
 
