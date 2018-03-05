@@ -12291,6 +12291,7 @@ class SimulationManager(Configurable):
         definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
         definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)
         definition.add_optional("not_features", "string_list", "don't analyse these features (if a single not_step is defined)")
+        definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
 
         # Return the definition
         return definition
@@ -12313,7 +12314,7 @@ class SimulationManager(Configurable):
         not_features = config.not_features
 
         # Reanalyse the simulation
-        self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps, not_features=not_features)
+        self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps, not_features=not_features, config=config.analysis)
 
     # -----------------------------------------------------------------
 
