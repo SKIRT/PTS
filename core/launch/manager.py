@@ -73,7 +73,11 @@ from ..plot.timeline import plot_timeline
 from ..extract.timeline import TimeLineTable, extract_timeline
 from ..extract.memory import MemoryUsageTable, extract_memory
 from ..units.unit import parse_unit as u
-from ..simulation.output import write_cache_path
+from ..simulation.output import write_cache_path, output_type_choices, extraction_output_type_choices, plotting_output_type_choices, misc_output_type_choices
+from ..simulation.output import output_types as output_type_names
+from ..simulation.output import extraction_output_types as extraction_type_names
+from ..simulation.output import plotting_output_types as plotting_type_names
+from ..simulation.output import misc_output_types as misc_type_names
 
 # -----------------------------------------------------------------
 
@@ -921,6 +925,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_caching(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.cache_output or self.config.cache_datacubes or self.config.cache_misc or self.config.cache_images
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -959,6 +975,9 @@ class SimulationManager(Configurable):
         # 10. Analyse
         if self.do_analysis: self.analyse()
 
+        # 11. Cache
+        if self.do_caching: self.cache()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -975,6 +994,10 @@ class SimulationManager(Configurable):
         # Check options
         if self.config.prompt_simulations_reanalysis is None: self.config.prompt_simulations_reanalysis = self.config.reanalyse_simulations is None
         if self.config.prompt_simulations_move is None: self.config.prompt_simulations_move = self.config.move_simulations is None
+
+        # Check caching options
+        if self.config.cache_output and self.config.cache_datacubes: self.config.cache_datacubes = False # datacubes will be cached, as all output
+        if self.config.cache_misc and self.config.cache_images: self.config.cache_images = False # images will be cached, as all misc output
 
         # Get the status
         if "status" in kwargs: self.status = kwargs.pop("status")
@@ -7611,13 +7634,14 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _cache_directories(self, output, directory_path, cache_path):
+    def _cache_directories(self, output, directory_path, cache_path, output_types=None):
 
         """
         This function ...
         :param output:
         :param directory_path:
         :param cache_path:
+        :param output_types:
         :return:
         """
 
@@ -7649,13 +7673,14 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _cache_files(self, output, directory_path, cache_path):
+    def _cache_files(self, output, directory_path, cache_path, output_types=None):
         
         """
         This function ...
         :param output:
         :param directory_path:
         :param cache_path:
+        :param output_types:
         :return: 
         """
 
@@ -7687,21 +7712,22 @@ class SimulationManager(Configurable):
         
     # -----------------------------------------------------------------
 
-    def _cache_output(self, output, directory_path, cache_path):
+    def _cache_output(self, output, directory_path, cache_path, output_types=None):
 
         """
         This function ...
         :param output:
         :param directory_path: local output directory
         :param cache_path: cache directory path
+        :param output_types:
         :return:
         """
 
         # Directories
-        self._cache_directories(output, directory_path, cache_path)
+        self._cache_directories(output, directory_path, cache_path, output_types=output_types)
 
         # Files
-        self._cache_files(output, directory_path, cache_path)
+        self._cache_files(output, directory_path, cache_path, output_types=output_types)
 
         # Set cache path (write cached.dat file)
         write_cache_path(directory_path, cache_path)
@@ -7720,6 +7746,8 @@ class SimulationManager(Configurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("output_types", "string_list", "output types to cache", choices=output_type_choices)
+        definition.add_optional("path", "directory_path", "caching path")
         return definition
 
     # -----------------------------------------------------------------
@@ -7789,11 +7817,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulation_output(self, simulation_name):
+    def cache_simulation_datacubes(self, simulation_name, cache_path=None):
 
         """
         This function ...
         :param simulation_name:
+        :param cache_path:
+        :return:
+        """
+
+        # Define types
+        datacube_types = [output_type_names.total_images, output_type_names.count_images, output_type_names.direct_images, output_type_names.transparent_images, output_type_names.scattered_images, output_type_names.dust_images, output_type_names.dust_scattered_images]
+
+        # Cache
+        self.cache_simulation_output(simulation_name, cache_path=cache_path, output_types=datacube_types)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_output(self, simulation_name, cache_path=None, output_types=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param cache_path:
+        :param output_types:
         :return:
         """
 
@@ -7806,11 +7853,20 @@ class SimulationManager(Configurable):
         # Get the simulation output
         output = self.get_output(simulation_name)
 
+        # Create the cache output path
+        if cache_path is not None:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(cache_path, simulation_name)
+
+            # Create output cache path
+            cache_output_path = fs.create_directory_in(simulation_cache_path, "out")
+
         # Get the cache output path
-        cache_output_path = self.get_cache_output_path_for_simulation(simulation_name)
+        else: cache_output_path = self.get_cache_output_path_for_simulation(simulation_name)
 
         # Cache
-        self._cache_output(output, output_path, cache_output_path)
+        self._cache_output(output, output_path, cache_output_path, output_types=output_types)
 
     # -----------------------------------------------------------------
 
@@ -7823,6 +7879,7 @@ class SimulationManager(Configurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_optional("path", "directory_path", "caching path")
         return definition
 
     # -----------------------------------------------------------------
@@ -7850,15 +7907,16 @@ class SimulationManager(Configurable):
                 continue
 
             # Cache
-            self.cache_simulation_analysis(simulation_name)
+            self.cache_simulation_analysis(simulation_name, cache_path=config.path)
 
     # -----------------------------------------------------------------
 
-    def cache_simulation_analysis(self, simulation_name):
+    def cache_simulation_analysis(self, simulation_name, cache_path=None):
 
         """
         This function ...
         :param simulation_name: 
+        :param cache_path:
         :return: 
         """
 
@@ -7866,15 +7924,15 @@ class SimulationManager(Configurable):
         log.debug("Caching analysis output of simulation '" + simulation_name + "' ...")
 
         # Extraction
-        if not self.is_cached_extraction(simulation_name): self.cache_simulation_extraction(simulation_name)
+        if not self.is_cached_extraction(simulation_name): self.cache_simulation_extraction(simulation_name, cache_path=cache_path)
         else: log.warning("Extraction output of simulation '" + simulation_name + "' is already cached: skipping ...")
 
         # Plotting
-        if not self.is_cached_plotting(simulation_name): self.cache_simulation_plotting(simulation_name)
+        if not self.is_cached_plotting(simulation_name): self.cache_simulation_plotting(simulation_name, cache_path=cache_path)
         else: log.warning("Plotting output of simulation '" + simulation_name + "' is already cached: skipping ...")
 
         # Misc
-        if not self.is_cached_misc(simulation_name): self.cache_simulation_misc(simulation_name)
+        if not self.is_cached_misc(simulation_name): self.cache_simulation_misc(simulation_name, cache_path=cache_path)
         else: log.warning("Misc output of simulation '" + simulation_name + "' is already cached: skipping ...")
 
     # -----------------------------------------------------------------
@@ -7888,6 +7946,8 @@ class SimulationManager(Configurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("output_types", "string_list", "extraction output types to cache", choices=extraction_output_type_choices)
+        definition.add_optional("path", "directory_path", "caching path")
         return definition
 
     # -----------------------------------------------------------------
@@ -7957,11 +8017,13 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulation_extraction(self, simulation_name):
+    def cache_simulation_extraction(self, simulation_name, cache_path=None, output_types=None):
 
         """
         This function ...
         :param simulation_name:
+        :param cache_path:
+        :param output_types:
         :return:
         """
 
@@ -7974,11 +8036,20 @@ class SimulationManager(Configurable):
         # Get the simulation extraction output
         extraction = self.get_extraction_output(simulation_name)
 
+        # Create the cache extraction path
+        if cache_path is not None:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(cache_path, simulation_name)
+
+            # Create extraction cache path
+            cache_extraction_path = fs.create_directory_in(simulation_cache_path, "extr")
+
         # Get the cache extraction path
-        cache_extraction_path = self.get_cache_extraction_path_for_simulation(simulation_name)
+        else: cache_extraction_path = self.get_cache_extraction_path_for_simulation(simulation_name)
 
         # Cache
-        self._cache_output(extraction, extraction_path, cache_extraction_path)
+        self._cache_output(extraction, extraction_path, cache_extraction_path, output_types=output_types)
 
     # -----------------------------------------------------------------
 
@@ -7991,6 +8062,8 @@ class SimulationManager(Configurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("output_types", "string_list", "plotting output types to cache", choices=plotting_output_type_choices)
+        definition.add_optional("path", "directory_path", "caching path")
         return definition
 
     # -----------------------------------------------------------------
@@ -8060,11 +8133,13 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulation_plotting(self, simulation_name):
+    def cache_simulation_plotting(self, simulation_name, cache_path=None, output_types=None):
 
         """
         This function ...
         :param simulation_name:
+        :param cache_path:
+        :param output_types:
         :return:
         """
 
@@ -8077,11 +8152,20 @@ class SimulationManager(Configurable):
         # Get the simulation output
         plotting = self.get_output(simulation_name)
 
+        # Create the cache plotting path
+        if cache_path is not None:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(cache_path, simulation_name)
+
+            # Create plotting cache path
+            cache_plotting_path = fs.create_directory_in(simulation_cache_path, "plot")
+
         # Get the cache plotting path
-        cache_plotting_path = self.get_cache_plotting_path_for_simulation(simulation_name)
+        else: cache_plotting_path = self.get_cache_plotting_path_for_simulation(simulation_name)
 
         # Cache
-        self._cache_output(plotting, plotting_path, cache_plotting_path)
+        self._cache_output(plotting, plotting_path, cache_plotting_path, output_types=output_types)
 
     # -----------------------------------------------------------------
 
@@ -8094,6 +8178,8 @@ class SimulationManager(Configurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("output_types", "string_list", "misc output types to cache", choices=misc_output_type_choices)
+        definition.add_optional("path", "directory_path", "caching path")
         return definition
 
     # -----------------------------------------------------------------
@@ -8163,11 +8249,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulation_misc(self, simulation_name):
+    def cache_simulation_images(self, simulation_name, cache_path=None):
 
         """
         This function ...
         :param simulation_name:
+        :param cache_path:
+        :return:
+        """
+
+        # Define types
+        image_types = [misc_type_names.images, misc_type_names.images_for_fluxes]
+
+        # Cache
+        self.cache_simulation_misc(simulation_name, cache_path=cache_path, output_types=image_types)
+
+    # -----------------------------------------------------------------
+
+    def cache_simulation_misc(self, simulation_name, cache_path=None, output_types=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param cache_path:
+        :param output_types:
         :return:
         """
 
@@ -8180,11 +8285,20 @@ class SimulationManager(Configurable):
         # Get the simulation output
         misc = self.get_misc_output(simulation_name)
 
+        # Create the cache output path
+        if cache_path is not None:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(cache_path, simulation_name)
+
+            # Create misc cache path
+            cache_misc_path = fs.create_directory_in(simulation_cache_path, "misc")
+
         # Get the cache output path
-        cache_misc_path = self.get_cache_misc_path_for_simulation(simulation_name)
+        else: cache_misc_path = self.get_cache_misc_path_for_simulation(simulation_name)
 
         # Cache
-        self._cache_output(misc, misc_path, cache_misc_path)
+        self._cache_output(misc, misc_path, cache_misc_path, output_types=output_types)
 
     # -----------------------------------------------------------------
 
@@ -12196,6 +12310,33 @@ class SimulationManager(Configurable):
 
         # Analyse the simulation
         analyse_simulation(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
+    def cache(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Caching output of the simulations ...")
+
+        # Loop over the retrieved simulations
+        for simulation in self.all_retrieved_simulations:
+
+            # Cache output
+            if self.config.cache_output: self.cache_simulation_output(simulation.name)
+
+            # Cache datacubes
+            if self.config.cache_datacubes: self.cache_simulation_datacubes(simulation.name)
+
+            # Cache misc output
+            if self.config.cache_misc and simulation.analysed_all_misc: self.cache_simulation_misc(simulation.name)
+
+            # Cache images
+            if self.config.cache_images and simulation.analysed_all_misc: self.cache_simulation_images(simulation.name)
 
 # -----------------------------------------------------------------
 

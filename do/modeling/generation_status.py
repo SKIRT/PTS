@@ -79,9 +79,10 @@ definition.add_flag("fix_success", "check success flags in assignment table")
 
 # Caching
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
-definition.add_flag("cache_misc", "cache the misc output of analysed simulations")
-definition.add_flag("cache_images", "cache the images output of analysed simulations")
-definition.add_flag("cache_datacubes", "cache the datacubes of retrieved simulations")
+definition.add_flag("cache_output", "automatically cache the output of retrieved simulations")
+definition.add_flag("cache_datacubes", "automatically cache the datacubes of retrieved simulations")
+definition.add_flag("cache_misc", "automatically cache the misc output of analysed simulations")
+definition.add_flag("cache_images", "automatically cache the images output of analysed simulations")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -210,13 +211,22 @@ manager.config.backup_dirname = "backup"
 manager.config.backup_simulations = True
 manager.config.backup_assignment = True
 
-# Set cache path
+# Set caching options
 if config.cache_volume is not None:
-    manager.config.cache_path = fs.get_volume_path(config.cache_volume)
-    manager.config.cache_misc = config.cache_misc
+
+    # Get volume path
+    volume_path = fs.get_volume_path(config.cache_volume)
+    cache_path = fs.join(volume_path, "RT Modeling", environment.galaxy_name)
+
+    # Set path and root
+    manager.config.cache_path = cache_path
     manager.config.cache_root = environment.path # set modeling path as cache root path
-    manager.config.cache_images = config.cache_images
+
+    # Auto-caching
+    manager.config.cache_output = config.cache_output
     manager.config.cache_datacubes = config.cache_datacubes
+    manager.config.cache_misc = config.cache_misc
+    manager.config.cache_images = config.cache_images
 
 # Set reference SEDs for plotting simulated SEDS
 reference_sed_paths = OrderedDict()
