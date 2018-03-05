@@ -812,7 +812,9 @@ class Output(object):
         :return:
         """
 
-        return fs.common_directory(self.all_paths)
+        dirpath = fs.common_directory(self.all_paths)
+        if dirpath == "": return None # no single common directory (different at the very root level of the filesystem (e.g. scattered acros disk and external volume)
+        else: return dirpath
 
     # -----------------------------------------------------------------
 
@@ -824,7 +826,7 @@ class Output(object):
         :return:
         """
 
-        return fs.relative_to(path, self.root_directory)
+        return fs.relative_to(path, self.root_directory) if self.root_directory is not None else path
 
     # -----------------------------------------------------------------
 
@@ -1244,7 +1246,7 @@ class Output(object):
             nfiles = self.get_nfiles(output_type)
 
             # Add title
-            title = fmt.green + fmt.underlined + output_type_choices[output_type].capitalize() + fmt.reset + " (" + str(nfiles) + "):"
+            title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset + " (" + str(nfiles) + "):"
             lines.append(line_prefix + title)
             lines.append(line_prefix)
 

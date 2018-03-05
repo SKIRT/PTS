@@ -388,6 +388,9 @@ def contains_path(directory, path):
     #print(directory_parts)
     #print(path_parts)
 
+    # If the path has less parts than the directory, the directory cannot possibly contain the path
+    if len(path_parts) < len(directory_parts): return False
+
     # Check each part
     #for index, part in enumerate(path_parts):
         #if part not in directory_parts: return False
@@ -412,6 +415,7 @@ def any_contains_path(directories, path):
     """
 
     for directory in directories:
+        print(directory, path)
         if contains_path(directory, path): return True
     return False
 
@@ -2551,6 +2555,8 @@ def relative_to(path, base_path):
     :param base_path:
     :return:
     """
+
+    # WARNING: at the moment, absolute_path converts empty strings into the current working directory. Is this desired?
 
     # Both absolute
     path = absolute_path(path)
