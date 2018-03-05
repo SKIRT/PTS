@@ -1965,10 +1965,13 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
     rebin_header = Header.fromtextfile(header_path)
     wcs = CoordinateSystem(rebin_header)
 
-    primary_frames = []
-    error_frames = []
+    #primary_frames = []
+    #error_frames = []
     weight_frames = []
+    weighted_frames = []
+    frames = []
 
+    # Loop over the images to be used for the mosaic
     for image_name in image_names_for_mosaic:
 
         # Determine paths
@@ -1983,36 +1986,50 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
 
         # Calculate the weighted frame
         frame_weighted = frame * weights
-        errors_weighted = errors / weights
+        #errors_weighted = errors / weights
 
         # Convert the units from counts/s/sr to counts/s
         pixelsr = frame_weighted.pixelarea.to("sr").value
         frame_weighted *= pixelsr
-        errors_weighted *= pixelsr
+        #errors_weighted *= pixelsr
 
         # Create mask where the weights are nans
         mask = weights.nans
 
         # Set zero
         frame_weighted[mask] = 0.0
-        errors_weighted[mask] = 0.0
+        #errors_weighted[mask] = 0.0
         weights[mask] = 0.0
 
         # Add to the list
-        primary_frames.append(frame_weighted)
-        error_frames.append(errors_weighted)
+        #primary_frames.append(frame_weighted)
+        #error_frames.append(errors_weighted)
+        #weight_frames.append(weights)
+
+        ## NEW: FIX MISTAKE
         weight_frames.append(weights)
+        weighted_frames.append(frame_weighted)
+        frames.append(frame)
 
     # Calculate denominator for weighted average (mosaicing)
     normalization = sum_frames(*weight_frames)
 
     # CALCULATE THE MOSAIC FRAME IN COUNTS/S
-    mosaic_frame = sum_frames(*primary_frames) / normalization
+    #mosaic_frame = sum_frames(*primary_frames) / normalization
+    #mosaic_frame.wcs = wcs
+    ## NEW
+    mosaic_frame = sum_frames(*weighted_frames) / normalization
     mosaic_frame.wcs = wcs
+    mosaic_frame.unit = "ct/s"
 
     # CALCULATE THE MOSAIC ERROR MAP IN COUNTS/S
-    mosaic_errormap = sum_frames_quadratically(*error_frames) / normalization
+    #mosaic_errormap = sum_frames_quadratically(*error_frames) / normalization
+    #mosaic_errormap.wcs = wcs
+    ## NEW
+    frames_sum = sum_frames(*frames)
+    mosaic_errormap = Frame(np.sqrt(frames_sum.data)) / normalization
     mosaic_errormap.wcs = wcs
+    mosaic_errormap.unit = "ct/s"
 
     ## DONE
 
@@ -2024,9 +2041,7 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
     mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
     mosaic_errormap.saveto(mosaic_error_path)
 
-    # Return the mosaic and the mosaic error map in counts/s
-    #return mosaic_frame, mosaic_errormap
-
+    # Return the mosaic path and the mosaic error map path in counts/s
     return mosaic_path, mosaic_error_path
 
 # -----------------------------------------------------------------
