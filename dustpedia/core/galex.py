@@ -2003,7 +2003,7 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
         error_frames.append(errors_weighted)
         weight_frames.append(weights)
 
-    #  Calculate denominator for weighted average (mosaicing)
+    # Calculate denominator for weighted average (mosaicing)
     normalization = sum_frames(*weight_frames)
 
     # CALCULATE THE MOSAIC FRAME IN COUNTS/S

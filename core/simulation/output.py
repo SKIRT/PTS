@@ -596,6 +596,18 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def get_nfiles_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return len(self.get_all_file_paths_for_types(otypes=otypes))
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_ndirectories(self, output_type):
 
@@ -606,6 +618,18 @@ class Output(object):
         """
 
         return len(self.directories[output_type])
+
+    # -----------------------------------------------------------------
+
+    def get_ndirectories_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return len(self.get_all_directory_paths_for_types(otypes=otypes))
 
     # -----------------------------------------------------------------
 
@@ -1028,6 +1052,18 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def get_all_file_paths_not_in_directory_for_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return list(self.iter_files_not_in_directory(otypes=otypes))
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def all_file_paths_not_in_directory(self):
 
@@ -1076,6 +1112,18 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def get_all_directory_paths_not_with_file_for_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return list(self.iter_directories_not_with_file(otypes=otypes))
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def all_directory_paths_not_with_file(self):
 
@@ -1085,6 +1133,18 @@ class Output(object):
         """
 
         return list(self.iter_directories_not_with_file())
+
+    # -----------------------------------------------------------------
+
+    def get_all_directory_paths_not_in_directory_for_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return list(self.iter_directories_not_in_directory(otypes=otypes))
 
     # -----------------------------------------------------------------
 

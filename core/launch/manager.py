@@ -75,9 +75,13 @@ from ..extract.memory import MemoryUsageTable, extract_memory
 from ..units.unit import parse_unit as u
 from ..simulation.output import write_cache_path, output_type_choices, extraction_output_type_choices, plotting_output_type_choices, misc_output_type_choices
 from ..simulation.output import output_types as output_type_names
-from ..simulation.output import extraction_output_types as extraction_type_names
-from ..simulation.output import plotting_output_types as plotting_type_names
 from ..simulation.output import misc_output_types as misc_type_names
+
+# -----------------------------------------------------------------
+
+# Define types
+datacube_types = [output_type_names.total_images, output_type_names.count_images, output_type_names.direct_images, output_type_names.transparent_images, output_type_names.scattered_images, output_type_names.dust_images, output_type_names.dust_scattered_images]
+image_types = [misc_type_names.images, misc_type_names.images_for_fluxes]
 
 # -----------------------------------------------------------------
 
@@ -1852,6 +1856,57 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_noutput_files(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_output(simulation_name).get_nfiles_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_noutput_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_output(simulation_name).get_ndirectories_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_noutput_files_and_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_noutput_files(simulation_name, otypes) + self.get_noutput_directories(simulation_name, otypes)
+
+    # -----------------------------------------------------------------
+
+    def has_datacubes(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_noutput_files(simulation_name, datacube_types) > 0
+
+    # -----------------------------------------------------------------
+
     def is_cached_output(self, simulation_name):
 
         """
@@ -1899,6 +1954,45 @@ class SimulationManager(Configurable):
         """
 
         return self.get_nextraction_output(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    def get_nextraction_files(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_extraction_output(simulation_name).get_nfiles_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_nextraction_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_extraction_output(simulation_name).get_ndirectories_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_nextraction_files_and_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_nextraction_files(simulation_name, otypes) + self.get_nextraction_directories(simulation_name, otypes)
 
     # -----------------------------------------------------------------
 
@@ -2030,6 +2124,45 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_nplotting_files(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_plotting_output(simulation_name).get_nfiles_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_nplotting_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_plotting_output(simulation_name).get_ndirectories_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_nplotting_files_and_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_nplotting_files(simulation_name, otypes) + self.get_nplotting_directories(simulation_name, otypes)
+
+    # -----------------------------------------------------------------
+
     def is_cached_plotting(self, simulation_name):
 
         """
@@ -2103,6 +2236,57 @@ class SimulationManager(Configurable):
         """
 
         return self.get_nmisc_output(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    def get_nmisc_files(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).get_nfiles_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_nmisc_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).get_ndirectories_types(otypes)
+
+    # -----------------------------------------------------------------
+
+    def get_nmisc_files_and_directories(self, simulation_name, otypes):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param otypes:
+        :return:
+        """
+
+        return self.get_nmisc_files(simulation_name, otypes) + self.get_nmisc_directories(simulation_name, otypes)
+
+    # -----------------------------------------------------------------
+
+    def has_images(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_nmisc_files_and_directories(simulation_name, image_types) > 0
 
     # -----------------------------------------------------------------
 
@@ -7650,8 +7834,12 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Caching directories ...")
 
+        # Get the directory paths
+        if output_types is not None: dirpaths = output.get_all_directory_paths_not_in_directory_for_types(output_types)
+        else: dirpaths = output.all_directory_paths_not_in_directory
+
         # Loop over the directories
-        for dirpath in output.all_directory_paths_not_in_directory:
+        for dirpath in dirpaths:
 
             # Determine relative directory path
             relpath = fs.relative_to(dirpath, directory_path)
@@ -7692,8 +7880,12 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Caching files ...")
 
+        # Get the file paths
+        if output_types is not None: filepaths = output.get_all_file_paths_not_in_directory_for_types(output_types)
+        else: filepaths = output.all_file_paths_not_in_directory
+
         # Loop over the files
-        for filepath in output.all_file_paths_not_in_directory:
+        for filepath in filepaths:
 
             # Determine relative file path
             relpath = fs.relative_to(filepath, directory_path)
@@ -7788,7 +7980,7 @@ class SimulationManager(Configurable):
                 continue
 
             # Cache
-            self.cache_simulation_output(simulation_name, cache_path=config.path, output_types=output_types)
+            self.cache_simulation_output(simulation_name, cache_path=config.path, output_types=config.output_types)
 
     # -----------------------------------------------------------------
 
@@ -7879,9 +8071,6 @@ class SimulationManager(Configurable):
         :param cache_path:
         :return:
         """
-
-        # Define types
-        datacube_types = [output_type_names.total_images, output_type_names.count_images, output_type_names.direct_images, output_type_names.transparent_images, output_type_names.scattered_images, output_type_names.dust_images, output_type_names.dust_scattered_images]
 
         # Cache
         self.cache_simulation_output(simulation_name, cache_path=cache_path, output_types=datacube_types)
@@ -8357,9 +8546,6 @@ class SimulationManager(Configurable):
         :param cache_path:
         :return:
         """
-
-        # Define types
-        image_types = [misc_type_names.images, misc_type_names.images_for_fluxes]
 
         # Cache
         self.cache_simulation_misc(simulation_name, cache_path=cache_path, output_types=image_types)
