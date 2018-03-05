@@ -907,81 +907,112 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
-    def iter_files(self):
+    def iter_files(self, otypes=None):
 
         """
         This function ...
+        :param otypes:
         :return:
         """
 
         for output_type in self.files:
+            if otypes is not None and output_type not in otypes: continue
             for path in self.files[output_type]: yield path
 
     # -----------------------------------------------------------------
 
-    def iter_files_not_in_directory(self):
+    def iter_files_not_in_directory(self, otypes=None):
 
         """
         This function ...
+        :param otypes:
         :return:
         """
 
+        # Get all directory paths
+        if otypes is not None: all_directories = self.get_all_directory_paths_for_types(otypes)
+        else: all_directories = self.all_directory_paths
+
         # Loop over all file paths
-        for path in self.iter_files():
+        for path in self.iter_files(otypes=otypes):
 
             # Skip files that are contained by any of the directories
-            if fs.any_contains_path(self.all_directory_paths, path): continue
+            if fs.any_contains_path(all_directories, path): continue
 
             # Give the file path
             yield path
 
     # -----------------------------------------------------------------
 
-    def iter_directories(self):
+    def iter_directories(self, otypes=None):
 
         """
         This function ...
+        :param otypes:
         :return:
         """
 
         for output_type in self.directories:
+            if otypes is not None and output_type not in otypes: continue
             for path in self.directories[output_type]: yield path
 
     # -----------------------------------------------------------------
 
-    def iter_directories_not_with_file(self):
+    def iter_directories_not_with_file(self, otypes=None):
 
         """
         This function ...
+        :param otypes:
         :return:
         """
 
+        # Get filepaths
+        if otypes is not None: all_files = self.get_all_file_paths_for_types(otypes)
+        else: all_files = self.all_file_paths
+
         # Loop over all directory paths
-        for path in self.iter_directories():
+        for path in self.iter_directories(otypes=otypes):
 
             # Skip directories that contain any of the files
-            if fs.contains_any_path(path, self.all_file_paths): continue
+            if fs.contains_any_path(path, all_files): continue
 
             # Give the directory path
             yield path
 
     # -----------------------------------------------------------------
 
-    def iter_directories_not_in_directory(self):
+    def iter_directories_not_in_directory(self, otypes=None):
 
         """
         This function ...
+        :param otypes:
         :return:
         """
 
+        # Get directory paths
+        if otypes is not None: all_directories = self.get_all_directory_paths_for_types(otypes)
+        else: all_directories = self.all_directory_paths
+
         # Loop over all directory paths
-        for path in self.iter_directories():
+        for path in self.iter_directories(otypes=otypes):
 
             # Skip directories that are contained by any of the (other) directories
-            if fs.any_contains_path(self.all_directory_paths, path): continue
+            if fs.any_contains_path(all_directories, path): continue
 
             # Give the directory path
             yield path
+
+    # -----------------------------------------------------------------
+
+    def get_all_file_paths_for_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return list(self.iter_files(otypes=otypes))
 
     # -----------------------------------------------------------------
 
@@ -1018,6 +1049,18 @@ class Output(object):
         """
 
         return self.all_file_paths_not_in_directory
+
+    # -----------------------------------------------------------------
+
+    def get_all_directory_paths_for_types(self, otypes):
+
+        """
+        This function ...
+        :param otypes:
+        :return:
+        """
+
+        return list(self.iter_directories(otypes=otypes))
 
     # -----------------------------------------------------------------
 
