@@ -38,7 +38,7 @@ from ..basics.containers import DefaultOrderedDict
 from ..tools import strings
 from ..simulation.remote import SKIRTRemote
 from ..remote.host import load_host
-from ..basics.containers import create_nested_defaultdict
+from ..basics.containers import create_nested_defaultdict, create_subdict
 from ..tools import sequences
 from ..basics.log import no_debugging
 from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status, retrieved_name, analysed_name
@@ -690,6 +690,35 @@ class SimulationManager(Configurable):
 
         # Return the values
         return values
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_info_values_scalar(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the unit
+        unit = self.info_units[name]
+
+        # Get the values
+        values = self.get_info_values(name)
+
+        # Initialize dictionary for the scalar values
+        scalar = dict()
+
+        # Loop over the simulation
+        for simulation_name in values:
+            value = values[simulation_name]
+            if value is not None and unit is not None: value = value.to(unit).value
+            scalar[simulation_name] = value
+
+        # Return the scalar values
+        return scalar
 
     # -----------------------------------------------------------------
 
@@ -2707,6 +2736,27 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).cluster_name
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_names_for_host_id(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        names = []
+
+        # Loop over the simulation names
+        for simulation_name in self.simulation_names:
+            if self.get_host_id_for_simulation(simulation_name) != host_id: continue
+            names.append(simulation_name)
+
+        # Return the names
+        return names
 
     # -----------------------------------------------------------------
 
@@ -10775,51 +10825,84 @@ class SimulationManager(Configurable):
         # No info?
         if not self.has_info: raise NotImplementedError("Not yet implemented without info: based on any choosen set of parameters")
 
-        indices = None
+        # Find simulations
+        self.find_simulations(host_id=config.host_id)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method # memoize because anyway self.simulation_names is a lazyproperty
+    def get_index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.simulation_names.index(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def find_simulations(self, host_id=None):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding simulations based on parameters ...")
+
+        # Get subset of simulations to start with
+        if host_id is not None: simulation_names = self.get_simulation_names_for_host_id(host_id)
+        else: simulation_names = None
 
         # Loop over the different parameters
         for name in self.info_names:
 
             # Get all info for all simulations (dict)
-            if indices is None: values = self.get_info_values(name)
-            else: values = None # GET THE VALUES FOR THE REMAINING INDICES
+            values = self.get_info_values_scalar(name)
+
+            # Get subset of values (still dict)
+            if simulation_names is not None: values_simulations = create_subdict(values, simulation_names)
+            else: values_simulations = values
 
             # Get unique values
-            unique_values = list(sorted(sequences.unique_values(values, ignore_none=True)))
+            unique_values = list(sorted(sequences.unique_values(values_simulations.values(), ignore_none=True)))
+
+            # Create description
+            description = "choice for '" + name + "'"
+            if self.info_units[name] is not None: description += " [" + tostr(self.info_units[name]) + "]"
 
             # Prompt for value
-            choice = prompt_choice(name, "choice for '" + name + "'", unique_values)
+            choice = prompt_choice(name, description, unique_values)
 
-            # Find incices
-            indices = tables.find_indices()
+            # Find simulation names for the choice
+            simulation_names = [] # reset
+            for simulation_name in values_simulations:
+                value = values[simulation_name]
+                if value != choice: continue
+                simulation_names.append(simulation_name)
 
-            #info = self.get_info_for_simulation(simulation_name)
-
-            #if name not in info: string = "--"
-            #else:
-            #    value = info[name]
-            #    unit = self.info_units[name]
-            #    if unit is not None: value = value.to(unit).value
-            #    string = tostr(value, scientific=self.config.info_scientific,
-            #                   decimal_places=self.config.info_ndecimal_places)
-
-    # def simulation_for_parameter_values(self, values):
-    #
-    #     """
-    #     This function ...
-    #     :param values:
-    #     :return:
-    #     """
-    #
-    #     # Get list of values and list of parameter labels
-    #     labels = values.keys()
-    #     scalar_values = [values[label].to(self.column_unit(label)).value for label in values]
-    #
-    #     # Find index of the simulation
-    #     index = tables.find_one_index(self, scalar_values, labels)
-    #
-    #     # Return the simulation name
-    #     return self["Simulation name"][index]
+            # Show the simulation names
+            nsimulations = len(simulation_names)
+            if nsimulations == 0:
+                log.warning("No simulations with the chosen parameter")
+                break
+            elif nsimulations == 1:
+                log.success("One matching simulation: '" + simulation_names[0] + "'")
+                break
+            else:
+                log.success("Matching simulations:")
+                indices = []
+                for simulation_name in simulation_names:
+                    index = self.get_index_for_simulation(simulation_name)
+                    indices.append(index)
+                for index in sorted(indices):
+                    index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
+                    simulation_name = self.simulation_names[index]
+                    log.success(" - " + index_string + simulation_name)
 
     # -----------------------------------------------------------------
 
