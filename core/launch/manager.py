@@ -18,7 +18,7 @@ from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help
+from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help, prompt_choice
 from ..basics.log import log
 from ..tools.stringify import tostr
 from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
@@ -114,6 +114,7 @@ clear_analysis_steps = ["extraction", "plotting", "misc"]
 _help_command_name = "help"
 _history_command_name = "history"
 _status_command_name = "status"
+_find_command_name = "find"
 _hosts_command_name = "hosts"
 _parallelizations_command_name = "parallelizations"
 _info_command_name = "info"
@@ -165,6 +166,7 @@ commands = OrderedDict()
 commands[_help_command_name] = ("show_help", False, "show help", None)
 commands[_history_command_name] = ("show_history", False, "show history of executed commands", None)
 commands[_status_command_name] = ("show_status_command", True, "show simulation status", None)
+commands[_find_command_name] = ("find_simulations_command", True, "find particular simulation(s) based on info or other parameters", None)
 commands[_hosts_command_name] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
 commands[_parallelizations_command_name] = ("show_parallelizations_command", True, "show parallelization schemes used per host", "host")
 commands[_info_command_name] = ("show_info_command", True, "show info about the simulation (if defined in info tables)", "simulation")
@@ -1850,6 +1852,55 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_nextraction_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return len(self.get_extraction_output(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def has_extraction_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_nextraction_output(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    def is_cached_extraction(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_extraction_output(simulation_name).has_cached
+
+    # -----------------------------------------------------------------
+
+    def has_analysis_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.has_extraction_output(simulation_name) or self.has_plotting_output(simulation_name) or self.has_misc_output(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def has_timeline_for_simulation(self, simulation_name):
 
         """
@@ -1929,6 +1980,43 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_nplotting_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return len(self.get_plotting_output(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def has_plotting_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_nplotting_output(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    def is_cached_plotting(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_plotting_output(simulation_name).has_cached
+
+    # -----------------------------------------------------------------
+
     def has_sed_plots_for_simulation(self, simulation_name):
 
         """
@@ -1965,6 +2053,43 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).misc_output
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_nmisc_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return len(self.get_misc_output(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def has_misc_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_nmisc_output(simulation_name) > 0
+
+    # -----------------------------------------------------------------
+
+    def is_cached_misc(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).has_cached
 
     # -----------------------------------------------------------------
 
@@ -4212,6 +4337,9 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Making plot ...")
+
         # Get simulation prefix
         prefix = self.get_simulation_prefix(simulation_name)
 
@@ -4593,11 +4721,37 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Making plot ...")
+
         # Get the fluxes
         fluxes = self.get_fluxes_for_simulation(simulation_name)
 
         # Get destination path
         path = kwargs.pop("path", None)
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Add reference SEDs
+        for name in self.reference_seds:
+            sed = self.reference_seds[name]
+            plotter.add_sed(sed, label=name)
+
+        # Add the mock SED to the plotter
+        plotter.add_sed(fluxes, label="Mock observation")
+
+        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
+
+        # Set filepath
+        if path is not None: filepath = path
+        else: filepath = fs.join(introspection.pts_temp_dir, "fluxes.pdf")
+
+        # Run the plotter
+        plotter.run(output=filepath)
+
+        # Open the file, if path was not specified
+        if path is None: fs.open_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -4656,11 +4810,37 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Making plot ...")
+
         # Get the fluxes
         fluxes = self.get_image_fluxes_for_simulation(simulation_name)
 
         # Get destination path
         path = kwargs.pop("path", None)
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Add reference SEDs
+        for name in self.reference_seds:
+            sed = self.reference_seds[name]
+            plotter.add_sed(sed, label=name)
+
+        # Add the mock SED to the plotter
+        plotter.add_sed(fluxes, label="Mock observation")
+
+        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
+
+        # Set filepath
+        if path is not None: filepath = path
+        else: filepath = fs.join(introspection.pts_temp_dir, "fluxes.pdf")
+
+        # Run the plotter
+        plotter.run(output=filepath)
+
+        # Open the file, if path was not specified
+        if path is None: fs.open_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -7431,15 +7611,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _cache_output(self, output, directory_path, cache_path):
+    def _cache_directories(self, output, directory_path, cache_path):
 
         """
         This function ...
         :param output:
-        :param directory_path: local output directory
-        :param cache_path: cache directory path
+        :param directory_path:
+        :param cache_path:
         :return:
         """
+
+        # Debugging
+        log.debug("Caching directories ...")
 
         # Loop over the directories
         for dirpath in output.all_directory_paths_not_in_directory:
@@ -7455,11 +7638,29 @@ class SimulationManager(Configurable):
             cache_directory_path = fs.directory_of(dirpath)
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
+            # Debugging
+            log.debug("Caching '" + dirname + "' directory from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
+
             # Copy the directory
             fs.copy_directory(dirpath, cache_directory_path)
 
             # Check whether the directory is present
             if not fs.is_directory(new_path): raise RuntimeError("Something went wrong")
+
+    # -----------------------------------------------------------------
+
+    def _cache_files(self, output, directory_path, cache_path):
+        
+        """
+        This function ...
+        :param output:
+        :param directory_path:
+        :param cache_path:
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Caching files ...")
 
         # Loop over the files
         for filepath in output.all_file_paths_not_in_directory:
@@ -7472,21 +7673,41 @@ class SimulationManager(Configurable):
 
             # Get filename and containing directory
             filename = fs.name(filepath)
-            cache_directory_path = fs.directory_of(dirpath)
+            cache_directory_path = fs.directory_of(filepath)
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
+
+            # Debugging
+            log.debug("Caching '" + filename + "' file from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
 
             # Copy the file
             fs.copy_file(filepath, cache_directory_path)
 
             # Check whether the file is present
             if not fs.is_file(new_path): raise RuntimeError("Something went wrong")
+        
+    # -----------------------------------------------------------------
 
-        # Set
+    def _cache_output(self, output, directory_path, cache_path):
+
+        """
+        This function ...
+        :param output:
+        :param directory_path: local output directory
+        :param cache_path: cache directory path
+        :return:
+        """
+
+        # Directories
+        self._cache_directories(output, directory_path, cache_path)
+
+        # Files
+        self._cache_files(output, directory_path, cache_path)
+
+        # Set cache path (write cached.dat file)
         write_cache_path(directory_path, cache_path)
 
-        # Remove output files and directories
-        fs.remove_directories(output.all_directory_paths_not_in_directory)
-        fs.remove_files(output.all_file_paths_not_in_directory)
+        # Remove original output files and directories
+        output.remove_all()
 
     # -----------------------------------------------------------------
 
@@ -7624,6 +7845,9 @@ class SimulationManager(Configurable):
         for simulation_name in simulation_names:
 
             # Check whether there is analysis output
+            if not self.has_analysis_output(simulation_name):
+                log.warning("No analysis output for simulation '" + simulation_name + "': skipping ...")
+                continue
 
             # Cache
             self.cache_simulation_analysis(simulation_name)
@@ -7683,7 +7907,53 @@ class SimulationManager(Configurable):
         splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_extraction_definition, name=name)
 
         # Loop over the simulations
-        for simulation_name in simulation_names: self.cache_simulation_extraction(simulation_name)
+        for simulation_name in simulation_names:
+
+            # Check whether there is extraction output
+            if not self.has_extraction_output(simulation_name):
+                log.warning("No extraction output for simulation '" + simulation_name + "': skipping ...")
+                continue
+
+            # Check whether already cached
+            if self.is_cached_extraction(simulation_name):
+                log.warning("Extraction output for simulation '" + simulation_name + "' is already cached: skipping ...")
+                continue
+
+            # Cache
+            self.cache_simulation_extraction(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_cache_extraction_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Root path is given
+        if self.config.cache_root is not None:
+
+            # Get the relative simulation extraction path
+            simulation_extraction_path = self.get_extraction_path(simulation_name)
+            relative_extraction_path = fs.relative_to(simulation_extraction_path, self.config.cache_root)
+
+            # Determine the extraction cache path
+            extraction_cache_path = fs.create_directory_in(self.config.cache_path, relative_extraction_path, recursive=True)
+
+        # Root path is not given: create directory for the simulation in the given cache path
+        else:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(self.config.cache_path, simulation_name)
+
+            # Create extraction cache path
+            extraction_cache_path = fs.create_directory_in(simulation_cache_path, "extr")
+
+        # Return the path
+        return extraction_cache_path
 
     # -----------------------------------------------------------------
 
@@ -7697,6 +7967,18 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Caching extraction output of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation extraction path
+        extraction_path = self.get_extraction_path(simulation_name)
+
+        # Get the simulation extraction output
+        extraction = self.get_extraction_output(simulation_name)
+
+        # Get the cache extraction path
+        cache_extraction_path = self.get_cache_extraction_path_for_simulation(simulation_name)
+
+        # Cache
+        self._cache_output(extraction, extraction_path, cache_extraction_path)
 
     # -----------------------------------------------------------------
 
@@ -7728,7 +8010,53 @@ class SimulationManager(Configurable):
         splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_plotting_definition, name=name)
 
         # Loop over the simulations
-        for simulation_name in simulation_names: self.cache_simulation_plotting(simulation_name)
+        for simulation_name in simulation_names:
+
+            # Check whether there is plotting output
+            if not self.has_plotting_output(simulation_name):
+                log.warning("No plotting output for simulation '" + simulation_name + "': skipping ...")
+                continue
+
+            # Check whether already cached
+            if self.is_cached_plotting(simulation_name):
+                log.warning("Plotting output for simulation '" + simulation_name + "' is already cached: skipping ...")
+                continue
+
+            # Cache
+            self.cache_simulation_plotting(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_cache_plotting_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Root path is given
+        if self.config.cache_root is not None:
+
+            # Get the relative simulation plotting path
+            simulation_plotting_path = self.get_plotting_path(simulation_name)
+            relative_plotting_path = fs.relative_to(simulation_plotting_path, self.config.cache_root)
+
+            # Determine the plotting cache path
+            plotting_cache_path = fs.create_directory_in(self.config.cache_path, relative_plotting_path, recursive=True)
+
+        # Root path is not given: create directory for the simulation in the given cache path
+        else:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(self.config.cache_path, simulation_name)
+
+            # Create plotting cache path
+            plotting_cache_path = fs.create_directory_in(simulation_cache_path, "plot")
+
+        # Return the path
+        return plotting_cache_path
 
     # -----------------------------------------------------------------
 
@@ -7742,6 +8070,18 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Caching plotting output of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation plotting path
+        plotting_path = self.get_plotting_path(simulation_name)
+
+        # Get the simulation output
+        plotting = self.get_output(simulation_name)
+
+        # Get the cache plotting path
+        cache_plotting_path = self.get_cache_plotting_path_for_simulation(simulation_name)
+
+        # Cache
+        self._cache_output(plotting, plotting_path, cache_plotting_path)
 
     # -----------------------------------------------------------------
 
@@ -7773,7 +8113,53 @@ class SimulationManager(Configurable):
         splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_misc_definition, name=name)
 
         # Loop over the simulations
-        for simulation_name in simulation_names: self.cache_simulation_misc(simulation_name)
+        for simulation_name in simulation_names:
+
+            # Check whether there is misc output
+            if not self.has_misc_output(simulation_name):
+                log.warning("No miscellaneous output for simulation '" + simulation_name + "': skipping ...")
+                continue
+
+            # Check whether already cached
+            if self.is_cached_misc(simulation_name):
+                log.warning("Miscellaneous output for simulation '" + simulation_name + "' is already cached: skipping ...")
+                continue
+
+            # Cache
+            self.cache_simulation_misc(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_cache_misc_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Root path is given
+        if self.config.cache_root is not None:
+
+            # Get the relative simulation misc path
+            simulation_misc_path = self.get_misc_path(simulation_name)
+            relative_misc_path = fs.relative_to(simulation_misc_path, self.config.cache_root)
+
+            # Determine the misc cache path
+            misc_cache_path = fs.create_directory_in(self.config.cache_path, relative_misc_path, recursive=True)
+
+        # Root path is not given: create directory for the simulation in the given cache path
+        else:
+
+            # Create simulation cache path
+            simulation_cache_path = fs.create_directory_in(self.config.cache_path, simulation_name)
+
+            # Create misc cache path
+            misc_cache_path = fs.create_directory_in(simulation_cache_path, "misc")
+
+        # Return the path
+        return misc_cache_path
 
     # -----------------------------------------------------------------
 
@@ -7787,6 +8173,18 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Caching misc output of simulation '" + simulation_name + "' ...")
+
+        # Get the simulation misc path
+        misc_path = self.get_misc_path(simulation_name)
+
+        # Get the simulation output
+        misc = self.get_misc_output(simulation_name)
+
+        # Get the cache output path
+        cache_misc_path = self.get_cache_misc_path_for_simulation(simulation_name)
+
+        # Cache
+        self._cache_output(misc, misc_path, cache_misc_path)
 
     # -----------------------------------------------------------------
 
@@ -9946,6 +10344,82 @@ class SimulationManager(Configurable):
 
         # Save the table
         if table is not None and path is not None: table.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def find_simulations_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("host_id", "string", "host ID for which to find simulation(s)")
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def find_simulations_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Parse the command
+        config = self.get_config_from_command(command, self.find_simulations_definition)
+
+        # No info?
+        if not self.has_info: raise NotImplementedError("Not yet implemented without info: based on any choosen set of parameters")
+
+        indices = None
+
+        # Loop over the different parameters
+        for name in self.info_names:
+
+            # Get all info for all simulations (dict)
+            if indices is None: values = self.get_info_values(name)
+            else: values = None # GET THE VALUES FOR THE REMAINING INDICES
+
+            # Get unique values
+            unique_values = list(sorted(sequences.unique_values(values, ignore_none=True)))
+
+            # Prompt for value
+            choice = prompt_choice(name, "choice for '" + name + "'", unique_values)
+
+            # Find incices
+            indices = tables.find_indices()
+
+            #info = self.get_info_for_simulation(simulation_name)
+
+            #if name not in info: string = "--"
+            #else:
+            #    value = info[name]
+            #    unit = self.info_units[name]
+            #    if unit is not None: value = value.to(unit).value
+            #    string = tostr(value, scientific=self.config.info_scientific,
+            #                   decimal_places=self.config.info_ndecimal_places)
+
+    # def simulation_for_parameter_values(self, values):
+    #
+    #     """
+    #     This function ...
+    #     :param values:
+    #     :return:
+    #     """
+    #
+    #     # Get list of values and list of parameter labels
+    #     labels = values.keys()
+    #     scalar_values = [values[label].to(self.column_unit(label)).value for label in values]
+    #
+    #     # Find index of the simulation
+    #     index = tables.find_one_index(self, scalar_values, labels)
+    #
+    #     # Return the simulation name
+    #     return self["Simulation name"][index]
 
     # -----------------------------------------------------------------
 

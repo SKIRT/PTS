@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
-from pts.core.basics.configuration import prompt_choices
+from pts.core.basics.configuration import prompt_choice
 from pts.core.tools import formatting as fmt
 from pts.core.tools import filesystem as fs
 from pts.core.tools.stringify import tostr
@@ -76,7 +76,7 @@ for j, label in enumerate(generation.parameter_labels):
         description = fitting_run.parameter_descriptions[label]
 
         # Prompt for the value of this parameter
-        value = prompt_choices(label, description, unique_values)
+        value = prompt_choice(label, description, unique_values)
 
     # Set the chosen value
     values[label] = value

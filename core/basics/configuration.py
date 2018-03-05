@@ -374,10 +374,10 @@ def prompt_automatic(name, description, default, choices=None, default_alias=Non
 
 # -----------------------------------------------------------------
 
-def prompt_choices(name, description, choices):
+def prompt_choice(name, description, choices):
 
     """
-    This function ...
+    This function lets the user pick one option from a list of defined choices
     :param name:
     :param description:
     :param choices:
@@ -390,6 +390,25 @@ def prompt_choices(name, description, choices):
 
     # Prompt
     return prompt_variable(name, ptype, description, choices=choices)
+
+# -----------------------------------------------------------------
+
+def prompt_choices(name, description, choices):
+
+    """
+    This function lets the user pick multiple options from a list of defined choices
+    :param name:
+    :param description:
+    :param choices:
+    :return:
+    """
+
+    # Determine parsing type
+    list_ptype, string = stringify.stringify_list(choices)
+    #ptype = list_ptype.rsplit("_list", 1)[0]
+
+    # Prompt
+    return prompt_variable(name, list_ptype, description, choices=choices)
 
 # -----------------------------------------------------------------
 

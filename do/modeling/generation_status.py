@@ -80,6 +80,8 @@ definition.add_flag("fix_success", "check success flags in assignment table")
 # Caching
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
 definition.add_flag("cache_misc", "cache the misc output of analysed simulations")
+definition.add_flag("cache_images", "cache the images output of analysed simulations")
+definition.add_flag("cache_datacubes", "cache the datacubes of retrieved simulations")
 
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
@@ -213,6 +215,8 @@ if config.cache_volume is not None:
     manager.config.cache_path = fs.get_volume_path(config.cache_volume)
     manager.config.cache_misc = config.cache_misc
     manager.config.cache_root = environment.path # set modeling path as cache root path
+    manager.config.cache_images = config.cache_images
+    manager.config.cache_datacubes = config.cache_datacubes
 
 # Set reference SEDs for plotting simulated SEDS
 reference_sed_paths = OrderedDict()

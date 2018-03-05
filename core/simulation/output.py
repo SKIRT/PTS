@@ -738,6 +738,21 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def remove_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Directories
+        fs.remove_directories(self.all_directory_paths_not_in_directory)
+
+        # Files
+        fs.remove_files(self.all_file_paths_not_in_directory)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def directory(self):
 

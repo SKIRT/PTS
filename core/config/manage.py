@@ -102,6 +102,8 @@ definition.add_optional("reference_seds", "string_filepath_dictionary", "file pa
 definition.add_optional("cache_path", "directory_path", "path to be used for caching")
 definition.add_optional("cache_root", "directory_path", "path of directory up in the hierarchy with respect to the simulation directories that should be set equivalent to the 'cache_path' and the intermediate directory structure should be created if necessary")
 definition.add_flag("cache_misc", "cache the misc output of analysed simulations")
+definition.add_flag("cache_images", "cache the images output of analysed simulations")
+definition.add_flag("cache_datacubes", "cache the datacubes of retrieved simulations")
 
 # -----------------------------------------------------------------
 
