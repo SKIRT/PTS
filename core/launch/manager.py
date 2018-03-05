@@ -12378,6 +12378,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def analyse_simulation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return analyse_simulation_definition
+
+    # -----------------------------------------------------------------
+
     def analyse_simulation_command(self, command):
 
         """
@@ -12387,7 +12399,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=analyse_simulation_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.analyse_simulation_definition)
 
         # Analyse
         self.analyse_simulation(simulation_name, config=config)
