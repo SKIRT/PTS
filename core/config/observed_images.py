@@ -10,6 +10,11 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
+default_min_points_per_filter = 8
+default_min_points_per_fwhm = 5
+
+# -----------------------------------------------------------------
+
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
@@ -63,5 +68,15 @@ definition.add_flag("update_dependencies", "update PTS dependencies (use with ca
 # Plot?
 definition.add_flag("plot", "make plots", True)
 definition.add_flag("plot_images", "plot the mock obseved images", False)
+
+# -----------------------------------------------------------------
+
+# Special options
+definition.add_flag("check_wavelengths", "check the sampling of the wavelength grid", True)
+definition.add_flag("ignore_bad", "ignore bad sampling of wavelength grid (just give warning)", False)
+definition.add_flag("skip_ignored_bad_convolution", "skip filters that are ignored because of bad sampling (for convolution)", True)
+definition.add_flag("skip_ignored_bad_closest", "skip filters that are ignored because the closest wavelength is outside of the inner region of the filter wavelength range", True)
+definition.add_optional("min_npoints", "positive_integer", "minimum number of points required in filter wavelength range", default_min_points_per_filter)
+definition.add_optional("min_npoints_fwhm", "positive_integer", "minimum number of points required in FWHM filter wavelength range", default_min_points_per_fwhm)
 
 # -----------------------------------------------------------------

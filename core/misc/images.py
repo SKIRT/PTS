@@ -1292,7 +1292,14 @@ class ObservedImageMaker(DatacubesMiscMaker):
             nprocesses = min(len(make_filters), nprocesses)
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[instr_name].frames_for_filters(make_filters, convolve=self.spectral_convolution_filters, nprocesses=nprocesses, check_previous_sessions=True)
+            frames = self.datacubes[instr_name].frames_for_filters(make_filters, convolve=self.spectral_convolution_filters,
+                                                                   nprocesses=nprocesses, check_previous_sessions=True,
+                                                                   check=self.config.check_wavelengths,
+                                                                   min_npoints = self.config.min_npoints,
+                                                                   min_npoints_fwhm = self.config.min_npoints_fwhm,
+                                                                   ignore_bad = self.config.ignore_bad,
+                                                                   skip_ignored_bad_convolution = self.config.skip_ignored_bad_convolution,
+                                                                   skip_ignored_bad_closest = self.config.skip_ignored_bad_closest)
 
             # Add the observed images to the dictionary
             for filter_name, frame in zip(make_filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube
