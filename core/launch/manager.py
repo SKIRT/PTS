@@ -10671,6 +10671,7 @@ class SimulationManager(Configurable):
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("extra_columns", "string_list", "extra columns to show", choices=extra_columns)
         definition.add_optional("path", "string", "save the status information as a table at this path")
+        definition.add_flag("refresh", "refresh the status info", False)
 
         # Return the definition
         return definition
@@ -10689,21 +10690,25 @@ class SimulationManager(Configurable):
         config = self.get_config_from_command(command, self.show_status_definition)
 
         # Show
-        self.show_status(extra=config.extra_columns)
+        self.show_status(extra=config.extra_columns, path=config.path, refresh=config.refresh)
         
     # -----------------------------------------------------------------
 
-    def show_status(self, extra=None, path=None):
+    def show_status(self, extra=None, path=None, refresh=False):
 
         """
         This function ...
         :param extra:
         :param path:
+        :param refresh:
         :return:
         """
 
         # Inform the user
         log.info("Showing the simulation status ...")
+
+        # Refresh if requested
+        if refresh: self.reset_status()
 
         # Show
         print("")
