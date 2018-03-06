@@ -62,6 +62,30 @@ class JobScript(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pbs_options["o"] if "o" in self.pbs_options else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def error_path(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.pbs_options["e"] if "e" in self.pbs_options else None
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path):
 

@@ -1795,6 +1795,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_screen_script(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_screen_script(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
     def get_job_id(self, simulation_name):
 
         """
@@ -1915,6 +1927,56 @@ class SimulationManager(Configurable):
         # No job script is found
         else: return None
         
+    # -----------------------------------------------------------------
+
+    def has_job_script(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_job_script(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    def get_job_output_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if self.has_job_script(simulation_name): return self.get_job_script(simulation_name).output_path
+        else:
+            remote_output_path = self.get_simulation(simulation_name).remote_output_path
+            filepaths = self.get_remote_for_simulation(simulation_name).files_in_path(remote_output_path, extension="txt", contains="out")
+            nfiles = len(filepaths)
+            if nfiles == 0: return None
+            elif nfiles > 1: return None
+            else: return filepaths[0]
+
+    # -----------------------------------------------------------------
+
+    def get_job_error_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if self.has_job_script(simulation_name): return self.get_job_script(simulation_name).error_path
+        else:
+            remote_output_path = self.get_simulation(simulation_name).remote_output_path
+            filepaths = self.get_remote_for_simulation(simulation_name).files_in_path(remote_output_path, extension="txt", contains="err")
+            nfiles = len(filepaths)
+            if nfiles == 0: return None
+            elif nfiles > 1: return None
+            else: return filepaths[0]
+
     # -----------------------------------------------------------------
 
     def get_simulation_extraction_path(self, simulation_name):
@@ -6780,10 +6842,13 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        name = self.get_screen_name(simulation_name)
-        remote_output_path = self.get_remote_screen_output_path(simulation_name)
-        remote_script_path = self.get_remote_screen_script_path(simulation_name)
-        print("screen", name, remote_output_path, remote_script_path)
+        # Debugging
+        log.debug("")
+
+        #name = self.get_screen_name(simulation_name)
+        #remote_output_path = self.get_remote_screen_output_path(simulation_name)
+        #remote_script_path = self.get_remote_screen_script_path(simulation_name)
+        #print("screen", name, remote_output_path, remote_script_path)
 
     # -----------------------------------------------------------------
 
@@ -6795,9 +6860,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        job_id = self.get_job_id(simulation_name)
-        remote_script_path = self.get_remote_job_script_path(simulation_name)
-        print("job", job_id, remote_script_path)
+        # Debugging
+        log.debug("")
+
+        # Get error file path
+        filepath = self.get_job_error_path(simulation_name)
 
     # -----------------------------------------------------------------
 
