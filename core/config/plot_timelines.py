@@ -34,3 +34,8 @@ definition.add_flag("show_ranks", "show process ranks")
 definition.add_optional("ticks_fontsize", "positive_integer", "fontsize of the axes ticks", default=12)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("write_timelines", "write the timelines", True)
+definition.add_flag("write_data", "write the plotting data", True)
+
+# -----------------------------------------------------------------

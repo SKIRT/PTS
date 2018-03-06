@@ -23,11 +23,11 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 from ..tools import filesystem as fs
-from ..extract.timeline import TimeLineExtractor, extract_timeline
+from ..extract.timeline import extract_timeline
 from ..basics.configurable import Configurable
 from ..simulation.discover import SimulationDiscoverer
-from ..tools.serialization import write_dict, write_data_tuple
 from ..simulation.parallelization import Parallelization
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -57,12 +57,14 @@ phase_label_names = {"setup": "setup",
 
 # -----------------------------------------------------------------
 
-def plot_timeline(timeline, path=None):
+def plot_timeline(timeline, path=None, write_timelines=False, write_data=False):
 
     """
     This function ...
     :param timeline:
     :param path:
+    :param write_timelines:
+    :param write_data:
     :return:
     """
 
@@ -71,6 +73,10 @@ def plot_timeline(timeline, path=None):
 
     # Set the output path
     plotter.config.output = path
+
+    # Set options
+    plotter.config.write_timelines = write_timelines
+    plotter.config.write_data = write_data
 
     # Run the timeline plotter
     plotter.run(timeline=timeline)
@@ -144,6 +150,7 @@ class TimeLinePlotter(Configurable):
         # Call the setup function of the base class
         super(TimeLinePlotter, self).setup(**kwargs)
 
+        # Get the timeline(s)
         if "timeline" in kwargs:
             output_path = self.config.output if self.config.output is not None else self.config.path
             self.timelines[output_path] = kwargs.pop("timeline")
@@ -154,22 +161,31 @@ class TimeLinePlotter(Configurable):
             else: raise ValueError("Timelines must be a dictionary")
 
         # Load simulations from working directory if none have been added
-        if len(self.simulations) == 0 and len(self.timelines) == 0:
+        if len(self.simulations) == 0 and len(self.timelines) == 0: self.load_simulations()
 
-            # Inform the user
-            log.info("Loading simulations ...")
+    # -----------------------------------------------------------------
 
-            # Create the simulation discoverer
-            discoverer = SimulationDiscoverer()
-            discoverer.config.path = self.config.path
-            discoverer.config.list = False
+    def load_simulations(self):
 
-            # Run the simulation discoverer
-            discoverer.run()
+        """
+        This function ...
+        :return:
+        """
 
-            # Set the simulations
-            if self.config.hetero: self.simulations = discoverer.simulations
-            else: self.simulations = discoverer.simulations_single_ski
+        # Inform the user
+        log.info("Loading simulations ...")
+
+        # Create the simulation discoverer
+        discoverer = SimulationDiscoverer()
+        discoverer.config.path = self.config.path
+        discoverer.config.list = False
+
+        # Run the simulation discoverer
+        discoverer.run()
+
+        # Set the simulations
+        if self.config.hetero: self.simulations = discoverer.simulations
+        else: self.simulations = discoverer.simulations_single_ski
 
     # -----------------------------------------------------------------
 
@@ -382,6 +398,7 @@ class TimeLinePlotter(Configurable):
         data = []
         nprocs_list = []
 
+        # Initialize phases
         data.append(["setup", [], []])
         data.append(["stellar", [], []])
         data.append(["spectra", [], []])
@@ -471,10 +488,10 @@ class TimeLinePlotter(Configurable):
         log.info("Writing ...")
 
         # Write the extracted timelines
-        self.write_timelines()
+        if self.config.write_timelines: self.write_timelines()
 
         # Write the data
-        self.write_data()
+        if self.config.write_data: self.write_data()
 
     # -----------------------------------------------------------------
 
@@ -530,10 +547,24 @@ class TimeLinePlotter(Configurable):
 
         # Determine the path
         if self.config.output is not None: path = fs.join(self.config.output, "single_data.dat")
-        else: path = fs.join(self.config.path, "single_data.dat")
+        #else: path = fs.join(self.config.path, "single_data.dat")
+        else: path = self.output_path_file("single_data.dat")
 
         # Write
-        write_dict(self.single_data, path)
+        #write_dict(self.single_data, path)
+        with open(path, "w") as datafile:
+
+            # Loop over the data for the different timelines
+            for output_path in self.single_data:
+
+                ranks, data = self.single_data[output_path]
+                print(output_path, file=datafile)
+                print(tostr(ranks), file=datafile)
+                #print(tostr(data), file=datafile)
+                for phase, start_times, end_times in data:
+                    print(phase + " " + str(start_times) + " " + str(end_times), file=datafile)
+                    #print(tostr(data_phase), file=datafile)
+                print("", file=datafile)
 
     # -----------------------------------------------------------------
 
@@ -549,10 +580,21 @@ class TimeLinePlotter(Configurable):
 
         # Determine the path
         if self.config.output is not None: path = fs.join(self.config.output, "multi_data.dat")
-        else: path = fs.join(self.config.path, "multi_data.dat")
+        #else: path = fs.join(self.config.path, "multi_data.dat")
+        else: path = self.output_path_file("multi_data.dat")
 
         # Write
-        write_data_tuple(self.multi_data, path)
+        #write_data_tuple(self.multi_data, path)
+        with open(path, 'w') as datafile:
+
+            # Loop over the data
+            for nprocs_list, simulation_names, data in self.multi_data:
+
+                print(tostr(nprocs_list), file=datafile)
+                print(tostr(simulation_names), file=datafile)
+                for phase, start_times, end_times in data:
+                    print(phase + " " + str(start_times) + " " + str(end_times), file=datafile)
+                print("", file=datafile)
 
     # -----------------------------------------------------------------
 
@@ -598,7 +640,8 @@ class TimeLinePlotter(Configurable):
 
             # Determine path
             if self.config.output is not None: path = fs.join(self.config.output, "timeline_" + fs.name(output_path) + ".pdf")
-            else: path = fs.join(output_path, "timeline.pdf")
+            #else: path = fs.join(output_path, "timeline.pdf")
+            else: path = None
 
             # Create the plot
             create_timeline_plot(data, ranks, path, figsize=self.config.figsize, percentages=self.config.percentages,
@@ -637,7 +680,8 @@ class TimeLinePlotter(Configurable):
 
             # Determine path
             if self.config.output is not None: path = fs.join(self.config.output, "timelines_" + str(nproc) + "processes.pdf")
-            else: path = fs.join(self.config.path, "timelines_" + str(nproc) + "processes.pdf")
+            #else: path = fs.join(self.config.path, "timelines_" + str(nproc) + "processes.pdf")
+            else: path = None
 
             # Gather the data
             nproc_dict = dict()
@@ -678,7 +722,8 @@ class TimeLinePlotter(Configurable):
 
         # Determine the path
         if self.config.output is not None: path = fs.join(self.config.output, "timeline_cputime.pdf")
-        else: path = fs.join(self.config.path, "timeline_cputime.pdf")
+        #else: path = fs.join(self.config.path, "timeline_cputime.pdf")
+        else: path = None
 
         # Create the plot
         create_timeline_plot(data, nprocs_list, path, percentages=True, totals=True, unordered=True, cpu=True,
