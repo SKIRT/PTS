@@ -31,7 +31,8 @@ class ScreenScript(object):
     An instance of the ...
     """
 
-    def __init__(self, name, host_id, output_path, process_binding=True, skirt_path=None, mpirun_path=None, remote=None):
+    def __init__(self, name, host_id, output_path, process_binding=True, skirt_path=None, mpirun_path=None,
+                 remote=None, check_ski=True):
 
         """
         The constructor ...
@@ -42,6 +43,7 @@ class ScreenScript(object):
         :param skirt_path:
         :param mpirun_path:
         :param remote:
+        :param check_ski:
         :return:
         """
 
@@ -63,6 +65,9 @@ class ScreenScript(object):
 
         # The arguments
         self.arguments = OrderedDict()
+
+        # Set flag
+        self.check_ski = check_ski
 
         # The path
         self.path = None
@@ -131,7 +136,7 @@ class ScreenScript(object):
             elif line.startswith("screen -S"): screen_name = line.split("screen -S ")[1].split()[0]
 
         # Create screen script
-        screen = cls(screen_name, host_id, screen_output_path)
+        screen = cls(screen_name, host_id, screen_output_path, check_ski=False) # check ski will be set to True if conditions are encountered
 
         # Loop over the simulation lines
         for line in lines:
@@ -140,6 +145,16 @@ class ScreenScript(object):
             if line.startswith("#"): continue
             if not line: continue
             if line.endswith("--version"): continue
+
+            # Conditional statements
+            if line.startswith("if [ -e"):
+                screen.check_ski = True
+                continue
+            elif line.startswith("then"): continue
+            elif line.startswith("else"): continue
+            elif line.startswith("fi"): continue
+            line = line.strip()
+            if line.startswith("echo"): continue
 
             # Get SKIRT arguments
             arguments = SkirtArguments.from_command(line)
@@ -426,12 +441,10 @@ class ScreenScript(object):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, update_path=True):
+    def to_lines(self):
 
         """
         This function ...
-        :param path:
-        :param update_path:
         :return:
         """
 
@@ -460,13 +473,53 @@ class ScreenScript(object):
             arguments = self.arguments[simulation_name]
 
             # Get command
-            command = arguments.to_command(scheduler=False, skirt_path=self.skirt_path, mpirun_path=self.mpirun_path, bind_to_cores=self.process_binding, to_string=True, remote=self.remote)
+            command = arguments.to_command(scheduler=False, skirt_path=self.skirt_path, mpirun_path=self.mpirun_path,
+                                           bind_to_cores=self.process_binding, to_string=True, remote=self.remote)
 
             # Add simulation name to command
-            line = command + " # " + simulation_name
+            command_line = command + " # " + simulation_name
 
-            # Add line
-            lines.append(line)
+            # Check presence of ski file?
+            if self.check_ski:
+
+                # Add check
+                line = "if [ -e '" + arguments.ski_pattern + "' ]"
+                lines.append(line)
+
+                lines.append("then")
+
+                line = "    " + command_line
+                lines.append(line)
+
+                lines.append("else")
+
+                line = '    echo "Simulation ' + "'" + simulation_name + "' cannot be executed: ski file is missing (" + arguments.ski_pattern + ")" + '"'
+                lines.append(line)
+
+                lines.append("fi")
+
+            # Don't check the presence of the ski file
+            else: lines.append(command_line)
+
+            # Add empty line
+            lines.append("")
+
+        # Return the lines
+        return lines
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        # Get the lines
+        lines = self.to_lines()
 
         # Write the lines
         fs.write_lines(path, lines)
