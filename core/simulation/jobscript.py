@@ -240,6 +240,9 @@ class SKIRTJobScript(JobScript):
         # Call the constructor of the base class
         super(SKIRTJobScript, self).__init__(name, walltime, nodes, ppn, output_file_path, error_file_path, mail, extra_header_lines=extra_header_lines)
 
+        # Save the arguments
+        self.arguments = arguments
+
         # Add the appropriate syntax for hybrid / multithreaded runs
         mpi_command += " --hybrid " + str(processes_per_node)
 
@@ -251,6 +254,84 @@ class SKIRTJobScript(JobScript):
 
         # Add modules to load
         for module in modules: self.import_module(module)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.arguments.parallelization
+
+    # -----------------------------------------------------------------
+
+    @property
+    def logging_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.arguments.logging
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnodes(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mail(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_node(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def walltime(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scheduling_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..launch.options import SchedulingOptions
+        return SchedulingOptions(nodes=self.nnodes, mail=self.mail, full_node=self.full_node, walltime=self.walltime,
+                                 local_jobscript_path=self.path)
 
 # -----------------------------------------------------------------
 

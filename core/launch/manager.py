@@ -1711,11 +1711,11 @@ class SimulationManager(Configurable):
         This property ...
         :return:
         """
-        
+
         # Initialize dictionary
         scripts = dict()
         if self.config.screen_scripts is None: return scripts
-        
+
         # Loop over the paths
         for filepath in self.config.screen_scripts:
 
@@ -8946,7 +8946,14 @@ class SimulationManager(Configurable):
         # Set the parallelization scheme
         if parallelization is None:
             screen_script = self.get_screen_script(simulation_name)
-            parallelization = screen_script.
+            if screen_script is None: raise RuntimeError("Cannot determine parallelization scheme: original screen script not found")
+            parallelization = screen_script.get_parallelization(simulation_name)
+
+        # Set the logging options
+        if logging_options is None:
+            screen_script = self.get_screen_script(simulation_name)
+            if screen_script is None: raise RuntimeError("Cannot determine logging options: original screen script not found")
+            logging_options = screen_script.get_logging_options(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -8964,21 +8971,37 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Relaunching simulation '" + simulation_name + "' as a new job ...")
 
+        # Set the parallelization scheme
+        if parallelization is None:
+            job_script = self.get_job_script(simulation_name)
+            if job_script is None: raise RuntimeError("Cannot determine parallelization scheme: original job script not found")
+            parallelization = job_script.parallelization
+
+        # Set the logging options
+        if logging_options is None:
+            job_script = self.get_job_script(simulation_name)
+            if job_script is None: raise RuntimeError("Cannot determine logging options: original job script not found")
+            logging_options = job_script.logging_options
+
+        # Set the scheduling options
+        if scheduling_options is None:
+            job_script = self.get_job_script(simulation_name)
+            if job_script is None: raise RuntimeError("Cannot determine scheduling options: original job script not found")
+            scheduling_options = job_script.scheduling_options
+
         # Add the simulation to the queue
         self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id,
                                    parallelization=parallelization, logging_options=logging_options,
                                    scheduling_options=scheduling_options, analysis_options=simulation.analysis)
 
         # Add entry to moved table
-        self.moved.add_simulation(simulation, host)
+        #self.moved.add_simulation(simulation, host)
 
         # Remove original simulation?
-        if not self.config.dry:
-            self.remove_simulation(simulation_name)  # backup is done here
+        #if not self.config.dry: self.remove_simulation(simulation_name)  # backup is done here
 
         # Don't remove
-        else:
-            log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
+        #else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
 
     # -----------------------------------------------------------------
 
