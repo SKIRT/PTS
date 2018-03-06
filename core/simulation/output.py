@@ -22,6 +22,7 @@ from ..basics.map import Map
 from ..tools.utils import lazyproperty, memoize_method
 from ..units.unit import parse_unit as u
 from ..basics.log import log
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -95,110 +96,118 @@ def get_all_output(path, out_name="out", extr_name="extr", plot_name="plot", mis
 
     # Get extraction output
     if extr_name in dirnames: extraction = get_extraction(fs.join(path, extr_name))
-    else: extraction = get_extraction(path)
+    else: extraction = get_extraction(path, ignore=output.all_file_paths)
 
     # Get plotting output
     if plot_name in dirnames: plotting = get_plotting(fs.join(path, plot_name))
-    else: plotting = get_plotting(path)
+    else: plotting = get_plotting(path, ignore=output.all_file_paths + extraction.all_file_paths)
 
     # Get misc output
     if misc_name in dirnames: misc = get_misc(fs.join(path, misc_name))
-    else: misc = get_misc(path)
+    else: misc = get_misc(path, ignore=output.all_file_paths + extraction.all_file_paths + plotting.all_file_paths)
 
     # Return
     return output, extraction, plotting, misc
 
 # -----------------------------------------------------------------
 
-def get_output_cwd():
+def get_output_cwd(ignore=None):
 
     """
     This function ...
+    :param ignore:
     :return:
     """
 
-    return SimulationOutput.from_cwd()
+    return SimulationOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
-def get_output(path):
+def get_output(path, ignore=None):
 
     """
     This function ...
     :param path:
+    :param ignore:
     :return:
     """
 
-    return SimulationOutput.from_directory(path)
+    return SimulationOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
-def get_extraction_output_cwd():
+def get_extraction_output_cwd(ignore=None):
 
     """
     This function ...
+    :param ignore:
     :return:
     """
 
-    return ExtractionOutput.from_cwd()
+    return ExtractionOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
-def get_extraction(path):
-
-    """
-    This function ...
-    :param path:
-    :return:
-    """
-
-    return ExtractionOutput.from_directory(path)
-
-# -----------------------------------------------------------------
-
-def get_plotting_cwd():
-
-    """
-    This function ...
-    :return:
-    """
-
-    return PlottingOutput.from_cwd()
-
-# -----------------------------------------------------------------
-
-def get_plotting(path):
+def get_extraction(path, ignore=None):
 
     """
     This function ...
     :param path:
+    :param ignore:
     :return:
     """
 
-    return PlottingOutput.from_directory(path)
+    return ExtractionOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
-def get_misc_cwd():
+def get_plotting_cwd(ignore=None):
 
     """
     This function ...
+    :param ignore:
     :return:
     """
 
-    return MiscOutput.from_cwd()
+    return PlottingOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
-def get_misc(path):
+def get_plotting(path, ignore=None):
 
     """
     This function ...
     :param path:
+    :param ignore:
     :return:
     """
 
-    return MiscOutput.from_directory(path)
+    return PlottingOutput.from_directory(path, ignore=ignore)
+
+# -----------------------------------------------------------------
+
+def get_misc_cwd(ignore=None):
+
+    """
+    This function ...
+    :param ignore:
+    :return:
+    """
+
+    return MiscOutput.from_cwd(ignore=ignore)
+
+# -----------------------------------------------------------------
+
+def get_misc(path, ignore=None):
+
+    """
+    This function ...
+    :param path:
+    :param ignore:
+    :return:
+    """
+
+    return MiscOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
@@ -440,6 +449,9 @@ class Output(object):
         :return:
         """
 
+        #print([fs.name(arg) for arg in args])
+        #print(kwargs)
+
         # Debugging
         log.debug("Loading file paths ...")
 
@@ -452,6 +464,7 @@ class Output(object):
 
         # Loop over the filepaths, categorize
         for filepath in args:
+            #print(filepath)
 
             # Get filename and directory path
             filename = fs.name(filepath)
@@ -474,12 +487,20 @@ class Output(object):
                 cached_path = get_cache_path(directory)
                 continue
 
+            #print(filepath, output_type)
+
             # Add the type
             if output_type is None: self.files[other_name].append(filepath)
             else: self.files[output_type].append(filepath)
 
+        #print(prefix)
+        #print(cached_path)
+
         # Load cached files and directories
         if cached_path is not None:
+
+            # Debugging
+            log.debug("Loading cached file paths ...")
 
             # Files
             filepaths = fs.files_in_path(cached_path, startswith=prefix, extension=self._with_extensions,
@@ -490,6 +511,10 @@ class Output(object):
 
             # Directories
             if self._with_directories:
+
+                # Debugging
+                log.debug("Loading cached directory paths ...")
+
                 dirpaths = fs.directories_in_path(cached_path, recursive=self._recursive)
                 ndirs = len(dirpaths)
                 if ndirs > 0: self.has_cached_directories = True
@@ -1174,6 +1199,18 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def output_type_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._output_types.values()
+
+    # -----------------------------------------------------------------
+
     @property
     def nfiles(self):
 
@@ -1185,7 +1222,7 @@ class Output(object):
         total = 0
 
         # Files
-        for output_type in self._output_types:
+        for output_type in self.output_type_names:
             if self.has_files(output_type): total += self.get_nfiles(output_type)
         if self.has_other_files: total += self.nother_files
 
@@ -1204,7 +1241,7 @@ class Output(object):
         total = 0
 
         # Directories
-        for output_type in self._output_types:
+        for output_type in self.output_type_names:
             if self.has_directories(output_type): total += self.get_ndirectories(output_type)
         if self.has_other_directories: total += self.nother_directories
 
@@ -1236,22 +1273,41 @@ class Output(object):
         lines = []
 
         # Loop over the output types
-        for output_type in self._output_types:
-            if not self.has_files(output_type): continue
+        for output_type in self.output_type_names:
 
-            # Empty line
-            lines.append(line_prefix)
-
-            # Get number of files
-            nfiles = self.get_nfiles(output_type)
+            # Skip?
+            if not self.has_files(output_type) and not self.has_directories(output_type): continue
 
             # Add title
-            title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset + " (" + str(nfiles) + "):"
-            lines.append(line_prefix + title)
             lines.append(line_prefix)
+            title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset
+            if self.has_files(output_type):
+                nfiles = self.get_nfiles(output_type)
+                title += " (" + str(nfiles) + ")"
+            title += ":"
+            lines.append(line_prefix + title)
 
-            # Add paths
-            for path in self.files[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
+            #print(output_type, self.has_files(output_type))
+
+            # Show files for this type
+            if self.has_files(output_type):
+
+                # Empty line
+                lines.append(line_prefix)
+                #print(self.files[output_type])
+
+                # Add paths
+                for path in self.files[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
+
+            #print(output_type, self.has_directories(output_type))
+
+            # Show directories for this type
+            if self.has_directories(output_type):
+
+                lines.append(line_prefix)
+                lines.append(line_prefix + fmt.red + "directories:" + fmt.reset)
+                lines.append(line_prefix)
+                for path in self.directories[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Other
         if self.has_other_files:
@@ -1346,16 +1402,18 @@ class SimulationOutput(Output):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path, prefix=None):
+    def from_directory(cls, path, prefix=None, ignore=None):
 
         """
         This function ...
         :param path:
         :param prefix:
+        :param ignore:
         :return:
         """
 
         filepaths = fs.files_in_path(path, startswith=prefix, not_extension=cls._without_extensions)
+        if ignore is not None: filepaths = sequences.removed(filepaths, ignore)
         return cls(*filepaths)
 
     # -----------------------------------------------------------------
@@ -2623,16 +2681,23 @@ class ExtractionOutput(Output):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, **kwargs):
 
         """
         This function ...
         :param path:
+        :param kwargs:
         :return:
         """
 
+        # Ignore
+        ignore = kwargs.pop("ignore", None)
+
         # Get the filepaths
-        filepaths = fs.files_in_path(path)
+        filepaths = fs.files_in_path(path, **kwargs)
+
+        # Ignore?
+        if ignore is not None: filepaths = sequences.removed(filepaths, ignore)
 
         # Load
         return cls(*filepaths)
@@ -2844,16 +2909,25 @@ class PlottingOutput(Output):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, **kwargs):
 
         """
         This function ...
         :param path:
+        :param kwargs:
         :return:
         """
 
+        # Get ignore
+        ignore = kwargs.pop("ignore", None)
+
         # Get files
-        filepaths = fs.files_in_path(path, extension=cls._with_extensions)
+        filepaths = fs.files_in_path(path, extension=cls._with_extensions, **kwargs)
+
+        # Ignore?
+        if ignore is not None: filepaths = sequences.removed(filepaths, ignore)
+
+        # Create
         return cls(*filepaths)
 
     # -----------------------------------------------------------------
@@ -3059,17 +3133,25 @@ class MiscOutput(Output):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, **kwargs):
 
         """
         This function ...
         :param path:
+        :param kwargs:
         :return:
         """
 
+        # Ignore?
+        ignore = kwargs.pop("ignore", None)
+
         # Get paths
-        filepaths = fs.files_in_path(path, recursive=cls._recursive)
-        dirpaths = fs.directories_in_path(path, recursive=cls._recursive)
+        filepaths = fs.files_in_path(path, recursive=cls._recursive, **kwargs)
+        dirpaths = fs.directories_in_path(path, recursive=cls._recursive, **kwargs)
+
+        # Ignore?
+        if ignore is not None: filepaths = sequences.removed(filepaths, ignore)
+        if ignore is not None: dirpaths = sequences.removed(dirpaths, ignore)
 
         # Create the object
         return cls(filepaths, dirpaths)

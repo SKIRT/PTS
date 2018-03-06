@@ -150,8 +150,7 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
 
         # Split
         number, units = split_value_unit(argument)
-
-        print(number, units)
+        #print(number, units)
 
         # Check whether unit is given
         if units == "":
