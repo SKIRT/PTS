@@ -187,10 +187,8 @@ class DependenciesChecker(Configurable):
                 index = table_match[1]
 
                 relative_class_module_path = tables[subproject]["Path"][index].replace(".", "/").rsplit("/", 1)[0] + ".py"
-
                 class_module_path = fs.join(introspection.pts_subproject_dir(subproject), relative_class_module_path)
-
-                logging_path = fs.join(introspection.pts_package_dir, "core", "tools", "logging.py")
+                logging_path = fs.join(introspection.pts_package_dir, "core", "basics", "log.py")
 
                 command_name = tables[subproject]["Command"][index]
                 configuration_name = tables[subproject]["Configuration"][index]

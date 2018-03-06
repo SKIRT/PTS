@@ -1690,6 +1690,37 @@ def is_present_package(package):
 
 # -----------------------------------------------------------------
 
+def module_has_function(module_path, function_name):
+
+    """
+    This function ...
+    :param module_path:
+    :param function_name:
+    :return:
+    """
+
+    for line in fs.read_lines(module_path):
+        if line.startswith("def " + function_name): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def module_has_function_or_global(module_path, name):
+
+    """
+    This function ...
+    :param module_path:
+    :param name:
+    :return:
+    """
+
+    for line in fs.read_lines(module_path):
+        if line.startswith("def " + name): return True
+        elif line.startswith(name + " = "): return True
+    return False
+
+# -----------------------------------------------------------------
+
 def get_modules(import_statement, script_path, return_unresolved=False, debug=False):
 
     """
@@ -1795,7 +1826,8 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
                 if debug: print(subpackage_path, name, ":", module_path)
                 if module_path is not None:
                     #print(fs.strip_extension(fs.name(module_path)), name)
-                    if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
+                    #module_has_function(module_path, name)
+                    if fs.strip_extension(fs.name(module_path)) == name and not module_has_function_or_global(module_path, name): which[module_path] = None
                     else:
                         if name == "*": name = None
                         if name == "__version__": name = None

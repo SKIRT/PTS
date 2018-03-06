@@ -6562,7 +6562,7 @@ class SimulationManager(Configurable):
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="show_simulation_errors")
+        simulation_name = self.get_simulation_name_from_command(command)
 
         # Show
         self.show_simulation_errors(simulation_name)
