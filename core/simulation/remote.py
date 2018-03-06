@@ -1297,7 +1297,7 @@ class SKIRTRemote(Remote):
 
         # Create the remote simulation directory
         if not self.is_directory(remote_simulation_path): # because remove can be skipped if 'contains_input'
-            if not dry: self.create_directory(remote_simulation_path)
+            if not dry: self.create_directory(remote_simulation_path, recursive=True)
             else: log.warning("[DRY] Not creating directory '" + remote_simulation_path + "' ...")
 
         # Return the path to the remote simulation directory

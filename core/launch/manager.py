@@ -7185,11 +7185,15 @@ class SimulationManager(Configurable):
         # Get the remote ski file path
         ski_path = self.get_remote_skifile_path(simulation_name)
 
-        # Debugging
-        log.debug("Removing the ski file '" + ski_path + "' from remote host '" + remote.host_id + "' ...")
+        if remote.is_file(ski_path):
 
-        # Remove the remote ski file
-        remote.remove_file(ski_path)
+            # Debugging
+            log.debug("Removing the ski file '" + ski_path + "' from remote host '" + remote.host_id + "' ...")
+
+            # Remove the remote ski file
+            remote.remove_file(ski_path)
+
+        else: log.warning("The ski file '" + ski_path + "' is already removed from remote host '" + remote.host_id + "'")
 
     # -----------------------------------------------------------------
 
@@ -7219,11 +7223,15 @@ class SimulationManager(Configurable):
         # Get the remote ski file path
         ski_path = self.get_remote_skifile_path(simulation_name)
 
-        # Debugging
-        log.debug("Removing the ski file '" + ski_path + "' from remote host '" + remote.host_id + "' ...")
+        if remote.is_file(ski_path):
 
-        # Remove the remote ski file
-        remote.remove_file(ski_path)
+            # Debugging
+            log.debug("Removing the ski file '" + ski_path + "' from remote host '" + remote.host_id + "' ...")
+
+            # Remove the remote ski file
+            remote.remove_file(ski_path)
+
+        else: log.warning("The ski file '" + ski_path + "' is already removed from remote host '" + remote.host_id + "'")
 
     # -----------------------------------------------------------------
 
