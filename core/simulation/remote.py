@@ -1664,6 +1664,7 @@ class SKIRTRemote(Remote):
         elif local_skirt_version == 8:
             modules.append("intel")
             modules.append("CMake/3.10.1-GCCcore-6.4.0")
+            modules.append("vsc-mympirun")
         else: raise ValueError("Invalid version")
 
         # Create a job script next to the (local) simulation's ski file
