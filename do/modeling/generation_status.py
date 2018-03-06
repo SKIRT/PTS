@@ -234,6 +234,9 @@ reference_sed_paths["Observed clipped fluxes"] = environment.observed_sed_path
 reference_sed_paths["Observed truncated fluxes"] = environment.truncated_sed_path
 manager.config.reference_seds = reference_sed_paths
 
+# Set screen script paths
+manager.config.screen_scripts = fs.files_in_path(generation.path, extension="sh")
+
 # Set remote input path for each host
 if not (config.lazy or config.offline):
 

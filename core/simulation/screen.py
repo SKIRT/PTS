@@ -332,6 +332,18 @@ class ScreenScript(object):
 
     # -----------------------------------------------------------------
 
+    def has_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self.arguments
+
+    # -----------------------------------------------------------------
+
     @property
     def nsimulations(self):
 

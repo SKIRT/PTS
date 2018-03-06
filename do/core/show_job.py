@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
-from pts.core.remote.jobscript import JobScript
+from pts.core.simulation.jobscript import SKIRTJobScript
 from pts.core.tools import filesystem as fs
 from pts.core.simulation.remote import get_simulation_for_host, get_simulation_id
 from pts.core.basics.log import log
@@ -64,7 +64,7 @@ if config.from_directory:
 
     # Open the files
     for path, name in fs.files_in_cwd(extension="sh", returns=["path", "name"]):
-        jobscript = JobScript.from_file(path)
+        jobscript = SKIRTJobScript.from_file(path)
         all_jobscripts[name] = jobscript
 
     # From names
@@ -112,7 +112,7 @@ elif config.jobscript is not None:
 
     jobscripts = dict()
     filename = fs.strip_extension(fs.name(config.jobscript))
-    jobscript = JobScript.from_file(config.jobscript)
+    jobscript = SKIRTJobScript.from_file(config.jobscript)
     jobscripts[filename]= jobscript
 
 # Not specified

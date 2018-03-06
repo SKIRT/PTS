@@ -168,3 +168,8 @@ definition.add_optional("info_ndecimal_places", "positive_integer", "number of d
 definition.add_flag("shared_input", "whether the different simulations share their input files", None)
 
 # -----------------------------------------------------------------
+
+# List of local screen script paths
+definition.add_optional("screen_scripts", "filepath_list", "filepaths of local screen scripts associated with the simulations")
+
+# -----------------------------------------------------------------

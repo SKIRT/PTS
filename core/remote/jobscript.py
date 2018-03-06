@@ -71,6 +71,47 @@ class JobScript(object):
         :return:
         """
 
+        from ..tools import filesystem as fs
+
+        # Get the lines
+        lines = fs.get_lines(path)
+
+        # Create from lines
+        script = cls.from_lines(lines)
+        script.path = path
+
+        # Return
+        return script
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_remote_file(cls, path, remote):
+
+        """
+        This function ...
+        :param path:
+        :param remote:
+        :return:
+        """
+
+        # Get the lines
+        lines = remote.get_lines(path)
+
+        # Create and return
+        return cls.from_lines(lines)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_lines(cls, lines):
+
+        """
+        This function ...
+        :param lines:
+        :return:
+        """
+
         name = None
         walltime = None
         output_path = None
@@ -85,10 +126,9 @@ class JobScript(object):
         commands = []
 
         # Loop over the lines
-        from ..tools import filesystem as fs
         body = False
         last_comment = None
-        for line in fs.read_lines(path):
+        for line in lines:
 
             # PBS options
             if line.startswith("#PBS"):
@@ -147,9 +187,6 @@ class JobScript(object):
         # Set the commands and modules
         jobscript.commands = commands
         jobscript.modules = modules
-
-        # Set the path
-        jobscript.path = path
 
         # Return the object
         return jobscript

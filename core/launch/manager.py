@@ -76,6 +76,8 @@ from ..units.unit import parse_unit as u
 from ..simulation.output import write_cache_path, output_type_choices, extraction_output_type_choices, plotting_output_type_choices, misc_output_type_choices
 from ..simulation.output import output_types as output_type_names
 from ..simulation.output import misc_output_types as misc_type_names
+from ..simulation.jobscript import SKIRTJobScript
+from ..simulation.screen import ScreenScript
 
 # -----------------------------------------------------------------
 
@@ -1690,6 +1692,109 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_remote_screen_script(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_remote_screen_script_path(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def local_screen_scripts(self):
+
+        """
+        This property ...
+        :return:
+        """
+        
+        # Initialize dictionary
+        scripts = dict()
+        if self.config.screen_scripts is None: return scripts
+        
+        # Loop over the paths
+        for filepath in self.config.screen_scripts:
+
+            # Load script
+            script = ScreenScript.from_file(filepath)
+
+            # Add under the name
+            scripts[script.name] = script
+
+        # Return
+        return scripts
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_local_screen_script_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the screen name
+        screen_name = self.get_screen_name(simulation_name)
+
+        # Check whether there is a local screen script with this name
+        if screen_name not in self.local_screen_scripts: return None
+
+        # Extra check: has simulation?
+        script = self.local_screen_scripts[screen_name]
+        if not script.has_simulation(simulation_name): raise RuntimeError("The screen script at '" + script.path + "' does not contain the simulation '" + simulation_name + "'")
+
+        # Return the screen script path
+        return script.path
+
+    # -----------------------------------------------------------------
+
+    def has_local_screen_script(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_local_screen_script_path(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_screen_script(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Local screen script found
+        if self.has_local_screen_script(simulation_name):
+
+            # Return the screen script
+            screen_name = self.get_screen_name(simulation_name)
+            return self.local_screen_scripts[screen_name]
+
+        # Remote screen script found
+        elif self.has_remote_screen_script(simulation_name):
+
+            # Open the remote screen script
+            host_id = self.get_host_id_for_simulation(simulation_name)
+            screen_script_path = self.get_remote_screen_script_path(simulation_name)
+            return ScreenScript.from_remote_file(screen_script_path, remote=self.get_remote(host_id))
+
+        # No screen script found
+        else: return None
+
+    # -----------------------------------------------------------------
+
     def get_job_id(self, simulation_name):
 
         """
@@ -1734,6 +1839,82 @@ class SimulationManager(Configurable):
         # Return the script path
         return self.get_execution_handle(simulation_name).remote_job_script_path
 
+    # -----------------------------------------------------------------
+
+    def has_remote_job_script(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_remote_job_script_path(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_local_job_script_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Look for sh files in simulation directory
+        simulation_path = self.get_simulation_path(simulation_name)
+
+        # Look for sh files in the simulation path
+        filepaths = fs.files_in_path(simulation_path, extension="sh")
+        nfiles = len(filepaths)
+
+        # Return the single filepath
+        if nfiles == 0: return None
+        elif nfiles > 1:
+            log.warning("Multiple potential job script files found in the simulation directory of simulation '" + simulation_name + "'")
+            return None
+        else: return filepaths[0]
+
+    # -----------------------------------------------------------------
+
+    def has_local_job_script(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        return self.get_local_job_script_path(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_job_script(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+        
+        # Local job script is found
+        if self.has_local_job_script(simulation_name):
+
+            filepath = self.get_local_job_script_path(simulation_name)
+            return SKIRTJobScript.from_file(filepath)
+        
+        # Remote job script is found
+        elif self.has_remote_job_script(simulation_name):
+
+            host_id = self.get_host_id_for_simulation(simulation_name)
+            filepath = self.get_remote_job_script_path(simulation_name)
+            return SKIRTJobScript.from_remote_file(filepath, remote=self.get_remote(host_id))
+
+        # No job script is found
+        else: return None
+        
     # -----------------------------------------------------------------
 
     def get_simulation_extraction_path(self, simulation_name):
@@ -8681,6 +8862,9 @@ class SimulationManager(Configurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("finished", "relaunch already finished simulations", False)
+        definition.add_positional_optional("parallelization", "parallelization", "new parallelization scheme (by default, previous one is used)")
+        definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
+        definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
         # Return
         return definition
@@ -8708,15 +8892,18 @@ class SimulationManager(Configurable):
             else: raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
 
         # Relaunch the simulation
-        self.relaunch_simulation(simulation_name)
+        self.relaunch_simulation(simulation_name, parallelization=config.parallelization, logging_options=config.logging, scheduling_options=config.scheduling)
 
     # -----------------------------------------------------------------
 
-    def relaunch_simulation(self, simulation_name):
+    def relaunch_simulation(self, simulation_name, parallelization=None, logging_options=None, scheduling_options=None):
 
         """
         This function ...
         :param simulation_name:
+        :param parallelization:
+        :param logging_options:
+        :param scheduling_options:
         :return:
         """
 
@@ -8729,8 +8916,69 @@ class SimulationManager(Configurable):
         # Add simulation to the relaunched table
         self.relaunched.add_simulation(simulation)
 
-        # Not yet implemented
-        raise NotImplementedError("Needs to be implemented")
+        # Screen
+        if self.is_screen_execution(simulation_name): self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
+            
+        # Job
+        elif self.is_job_execution(simulation_name): self.relaunch_simulation_job(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
+
+        # Not supported
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    def relaunch_simulation_screen(self, simulation_name, parallelization=None, logging_options=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param parallelization:
+        :param logging_options:
+        :return:
+        """
+
+        # Get the screen session name
+        screen_name = self.get_screen_name(simulation_name)
+
+        # Debugging
+        log.debug("Relaunching the screen session '" + screen_name + "' to relaunch simulation '" + simulation_name + "' ...")
+
+        # Set the parallelization scheme
+        if parallelization is None:
+            screen_script = self.get_screen_script(simulation_name)
+            parallelization = screen_script.
+
+    # -----------------------------------------------------------------
+
+    def relaunch_simulation_job(self, simulation_name, parallelization=None, logging_options=None, scheduling_options=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param parallelization:
+        :param logging_options:
+        :param scheduling_options:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Relaunching simulation '" + simulation_name + "' as a new job ...")
+
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id,
+                                   parallelization=parallelization, logging_options=logging_options,
+                                   scheduling_options=scheduling_options, analysis_options=simulation.analysis)
+
+        # Add entry to moved table
+        self.moved.add_simulation(simulation, host)
+
+        # Remove original simulation?
+        if not self.config.dry:
+            self.remove_simulation(simulation_name)  # backup is done here
+
+        # Don't remove
+        else:
+            log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
 
     # -----------------------------------------------------------------
 
