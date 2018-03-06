@@ -4333,27 +4333,7 @@ class SkiFile8:
     ## This function returns the boolean value of a certain parameter of the specified tree elemtn
     def get_boolean(self, element, name):
         from ..tools.parsing import boolean
-        return boolean(element.get(name))
-
-    ## This function returns the value of a certain parameter of the specified tree element as an Astropy quantity. The
-    #  default unit can be specified which is used when the unit is not described in the ski file.
-    def get_quantity(self, element, name, default_unit=None):
-
-        # Import here to avoid import errors for this module for users without an Astropy installation
-        from ..units.parsing import parse_quantity
-        from ..units.parsing import parse_unit
-
-        string = element.get(name)
-        try:
-            quantity = parse_quantity(string)
-            if quantity.unit == "" and default_unit is not None:
-                quantity = quantity * parse_unit(default_unit)
-            return quantity
-        except ValueError:
-            value = float(string)
-            if default_unit is not None: quantity = value * parse_unit(default_unit)
-            else: quantity = value
-            return quantity
+        return boolean(self.get_value(element, name))
 
     # -----------------------------------------------------------------
 
@@ -4369,34 +4349,11 @@ class SkiFile8:
 
     # -----------------------------------------------------------------
 
-    ## This function sets the value of a certain parameter of the specified tree element from an Astropy quantity.
-    def set_quantity(self, element, name, value, default_unit=None):
-
-        # Import here to avoid import errors for this module for users without an Astropy installation
-        from ..units.stringify import represent_quantity, represent_unit
-        from ..units.parsing import parse_unit
-
-        if hasattr(value, "unit"): string = represent_quantity(value)
-        elif default_unit is not None: string = repr(value) + " " + represent_unit(parse_unit(default_unit))
-        else: string = repr(value)
-
-        # Set the value in the tree element
-        element.set(name, string)
-
     ## This function returns the child of the passed element with a given name
     def get_child_with_name(self, element, child_name):
         for child in element.getchildren():
             if child.tag == child_name: return child
         return None
-
-    ## This function returns the string value of a property of an element
-    def get_value(self, element, name):
-        if name not in element.attrib: raise ValueError("A property '" + name + "' does not exist for this element")
-        return element.get(name)
-
-    ## This function sets the string value of a property of an element
-    def set_value(self, element, name, string):
-        element.set(name, string)
 
     def get_value_for_path(self, property_path, element=None):
 
@@ -4447,13 +4404,9 @@ class SkiFile8:
         for condition, templates in upgrades:
             changed |= self.transformif(condition, templates)
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-class LabeledSkiFile8(SkiFile8):
-
-    """
-    This class ...
-    """
+    # FROM HERE ON, FROM OLD LABELED SKI FILE CLASS
 
     @property
     def labels(self):
@@ -5098,11 +5051,13 @@ class LabeledSkiFile8(SkiFile8):
     def get_value(self, element, name):
 
         """
-        This function ...
+        This function returns the string value of a property of an element
         :param element:
         :param name:
         :return:
         """
+
+        if name not in element.attrib: raise ValueError("A property '" + name + "' does not exist for this element")
 
         prop = element.get(name)
         if prop.startswith("[") and prop.endswith("]"): prop = prop[1:-1].split(":")[1].strip()
@@ -5114,7 +5069,7 @@ class LabeledSkiFile8(SkiFile8):
     def set_value(self, element, name, string):
 
         """
-        This function ...
+        This function sets the string value of a property of an element
         :param element:
         :param name:
         :param string:
@@ -5141,7 +5096,8 @@ class LabeledSkiFile8(SkiFile8):
     def get_quantity(self, element, name, default_unit=None):
 
         """
-        This function overwrites the default implementation in SkiFile to incorporate labeled properties
+        This function returns the value of a certain parameter of the specified tree element as an Astropy quantity. The
+        default unit can be specified which is used when the unit is not described in the ski file.
         :param element:
         :param name:
         :param default_unit:
@@ -5171,7 +5127,7 @@ class LabeledSkiFile8(SkiFile8):
     def set_quantity(self, element, name, value, default_unit=None):
 
         """
-        This function overwrites the default implementation in SkiFile to incorporate labeled properties
+        This function sets the value of a certain parameter of the specified tree element from an Astropy quantity.
         :param element:
         :param name:
         :param value:

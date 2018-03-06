@@ -19,7 +19,7 @@ from pts.modeling.basics.instruments import SEDInstrument
 from pts.modeling.tests.base import M81TestBase, fitting_filter_names
 from pts.core.launch.options import AnalysisOptions
 from pts.do.commandline import Command
-from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.simulation.skifile import SkiFile
 from pts.modeling.tests.base import instrument_name, free_parameters_absolute_paths
 from pts.modeling.tests.base import free_parameters_relative_stellar_component_paths, free_parameters_relative_dust_component_paths
 from pts.modeling.tests.base import free_parameters_relative_instruments_paths, free_parameter_types, parameter_ndigits
@@ -217,7 +217,7 @@ class M81SEDTest(M81TestBase):
         prefix, ski_path, in_path, out_path = find_one_simulation_in_path(simulation_path)
 
         # Load the ski file
-        self.ski = LabeledSkiFile(ski_path)
+        self.ski = SkiFile(ski_path)
 
         # Other paths
         extr_path = fs.join(simulation_path, "extr")
@@ -444,7 +444,7 @@ class M81SEDTest(M81TestBase):
         log.info("Creating the ski file template ...")
 
         # Load as labeled ski file
-        self.ski_template = LabeledSkiFile(self.reference_ski_path)
+        self.ski_template = SkiFile(self.reference_ski_path)
 
         # Add parameter labels
         self.add_labels()

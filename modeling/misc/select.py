@@ -19,7 +19,7 @@ from ..fitting.run import get_ski_file_for_simulation
 from ..config.parameters import parameter_descriptions, default_units, parsing_types_for_parameter_types
 from ..config.parameters import types as parameter_types
 from ...core.basics.configuration import prompt_string, prompt_string_list, prompt_variable
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import SkiFile
 from ...core.tools import introspection
 
 # -----------------------------------------------------------------
@@ -44,7 +44,7 @@ def select_from_model_suite(model_suite, adapt=True, name=None):
     else: raise ValueError("Model name '" + name + "' does not exist")
 
     # Load the labeled ski template file
-    ski = LabeledSkiFile(template_ski_path)
+    ski = SkiFile(template_ski_path)
     #labels_before = ski.labels
 
     # Get paths for each label

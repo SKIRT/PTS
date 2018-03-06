@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Quantity
 
 # Import the relevant PTS classes and modules
-from ..simulation.skifile import SkiFile, LabeledSkiFile
+from ..simulation.skifile import SkiFile
 from ..tools import formatting as fmt
 from ..tools import stringify
 from ..filter.filter import Filter
@@ -161,7 +161,7 @@ class SkiSummarizer(Configurable):
 
         # Get the ski file
         if "ski" in kwargs: self.ski = kwargs.pop("ski")
-        elif self.config.ski is not None: self.ski = LabeledSkiFile(self.config.ski)
+        elif self.config.ski is not None: self.ski = SkiFile(self.config.ski)
 
     # -----------------------------------------------------------------
 

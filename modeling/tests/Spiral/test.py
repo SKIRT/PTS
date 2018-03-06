@@ -15,7 +15,7 @@ import inspect
 from pts.core.tools import filesystem as fs
 from pts.core.units.parsing import parse_unit as u
 from pts.core.basics.configuration import Configuration
-from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.simulation.skifile import SkiFile
 from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
@@ -36,7 +36,7 @@ description = "determining parameters based on mock observations of a simple spi
 ski_path = fs.join(this_dir_path, "spiral.ski")
 
 # Get the initial dust mass of the exponential disk with spiral structure
-ski = LabeledSkiFile(ski_path)
+ski = SkiFile(ski_path)
 dust_mass = ski.get_labeled_value("exp_dustmass")
 
 # -----------------------------------------------------------------
@@ -196,7 +196,7 @@ class SpiralTest(TestImplementation):
         # Input
 
         # Get free parameter names
-        ski = LabeledSkiFile(ski_path)
+        ski = SkiFile(ski_path)
         free_parameter_names = ski.labels
 
         # Get fitting filter names

@@ -20,23 +20,19 @@ from ..tools import filesystem as fs
 from ..tools import types
 from .skifile7 import SkiFile7
 from .skifile8 import SkiFile8
-from .skifile7 import LabeledSkiFile7
-from .skifile8 import LabeledSkiFile8
 from ..tools.introspection import skirt_main_version, has_skirt
 
 # -----------------------------------------------------------------
 
+# Get the SKIRT version number
 if not has_skirt(): version_number = 8
 else: version_number = skirt_main_version()
 
 # -----------------------------------------------------------------
 
-if version_number == 8:
-    SkiFile = SkiFile8
-    LabeledSkiFile = LabeledSkiFile8
-elif version_number == 7:
-    SkiFile = SkiFile7
-    LabeledSkiFile = LabeledSkiFile7
+# Set the appropriate ski file class, depending on the SKIRT version
+if version_number == 8: SkiFile = SkiFile8
+elif version_number == 7: SkiFile = SkiFile7
 else: raise ValueError("Invalid SKIRT version: " + str(version_number))
 
 # -----------------------------------------------------------------
@@ -218,6 +214,22 @@ def get_label(value):
 
 #-----------------------------------------------------------------
 
+def get_normalizations_from_file(ski_path):
+
+    """
+    This function ...
+    :param ski_path:
+    :return:
+    """
+
+    # Load ski file
+    ski = SkiFile(ski_path)
+
+    # Get normalizations
+    return get_normalizations(ski)
+
+# -----------------------------------------------------------------
+
 def get_normalizations(ski):
 
     """
@@ -231,6 +243,7 @@ def get_normalizations(ski):
     # Get stellar component IDs
     stellar_component_ids = ski.get_stellar_component_ids()
 
+    # Initialize dictionaries for wavelength and filter
     wavelengths = defaultdict(dict)
     filters = defaultdict(dict)
 

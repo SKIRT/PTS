@@ -16,7 +16,7 @@ from pts.core.tools import filesystem as fs
 from pts.core.data.sed import ObservedSED
 from pts.core.units.parsing import parse_unit as u
 from pts.core.basics.configuration import Configuration
-from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.simulation.skifile import SkiFile
 from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
@@ -158,7 +158,7 @@ class SN1987ATest(TestImplementation):
         # Input
 
         # Get free parameter names
-        ski = LabeledSkiFile(ski_path)
+        ski = SkiFile(ski_path)
         free_parameter_names = ski.labels
 
         # Get fitting filter names

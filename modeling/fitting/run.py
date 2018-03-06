@@ -20,7 +20,7 @@ from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestPara
 from ...core.basics.distribution import Distribution
 from ..core.model import Model
 from ...core.simulation.skifile import SkiFile
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import SkiFile
 from ...core.simulation.simulation import SkirtSimulation
 from .tables import ModelProbabilitiesTable
 from ...core.basics.configuration import Configuration
@@ -1860,7 +1860,7 @@ class FittingRun(object):
         :return:
         """
 
-        return LabeledSkiFile(self.template_ski_path)
+        return SkiFile(self.template_ski_path)
 
     # -----------------------------------------------------------------
 

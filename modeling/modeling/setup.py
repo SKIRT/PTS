@@ -23,7 +23,7 @@ from ...core.basics.configuration import Configuration, ConfigurationDefinition,
 from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
 from ...core.data.sed import ObservedSED
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import SkiFile
 from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
 from ..component.images import get_images_path, get_images_header_path
 from ...magic.core.frame import Frame
@@ -201,7 +201,7 @@ class ModelingSetupTool(Configurable):
         if types.is_string_type(self.sed): self.sed = ObservedSED.from_file(self.sed)
 
         # If is path, load the ski file template
-        if types.is_string_type(self.ski): self.ski = LabeledSkiFile(self.ski)
+        if types.is_string_type(self.ski): self.ski = SkiFile(self.ski)
 
     # -----------------------------------------------------------------
 
@@ -585,7 +585,7 @@ class ModelingSetupTool(Configurable):
         log.info("Loading the ski template ...")
 
         # Load the ski file
-        self.ski = LabeledSkiFile(self.object_config.ski)
+        self.ski = SkiFile(self.object_config.ski)
 
     # -----------------------------------------------------------------
 

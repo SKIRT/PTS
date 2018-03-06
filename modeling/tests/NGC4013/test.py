@@ -25,7 +25,7 @@ from pts.core.tools import introspection
 from pts.core.basics.range import RealRange, QuantityRange
 from pts.magic.core.frame import Frame
 from pts.core.units.parsing import parse_quantity, parse_angle
-from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.simulation.skifile import SkiFile
 from pts.modeling.basics.instruments import InstrumentFrame, MultiFrameInstrument
 from pts.core.filter.filter import parse_filter
 from pts.modeling.fitting.fitskirt import FskiFile
@@ -308,7 +308,7 @@ class NGC4013Test(TestImplementation):
         log.info("Loading the ski file ...")
 
         # Load ski
-        self.ski = LabeledSkiFile(ski_path)
+        self.ski = SkiFile(ski_path)
 
     # -----------------------------------------------------------------
 

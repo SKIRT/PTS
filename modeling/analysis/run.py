@@ -17,7 +17,7 @@ from abc import ABCMeta, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import LabeledSkiFile, SkiFile
+from ...core.simulation.skifile import SkiFile
 from ..core.model import Model
 from ...core.tools import sequences
 from ...core.basics.composite import SimplePropertyComposite
@@ -1989,7 +1989,7 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return LabeledSkiFile(self.ski_file_path)
+        return SkiFile(self.ski_file_path)
 
     # -----------------------------------------------------------------
 
@@ -3980,7 +3980,7 @@ class CachedAnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return LabeledSkiFile.from_remote_file(self.ski_file_path, self.remote)
+        return SkiFile.from_remote_file(self.ski_file_path, self.remote)
 
     # -----------------------------------------------------------------
 

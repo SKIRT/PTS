@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import SkiFile
 from ...core.basics.log import log
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
@@ -1287,7 +1287,7 @@ class FittingConfigurer(FittingComponent):
         log.info("Loading the ski file template ...")
 
         # Load ski file template
-        self.ski = LabeledSkiFile(template_ski_path)
+        self.ski = SkiFile(template_ski_path)
 
     # -----------------------------------------------------------------
 

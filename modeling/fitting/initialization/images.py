@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ...component.images import ImagesModelingComponent
-from ....core.simulation.skifile import LabeledSkiFile
+from ....core.simulation.skifile import SkiFile
 from .base import FittingInitializerBase
 
 # -----------------------------------------------------------------
@@ -100,7 +100,7 @@ class ImagesFittingInitializer(FittingInitializerBase, ImagesModelingComponent):
         log.info("Loading the ski file template ...")
 
         # Load the ski file
-        self.ski = LabeledSkiFile(self.environment.ski_path)
+        self.ski = SkiFile(self.environment.ski_path)
 
     # -----------------------------------------------------------------
 

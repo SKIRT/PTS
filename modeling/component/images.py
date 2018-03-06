@@ -21,7 +21,7 @@ from astropy.io.fits import Header
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import SkiFile
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from pts.core.tools.utils import lazyproperty
 
@@ -171,7 +171,7 @@ def get_ski_template(modeling_path):
     :return:
     """
 
-    return LabeledSkiFile(get_ski_template_path(modeling_path))
+    return SkiFile(get_ski_template_path(modeling_path))
 
 # -----------------------------------------------------------------
 

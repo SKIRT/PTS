@@ -279,7 +279,11 @@ def clean_unit_string(string):
     :return:
     """
 
-    if "[" in string and "]" in string: string = string.split("[")[0]
+    # Remove things within brackets
+    if "[" in string and "]" in string:
+        string = string.split("[")[0]
+        # If nothing remains, that is weird
+        if string.strip() == "": raise ValueError("Invalid unit")
 
     # Remove hash words (#density and #brightness)
     from ..tools import strings

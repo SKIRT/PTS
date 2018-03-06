@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.simulation.skifile import SkiFile
 from pts.core.simulation.skifile import show_normalizations
 
 # -----------------------------------------------------------------
@@ -36,7 +36,7 @@ config = parse_arguments("normalizations", definition, "Show the normalizations 
 # -----------------------------------------------------------------
 
 # Load the ski file
-ski = LabeledSkiFile(config.ski)
+ski = SkiFile(config.ski)
 
 # -----------------------------------------------------------------
 

@@ -19,7 +19,7 @@ from astropy.units import dimensionless_angles
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.units.parsing import parse_unit as u
-from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.simulation.skifile import SkiFile
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
 from pts.core.units.parsing import parse_quantity, parse_angle
@@ -417,7 +417,7 @@ class GalaxyTest(TestImplementation):
         ski_path = fs.join(this_dir_path, "galaxy.ski")
 
         # Create clumpy ski file
-        self.ski = LabeledSkiFile(ski_path)
+        self.ski = SkiFile(ski_path)
 
         # Set instrument
         self.set_instrument()

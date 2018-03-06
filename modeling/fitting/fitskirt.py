@@ -40,7 +40,7 @@ from ...core.basics.range import RealRange
 from ...core.tools import stringify
 from ...core.basics.map import Map
 from ...core.tools import time
-from ...core.simulation.skifile import LabeledSkiFile
+from ...core.simulation.skifile import SkiFile
 from ...magic.core.frame import Frame
 from ...core.units.helper import is_angle
 from pts.core.tools.utils import lazyproperty
@@ -1131,7 +1131,7 @@ class FitSKIRTRun(object):
         :return:
         """
 
-        return LabeledSkiFile(self.ski_path)
+        return SkiFile(self.ski_path)
 
     # -----------------------------------------------------------------
 
