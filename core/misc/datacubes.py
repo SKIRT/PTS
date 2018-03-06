@@ -467,10 +467,10 @@ class DatacubesMiscMaker(Configurable):
         log.debug("Looking for total datacube files in directory '" + output_path + "' ...")
 
         # Set the paths to the total FITS files created by the simulation
-        self.datacube_paths, self.simulation_prefix = find_datacube_paths(output_path, return_prefix=True)
+        self.datacube_paths, self.simulation_prefix = find_datacubes(output_path, return_prefix=True)
 
         # Set the list of wavelengths for the simulation
-        self.wavelengths = find_wavelengths(output_path)
+        self.wavelengths = load_wavelengths(output_path)
 
     # -----------------------------------------------------------------
 
