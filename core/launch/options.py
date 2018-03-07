@@ -88,7 +88,7 @@ class SchedulingOptions(Options):
         self.add_property("ppn", "positive_integer", "number of processors per node", None)
         self.add_property("mail", "boolean", "send mails", None)
         self.add_property("full_node", "boolean", "use full nodes", None)
-        self.add_property("walltime", "real", "expected walltime", None)
+        self.add_property("walltime", "real", "expected walltime", None) # in seconds
         self.add_property("local_jobscript_path", "string", None)
 
         # Set values

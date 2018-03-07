@@ -151,6 +151,7 @@ _cancel_command_name = "cancel"
 _remove_command_name = "remove"
 _clear_command_name = "clear"
 _cache_command_name = "cache"
+_unfinish_command_name = "unfinish"
 _unretrieve_command_name = "unretrieve"
 _unanalyse_command_name = "unanalyse"
 _relaunch_command_name = "relaunch"
@@ -203,6 +204,7 @@ commands[_cancel_command_name] = ("cancel_simulations_command", True, "cancel si
 commands[_remove_command_name] = ("remove_simulation_command", True, "remove simulation", "simulations")
 commands[_clear_command_name] = (None, None, "clear simulation output/input/analysis", "simulation")
 commands[_cache_command_name] = (None, None, "cache simulation/analysis output", "simulations")
+commands[_unfinish_command_name] = ("unfinish_simulation_command", True, "unfinish simulation", "simulation")
 commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "unretrieve simulation", "simulation")
 commands[_unanalyse_command_name] = ("unanalyse_simulation_command", True, "unanalyse simulation", "simulation")
 commands[_relaunch_command_name] = ("relaunch_simulation_command", True, "relaunch simulations", "simulation")
@@ -8033,6 +8035,47 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def unfinish_simulation_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Unfinish
+        self.unfinish_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def unfinish_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unfinishing simulation '" + simulation_name + "' ...")
+
+        # Clear remote output
+        self.clear_simulation_output_remote(simulation_name)
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set not finished
+        simulation.set_finished(False)
+
+        # Save the simulation
+        simulation.save()
+
+    # -----------------------------------------------------------------
+
     def unretrieve_simulation_command(self, command):
 
         """
@@ -8104,6 +8147,12 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Clearing local output of simulation '" + simulation_name + "' ...")
 
+        # Get the simulation output
+        output = self.get_output(simulation_name)
+
+        # Remove
+        output.remove_all()
+
     # -----------------------------------------------------------------
 
     def clear_simulation_output_remote(self, simulation_name):
@@ -8116,6 +8165,12 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Clearing remote output of simulation '" + simulation_name + "' ...")
+
+        # Get the remote output path
+        output_path = self.get_remote_output_path(simulation_name)
+
+        # Remove all output files
+        self.get_remote_for_simulation(simulation_name).remove_files_in_path(output_path, startswith=self.get_simulation_prefix(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -9221,12 +9276,6 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Relaunching simulation '" + simulation_name + "' ...")
 
-        # Get the simulation
-        simulation = self.get_simulation(simulation_name)
-
-        # Add simulation to the relaunched table
-        self.relaunched.add_simulation(simulation)
-
         # Screen
         if self.is_screen_execution(simulation_name): self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
 
@@ -9254,6 +9303,25 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Relaunching the screen session '" + screen_name + "' to relaunch simulation '" + simulation_name + "' ...")
 
+        # Get the remote
+        remote = self.get_remote_for_simulation(simulation_name)
+
+        # Check if the screen is active: this will only be the case for the first time the relaunch_simulation_screen function is called (for the same screen)
+        if remote.is_active_screen(screen_name):
+
+            # Give warning
+            log.warning("The screen '" + screen_name + "' is active: currently running simulations will have to be stopped and relaunched for simulation '" + simulation_name + "'")
+
+            # Stop the screen
+            remote.kill_screen(screen_name)
+
+            # Check which simulations are still queued or running in this screen
+
+            # Stop/cancel and re-add the simulations to the queue (they will be launched together with the relaunched simulations in a new screen)
+
+            # Remove their remote output
+            self.unfinish_simulation(simulation_name)
+
         # Set the parallelization scheme
         if parallelization is None:
             screen_script = self.get_screen_script(simulation_name)
@@ -9265,6 +9333,32 @@ class SimulationManager(Configurable):
             screen_script = self.get_screen_script(simulation_name)
             if screen_script is None: raise RuntimeError("Cannot determine logging options: original screen script not found")
             logging_options = screen_script.get_logging_options(simulation_name)
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+        host_id = self.get_host_id_for_simulation(simulation_name)
+
+        # Unanalyse: remove analysis output and unset analysis flags
+        self.unanalyse_simulation(simulation_name)
+
+        # Unretrieve: remove local simulation output and unset retrieved flag
+        self.unretrieve_simulation(simulation_name)
+
+        # Unfinish: remove remote simulation output and unset finished flag
+        self.unfinish_simulation(simulation_name)
+
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id, parallelization=parallelization,
+                                   logging_options=logging_options, analysis_options=simulation.analysis)
+
+        # Add simulation to the relaunched table
+        self.relaunched.add_simulation(simulation)
+
+        # Remove original simulation?
+        if not self.config.dry: self.remove_simulation(simulation_name)  # backup is done here
+
+        # Don't remove
+        else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
 
     # -----------------------------------------------------------------
 
@@ -9300,19 +9394,25 @@ class SimulationManager(Configurable):
             if job_script is None: raise RuntimeError("Cannot determine scheduling options: original job script not found")
             scheduling_options = job_script.scheduling_options
 
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+        host_id = self.get_host_id_for_simulation(simulation_name)
+
+        # TODO: actually support giving the specific cluster it is supposed to be run on
+
         # Add the simulation to the queue
         self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id,
                                    parallelization=parallelization, logging_options=logging_options,
                                    scheduling_options=scheduling_options, analysis_options=simulation.analysis)
 
-        # Add entry to moved table
-        #self.moved.add_simulation(simulation, host)
+        # Add simulation to the relaunched table
+        self.relaunched.add_simulation(simulation)
 
         # Remove original simulation?
-        #if not self.config.dry: self.remove_simulation(simulation_name)  # backup is done here
+        if not self.config.dry: self.remove_simulation(simulation_name)  # backup is done here
 
         # Don't remove
-        #else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
+        else: log.warning("[DRY] Not removing the simulation from '" + simulation.path + "' ...")
 
     # -----------------------------------------------------------------
 

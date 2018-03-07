@@ -282,46 +282,6 @@ class SKIRTJobScript(JobScript):
     # -----------------------------------------------------------------
 
     @property
-    def nnodes(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    @property
-    def mail(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    @property
-    def full_node(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    @property
-    def walltime(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    @property
     def scheduling_options(self):
 
         """
@@ -330,8 +290,7 @@ class SKIRTJobScript(JobScript):
         """
 
         from ..launch.options import SchedulingOptions
-        return SchedulingOptions(nodes=self.nnodes, mail=self.mail, full_node=self.full_node, walltime=self.walltime,
-                                 local_jobscript_path=self.path)
+        return SchedulingOptions(nodes=self.nnodes, mail=self.mail, full_node=True, walltime=self.walltime, local_jobscript_path=self.path)
 
 # -----------------------------------------------------------------
 

@@ -1094,6 +1094,20 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    def set_finished(self, value=True):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        old_finished = self.finished
+        self.finished = value
+        return old_finished != self.finished
+
+    # -----------------------------------------------------------------
+
     def set_retrieved(self, value=True):
 
         """

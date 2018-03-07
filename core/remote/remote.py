@@ -3060,6 +3060,33 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def remove_files(self, paths, show_output=False):
+
+        """
+        This function ...
+        :param paths:
+        :param show_output:
+        :return:
+        """
+
+        for path in paths: self.remove_file(path)
+
+    # -----------------------------------------------------------------
+
+    def remove_files_in_path(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        show_output = kwargs.pop("show_output", False)
+        self.remove_files(self.files_in_path(*args, **kwargs), show_output=show_output)
+
+    # -----------------------------------------------------------------
+
     def remove_directories(self, paths):
 
         """

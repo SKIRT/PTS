@@ -63,6 +63,18 @@ class JobScript(object):
     # -----------------------------------------------------------------
 
     @property
+    def name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pbs_options["N"] if "N" in self.pbs_options else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def output_path(self):
 
         """
@@ -83,6 +95,67 @@ class JobScript(object):
         """
 
         return self.pbs_options["e"] if "e" in self.pbs_options else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnodes(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        if "l" not in self.pbs_options: return None
+        for line in self.pbs_options["l"]:
+            if line.startswith("nodes="):
+                return int(line.split("nodes=")[1].split(":")[0])
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ppn(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "l" not in self.pbs_options: return None
+        for line in self.pbs_options["l"]:
+            if line.startswith("nodes="):
+                return int(line.split("ppn=")[1])
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mail(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return "m" in self.pbs_options
+
+    # -----------------------------------------------------------------
+
+    @property
+    def walltime(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        if "l" not in self.pbs_options: return None
+        for line in self.pbs_options["l"]:
+            if line.startswith("walltime="):
+                hours, minutes, seconds = line.split("walltime=")[1].split(":")
+                return float(hours) * 3600 + float(minutes) * 60 + float(seconds)
+        return None
 
     # -----------------------------------------------------------------
 
