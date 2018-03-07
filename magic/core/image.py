@@ -76,7 +76,7 @@ class Image(object):
 
     @classmethod
     def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0, no_filter=False, density=False,
-                  brightness=False, density_strict=False, brightness_strict=False, indices=None):
+                  brightness=False, density_strict=False, brightness_strict=False, indices=None, absolute_index_names=True):
 
         """
         This function ...
@@ -90,6 +90,7 @@ class Image(object):
         :param density_strict:
         :param brightness_strict:
         :param indices:
+        :param absolute_index_names:
         :return:
         """
 
@@ -105,7 +106,7 @@ class Image(object):
         # Load the image frames
         image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index,
                           no_filter=no_filter, density=density, brightness=brightness, density_strict=density_strict,
-                          brightness_strict=brightness_strict, indices=indices)
+                          brightness_strict=brightness_strict, indices=indices, absolute_index_names=absolute_index_names)
 
         # Return the image
         return image
@@ -1875,7 +1876,7 @@ class Image(object):
 
     def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True,
                     hdulist_index=0, no_filter=False, silent=False, density=False, brightness=False,
-                    density_strict=False, brightness_strict=False, indices=None):
+                    density_strict=False, brightness_strict=False, indices=None, absolute_index_names=True):
 
         """
         This function ...
@@ -1892,6 +1893,7 @@ class Image(object):
         :param density_strict:
         :param brightness_strict:
         :param indices:
+        :param absolute_index_names:
         :return:
         """
 
@@ -1907,7 +1909,7 @@ class Image(object):
             frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
                                                            hdulist_index, no_filter, density=density, brightness=brightness,
                                                            density_strict=density_strict, brightness_strict=brightness_strict,
-                                                           indices=indices)
+                                                           indices=indices, absolute_index_names=absolute_index_names)
         except pts_fits.DamagedFITSFileError: raise IOError("File is possibly damaged")
 
         # Set frames, masks and meta information

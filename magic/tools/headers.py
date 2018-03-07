@@ -825,13 +825,18 @@ def get_number_of_frames(header):
 
 # -----------------------------------------------------------------
 
-def get_frame_name_and_description(header, i, always_call_first_primary=True):
+def get_frame_name_and_description(header, i, always_call_first_primary=True, absolute_index_names=True, frame_names=None,
+                                   mask_names=None, segments_names=None):
 
     """
     This function ...
     :param header:
     :param i:
     :param always_call_first_primary:
+    :param absolute_index_names:
+    :param frame_names:
+    :param mask_names:
+    :param segments_names:
     :return:
     """
 
@@ -867,8 +872,16 @@ def get_frame_name_and_description(header, i, always_call_first_primary=True):
 
     else: ## description is None
 
-        description = ""
-        name = "frame"+str(i)
+        description = str(i) + "th plane of the image"
+
+        if absolute_index_names: name = "frame" + str(i)
+        else:
+            # Determine the next index for the frame based on the current frame indices
+            from ...core.tools import numbers
+            if frame_names is None: raise ValueError("Frame names must be defined")
+            current_indices = [int(frame_name.split("frame")[1]) for frame_name in frame_names if frame_name.startswith("frame")]
+            relative_index = numbers.lowest_missing_integer(current_indices)
+            name = "frame" + str(relative_index)
 
     # Return the name and description
     return name, description, plane_type

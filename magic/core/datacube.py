@@ -141,12 +141,13 @@ def load_skirt_sed_paths(output_path=None):
 
 # -----------------------------------------------------------------
 
-def load_skirt_datacubes(output_path=None, contribution="total"):
+def load_skirt_datacubes(output_path=None, contribution="total", wavelength_range=None):
 
     """
     This function ...
     :param output_path:
     :param contribution:
+    :param wavelength_range:
     :return:
     """
 
@@ -167,7 +168,7 @@ def load_skirt_datacubes(output_path=None, contribution="total"):
         sed_path = sed_paths_instruments[instrument_name]
 
         # Load datacube
-        datacube = DataCube.from_file_and_sed_file(datacube_path, sed_path)
+        datacube = DataCube.from_file_and_sed_file(datacube_path, sed_path, wavelength_range=wavelength_range)
 
         # Add to dictionary
         datacubes[instrument_name] = datacube
@@ -304,7 +305,9 @@ class DataCube(Image):
         else: indices = None
 
         # Call the corresponding base class function
-        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True, density=True, density_strict=True, indices=indices) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
+        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True,
+                                                  density=True, density_strict=True, indices=indices,
+                                                  absolute_index_names=False) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
 
         # Slice the wavelength grid
         if indices is not None: wavelength_grid = wavelength_grid[indices]

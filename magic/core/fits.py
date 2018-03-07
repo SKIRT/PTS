@@ -207,7 +207,7 @@ def get_total_npixels(path):
 
 def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, hdulist_index=0,
                 no_filter=False, no_wcs=False, density=False, brightness=False, density_strict=False,
-                brightness_strict=False, indices=None):
+                brightness_strict=False, indices=None, absolute_index_names=True):
 
     """
     This function ...
@@ -224,6 +224,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     :param density_strict:
     :param brightness_strict:
     :param indices:
+    :param absolute_index_names:
     :return:
     """
 
@@ -356,7 +357,9 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
         for i in indices:
 
             # Load plane into one of the dictionaries
-            load_plane(frames, masks, segments, hdu.data, i, original_header, wcs, pixelscale, frame_properties=properties, always_call_first_primary=always_call_first_primary)
+            load_plane(frames, masks, segments, hdu.data, i, original_header, wcs, pixelscale,
+                       frame_properties=properties, always_call_first_primary=always_call_first_primary,
+                       absolute_index_names=absolute_index_names)
 
     # Read multiple planes
     elif nframes > 1:
@@ -368,7 +371,9 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
             if index is not None and i != index: continue
 
             # Load plane into one of the directories
-            load_plane(frames, masks, segments, hdu.data, i, original_header, wcs, pixelscale, frame_properties=properties, always_call_first_primary=always_call_first_primary)
+            load_plane(frames, masks, segments, hdu.data, i, original_header, wcs, pixelscale,
+                       frame_properties=properties, always_call_first_primary=always_call_first_primary,
+                       absolute_index_names=absolute_index_names)
 
     # Only one plane to read
     else:
@@ -376,55 +381,23 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
         # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
         if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
 
+        # Set name and description
         if name is None: name = "primary"
         if description is None: description = "the primary signal map"
 
+        # Get plane type
         dummy_name, dummy_description, plane_type = headers.get_frame_name_and_description(original_header, 0)
 
+        # Get plane type from pts class name
         pts_class_name = original_header["PTSCLS"] if "PTSCLS" in original_header else None
         if pts_class_name is not None:
             if pts_class_name == "Frame": plane_type = "frame"
             elif pts_class_name == "Mask": plane_type = "mask"
             elif pts_class_name == "SegmentationMap": plane_type = "segments"
 
-        if plane_type == "frame":
-
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            frame = Frame(hdu.data,
-                          wcs=wcs,
-                          name=name,
-                          description=description,
-                          unit=unit,
-                          zero_point=zero_point,
-                          filter=fltr,
-                          sky_subtracted=sky_subtracted,
-                          source_extracted=source_extracted,
-                          extinction_corrected=extinction_corrected,
-                          fwhm=fwhm,
-                          pixelscale=pixelscale,
-                          distance=distance,
-                          psf_filter=psf_filter,
-                          smoothing_factor=smoothing_factor)
-
-            # Add the primary image frame
-            frames[name] = frame
-
-        # Mask
-        elif plane_type == "mask":
-
-            mask = Mask(hdu.data, name=name, description=description, wcs=wcs, pixelscale=pixelscale)
-            # Add the mask
-            masks[name] = mask
-
-        # Segmentation map
-        elif plane_type == "segments":
-
-            segments_map = SegmentationMap(hdu.data, wcs=wcs, name=name, description=description)
-            # Add the segmentation map
-            segments[name] = segments_map
-
-        # Plane type not recognized
-        else: raise ValueError("Unrecognized type (must be frame or mask)")
+        # Load plane
+        # frames, masks, segments, data, wcs, pixelscale, frame_properties=None
+        load_plane_impl(name, description, plane_type, frames, masks, segments, hdu.data, wcs, pixelscale, frame_properties=properties)
 
     # Add meta information
     for key in original_header: metadata[key.lower()] = original_header[key]
@@ -638,8 +611,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
             for i in range(nframes):
 
                 # Get name and description of frame
-                name, description, plane_type = headers.get_frame_name_and_description(header, i,
-                                                                                       always_call_first_primary=False)
+                name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
 
                 if plane == name:
 
@@ -989,7 +961,8 @@ def fix_ctypes(header):
 
 # -----------------------------------------------------------------
 
-def load_plane(frames, masks, segments, data, index, header, wcs, pixelscale, frame_properties=None, always_call_first_primary=True):
+def load_plane(frames, masks, segments, data, index, header, wcs, pixelscale, frame_properties=None,
+               always_call_first_primary=True, absolute_index_names=True):
 
     """
     This function ...
@@ -1003,23 +976,54 @@ def load_plane(frames, masks, segments, data, index, header, wcs, pixelscale, fr
     :param pixelscale:
     :param frame_properties:
     :param always_call_first_primary:
+    :param absolute_index_names:
+    :return:
+    """
+
+    # Get the frame, mask and segmentation map names
+    frame_names = frames.keys()
+    mask_names = masks.keys()
+    segments_names = segments.keys()
+
+    # Get name and description of frame
+    name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary,
+                                                                           absolute_index_names=absolute_index_names,
+                                                                           frame_names=frame_names, mask_names=mask_names,
+                                                                           segments_names=segments_names)
+
+    # Load the plane
+    load_plane_impl(name, description, plane_type, frames, masks, segments, data[index], wcs, pixelscale, frame_properties=frame_properties)
+
+# -----------------------------------------------------------------
+
+def load_plane_impl(name, description, plane_type, frames, masks, segments, data, wcs, pixelscale, frame_properties=None):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param plane_type:
+    :param frames:
+    :param masks:
+    :param segments:
+    :param data:
+    :param wcs:
+    :param pixelscale:
+    :param frame_properties:
     :return:
     """
 
     # Set frame properties
     if frame_properties is None: frame_properties = {}
 
-    # Get name and description of frame
-    name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary)
-
     # FRAME
-    if plane_type == "frame": frames[name] = Frame(data[index], wcs=wcs, name=name, description=description, **frame_properties)
+    if plane_type == "frame": frames[name] = Frame(data, wcs=wcs, name=name, description=description, **frame_properties)
 
     # MASK
-    elif plane_type == "mask": masks[name] = Mask(data[index], name=name, description=description, wcs=wcs, pixelscale=pixelscale)
+    elif plane_type == "mask": masks[name] = Mask(data, name=name, description=description, wcs=wcs, pixelscale=pixelscale)
 
     # SEGMENTATION MAP
-    elif plane_type == "segments": segments[name] = SegmentationMap(data[index], wcs=wcs, name=name, description=description)
+    elif plane_type == "segments": segments[name] = SegmentationMap(data, wcs=wcs, name=name, description=description)
 
     # NOT RECOGNIZED
     else: raise ValueError("Unrecognized type (must be frame, mask or segments)")
