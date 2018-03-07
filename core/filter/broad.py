@@ -1223,13 +1223,21 @@ class BroadBandFilter(Filter):
     #   per unit of wavelength. This can be an array with the same length as \em wavelengths, or a multi-dimensional
     #   array where the last dimension has the same length as \em wavelengths.
     #   The returned result will have the shape of \em densities minus the last (or only) dimension.
-    def convolve(self, wavelengths, densities, return_grid=False, scipy=False, show_times=False):
+    def convolve(self, wavelengths, densities, return_grid=False, show_times=False, downsample=True, max_npoints=250):
 
         from pts.core.tools import time
 
         # Define short names for the involved wavelength grids
         wa = wavelengths
         wb = self._Wavelengths
+
+        # Downsample the filter transmission curve?
+        if downsample and len(wb) > max_npoints:
+            #print("DOWNSAMPLING...")
+            downsample_factor = int(len(wb) / max_npoints)
+            wb = wb[::downsample_factor]
+            trans = self._Transmission[::downsample_factor]
+        else: trans = self._Transmission
 
         # Create a combined wavelength grid, restricted to the overlapping interval
         with time.elapsed_timer() as elapsed:
@@ -1242,30 +1250,15 @@ class BroadBandFilter(Filter):
             if show_times: print("Created wavelength grid in " + str(elapsed()) + " seconds")
 
         # Perform log-log interpolate SED and transmission on the combined wavelength grid
+        # Use SciPy: NumPy interpolation doesn't support 1D interpolation of multi-dimensional arrays (for example a datacube)
+        with time.elapsed_timer() as elapsed:
 
-        # Use SciPy
-        # (use scipy interpolation function for SED because np.interp does not support broadcasting)
-        if scipy:
-
-            with time.elapsed_timer() as elapsed:
-
-                F = np.exp(interp1d(np.log(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log(w)))
-                if show_times: print("Interpolation of spectral densities performed in " + str(elapsed()) + " seconds")
-
-        # Use NumPy
-        else:
-
-            with time.elapsed_timer() as elapsed:
-
-                F = np.exp(np.interp(np.log(w), np.log(wa), _log(densities)))
-                if show_times: print("Interpolation of spectral densities performed in " + str(elapsed()) + " seconds")
-
-        #close = np.isclose(F, F2)
-        #print(close)
+            F = np.exp(interp1d(np.log(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log(w)))
+            if show_times: print("Interpolation of spectral densities performed in " + str(elapsed()) + " seconds")
 
         # Interpolate the transmission
         with time.elapsed_timer() as elapsed:
-            T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
+            T = np.exp(np.interp(np.log(w), np.log(wb), _log(trans), left=0., right=0.))
             if show_times: print("Interpolation of transmissions performed in " + str(elapsed()) + " seconds")
 
         # Perform the integration
