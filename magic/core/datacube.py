@@ -849,7 +849,9 @@ class DataCube(Image):
             else: raise WavelengthGridError(message, filter=fltr)
 
         # OK
-        else: log.debug("Enough wavelengths within the filter range")
+        else:
+            log.debug("Enough wavelengths within the filter range")
+            return True # CHECK OK
 
     # -----------------------------------------------------------------
 
