@@ -4509,40 +4509,6 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    #def upload_file_buffer(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Send a file:
-        #  cat file | ssh ajw@dogmatix "cat > remote"
-        # OR: ssh ajw@dogmatix "cat > remote" < file
-
-        #pass
-
-    # -----------------------------------------------------------------
-
-    def download_file_buffer(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # receive a file:
-        # ssh ajw@dogmatix "cat remote" > copy
-
-        #output = StringIO.StringIO()
-        #output.write(binary_data_string)
-
-        #return output
-
-        pass
-
-    # -----------------------------------------------------------------
-
     def upload_retry(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90, max_nattempts=3):
 
         """
@@ -4871,6 +4837,89 @@ class Remote(object):
 
         # Return the remote directory path
         return remote_path
+
+    # -----------------------------------------------------------------
+
+    def synchronize(self, origin, destination, timeout=None, connect_timeout=90, compress=True, show_output=False, delete=False):
+
+        """
+        This function ...
+        :param origin:
+        :param destination:
+        :param timeout:
+        :param connect_timeout:
+        :param compress:
+        :param show_output:
+        :param delete:
+        :return:
+        """
+
+        # If debugging is enabled, always show the scp output
+        if log.is_debug(): show_output = True
+
+        # Construct the command string
+        command = "rsync -chavP --stats " #--stats user@remote.host:/path/to/copy /path/to/local/storage"
+        if compress: command += "-z "
+        if connect_timeout is not None: command += "--contimeout=" + str(connect_timeout) + " "
+        if delete: command += "--delete "
+
+        # Check if the origin directory exists
+        if not fs.is_directory(origin): raise ValueError("Origin direcory '" + origin + "' does not exist")
+        command += "'" + origin + "' "
+
+        # Set destination string depending on whether it is a file or a directory
+        if "." in fs.name(destination): destination_string = "'" + destination.replace(" ", "\ ") + "'"  # destination is a file
+        elif not self.is_directory(destination):  # destination should be existing directory
+            raise ValueError("Destination directory '" + destination + "' does not exist on remote host '" + self.host_id + "'")
+        else:
+            #if new_name is not None: destination_string = "'" + destination.replace(" ", "\ ") + "/"  # existing directory
+            #else: destination_string = "'" + destination.replace(" ", "\ ") + "/'"  # existing directory
+            destination_string = "'" + destination.replace(" ", "\ ") + "/'"  # existing directory
+
+        # Construct command
+        command += self.host.user + "@" + self.host.name + ":" + destination_string
+        #if new_name is not None: copy_command += new_name + "'"
+
+        # Debugging
+        self.debug("Upload command: " + command)
+
+        # Create the pexpect child instance
+        child = pexpect.spawn(command, timeout=timeout)
+        if self.host.password is not None:
+            index = child.expect(['password: ', pexpect.EOF])
+            if index == 0: child.sendline(self.host.password)
+            else: return False
+
+        # If the output does not have to be shown on the console, create a temporary file where the output is written to
+        if not show_output:
+
+            # New way: use a string stream
+            temp_file = StringIO.StringIO()
+            child.logfile = temp_file
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        else: child.logfile = sys.stdout
+
+        # Execute the command and get the output
+        try:
+            child.expect(pexpect.EOF, timeout=None)
+            lines = child.before.split("\r\n")
+        except pexpect.EOF:
+            pass
+            lines = None
+        child.close()
+        if lines is None: lines = child.logfile.getvalue()
+
+        # Show output lines in debug mode
+        if not show_output:
+
+            # Raise an error if something went wrong
+            if child.exitstatus != 0: raise RuntimeError(" ".join(lines))
+
+            # Debugging: show the output of the scp command
+            self.debug("Synchronize stdout: " + str(" ".join(lines)))
+
+
 
     # -----------------------------------------------------------------
 

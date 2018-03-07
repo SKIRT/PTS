@@ -1384,7 +1384,7 @@ imfit_linux_binary_url = "http://www.mpe.mpg.de/~erwin/resources/imfit/binaries/
 # -----------------------------------------------------------------
 
 # Approximate size of a full conda installation (all PTS dependencies) in GB
-full_conda_installation_size = 5.
+full_conda_installation_size = 5. * u("GB")
 
 # -----------------------------------------------------------------
 
