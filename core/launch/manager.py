@@ -6870,7 +6870,7 @@ class SimulationManager(Configurable):
             if not self.is_screen_execution(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is/was not executed in a screen session")
 
             # Show output
-            self.show_simulation_screen_output(simulation_name)
+            self.show_simulation_screen_output(simulation_name, summarize=config.summarize, short=config.short)
 
         # Show job log
         elif config.job:
@@ -6879,7 +6879,7 @@ class SimulationManager(Configurable):
             if not self.is_job_execution(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is/was not executed as a job")
 
             # Show output
-            self.show_simulation_job_output(simulation_name)
+            self.show_simulation_job_output(simulation_name, summarize=config.summarize, short=config.short)
 
         # Show simulation log
         else: self.show_simulation_log(simulation_name, summarize=config.summarize, short=config.short)
