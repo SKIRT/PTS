@@ -404,15 +404,28 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def __getitem__(self, index):
+    def __getitem__(self, index_or_indices):
 
         """
         This function ...
-        :param index:
+        :param index_or_indices:
         :return:
         """
 
-        return self.table["Wavelength"][index] * self.table["Wavelength"].unit
+        from ..tools import types
+
+        # Single index
+        if types.is_integer_type(index_or_indices): return self.table["Wavelength"][index_or_indices] * self.table["Wavelength"].unit
+
+        # Multiple indices
+        elif types.is_integer_sequence(index_or_indices) or types.is_integer_array(index_or_indices) or types.is_integer_tuple(index_or_indices):
+
+            # Get the wavelengths and create a new grid
+            wavelengths = self.wavelengths(asarray=True, unit=self.unit)[list(index_or_indices)]
+            return WavelengthGrid.from_wavelengths(wavelengths, unit=self.unit)
+
+        # Invalid
+        else: raise ValueError("Invalid index or indices: '" + str(index_or_indices) + "'")
 
     # -----------------------------------------------------------------
 
@@ -479,15 +492,24 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def wavelength_indices(self, min_wavelength=None, max_wavelength=None):
+    def wavelength_indices(self, min_wavelength=None, max_wavelength=None, wavelength_range=None):
 
         """
         This function ...
         :param min_wavelength:
         :param max_wavelength:
+        :param wavelength_range:
         :return:
         """
 
+        # Set min and max from range
+        if wavelength_range is not None:
+            if min_wavelength is not None: raise ValueError("Minimum wavelength cannot be specified when wavelength range is specified")
+            if max_wavelength is not None: raise ValueError("Maximum wavelength cannot be specified when wavelength range is specified")
+            min_wavelength = wavelength_range.min
+            max_wavelength = wavelength_range.max
+
+        # Get indices
         if min_wavelength is None and max_wavelength is None: return list(range(len(self.table)))
         elif min_wavelength is None: return list(range(self.closest_wavelength_below_index(max_wavelength)+1))
         elif max_wavelength is None: return list(range(self.closest_wavelength_above_index(min_wavelength), len(self.table)))
@@ -495,15 +517,23 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def wavelengths_mask(self, min_wavelength=None, max_wavelength=None, inclusive=True):
+    def wavelengths_mask(self, min_wavelength=None, max_wavelength=None, inclusive=True, wavelength_range=None):
 
         """
         This function ...
         :param min_wavelength:
         :param max_wavelength:
         :param inclusive:
+        :param wavelength_range:
         :return:
         """
+
+        # Set min and max from range
+        if wavelength_range is not None:
+            if min_wavelength is not None: raise ValueError("Minimum wavelength cannot be specified when wavelength range is specified")
+            if max_wavelength is not None: raise ValueError("Maximum wavelength cannot be specified when wavelength range is specified")
+            min_wavelength = wavelength_range.min
+            max_wavelength = wavelength_range.max
 
         # Initialize mask
         mask = np.zeros(len(self), dtype=bool)
@@ -520,6 +550,24 @@ class WavelengthGrid(object):
 
         # Return the mask
         return mask
+
+    # -----------------------------------------------------------------
+
+    def get_subgrid(self, min_wavelength=None, max_wavelength=None, wavelength_range=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param wavelength_range:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength, wavelength_range=wavelength_range)
+
+        # Return the subgrid
+        return self[indices]
 
     # -----------------------------------------------------------------
 

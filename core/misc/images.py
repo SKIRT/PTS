@@ -34,6 +34,7 @@ from ..tools import strings
 from ..tools.stringify import tostr
 from ..tools import numbers
 from .datacubes import DatacubesMiscMaker, get_datacube_instrument_name
+from ..basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -918,6 +919,82 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def min_filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        min_name = None
+
+        # Loop over the filters
+        for filter_name in self.filter_names:
+            if min_name is None or self.filters[filter_name].min < self.filters[min_name].min: min_name = filter_name
+        if min_name is None: raise RuntimeError("Something went wrong: no filters specified?")
+
+        # Return the name of the filter with minimum wavelength
+        return min_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_filter_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        max_name = None
+
+        # Loop over the filters
+        for filter_name in self.filter_names:
+            if max_name is None or self.filters[filter_name].max > self.filters[max_name].max: max_name = filter_name
+        if max_name is None: raise RuntimeError("Something went wrong: no filters specified?")
+
+        # Return the name of the filter with maximum wavelength
+        return max_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.filters[self.min_filter_name].min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.filters[self.max_filter_name].max
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.min_wavelength, self.max_wavelength)
+
+    # -----------------------------------------------------------------
+
     def filter_names_with_image_for_instrument(self, instr_name):
 
         """
@@ -1080,8 +1157,10 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Debugging
         log.debug("Trying to load the datacube '" + path + "' locally ...")
 
+        # Slice the datacube to only the needed wavelength range?
+
         # Load
-        try: datacube = DataCube.from_file(path, self.wavelength_grid)
+        try: datacube = DataCube.from_file(path, self.wavelength_grid, wavelength_range=self.wavelength_range)
         except fits.DamagedFITSFileError as e:
             log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
             datacube = None
@@ -1103,8 +1182,10 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Debugging
         log.debug("Trying to load the datacube '" + path + "' remotely ...")
 
+        # Slice the datacube to only the needed wavelength range?
+
         # Load
-        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session)
+        try: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.session, wavelength_range=self.wavelength_range)
         except fits.DamagedFITSFileError as e:
             log.error("The datacube '" + path + "' is damaged: images cannot be created. Skipping this datacube ...")
             datacube = None

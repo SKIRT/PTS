@@ -203,13 +203,14 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_skirt_output(cls, instrument_name, output_path=None, contribution="total"):
+    def from_skirt_output(cls, instrument_name, output_path=None, contribution="total", wavelength_range=None):
 
         """
         This function ...
         :param instrument_name:
         :param output_path:
         :param contribution:
+        :param wavelength_range:
         :return:
         """
 
@@ -224,17 +225,18 @@ class DataCube(Image):
         sed_path = sed_paths_instruments[instrument_name]
 
         # Return
-        return cls.from_file_and_sed_file(datacube_path, sed_path)
+        return cls.from_file_and_sed_file(datacube_path, sed_path, wavelength_range=wavelength_range)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file_and_sed_file(cls, image_path, sed_path):
+    def from_file_and_sed_file(cls, image_path, sed_path, wavelength_range=None):
 
         """
         This function ...
         :param image_path:
         :param sed_path:
+        :param wavelength_range:
         :return:
         """
 
@@ -244,17 +246,18 @@ class DataCube(Image):
         sed = load_sed(sed_path)
 
         # Create
-        return cls.from_file_and_sed(image_path, sed)
+        return cls.from_file_and_sed(image_path, sed, wavelength_range=wavelength_range)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file_and_sed(cls, image_path, sed):
+    def from_file_and_sed(cls, image_path, sed, wavelength_range=None):
 
         """
         This function ...
         :param image_path:
         :param sed:
+        :param wavelength_range:
         :return:
         """
 
@@ -262,17 +265,18 @@ class DataCube(Image):
         wavelength_grid = WavelengthGrid.from_sed(sed)
 
         # Create the datacube
-        return cls.from_file(image_path, wavelength_grid)
+        return cls.from_file(image_path, wavelength_grid, wavelength_range=wavelength_range)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file_and_wavelength_grid_file(cls, image_path, wavelengths_path):
+    def from_file_and_wavelength_grid_file(cls, image_path, wavelengths_path, wavelength_range=None):
 
         """
         This function ...
         :param image_path:
         :param wavelengths_path:
+        :param wavelength_range:
         :return:
         """
 
@@ -280,23 +284,30 @@ class DataCube(Image):
         wavelength_grid = WavelengthGrid.from_file(wavelengths_path)
 
         # Create the datacube
-        return cls.from_file(image_path, wavelength_grid)
+        return cls.from_file(image_path, wavelength_grid, wavelength_range=wavelength_range)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, image_path, wavelength_grid):
+    def from_file(cls, image_path, wavelength_grid, wavelength_range=None):
 
         """
         This function ...
         :param image_path:
         :param wavelength_grid:
+        :param wavelength_range:
         :return:
         """
 
+        # Get the indices for the given wavelength range
+        if wavelength_range is not None: indices = wavelength_grid.wavelength_indices(wavelength_range=wavelength_range)
+        else: indices = None
+
         # Call the corresponding base class function
-        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True,
-                                                  density=True, density_strict=True) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
+        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True, density=True, density_strict=True, indices=indices) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
+
+        # Slice the wavelength grid
+        if indices is not None: wavelength_grid = wavelength_grid[indices]
 
         # Check wavelength grid size
         assert len(wavelength_grid) == datacube.nframes

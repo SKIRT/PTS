@@ -205,9 +205,9 @@ def get_total_npixels(path):
 
 # -----------------------------------------------------------------
 
-def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False,
-                hdulist_index=0, no_filter=False, no_wcs=False, density=False, brightness=False, density_strict=False,
-                brightness_strict=False):
+def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, hdulist_index=0,
+                no_filter=False, no_wcs=False, density=False, brightness=False, density_strict=False,
+                brightness_strict=False, indices=None):
 
     """
     This function ...
@@ -216,7 +216,6 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     :param name:
     :param description:
     :param always_call_first_primary:
-    :param rebin_to_wcs:
     :param hdulist_index:
     :param no_filter:
     :param no_wcs:
@@ -224,15 +223,20 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     :param brightness:
     :param density_strict:
     :param brightness_strict:
+    :param indices:
     :return:
     """
 
+    # Cannot both specify index and indices
+    if index is not None and indices is not None: raise ValueError("Cannot specify both 'index' and 'indices'")
+
+    # Initialize
     frames = OrderedDict()
     masks = OrderedDict()
     segments = OrderedDict()
-
     metadata = dict()
 
+    # Get name of the file
     filename = fs.strip_extension(fs.name(path))
 
     # Check if the file exists
@@ -266,19 +270,13 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Fix
     fix_ctypes(flattened_header)
 
-    # If WCS is needed or expected
-    #if not no_wcs:
-
     # Obtain the world coordinate system
     try:
         wcs = CoordinateSystem(flattened_header)
         pixelscale = None
     except ValueError:
         wcs = None
-        #pixelscale = headers.get_pixelscale(original_header)
         pixelscale = None
-
-    #else: wcs = pixelscale = None
 
     # Get the pixelscale from the header
     header_pixelscale = headers.get_pixelscale(original_header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
@@ -335,7 +333,33 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
     # Check whether multiple planes are present in the FITS image
     nframes = headers.get_number_of_frames(original_header)
-    if nframes > 1:
+
+    # Define properties for frames
+    # The sky-subtracted flag should only be set for the primary frame??
+    properties = dict()
+    properties["unit"] = unit
+    properties["zero_point"] = zero_point
+    properties["filter"] = fltr
+    properties["sky_subtracted"] = sky_subtracted
+    properties["source_extracted"] = source_extracted
+    properties["extinction_corrected"] = extinction_corrected
+    properties["fwhm"] = fwhm
+    properties["pixelscale"] = pixelscale
+    properties["distance"] = distance
+    properties["psf_filter"] = psf_filter
+    properties["smoothing_factor"] = smoothing_factor
+
+    # Just specific planes have to be read
+    if indices is not None:
+
+        # Loop over the planes to be loaded
+        for i in indices:
+
+            # Load plane into one of the dictionaries
+            load_plane(frames, masks, segments, hdu.data, i, original_header, wcs, pixelscale, frame_properties=properties, always_call_first_primary=always_call_first_primary)
+
+    # Read multiple planes
+    elif nframes > 1:
 
         # For each frame
         for i in range(nframes):
@@ -343,54 +367,10 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
             # If only a frame with specific index needs to be imported, skip this frame if it does not correspond
             if index is not None and i != index: continue
 
-            # Get name and description of frame
-            name, description, plane_type = headers.get_frame_name_and_description(original_header, i, always_call_first_primary)
+            # Load plane into one of the directories
+            load_plane(frames, masks, segments, hdu.data, i, original_header, wcs, pixelscale, frame_properties=properties, always_call_first_primary=always_call_first_primary)
 
-            # The sky-subtracted flag should only be set for the primary frame
-            if i == 0:
-
-                subtracted = sky_subtracted
-                extracted = source_extracted
-                corrected = extinction_corrected
-
-            # Not a primary frame
-            else: subtracted = extracted = corrected = False
-
-            # Add this frame to the frames dictionary
-            if plane_type == "frame":
-
-                # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-                frame = Frame(hdu.data[i],
-                              wcs=wcs,
-                              name=name,
-                              description=description,
-                              unit=unit,
-                              zero_point=zero_point,
-                              filter=fltr,
-                              sky_subtracted=subtracted,
-                              source_extracted=extracted,
-                              extinction_corrected=corrected,
-                              fwhm=fwhm,
-                              pixelscale=pixelscale,
-                              distance=distance,
-                              psf_filter=psf_filter,
-                              smoothing_factor=smoothing_factor)
-
-                frames[name] = frame
-
-            elif plane_type == "mask":
-
-                #data, name=None, description=None
-                mask = Mask(hdu.data[i], name=name, description=description, wcs=wcs, pixelscale=pixelscale)
-                masks[name] = mask
-
-            elif plane_type == "segments":
-
-                segments_map = SegmentationMap(hdu.data[i], wcs=wcs, name=name, description=description)
-                segments[name] = segments_map
-
-            else: raise ValueError("Unrecognized type (must be frame, mask or segments)")
-
+    # Only one plane to read
     else:
 
         # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
@@ -1006,5 +986,42 @@ def fix_ctypes(header):
             if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
             replacement = "-" * new_ndashes
             header["CTYPE2"] = header["CTYPE2"].replace(to_replace, replacement)
+
+# -----------------------------------------------------------------
+
+def load_plane(frames, masks, segments, data, index, header, wcs, pixelscale, frame_properties=None, always_call_first_primary=True):
+
+    """
+    This function ...
+    :param frames:
+    :param masks:
+    :param segments:
+    :param data:
+    :param index:
+    :param header:
+    :param wcs:
+    :param pixelscale:
+    :param frame_properties:
+    :param always_call_first_primary:
+    :return:
+    """
+
+    # Set frame properties
+    if frame_properties is None: frame_properties = {}
+
+    # Get name and description of frame
+    name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary)
+
+    # FRAME
+    if plane_type == "frame": frames[name] = Frame(data[index], wcs=wcs, name=name, description=description, **frame_properties)
+
+    # MASK
+    elif plane_type == "mask": masks[name] = Mask(data[index], name=name, description=description, wcs=wcs, pixelscale=pixelscale)
+
+    # SEGMENTATION MAP
+    elif plane_type == "segments": segments[name] = SegmentationMap(data[index], wcs=wcs, name=name, description=description)
+
+    # NOT RECOGNIZED
+    else: raise ValueError("Unrecognized type (must be frame, mask or segments)")
 
 # -----------------------------------------------------------------

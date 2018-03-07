@@ -76,7 +76,7 @@ class Image(object):
 
     @classmethod
     def from_file(cls, path, name=None, always_call_first_primary=True, hdulist_index=0, no_filter=False, density=False,
-                  brightness=False, density_strict=False, brightness_strict=False):
+                  brightness=False, density_strict=False, brightness_strict=False, indices=None):
 
         """
         This function ...
@@ -89,6 +89,7 @@ class Image(object):
         :param brightness:
         :param density_strict:
         :param brightness_strict:
+        :param indices:
         :return:
         """
 
@@ -104,7 +105,7 @@ class Image(object):
         # Load the image frames
         image.load_frames(path, always_call_first_primary=always_call_first_primary, hdulist_index=hdulist_index,
                           no_filter=no_filter, density=density, brightness=brightness, density_strict=density_strict,
-                          brightness_strict=brightness_strict)
+                          brightness_strict=brightness_strict, indices=indices)
 
         # Return the image
         return image
@@ -1873,8 +1874,8 @@ class Image(object):
     # -----------------------------------------------------------------
 
     def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True,
-                    rebin_to_wcs=False, hdulist_index=0, no_filter=False, silent=False, density=False, brightness=False,
-                    density_strict=False, brightness_strict=False):
+                    hdulist_index=0, no_filter=False, silent=False, density=False, brightness=False,
+                    density_strict=False, brightness_strict=False, indices=None):
 
         """
         This function ...
@@ -1883,7 +1884,6 @@ class Image(object):
         :param name:
         :param description:
         :param always_call_first_primary:
-        :param rebin_to_wcs:
         :param hdulist_index:
         :param no_filter:
         :param silent:
@@ -1891,6 +1891,7 @@ class Image(object):
         :param brightness:
         :param density_strict:
         :param brightness_strict:
+        :param indices:
         :return:
         """
 
@@ -1904,8 +1905,9 @@ class Image(object):
         from . import fits as pts_fits
         try:
             frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
-                                                           rebin_to_wcs, hdulist_index, no_filter, density=density, brightness=brightness,
-                                                           density_strict=density_strict, brightness_strict=brightness_strict)
+                                                           hdulist_index, no_filter, density=density, brightness=brightness,
+                                                           density_strict=density_strict, brightness_strict=brightness_strict,
+                                                           indices=indices)
         except pts_fits.DamagedFITSFileError: raise IOError("File is possibly damaged")
 
         # Set frames, masks and meta information

@@ -2106,12 +2106,13 @@ class RemoteDataCube(RemoteImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, wavelength_grid, session):
+    def from_file(cls, path, wavelength_grid, session, wavelength_range=None):
 
         """
         This function ...
         :param path:
         :param wavelength_grid:
+        :param wavelength_range:
         :param session:
         :return:
         """
@@ -2178,8 +2179,12 @@ class RemoteDataCube(RemoteImage):
         # Open the frame remotely
         log.info("Loading the datacube on the remote host ...")
 
-        # Actually create the frame remotely
-        session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
+        # Actually create the datacube instance remotely
+        if wavelength_range is not None:
+            session.import_package("QuantityRange", from_name="pts.core.basics.range")
+            session.send_line_and_raise("wavelength_range = QuantityRange('" + str(wavelength_range.min) + "','" + str(wavelength_range.max) + "')")
+            session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid, wavelength_range=wavelength_range)", show_output=True)
+        else: session.send_line_and_raise(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
 
         # Return the remotedatacube instance
         return remotedatacube
@@ -2187,12 +2192,13 @@ class RemoteDataCube(RemoteImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_local(cls, datacube, session):
+    def from_local(cls, datacube, session, wavelength_range=None):
 
         """
         This function ...
         :param datacube:
         :param session:
+        :param wavelength_range:
         :return:
         """
 
@@ -2206,7 +2212,7 @@ class RemoteDataCube(RemoteImage):
         datacube.saveto(local_path)
 
         # Create the remotedatacube from the locally saved FITS file
-        remotedatacube = cls.from_file(local_path, datacube.wavelength_grid, session)
+        remotedatacube = cls.from_file(local_path, datacube.wavelength_grid, session, wavelength_range=wavelength_range)
 
         # Remove the local file
         fs.remove_file(local_path)
