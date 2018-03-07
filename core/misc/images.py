@@ -1304,9 +1304,6 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Inform the user
         log.info("Making the observed images (this may take a while) ...")
 
-        from ...magic.core.remote import RemoteFrame
-        from ...magic.core.frame import Frame
-
         # Loop over the datacubes
         for instr_name in self.datacubes:
 
@@ -1316,10 +1313,6 @@ class ObservedImageMaker(DatacubesMiscMaker):
             # Get the filters that don't have an image (end result) yet saved on disk
             filters_dict = self.filters_without_image_for_instrument(instr_name)
 
-            # Get filters list and filter names list
-            filter_names = filters_dict.keys()
-            filters = filters_dict.values()
-
             # Initialize a dictionary, indexed by the filter names, to contain the images
             images = dict()
 
@@ -1327,40 +1320,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
             datacube = self.datacubes[instr_name]
 
             # Check for which filters an initial image is already present
-            make_filter_names = []
-            make_filters = []
-            for filter_name, fltr in zip(filter_names, filters):
-
-                # Remote datacube
-                if isinstance(datacube, RemoteDataCube):
-                    path = self.remote_intermediate_initial_path_for_image(instr_name, filter_name)
-                    if self.remote.is_file(path):
-                        # Success
-                        log.success("Initial '" + filter_name + "' image from the '" + instr_name + "' instrument is found in the remote directory '" + self.remote_intermediate_initial_path + "': not making it again")
-                        # Load as remote frame
-                        frame = RemoteFrame.from_remote_file(path, self.session)
-                        # Add to the dictionary of initial images
-                        images[filter_name] = frame
-                    else:
-                        make_filter_names.append(filter_name)
-                        make_filters.append(fltr)
-
-                # Regular datacube
-                elif isinstance(datacube, DataCube):
-                    path = self.intermediate_initial_path_for_image(instr_name, filter_name)
-                    if fs.is_file(path):
-                        # Success
-                        log.success("Initial '" + filter_name + "' image from the '" + instr_name + "' instrument is found in the directory '" + self.intermediate_initial_path + "': not making it again")
-                        # Load as frame
-                        frame = Frame.from_file(path)
-                        # Add to the dictionary of initial images
-                        images[filter_name] = frame
-                    else:
-                        make_filter_names.append(filter_name)
-                        make_filters.append(fltr)
-
-                # Invalid
-                else: raise ValueError("Something went wrong")
+            make_filter_names, make_filters = self._find_initial_images(images, datacube, filters_dict, instr_name)
 
             # Determine the number of processes
             if not self.has_spectral_convolution_filters: nprocesses = 1
@@ -1389,35 +1349,122 @@ class ObservedImageMaker(DatacubesMiscMaker):
             self.images[instr_name] = images
 
             # Save intermediate results
-            if self.config.write_intermediate:
+            if self.config.write_intermediate: self._write_initial_images(images, instr_name, make_filter_names)
 
-                # Loop over the images
-                for filter_name in self.images[instr_name]:
+    # -----------------------------------------------------------------
 
-                    # If the image didn't need to be made, it means it was already saved
-                    if filter_name not in make_filter_names: continue
+    def _write_initial_images(self, images, instr_name, make_filter_names):
 
-                    # Remote frame?
-                    frame = self.images[instr_name][filter_name]
-                    if isinstance(frame, RemoteFrame):
+        """
+        This function ...
+        :param images:
+        :param instr_name:
+        :param make_filter_names:
+        :return:
+        """
 
-                        # Determine the path
-                        path = self.remote_intermediate_initial_path_for_image(instr_name, filter_name)
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
 
-                        # Save the frame remotely
-                        frame.saveto_remote(path)
+        # Loop over the images
+        for filter_name in images:
 
-                    # Regular frame?
-                    elif isinstance(frame, Frame):
+            # If the image didn't need to be made, it means it was already saved
+            if filter_name not in make_filter_names: continue
 
-                        # Determine the path
-                        path = self.intermediate_initial_path_for_image(instr_name, filter_name)
+            # Remote frame?
+            frame = images[filter_name]
+            if isinstance(frame, RemoteFrame):
 
-                        # Save the frame
-                        frame.saveto(path)
+                # Determine the path
+                path = self.remote_intermediate_initial_path_for_image(instr_name, filter_name)
 
-                    # Invalid
-                    else: raise ValueError("Something went wrong")
+                # Save the frame remotely
+                frame.saveto_remote(path)
+
+            # Regular frame?
+            elif isinstance(frame, Frame):
+
+                # Determine the path
+                path = self.intermediate_initial_path_for_image(instr_name, filter_name)
+
+                # Save the frame
+                frame.saveto(path)
+
+            # Invalid
+            else: raise ValueError("Something went wrong")
+
+    # -----------------------------------------------------------------
+
+    def _find_initial_images(self, images, datacube, filters_dict, instr_name):
+
+        """
+        This function ...
+        :param images:
+        :param datacube:
+        :param filters_dict:
+        :param instr_name:
+        :return:
+        """
+
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
+        # Get filters list and filter names list
+        filter_names = filters_dict.keys()
+        filters = filters_dict.values()
+
+        # Initialize
+        make_filter_names = []
+        make_filters = []
+
+        for filter_name, fltr in zip(filter_names, filters):
+
+            # Remote datacube
+            if isinstance(datacube, RemoteDataCube):
+
+                path = self.remote_intermediate_initial_path_for_image(instr_name, filter_name)
+                if self.remote.is_file(path):
+
+                    # Success
+                    log.success("Initial '" + filter_name + "' image from the '" + instr_name + "' instrument is found in the remote directory '" + self.remote_intermediate_initial_path + "': not making it again")
+
+                    # Load as remote frame
+                    frame = RemoteFrame.from_remote_file(path, self.session)
+
+                    # Add to the dictionary of initial images
+                    images[filter_name] = frame
+
+                else:
+
+                    make_filter_names.append(filter_name)
+                    make_filters.append(fltr)
+
+            # Regular datacube
+            elif isinstance(datacube, DataCube):
+
+                path = self.intermediate_initial_path_for_image(instr_name, filter_name)
+                if fs.is_file(path):
+
+                    # Success
+                    log.success("Initial '" + filter_name + "' image from the '" + instr_name + "' instrument is found in the directory '" + self.intermediate_initial_path + "': not making it again")
+
+                    # Load as frame
+                    frame = Frame.from_file(path)
+
+                    # Add to the dictionary of initial images
+                    images[filter_name] = frame
+
+                else:
+
+                    make_filter_names.append(filter_name)
+                    make_filters.append(fltr)
+
+            # Invalid
+            else: raise ValueError("Something went wrong")
+
+        # Return
+        return make_filter_names, make_filters
 
     # -----------------------------------------------------------------
 

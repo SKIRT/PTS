@@ -668,11 +668,12 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filter(self, fltr):
+    def convolve_with_filter(self, fltr, return_wavelength_grid=False):
 
         """
         This function ...
         :param fltr:
+        :param return_wavelength_grid:
         :return:
         """
 
@@ -682,21 +683,15 @@ class DataCube(Image):
         # Convert the datacube to a numpy array where wavelength is the third dimension
         array = self.asarray()
 
-        # Calculate the observed image frame
-        data = fltr.convolve(self.wavelengths(asarray=True), array)
-        frame = Frame(data)
+        # Get the wavelengths of the datacube
+        wavelengths = self.wavelengths(asarray=True)
 
-        # Set the filter
-        frame.filter = fltr
+        # Peform the convolution
+        frame, wavelength_grid = _do_one_filter_convolution(fltr, wavelengths, array, self.unit, self.wcs)
 
-        # Set the unit of the frame
-        frame.unit = self.unit
-
-        # Set the wcs of the frame
-        frame.wcs = self.wcs
-
-        # Return the resulting frame
-        return frame
+        # Return
+        if return_wavelength_grid: return frame, wavelength_grid
+        else: return frame
 
     # -----------------------------------------------------------------
 
@@ -1224,8 +1219,11 @@ class DataCube(Image):
             # Get the current filter
             fltr = filters[index]
 
-            # Do the filter convolution, put frame in the frames list
-            filter_wavelengths = _do_one_filter_convolution(fltr, wavelengths, array, frames, index, self.unit, self.wcs)
+            # Do the filter convolution to produce one frame
+            frame, filter_wavelengths = _do_one_filter_convolution(fltr, wavelengths, array, self.unit, self.wcs)
+
+            # Add the frame to the list
+            frames[index] = frame
 
             # Add the wavelengths
             filter_wavelengths = [value * Unit("micron") for value in filter_wavelengths]
@@ -2164,17 +2162,20 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     # Inform the user
     log.info(message_prefix + "Starting convolution ...")
 
-    # Do the convolution
-    data = fltr.convolve(wavelengths, array)
+    # Do the convolution, time it
+    with time.elapsed_timer() as elapsed:
+
+        # Convolve
+        data = fltr.convolve(wavelengths, array)
+
+        # Show time
+        log.success("Convolved the datacube with the " + str(fltr) + " filter in " + str(elapsed()) + " seconds")
 
     # Inform the user
     log.info(message_prefix + "Convolution completed")
 
     # Create frame, set properties
-    frame = Frame(data)
-    frame.unit = unit
-    frame.filter = fltr
-    frame.wcs = datacube.wcs
+    frame = Frame(data, unit=unit, filter=fltr, wcs=datacube.wcs)
 
     # Inform
     log.info(message_prefix + "Saving result to " + result_path + " ...")
@@ -2188,15 +2189,13 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
 
 # -----------------------------------------------------------------
 
-def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wcs):
+def _do_one_filter_convolution(fltr, wavelengths, array, unit, wcs):
 
     """
     This function ...
     :param fltr:
     :param wavelengths:
     :param array:
-    :param frames:
-    :param index:
     :return:
     """
 
@@ -2208,27 +2207,17 @@ def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wc
     array = array[:, :, use]
     wavelengths = wavelengths[use]
 
-    # Calculate the observed image frame
-    data, wavelength_grid = fltr.convolve(wavelengths, array, return_grid=True)
-    frame = Frame(data)
+    # Calculate the observed image frame, time it
+    with time.elapsed_timer() as elapsed:
 
-    # Debugging
-    log.success("Convolved the datacube with the " + str(fltr) + " filter ...")
+        # Do the convolution
+        data, wavelength_grid = fltr.convolve(wavelengths, array, return_grid=True)
 
-    # Set the unit of the frame
-    frame.unit = unit
+        # Show time
+        log.success("Convolved the datacube with the " + str(fltr) + " filter in " + str(elapsed()) + " seconds")
 
-    # Set the filter
-    frame.filter = fltr
-
-    # Set the wcs
-    frame.wcs = wcs
-
-    # Add the frame to the list
-    frames[index] = frame
-
-    # Return the wavelength grid array
-    return wavelength_grid
+    # Create and return the frame and the wavelength grid
+    return Frame(data, unit=unit, filter=fltr, wcs=wcs), wavelength_grid
 
 # -----------------------------------------------------------------
 
