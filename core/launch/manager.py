@@ -1807,6 +1807,32 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_screen_log_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Try to get remote output path
+        output_path = self.get_remote_screen_output_path(simulation_name)
+        if output_path is None and self.has_screen_script(simulation_name): output_path = self.get_screen_script(simulation_name).output_path
+        if output_path is None: return None
+
+        # Get the remote
+        remote = self.get_remote_for_simulation(simulation_name)
+
+        # Try to find screenlog file
+        filename = "screenlog.0"
+        filepath = fs.join(output_path, filename)
+        if not remote.is_file(filepath): return None
+
+        # Return the screen log path
+        return filepath
+
+    # -----------------------------------------------------------------
+
     def get_job_id(self, simulation_name):
 
         """
@@ -1874,11 +1900,11 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Look for sh files in simulation directory
-        simulation_path = self.get_simulation_path(simulation_name)
+        # Look for sh files in simulation base directory
+        base_path = self.get_base_path(simulation_name)
 
         # Look for sh files in the simulation path
-        filepaths = fs.files_in_path(simulation_path, extension="sh")
+        filepaths = fs.files_in_path(base_path, extension="sh")
         nfiles = len(filepaths)
 
         # Return the single filepath
@@ -1960,6 +1986,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_job_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        filepath = self.get_job_output_path(simulation_name)
+        if filepath is None: return []
+        return self.get_remote_for_simulation(simulation_name).get_lines(filepath)
+
+    # -----------------------------------------------------------------
+
     def get_job_error_path(self, simulation_name):
 
         """
@@ -1976,6 +2017,21 @@ class SimulationManager(Configurable):
             if nfiles == 0: return None
             elif nfiles > 1: return None
             else: return filepaths[0]
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_job_error(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        filepath = self.get_job_error_path(simulation_name)
+        if filepath is None: return []
+        return self.get_remote_for_simulation(simulation_name).get_lines(filepath)
 
     # -----------------------------------------------------------------
 
@@ -2042,6 +2098,30 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_base_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).base_path
+
+    # -----------------------------------------------------------------
+
+    def get_remote_base_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).remote_simulation_path
+
+    # -----------------------------------------------------------------
+
     def get_output_path(self, simulation_name):
 
         """
@@ -2051,6 +2131,18 @@ class SimulationManager(Configurable):
         """
 
         return self.get_simulation(simulation_name).output_path
+
+    # -----------------------------------------------------------------
+
+    def get_remote_output_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).remote_output_path
 
     # -----------------------------------------------------------------
 
@@ -3767,6 +3859,11 @@ class SimulationManager(Configurable):
             command = prompt_string("command", "command to be executed")
             if not command: break
 
+            # DEVELOPER COMMAND
+            if command.startswith("$"):
+                self._run_developer_command(command)
+                continue
+
             # Process command
             success = True
             try: self.process_command(command)
@@ -3835,6 +3932,25 @@ class SimulationManager(Configurable):
         elif command == _clear_command_name: return clear_commands
         elif command == _cache_command_name: return cache_commands
         else: raise InvalidCommandError("Invalid command: '" + command + "'", command)
+
+    # -----------------------------------------------------------------
+
+    def _run_developer_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Clean
+        command = command[1:].strip()
+
+        # Create evaluation command
+        eval_command = "self." + command
+
+        # Evaluate
+        eval(eval_command)
 
     # -----------------------------------------------------------------
 
@@ -4452,10 +4568,10 @@ class SimulationManager(Configurable):
         if remote is None: remote = False
 
         # On the remote
-        if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_simulation_path)
+        if remote: self.mount_and_open_path(simulation.host_id, self.get_remote_base_path(simulation_name))
 
         # Locally
-        else: fs.open_directory(simulation.base_path)
+        else: fs.open_directory(self.get_base_path(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -4606,7 +4722,7 @@ class SimulationManager(Configurable):
         if remote: self.mount_and_open_path(simulation.host_id, simulation.remote_output_path)
 
         # Locally
-        else: fs.open_directory(simulation.output_path)
+        else: fs.open_directory(self.get_output_path(simulation_name))
 
     # -----------------------------------------------------------------
     
@@ -6842,13 +6958,15 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Debugging
-        log.debug("")
+        # Get the screen name
+        screen_name = self.get_screen_name(simulation_name)
 
-        #name = self.get_screen_name(simulation_name)
-        #remote_output_path = self.get_remote_screen_output_path(simulation_name)
-        #remote_script_path = self.get_remote_screen_script_path(simulation_name)
-        #print("screen", name, remote_output_path, remote_script_path)
+        # Debugging
+        log.debug("Showing error output of screen session '" + screen_name + "' for simulation '" + simulation_name + "' ...")
+
+        # Get the screenlog path
+        filepath = self.get_screen_log_path(simulation_name)
+        print(filepath)
 
     # -----------------------------------------------------------------
 
@@ -6860,11 +6978,19 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Debugging
-        log.debug("")
+        # Get the job ID
+        job_id = self.get_job_id(simulation_name)
 
-        # Get error file path
-        filepath = self.get_job_error_path(simulation_name)
+        # Debugging
+        log.debug("Showing error output for job '" + str(job_id) + "' ...")
+
+        # Get the error lines
+        lines = self.get_job_error(simulation_name)
+
+        # Show
+        print("")
+        for line in lines: print(line)
+        print("")
 
     # -----------------------------------------------------------------
 
