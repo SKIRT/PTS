@@ -1223,28 +1223,56 @@ class BroadBandFilter(Filter):
     #   per unit of wavelength. This can be an array with the same length as \em wavelengths, or a multi-dimensional
     #   array where the last dimension has the same length as \em wavelengths.
     #   The returned result will have the shape of \em densities minus the last (or only) dimension.
-    def convolve(self, wavelengths, densities, return_grid=False):
+    def convolve(self, wavelengths, densities, return_grid=False, scipy=False, show_times=False):
 
-        # define short names for the involved wavelength grids
+        from pts.core.tools import time
+
+        # Define short names for the involved wavelength grids
         wa = wavelengths
         wb = self._Wavelengths
 
-        # create a combined wavelength grid, restricted to the overlapping interval
-        w1 = wa[ (wa>=wb[0]) & (wa<=wb[-1]) ]
-        w2 = wb[ (wb>=wa[0]) & (wb<=wa[-1]) ]
-        w = np.unique(np.hstack((w1,w2)))
-        if len(w) < 2:
-            if return_grid: return 0, w
-            else: return 0
+        # Create a combined wavelength grid, restricted to the overlapping interval
+        with time.elapsed_timer() as elapsed:
+            w1 = wa[ (wa>=wb[0]) & (wa<=wb[-1]) ]
+            w2 = wb[ (wb>=wa[0]) & (wb<=wa[-1]) ]
+            w = np.unique(np.hstack((w1,w2)))
+            if len(w) < 2:
+                if return_grid: return 0, w
+                else: return 0
+            if show_times: print("Created wavelength grid in " + str(elapsed()) + " seconds")
 
-        # log-log interpolate SED and transmission on the combined wavelength grid
+        # Perform log-log interpolate SED and transmission on the combined wavelength grid
+
+        # Use SciPy
         # (use scipy interpolation function for SED because np.interp does not support broadcasting)
-        F = np.exp(interp1d(np.log(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log(w)))
-        T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
+        if scipy:
 
-        # perform the integration
-        if self._PhotonCounter:  convolved = np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
-        else: convolved = np.trapz(x=w, y=F*T) / self._IntegratedTransmission
+            with time.elapsed_timer() as elapsed:
+
+                F = np.exp(interp1d(np.log(wa), _log(densities), copy=False, bounds_error=False, fill_value=0.)(np.log(w)))
+                if show_times: print("Interpolation of spectral densities performed in " + str(elapsed()) + " seconds")
+
+        # Use NumPy
+        else:
+
+            with time.elapsed_timer() as elapsed:
+
+                F = np.exp(np.interp(np.log(w), np.log(wa), _log(densities)))
+                if show_times: print("Interpolation of spectral densities performed in " + str(elapsed()) + " seconds")
+
+        #close = np.isclose(F, F2)
+        #print(close)
+
+        # Interpolate the transmission
+        with time.elapsed_timer() as elapsed:
+            T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
+            if show_times: print("Interpolation of transmissions performed in " + str(elapsed()) + " seconds")
+
+        # Perform the integration
+        with time.elapsed_timer() as elapsed:
+            if self._PhotonCounter:  convolved = np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
+            else: convolved = np.trapz(x=w, y=F*T) / self._IntegratedTransmission
+            if show_times: print("Integration performed in " + str(elapsed()) + " seconds")
 
         # Return
         if return_grid: return convolved, w

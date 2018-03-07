@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import time as _time
 from datetime import datetime
+from contextlib import contextmanager
+from timeit import default_timer
 
 # -----------------------------------------------------------------
 
@@ -377,5 +379,21 @@ def validate_format(string):
 
     try: datetime.strptime(string, '%Y-%m-%d')
     except ValueError: raise ValueError("Incorrect date format")
+
+# -----------------------------------------------------------------
+
+@contextmanager
+def elapsed_timer():
+
+    """
+    This function ...
+    :return:
+    """
+
+    start = default_timer()
+    elapser = lambda: default_timer() - start
+    yield lambda: elapser()
+    end = default_timer()
+    elapser = lambda: end-start
 
 # -----------------------------------------------------------------
