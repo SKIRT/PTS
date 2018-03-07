@@ -78,6 +78,7 @@ from ..simulation.output import output_types as output_type_names
 from ..simulation.output import misc_output_types as misc_type_names
 from ..simulation.jobscript import SKIRTJobScript
 from ..simulation.screen import ScreenScript
+from ..simulation.logfile import has_valid_timestamp
 
 # -----------------------------------------------------------------
 
@@ -1917,11 +1918,11 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     def has_local_job_script(self, simulation_name):
-        
+
         """
         This function ...
-        :param simulation_name: 
-        :return: 
+        :param simulation_name:
+        :return:
         """
 
         return self.get_local_job_script_path(simulation_name) is not None
@@ -1930,19 +1931,19 @@ class SimulationManager(Configurable):
 
     @memoize_method
     def get_job_script(self, simulation_name):
-        
+
         """
         This function ...
-        :param simulation_name: 
-        :return: 
+        :param simulation_name:
+        :return:
         """
-        
+
         # Local job script is found
         if self.has_local_job_script(simulation_name):
 
             filepath = self.get_local_job_script_path(simulation_name)
             return SKIRTJobScript.from_file(filepath)
-        
+
         # Remote job script is found
         elif self.has_remote_job_script(simulation_name):
 
@@ -1952,7 +1953,7 @@ class SimulationManager(Configurable):
 
         # No job script is found
         else: return None
-        
+
     # -----------------------------------------------------------------
 
     def has_job_script(self, simulation_name):
@@ -4725,13 +4726,13 @@ class SimulationManager(Configurable):
         else: fs.open_directory(self.get_output_path(simulation_name))
 
     # -----------------------------------------------------------------
-    
+
     def open_extraction_command(self, command):
 
         """
         This function ...
-        :param command: 
-        :return: 
+        :param command:
+        :return:
         """
 
         # Set command name
@@ -6765,7 +6766,7 @@ class SimulationManager(Configurable):
         :param required_to_optional:
         :return:
         """
-        
+
         # Get the definition
         definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
@@ -6837,6 +6838,9 @@ class SimulationManager(Configurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("summarize", "show summarized log output")
+        definition.add_flag("short", "show short output")
+        definition.add_flag("screen", "show screen log output instead of SKIRT log file")
+        definition.add_flag("job", "show job log output instead of SKIRT log file")
 
         # Return the definition
         return definition
@@ -6859,17 +6863,36 @@ class SimulationManager(Configurable):
         if self.is_running(simulation_name): log.warning("Simulation '" + simulation_name + "' is still running")
         elif self.is_failed(simulation_name): log.warning("Simulation '" + simulation_name + "' has not finished succesfully")
 
-        # Show
-        self.show_simulation_log(simulation_name, summarize=config.summarize)
+        # Show screen log
+        if config.screen:
+
+            # Check
+            if not self.is_screen_execution(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is/was not executed in a screen session")
+
+            # Show output
+            self.show_simulation_screen_output(simulation_name)
+
+        # Show job log
+        elif config.job:
+
+            # Check
+            if not self.is_job_execution(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is/was not executed as a job")
+
+            # Show output
+            self.show_simulation_job_output(simulation_name)
+
+        # Show simulation log
+        else: self.show_simulation_log(simulation_name, summarize=config.summarize, short=config.short)
 
     # -----------------------------------------------------------------
 
-    def show_simulation_log(self, simulation_name, summarize=False):
+    def show_simulation_log(self, simulation_name, summarize=False, short=False):
 
         """
         This function ...
         :param simulation_name:
         :param summarize:
+        :param short:
         :return:
         """
 
@@ -6906,8 +6929,87 @@ class SimulationManager(Configurable):
         # Print the lines of the log file
         print("")
         if summarize: show_log_summary(lines, debug_output=True)
+        elif short: show_log_summary(lines, debug_output=False)
         else:
             for line in lines: print(line)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_screen_output(self, simulation_name, summarize=False, short=False):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param summarize:
+        :param short:
+        :return:
+        """
+
+        # Get the screen name
+        screen_name = self.get_screen_name(simulation_name)
+
+        # Debugging
+        log.debug("Showing output of screen session '" + screen_name + "' for simulation '" + simulation_name + "' ...")
+
+        # Get the screenlog path
+        filepath = self.get_screen_log_path(simulation_name)
+        #print(filepath)
+
+        remote_ski_path = self.get_remote_skifile_path(simulation_name)
+
+        # Get the lines
+        lines = self.get_remote_for_simulation(simulation_name).get_lines_between(filepath, remote_ski_path, "Finished simulation")
+        
+        # Show
+        print("")
+        if summarize: show_log_summary(lines, debug_output=True)
+        elif short: show_log_summary(lines, debug_output=False)
+        else:
+            for line in lines:
+
+                # Show the line
+                if not has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
+                else: print(line)
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_job_output(self, simulation_name, summarize=False, short=False):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param summarize:
+        :param short:
+        :return:
+        """
+
+        # Get the job ID
+        job_id = self.get_job_id(simulation_name)
+
+        # Debugging
+        log.debug("Showing output for job '" + str(job_id) + "' ...")
+
+        # Get the output lines
+        lines = self.get_job_output(simulation_name)
+        nlines = len(lines)
+        if nlines == 0:
+            log.warning("No output for job '" + str(job_id) + "'")
+            return
+
+        # Show
+        print("")
+        if summarize: show_log_summary(lines, debug_output=True)
+        elif short: show_log_summary(lines, debug_output=False)
+        else:
+            for line in lines:
+
+                # Show the line
+                if not has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
+                else: print(line)
+
         print("")
 
     # -----------------------------------------------------------------
@@ -6986,10 +7088,26 @@ class SimulationManager(Configurable):
 
         # Get the error lines
         lines = self.get_job_error(simulation_name)
+        nlines = len(lines)
+        if nlines == 0:
+            print(fmt.red + "no error output" + fmt.reset)
+            return
 
         # Show
         print("")
-        for line in lines: print(line)
+        break_after = False
+        for line in lines:
+
+            # Skip regular SKIRT output messages
+            if has_valid_timestamp(line): continue
+
+            # Show the line
+            print(fmt.red + line + fmt.reset)
+            if break_after: break
+
+            # Skip after certain MPI message
+            if "YOU CAN IGNORE THE BELOW CLEANUP MESSAGES" in line: break_after = True
+
         print("")
 
     # -----------------------------------------------------------------
@@ -8323,14 +8441,14 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     def _cache_files(self, output, directory_path, cache_path, output_types=None):
-        
+
         """
         This function ...
         :param output:
         :param directory_path:
         :param cache_path:
         :param output_types:
-        :return: 
+        :return:
         """
 
         # Debugging
@@ -8475,10 +8593,10 @@ class SimulationManager(Configurable):
 
     @lazyproperty
     def cache_simulations_datacubes_definition(self):
-        
+
         """
         This function ...
-        :return: 
+        :return:
         """
 
         definition = ConfigurationDefinition(write_config=False)
@@ -8587,8 +8705,8 @@ class SimulationManager(Configurable):
 
         """
         This function ...
-        :param command: 
-        :return: 
+        :param command:
+        :return:
         """
 
         # Set command name
@@ -8614,9 +8732,9 @@ class SimulationManager(Configurable):
 
         """
         This function ...
-        :param simulation_name: 
+        :param simulation_name:
         :param cache_path:
-        :return: 
+        :return:
         """
 
         # Debugging
@@ -8652,11 +8770,11 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     def cache_simulations_extraction_command(self, command):
-        
+
         """
         This function ...
-        :param command: 
-        :return: 
+        :param command:
+        :return:
         """
 
         # Set command name
@@ -9111,7 +9229,7 @@ class SimulationManager(Configurable):
 
         # Screen
         if self.is_screen_execution(simulation_name): self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
-            
+
         # Job
         elif self.is_job_execution(simulation_name): self.relaunch_simulation_job(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
 
@@ -9285,8 +9403,47 @@ class SimulationManager(Configurable):
         remotes = []
         for host_id in self.launcher.queue_host_ids: remotes.append(self.get_remote(host_id))
 
+        # Debugging
+        log.debug("Running the batch simulation launcher ...")
+
         # Run the launcher
         self.launcher.run(remotes=remotes, timing=self.timing, memory=self.memory)
+
+        # Set moved IDs
+        self.set_moved_simulation_ids()
+
+        # Set relaunched simulation IDs
+        self.set_relaunched_simulation_ids()
+
+        # Debugging
+        log.debug("Creating backup of assignment scheme ...")
+
+        # Backup assignment?
+        if self.config.backup_assignment: self.assignment.saveto(self.backup_assignment_path)
+
+        # Debugging
+        log.debug("Updating the assignment scheme ...")
+
+        # Change assignment
+        for simulation in self.launched_simulations: self.assignment.update_simulation(simulation)
+
+        # Set that the assignment has changed
+        self._adapted_assignment = True
+
+        # Reset status?
+        if self.has_moved or self.has_relaunched: self.reset_status()
+
+    # -----------------------------------------------------------------
+
+    def set_moved_simulation_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the new simulation IDs for the moved simulations ...")
 
         # Set moved IDs
         for simulation in self.moved_simulations:
@@ -9300,6 +9457,18 @@ class SimulationManager(Configurable):
             # Set the new ID of the moved simulation
             self.moved.set_new_id(simulation.name, simulation.id)
 
+    # -----------------------------------------------------------------
+
+    def set_relaunched_simulation_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the new simulation IDs for the relaunched simulations ...")
+
         # Set relaunched IDs
         for simulation in self.relaunched_simulations:
 
@@ -9311,18 +9480,6 @@ class SimulationManager(Configurable):
 
             # Set the new ID of the relaunched simulation
             self.relaunched.set_new_id(simulation.name, simulation.id)
-
-        # Backup assignment?
-        if self.config.backup_assignment: self.assignment.saveto(self.backup_assignment_path)
-
-        # Change assignment
-        for simulation in self.launched_simulations: self.assignment.update_simulation(simulation)
-
-        # Set that the assignment has changed
-        self._adapted_assignment = True
-
-        # Reset status?
-        if self.has_moved or self.has_relaunched: self.reset_status()
 
     # -----------------------------------------------------------------
 
@@ -11151,11 +11308,11 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     def show_status_command(self, command):
-        
+
         """
         This function ...
-        :param command: 
-        :return: 
+        :param command:
+        :return:
         """
 
         # Get the config
@@ -11163,7 +11320,7 @@ class SimulationManager(Configurable):
 
         # Show
         self.show_status(extra=config.extra_columns, path=config.path, refresh=config.refresh)
-        
+
     # -----------------------------------------------------------------
 
     def show_status(self, extra=None, path=None, refresh=False):
@@ -11698,8 +11855,8 @@ class SimulationManager(Configurable):
 
         """
         This function ...
-        :param host: 
-        :return: 
+        :param host:
+        :return:
         """
 
         # Loop over the parallelization schemes
@@ -12017,9 +12174,9 @@ class SimulationManager(Configurable):
 
         """
         This function ...
-        :param host: 
-        :param parallelization: 
-        :return: 
+        :param host:
+        :param parallelization:
+        :return:
         """
 
         # Debugging
@@ -12834,7 +12991,7 @@ class SimulationManager(Configurable):
         This function ...
         :param host:
         :param parallelization:
-        :return: 
+        :return:
         """
 
         # Get distribution

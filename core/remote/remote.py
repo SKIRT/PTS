@@ -3994,6 +3994,82 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def get_first_line_containing(self, path, string):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :return:
+        """
+
+        # Get the matching lines
+        lines = self.filter_lines(path, string, full=False)
+
+        # Return the first line
+        if len(lines) > 0: return lines[0]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_first_line_containing_memoize(self, path, string):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :return:
+        """
+
+        return self.get_first_line_containing(path, string)
+
+    # -----------------------------------------------------------------
+
+    def get_lines_between_first_and_last_occurence(self, path, string):
+
+        """
+        This function ...
+        :param path:
+        :param string:
+        :return:
+        """
+
+        # COMMANDS: WORKS!
+        # read first last <<< $(grep -n "/home/anersesi/SKIRT/run/2018-01-13--12-20-31-140924/M83.ski" screenlog.0 | awk -F: 'NR==1 {printf "%d ", $1}; END{print $1}')
+        # awk -v f=$first -v l=$last 'NR>=f && NR<=l' screenlog.0
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def get_lines_between(self, path, start, end):
+
+        """
+        This function ...
+        :param path:
+        :param start:
+        :param end:
+        :return:
+        """
+
+        # awk '/140924\/M83.ski/,/Finished simulation/' screenlog.0
+
+        # Check
+        if "'" in start: raise ValueError("Patterns cannot contain single quotes")
+        if "'" in end: raise ValueError("Patterns cannot contain single quotes")
+
+        # Set command
+        command = "awk '/" + start.replace("/", "\/") + "/,/" + end.replace("/", "\/") + "/' " + path
+
+        # Get the output
+        output = self.execute(command)
+
+        # Return the output
+        return output
+
+    # -----------------------------------------------------------------
+
     def get_noccurences(self, path, string):
 
         """

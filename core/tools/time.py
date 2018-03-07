@@ -366,3 +366,16 @@ def pretty_lookback_time(time):
     return str(day_diff / 365) + " years ago"
 
 # -----------------------------------------------------------------
+
+def validate_format(string):
+
+    """
+    This function ...
+    :param date_text:
+    :return:
+    """
+
+    try: datetime.strptime(string, '%Y-%m-%d')
+    except ValueError: raise ValueError("Incorrect date format")
+
+# -----------------------------------------------------------------

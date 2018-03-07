@@ -66,7 +66,7 @@ definition.add_optional("extra", "string_list", "show extra info", choices=extra
 definition.add_flag("offline", "offline mode")
 definition.add_flag("lazy", "lazy mode")
 definition.add_flag("interactive", "interactive simulation management mode")
-definition.add_flag("find_simulations", "find missing simulations by searching on simulation name")
+definition.add_flag("find_simulations", "find missing simulations by searching on simulation name", True)
 definition.add_optional("find_remotes", "string_list", "find missing simulations in these remote hosts", default=all_host_ids, choices=all_host_ids)
 definition.add_flag("dry", "run in dry mode")
 definition.add_flag("write_status", "write the status", False)
