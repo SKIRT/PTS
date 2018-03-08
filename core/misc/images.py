@@ -897,10 +897,10 @@ class ObservedImageMaker(DatacubesMiscMaker):
         deployer.config.update_dependencies = self.config.update_dependencies
 
         # Do clean install
-        #deployer.config.clean = self.config.deploy_clean
+        deployer.config.clean = self.config.deploy_clean
 
         # Pubkey pass
-        #deployer.config.pubkey_password = self.config.pubkey_password
+        deployer.config.pubkey_password = self.config.pubkey_password
 
         # Run the deployer
         deployer.run()

@@ -346,6 +346,9 @@ class ObservedFluxCalculator(Configurable):
         # Update PTS dependencies
         deployer.config.update_dependencies = self.config.update_dependencies
 
+        # Do clean install
+        deployer.config.clean = self.config.deploy_clean
+
         # Password
         deployer.config.pubkey_password = self.config.pubkey_password
 

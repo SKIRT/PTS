@@ -45,6 +45,7 @@ definition.add_optional("images_nprocesses", "positive_integer", "number of para
 # Update PTS on the remote
 definition.add_flag("deploy_pts", "deply (install or update) PTS on the remote host", True)
 definition.add_flag("update_dependencies", "update PTS dependencies (use with care!)", False)
+definition.add_flag("deploy_clean", "perform a clean install", False)
 definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
 # -----------------------------------------------------------------
