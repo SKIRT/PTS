@@ -204,13 +204,13 @@ class Remote(object):
     This function ...
     """
 
-    def __init__(self, log_conda=False, host_id=None, silent=False):
+    def __init__(self, host_id=None, silent=False, log_conda=False):
 
         """
         The constructor ...
-        :param log_conda:
         :param host_id:
         :param silent:
+        :param log_conda:
         :return:
         """
 
@@ -1462,20 +1462,26 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def swap_cluster(self, cluster_name, check_modules=False):
+    def swap_cluster(self, cluster_name, check_modules=False, timeout=4):
 
         """
         This function ...
         :param cluster_name:
         :param check_modules:
+        :param timeout:
         :return:
         """
 
         # Check if not already the loaded cluster
-        if check_modules and "cluster/" + cluster_name in self.loaded_modules: return
+        if check_modules and "cluster/" + cluster_name in self.loaded_modules: return True
 
         # Swap to requested cluster
-        self.execute("module swap cluster/" + cluster_name)
+        try:
+            self.execute("module swap cluster/" + cluster_name, timeout=timeout)
+            return True
+        except TimeOutReached:
+            log.warning("Swapping to the '" + cluster_name + "' cluster failed: timeout reached")
+            return False
 
     # -----------------------------------------------------------------
 

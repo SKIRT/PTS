@@ -20,7 +20,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
-from pts.core.simulation.remote import SKIRTRemote
+from pts.core.remote.ensemble import SKIRTRemotesEnsemble
 from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager, extra_columns
@@ -129,25 +129,9 @@ if len(chi_squared) > 0:
 
 # -----------------------------------------------------------------
 
-remotes = dict()
-screen_states = dict()
-jobs_status = dict()
-
-# -----------------------------------------------------------------
-
-if not config.offline:
-
-    # Inform the user
-    log.info("Loading the remotes ...")
-
-    # Create the remote instances
-    for host_id in generation.host_ids: remotes[host_id] = SKIRTRemote(host_id=host_id)
-
-    # Get screen states
-    for host_id in remotes:
-
-        if remotes[host_id].scheduler: jobs_status[host_id] = remotes[host_id].get_jobs_status()
-        else: screen_states[host_id] = remotes[host_id].screen_states()
+# Create remotes ensemble
+if not config.offline: remotes = SKIRTRemotesEnsemble(generation.host_ids)
+else: remotes = None
 
 # -----------------------------------------------------------------
 
@@ -175,8 +159,8 @@ backup_path = fs.join(manage_current_path, "backup")
 # Get the status of the simulations
 status = generation.get_status(remotes, lazy=config.lazy, find_simulations=config.find_simulations,
                                find_remotes=config.find_remotes, produce_missing=config.produce_missing,
-                               retrieve=config.retrieve, analyse=config.analyse, screen_states=screen_states, jobs_status=jobs_status,
-                               check_paths=config.check_paths, fix_success=config.fix_success)
+                               retrieve=config.retrieve, analyse=config.analyse, check_paths=config.check_paths,
+                               fix_success=config.fix_success)
 
 # -----------------------------------------------------------------
 
@@ -245,6 +229,7 @@ if not (config.lazy or config.offline):
 
         remote_input_path = None
         remote = remotes[host_id]
+
         # Find remote input path
         # Loop over the simulations
         for simulation_name in generation.get_simulation_names_for_host(host_id):

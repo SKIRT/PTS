@@ -2751,25 +2751,24 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    def get_status(self, remotes, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
-                   retrieve=False, analyse=False, screen_states=None, jobs_status=None, check_paths=False, fix_success=True):
+    def get_status(self, remotes=None, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
+                   retrieve=False, analyse=False, check_paths=False, fix_success=True):
 
         """
         This function gets the status of the simulations
-        :param remotes:
+        :param remotes: must be a SKIRT remotes ensemble object, or None (with reduced functionality)
         :param lazy:
         :param find_simulations:
         :param find_remotes:
         :param produce_missing:
         :param retrieve:
         :param analyse:
-        :param screen_states:
-        :param jobs_status:
         :param check_paths:
         :param fix_success:
         :return:
         """
 
+        # Initialize a list for the status of the different simulations
         status_list = []
 
         # Initialize flag for when assignment scheme is changed
@@ -2779,6 +2778,7 @@ class Generation(object):
         for simulation_name in self.simulation_names:
 
             load_simulation = True
+
             if lazy: load_simulation = False
             elif not self.has_simulation(simulation_name):
 
@@ -2797,7 +2797,6 @@ class Generation(object):
 
                     # Give warning
                     log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")
-                    # host_id, simulation_id = find_simulation(simulation_name, config.find_remotes)
                     simulation = find_simulation(simulation_name, find_remotes)
 
                     # Simulation is not found
@@ -2820,7 +2819,8 @@ class Generation(object):
                             simulation = produce_simulation_from_other(other_simulation, simulation_name, simulation_id, cluster_name)
 
                             # Check simulation paths
-                            check_simulation_paths(simulation, remote=remotes[host_id], other_remote_input_path=other_remote_input_path)
+                            if remotes is None or host_id not in remotes: log.warning("Cannot check the simulation paths: remote is not passed")
+                            else: check_simulation_paths(simulation, remote=remotes[host_id], other_remote_input_path=other_remote_input_path)
 
                             # Save the simulation
                             simulation.save()
@@ -2857,7 +2857,9 @@ class Generation(object):
                 simulation_id = simulation.id
 
                 # Check paths
-                if check_paths: check_simulation_paths(simulation, remote=remotes[host_id])
+                if check_paths:
+                    if remotes is None or host_id not in remotes: log.warning("Cannot check paths if remote is not passed")
+                    else: check_simulation_paths(simulation, remote=remotes[host_id])
 
             # Don't load the simulation
             else:
@@ -2921,15 +2923,16 @@ class Generation(object):
                 elif simulation.finished: simulation_status = finished_name
 
                 # Not retrieved
-                else:
+                elif remotes is not None:
 
                     # Not yet retrieved, what is the status?
-                    screen_states_host = screen_states[host_id] if screen_states is not None and host_id in screen_states else None
-                    jobs_status_host = jobs_status[host_id] if jobs_status is not None and host_id in jobs_status else None
-                    if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation,
-                                                                                   screen_states=screen_states_host,
-                                                                                   jobs_status=jobs_status_host)
+                    screen_states_host = remotes.screens[host_id]
+                    jobs_status_host = remotes.jobs[host_id]
+                    if host_id in remotes: simulation_status = remotes[host_id].get_simulation_status(simulation, screen_states=screen_states_host, jobs_status=jobs_status_host)
                     else: simulation_status = "unknown"
+
+                # Unknown
+                else: simulation_status = "unknown"
 
                 # Check success flag in assignment
                 if fix_success and not self.assignment_table.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
@@ -2938,8 +2941,10 @@ class Generation(object):
 
                 # Retrieve finished simulations?
                 if simulation_status == finished_name and retrieve:
-                    remotes[host_id].retrieve_simulation(simulation)
-                    simulation_status = "retrieved"
+                    if remotes is None or host_id not in remotes: log.warning("Cannot retrieve simulations if remotes are not passed")
+                    else:
+                        remotes[host_id].retrieve_simulation(simulation)
+                        simulation_status = "retrieved"
 
             # Add the status
             status_list.append(simulation_status)
