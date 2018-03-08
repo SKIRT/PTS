@@ -16,7 +16,7 @@ definition = ConfigurationDefinition(write_config=False)
 definition.add_flag("plot", "do plotting", False)
 
 definition.add_optional("fwhm", "positive_real", "FWHM in pixels", 5.)
-definition.add_optional("shape", "integer_tuple", "shape", (300, 500))
+definition.add_optional("shape", "integer_pair", "shape", (300, 500))
 
 definition.add_optional("nsources", "positive_integer", "number of sources", 100)
 definition.add_optional("flux_range", "real_range", "range of flux of sources", "500>1000", convert_default=True)

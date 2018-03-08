@@ -1469,6 +1469,9 @@ class BasicAnalyser(Configurable):
         # Loop over the filter names
         for filter_name in self.misc_options.fluxes_from_images_masks:
 
+            # Debugging
+            log.debug("Loading mask for '" + filter_name + "' filter ...")
+
             # Get filter
             fltr = parse_filter(filter_name)
 

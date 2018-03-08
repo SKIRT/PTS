@@ -25,7 +25,7 @@ definition.add_flag("group", "group timelines for the same number of processes i
 
 # Plot
 definition.add_optional("label_fontsize", "positive_integer", "fontsize for the axes labels", default=18)
-definition.add_optional("figsize", "integer_tuple", "size of the figure", default=(12,8))
+definition.add_optional("figsize", "integer_pair", "size of the figure", default=(12,8))
 definition.add_flag("percentages", "show percentages")
 definition.add_flag("totals", "show totals")
 definition.add_optional("title", "string", "plot title")

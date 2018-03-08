@@ -1684,3 +1684,29 @@ def fwhm(values, probabilities):
     return max_value_fwhm - min_value_fwhm
 
 # -----------------------------------------------------------------
+
+def same_sign(number_a, number_b):
+
+    """
+    This function ...
+    :param number_a:
+    :param number_b:
+    :return:
+    """
+
+    return np.sign(number_a) == np.sign(number_b)
+
+# -----------------------------------------------------------------
+
+def different_sign(number_a, number_b):
+
+    """
+    This function ...
+    :param number_a:
+    :param number_b:
+    :return:
+    """
+
+    return np.sign(number_a) != np.sign(number_b)
+
+# -----------------------------------------------------------------

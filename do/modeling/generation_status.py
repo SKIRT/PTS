@@ -21,7 +21,6 @@ from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
 from pts.core.remote.ensemble import SKIRTRemotesEnsemble
-from pts.core.basics.log import log
 from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager, extra_columns
 from pts.core.tools import filesystem as fs
@@ -48,7 +47,7 @@ if runs.empty: raise RuntimeError("No fitting runs are present")
 elif runs.has_single: definition.add_fixed("name", "name of the fitting run", runs.single_name)
 else: definition.add_required("name", "string", "name of the fitting run", choices=runs.names)
 
-# Generations to remove
+# Generation name
 definition.add_required("generation", "string", "generation name")
 
 # Plotting

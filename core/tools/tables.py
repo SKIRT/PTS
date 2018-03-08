@@ -14,12 +14,15 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict
 
 # Import astronomical modules
 from astropy.table import Table, Column
 
 # Import the relevant PTS classes and modules
 from . import arrays
+from . import types
+from . import numbers
 
 # -----------------------------------------------------------------
 
@@ -35,10 +38,11 @@ def find_index(table, key, column_name=None, where=None):
     """
 
     # If multiple keys are passed
-    if isinstance(key, list):
+    if types.is_sequence(key):
 
+        # Checks
         if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
-        if not isinstance(column_name, list): raise ValueError("If key(s) is a list, column_name(s) must also be a list")
+        if not types.is_sequence(column_name): raise ValueError("If key(s) is a list, column_name(s) must also be a list")
 
         # Loop over all entries in the table
         for i in range(len(table)):
@@ -108,8 +112,10 @@ def find_indices(table, key, column_name=None):
     :return:
     """
 
-    if isinstance(key, list):
+    # Sequence
+    if types.is_sequence(key):
 
+        # Checks
         if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
         if not isinstance(column_name, list): raise ValueError("If key(s) is a list, column_name(s) must also be a list")
 
@@ -130,7 +136,7 @@ def find_indices(table, key, column_name=None):
 
         return indices
 
-    #elif isinstance(key, basestring):
+    # Single key
     else:
 
         # Get first column name is none is given
@@ -145,7 +151,93 @@ def find_indices(table, key, column_name=None):
 
         return indices
 
-    #else: raise ValueError("Invalid key: must be a list (of strings) or a string")
+# -----------------------------------------------------------------
+
+def find_closest_indices(table, key, column_name=None, nindices=5, rel_or_abs="rel", quadratic=True):
+
+    """
+    This function ...
+    :param table:
+    :param key:
+    :param column_name:
+    :param nindices:
+    :param rel_or_abs:
+    :param quadratic:
+    :return:
+    """
+
+    # Keep the differences
+    diffs = []
+
+    # If multiple keys are passed
+    if types.is_sequence(key):
+
+        # Checks
+        if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
+        if not types.is_sequence(column_name): raise ValueError("If key(s) is a list, column_name(s) must also be a list")
+
+        # Set rel or abs dict
+        if types.is_dictionary(rel_or_abs): relabs = rel_or_abs
+        elif types.is_sequence(rel_or_abs) or types.is_tuple(rel_or_abs):
+            relabs = dict()
+            for k, ra in zip(key, rel_or_abs): relabs[k] = ra
+        elif types.is_string_type(rel_or_abs):
+            relabs = dict()
+            for k in key: relabs[k] = rel_or_abs
+        else: raise ValueError("Invalid value for 'rel_or_abs'")
+
+        # Loop over all entries in the table
+        for i in range(len(table)):
+
+            diff_keys = []
+
+            # Loop over the columns and reference value
+            for k, c in zip(key, column_name):
+
+                value = table[c][i]
+
+                # Calculate the difference
+                if relabs[k] == "abs": diff = abs(value - k)
+                elif relabs[k] == "rel":
+                    if numbers.different_sign(value, k): diff = float("inf")
+                    else: diff = np.exp(abs(np.log(value/k)))
+                else: raise ValueError("Invalid option: '" + relabs[k] + "'")
+
+                # Add the difference
+                diff_keys.append(diff)
+
+            # Calculate difference
+            if quadratic: diff = np.sqrt(np.sum(np.power(diff_keys, 2)))
+            else: diff = sum(diff_keys)
+
+            # Add difference for this entry
+            diffs.append(diff)
+
+    # Single key
+    else:
+
+        # Get first column name is none is given
+        if column_name is None: column_name = table.colnames[0]
+
+        # Loop over all entries in the table
+        for i in range(len(table)):
+
+            # Get the value
+            value = table[column_name][i]
+
+            # Calculate the difference
+            if rel_or_abs == "abs": diff = abs(value - key)
+            elif rel_or_abs == "rel":
+                if numbers.different_sign(value, key): diff = float("inf")
+                else: diff = np.exp(abs(np.log(value/key)))
+            else: raise ValueError("Invalid option: '" + rel_or_abs + "'")
+
+            # Add the difference
+            diffs.append(diff)
+
+    # Return the indices
+    indices = np.argsort(diffs)
+    return indices[:nindices]
 
 # -----------------------------------------------------------------
 
@@ -159,14 +251,27 @@ def find_one_index(table, key, column_name=None):
     :return:
     """
 
-    #print(table)
-    #print(key)
-    #print(column_name)
-
     indices = find_indices(table, key, column_name=column_name)
     if len(indices) == 0: raise ValueError("Not found")
     elif len(indices) > 1: raise ValueError("Multiple matches found")
     else: return indices[0]
+
+# -----------------------------------------------------------------
+
+def find_closest_index(table, key, column_name=None, rel_or_abs="rel"):
+
+    """
+    This function ...
+    :param table:
+    :param key:
+    :param column_name:
+    :param rel_or_abs:
+    :return:
+    """
+
+    indices = find_closest_indices(table, key, column_name=column_name, rel_or_abs=rel_or_abs)
+    if len(indices) == 0: raise ValueError("Not found")
+    else: return indices[0] # return closest
 
 # -----------------------------------------------------------------
 

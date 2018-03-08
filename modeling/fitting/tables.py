@@ -1012,6 +1012,33 @@ class ParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of row corresponding with the simulation
+        index = tables.find_index(self, simulation_name, "Simulation name")
+        if index is None: raise ValueError("Simulation not found in the table")
+        return index
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Simulation name", index)
+
+    # -----------------------------------------------------------------
+
     def parameter_values_for_simulation(self, simulation_name):
 
         """
@@ -1020,29 +1047,33 @@ class ParametersTable(SmartTable):
         :return:
         """
 
-        values = dict()
+        # Get index
+        index = self.index_for_simulation(simulation_name)
 
-        # Find index of row corresponding with the simulation
-        index = tables.find_index(self, simulation_name, "Simulation name")
-        if index is None: raise ValueError("Simulation not found in the table")
-
-        for name in self.colnames:
-            #print(self[name], type(self[name]))
-            #print(self[name][index], type(self[name][index]))
-            if name == "Simulation name": continue
-            if self.column_unit(name) is None: values[name] = self[name][index]
-            else: values[name] = self[name][index] * self.column_unit(name)
-
-        # Return the values
-        return values
+        # Return the parameter values
+        return self.get_parameter_values(index)
 
     # -----------------------------------------------------------------
 
-    def simulation_for_parameter_values(self, values):
+    def get_parameter_values(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Return the parameter values
+        return self.get_values(self.parameter_labels, index, as_dict=True)
+
+    # -----------------------------------------------------------------
+
+    def simulation_for_parameter_values(self, values, return_index=False):
 
         """
         This function ...
         :param values:
+        :param return_index:
         :return:
         """
 
@@ -1054,7 +1085,53 @@ class ParametersTable(SmartTable):
         index = tables.find_one_index(self, scalar_values, labels)
 
         # Return the simulation name
-        return self["Simulation name"][index]
+        if return_index: return index
+        else: return self.get_simulation_name(index)
+
+    # -----------------------------------------------------------------
+
+    def closest_simulation_for_parameter_values(self, values, return_index=False):
+
+        """
+        This function ...
+        :param values:
+        :param return_index:
+        :return:
+        """
+
+        # Get list of values and list of parameter labels
+        labels = values.keys()
+        scalar_values = [values[label].to(self.column_unit(label)).value for label in values]
+
+        # Find closest index of the simulation
+        index = tables.find_closest_index(self, scalar_values, labels, rel_or_abs="rel")
+
+        # Return the simulation name
+        if return_index: return index
+        else: return self.get_simulation_name(index)
+
+    # -----------------------------------------------------------------
+
+    def closest_simulations_for_parameter_values(self, values, nsimulations=2, return_indices=False):
+
+        """
+        This function ...
+        :param values:
+        :param nsimulations:
+        :param return_indices:
+        :return:
+        """
+
+        # Get list of values and list of parameter labels
+        labels = values.keys()
+        scalar_values = [values[label].to(self.column_unit(label)).value for label in values]
+
+        # Find closest indices
+        indices = tables.find_closest_indices(self, scalar_values, labels, nindices=nsimulations, rel_or_abs="rel")
+
+        # Return
+        if return_indices: return indices
+        else: return [self.get_simulation_name(index) for index in indices]
 
     # -----------------------------------------------------------------
 

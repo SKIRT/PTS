@@ -177,7 +177,7 @@ _simulation_command_name = "simulation"
 # Define commands
 commands = OrderedDict()
 commands[_help_command_name] = ("show_help", False, "show help", None)
-commands[_history_command_name] = ("show_history", False, "show history of executed commands", None)
+commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
 commands[_status_command_name] = ("show_status_command", True, "show simulations status", None)
 commands[_find_command_name] = ("find_simulations_command", True, "find particular simulation(s) based on info or other parameters", None)
 commands[_hosts_command_name] = ("show_hosts_command", True, "show remote hosts of the simulations", "hosts")
@@ -4297,21 +4297,68 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_history(self, **kwargs):
+    @lazyproperty
+    def show_history_definition(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_flag("all", "show all of the history (also from previous sessions)", False)
+        definition.add_optional("path", "string", "write the history to a file")
+        return definition
+        
+    # -----------------------------------------------------------------
+
+    def show_history_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
         :param kwargs:
+        :return:
+        """
+
+        # Parse command
+        config = self.get_config_from_command(command, self.show_history_definition)
+
+        # Show history
+        self.show_history(all=config.all, path=config.path)
+
+    # -----------------------------------------------------------------
+
+    def show_history(self, all=False, path=None):
+
+        """
+        This function ...
+        :param all:
+        :param path:
         :return:
         """
 
         # Inform the user
         log.info("Showing history of commands ...")
 
+        # Lines to write
+        lines = []
+
+        # Show all history?
+        if all:
+            print("")
+            for command in self.history:
+                print(command)
+                lines.append(command)
+
         print("")
         for command in self.commands:
             print(command)
+            lines.append(command)
         print("")
+
+        # Write to file
+        if path is not None: fs.write_lines(path, lines)
 
     # -----------------------------------------------------------------
 
@@ -9738,14 +9785,10 @@ class SimulationManager(Configurable):
 
             # Find remote input path
             # Loop over the simulations
-            #for simulation_name in generation.get_simulation_names_for_host(host_id):
             for simulation_name in self.get_simulation_names_for_host_id(host_id):
 
                 # Get the simulation
                 simulation = self.get_simulation(simulation_name)
-
-                #if not generation.has_simulation(simulation_name): continue
-                #simulation = generation.get_simulation(simulation_name)
                 if simulation.remote_input_path is None: continue
 
                 # Check remote input path
@@ -12741,6 +12784,43 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def history_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        return fs.join(introspection.pts_user_manager_dir, "history.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.get_lines(self.history_path) if self.has_history else []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.history_path)
+
+    # -----------------------------------------------------------------
+
     def write_history(self):
 
         """
@@ -12750,12 +12830,9 @@ class SimulationManager(Configurable):
 
         # Inform the user
         log.info("Writing the history ...")
-        
-        # Determine the path
-        path = fs.join(introspection.pts_user_manager_dir, "history.dat")
 
         # Write
-        fs.add_lines(path, self.commands, create=True)
+        fs.add_lines(self.history_path, self.commands, create=True)
 
     # -----------------------------------------------------------------
 

@@ -609,9 +609,9 @@ def real_range(argument):
     :return:
     """
 
-    from ..basics.range import IntegerRange, RealRange, QuantityRange
+    from ..basics.range import RealRange
 
-    min_value, max_value = real_tuple(argument.replace(">", ","))
+    min_value, max_value = real_pair(argument.replace(">", ","))
     return RealRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -624,9 +624,9 @@ def integer_range(argument):
     :return:
     """
 
-    from ..basics.range import IntegerRange, RealRange, QuantityRange
+    from ..basics.range import IntegerRange
 
-    min_value, max_value = integer_tuple(argument.replace(">", ","))
+    min_value, max_value = integer_pair(argument.replace(">", ","))
     return IntegerRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -640,7 +640,7 @@ def quantity_range(argument):
     """
 
     from ..basics.range import QuantityRange
-    min_quantity, max_quantity = quantity_tuple(argument.replace(">", ","))
+    min_quantity, max_quantity = quantity_pair(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -654,7 +654,7 @@ def photometric_quantity_range(argument):
     """
 
     from ..basics.range import QuantityRange
-    min_quantity, max_quantity = photometric_quantity_tuple(argument.replace(">", ","))
+    min_quantity, max_quantity = photometric_quantity_pair(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -668,7 +668,7 @@ def photometric_density_quantity_range(argument):
     """
 
     from ..basics.range import QuantityRange
-    min_quantity, max_quantity = photometric_density_quantity_tuple(argument.replace(">", ","))
+    min_quantity, max_quantity = photometric_density_quantity_pair(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -682,7 +682,7 @@ def length_quantity_range(argument):
     """
 
     from ..basics.range import QuantityRange
-    min_quantity, max_quantity = length_quantity_tuple(argument.replace(">", ","))
+    min_quantity, max_quantity = length_quantity_pair(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -785,7 +785,7 @@ def filepath_list(argument):
 
 # -----------------------------------------------------------------
 
-def string_tuple(argument):
+def string_pair(argument):
 
     """
     This function ...
@@ -796,11 +796,11 @@ def string_tuple(argument):
     try:
         a, b = argument.split(",")
         return a, b
-    except: raise ValueError("Tuple must be of format a,b")
+    except: raise ValueError("Pair must be of format a,b")
 
 # -----------------------------------------------------------------
 
-def integer_tuple(argument):
+def integer_pair(argument):
 
     """
     Tuple of integer values
@@ -811,11 +811,11 @@ def integer_tuple(argument):
     try:
         a, b = map(int, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a,b")
+    except: raise ValueError("Pair must be of format a,b")
 
 # -----------------------------------------------------------------
 
-def real_tuple(argument):
+def real_pair(argument):
 
     """
     Tuple of real (floating-point) values
@@ -826,11 +826,11 @@ def real_tuple(argument):
     try:
         a, b = map(float, argument.split(","))
         return a, b
-    except: raise ValueError("Tuple must be of format a,b")
+    except: raise ValueError("Pair must be of format a,b")
 
 # -----------------------------------------------------------------
 
-def real_or_real_tuple(argument):
+def real_or_real_pair(argument):
 
     """
     This function ...
@@ -839,11 +839,11 @@ def real_or_real_tuple(argument):
     """
 
     try: return real(argument)
-    except ValueError: return real_tuple(argument)
+    except ValueError: return real_pair(argument)
 
 # -----------------------------------------------------------------
 
-def quantity_tuple(argument):
+def quantity_pair(argument):
 
     """
     Tuple of (Astropy) quantities
@@ -854,11 +854,11 @@ def quantity_tuple(argument):
     try:
         a, b = map(quantity, argument.split(","))
         return a, b
-    except: raise ValueError("Tuple must be of format a unit_a, b unit_b")
+    except: raise ValueError("Pair must be of format a unit_a, b unit_b")
 
 # -----------------------------------------------------------------
 
-def quantity_or_quantity_tuple(argument):
+def quantity_or_quantity_pair(argument):
 
     """
     This function ...
@@ -867,11 +867,11 @@ def quantity_or_quantity_tuple(argument):
     """
 
     try: return quantity(argument)
-    except ValueError: return quantity_tuple(argument)
+    except ValueError: return quantity_pair(argument)
 
 # -----------------------------------------------------------------
 
-def angle_tuple(argument):
+def angle_pair(argument):
 
     """
     Tuple of angles
@@ -882,11 +882,11 @@ def angle_tuple(argument):
     try:
         a, b = map(angle, argument.split(","))
         return a, b
-    except: raise ValueError("Tuple must be of format a unit_a, b unit_b")
+    except: raise ValueError("Pair must be of format a unit_a, b unit_b")
 
 # -----------------------------------------------------------------
 
-def angle_or_angle_tuple(argument):
+def angle_or_angle_pair(argument):
 
     """
     Thisj function ...
@@ -895,7 +895,7 @@ def angle_or_angle_tuple(argument):
     """
 
     try: return angle(argument)
-    except ValueError: return angle_tuple(argument)
+    except ValueError: return angle_pair(argument)
 
 # -----------------------------------------------------------------
 
@@ -943,7 +943,7 @@ def descending_quantity_list(argument):
 
 # -----------------------------------------------------------------
 
-def mixed_tuple(argument):
+def mixed_pair(argument):
 
     """
     This function ...
@@ -1629,7 +1629,7 @@ def photometric_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def photometric_quantity_tuple(argument):
+def photometric_quantity_pair(argument):
 
     """
     This fucntion ...
@@ -1640,7 +1640,7 @@ def photometric_quantity_tuple(argument):
     try:
         a, b = map(photometric_quantity, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a photometric_unit_a, b photometric_unit_b")
+    except: raise ValueError("Pair must be of format a photometric_unit_a, b photometric_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1670,7 +1670,7 @@ def photometric_brightness_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def photometric_density_quantity_tuple(argument):
+def photometric_density_quantity_pair(argument):
 
     """
     This function ...
@@ -1758,7 +1758,7 @@ def length_quantity_list(argument):
 
 # -----------------------------------------------------------------
 
-def length_quantity_tuple(argument):
+def length_quantity_pair(argument):
 
     """
     This function ...
@@ -1773,7 +1773,7 @@ def length_quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
-def length_quantity_or_length_quantity_tuple(argument):
+def length_quantity_or_length_quantity_pair(argument):
 
     """
     This function ...
@@ -1782,7 +1782,7 @@ def length_quantity_or_length_quantity_tuple(argument):
     """
 
     try: return length_quantity(argument)
-    except ValueError: return length_quantity_tuple(argument)
+    except ValueError: return length_quantity_pair(argument)
 
 # -----------------------------------------------------------------
 
@@ -1801,7 +1801,7 @@ def temperature_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def temperature_quantity_tuple(argument):
+def temperature_quantity_pair(argument):
 
     """
     This fucntion ...
@@ -1812,7 +1812,7 @@ def temperature_quantity_tuple(argument):
     try:
         a, b = map(temperature_quantity, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a temperature_unit_a, temperature_unit_b")
+    except: raise ValueError("Pair must be of format a temperature_unit_a, temperature_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1831,7 +1831,7 @@ def mass_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def mass_quantity_tuple(argument):
+def mass_quantity_pair(argument):
 
     """
     This function ...
@@ -1842,7 +1842,7 @@ def mass_quantity_tuple(argument):
     try:
         a, b = map(mass_quantity, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a mass_unit_a, mass_unit_b")
+    except: raise ValueError("Pair must be of format a mass_unit_a, mass_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1855,7 +1855,7 @@ def mass_quantity_range(argument):
     """
 
     from ..basics.range import QuantityRange
-    min_quantity, max_quantity = mass_quantity_tuple(argument.replace(">", ","))
+    min_quantity, max_quantity = mass_quantity_pair(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -1890,7 +1890,7 @@ def mass_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def mass_density_quantity_tuple(argument):
+def mass_density_quantity_pair(argument):
 
     """
     This function ...
@@ -1901,7 +1901,7 @@ def mass_density_quantity_tuple(argument):
     try:
         a, b = map(mass_density_quantity, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a mass_density_unit_a, b mass_density_unit_b")
+    except: raise ValueError("Pair must be of format a mass_density_unit_a, b mass_density_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1925,7 +1925,7 @@ def mass_surface_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def mass_surface_density_quantity_tuple(argument):
+def mass_surface_density_quantity_pair(argument):
 
     """
     This function ...
@@ -1936,7 +1936,7 @@ def mass_surface_density_quantity_tuple(argument):
     try:
         a, b = map(mass_surface_density_quantity, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a mass_surface_density_unit_a, b mass_surface_density_unit_b")
+    except: raise ValueError("Pair must be of format a mass_surface_density_unit_a, b mass_surface_density_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -1955,7 +1955,7 @@ def data_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def data_quantity_tuple(argument):
+def data_quantity_pair(argument):
 
     """
     This function ...
@@ -1966,7 +1966,7 @@ def data_quantity_tuple(argument):
     try:
         a, b = map(data_quantity, argument.split(','))
         return a, b
-    except: raise ValueError("Tuple must be of format a data_unit_a, b data_unit_b")
+    except: raise ValueError("Pair must be of format a data_unit_a, b data_unit_b")
 
 # -----------------------------------------------------------------
 
@@ -2009,7 +2009,7 @@ def errorbar(argument):
     from ..basics.errorbar import ErrorBar
 
     upper = None
-    if ">" in argument: lower, upper = quantity_tuple(argument.replace(">", ","))
+    if ">" in argument: lower, upper = quantity_pair(argument.replace(">", ","))
     else: lower = quantity(argument)
 
     # Create error bar
@@ -2028,7 +2028,7 @@ def photometric_errorbar(argument):
     from ..basics.errorbar import ErrorBar
 
     upper = None
-    if ">" in argument: lower, upper = photometric_quantity_tuple(argument)
+    if ">" in argument: lower, upper = photometric_quantity_pair(argument)
     else: lower = photometric_quantity(argument)
 
     # Create error bar
@@ -2339,7 +2339,7 @@ def pixelcoordinate(argument):
     """
 
     from ...magic.basics.coordinate import PixelCoordinate
-    x, y = real_tuple(argument)
+    x, y = real_pair(argument)
     return PixelCoordinate(x, y)
 
 # -----------------------------------------------------------------
@@ -2353,7 +2353,7 @@ def skycoordinate(argument):
     """
 
     from ...magic.basics.coordinate import SkyCoordinate
-    ra, dec = quantity_tuple(argument)
+    ra, dec = quantity_pair(argument)
     return SkyCoordinate(ra=ra, dec=dec)
 
 # -----------------------------------------------------------------
@@ -2367,7 +2367,7 @@ def physicalcoordinate(argument):
     """
 
     from ...magic.basics.coordinate import PhysicalCoordinate
-    x, y = quantity_tuple(argument)
+    x, y = quantity_pair(argument)
     return PhysicalCoordinate(x, y)
 
 # -----------------------------------------------------------------
@@ -2494,7 +2494,7 @@ def pixel_shape(argument):
     """
 
     from ...magic.basics.vector import PixelShape
-    shape = integer_tuple(argument)
+    shape = integer_pair(argument)
     return PixelShape.from_xy_tuple(shape)
 
 # -----------------------------------------------------------------
@@ -2508,7 +2508,7 @@ def pixelscale(argument):
     """
 
     from ...magic.basics.pixelscale import Pixelscale
-    result = angle_or_angle_tuple(argument)
+    result = angle_or_angle_pair(argument)
 
     if types.is_tuple(result): return Pixelscale(result[0], result[1])
     else: return Pixelscale(result)
@@ -2524,7 +2524,7 @@ def physical_pixelscale(argument):
     """
 
     from ...magic.basics.pixelscale import PhysicalPixelscale
-    result = length_quantity_or_length_quantity_tuple(argument)
+    result = length_quantity_or_length_quantity_pair(argument)
 
     if types.is_tuple(result): return PhysicalPixelscale(result[0], result[1])
     else: return PhysicalPixelscale(result)
@@ -2564,7 +2564,7 @@ def integer_extent(argument):
     :return:
     """
 
-    x, y = integer_tuple(argument)
+    x, y = integer_pair(argument)
     from ...magic.basics.vector import IntegerExtent
     return IntegerExtent(x, y)
 
@@ -2578,7 +2578,7 @@ def real_extent(argument):
     :return:
     """
 
-    x, y = real_tuple(argument)
+    x, y = real_pair(argument)
     from ...magic.basics.vector import RealExtent
     return RealExtent(x, y)
 
@@ -2592,7 +2592,7 @@ def angle_extent(argument):
     :return:
     """
 
-    x, y = angle_tuple(argument)
+    x, y = angle_pair(argument)
     from ...magic.basics.vector import AngleExtent
     return AngleExtent(x, y)
 
@@ -2606,7 +2606,7 @@ def quantity_extent(argument):
     :return:
     """
 
-    x, y = quantity_tuple(argument)
+    x, y = quantity_pair(argument)
     from ...magic.basics.vector import QuantityExtent
     return QuantityExtent(x, y)
 
@@ -2620,7 +2620,7 @@ def sky_extent(argument):
     :return:
     """
 
-    x, y = angle_tuple(argument)
+    x, y = angle_pair(argument)
     from ...magic.basics.stretch import SkyExtent
     return SkyExtent(x, y)
 
@@ -2634,7 +2634,7 @@ def physical_extent(argument):
     :return:
     """
 
-    x, y = length_quantity_tuple(argument)
+    x, y = length_quantity_pair(argument)
     from ...magic.basics.stretch import PhysicalExtent
     return PhysicalExtent(x, y)
 
@@ -2649,7 +2649,7 @@ def pixelshape(argument):
     """
 
     from ...magic.basics.vector import PixelShape
-    x, y = integer_tuple(argument)
+    x, y = integer_pair(argument)
     return PixelShape(x=x, y=y)
 
 # -----------------------------------------------------------------
@@ -2677,7 +2677,7 @@ def username_password(argument):
     """
 
     from ..basics.map import Map
-    username, password = string_tuple(argument)
+    username, password = string_pair(argument)
     credentials = Map()
     credentials.username = username
     credentials.password = password
@@ -2718,6 +2718,6 @@ def string_replacement(argument):
     :return:
     """
 
-    return string_tuple(argument.replace(":", ","))
+    return string_pair(argument.replace(":", ","))
 
 # -----------------------------------------------------------------

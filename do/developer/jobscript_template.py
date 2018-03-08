@@ -36,7 +36,7 @@ definition.add_optional("input", "string", "input directory for the simulation(s
 definition.add_optional("output", "string", "output directory for the simulation(s)", "~/SKIRT/run", letter="o", convert_default=True)
 
 definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
-definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p", default=(8,4))
+definition.add_optional("parallel", "integer_pair", "the parallelization scheme (processes, threads)", letter="p", default=(8,4))
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme", "12:00:00", convert_default=True)
 definition.add_flag("data_parallel", "enable data parallelization", None)
 

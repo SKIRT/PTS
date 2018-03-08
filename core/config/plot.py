@@ -14,7 +14,6 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add options
-#definition.add_optional("figsize", "integer_tuple", "figure size", default=(10,6))
 definition.add_optional("xsize", "integer", "figure x size", 10)
 definition.add_optional("ysize", "integer", "figure y size", 6)
 definition.add_optional("main_relsize", "percentage", "main panel relative size (wrt. x or y size)", "80", convert_default=True)

@@ -1545,6 +1545,7 @@ class SmartTable(Table):
         :return:
         """
 
+        # Get raw, scalar value
         value = self[colname][index]
 
         if self[colname].mask[index]: value = None
@@ -1552,6 +1553,29 @@ class SmartTable(Table):
 
         # Return the value
         return value
+
+    # -----------------------------------------------------------------
+
+    def get_values(self, colnames, index, add_unit=True, as_dict=False):
+
+        """
+        This function ...
+        :param colnames:
+        :param index:
+        :param add_unit:
+        :param as_dict:
+        :return:
+        """
+
+        # Initialize dictionary
+        values = OrderedDict()
+
+        # Loop over the columns
+        for name in colnames: values[name] = self.get_value(name, index, add_unit=add_unit)
+
+        # Return the values
+        if as_dict: return values
+        else: return values.values()
 
     # -----------------------------------------------------------------
 
