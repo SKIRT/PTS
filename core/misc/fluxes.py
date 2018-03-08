@@ -338,7 +338,7 @@ class ObservedFluxCalculator(Configurable):
         deployer.config.pts = True
 
         # Set the host ids
-        deployer.config.host_ids = [self.host_id]
+        deployer.config.hosts = [self.remote.host]
 
         # Check versions between local and remote
         deployer.config.check = self.config.check_versions

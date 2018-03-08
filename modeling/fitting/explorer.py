@@ -488,7 +488,7 @@ class ParameterExplorer(FittingComponent):
         deployer.config.local = False
 
         # Set the host ids
-        deployer.config.host_ids = self.remote_host_ids
+        deployer.config.hosts = self.remote_host_ids
 
         # Check versions between local and remote
         deployer.config.check = self.config.check_versions
@@ -526,6 +526,18 @@ class ParameterExplorer(FittingComponent):
 
         # Return the host IDs
         return remote_host_ids
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [load_host(host_id) for host_id in self.remote_host_ids]
 
     # -----------------------------------------------------------------
 

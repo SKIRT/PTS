@@ -8,9 +8,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import inspect
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.units.parsing import parse_unit as u
@@ -21,7 +18,6 @@ from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.modeling.basics.instruments import FullInstrument
 from pts.core.filter.filter import parse_filter
 from pts.core.remote.moderator import PlatformModerator
-from pts.core.simulation.memory import MemoryRequirement
 from pts.core.prep.deploy import Deployer
 from pts.core.launch.options import AnalysisOptions
 from pts.modeling.tests.base import M81TestBase, m81_data_path, fitting_filter_names, instrument_name
@@ -29,6 +25,7 @@ from pts.modeling.tests.base import seds_path, dustpedia_sed_path
 from pts.core.data.sed import ObservedSED
 from pts.core.tools import sequences
 from pts.modeling.core.environment import GalaxyModelingEnvironment
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -179,6 +176,19 @@ class M81Test(M81TestBase):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from pts.core.remote.host import load_host
+        return load_host(self.host_id)
+
+    # -----------------------------------------------------------------
+
     def deploy(self):
 
         """
@@ -193,7 +203,7 @@ class M81Test(M81TestBase):
         deployer = Deployer()
 
         # Set the host ids
-        deployer.config.host_ids = [self.host_id]
+        deployer.config.hosts = [self.host]
 
         # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
         # that have a scheduling system to launch the pts run_queue command)

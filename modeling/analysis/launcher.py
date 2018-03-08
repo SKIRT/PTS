@@ -31,6 +31,7 @@ from ...core.simulation.output import output_types as ot
 from ..misc.interface import earth_name
 from ...core.remote.remote import Remote
 from ...core.prep.deploy import Deployer
+from ...core.remote.host import load_host
 
 # -----------------------------------------------------------------
 
@@ -798,7 +799,7 @@ class AnalysisLauncher(AnalysisLauncherBase):
         deployer.config.local = False
 
         # Set the host ids
-        deployer.config.host_ids = self.all_host_ids
+        deployer.config.hosts = self.all_hosts
 
         # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
         # that have a scheduling system to launch the pts run_queue command)
@@ -833,6 +834,18 @@ class AnalysisLauncher(AnalysisLauncherBase):
         if self.images_host_id is not None: host_ids.append(self.images_host_id)
         if self.host_id is not None: host_ids.append(self.host_id)
         return host_ids
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [load_host(host_id) for host_id in self.all_host_ids]
 
     # -----------------------------------------------------------------
 

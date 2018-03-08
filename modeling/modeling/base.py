@@ -642,7 +642,7 @@ class ModelerBase(Configurable):
         deployer = Deployer()
 
         # Set the host ids
-        deployer.config.host_ids = self.moderator.all_host_ids
+        deployer.config.hosts = self.moderator.all_hosts
 
         # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
         # that have a scheduling system to launch the pts run_queue command)

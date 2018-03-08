@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .remote import is_available
 from ..basics.log import log
 from .host import load_host
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -247,6 +248,18 @@ class PlatformModerator(object):
 
         # Return the list of host IDs
         return list(host_ids)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [load_host(host_id) for host_id in self.all_host_ids]
 
     # -----------------------------------------------------------------
 
