@@ -18,7 +18,7 @@ from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help, prompt_choice
+from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help, prompt_choice, prompt_settings
 from ..basics.log import log
 from ..tools.stringify import tostr
 from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
@@ -3442,16 +3442,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def retrieve_simulation_command(self, command):
+    def retrieve_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get the simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Retrieve
         self.retrieve_simulation(simulation_name)
@@ -3957,37 +3958,80 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def _run_command(self, command, cmds, main_command=None):
+    def _run_command(self, command, cmds):
 
         """
         This function ...
         :param command:
         :param cmds:
-        :param main_command:
         :return:
         """
 
-        # Set first word
+        # Get first word
         first = command.split(" ")[0]
+
+        # Check whether interactive
+        if first.startswith("*"):
+            interactive = True
+            command = command[1:]
+            first = first[1:]
+        else: interactive = False
 
         # Find key
         if first not in cmds: raise InvalidCommandError("Invalid command: '" + first + "'", command)
         key = first
 
         # Has subcommands
-        if self.has_subcommands(key):
+        if self.has_subcommands(key): self._run_subcommand(command)
 
-            # Get the possible subcommands
-            subcommands = self.get_subcommands(key)
+        # Regular command
+        else: self._run_command_impl(command, cmds, interactive=interactive)
 
-            # Get command without main command
-            subcommand = strings.split_at_first(command, key)[1].strip()
+    # -----------------------------------------------------------------
 
-            # No subcommand?
-            if not strings.startswith_any(subcommand, subcommands):
+    def _run_subcommand(self, command, interactive=False):
 
-                # Show help for the main command
-                if "-h" in subcommand or "--help" in subcommand:
+        """
+        This function ...
+        :param command:
+        :param interactive:
+        :return:
+        """
+
+        # Get first word == key
+        key = command.split(" ")[0]
+
+        # Get the possible subcommands
+        subcommands = self.get_subcommands(key)
+
+        # Get command without main command
+        subcommand = strings.split_at_first(command, key)[1].strip()
+
+        # No subcommand?
+        if not strings.startswith_any(subcommand, subcommands):
+
+            # Show help for the main command
+            if "-h" in subcommand or "--help" in subcommand:
+
+                # Set subcommands with descriptions
+                subcommands_descriptions = OrderedDict()
+                for subkey in subcommands:
+                    function_name, pass_command, description, subject = subcommands[subkey]
+                    subcommands_descriptions[subkey] = description
+
+                # Create definition for the subcommands
+                definition = ConfigurationDefinition(write_config=False)
+                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                help = get_help(key, definition, add_logging=False, add_cwd=False)
+
+                # Show help
+                for line in help: print(fmt.red + line + fmt.reset)
+
+            # Nothing more than the main command is given as input
+            elif subcommand == "":
+
+                # Interactive mode: prompt between the different subcommands
+                if interactive:
 
                     # Set subcommands with descriptions
                     subcommands_descriptions = OrderedDict()
@@ -3995,46 +4039,60 @@ class SimulationManager(Configurable):
                         function_name, pass_command, description, subject = subcommands[subkey]
                         subcommands_descriptions[subkey] = description
 
-                    # Create definition for the subcommands
-                    definition = ConfigurationDefinition(write_config=False)
-                    definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
-                    help = get_help(key, definition, add_logging=False, add_cwd=False)
+                    # Prompt for the subcommand
+                    subcommand = prompt_string("subcommand", "subcommand", choices=subcommands_descriptions)
 
-                    # Show help
-                    for line in help: print(fmt.red + line + fmt.reset)
+                    # Run the subcommand in interactive mode
+                    self._run_command_impl(subcommand, subcommands, main_command=key, interactive=True)
 
-                # Invalid command
-                else: raise InvalidCommandError("Invalid command: '" + subcommand + "'", command)
+                # Not enough input
+                else: raise InvalidCommandError("Not enough input for '" + key + "' command", command)
 
-            # Run the command
-            else: self._run_command(subcommand, subcommands, main_command=key)
+            # Invalid command
+            else: raise InvalidCommandError("Invalid command: '" + subcommand + "'", command)
 
-        # Regular command
+        # Run the command
+        else: self._run_command_impl(subcommand, subcommands, main_command=key, interactive=interactive)
+
+    # -----------------------------------------------------------------
+
+    def _run_command_impl(self, command, cmds, main_command=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param cmds:
+        :param main_command:
+        :param interactive:
+        :return:
+        """
+
+        # Get first word == key
+        key = command.split(" ")[0]
+
+        # Get function name and description
+        function_name, pass_command, description, subject = cmds[key]
+
+        # Show help for the command
+        if "-h" in command or "--help" in command:
+
+            # Get the help info
+            help = self.get_help_for_key(key, cmds, main_command=main_command)
+
+            # Show help
+            if help is None: print(fmt.red + "no input required" + fmt.reset)
+            else:
+                for line in help: print(fmt.red + line + fmt.reset)
+
+        # Actually run
         else:
 
-            # Get function name and description
-            function_name, pass_command, description, subject = cmds[key]
+            # Get the function
+            function = getattr(self, function_name)
 
-            # Show help for the command
-            if "-h" in command or "--help" in command:
-
-                # Get the help info
-                help = self.get_help_for_key(key, cmds, main_command=main_command)
-
-                # Show help
-                if help is None: print(fmt.red + "no input required" + fmt.reset)
-                else:
-                    for line in help: print(fmt.red + line + fmt.reset)
-
-            # Actually run
-            else:
-
-                # Get the function
-                function = getattr(self, function_name)
-
-                # Call the function
-                if pass_command: function(command)
-                else: function()
+            # Call the function
+            if pass_command: function(command, interactive=interactive)
+            else: function(interactive=interactive)
 
     # -----------------------------------------------------------------
 
@@ -4163,10 +4221,11 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_help(self):
+    def show_help(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -4256,10 +4315,11 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_history(self):
+    def show_history(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -4306,19 +4366,23 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_hosts_command(self, command):
+    def show_hosts_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Inform the user
         log.info("Showing hosts ...")
 
+        # Get all kwargs
+        kwargs.update(self.show_hosts_kwargs)
+
         # Get the host
-        splitted, hosts, config = self.parse_hosts_command(command, command_definition=self.show_hosts_definition, **self.show_hosts_kwargs)
+        splitted, hosts, config = self.parse_hosts_command(command, command_definition=self.show_hosts_definition, **kwargs)
 
         print("")
 
@@ -4376,16 +4440,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_parallelizations_command(self, command):
+    def show_parallelizations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get the host
-        host = self.get_host_from_command(command)
+        host = self.get_host_from_command(command, **kwargs)
 
         # Show
         self.show_parallelizations(host)
@@ -4410,16 +4475,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_info_command(self, command):
+    def show_info_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show info
         self.show_simulation_info(simulation_name)
@@ -4533,11 +4599,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_base_command(self, command):
+    def open_base_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -4545,7 +4612,7 @@ class SimulationManager(Configurable):
         name = _open_command_name + " " + _base_command_name
 
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_base_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_base_definition, name=name, **kwargs)
 
         # Open
         self.open_base(simulation_name, remote=config.remote)
@@ -4595,11 +4662,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_input_command(self, command):
+    def open_input_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -4607,7 +4675,7 @@ class SimulationManager(Configurable):
         name = _open_command_name + " " + _input_command_name
 
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_input_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_input_definition, name=name, **kwargs)
 
         # Open
         self.open_input(simulation_name, remote=config.remote)
@@ -4676,11 +4744,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_output_command(self, command):
+    def open_output_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -4688,7 +4757,7 @@ class SimulationManager(Configurable):
         name = _open_command_name + " " + _output_command_name
 
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_output_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.open_output_definition, name=name, **kwargs)
 
         # Open
         self.open_output(simulation_name, remote=config.remote)
@@ -4729,11 +4798,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_extraction_command(self, command):
+    def open_extraction_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -4741,7 +4811,7 @@ class SimulationManager(Configurable):
         name = _open_command_name + " " + _extraction_command_name
 
         # Parse the command
-        simulation_name = self.get_simulation_name_from_command(command, name=name)
+        simulation_name = self.get_simulation_name_from_command(command, name=name, **kwargs)
 
         # Open
         self.open_extraction(simulation_name)
@@ -4767,11 +4837,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_plotting_command(self, command):
+    def open_plotting_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -4779,7 +4850,7 @@ class SimulationManager(Configurable):
         name = _open_command_name + " " + _plotting_command_name
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name=name)
+        simulation_name = self.get_simulation_name_from_command(command, name=name, **kwargs)
 
         # Open
         self.open_plotting(simulation_name)
@@ -4805,11 +4876,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def open_misc_command(self, command):
+    def open_misc_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -4817,7 +4889,7 @@ class SimulationManager(Configurable):
         name = _open_command_name + " " + _misc_command_name
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name=name)
+        simulation_name = self.get_simulation_name_from_command(command, name=name, **kwargs)
 
         # Open
         self.open_misc(simulation_name)
@@ -4887,16 +4959,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_seds_command(self, command):
+    def plot_seds_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_seds_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_seds_definition, **kwargs)
 
         # Plot
         self.plot_simulation_seds(simulation_name, path=config.path, from_file=config.from_file)
@@ -5030,16 +5103,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_datacubes_command(self, command):
+    def plot_datacubes_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_datacubes_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_datacubes_definition, **kwargs)
 
         # Plot
         self.plot_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments)
@@ -5249,16 +5323,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_fluxes_command(self, command):
+    def plot_fluxes_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get the simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_fluxes_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_fluxes_definition, **kwargs)
 
         # Determine flag
         if config.from_images is None:
@@ -5481,16 +5556,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_images_command(self, command):
+    def plot_images_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get the simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_images_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_images_definition, **kwargs)
 
         # Determine flag
         if config.for_fluxes is None:
@@ -5646,20 +5722,32 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_input_command(self, command):
+    @lazyproperty
+    def show_input_definition(self):
 
         """
         This function ...
-        :param command:
         :return:
         """
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("remote", "show remote input", False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_input_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_input_definition, **kwargs)
 
         # Show
         if config.remote: self.show_input_remote(simulation_name)
@@ -5732,16 +5820,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_output_command(self, command):
+    def show_output_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_output_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_output_definition, **kwargs)
 
         # Set remote flag
         if config.remote is None:
@@ -5809,16 +5898,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_extraction_command(self, command):
+    def show_extraction_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show
         self.show_extraction(simulation_name)
@@ -5849,16 +5939,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_plotting_command(self, command):
+    def show_plotting_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show
         self.show_plotting(simulation_name)
@@ -5889,16 +5980,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_misc_command(self, command):
+    def show_misc_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show
         self.show_misc(simulation_name)
@@ -5929,16 +6021,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_instruments_command(self, command):
+    def show_instruments_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show instruments
         self.show_instruments(simulation_name)
@@ -5964,16 +6057,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_stellar_components_command(self, command):
+    def show_stellar_components_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show
         self.show_stellar_components(simulation_name)
@@ -5998,15 +6092,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_dust_components_command(self, command):
+    def show_dust_components_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show
         self.show_dust_components(simulation_name)
@@ -6048,16 +6144,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_normalizations_command(self, command):
+    def show_normalizations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_normalizations_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_normalizations_definition, **kwargs)
 
         # Show
         self.show_normalizations(simulation_name, flux_unit=config.flux)
@@ -6084,7 +6181,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_config_from_command(self, command, definition, name=None, index=1):
+    def get_config_from_command(self, command, definition, name=None, index=1, interactive=False):
 
         """
         This function ...
@@ -6092,6 +6189,7 @@ class SimulationManager(Configurable):
         :param definition:
         :param name:
         :param index:
+        :param interactive:
         :return:
         """
 
@@ -6102,8 +6200,11 @@ class SimulationManager(Configurable):
         # Set parse command
         parse_command = splitted[index:]
 
+        # Interactively get the settings
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
                                  initialize=False, add_logging=False, add_cwd=False)
 
         # Return the configuration
@@ -6168,7 +6269,7 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     def parse_host_command(self, command, command_definition=None, name=None, index=1, required=True, choices=None,
-                           required_to_optional=True):
+                           required_to_optional=True, interactive=False):
 
         """
         This function ...
@@ -6179,6 +6280,7 @@ class SimulationManager(Configurable):
         :param required:
         :param choices:
         :param required_to_optional:
+        :param interactive:
         :return:
         """
 
@@ -6192,8 +6294,11 @@ class SimulationManager(Configurable):
         # Get the definition
         definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
 
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get the host
         host = config.pop("host")
@@ -6243,7 +6348,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_host_from_command(self, command, name=None, index=1, required=True, choices=None):
+    def get_host_from_command(self, command, name=None, index=1, required=True, choices=None, interactive=False):
 
         """
         This function ...
@@ -6252,11 +6357,12 @@ class SimulationManager(Configurable):
         :param index:
         :param required:
         :param choices:
+        :param interactive:
         :return:
         """
 
         # Parse
-        splitted, host, config = self.parse_host_command(command, name=name, index=index, required=required, choices=choices)
+        splitted, host, config = self.parse_host_command(command, name=name, index=index, required=required, choices=choices, interactive=interactive)
 
         # Return the host
         return host
@@ -6288,7 +6394,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_hosts_command(self, command, command_definition=None, name=None, index=1, required=False, choices=None):
+    def parse_hosts_command(self, command, command_definition=None, name=None, index=1, required=False, choices=None, interactive=False):
 
         """
         This function ...
@@ -6298,6 +6404,7 @@ class SimulationManager(Configurable):
         :param index:
         :param required:
         :param choices:
+        :param interactive:
         :return:
         """
 
@@ -6312,8 +6419,11 @@ class SimulationManager(Configurable):
         # Get the definition
         definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
 
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Return
         hosts = config.pop("hosts")
@@ -6406,7 +6516,8 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_host_and_parallelization_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
+    def parse_host_and_parallelization_command(self, command, command_definition=None, name=None, index=1,
+                                               required_to_optional=True, interactive=False):
 
         """
         This function ...
@@ -6415,6 +6526,7 @@ class SimulationManager(Configurable):
         :param name:
         :param index:
         :param required_to_optional:
+        :param interactive:
         :return:
         """
 
@@ -6428,8 +6540,11 @@ class SimulationManager(Configurable):
         # Get the definition
         definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
 
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get host and parallelization
         host = config.pop("host")
@@ -6476,18 +6591,19 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_host_and_parallelization_from_command(self, command, name=None, index=1):
+    def get_host_and_parallelization_from_command(self, command, name=None, index=1, interactive=False):
 
         """
         This function ...
         :param command:
         :param name:
         :param index:
+        :param interactive:
         :return:
         """
 
         # Parse
-        splitted, host, parallelization, config = self.parse_host_and_parallelization_command(command, name=name, index=index)
+        splitted, host, parallelization, config = self.parse_host_and_parallelization_command(command, name=name, index=index, interactive=interactive)
 
         # Return
         return host, parallelization
@@ -6517,7 +6633,8 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_simulation_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
+    def parse_simulation_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True,
+                                 interactive=False):
 
         """
         This function ...
@@ -6526,6 +6643,7 @@ class SimulationManager(Configurable):
         :param index:
         :param command_definition:
         :param required_to_optional:
+        :param interactive:
         :return:
         """
 
@@ -6540,8 +6658,11 @@ class SimulationManager(Configurable):
         # Get the definition
         definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
 
+        # Get settings interactively
+        if interactive: config = parse_arguments(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation name
         if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
@@ -6611,7 +6732,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
+    def parse_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
 
         """
         This function ...
@@ -6620,6 +6741,7 @@ class SimulationManager(Configurable):
         :param name:
         :param index:
         :param required_to_optional:
+        :param interactive:
         :return:
         """
 
@@ -6634,8 +6756,11 @@ class SimulationManager(Configurable):
         # Get definition
         definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation names
         simulation_names = []
@@ -6706,7 +6831,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def parse_two_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True):
+    def parse_two_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
 
         """
         This function ....
@@ -6715,6 +6840,7 @@ class SimulationManager(Configurable):
         :param name:
         :param index:
         :param required_to_optional:
+        :param interactive:
         :return:
         """
 
@@ -6725,8 +6851,11 @@ class SimulationManager(Configurable):
         # Get the definition
         definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+
         # Parse arguments
-        config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        else: config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation_a name
         if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]
@@ -6777,52 +6906,55 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_names_from_command(self, command, name=None):
+    def get_simulation_names_from_command(self, command, name=None, interactive=False):
 
         """
         This function ...
         :param command:
         :param name:
+        :param interactive:
         :return:
         """
 
         # Parse the command
-        splitted, simulation_names, config = self.parse_simulations_command(command, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, name=name, interactive=interactive)
 
         # Return the simulation names
         return simulation_names
 
     # -----------------------------------------------------------------
 
-    def get_simulation_name_from_command(self, command, name=None):
+    def get_simulation_name_from_command(self, command, name=None, interactive=False):
 
         """
         This function ...
         :param command:
         :param name:
+        :param interactive:
         :return:
         """
 
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, name=name, interactive=interactive)
 
         # Return the simulation name
         return simulation_name
 
     # -----------------------------------------------------------------
 
-    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None):
+    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None, interactive=False):
 
         """
         This function ...
         :param command:
         :param command_definition:
         :param name:
+        :param interactive:
         :return:
         """
 
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=command_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=command_definition, name=name, interactive=interactive)
 
         # Return simulation name and config
         return simulation_name, config
@@ -6849,16 +6981,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_simulation_log_command(self, command):
+    def show_simulation_log_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_simulation_log_definition, name="show_simulation_log")
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_simulation_log_definition, **kwargs)
 
         # Check
         if not self.is_running_or_finished_or_aborted_or_crashed(simulation_name): raise ValueError("Simulation '" + simulation_name + "' cannot have log output (yet)")
@@ -7016,16 +7149,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_simulation_errors_command(self, command):
+    def show_simulation_errors_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Show
         self.show_simulation_errors(simulation_name)
@@ -7126,16 +7260,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_simulation_settings_command(self, command):
+    def show_simulation_settings_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_simulation_settings_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_simulation_settings_definition, **kwargs)
 
         # Show
         self.show_simulation_settings(simulation_name, config=config)
@@ -7174,16 +7309,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_analysis_options_command(self, command):
+    def show_analysis_options_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_analysis_options_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.show_analysis_options_definition, **kwargs)
 
         # Show
         self.show_analysis_options(simulation_name, config=config)
@@ -7222,11 +7358,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def adapt_simulation_settings_command(self, command):
+    def adapt_simulation_settings_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7234,7 +7371,7 @@ class SimulationManager(Configurable):
         name = _adapt_command_name + " " + _simulation_command_name
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_simulation_settings_definition, name=name)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_simulation_settings_definition, name=name, **kwargs)
 
         # Adapt
         self.adapt_simulation_settings(simulation_name, config=config)
@@ -7273,11 +7410,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def adapt_analysis_options_command(self, command):
+    def adapt_analysis_options_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7285,7 +7423,7 @@ class SimulationManager(Configurable):
         name = _adapt_command_name + " " + _analysis_command_name
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_analysis_options_definition, name=name)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_analysis_options_definition, name=name, **kwargs)
 
         # Adapt
         self.adapt_analysis_options(simulation_name, config=config)
@@ -7324,11 +7462,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def compare_simulation_settings_command(self, command):
+    def compare_simulation_settings_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7336,7 +7475,7 @@ class SimulationManager(Configurable):
         name = _compare_command_name + " " + _simulation_command_name
 
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name=name)
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name=name, **kwargs)
 
         # Compare
         self.compare_simulation_settings(simulation_a_name, simulation_b_name, config=config)
@@ -7378,11 +7517,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def compare_analysis_options_command(self, command):
+    def compare_analysis_options_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7390,7 +7530,7 @@ class SimulationManager(Configurable):
         name = _compare_command_name + " " + _simulation_command_name
 
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name=name)
+        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name=name, **kwargs)
 
         # Compare
         self.compare_analysis_options(simulation_a_name, simulation_b_name, config=config)
@@ -7500,16 +7640,20 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def move_simulations_command(self, command):
+    def move_simulations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
+        # Set all kwargs
+        kwargs.update(self.move_simulations_kwargs)
+
         # Get the simulation names
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, **self.move_simulations_kwargs)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, **kwargs)
 
         # Loop over the simulation names
         for simulation_name in simulation_names:
@@ -7615,16 +7759,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cancel_simulations_command(self, command):
+    def cancel_simulations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation names
-        simulation_names = self.get_simulation_names_from_command(command)
+        simulation_names = self.get_simulation_names_from_command(command, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -7729,16 +7874,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def stop_simulations_command(self, command):
+    def stop_simulations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_names = self.get_simulation_names_from_command(command)
+        simulation_names = self.get_simulation_names_from_command(command, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -7811,16 +7957,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def remove_simulation_command(self, command):
+    def remove_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name="remove_simulation")
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Remove
         self.remove_simulation(simulation_name)
@@ -7866,11 +8013,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_simulation_input_command(self, command):
+    def clear_simulation_input_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7878,7 +8026,7 @@ class SimulationManager(Configurable):
         name = _clear_command_name + " " + _input_command_name
 
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_input_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_input_definition, name=name, **kwargs)
 
         # Execute the command
         if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
@@ -7904,12 +8052,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_simulation_output_command(self, command):
+    def clear_simulation_output_command(self, command, **kwargs):
 
         """
         This function ...
-        :param self:
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7917,7 +8065,7 @@ class SimulationManager(Configurable):
         name = _clear_command_name + " " + _output_command_name
 
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_output_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_output_definition, name=name, **kwargs)
 
         # Execute the command
         if config.analysis_steps is not None: raise ValueError("Cannot specify 'analysis_steps'")
@@ -7943,11 +8091,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_simulation_analysis_command(self, command):
+    def clear_simulation_analysis_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -7955,7 +8104,7 @@ class SimulationManager(Configurable):
         name = _clear_command_name + " " + _analysis_command_name
 
         # Parse command
-        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_analysis_definition, name=name)
+        splitted, simulation_name, config = self.parse_simulation_command(command, self.clear_simulation_analysis_definition, name=name, **kwargs)
 
         # Execute
         self.clear_simulation_analysis(simulation_name, steps=config.analysis_steps)
@@ -8035,16 +8184,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def unfinish_simulation_command(self, command):
+    def unfinish_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Unfinish
         self.unfinish_simulation(simulation_name)
@@ -8076,16 +8226,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def unretrieve_simulation_command(self, command):
+    def unretrieve_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command)
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
 
         # Unretrieve
         self.unretrieve_simulation(simulation_name)
@@ -8191,16 +8342,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def unanalyse_simulation_command(self, command):
+    def unanalyse_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Parse
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.unanalyse_simulation_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.unanalyse_simulation_definition, **kwargs)
 
         # Unanalyse
         self.unanalyse_simulation(simulation_name, steps=config.steps)
@@ -8335,11 +8487,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_extraction_command(self, command):
+    def clear_extraction_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8347,7 +8500,7 @@ class SimulationManager(Configurable):
         name = _clear_command_name + " " + _extraction_command_name
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name=name)
+        simulation_name = self.get_simulation_name_from_command(command, name=name, **kwargs)
 
         # Clear
         self.clear_extraction(simulation_name)
@@ -8373,11 +8526,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_plotting_command(self, command):
+    def clear_plotting_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8385,7 +8539,7 @@ class SimulationManager(Configurable):
         name = _clear_command_name + " " + _plotting_command_name
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name=name)
+        simulation_name = self.get_simulation_name_from_command(command, name=name, **kwargs)
 
         # Clear
         self.clear_plotting(simulation_name)
@@ -8411,11 +8565,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def clear_misc_command(self, command):
+    def clear_misc_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8423,7 +8578,7 @@ class SimulationManager(Configurable):
         name = _clear_command_name + " " + _misc_command_name
 
         # Get simulation name
-        simulation_name = self.get_simulation_name_from_command(command, name=name)
+        simulation_name = self.get_simulation_name_from_command(command, name=name, **kwargs)
 
         # Clear
         self.clear_misc(simulation_name)
@@ -8581,11 +8736,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_output_command(self, command):
+    def cache_simulations_output_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8593,7 +8749,7 @@ class SimulationManager(Configurable):
         name = _cache_command_name + " " + _output_command_name
 
         # Parse
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_output_definition, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_output_definition, name=name, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -8660,11 +8816,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_datacubes_command(self, command):
+    def cache_simulations_datacubes_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8672,7 +8829,7 @@ class SimulationManager(Configurable):
         name = _cache_command_name + " " + _datacube_command_name
 
         # Parse
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_datacubes_definition, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_datacubes_definition, name=name, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -8756,11 +8913,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_analysis_command(self, command):
+    def cache_simulations_analysis_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8768,7 +8926,7 @@ class SimulationManager(Configurable):
         name = _cache_command_name + " " + _analysis_command_name
 
         # Parse
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_analysis_definition, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_analysis_definition, name=name, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -8824,11 +8982,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_extraction_command(self, command):
+    def cache_simulations_extraction_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -8836,7 +8995,7 @@ class SimulationManager(Configurable):
         name = _cache_command_name + " " + _extraction_command_name
 
         # Parse
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_extraction_definition, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_extraction_definition, name=name, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -8940,11 +9099,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_plotting_command(self, command):
+    def cache_simulations_plotting_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -9056,11 +9216,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_misc_command(self, command):
+    def cache_simulations_misc_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -9068,7 +9229,7 @@ class SimulationManager(Configurable):
         name = _cache_command_name + " " + _misc_command_name
 
         # Parse
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_misc_definition, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_misc_definition, name=name, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -9135,11 +9296,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def cache_simulations_images_command(self, command):
+    def cache_simulations_images_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -9147,7 +9309,7 @@ class SimulationManager(Configurable):
         name = _cache_command_name + " " + _images_command_name
 
         # Parse
-        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_images_definition, name=name)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.cache_simulations_images_definition, name=name, **kwargs)
 
         # Loop over the simulations
         for simulation_name in simulation_names:
@@ -9237,16 +9399,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def relaunch_simulation_command(self, command):
+    def relaunch_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.relaunch_simulation_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.relaunch_simulation_definition, **kwargs)
 
         # Check simulation
         if not self.is_failed(simulation_name):
@@ -11257,10 +11420,11 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_assignment(self):
+    def show_assignment(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -11407,34 +11571,38 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_status_command(self, command):
+    def show_status_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get the config
-        config = self.get_config_from_command(command, self.show_status_definition)
+        config = self.get_config_from_command(command, self.show_status_definition, **kwargs)
 
         # Show
         self.show_status(extra=config.extra_columns, path=config.path, refresh=config.refresh)
 
     # -----------------------------------------------------------------
 
-    def show_status(self, extra=None, path=None, refresh=False):
+    def show_status(self, **kwargs):
 
         """
         This function ...
-        :param extra:
-        :param path:
-        :param refresh:
+        :param kwargs:
         :return:
         """
 
         # Inform the user
         log.info("Showing the simulation status ...")
+
+        # Get settings
+        extra = kwargs.pop("extra", None)
+        path = kwargs.pop("path", None)
+        refresh = kwargs.pop("refresh", False)
 
         # Refresh if requested
         if refresh: self.reset_status()
@@ -11569,16 +11737,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_simulations_command(self, command):
+    def find_simulations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Parse the command
-        config = self.get_config_from_command(command, self.find_simulations_definition)
+        config = self.get_config_from_command(command, self.find_simulations_definition, **kwargs)
 
         # No info?
         if not self.has_info: raise NotImplementedError("Not yet implemented without info: based on any choosen set of parameters")
@@ -11915,16 +12084,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_runtimes_command(self, command):
+    def show_runtimes_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get host and parallelization
-        host, parallelization = self.get_host_and_parallelization_from_command(command, name="show_runtimes")
+        host, parallelization = self.get_host_and_parallelization_from_command(command, **kwargs)
 
         # Show
         if host is None: self.show_runtimes()
@@ -12218,16 +12388,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_memory_command(self, command):
+    def show_memory_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get host and parallelization
-        host, parallelization = self.get_host_and_parallelization_from_command(command, name="show_memory")
+        host, parallelization = self.get_host_and_parallelization_from_command(command, **kwargs)
 
         # Show
         if host is None: self.show_memory()
@@ -12655,16 +12826,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_runtimes_command(self, command):
+    def plot_runtimes_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get host and parallelization
-        host, parallelization = self.get_host_and_parallelization_from_command(command, name="plot_runtimes")
+        host, parallelization = self.get_host_and_parallelization_from_command(command, **kwargs)
 
         # Plot
         if host is None: self.plot_runtimes()
@@ -13010,16 +13182,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_memory_command(self, command):
+    def plot_memory_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get host and parallelization
-        host, parallelization = self.get_host_and_parallelization_from_command(command, name="plot_memory")
+        host, parallelization = self.get_host_and_parallelization_from_command(command, **kwargs)
 
         # Plot
         if host is None: self.plot_memory()
@@ -13228,11 +13401,12 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_timeline_command(self, command):
+    def plot_timeline_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
@@ -13240,7 +13414,7 @@ class SimulationManager(Configurable):
         name = _plot_command_name + " " + _timeline_command_name
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_timeline_definition, name=name)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_timeline_definition, name=name, **kwargs)
 
         # Plot
         self.plot_timeline(simulation_name, path=config.path)
@@ -13325,16 +13499,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def reanalyse_simulation_command(self, command):
+    def reanalyse_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.reanalyse_simulation_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.reanalyse_simulation_definition, **kwargs)
         steps = config.steps
         features = config.features
         not_steps = config.not_steps
@@ -13417,16 +13592,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def analyse_simulation_command(self, command):
+    def analyse_simulation_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
+        :param kwargs:
         :return:
         """
 
         # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.analyse_simulation_definition)
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.analyse_simulation_definition, **kwargs)
 
         # Analyse
         self.analyse_simulation(simulation_name, config=config)

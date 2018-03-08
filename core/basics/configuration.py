@@ -98,7 +98,7 @@ def create_definition(**kwargs):
 
 # -----------------------------------------------------------------
 
-def prompt_settings(name, definition, description=None, add_logging=True, add_cwd=True):
+def prompt_settings(name, definition, description=None, add_logging=True, add_cwd=True, initialize=True):
 
     """
     This function ...
@@ -107,6 +107,7 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
     :param description:
     :param add_logging:
     :param add_cwd:
+    :param initialize:
     :return:
     """
 
@@ -115,8 +116,9 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
     config = setter.run(definition, prompt_optional=True)
 
     # Initialize PTS
-    from ...do.run import initialize_pts
-    initialize_pts(config)
+    if initialize:
+        from ...do.run import initialize_pts
+        initialize_pts(config)
 
     # Return the configuration
     return config
