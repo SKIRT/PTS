@@ -1643,14 +1643,44 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def copy(self):
+    def copy(self, sections=True, fixed=True, required=True, pos_optional=True, optional=True, flags=True):
 
         """
         This function ...
+        :param sections:
+        :param fixed:
+        :param required:
+        :param pos_optional:
+        :param optional:
+        :param flags:
         :return:
         """
 
-        return copy.deepcopy(self)
+        # Create new
+        new = ConfigurationDefinition(prefix=self.prefix, log_path=self.log_path, config_path=self.config_path, write_config=self.write_config, add_timestamp=self.add_timestamp)
+
+        # Add sections
+        if sections:
+            new.sections = copy.deepcopy(self.sections)
+            new.section_descriptions = copy.deepcopy(self.section_descriptions)
+
+        # Add fixed
+        if fixed: new.fixed = copy.deepcopy(self.fixed)
+
+        # Add required
+        if required: new.required = copy.deepcopy(self.required)
+
+        # Add pos optional
+        if pos_optional: new.pos_optional = copy.deepcopy(self.pos_optional)
+
+        # Add optional
+        if optional: new.optional = copy.deepcopy(self.optional)
+
+        # Add flags
+        if flags: new.flags = copy.deepcopy(self.flags)
+
+        # Return the copy
+        return new
 
     # -----------------------------------------------------------------
 
@@ -2259,6 +2289,17 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def remove_all_sections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.section_names: self.remove_section(name)
+
+    # -----------------------------------------------------------------
+
     def import_section(self, name, description, definition):
 
         """
@@ -2374,6 +2415,17 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def remove_all_fixed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.fixed_names: self.remove_fixed(name)
+
+    # -----------------------------------------------------------------
+
     def add_required(self, name, user_type, description, choices=None, dynamic_list=False, suggestions=None,
                      min_value=None, max_value=None, forbidden=None):
 
@@ -2425,6 +2477,17 @@ class ConfigurationDefinition(object):
 
         if name not in self.required_names: raise ValueError("Not a required setting: '" + name + "'")
         del self.required[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_required(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.required_names: self.remove_required(name)
 
     # -----------------------------------------------------------------
 
@@ -2501,6 +2564,17 @@ class ConfigurationDefinition(object):
 
         if name not in self.positional_optional_names: raise ValueError("Not a positional optional setting: '" + name + "'")
         del self.pos_optional[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_positional_optional(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.positional_optional_names: self.remove_positional_optional(name)
 
     # -----------------------------------------------------------------
 
@@ -2593,6 +2667,17 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def remove_all_optional(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.optional_names: self.remove_optional(name)
+
+    # -----------------------------------------------------------------
+
     def add_flag(self, name, description, default=False, letter=None, convert_default=False):
 
         """
@@ -2635,6 +2720,17 @@ class ConfigurationDefinition(object):
 
         if name not in self.flag_names: raise ValueError("Not a flag setting: '" + name + "'")
         del self.flags[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_flags(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.flag_names: self.remove_flag(name)
 
 # -----------------------------------------------------------------
 

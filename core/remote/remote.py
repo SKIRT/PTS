@@ -42,6 +42,30 @@ from ..tools.utils import memoize_method
 
 # -----------------------------------------------------------------
 
+class TimeOutReached(RuntimeError):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, timeout, command=None):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param timeout: the max timeout that was used
+        :param command:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(TimeOutReached, self).__init__(message)
+
+        # The timeout and command
+        self.timeout = timeout
+        self.command = command
+
+# -----------------------------------------------------------------
+
 def is_available(host_id):
 
     """
@@ -2725,7 +2749,7 @@ class Remote(object):
             if contains_extra_eof: matched = self.ssh.prompt()
 
             # If the command could not be sent, raise an error
-            if not matched and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
+            if not matched and expect_eof and not contains_extra_eof: raise TimeOutReached("Time out for command '" + command + "'", timeout=timeout, command=command)
 
         # Check for expected characters
         else:

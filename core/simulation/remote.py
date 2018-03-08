@@ -18,7 +18,7 @@ import math
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ..remote.remote import Remote
+from ..remote.remote import Remote, TimeOutReached
 from .jobscript import MultiJobScript, SKIRTJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs
@@ -2371,7 +2371,7 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def _get_jobs_status_cluster(self, cluster_name, check_swap=True, swap=True, reswap=True):
+    def _get_jobs_status_cluster(self, cluster_name, check_swap=True, swap=True, reswap=True, timeout=5):
 
         """
         This function ...
@@ -2379,6 +2379,7 @@ class SKIRTRemote(Remote):
         :param check_swap:
         :param swap:
         :param reswap:
+        :param timeout:
         :return:
         """
 
@@ -2397,7 +2398,10 @@ class SKIRTRemote(Remote):
         queue_status = dict()
 
         # Obtain job status information through the 'qstat' command
-        output = self.execute("qstat")
+        try: output = self.execute("qstat", timeout=timeout)
+        except TimeOutReached:
+            log.warning("The jobs status could not be obtained on cluster '" + cluster_name + "': time out reached")
+            return queue_status
 
         # Check every line in the output
         for line in output:
