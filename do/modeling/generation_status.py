@@ -26,6 +26,7 @@ from pts.core.tools import numbers
 from pts.core.launch.manager import SimulationManager, extra_columns
 from pts.core.tools import filesystem as fs
 from pts.core.remote.host import find_host_ids
+from pts.core.config.analyse_simulation import definition as analysis_definition
 
 # -----------------------------------------------------------------
 
@@ -76,6 +77,9 @@ definition.add_flag("analyse", "analyse retrieved simulations", False)
 definition.add_flag("produce_missing", "produce missing simulation files", False)
 definition.add_flag("check_paths", "check simulation paths", False)
 definition.add_flag("fix_success", "check success flags in assignment table")
+
+# Analysis settings
+definition.import_section("analysis", "analyser options", analysis_definition)
 
 # Caching
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
@@ -159,7 +163,7 @@ backup_path = fs.join(manage_current_path, "backup")
 # Get the status of the simulations
 status = generation.get_status(remotes, lazy=config.lazy, find_simulations=config.find_simulations,
                                find_remotes=config.find_remotes, produce_missing=config.produce_missing,
-                               retrieve=config.retrieve, analyse=config.analyse, check_paths=config.check_paths,
+                               retrieve=config.retrieve, check_paths=config.check_paths,
                                fix_success=config.fix_success)
 
 # -----------------------------------------------------------------
@@ -221,30 +225,9 @@ manager.config.reference_seds = reference_sed_paths
 # Set screen script paths
 manager.config.screen_scripts = fs.files_in_path(generation.path, extension="sh")
 
-# Set remote input path for each host
-if not (config.lazy or config.offline):
-
-    # Set remote input path for each host ID
-    for host_id in generation.host_ids:
-
-        remote_input_path = None
-        remote = remotes[host_id]
-
-        # Find remote input path
-        # Loop over the simulations
-        for simulation_name in generation.get_simulation_names_for_host(host_id):
-            if not generation.has_simulation(simulation_name): continue
-            simulation = generation.get_simulation(simulation_name)
-            if remote.is_directory(simulation.remote_input_path) and not remote.is_empty(simulation.remote_input_path):
-                remote_input_path = simulation.remote_input_path
-                break
-
-        # Show
-        if remote_input_path is None: continue
-        else: log.debug("The remote simulation input path for host '" + host_id + "' is '" + remote_input_path + "'")
-
-        # Set remote input path
-        manager.set_remote_input_path_for_host(host_id, remote_input_path)
+# ANALYSE?
+manager.config.analyse = config.analyse
+manager.config.analysis = config.analysis
 
 # Run the manager
 manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,

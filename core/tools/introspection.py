@@ -99,6 +99,9 @@ pts_user_accounts_dir = fs.create_directory_in(pts_user_dir, "accounts")
 # The path to the PTS user/config directory
 pts_user_config_dir = fs.create_directory_in(pts_user_dir, "config")
 
+# The path to the PTS user/manager directory
+pts_user_manager_dir = fs.create_directory_in(pts_user_dir, "manager")
+
 # -----------------------------------------------------------------
 
 temp_dirs = []

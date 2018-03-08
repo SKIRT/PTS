@@ -2311,6 +2311,28 @@ def write_lines(filepath, lines):
 
 # -----------------------------------------------------------------
 
+def add_lines(filepath, lines, create=False):
+
+    """
+    This function ...
+    :param filepath:
+    :param lines:
+    :param create:
+    :return:
+    """
+
+    # Create the file?
+    if is_file(filepath):
+        if create: mode = "w"
+        else: raise IOError("File '" + filepath + "' is not present")
+    else: mode = "a"
+
+    # Write
+    with open(filepath, mode) as fh:
+        for line in lines: fh.write(line + "\n")
+
+# -----------------------------------------------------------------
+
 def write_text(filepath, text):
 
     """

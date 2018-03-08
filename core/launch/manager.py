@@ -36,7 +36,6 @@ from ..simulation.remote import get_simulations_for_host
 from ..tools import types
 from ..basics.containers import DefaultOrderedDict
 from ..tools import strings
-from ..simulation.remote import SKIRTRemote
 from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict, create_subdict
 from ..tools import sequences
@@ -160,6 +159,7 @@ _log_command_name = "log"
 _error_command_name = "error"
 _settings_command_name = "settings"
 _analysis_command_name = "analysis"
+_steps_command_name = "steps"
 _adapt_command_name = "adapt"
 _compare_command_name = "compare"
 _retrieve_command_name = "retrieve"
@@ -213,6 +213,7 @@ commands[_log_command_name] = ("show_simulation_log_command", True, "show log ou
 commands[_error_command_name] = ("show_simulation_errors_command", True, "show error output of a simulation", "simulation")
 commands[_settings_command_name] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
 commands[_analysis_command_name] = ("show_analysis_options_command", True, "show analysis options", "simulation")
+commands[_steps_command_name] = ("show_analysis_steps_command", True, "show analysis steps", "simulation")
 commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulation")
 commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between two simulations", "two_simulations")
 commands[_retrieve_command_name] = ("retrieve_simulation_command", True, "retrieve a simulation from the remote host", "simulation")
@@ -1019,6 +1020,9 @@ class SimulationManager(Configurable):
         # 11. Cache
         if self.do_caching: self.cache()
 
+        # 12. Write the history
+        if self.has_commands: self.write_history()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -1072,6 +1076,7 @@ class SimulationManager(Configurable):
                 for name in remotes: self.set_remote(remotes[name], name)
             elif types.is_sequence(remotes):
                 for remote in remotes: self.set_remote(remote)
+            elif remotes is None: pass
             else: raise ValueError("Invalid type for 'remotes'")
 
         # Set launcher options
@@ -6178,7 +6183,7 @@ class SimulationManager(Configurable):
         parse_command = splitted[index:]
 
         # Interactively get the settings
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
@@ -6272,7 +6277,7 @@ class SimulationManager(Configurable):
         definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
 
         # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -6397,7 +6402,7 @@ class SimulationManager(Configurable):
         definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
 
         # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -6518,7 +6523,7 @@ class SimulationManager(Configurable):
         definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -6636,7 +6641,7 @@ class SimulationManager(Configurable):
         definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -6734,7 +6739,7 @@ class SimulationManager(Configurable):
         definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -6829,7 +6834,7 @@ class SimulationManager(Configurable):
         definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -7321,6 +7326,42 @@ class SimulationManager(Configurable):
         # Show
         show_analysis(simulation, config=config)
 
+    # -----------------------------------------------------------------
+
+    def show_analysis_steps_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
+
+        # Show analysis steps
+        self.show_analysis_steps(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_analysis_steps(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Showing analysis steps for simulation '" + simulation_name + "' ...")
+        
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Show steps that will be performed
+        show_analysis_steps(simulation)
+        
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -9639,6 +9680,9 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Launching simulations ...")
 
+        # Set the remote input paths
+        if self.config.shared_input: self.set_shared_remote_input_paths()
+
         # Get remotes
         remotes = []
         for host_id in self.launcher.queue_host_ids: remotes.append(self.get_remote(host_id))
@@ -9672,6 +9716,49 @@ class SimulationManager(Configurable):
 
         # Reset status?
         if self.has_moved or self.has_relaunched: self.reset_status()
+
+    # -----------------------------------------------------------------
+
+    def set_shared_remote_input_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Setting remote input paths for the simulations to be launched ...")
+
+        # Loop over the launch host IDs
+        for host_id in self.launcher.queue_host_ids:
+
+            # Get the remote
+            remote_input_path = None
+            remote = self.get_remote(host_id)
+
+            # Find remote input path
+            # Loop over the simulations
+            #for simulation_name in generation.get_simulation_names_for_host(host_id):
+            for simulation_name in self.get_simulation_names_for_host_id(host_id):
+
+                # Get the simulation
+                simulation = self.get_simulation(simulation_name)
+
+                #if not generation.has_simulation(simulation_name): continue
+                #simulation = generation.get_simulation(simulation_name)
+                if simulation.remote_input_path is None: continue
+
+                # Check remote input path
+                if remote.is_directory(simulation.remote_input_path) and not remote.is_empty(simulation.remote_input_path):
+                    remote_input_path = simulation.remote_input_path
+                    break
+
+            # Show
+            if remote_input_path is None: continue
+            else: log.debug("The remote simulation input path for host '" + host_id + "' is '" + remote_input_path + "'")
+
+            # Set remote input path
+            self.set_remote_input_path_for_host(host_id, remote_input_path)
 
     # -----------------------------------------------------------------
 
@@ -11468,7 +11555,7 @@ class SimulationManager(Configurable):
 
         # Set simulation ID string
         if id_size is not None: id_string = strings.integer(simulation.id, id_size)
-        else: id_string = simulation.id
+        else: id_string = str(simulation.id)
 
         # Set host ID string
         if host_id_size is not None: host_string = strings.to_length(tostr(simulation.host), host_id_size)
@@ -12654,6 +12741,24 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write_history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the history ...")
+        
+        # Determine the path
+        path = fs.join(introspection.pts_user_manager_dir, "history.dat")
+
+        # Write
+        fs.add_lines(path, self.commands, create=True)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -13611,6 +13716,9 @@ class SimulationManager(Configurable):
 
         # Loop over the retrieved simulations
         for simulation in self.all_retrieved_simulations:
+
+            # Debugging
+            log.debug("Caching output of simulation '" + simulation.name + "' ...")
 
             # Cache output
             if self.config.cache_output: self.cache_simulation_output(simulation.name)

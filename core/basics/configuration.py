@@ -98,7 +98,7 @@ def create_definition(**kwargs):
 
 # -----------------------------------------------------------------
 
-def prompt_settings(name, definition, description=None, add_logging=True, add_cwd=True, initialize=True):
+def prompt_settings(name, definition, description=None, add_logging=True, add_cwd=True, initialize=True, add_config_path=True):
 
     """
     This function ...
@@ -108,11 +108,12 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
     :param add_logging:
     :param add_cwd:
     :param initialize:
+    :param add_config_path:
     :return:
     """
 
     # Create the configuration
-    setter = InteractiveConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd)
+    setter = InteractiveConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd, add_config_path=add_config_path)
     config = setter.run(definition, prompt_optional=True)
 
     # Initialize PTS
