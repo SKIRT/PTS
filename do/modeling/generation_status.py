@@ -241,7 +241,7 @@ if not (config.lazy or config.offline):
 
         # Show
         if remote_input_path is None: continue
-        else: log.debug("The remote input for host '" + host_id + "' is '" + remote_input_path + "'")
+        else: log.debug("The remote simulation input path for host '" + host_id + "' is '" + remote_input_path + "'")
 
         # Set remote input path
         manager.set_remote_input_path_for_host(host_id, remote_input_path)
