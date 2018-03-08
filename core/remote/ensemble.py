@@ -47,6 +47,18 @@ class RemotesEnsemble(LazyDictionary):
 
     # -----------------------------------------------------------------
 
+    def is_used(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.evaluated[name]
+
+    # -----------------------------------------------------------------
+
     def add_host_ids(self, host_ids):
 
         """
@@ -105,6 +117,78 @@ class RemotesEnsemble(LazyDictionary):
 
         # Remove
         del self[name]
+
+    # -----------------------------------------------------------------
+
+    def add_remote(self, remote, name=None):
+
+        """
+        This function ...
+        :param remote:
+        :param name:
+        :return:
+        """
+
+        # Check whether remote instance
+        if not isinstance(remote, Remote): raise ValueError("First argument must be Remote instance")
+
+        # Get name
+        if name is None: name = remote.host_id
+
+        # Check whether not yet present
+        if name in self.names: raise ValueError("Already an entry for name '" + name + "'")
+
+        # Set the value
+        self.set_value(name, remote)
+
+    # -----------------------------------------------------------------
+
+    def set_remote(self, remote, name=None):
+
+        """
+        This function ...
+        :param remote:
+        :param name:
+        :return:
+        """
+
+        # Check whether remote instance
+        if not isinstance(remote, Remote): raise ValueError("First argument must be Remote instance")
+
+        # Get name
+        if name is None: name = remote.host_id
+
+        # Check whether present
+        if name not in self.names: raise ValueError("No entry for name '" + name + "'")
+
+        # Check whether not used yet
+        if self.is_used(name): raise ValueError("Remote already set for name '" + name + "'")
+
+        # Set
+        self.set_value(name, remote)
+
+    # -----------------------------------------------------------------
+
+    def set_or_add_remote(self, remote, name=None):
+
+        """
+        This function ...
+        :param remote:
+        :param name:
+        :return:
+        """
+
+        # Check whether remote instance
+        if not isinstance(remote, Remote): raise ValueError("First argument must be Remote instance")
+
+        # Get name
+        if name is None: name = remote.host_id
+
+        # Set
+        if name in self.names: self.set_remote(remote, name=name)
+
+        # Add
+        else: self.add_remote(remote, name=name)
 
     # -----------------------------------------------------------------
 
@@ -339,5 +423,33 @@ class SKIRTRemotesEnsemble(RemotesEnsemble):
         # Remove from screens and jobs
         del self.screens[name]
         del self.jobs[name]
+
+    # -----------------------------------------------------------------
+
+    def reset_screens(self, names=None):
+
+        """
+        This function ...
+        :param names: names of the hosts to reset
+        :return:
+        """
+
+        # Reset all to just the names
+        if names is None: names = self.names
+        for name in names: self.screens.set(name, name)
+
+    # -----------------------------------------------------------------
+
+    def reset_jobs(self, names=None):
+
+        """
+        This function ...
+        :param names: names of the hosts to reset
+        :return:
+        """
+
+        # Reset all to just the names
+        if names is None: names = self.names
+        for name in names: self.jobs.set(name, name)
 
 # -----------------------------------------------------------------

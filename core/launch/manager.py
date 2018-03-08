@@ -79,6 +79,7 @@ from ..simulation.output import misc_output_types as misc_type_names
 from ..simulation.jobscript import SKIRTJobScript
 from ..simulation.screen import ScreenScript
 from ..simulation.logfile import has_valid_timestamp
+from ..remote.ensemble import SKIRTRemotesEnsemble
 
 # -----------------------------------------------------------------
 
@@ -549,8 +550,8 @@ class SimulationManager(Configurable):
         # Additional info tables
         self.info = OrderedDict()
 
-        # The used remotes
-        self.remotes = dict()
+        # The ensemble of remotes
+        self.remotes = SKIRTRemotesEnsemble()
 
         # Mount paths
         self.mount_paths = dict()
@@ -1068,7 +1069,7 @@ class SimulationManager(Configurable):
         if "remotes" in kwargs:
             remotes = kwargs.pop("remotes")
             if types.is_dictionary(remotes):
-                for host_id in remotes: self.set_remote(remotes[host_id], host_id)
+                for name in remotes: self.set_remote(remotes[name], name)
             elif types.is_sequence(remotes):
                 for remote in remotes: self.set_remote(remote)
             else: raise ValueError("Invalid type for 'remotes'")
@@ -3420,8 +3421,8 @@ class SimulationManager(Configurable):
             else:
 
                 host_id = simulation.host_id
-                screen_states = self.screen_states[host_id] if host_id in self.screen_states else None
-                jobs_status = self.jobs_status[host_id] if host_id in self.jobs_status else None
+                screen_states = self.screens[host_id]
+                jobs_status = self.jobs[host_id]
                 with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
 
             # Check success flag in assignment
@@ -3489,11 +3490,9 @@ class SimulationManager(Configurable):
         # Debugging
         log.debug("Resetting the simulation status ...")
 
-        # Reset the jobs status
-        del self.jobs_status
-
-        # Reset the screen states
-        del self.screen_states
+        # Reset the screen states and job status
+        self.remotes.reset_jobs()
+        self.remotes.reset_screens()
 
         # Reset the simulation status table
         del self.status
@@ -3512,49 +3511,27 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def jobs_status(self):
+    @property
+    def screens(self):
 
         """
-        This function gets the status of jobs
+        This function ...
         :return:
         """
 
-        # Initialize dictionary
-        jobs_status_hosts = dict()
-
-        # Loop over the hosts
-        for host_id in self.simulations:
-            if not self.get_remote(host_id).scheduler: continue
-
-            # Get the status of the jobs
-            jobs_status_hosts[host_id] = self.get_remote(host_id).get_jobs_status()
-
-        # Return
-        return jobs_status_hosts
+        return self.remotes.screens
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def screen_states(self):
+    @property
+    def jobs(self):
 
         """
-        This function gets the status of screen sessions
+        This function ...
         :return:
         """
 
-        # Initialize dictionary
-        screen_states_hosts = dict()
-
-        # Loop over the hosts
-        for host_id in self.simulations:
-            if self.get_remote(host_id).scheduler: continue
-
-            # Get the status of the screen sessions
-            screen_states_hosts[host_id] = self.get_remote(host_id).screen_states()
-
-        # Return
-        return screen_states_hosts
+        return self.remotes.jobs
 
     # -----------------------------------------------------------------
 
@@ -6659,7 +6636,7 @@ class SimulationManager(Configurable):
         definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get settings interactively
-        if interactive: config = parse_arguments(name, definition, initialize=False, add_logging=False, add_cwd=False)
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False)
 
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
@@ -11436,8 +11413,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    #@memoize_method
-    # NO: we also want a setter (so that another class/script can pass its already initialized remotes)
     def get_remote(self, host_id):
 
         """
@@ -11446,10 +11421,8 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        #return SKIRTRemote(host_id=host_id)
-
-        # Initialize the remote if not yet in the dictinoary
-        if host_id not in self.remotes: self.remotes[host_id] = SKIRTRemote(host_id=host_id)
+        # Add host ID
+        if host_id not in self.remotes: self.remotes.add_host_id(host_id)
 
         # Return the remote
         return self.remotes[host_id]
@@ -11468,20 +11441,17 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_remote(self, remote, host_id=None):
+    def set_remote(self, remote, name=None):
 
         """
         This function ...
         :param remote:
-        :param host_id:
+        :param name:
         :return:
         """
 
-        # Set host ID
-        if host_id is None: host_id = remote.host_id
-
-        # Set the remote
-        self.remotes[host_id] = remote
+        # Add
+        self.remotes.set_or_add_remote(remote, name=name)
 
     # -----------------------------------------------------------------
 
