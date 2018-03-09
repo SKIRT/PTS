@@ -1998,6 +1998,7 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
 
         # Set zero
         frame_weighted[mask] = 0.0
+        frame[mask] = 0.0
         #errors_weighted[mask] = 0.0
         weights[mask] = 0.0
 
