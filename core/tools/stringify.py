@@ -41,6 +41,7 @@ def tostr(value, **kwargs):
     # Set default number of decimal places
     decimal_places = kwargs.pop("decimal_places", None) # let it be done automatically in the str_from_... function
     #print(str(value), "nd", decimal_places)
+    ndigits = kwargs.pop("ndigits", None)
 
     # Set scientific flag flexibly, if scientific flag was not passed explicitly
     if scientific is None:
@@ -54,7 +55,7 @@ def tostr(value, **kwargs):
             #if -1e4 <= value <= 1e4: scientific = False
             if -999 < value < 999:
                 scientific = False
-                decimal_places = 0
+                if ndigits is None: decimal_places = 0
             else: scientific = True
 
             # No decimals for integers
@@ -96,6 +97,7 @@ def tostr(value, **kwargs):
         # Set the options
         kwargs["scientific"] = scientific
         kwargs["decimal_places"] = decimal_places
+        kwargs["ndigits"] = ndigits
 
     # Set scientific flag for integers
     elif types.is_integer_type(value) or (types.is_real_type(value) and numbers.is_integer(value)):
@@ -114,6 +116,7 @@ def tostr(value, **kwargs):
 
         # Set flag
         kwargs["scientific"] = scientific
+        kwargs["ndigits"] = ndigits
 
     # Stringify
     return stringify(value, **kwargs)[1].strip()

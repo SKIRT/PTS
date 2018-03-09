@@ -217,7 +217,7 @@ commands[_analysis_command_name] = ("show_analysis_options_command", True, "show
 commands[_steps_command_name] = ("show_analysis_steps_command", True, "show analysis steps", "simulation")
 commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
 commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between two simulations", "two_simulations")
-commands[_retrieve_command_name] = ("retrieve_simulation_command", True, "retrieve a simulation from the remote host", "simulation")
+commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve a simulation from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulation_command", True, "analyse a simulation", "simulation")
 commands[_reanalyse_command_name] = ("reanalyse_simulation_command", True, "re-analyse a simulation", "simulation")
 
@@ -3548,7 +3548,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def retrieve_simulation_command(self, command, **kwargs):
+    def retrieve_simulations_command(self, command, **kwargs):
 
         """
         This function ...
@@ -3558,10 +3558,16 @@ class SimulationManager(Configurable):
         """
 
         # Get the simulation name
-        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
+        simulation_names = self.get_simulation_names_from_command(command, **kwargs)
 
-        # Retrieve
-        self.retrieve_simulation(simulation_name)
+        # Retrieve all simulations
+        for simulation_name in simulation_names:
+
+            # Check
+            if not self.is_finished(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is not finished")
+
+            # Retrieve the simulation
+            self.retrieve_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
