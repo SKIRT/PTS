@@ -686,6 +686,18 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unique_observation_point_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_unique_labels(self.observations)
+
+    # -----------------------------------------------------------------
+
     @property
     def observation_labels(self):
 
@@ -694,7 +706,6 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        #return get_unique_labels(self.observations)
         return self.observations.keys()
 
     # -----------------------------------------------------------------
@@ -767,7 +778,7 @@ class SEDPlotter(Configurable):
         different_colors = iter(dark_pretty_colors)
 
         # Markers for the unique labels
-        markers = filled_markers[:len(self.observation_labels)]
+        markers = filled_markers[:len(self.unique_observation_point_labels)]
 
         # Used labels
         used_labels = []
@@ -824,7 +835,7 @@ class SEDPlotter(Configurable):
                     continue
 
                 # Get marker
-                marker = markers[self.observation_labels.index(labels[k])]
+                marker = markers[self.unique_observation_point_labels.index(labels[k])]
 
                 # Set zero error if other observations also have errors (BECAUSE CALLING MATPLOTLIB'S ERRORBAR AND AFTER THAT PLOT DOESN'T WORK APPARENTLY!!)
                 error = errors[k]
@@ -1468,7 +1479,7 @@ class SEDPlotter(Configurable):
         different_colors = iter(dark_pretty_colors)
 
         # Markers for the unique labels
-        markers = filled_markers[:len(self.observation_labels)]
+        markers = filled_markers[:len(self.unique_observation_point_labels)]
 
         # Used labels
         used_labels = []
@@ -1522,7 +1533,7 @@ class SEDPlotter(Configurable):
                     continue
 
                 # Get marker
-                marker = markers[self.observation_labels.index(labels[k])]
+                marker = markers[self.unique_observation_point_labels.index(labels[k])]
 
                 # Set zero error if other observations also have errors (BECAUSE CALLING MATPLOTLIB'S ERRORBAR AND AFTER THAT PLOT DOESN'T WORK APPARENTLY!!)
                 error = errors[k]
