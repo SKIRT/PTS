@@ -19,7 +19,7 @@ import numpy as np
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
-from pts.core.tools.stringify import tostr
+from pts.core.tools.stringify import tostr, yes_or_no
 
 # -----------------------------------------------------------------
 
@@ -144,6 +144,44 @@ for label in fitting_run.free_parameter_labels:
 # -----------------------------------------------------------------
 
 print("")
+print(fmt.blue + "GENERATION INFO:" + fmt.reset)
+print("")
+
+# -----------------------------------------------------------------
+
+def show_generation_info(generation):
+
+    """
+    This fnuction ...
+    :param generation:
+    :return:
+    """
+
+    print(" - " + fmt.bold + "Method: " + fmt.reset + generation.method)
+    print(" - " + fmt.bold + "Wavelength grid: " + fmt.reset + generation.wavelength_grid_name)
+    print(" - " + fmt.bold + "Representation: " + fmt.reset + generation.model_representation_name)
+    print(" - " + fmt.bold + "Number of photon packages: " + fmt.reset + yes_or_no(generation.npackages))
+    print(" - " + fmt.bold + "Dust self-absorption: " + fmt.reset + yes_or_no(generation.selfabsorption))
+    print(" - " + fmt.bold + "Transient heating: " + fmt.reset + yes_or_no(generation.transient_heating))
+    print(" - " + fmt.bold + "Spectral convolution: " + fmt.reset + yes_or_no(generation.spectral_convolution))
+    print(" - " + fmt.bold + "Use images: " + fmt.reset + yes_or_no(generation.use_images))
+
+# -----------------------------------------------------------------
+
+# Show info of generation a
+print(fmt.underlined + fmt.yellow + generation_name_a + fmt.reset)
+print("")
+show_generation_info(generation_a)
+print("")
+
+# Show info of generation b
+print(fmt.underlined + fmt.cyan + generation_name_b + fmt.reset)
+print("")
+show_generation_info(generation_b)
+print("")
+
+# -----------------------------------------------------------------
+
 print(fmt.blue + "CLOSEST SIMULATIONS:" + fmt.reset)
 print("")
 
@@ -165,7 +203,10 @@ for index, match in enumerate(matches):
     for label in fitting_run.free_parameter_labels:
 
         unit = parameter_units[label]
-        print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(values_a[label].to(unit).value, decimal_places=4) + ", " + tostr(values_b[label].to(unit).value, decimal_places=4) + " " + tostr(unit))
+        value_a = values_a[label].to(unit).value
+        value_b = values_b[label].to(unit).value
+        reldiff = np.exp(abs(np.log(value_a/value_b))) - 1
+        print(" - " + fmt.bold + label + fmt.reset + ": " + fmt.yellow + tostr(value_a, decimal_places=4) + fmt.reset + ", " + fmt.cyan + tostr(value_b, decimal_places=4) + fmt.reset + " " + tostr(unit) + " (" + tostr(reldiff*100, decimal_places=3) + "%)")
 
     print("")
 
