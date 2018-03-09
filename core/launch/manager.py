@@ -7285,7 +7285,10 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return show_simulation_definition
+        definition = show_simulation_definition.copy(pos_optional=False)
+        definition.remove_optional("names")
+        definition.remove_flag("from_directories")
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -7334,7 +7337,10 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return show_analysis_definition
+        definition = show_analysis_definition.copy(pos_optional=False)
+        definition.remove_optional("names")
+        definition.remove_flag("from_directories")
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -7523,7 +7529,10 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return show_simulation_definition
+        definition = show_simulation_definition.copy(pos_optional=False)
+        definition.remove_optional("names")
+        definition.remove_flag("from_directories")
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -7578,7 +7587,10 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return show_analysis_definition
+        definition = show_analysis_definition.copy(pos_optional=False)
+        definition.remove_optional("names")
+        definition.remove_flag("from_directories")
+        return definition
 
     # -----------------------------------------------------------------
 

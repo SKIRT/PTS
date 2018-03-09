@@ -39,7 +39,8 @@ def tostr(value, **kwargs):
     scientific_int = kwargs.pop("scientific_int", True) # also represent integers in scientific notation
 
     # Set default number of decimal places
-    decimal_places = 2
+    decimal_places = kwargs.pop("decimal_places", None) # let it be done automatically in the str_from_... function
+    #print(str(value), "nd", decimal_places)
 
     # Set scientific flag flexibly, if scientific flag was not passed explicitly
     if scientific is None:
@@ -51,11 +52,13 @@ def tostr(value, **kwargs):
             value = int(value)
 
             #if -1e4 <= value <= 1e4: scientific = False
-            if -999 < value < 999: scientific = False
+            if -999 < value < 999:
+                scientific = False
+                decimal_places = 0
             else: scientific = True
 
             # No decimals for integers
-            decimal_places = 0
+            #decimal_places = 0 YES: OF COURSE THERE MUST BE DECIMAL PLACES FOR SCIENTIFIC NOTATION
 
         # Real value
         elif types.is_real_type(value):
@@ -88,6 +91,8 @@ def tostr(value, **kwargs):
         # Other
         else: scientific = False
 
+        #print("scien", scientific)
+
         # Set the options
         kwargs["scientific"] = scientific
         kwargs["decimal_places"] = decimal_places
@@ -97,7 +102,7 @@ def tostr(value, **kwargs):
 
         if scientific:
 
-            # ONLY IF SICENTIFIC_INT IS TRUE
+            # ONLY IF SCIENTIFIC_INT IS TRUE
             if scientific_int:
 
                 # ONLY IF NECESSARY
@@ -111,7 +116,6 @@ def tostr(value, **kwargs):
         kwargs["scientific"] = scientific
 
     # Stringify
-    #return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter, **kwargs)[1].strip()
     return stringify(value, **kwargs)[1].strip()
 
 # -----------------------------------------------------------------
@@ -602,8 +606,6 @@ def stringify_not_list(value, **kwargs):
     :return:
     """
 
-    #print("okwargs", kwargs)
-
     # Standard
     if types.is_boolean_type(value): return "boolean", str_from_bool(value, **kwargs)
     elif types.is_integer_type(value): return "integer", str_from_integer(value, **kwargs)
@@ -778,7 +780,7 @@ def str_from_integer(integer, **kwargs):
     
     # Get settings
     scientific = kwargs.pop("scientific", False)
-    decimal_places = kwargs.pop("decimal_places", 2)
+    decimal_places = kwargs.pop("decimal_places", None)
     fancy = kwargs.pop("fancy", False)
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
@@ -786,10 +788,26 @@ def str_from_integer(integer, **kwargs):
 
     # Check input
     if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
+    if ndigits is not None and decimal_places is not None: raise ValueError("Cannot specify both number of decimal places and number of digits")
 
+    # Set ndigits and number of decimal places
+    if ndigits is not None:
+        if scientific: decimal_places = ndigits - 1
+        else: pass
+    elif decimal_places is not None:
+        if scientific: ndigits = decimal_places + 1
+        else: pass
+    else: decimal_places = 2 # default value for when ndigits is not specified
+
+    #print(scientific, decimal_places, ndigits)
+
+    # Scientific notation
     if scientific:
+
         if fancy:
+
             if ndigits is not None:
+
                 power = len(str(integer)) - 1
                 digits = []
                 str_rounded = str(integer)
@@ -799,17 +817,19 @@ def str_from_integer(integer, **kwargs):
                 if html: return digits[0] + "." + "".join(digits[1:]) + " &times; 10<sup>" + str(power) + "</sup>"
                 elif unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK??
                 else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
+
             else:
+
                 result = "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
                 power = int(result.split("e")[1])
                 if html: result = result.split("e")[0] + " &times; 10<sup>" + str(power) + "</sup>"
                 elif unicode: result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK
                 else: result = result.split("e")[0] + " x 10^" + str(power)
                 return result
-        else:
-            if ndigits is not None: decimal_places = ndigits - 1
-            #return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
 
+        else:
+
+            if ndigits is not None: decimal_places = ndigits - 1
             if html: return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", " &times; 10<sup>") + "</sup>"
             else: return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", "e")
 
@@ -846,21 +866,38 @@ def str_from_real(real, **kwargs):
 
     # Get kwargs
     scientific = kwargs.pop("scientific", False)
-    decimal_places = kwargs.pop("decimal_places", 2)
+    decimal_places = kwargs.pop("decimal_places", None)
     fancy = kwargs.pop("fancy", False)
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
     doround = kwargs.pop("round", False)
     html = kwargs.pop("html", False)
 
+    #print(decimal_places, ndigits)
+
     # Check input
     if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
+    if ndigits is not None and decimal_places is not None: raise ValueError("Cannot specify both number of decimal places and number of digits")
 
-    #print(real)
+    # Set ndigits and number of decimal places
+    if ndigits is not None:
+        if scientific: decimal_places = ndigits - 1
+        else: pass
+    elif decimal_places is not None:
+        if scientific: ndigits = decimal_places + 1
+        else: pass
+    else: decimal_places = 2 # default value for when ndigits is not specified
 
+    #print(decimal_places, ndigits)
+
+    # Scientific notation
     if scientific:
+
+        # Fancy
         if fancy:
+
             if ndigits is not None:
+
                 if "e" in str(real): power = int(str(real).split("e")[1])
                 else: power = len(str(real).split(".")[0]) - 1
                 digits = []
@@ -878,6 +915,7 @@ def str_from_real(real, **kwargs):
                 if html: return digits[0] + "." + "".join(digits[1:]) + " &times; 10<sup>" + str(power) + "</sup>"
                 elif unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8") # DOESN'T WORK??
                 else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
+
             else:
                 result = ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
                 power = int(result.split("e")[1])
@@ -894,9 +932,12 @@ def str_from_real(real, **kwargs):
             else: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
 
     else:
+
         if doround:
+
             if ndigits is not None: return repr(numbers.round_to_n_significant_digits(real, ndigits))
-            return ("{:." + str(decimal_places) + "}").format(real)
+            else: return ("{:." + str(decimal_places) + "}").format(real)
+
         else: return repr(real)
 
 # -----------------------------------------------------------------

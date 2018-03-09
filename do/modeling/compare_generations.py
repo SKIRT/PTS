@@ -18,6 +18,8 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
+from pts.core.tools import formatting as fmt
+from pts.core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -37,6 +39,9 @@ else: definition.add_required("name", "string", "name of the fitting run", choic
 
 # Generation names
 definition.add_positional_optional("generations", "string_pair", "names of generations to compare")
+
+# Number of best maching simulations
+definition.add_optional("nsimulations", "positive_integer", "number of best matching simulations", 5)
 
 # Create the configuration
 config = parse_arguments("compare_generations", definition, "Compare simulation parameters between generations")
@@ -108,8 +113,8 @@ for index in range(len(parameters_a)):
 
     # Calculate difference
     diff = np.sqrt(np.sum(np.power(diff_keys, 2)))
-    #print(diff)
 
+    # Add to the dictionary
     if closest_simulation_name in closest:
         current_diff = closest[closest_simulation_name][1]
         if diff < current_diff: closest[closest_simulation_name] = (simulation_name, diff)
@@ -117,14 +122,51 @@ for index in range(len(parameters_a)):
 
 # -----------------------------------------------------------------
 
+# Keep only the closest matches
 matches = []
+
+# Sort from best match to worse match
 for closest_simulation_name in sorted(closest, key=lambda name: closest[name][1]):
+
     simulation_name = closest[closest_simulation_name][0]
     diff = closest[closest_simulation_name][1]
     matches.append((simulation_name, closest_simulation_name, diff))
+    if len(matches) == config.nsimulations: break
 
 # -----------------------------------------------------------------
 
-for match in matches: print(match)
+# Determine common parameter units
+parameter_units = dict()
+for label in fitting_run.free_parameter_labels:
+    unit = parameters_a.column_unit(label)
+    parameter_units[label] = unit
+
+# -----------------------------------------------------------------
+
+print("")
+print(fmt.blue + "CLOSEST SIMULATIONS:" + fmt.reset)
+print("")
+
+# Loop over the matches
+for index, match in enumerate(matches):
+
+    # Get simulation names
+    name_a, name_b = match[0], match[1]
+
+    # Show simulation names
+    print(str(index+1) + ". " + fmt.underlined + fmt.green + name_a + fmt.reset + ", " + fmt.underlined + fmt.green + name_b + fmt.reset + ":")
+    print("")
+
+    # Get parameter values
+    values_a = parameters_a.parameter_values_for_simulation(name_a)
+    values_b = parameters_b.parameter_values_for_simulation(name_b)
+
+    # Loop over the parameter values
+    for label in fitting_run.free_parameter_labels:
+
+        unit = parameter_units[label]
+        print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(values_a[label].to(unit).value, decimal_places=4) + ", " + tostr(values_b[label].to(unit).value, decimal_places=4) + " " + tostr(unit))
+
+    print("")
 
 # -----------------------------------------------------------------
