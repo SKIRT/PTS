@@ -151,6 +151,7 @@ _remove_command_name = "remove"
 _clear_command_name = "clear"
 _cache_command_name = "cache"
 _unfinish_command_name = "unfinish"
+_unlaunch_command_name = "unlaunch"
 _unretrieve_command_name = "unretrieve"
 _unanalyse_command_name = "unanalyse"
 _relaunch_command_name = "relaunch"
@@ -205,6 +206,7 @@ commands[_remove_command_name] = ("remove_simulation_command", True, "remove sim
 commands[_clear_command_name] = (None, None, "clear simulation output/input/analysis", "simulation")
 commands[_cache_command_name] = (None, None, "cache simulation/analysis output to another directory/filesystem", "simulations")
 commands[_unfinish_command_name] = ("unfinish_simulation_command", True, "remove remote output of a simulation and unset finished flag", "simulation")
+commands[_unlaunch_command_name] = ("unlaunch_simulation_command", True, "undo launching a simulation", "simulation")
 commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "remove local (retrieved) output of a simulation and unset retrieved flag", "simulation")
 commands[_unanalyse_command_name] = ("unanalyse_simulation_command", True, "remove analysis output of a simulation and unset analysis flags", "simulation")
 commands[_relaunch_command_name] = ("relaunch_simulation_command", True, "relaunch simulations on the original remote host", "simulation")
@@ -1227,6 +1229,76 @@ class SimulationManager(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def all_queued_simulations(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        for simulation in self.all_simulations:
+            if not self.is_queued(simulation.name): continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_running_simulations(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        for simulation in self.all_simulations:
+            if not self.is_running(simulation.name): continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_queued_or_running_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations:
+            if not (self.is_queued(simulation.name) or self.is_running(simulation.name)): continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_finished_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations:
+            if not simulation.finished: continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+    
+    @property
+    def all_not_finished_simulations(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        for simulation in self.all_simulations:
+            if simulation.finished: continue
+            yield simulation
+        
+    # -----------------------------------------------------------------
+
+    @property
     def all_retrieved_simulations(self):
 
         """
@@ -1666,6 +1738,23 @@ class SimulationManager(Configurable):
 
         # Return the screen name
         return self.get_execution_handle(simulation_name).value
+
+    # -----------------------------------------------------------------
+
+    def get_queued_and_running_simulation_names_for_screen(self, screen_name):
+
+        """
+        This function ...
+        :param screen_name:
+        :return:
+        """
+
+        names = []
+        for simulation in self.all_queued_or_running_simulations:
+            if self.get_screen_name(simulation.name) != screen_name: continue
+            #yield simulation.name
+            names.append(simulation.name)
+        return names
 
     # -----------------------------------------------------------------
 
@@ -7722,8 +7811,7 @@ class SimulationManager(Configurable):
         simulation = self.get_simulation(simulation_name)
 
         # Cancel or stop the simulation
-        if self.is_running(simulation_name): self.stop_simulation(simulation_name)
-        elif self.is_queued(simulation_name): self.cancel_simulation(simulation_name)
+        self.cancel_or_stop_simulation(simulation_name)
 
         # TODO: support different clusters
         host_id = host.id
@@ -7812,6 +7900,20 @@ class SimulationManager(Configurable):
 
             # Cancel the simulation
             self.cancel_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def cancel_or_stop_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if self.is_running(simulation_name): self.stop_simulation(simulation_name)
+        elif self.is_queued(simulation_name): self.cancel_simulation(simulation_name)
+        else: log.warning("Simulation '" + simulation_name + "' is not running or queued: cancelling is not required")
 
     # -----------------------------------------------------------------
 
@@ -8214,6 +8316,45 @@ class SimulationManager(Configurable):
 
         # Clear the input directory
         remote.clear_directory(simulation.remote_input_path)
+
+    # -----------------------------------------------------------------
+
+    def unlaunch_simulation_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command)
+
+        # Unlaunch
+        self.unlaunch_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def unlaunch_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Unlaunching simulation '" + simulation_name + "' ...")
+
+        # Unfinish: remove remote simulation output and unset finished flag
+        self.unfinish_simulation(simulation_name)
+
+        # Unretrieve: remove local simulation output and unset retrieved flag
+        self.unretrieve_simulation(simulation_name)
+
+        # Unanalyse: remove analysis output and unset analysis flags
+        self.unanalyse_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -9509,14 +9650,43 @@ class SimulationManager(Configurable):
             log.warning("The screen '" + screen_name + "' is active: currently running simulations will have to be stopped and relaunched for simulation '" + simulation_name + "'")
 
             # Stop the screen
-            remote.kill_screen(screen_name)
+            if not self.config.dry:
+
+                # Debugging
+                log.debug("Stopping the screen session '" + screen_name + "' ...")
+
+                # Stop the screen
+                remote.kill_screen(screen_name)
+
+            # Dry mode: don't stop
+            else: log.warning("[DRY] Not stopping the screen session '" + screen_name + "' ...")
 
             # Check which simulations are still queued or running in this screen
+            screen_simulation_names = self.get_queued_and_running_simulation_names_for_screen(screen_name)
 
-            # Stop/cancel and re-add the simulations to the queue (they will be launched together with the relaunched simulations in a new screen)
+            # Loop over the simulations
+            for screen_simulation_name in screen_simulation_names:
 
-            # Remove their remote output
-            self.unfinish_simulation(simulation_name)
+                # Stop/cancel and re-add the simulations to the queue (they will be launched together with the relaunched simulations in a new screen)
+                #self.cancel_or_stop_simulation(screen_simulation_name): NO, THE SCREEN IS ALREADY STOPPED
+
+                # Add the simulation to the queue
+                self._relaunch_simulation_screen_impl(screen_simulation_name) # use original parallelization and logging options
+
+        # Relaunch
+        self._relaunch_simulation_screen_impl(simulation_name, parallelization=parallelization, logging_options=logging_options)
+        
+    # -----------------------------------------------------------------
+
+    def _relaunch_simulation_screen_impl(self, simulation_name, parallelization=None, logging_options=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param parallelization:
+        :param logging_options:
+        :return: 
+        """
 
         # Set the parallelization scheme
         if parallelization is None:
@@ -9530,18 +9700,12 @@ class SimulationManager(Configurable):
             if screen_script is None: raise RuntimeError("Cannot determine logging options: original screen script not found")
             logging_options = screen_script.get_logging_options(simulation_name)
 
+        # Unlaunch: remove remote and local output and analysis output
+        self.unlaunch_simulation(simulation_name)
+
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
         host_id = self.get_host_id_for_simulation(simulation_name)
-
-        # Unanalyse: remove analysis output and unset analysis flags
-        self.unanalyse_simulation(simulation_name)
-
-        # Unretrieve: remove local simulation output and unset retrieved flag
-        self.unretrieve_simulation(simulation_name)
-
-        # Unfinish: remove remote simulation output and unset finished flag
-        self.unfinish_simulation(simulation_name)
 
         # Add the simulation to the queue
         self.launcher.add_to_queue(simulation.definition, simulation_name, host_id=host_id, parallelization=parallelization,
@@ -9589,6 +9753,9 @@ class SimulationManager(Configurable):
             job_script = self.get_job_script(simulation_name)
             if job_script is None: raise RuntimeError("Cannot determine scheduling options: original job script not found")
             scheduling_options = job_script.scheduling_options
+
+        # Unlaunch: remove remote and local output and analysis output
+        self.unlaunch_simulation(simulation_name)
 
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
