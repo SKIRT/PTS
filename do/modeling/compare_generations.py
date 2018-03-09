@@ -14,12 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr, yes_or_no
+from pts.core.plot.sed import plot_seds
 
 # -----------------------------------------------------------------
 
@@ -42,6 +44,14 @@ definition.add_positional_optional("generations", "string_pair", "names of gener
 
 # Number of best maching simulations
 definition.add_optional("nsimulations", "positive_integer", "number of best matching simulations", 5)
+
+# Plot SEDs or fluxes
+definition.add_flag("plot_seds", "compare simulated SEDs of matching simulations")
+definition.add_flag("plot_fluxes", "compare the mock observed SEDs of matching simulations")
+definition.add_flag("plot_datacube_residuals", "plot the residuals of the matching simulation datacubes")
+definition.add_flag("plot_image_residuals", "plot the residuals of the matching simulation mock observed images")
+
+# -----------------------------------------------------------------
 
 # Create the configuration
 config = parse_arguments("compare_generations", definition, "Compare simulation parameters between generations")
@@ -182,6 +192,12 @@ print("")
 
 # -----------------------------------------------------------------
 
+reference_seds = OrderedDict()
+reference_seds["Observed clipped fluxes"] = environment.observed_sed
+reference_seds["Observed truncated fluxes"] = environment.truncated_sed
+
+# -----------------------------------------------------------------
+
 print(fmt.blue + "CLOSEST SIMULATIONS:" + fmt.reset)
 print("")
 
@@ -209,5 +225,29 @@ for index, match in enumerate(matches):
         print(" - " + fmt.bold + label + fmt.reset + ": " + fmt.yellow + tostr(value_a, decimal_places=4) + fmt.reset + ", " + fmt.cyan + tostr(value_b, decimal_places=4) + fmt.reset + " " + tostr(unit) + " (" + tostr(reldiff*100, decimal_places=3) + "%)")
 
     print("")
+
+    # Plot SEDs
+    if config.plot_seds:
+
+        # Create SEDs
+        seds = OrderedDict()
+        #seds.update(reference_seds)
+        seds[generation_name_a] = generation_a.get_simulation_sed(name_a)
+        seds[generation_name_b] = generation_b.get_simulation_sed(name_b)
+
+        # Plot
+        plot_seds(seds)
+
+    # Plot fluxes
+    if config.plot_fluxes:
+
+        # Create SEDs
+        seds = OrderedDict()
+        seds.update(reference_seds)
+        seds[generation_name_a] = generation_a.get_simulation_mock_sed(name_a)
+        seds[generation_name_b] = generation_b.get_simulation_mock_sed(name_b)
+
+        # Plot
+        plot_seds(seds)
 
 # -----------------------------------------------------------------

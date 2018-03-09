@@ -34,6 +34,7 @@ from ..filter.broad import BroadBandFilter
 from ..basics.errorbar import ErrorBar
 from ..tools import numbers
 from ..tools.utils import lazyproperty
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -58,7 +59,7 @@ color_plt_identifiers = color_hex.keys()
 
 # -----------------------------------------------------------------
 
-def plot_sed(sed, label=None, path=None, title=None):
+def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf"):
 
     """
     This function ...
@@ -66,6 +67,8 @@ def plot_sed(sed, label=None, path=None, title=None):
     :param label:
     :param path:
     :param title:
+    :param show_file:
+    :param format:
     :return:
     """
 
@@ -81,8 +84,49 @@ def plot_sed(sed, label=None, path=None, title=None):
     # Add the SED
     plotter.add_sed(sed, label)
 
+    # Set filepath, if plot is to be shown as file
+    if path is None and show_file: path = fs.join(introspection.pts_temp_dir, "seds." + format)
+
     # Make the plot
     plotter.run(title=title, output=path)
+
+    # Show file?
+    if show_file: fs.open_file(path)
+
+# -----------------------------------------------------------------
+
+def plot_seds(seds, **kwargs):
+
+    """
+    This function ...
+    :param seds:
+    :param path:
+    :param title:
+    :return:
+    """
+
+    # Get settings
+    title = kwargs.pop("title", None)
+    path = kwargs.pop("path", None)
+    show_file = kwargs.pop("show_file", None)
+    format = kwargs.pop("format", "pdf")
+
+    # Create SED plotter
+    plotter = SEDPlotter()
+
+    # Add SEDs
+    for name in seds:
+        sed = seds[name]
+        plotter.add_sed(sed, label=name)
+
+    # Set filepath, if plot is to be shown as file
+    if path is None and show_file: path = fs.join(introspection.pts_temp_dir, "seds." + format)
+
+    # Run the plotter
+    plotter.run(title=title, output=path)
+
+    # Show file
+    if show_file: fs.open_file(path)
 
 # -----------------------------------------------------------------
 
@@ -879,13 +923,6 @@ class SEDPlotter(Configurable):
 
         # Debugging
         log.debug("Plotting only model SEDs ...")
-
-        # Setup the figure
-        #self.main_plot = self.figure.ax
-
-        #plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
-        #self.main_plot = plots[0]
-        #self.residual_plots = plots[1:]
 
         # Create the main plot
         self.main_plot = self.figure.create_one_plot()

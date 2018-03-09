@@ -842,7 +842,6 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-
     def get_simulation_mock_sed_path(self, name):
 
         """

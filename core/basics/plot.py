@@ -3643,14 +3643,8 @@ class MPLFigure(Figure):
         # Inform the user
         log.info("Showing the plot ...")
 
-        # SHow the figure
-        #Plotter(self.figure)
-
-        # Wait untill key is pressed
-        #result = raw_input("press ENTER to continue")
-
         # Show the figure
-        if block: self.figure.show() #block=block)
+        if block: plt.show(self.figure) #self.figure.show() #block=block)
         else: self.figure.draw()
 
     # -----------------------------------------------------------------

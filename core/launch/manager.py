@@ -61,7 +61,7 @@ from ..remote.mounter import mount_remote
 from ..simulation.skifile import show_normalizations
 from ..prep.summarize import show_instrument, show_stellar_component, show_dust_component
 from ..units.unit import get_common_unit
-from ..plot.sed import SEDPlotter
+from ..plot.sed import plot_seds
 from ..data.sed import load_multiple_seds
 from ..misc.fluxes import get_sed_instrument_name
 from ..misc.images import get_datacube_instrument_name
@@ -5069,13 +5069,9 @@ class SimulationManager(Configurable):
         # Get simulation output
         output = self.get_output(simulation_name)
 
-        # Create SED plotter
-        plotter = SEDPlotter()
-
-        # Add reference SEDs
-        for name in self.reference_seds:
-            sed = self.reference_seds[name]
-            plotter.add_sed(sed, label=name)
+        # Set the SEDs to plot
+        seds = OrderedDict()
+        seds.update(self.reference_seds)
 
         # Plot the SEDs
         for path in output.seds:
@@ -5084,10 +5080,10 @@ class SimulationManager(Configurable):
             instr_name = get_sed_instrument_name(path, prefix)
 
             # Load SEDs
-            seds = load_multiple_seds(path, as_dict=True)
+            sed_contributions = load_multiple_seds(path, as_dict=True)
 
             # Loop over the SEDs
-            for contribution in seds:
+            for contribution in sed_contributions:
 
                 # Determine label
                 label = instr_name + " " + contribution
@@ -5095,20 +5091,11 @@ class SimulationManager(Configurable):
                 # Get the SED
                 sed = seds[contribution]
 
-                # Add the SED to the plotter
-                plotter.add_sed(sed, label=label)
+                # Add the SED to the dictionary
+                seds[label] = sed
 
-        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
-
-        # Set filepath
-        if path is not None: filepath = path
-        else: filepath = fs.join(introspection.pts_temp_dir, "seds.pdf")
-
-        # Run the plotter
-        plotter.run(output=filepath)
-
-        # Open the file, if path was not specified
-        if path is None: fs.open_file(filepath)
+        # Make (and show) the plot
+        plot_seds(seds, path=path, show_file=True)
 
     # -----------------------------------------------------------------
 
@@ -5455,28 +5442,13 @@ class SimulationManager(Configurable):
         # Get destination path
         path = kwargs.pop("path", None)
 
-        # Create SED plotter
-        plotter = SEDPlotter()
+        # Set SEDs
+        seds = OrderedDict()
+        seds.update(self.reference_seds)
+        seds["Mock observation"] = fluxes
 
-        # Add reference SEDs
-        for name in self.reference_seds:
-            sed = self.reference_seds[name]
-            plotter.add_sed(sed, label=name)
-
-        # Add the mock SED to the plotter
-        plotter.add_sed(fluxes, label="Mock observation")
-
-        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
-
-        # Set filepath
-        if path is not None: filepath = path
-        else: filepath = fs.join(introspection.pts_temp_dir, "fluxes.pdf")
-
-        # Run the plotter
-        plotter.run(output=filepath)
-
-        # Open the file, if path was not specified
-        if path is None: fs.open_file(filepath)
+        # Make (and show) the plot
+        plot_seds(seds, path=path, show_file=True)
 
     # -----------------------------------------------------------------
 
@@ -5544,28 +5516,13 @@ class SimulationManager(Configurable):
         # Get destination path
         path = kwargs.pop("path", None)
 
-        # Create SED plotter
-        plotter = SEDPlotter()
+        # Set SEDs
+        seds = OrderedDict()
+        seds.update(self.reference_seds)
+        seds["Mock observation"] = fluxes
 
-        # Add reference SEDs
-        for name in self.reference_seds:
-            sed = self.reference_seds[name]
-            plotter.add_sed(sed, label=name)
-
-        # Add the mock SED to the plotter
-        plotter.add_sed(fluxes, label="Mock observation")
-
-        # BECAUSE FOR SOME REASON INTERACTIVE PLOTTING IS NOT WORKING
-
-        # Set filepath
-        if path is not None: filepath = path
-        else: filepath = fs.join(introspection.pts_temp_dir, "fluxes.pdf")
-
-        # Run the plotter
-        plotter.run(output=filepath)
-
-        # Open the file, if path was not specified
-        if path is None: fs.open_file(filepath)
+        # Make (and show) the plot
+        plot_seds(seds, path=path, show_file=True)
 
     # -----------------------------------------------------------------
 
