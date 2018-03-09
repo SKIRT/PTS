@@ -47,6 +47,7 @@ definition.add_optional("unit", "photometric_unit", "photometric unit", "Jy", co
 
 # Residual reference
 definition.add_optional("residual_reference", "string", "reference for the residuals", default_residual_reference, choices=residual_references)
+definition.add_flag("models_residuals", "plot residuals for only model SEDs", False)
 
 # The plotting library to use
 definition.add_optional("library", "string", "plotting library", mpl, plotting_libraries)

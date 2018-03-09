@@ -112,7 +112,7 @@ def plot_seds(seds, **kwargs):
     format = kwargs.pop("format", "pdf")
 
     # Create SED plotter
-    plotter = SEDPlotter()
+    plotter = SEDPlotter(kwargs)
 
     # Add SEDs
     for name in seds:
@@ -174,7 +174,7 @@ class SEDPlotter(Configurable):
         self.title = None
 
         # Create ordered dictionaries for the model and observed SEDs (the order of adding SEDs is remembered)
-        self.models = []
+        self.models = OrderedDict()
         self.observations = OrderedDict()
 
         # Keep track of the minimal and maximal wavelength and flux encountered during the plotting
@@ -291,6 +291,9 @@ class SEDPlotter(Configurable):
         # Add observed or modeled SED
         if isinstance(sed, ObservedSED):
 
+            # Check label
+            if label in self.observation_labels: raise ValueError("Already an observation with the label '" + label + "'")
+
             # Make a copy with only broad band filters
             only_broad = sed.only_broad_band()
 
@@ -300,7 +303,16 @@ class SEDPlotter(Configurable):
             # Set the SED
             self.observations[label] = only_broad
 
-        elif isinstance(sed, SED): self.models.append((label, sed, residuals, ghost))
+        # Add model SED
+        elif isinstance(sed, SED):
+
+            # Check label
+            if label in self.model_labels: raise ValueError("Already a model with the label '" + label + "'")
+
+            # Add the SED
+            self.models[label] = (sed, residuals, ghost)
+
+        # Invalid
         else: raise ValueError("The SED must be an SED or ObservedSED instance")
 
     # -----------------------------------------------------------------
@@ -563,9 +575,7 @@ class SEDPlotter(Configurable):
         log.info("Clearing the SED plotter ...")
 
         # Set default values for all attributes
-        #self.models = OrderedDict()
-        #self.models_no_residuals = OrderedDict()
-        self.models = []
+        self.models = OrderedDict()
         self.observations = OrderedDict()
         self._min_wavelength = None
         self._max_wavelength = None
@@ -676,15 +686,28 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def unique_observation_labels(self):
+    @property
+    def observation_labels(self):
 
         """
         This function ...
         :return:
         """
 
-        return get_unique_labels(self.observations)
+        #return get_unique_labels(self.observations)
+        return self.observations.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.models.keys()
 
     # -----------------------------------------------------------------
 
@@ -744,7 +767,7 @@ class SEDPlotter(Configurable):
         different_colors = iter(dark_pretty_colors)
 
         # Markers for the unique labels
-        markers = filled_markers[:len(self.unique_observation_labels)]
+        markers = filled_markers[:len(self.observation_labels)]
 
         # Used labels
         used_labels = []
@@ -801,7 +824,7 @@ class SEDPlotter(Configurable):
                     continue
 
                 # Get marker
-                marker = markers[self.unique_observation_labels.index(labels[k])]
+                marker = markers[self.observation_labels.index(labels[k])]
 
                 # Set zero error if other observations also have errors (BECAUSE CALLING MATPLOTLIB'S ERRORBAR AND AFTER THAT PLOT DOESN'T WORK APPARENTLY!!)
                 error = errors[k]
@@ -924,20 +947,41 @@ class SEDPlotter(Configurable):
         # Debugging
         log.debug("Plotting only model SEDs ...")
 
+        for_residuals = []
+        for model_label in self.models:
+            sed, plot_residuals, ghost = self.models[model_label]
+            if plot_residuals: for_residuals.append(model_label)
+
         # Create the main plot
-        self.main_plot = self.figure.create_one_plot()
+        if self.config.models_residuals and len(for_residuals) > 1:
 
-        # Add model SEDs
+            height_ratios = [4,1]
+            # CREATE MAIN PLOT AND RESIDUAL PLOT
+            plots = self.figure.create_column(2, share_axis=True, height_ratios=height_ratios)
 
-        counter_residuals = 0
-        counter_no_residals = 0
+            self.main_plot = plots[0]
+            self.residual_plots = plots[1:]
+            residual_plot = self.residual_plots[0]
 
-        line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
-        line_styles_models_no_residuals = ["-"] * len(self.models)
+        else:
+            self.main_plot = self.figure.create_one_plot()
+            residual_plot = None
+
+        # Keep
+        counter = 0
+        model_colors = dict()
+        model_styles = dict()
+
+        #line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        line_colors_models = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        #line_styles_models_no_residuals = ["-"] * len(self.models)
 
         # Loop over the model SEDs
-        for model_label, sed, plot_residuals, ghost in self.models:
+        for model_label in self.models:
 
+            sed, plot_residuals, ghost = self.models[model_label]
+
+            # Ghost
             if ghost:
 
                 # Get fluxes, wavelengths and errors
@@ -946,22 +990,11 @@ class SEDPlotter(Configurable):
 
                 # Plot the model SED as a grey line (no errors)
                 self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey")
+                model_colors[model_label] = "lightgrey"
+                model_styles[model_label] = "-"
 
-            elif plot_residuals:
-
-                #print(self.config.unit.density)
-                #print(sed.unit)
-
-                # Get fluxes, wavelengths and errors
-                fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
-                wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                errors = sed.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info) if sed.has_errors else None
-
-                # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter_residuals], model_label, errors=errors)
-
-                counter_residuals += 1
-
+            # No
+            # PLOT_RESIDUALS IS IRRELEVANT, RIGHT?
             else:
 
                 # Get fluxes, wavelengths and errors
@@ -970,9 +1003,97 @@ class SEDPlotter(Configurable):
                 errors = sed.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residals], model_label, errors=errors, linecolor=line_colors_models_no_residuals[counter_no_residals], adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], model_label, errors=errors, linecolor=line_colors_models[counter])
+                model_colors[model_label] = line_colors_models[counter]
+                model_styles[model_label] = line_styles[counter]
 
-                counter_no_residals += 1
+                counter += 1
+
+        # Plot residual axis
+        if residual_plot is not None:
+
+            # Pair of models
+            if len(for_residuals) == 2:
+
+                label_a = for_residuals[0]
+                label_b = for_residuals[1]
+                sed_a = self.models[label_a][0]
+                sed_b = self.models[label_b][0]
+
+                # Get wavelengths
+                wavelengths_a = sed_a.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                wavelengths_b = sed_b.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+
+                # Get fluxes
+                fluxes_a = sed_a.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                fluxes_b = sed_b.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+
+                # Determine min and max wavelength
+                min_wavelength = max(min(wavelengths_a), min(wavelengths_b))
+                max_wavelength = min(max(wavelengths_a), max(wavelengths_b))
+
+                # Filter
+                wavelengths_fluxes_a = [(wavelength, flux) for wavelength, flux in zip(wavelengths_a, fluxes_a) if min_wavelength < wavelength < max_wavelength]
+                wavelengths_fluxes_b = [(wavelength, flux) for wavelength, flux in zip(wavelengths_b, fluxes_b) if min_wavelength < wavelength < max_wavelength]
+
+                # Wavelengths and fluxes again
+                wavelengths_a = [wf[0] for wf in wavelengths_fluxes_a]
+                fluxes_a = [wf[1] for wf in wavelengths_fluxes_a]
+                wavelengths_b = [wf[0] for wf in wavelengths_fluxes_b]
+                fluxes_b = [wf[1] for wf in wavelengths_fluxes_b]
+
+                # Interpolate to same grid
+                f2 = interp1d(wavelengths_b, fluxes_b, kind='cubic')
+
+                # Determine residuals
+                fluxes_b_wavelengths_a = f2(wavelengths_a)
+                residuals = (fluxes_a - fluxes_b_wavelengths_a) / fluxes_a * 100.
+                residuals_a = 0.5 * residuals
+                residuals_b = - 0.5 * residuals
+
+                # Plot both
+                residual_plot.plot(wavelengths_a, residuals_a, linestyle=model_styles[label_a], color=model_colors[label_a], label=label_a)
+                residual_plot.plot(wavelengths_a, residuals_b, linestyle=model_styles[label_b], color=model_colors[label_b], label=label_b)
+
+            # More models
+            elif len(for_residuals) > 2:
+
+                # Get reference
+                reference_model_label = for_residuals[0]
+                reference_model_sed = self.models[reference_model_label][0]
+                reference_wavelengths = reference_model_sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                reference_fluxes = reference_model_sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+
+                # Plot reference
+                residuals = [0.0] * len(reference_wavelengths)
+                residual_plot.plot(reference_wavelengths, residuals, linestyle=model_styles[reference_model_label], color=model_colors[reference_model_label], label=reference_model_label)
+
+                # Loop over the models to be plotted
+                for model_label in for_residuals:
+                    if model_label == reference_model_label: continue
+
+                    # Get color and style
+                    linecolor = model_colors[model_label]
+                    linestyle = model_styles[model_label]
+
+                    # Get the sed
+                    sed = self.models[model_label][0]
+
+                    sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                    model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
+                    f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
+
+                    min_sed_wavelength = min(sed_wavelengths)
+                    max_sed_wavelength = max(sed_wavelengths)
+
+                    wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(reference_wavelengths, reference_fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
+                    wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
+
+                    fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
+                    residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
+
+                    # Plot
+                    residual_plot.plot(wavelengths_residuals, residuals, linestyle=linestyle, color=linecolor, label=model_label)
 
         # Finish the plot
         self.finish_plot()
@@ -990,7 +1111,8 @@ class SEDPlotter(Configurable):
         count = 0
 
         # Loop over the models
-        for model_label, sed, plot_residuals, ghost in self.models:
+        for model_label in self.models:
+            sed, plot_residuals, ghost = self.models[model_label]
             if plot_residuals: count += 1
         return count
 
@@ -1022,11 +1144,6 @@ class SEDPlotter(Configurable):
         log.debug("Plotting one observed SED with model SEDs ...")
 
         # Setup the figure
-        #gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
-        #self.main_plot = plt.subplot(gs[0])
-        #ax2 = plt.subplot(gs[1], sharex=self.main_plot)
-        #self.residual_plots.append(ax2)
-
         if self.config.residual_reference == "observations": nplots = 2
         elif self.config.residual_reference == "models": nplots = 1 + self.nmodels_for_residuals
         else: raise ValueError("")
@@ -1034,9 +1151,7 @@ class SEDPlotter(Configurable):
         height_ratios = [4] + [1] * (nplots-1)
 
         # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
-        #self.main_plot, residual_plot = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
         plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
-        #self.residual_plots.append(residual_plot)
         self.main_plot = plots[0]
         self.residual_plots = plots[1:]
 
@@ -1055,7 +1170,6 @@ class SEDPlotter(Configurable):
 
         # Determine color map class
         colormap = plt.get_cmap("rainbow")
-        #print(colormap)
 
         # Create color range
         color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
@@ -1086,12 +1200,8 @@ class SEDPlotter(Configurable):
                 log.warning("Negative flux encountered for " + str(descriptions[k]) + " band")
                 continue
 
-            #print(color_range)
-
             # Get next color
             color = next(color_range)
-
-            #print(color)
 
             # Get marker
             marker = markers[unique_labels.index(labels[k])]
@@ -1123,7 +1233,9 @@ class SEDPlotter(Configurable):
                 residual_plot_index = 0
 
                 # Loop over the models
-                for model_label, sed, plot_residuals, ghost in self.models:
+                for model_label in self.models:
+
+                    sed, plot_residuals, ghost = self.models[model_label]
 
                     # Don't plot residuals for this model
                     if not plot_residuals: continue
@@ -1164,7 +1276,8 @@ class SEDPlotter(Configurable):
         counter = 0
 
         # Plot models on the residual axis, WHEN OBSERVATION IS THE REFERENCE
-        for model_label, sed, plot_residuals, ghost in self.models:
+        for model_label in self.models:
+            sed, plot_residuals, ghost = self.models[model_label]
 
             if not plot_residuals: continue
 
@@ -1214,7 +1327,8 @@ class SEDPlotter(Configurable):
         counter_no_residuals = 0
 
         # Add model SEDs
-        for model_label, sed, plot_residuals, ghost in self.models:
+        for model_label in self.models:
+            sed, plot_residuals, ghost = self.models[model_label]
 
             if self.nmodels == 1: model_label = "model"
 
@@ -1354,7 +1468,7 @@ class SEDPlotter(Configurable):
         different_colors = iter(dark_pretty_colors)
 
         # Markers for the unique labels
-        markers = filled_markers[:len(self.unique_observation_labels)]
+        markers = filled_markers[:len(self.observation_labels)]
 
         # Used labels
         used_labels = []
@@ -1408,7 +1522,7 @@ class SEDPlotter(Configurable):
                     continue
 
                 # Get marker
-                marker = markers[self.unique_observation_labels.index(labels[k])]
+                marker = markers[self.observation_labels.index(labels[k])]
 
                 # Set zero error if other observations also have errors (BECAUSE CALLING MATPLOTLIB'S ERRORBAR AND AFTER THAT PLOT DOESN'T WORK APPARENTLY!!)
                 error = errors[k]
@@ -1450,7 +1564,8 @@ class SEDPlotter(Configurable):
                     residual_plot_index = 0
 
                     # Loop over the models
-                    for model_label, sed, plot_residuals, ghost in self.models:
+                    for model_label in self.models:
+                        sed, plot_residuals, ghost = self.models[model_label]
 
                         # Don't plot residuals for this model
                         if not plot_residuals: continue
@@ -1499,7 +1614,8 @@ class SEDPlotter(Configurable):
 
                 # Residuals
                 counter = 0
-                for model_label, sed, plot_residuals, ghost in self.models:
+                for model_label in self.models:
+                    sed, plot_residuals, ghost = self.models[model_label]
 
                     if not plot_residuals: continue
 
@@ -1532,7 +1648,8 @@ class SEDPlotter(Configurable):
         # Add model SEDs
         counter = 0
         counter_no_residuals = 0
-        for model_label, sed, plot_residuals, ghost in self.models:
+        for model_label in self.models:
+            sed, plot_residuals, ghost = self.models[model_label]
 
             # Get fluxes, wavelengths and errors
             fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)

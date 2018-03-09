@@ -232,11 +232,11 @@ for index, match in enumerate(matches):
         # Create SEDs
         seds = OrderedDict()
         #seds.update(reference_seds)
-        seds[generation_name_a] = generation_a.get_simulation_sed(name_a)
-        seds[generation_name_b] = generation_b.get_simulation_sed(name_b)
+        seds["Generation a"] = generation_a.get_simulation_sed(name_a)
+        seds["Generation b"] = generation_b.get_simulation_sed(name_b)
 
         # Plot
-        plot_seds(seds)
+        plot_seds(seds, models_residuals=True)
 
     # Plot fluxes
     if config.plot_fluxes:
@@ -244,8 +244,8 @@ for index, match in enumerate(matches):
         # Create SEDs
         seds = OrderedDict()
         seds.update(reference_seds)
-        seds[generation_name_a] = generation_a.get_simulation_mock_sed(name_a)
-        seds[generation_name_b] = generation_b.get_simulation_mock_sed(name_b)
+        seds["Generation a"] = generation_a.get_simulation_mock_sed(name_a)
+        seds["Generation b"] = generation_b.get_simulation_mock_sed(name_b)
 
         # Plot
         plot_seds(seds)
