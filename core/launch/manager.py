@@ -44,7 +44,7 @@ from ..simulation.remote import is_finished_status, is_running_status, finished_
 from ..basics.configuration import prompt_string, prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
-from ..simulation.adapter import adapt_simulation, adapt_analysis
+from ..simulation.adapter import adapt_simulation, adapt_analysis, adapt_simulations, adapt_analysis_simulations
 from ..config.show_simulation_settings import definition as show_simulation_definition
 from ..config.adapt_simulation_settings import definition as adapt_simulations_definition
 from ..config.show_analysis_options import definition as show_analysis_definition
@@ -215,7 +215,7 @@ commands[_error_command_name] = ("show_simulation_errors_command", True, "show e
 commands[_settings_command_name] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
 commands[_analysis_command_name] = ("show_analysis_options_command", True, "show analysis options", "simulation")
 commands[_steps_command_name] = ("show_analysis_steps_command", True, "show analysis steps", "simulation")
-commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulation")
+commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
 commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between two simulations", "two_simulations")
 commands[_retrieve_command_name] = ("retrieve_simulation_command", True, "retrieve a simulation from the remote host", "simulation")
 commands[_analyse_command_name] = ("analyse_simulation_command", True, "analyse a simulation", "simulation")
@@ -253,8 +253,8 @@ open_commands[_misc_command_name] = ("open_misc_command", True, "open simulation
 
 # Define adapt commands
 adapt_commands = OrderedDict()
-adapt_commands[_simulation_command_name] = ("adapt_simulation_settings_command", True, "adapt simulation settings", "simulation")
-adapt_commands[_analysis_command_name] = ("adapt_analysis_options_command", True, "adapt analysis options", "simulation")
+adapt_commands[_simulation_command_name] = ("adapt_simulation_settings_command", True, "adapt simulation settings", "simulations")
+adapt_commands[_analysis_command_name] = ("adapt_analysis_options_command", True, "adapt analysis options", "simulations")
 
 # -----------------------------------------------------------------
 
@@ -1510,6 +1510,18 @@ class SimulationManager(Configurable):
 
         # Get the simulation
         return self.simulations[host_id][simulation_name]
+
+    # -----------------------------------------------------------------
+
+    def get_simulations(self, names):
+        
+        """
+        This function ...
+        :param names: 
+        :return: 
+        """
+
+        return [self.get_simulation(name) for name in names]
 
     # -----------------------------------------------------------------
 
@@ -6998,6 +7010,25 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_names_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, simulation_names, config = self.parse_simulations_command(command, command_definition=command_definition, name=name, interactive=interactive)
+
+        # Return the simulation names and config
+        return simulation_names, config
+
+    # -----------------------------------------------------------------
+
     def get_simulation_name_from_command(self, command, name=None, interactive=False):
 
         """
@@ -7470,7 +7501,10 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return adapt_simulations_definition
+        definition = adapt_simulations_definition.copy(pos_optional=False)
+        definition.remove_optional("names")
+        definition.remove_flag("from_directories")
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -7487,10 +7521,14 @@ class SimulationManager(Configurable):
         name = _adapt_command_name + " " + _simulation_command_name
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_simulation_settings_definition, name=name, **kwargs)
+        simulation_names, config = self.get_simulation_names_and_config_from_command(command, self.adapt_simulation_settings_definition, name=name, **kwargs)
+        nsimulations = len(simulation_names)
 
-        # Adapt
-        self.adapt_simulation_settings(simulation_name, config=config)
+        # Adapt single simulation
+        if nsimulations == 1: self.adapt_simulation_settings(simulation_names[0], config=config)
+
+        # Adapt multiple simulations
+        else: self.adapt_simulations_settings(simulation_names, config=config)
 
     # -----------------------------------------------------------------
 
@@ -7514,6 +7552,26 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def adapt_simulations_settings(self, simulation_names, config=None):
+
+        """
+        This function ...
+        :param simulation_names:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adapting simulations '" + ",".join(simulation_names) + "' ...")
+
+        # Get simulations
+        simulations = self.get_simulations(simulation_names)
+
+        # Adapt
+        adapt_simulations(*simulations, config=config)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def adapt_analysis_options_definition(self):
 
@@ -7522,7 +7580,10 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        return adapt_analysis_definition
+        definition = adapt_analysis_definition.copy(pos_optional=False)
+        definition.remove_optional("names")
+        definition.remove_flag("from_directories")
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -7539,10 +7600,14 @@ class SimulationManager(Configurable):
         name = _adapt_command_name + " " + _analysis_command_name
 
         # Get simulation name
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.adapt_analysis_options_definition, name=name, **kwargs)
+        simulation_names, config = self.get_simulation_names_and_config_from_command(command, self.adapt_analysis_options_definition, name=name, **kwargs)
+        nsimulations = len(simulation_names)
 
-        # Adapt
-        self.adapt_analysis_options(simulation_name, config=config)
+        # Adapt single simulation
+        if nsimulations == 1: self.adapt_analysis_options(simulation_names[0], config=config)
+
+        # Adapt multiple simulations
+        else: self.adapt_analysis_options_simulations(simulation_names, config=config)
 
     # -----------------------------------------------------------------
 
@@ -7563,6 +7628,26 @@ class SimulationManager(Configurable):
 
         # Adapt
         adapt_analysis(simulation, config=config)
+
+    # -----------------------------------------------------------------
+
+    def adapt_analysis_options_simulations(self, simulation_names, config=None):
+
+        """
+        This function ...
+        :param simulation_names:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adapt analysis options of simulations '" + ", ".join(simulation_names) + "' ...")
+
+        # Get the simulations
+        simulations = self.get_simulations(simulation_names)
+
+        # Adapt
+        adapt_analysis_simulations(*simulations, config=config)
 
     # -----------------------------------------------------------------
 

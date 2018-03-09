@@ -50,6 +50,23 @@ def adapt_simulation(simulation, config=None):
 
 # -----------------------------------------------------------------
 
+def adapt_simulations(*simulations, **kwargs):
+
+    """
+    This function ...
+    :param simulations:
+    :param kwargs:
+    :return:
+    """
+
+    # Create adapter
+    adapter = SimulationAdapter(kwargs)
+
+    # Run
+    adapter.run(simulations=simulations)
+
+# -----------------------------------------------------------------
+
 def adapt_analysis(simulation, config=None):
 
     """
@@ -64,6 +81,23 @@ def adapt_analysis(simulation, config=None):
 
     # Run
     adapter.run(simulation=simulation)
+
+# -----------------------------------------------------------------
+
+def adapt_analysis_simulations(*simulations, **kwargs):
+
+    """
+    This function ...
+    :param simulations:
+    :param kwargs:
+    :return:
+    """
+
+    # Create adapter
+    adapter = AnalysisAdapter(kwargs)
+
+    # Run
+    adapter.run(simulations=simulations)
 
 # -----------------------------------------------------------------
 
