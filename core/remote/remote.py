@@ -4277,7 +4277,7 @@ class Remote(object):
             if nattempts == max_nattempts: break
 
             # Try uploading
-            success = self.download(origin, destination, timeout, new_name, compress, show_output, connect_timeout)
+            success = self.download(origin, destination, timeout, new_name, compress, show_output, connect_timeout, return_success=True)
 
             # Increment the number of attempts
             nattempts += 1
@@ -4287,7 +4287,8 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90):
+    def download(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False,
+                 connect_timeout=90, return_success=False):
 
         """
         This function ...
@@ -4298,6 +4299,7 @@ class Remote(object):
         :param compress:
         :param show_output:
         :param connect_timeout:
+        :param return_success:
         :return:
         """
 
@@ -4373,13 +4375,8 @@ class Remote(object):
         # Invalid
         else: raise ValueError("Invalid origin: " + str(origin))
 
-        # Add the destination path to the command
-        #copy_command += destination.replace(" ", "\\\ ") + "/"
-        #copy_command += "'" + destination.replace(" ", "\ ") + "/'"
-
         # Check whether the destination is a directory
-        if "." in fs.name(destination):
-            destination_string = "'" + destination + "'" # destination is a file
+        if "." in fs.name(destination): destination_string = "'" + destination + "'" # destination is a file
         elif not fs.is_directory(destination): # destination should be existing directory
             raise ValueError("Destination directory '" + destination + "' does not exist")
         else:
@@ -4397,21 +4394,21 @@ class Remote(object):
         if self.host.password is not None:
             index = child.expect(['password: ', pexpect.EOF])
             if index == 0: child.sendline(self.host.password)
-            else: return False
+            else:
+                if return_success: return False
+                else:
+                    lines = child.before.split("\r\n")
+                    raise RuntimeError(" ".join(lines))
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        if show_output: child.logfile = sys.stdout
 
         # If the output does not have to be shown on the console, create a temporary file where the output is written to
-        if not show_output:
-
-            # Temporary file for output of the scp command
-            #temp_file_path = tempfile.mktemp()
-            #temp_file = open(temp_file_path, 'w')
+        else:
 
             # New way: use a string stream
             temp_file = StringIO.StringIO()
             child.logfile = temp_file
-
-        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
-        else: child.logfile = sys.stdout
 
         # Execute the command and get the output
         child.expect(pexpect.EOF, timeout=None)
@@ -4564,7 +4561,7 @@ class Remote(object):
             if nattempts == max_nattempts: break
 
             # Try uploading
-            success = self.upload(origin, destination, timeout, new_name, compress, show_output, connect_timeout)
+            success = self.upload(origin, destination, timeout, new_name, compress, show_output, connect_timeout, return_success=True)
 
             # Increment the number of attempts
             nattempts += 1
@@ -4574,7 +4571,8 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def upload(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90):
+    def upload(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False,
+               connect_timeout=90, return_success=False):
 
         """
         This function ...
@@ -4585,6 +4583,7 @@ class Remote(object):
         :param compress:
         :param show_output:
         :param connect_timeout:
+        :param return_success:
         :return:
         """
 
@@ -4665,21 +4664,21 @@ class Remote(object):
         if self.host.password is not None:
             index = child.expect(['password: ', pexpect.EOF])
             if index == 0: child.sendline(self.host.password)
-            else: return False
+            else:
+                if return_success: return False
+                else:
+                    lines = child.before.split("\r\n")
+                    raise RuntimeError(" ".join(lines))
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        if show_output: child.logfile = sys.stdout
 
         # If the output does not have to be shown on the console, create a temporary file where the output is written to
-        if not show_output:
-
-            # Temporary file for output of the scp command
-            #temp_file_path = tempfile.mktemp()
-            #temp_file = open(temp_file_path, 'w')
+        else:
 
             # New way: use a string stream
             temp_file = StringIO.StringIO()
             child.logfile = temp_file
-
-        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
-        else: child.logfile = sys.stdout
 
         # Execute the command and get the output
         try:
@@ -4695,15 +4694,8 @@ class Remote(object):
         # Show output lines in debug mode
         if not show_output:
 
-            # Retrieve file contents -- this will be
-            # 'First line.\nSecond line.\n'
-            #stdout = child.logfile.getvalue()
-
             # Raise an error if something went wrong
             if child.exitstatus != 0: raise RuntimeError(" ".join(lines))
-
-            # Get the output lines
-            #lines = stdout.split("\n")
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
@@ -4725,6 +4717,7 @@ class Remote(object):
             #    index += 1
 
         # EXTRA check
+        # Check whether remote files are present
         if origin_type == "files":
 
             for filepath in origin:
@@ -4884,6 +4877,26 @@ class Remote(object):
         :return:
         """
 
+        # Check whether connection timeout can be specified
+        if connect_timeout is not None:
+            from ..tools import terminal
+            lines = terminal.execute("rsync --contimeout", return_first=True)
+            for line in lines:
+                if "unknown option" in line:
+                    log.warning("The connection timeout cannot be specified with your version of rsync")
+                    connect_timeout = None
+                    break
+
+        # Create absolute paths
+        origin = fs.absolute_path(origin)
+
+        # Set full path to the destination
+        destination = self.absolute_path(destination)
+
+        # Check paths
+        if not fs.is_directory(origin): raise IOError("Origin direcory '" + origin + "' does not exist")
+        if not self.is_directory(destination): raise IOError("Destination directory '" + destination + "' does not exist")
+
         # If debugging is enabled, always show the scp output
         if log.is_debug(): show_output = True
 
@@ -4893,22 +4906,17 @@ class Remote(object):
         if connect_timeout is not None: command += "--contimeout=" + str(connect_timeout) + " "
         if delete: command += "--delete "
 
-        # Check if the origin directory exists
-        if not fs.is_directory(origin): raise ValueError("Origin direcory '" + origin + "' does not exist")
-        command += "'" + origin + "' "
+        # Add the origin directory, adding '/' to synchronize its contents
+        command += "'" + origin + "/' "
 
         # Set destination string depending on whether it is a file or a directory
         if "." in fs.name(destination): destination_string = "'" + destination.replace(" ", "\ ") + "'"  # destination is a file
         elif not self.is_directory(destination):  # destination should be existing directory
             raise ValueError("Destination directory '" + destination + "' does not exist on remote host '" + self.host_id + "'")
-        else:
-            #if new_name is not None: destination_string = "'" + destination.replace(" ", "\ ") + "/"  # existing directory
-            #else: destination_string = "'" + destination.replace(" ", "\ ") + "/'"  # existing directory
-            destination_string = "'" + destination.replace(" ", "\ ") + "/'"  # existing directory
+        else: destination_string = "'" + destination.replace(" ", "\ ") + "/'"  # existing directory
 
         # Construct command
         command += self.host.user + "@" + self.host.name + ":" + destination_string
-        #if new_name is not None: copy_command += new_name + "'"
 
         # Debugging
         self.debug("Upload command: " + command)
@@ -4918,17 +4926,19 @@ class Remote(object):
         if self.host.password is not None:
             index = child.expect(['password: ', pexpect.EOF])
             if index == 0: child.sendline(self.host.password)
-            else: return False
+            else:
+                lines = child.before.split("\r\n")
+                raise RuntimeError(" ".join(lines))
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        if show_output: child.logfile = sys.stdout
 
         # If the output does not have to be shown on the console, create a temporary file where the output is written to
-        if not show_output:
+        else:
 
             # New way: use a string stream
             temp_file = StringIO.StringIO()
             child.logfile = temp_file
-
-        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
-        else: child.logfile = sys.stdout
 
         # Execute the command and get the output
         try:
@@ -4938,6 +4948,8 @@ class Remote(object):
             pass
             lines = None
         child.close()
+
+        # Get output lines
         if lines is None: lines = child.logfile.getvalue()
 
         # Show output lines in debug mode
@@ -4949,7 +4961,17 @@ class Remote(object):
             # Debugging: show the output of the scp command
             self.debug("Synchronize stdout: " + str(" ".join(lines)))
 
+        # Check for errors
+        for line in lines:
+            # TODO: fill in the error message strings for rsync
+            #if "not a regular file" in line: raise ValueError(line)
+            #if "scp: ambiguous target" in line: raise ValueError(line)
+            #if "No such file or directory" in line: raise ValueError(line)
+            #if "No space left on device" in line: raise IOError("Not enough disk space")
+            pass
 
+        # Return success
+        return True
 
     # -----------------------------------------------------------------
 

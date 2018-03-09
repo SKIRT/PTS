@@ -157,10 +157,16 @@ def execute_no_pexpect(command, output=True, show_output=False, cwd=None):
 
 # -----------------------------------------------------------------
 
-def execute(command, output=True, show_output=False, timeout=None, expect=None, cwd=None):
+def execute(command, output=True, show_output=False, timeout=None, expect=None, cwd=None, return_first=False):
 
     """
     This function ...
+    :param output:
+    :param show_output:
+    :param timeout:
+    :param expect:
+    :param cwd:
+    :param return_first:
     :return:
     """
 
@@ -183,7 +189,10 @@ def execute(command, output=True, show_output=False, timeout=None, expect=None, 
     child.logfile = None
 
     # Ignore the first and the last line (the first is the command itself, the last is always empty)
-    if output: return child.before.replace('\x1b[K', '').split("\r\n")[1:-1]
+    if output:
+        lines = child.before.replace('\x1b[K', '').split("\r\n")
+        if return_first: return lines[:-1]
+        else: return lines[1:-1]
 
 # -----------------------------------------------------------------
 
