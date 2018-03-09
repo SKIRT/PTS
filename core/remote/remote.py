@@ -4863,7 +4863,8 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def synchronize(self, origin, destination, timeout=None, connect_timeout=90, compress=True, show_output=False, delete=False):
+    def synchronize(self, origin, destination, timeout=None, connect_timeout=90, compress=True, show_output=False,
+                    delete=False, hidden=False):
 
         """
         This function ...
@@ -4874,6 +4875,7 @@ class Remote(object):
         :param compress:
         :param show_output:
         :param delete:
+        :param hidden: also synchronize hidden files
         :return:
         """
 
@@ -4905,6 +4907,9 @@ class Remote(object):
         if compress: command += "-z "
         if connect_timeout is not None: command += "--contimeout=" + str(connect_timeout) + " "
         if delete: command += "--delete "
+        if not hidden:
+            command += '--exclude ".*/" ' # hidden directories
+            command += '--exclude=".*" '  # hidden files
 
         # Add the origin directory, adding '/' to synchronize its contents
         command += "'" + origin + "/' "

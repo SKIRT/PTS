@@ -103,6 +103,10 @@ class GenerationInfo(SimplePropertyComposite):
 
 # -----------------------------------------------------------------
 
+cached_filename = "cached.dat"
+
+# -----------------------------------------------------------------
+
 class Generation(object):
     
     """
@@ -938,6 +942,244 @@ class Generation(object):
         from .modelanalyser import FluxDifferencesTable
         path = self.get_simulation_sed_differences_path(name)
         return FluxDifferencesTable.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        all_cache_paths = set()
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            output_cached_path = self.get_output_cached_path(simulation_name)
+            extraction_cached_path = self.get_extraction_cached_path(simulation_name)
+            plotting_cached_path = self.get_plotting_cached_path(simulation_name)
+            misc_cached_path = self.get_misc_cached_path(simulation_name)
+
+            rel_output_path = fs.relative_to(self.get_simulation_output_path(simulation_name), self.modeling_path)
+            rel_extraction_path = fs.relative_to(self.get_simulation_extract_path(simulation_name), self.modeling_path)
+            rel_plotting_path = fs.relative_to(self.get_simulation_plot_path(simulation_name), self.modeling_path)
+            rel_misc_path = fs.relative_to(self.get_simulation_misc_path(simulation_name), self.modeling_path)
+
+            cache_paths = []
+            if output_cached_path is not None: cache_paths.append(output_cached_path.split("/" + rel_output_path)[0])
+            if extraction_cached_path is not None: cache_paths.append(extraction_cached_path.split("/" + rel_extraction_path)[0])
+            if plotting_cached_path is not None: cache_paths.append(plotting_cached_path.split("/" + rel_plotting_path)[0])
+            if misc_cached_path is not None: cache_paths.append(misc_cached_path.split("/" + rel_misc_path)[0])
+            if len(cache_paths) == 0: continue
+            cache_path = sequences.get_all_equal_value(cache_paths)
+
+            # Add
+            all_cache_paths.add(cache_path)
+
+        # Return
+        return list(all_cache_paths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncache_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.cache_paths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cache_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ncache_paths > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_cache_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ncache_paths == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_cache_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_cache_paths: raise ValueError("No cache paths")
+        if not self.has_single_cache_path: raise ValueError("Not a single cache path: " + str(self.ncache_paths) + " different paths")
+        return self.cache_paths[0]
+
+    # -----------------------------------------------------------------
+
+    def get_output_cached_filepath(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_output_path(simulation_name), cached_filename)
+
+    # -----------------------------------------------------------------
+
+    def has_output_cached(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_output_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_output_cached_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if not self.has_output_cached(simulation_name): return None
+        return fs.get_first_line(self.get_output_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_extraction_cached_filepath(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_extract_path(simulation_name), cached_filename)
+
+    # -----------------------------------------------------------------
+
+    def has_extraction_cached(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_extraction_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_extraction_cached_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if not self.has_extraction_cached(simulation_name): return None
+        return fs.get_first_line(self.get_extraction_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_plotting_cached_filepath(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_plot_path(simulation_name), cached_filename)
+
+    # -----------------------------------------------------------------
+
+    def has_plotting_cached(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_plotting_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_plotting_cached_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if not self.has_plotting_cached(simulation_name): return None
+        return fs.get_first_line(self.get_plotting_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_misc_cached_filepath(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.join(self.get_simulation_misc_path(simulation_name), cached_filename)
+
+    # -----------------------------------------------------------------
+
+    def has_misc_cached(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_misc_cached_filepath(simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_misc_cached_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if not self.has_misc_cached(simulation_name): return None
+        return fs.get_first_line(self.get_misc_cached_filepath(simulation_name))
 
     # -----------------------------------------------------------------
 

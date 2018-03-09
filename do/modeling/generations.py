@@ -28,7 +28,7 @@ runs = FittingRuns(modeling_path)
 # Create configuration definition
 definition = ConfigurationDefinition()
 
-# FITTING RUN
+# The fitting run
 if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
 else: definition.add_positional_optional("runs", "string_list", "names of the fitting runs", runs.names, choices=runs.names)
 
