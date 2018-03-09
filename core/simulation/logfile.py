@@ -1014,14 +1014,15 @@ def parse_from_lines(lines):
 
         # Check whether the timestamp is valid
         # 17/09/2017 19:51:29.080
-        if has_valid_timestamp(line): t = time.parse_line(line) # Get the date and time information of the current line
+        #print(line)
+        if time.has_valid_timestamp(line): t = time.parse_line(line) # Get the date and time information of the current line
         else:
             index = 1
             while True:
                 if index > len(line) - 26:
                     index = None
                     break
-                if has_valid_timestamp(line[index:]): break
+                if time.has_valid_timestamp(line[index:]): break
                 index += 1
             if index is None:
                 warnings.warn("Not a valid line: '" + line + "': skipping ...")
@@ -1356,24 +1357,24 @@ def get_simulation_phase(line, simulation_phase):
 
 # -----------------------------------------------------------------
 
-def has_valid_timestamp(line):
-
-    """
-    This function ...
-    :param line:
-    :return:
-    """
-
-    # 17/09/2017 19:51:29.080
-
-    if line[2] != "/": return False
-    if line[5] != "/": return False
-    if line[10] != " ": return False
-    if line[13] != ":": return False
-    if line[16] != ":": return False
-    if line[19] != ".": return False
-
-    # All checks passed
-    return True
+# def has_valid_timestamp(line):
+#
+#     """
+#     This function ...
+#     :param line:
+#     :return:
+#     """
+#
+#     # 17/09/2017 19:51:29.080
+#
+#     if line[2] != "/": return False
+#     if line[5] != "/": return False
+#     if line[10] != " ": return False
+#     if line[13] != ":": return False
+#     if line[16] != ":": return False
+#     if line[19] != ".": return False
+#
+#     # All checks passed
+#     return True
 
 # -----------------------------------------------------------------

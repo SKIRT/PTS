@@ -77,7 +77,6 @@ from ..simulation.output import output_types as output_type_names
 from ..simulation.output import misc_output_types as misc_type_names
 from ..simulation.jobscript import SKIRTJobScript
 from ..simulation.screen import ScreenScript
-from ..simulation.logfile import has_valid_timestamp
 from ..remote.ensemble import SKIRTRemotesEnsemble
 
 # -----------------------------------------------------------------
@@ -7090,7 +7089,7 @@ class SimulationManager(Configurable):
             for line in lines:
 
                 # Show the line
-                if not has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
+                if not time.has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
                 else: print(line)
 
         print("")
@@ -7128,7 +7127,7 @@ class SimulationManager(Configurable):
             for line in lines:
 
                 # Show the line
-                if not has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
+                if not time.has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
                 else: print(line)
 
         print("")
@@ -7221,7 +7220,7 @@ class SimulationManager(Configurable):
         for line in lines:
 
             # Skip regular SKIRT output messages
-            if has_valid_timestamp(line): continue
+            if time.has_valid_timestamp(line): continue
 
             # Show the line
             print(fmt.red + line + fmt.reset)

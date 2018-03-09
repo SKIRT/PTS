@@ -30,6 +30,10 @@ intervals = (
 
 # -----------------------------------------------------------------
 
+default_format = "%d/%m/%Y %H:%M:%S.%f"
+
+# -----------------------------------------------------------------
+
 def display_time(seconds, granularity=2):
 
     """
@@ -89,7 +93,49 @@ def iterate(seconds):
 
 # -----------------------------------------------------------------
 
-def parse(timestamp):
+def parse_format(string, format):
+
+    """
+    This function ...
+    :param string:
+    :param format:
+    :return:
+    """
+
+    return datetime.strptime(string, format)
+
+# -----------------------------------------------------------------
+
+def validate_format(string, format):
+
+    """
+    This function ...
+    :param string:
+    :param format:
+    :return:
+    """
+
+    try: parse_format(string, format)
+    except ValueError: raise ValueError("Incorrect date format")
+
+# -----------------------------------------------------------------
+
+def is_valid_format(string, format):
+
+    """
+    This function ...
+    :param string:
+    :param format:
+    :return:
+    """
+
+    try: parse_format(string, format)
+    except ValueError: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_valid_timestamp(string):
 
     """
     This function ...
@@ -97,57 +143,122 @@ def parse(timestamp):
     :return:
     """
 
-    # Parse the timestamp
-    date, time = timestamp.split()
-
-    # Combine the date and time stamp to a datetime object
-    return parse_date_time(date, time)
+    return is_valid_format(string, default_format)
 
 # -----------------------------------------------------------------
 
-def parse_line(line):
+def parse_timestamp(string):
 
     """
-    This function returns the datetime object corresponding to a certain time stamp (as a string)
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return parse_format(string, default_format)
+
+# -----------------------------------------------------------------
+
+def has_valid_timestamp(line):
+
+    """
+    This function ...
+    :param line:
+    :return:
+    """
+
+    # Split
+    date, time, message = split_line(line)
+
+    # Check
+    return is_valid_timestamp(date + " " + time)
+
+# -----------------------------------------------------------------
+
+def split_line(line):
+
+    """
+    This function ...
     :param line:
     :return:
     """
 
     # Parse the line
-    date, time, dummy = line.split(None, 2)
+    splitted = line.split(None, 2)
 
-    # Combine the date and time stamp to a datetime object
-    return parse_date_time(date, time)
+    # Get parts
+    date = splitted[0]
+    time = splitted[1]
+    if len(splitted) > 2: message = splitted[2]
+    else: message = ""
+
+    # Return parts
+    return date, time, message
 
 # -----------------------------------------------------------------
 
-def parse_date_time(date, time):
+# OLD IMPLEMENTATION: SLIGHTLY SLOWER?
+
+# def parse_line(line):
+#
+#     """
+#     This function returns the datetime object corresponding to a certain time stamp (as a string)
+#     :param line:
+#     :return:
+#     """
+#
+#     # Split
+#     date, time, message = split_line(line)
+#
+#     # Combine the date and time stamp to a datetime object
+#     return parse_date_time(date, time)
+#
+# # -----------------------------------------------------------------
+#
+# def parse_date_time(date, time):
+#
+#     """
+#     This function ...
+#     :param date:
+#     :param time:
+#     :return:
+#     """
+#
+#     try: day, month, year = date.split('/')
+#     except ValueError: return None
+#     hour, minute, second = time.split(':')
+#     second, millisecond = second.split('.')
+#
+#     # Convert the strings to integers
+#     year = int(year)
+#     month = int(month)
+#     day = int(day)
+#     hour = int(hour)
+#     minute = int(minute)
+#     second = int(second)
+#     millisecond = int(millisecond)
+#
+#     microsecond = millisecond * 1000
+#
+#     # Create and return a datetime object
+#     return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
+
+# -----------------------------------------------------------------
+
+# NEW
+def parse_line(line):
 
     """
     This function ...
-    :param date:
-    :param time:
+    :param line:
     :return:
     """
 
-    try: day, month, year = date.split('/')
-    except ValueError: return None
-    hour, minute, second = time.split(':')
-    second, millisecond = second.split('.')
+    # Split
+    date, time, message = split_line(line)
 
-    # Convert the strings to integers
-    year = int(year)
-    month = int(month)
-    day = int(day)
-    hour = int(hour)
-    minute = int(minute)
-    second = int(second)
-    millisecond = int(millisecond)
-
-    microsecond = millisecond * 1000
-
-    # Create and return a datetime object
-    return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
+    # Parse
+    return parse_timestamp(date + " " + time)
 
 # -----------------------------------------------------------------
 
@@ -366,19 +477,6 @@ def pretty_lookback_time(time):
         return str(day_diff / 30) + " months ago"
 
     return str(day_diff / 365) + " years ago"
-
-# -----------------------------------------------------------------
-
-def validate_format(string):
-
-    """
-    This function ...
-    :param date_text:
-    :return:
-    """
-
-    try: datetime.strptime(string, '%Y-%m-%d')
-    except ValueError: raise ValueError("Incorrect date format")
 
 # -----------------------------------------------------------------
 
