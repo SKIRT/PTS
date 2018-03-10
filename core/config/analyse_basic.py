@@ -40,3 +40,8 @@ definition.add_flag("update_dependencies", "update PTS dependencies (use with ca
 definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
 
 # -----------------------------------------------------------------
+
+# Local: override analysis options and perform everything locally
+definition.add_flag("local", "override analysis options and perform everything locally", False)
+
+# -----------------------------------------------------------------

@@ -1572,11 +1572,12 @@ class BasicAnalyser(Configurable):
         input_dict["reference_seds"] = self.fluxes_from_images_reference_seds
 
         # Remote
-        input_dict["host_id"] = self.misc_options.fluxes_from_images_remote
-        input_dict["remote_images_spectral_convolution"] = self.misc_options.fluxes_from_images_remote_spectral_convolution
-        input_dict["remote_threshold"] = self.misc_options.fluxes_from_images_remote_threshold
-        input_dict["remote_npixels_threshold"] = self.misc_options.fluxes_from_images_remote_npixels_threshold
-        input_dict["remote_rebin_threshold"] = self.misc_options.fluxes_from_images_rebin_remote_threshold
+        if not self.config.local:
+            input_dict["host_id"] = self.misc_options.fluxes_from_images_remote
+            input_dict["remote_images_spectral_convolution"] = self.misc_options.fluxes_from_images_remote_spectral_convolution
+            input_dict["remote_threshold"] = self.misc_options.fluxes_from_images_remote_threshold
+            input_dict["remote_npixels_threshold"] = self.misc_options.fluxes_from_images_remote_npixels_threshold
+            input_dict["remote_rebin_threshold"] = self.misc_options.fluxes_from_images_rebin_remote_threshold
 
         # Return the input
         return input_dict
@@ -1759,12 +1760,13 @@ class BasicAnalyser(Configurable):
         input_dict["rebin_instrument"] = self.misc_options.rebin_instrument
 
         # Remote
-        input_dict["host_id"] = self.misc_options.make_images_remote
-        input_dict["remote_spectral_convolution"] = self.misc_options.remote_spectral_convolution
-        input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
-        input_dict["remote_npixels_threshold"] = self.misc_options.images_remote_npixels_threshold
-        input_dict["remote_rebin_threshold"] = self.misc_options.rebin_remote_threshold
-        input_dict["remote_convolve_threshold"] = self.misc_options.convolve_remote_threshold
+        if not self.config.local:
+            input_dict["host_id"] = self.misc_options.make_images_remote
+            input_dict["remote_spectral_convolution"] = self.misc_options.remote_spectral_convolution
+            input_dict["remote_threshold"] = self.misc_options.images_remote_threshold
+            input_dict["remote_npixels_threshold"] = self.misc_options.images_remote_npixels_threshold
+            input_dict["remote_rebin_threshold"] = self.misc_options.rebin_remote_threshold
+            input_dict["remote_convolve_threshold"] = self.misc_options.convolve_remote_threshold
 
         # NO SPECTRAL CONVOLUTION FOR CERTAIN IMAGES?
         input_dict["no_spectral_convolution_filters"] = self.misc_options.no_images_spectral_convolution_filters

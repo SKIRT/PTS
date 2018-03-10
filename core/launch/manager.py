@@ -218,8 +218,8 @@ commands[_steps_command_name] = ("show_analysis_steps_command", True, "show anal
 commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
 commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between two simulations", "two_simulations")
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve a simulation from the remote host", "simulations")
-commands[_analyse_command_name] = ("analyse_simulation_command", True, "analyse a simulation", "simulation")
-commands[_reanalyse_command_name] = ("reanalyse_simulation_command", True, "re-analyse a simulation", "simulation")
+commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse a simulation", "simulations")
+commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
 
 # -----------------------------------------------------------------
 
@@ -13877,7 +13877,139 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def reanalyse_simulation_command(self, command, **kwargs):
+    def analysed_any(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_any
+
+    # -----------------------------------------------------------------
+
+    def analysed_any_extraction(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_any_extraction
+
+    # -----------------------------------------------------------------
+
+    def analysed_all_extraction(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_all_extraction
+
+    # -----------------------------------------------------------------
+
+    def analysed_any_plotting(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_any_plotting
+
+    # -----------------------------------------------------------------
+
+    def analysed_all_plotting(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_all_plotting
+
+    # -----------------------------------------------------------------
+
+    def analysed_any_misc(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_any_misc
+
+    # -----------------------------------------------------------------
+
+    def analysed_all_misc(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_all_misc
+
+    # -----------------------------------------------------------------
+
+    def analysed_batch(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_batch
+
+    # -----------------------------------------------------------------
+
+    def analysed_scaling(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_scaling
+
+    # -----------------------------------------------------------------
+
+    def analysed_any_extra(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_any_extra
+
+    # -----------------------------------------------------------------
+
+    def analysed_all_extra(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysed_all_extra
+
+    # -----------------------------------------------------------------
+
+    def reanalyse_simulations_command(self, command, **kwargs):
 
         """
         This function ...
@@ -13886,15 +14018,23 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.reanalyse_simulation_definition, **kwargs)
+        # Get simulation names and config
+        simulation_names, config = self.get_simulation_names_and_config_from_command(command, command_definition=self.reanalyse_simulation_definition, **kwargs)
+
+        # Get settings
         steps = config.steps
         features = config.features
         not_steps = config.not_steps
         not_features = config.not_features
 
-        # Reanalyse the simulation
-        self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps, not_features=not_features, config=config.analysis)
+        # Loop over the simulations
+        for simulation_name in simulation_names:
+
+            # Check
+            if not self.analysed_any(simulation_name): raise ValueError("The simulation '" + simulation_name + "' has not been analysed yet")
+
+            # Reanalyse the simulation
+            self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps, not_features=not_features, config=config.analysis)
 
     # -----------------------------------------------------------------
 
@@ -13970,7 +14110,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def analyse_simulation_command(self, command, **kwargs):
+    def analyse_simulations_command(self, command, **kwargs):
 
         """
         This function ...
@@ -13979,11 +14119,17 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Get simulation name and config
-        simulation_name, config = self.get_simulation_name_and_config_from_command(command, command_definition=self.analyse_simulation_definition, **kwargs)
+        # Get simulation names and config
+        simulation_names, config = self.get_simulation_names_and_config_from_command(command, command_definition=self.analyse_simulation_definition, **kwargs)
 
-        # Analyse
-        self.analyse_simulation(simulation_name, config=config)
+        # Analyse simulations
+        for simulation_name in simulation_names:
+
+            # Check
+            if not self.is_retrieved(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is not yet retrieved")
+
+            # Analyse
+            self.analyse_simulation(simulation_name, config=config)
 
     # -----------------------------------------------------------------
 
