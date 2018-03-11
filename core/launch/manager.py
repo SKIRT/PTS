@@ -8905,7 +8905,7 @@ class SimulationManager(Configurable):
             log.debug("Caching '" + dirname + "' directory from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
 
             # Copy the directory
-            fs.copy_directory(dirpath, cache_directory_path, replace=True)
+            fs.copy_directory(dirpath, cache_directory_path, replace_files=True, replace_directories=False) # avoid replacing filed directories with empty ones
 
             # Check whether the directory is present
             if not fs.is_directory(new_path): raise RuntimeError("Something went wrong")
@@ -14167,16 +14167,24 @@ class SimulationManager(Configurable):
             log.debug("Caching output of simulation '" + simulation.name + "' ...")
 
             # Cache output
-            if self.config.cache_output: self.cache_simulation_output(simulation.name)
+            if self.config.cache_output:
+                if self.is_cached_output(simulation.name): log.warning("Simulation output is already cached for simulation '" + simulation.name + "': skipping ...")
+                else: self.cache_simulation_output(simulation.name)
 
             # Cache datacubes
-            if self.config.cache_datacubes: self.cache_simulation_datacubes(simulation.name)
+            if self.config.cache_datacubes:
+                if self.is_cached_output(simulation.name): log.warning("Simulation output is already cached for simulation '" + simulation.name + "': skipping ...")
+                else: self.cache_simulation_datacubes(simulation.name)
 
             # Cache misc output
-            if self.config.cache_misc and simulation.analysed_all_misc: self.cache_simulation_misc(simulation.name)
+            if self.config.cache_misc and simulation.analysed_all_misc:
+                if self.is_cached_misc(simulation.name): log.warning("Simulation miscellaneous output is already cached for simulation '" + simulation.name + "': skipping ...")
+                else: self.cache_simulation_misc(simulation.name)
 
             # Cache images
-            if self.config.cache_images and simulation.analysed_all_misc: self.cache_simulation_images(simulation.name)
+            if self.config.cache_images and simulation.analysed_all_misc:
+                if self.is_cached_misc(simulation.name): log.warning("Simulation miscellaneous output is already cached for simulation '" + simulation.name + "': skipping ...")
+                else: self.cache_simulation_images(simulation.name)
 
 # -----------------------------------------------------------------
 

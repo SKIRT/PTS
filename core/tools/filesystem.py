@@ -1707,23 +1707,27 @@ def copy_file(file_path, directory_path, new_name=None, remove=False):
 
 # -----------------------------------------------------------------
 
-def copy_directory(path, directory_path, new_name=None, replace=False):
+def copy_directory(path, directory_path, new_name=None, replace_files=False, replace_directories=False):
 
     """
     This function ...
     :param path:
     :param directory_path:
     :param new_name:
-    :param replace:
+    :param replace_files:
+    :param replace_directories:
     :return:
     """
 
     # Create the directory
     dirname = new_name if new_name is not None else name(path)
-    copy_path = create_directory_in(directory_path, dirname)
+    copy_path = join(directory_path, dirname)
+    if is_directory(copy_path):
+        if replace_directories: clear_directory(copy_path)
+    else: create_directory(copy_path)
 
     # Copy contents
-    copy_from_directory(path, copy_path, replace=replace)
+    copy_from_directory(path, copy_path, replace_files=replace_files, replace_directories=replace_directories)
 
     # Return the directory path
     return copy_path
@@ -1773,7 +1777,11 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     """
 
     # Replace?
-    #replace = kwargs.pop("replace", False)
+    replace_files = kwargs.pop("replace_files", False)
+    replace_directories = kwargs.pop("replace_directories", False)
+
+    # Set for files
+    kwargs["replace"] = replace_files
 
     # Copy files
     copy_files_from_directory(from_directory, to_directory, **kwargs)
@@ -1782,6 +1790,11 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     if "extension" in kwargs: del kwargs["extension"]
     if "not_extension" in kwargs: del kwargs["not_extension"]
     if "extensions" in kwargs: del kwargs["extensions"]
+
+    # Set for directories
+    kwargs.pop("replace")
+    kwargs["replace_files"] = replace_files
+    kwargs["replace_directories"] = replace_directories
 
     # Copy directories
     copy_directories_from_directory(from_directory, to_directory, **kwargs)
@@ -1817,10 +1830,11 @@ def copy_directories_from_directory(from_directory, to_directory, **kwargs):
     """
 
     # Replace?
-    replace = kwargs.pop("replace", False)
+    replace_files = kwargs.pop("replace_files", False)
+    replace_directories = kwargs.pop("replace_directories", False)
 
     # Copy directories
-    copy_directories(directories_in_path(from_directory, **kwargs), to_directory, replace=replace)
+    copy_directories(directories_in_path(from_directory, **kwargs), to_directory, replace_files=replace_files, replace_directories=replace_directories)
 
 # -----------------------------------------------------------------
 
@@ -1838,17 +1852,18 @@ def copy_files(file_paths, directory_path, replace=False):
 
 # -----------------------------------------------------------------
 
-def copy_directories(directory_paths, directory_path, replace=False):
+def copy_directories(directory_paths, directory_path, replace_files=False, replace_directories=False):
 
     """
     This function ...
     :param directory_paths:
     :param directory_path:
-    :param replace:
+    :param replace_files:
+    :param replace_directories:
     :return:
     """
 
-    for dirpath in directory_paths: copy_directory(dirpath, directory_path, replace=replace)
+    for dirpath in directory_paths: copy_directory(dirpath, directory_path, replace_files=replace_files, replace_directories=replace_directories)
 
 # -----------------------------------------------------------------
 
