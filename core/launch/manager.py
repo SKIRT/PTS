@@ -8898,14 +8898,14 @@ class SimulationManager(Configurable):
 
             # Get directory name and containing directory
             dirname = fs.name(dirpath)
-            cache_directory_path = fs.directory_of(dirpath)
+            cache_directory_path = fs.directory_of(new_path)
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
             # Debugging
             log.debug("Caching '" + dirname + "' directory from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
 
             # Copy the directory
-            fs.copy_directory(dirpath, cache_directory_path)
+            fs.copy_directory(dirpath, cache_directory_path, replace=True)
 
             # Check whether the directory is present
             if not fs.is_directory(new_path): raise RuntimeError("Something went wrong")
@@ -8944,7 +8944,7 @@ class SimulationManager(Configurable):
 
             # Get filename and containing directory
             filename = fs.name(filepath)
-            cache_directory_path = fs.directory_of(filepath)
+            cache_directory_path = fs.directory_of(new_path)
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
             # Debugging
@@ -8980,9 +8980,6 @@ class SimulationManager(Configurable):
 
         # Files
         self._cache_files(output, directory_path, cache_path, output_types=output_types)
-
-        # Remove original output files and directories: NO, depends on output_types
-        #output.remove_all()
 
     # -----------------------------------------------------------------
 

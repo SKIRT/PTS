@@ -114,7 +114,7 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
-        return self.simulation.analysis.any_extraction
+        return self.config.extract and self.simulation.analysis.any_extraction
 
     # -----------------------------------------------------------------
 
@@ -126,7 +126,7 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
-        return self.simulation.analysis.any_plotting
+        return self.config.plot and self.simulation.analysis.any_plotting
 
     # -----------------------------------------------------------------
 
@@ -138,7 +138,7 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
-        return self.simulation.analysis.any_misc
+        return self.config.misc and self.simulation.analysis.any_misc
 
     # -----------------------------------------------------------------
 

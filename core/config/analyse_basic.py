@@ -45,3 +45,10 @@ definition.add_optional("pubkey_password", "string", "pubkey password for access
 definition.add_flag("local", "override analysis options and perform everything locally", False)
 
 # -----------------------------------------------------------------
+
+# Flags
+definition.add_flag("extract", "do extraction", True)
+definition.add_flag("plot", "do plotting", True)
+definition.add_flag("misc", "do misc", True)
+
+# -----------------------------------------------------------------

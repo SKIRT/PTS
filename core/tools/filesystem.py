@@ -1707,13 +1707,14 @@ def copy_file(file_path, directory_path, new_name=None, remove=False):
 
 # -----------------------------------------------------------------
 
-def copy_directory(path, directory_path, new_name=None):
+def copy_directory(path, directory_path, new_name=None, replace=False):
 
     """
     This function ...
     :param path:
     :param directory_path:
     :param new_name:
+    :param replace:
     :return:
     """
 
@@ -1722,7 +1723,7 @@ def copy_directory(path, directory_path, new_name=None):
     copy_path = create_directory_in(directory_path, dirname)
 
     # Copy contents
-    copy_from_directory(path, copy_path)
+    copy_from_directory(path, copy_path, replace=replace)
 
     # Return the directory path
     return copy_path
@@ -1771,6 +1772,9 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     :return: 
     """
 
+    # Replace?
+    #replace = kwargs.pop("replace", False)
+
     # Copy files
     copy_files_from_directory(from_directory, to_directory, **kwargs)
 
@@ -1794,8 +1798,11 @@ def copy_files_from_directory(from_directory, to_directory, **kwargs):
     :return:
     """
 
+    # Replace?
+    replace = kwargs.pop("replace", False)
+
     # Copy files
-    copy_files(files_in_path(from_directory, **kwargs), to_directory)
+    copy_files(files_in_path(from_directory, **kwargs), to_directory, replace=replace)
 
 # -----------------------------------------------------------------
 
@@ -1809,34 +1816,39 @@ def copy_directories_from_directory(from_directory, to_directory, **kwargs):
     :return:
     """
 
+    # Replace?
+    replace = kwargs.pop("replace", False)
+
     # Copy directories
-    copy_directories(directories_in_path(from_directory, **kwargs), to_directory)
+    copy_directories(directories_in_path(from_directory, **kwargs), to_directory, replace=replace)
 
 # -----------------------------------------------------------------
 
-def copy_files(file_paths, directory_path):
+def copy_files(file_paths, directory_path, replace=False):
 
     """
     This function ...
     :param file_paths:
     :param directory_path:
+    :param replace:
     :return:
     """
 
-    for file_path in file_paths: copy_file(file_path, directory_path)
+    for file_path in file_paths: copy_file(file_path, directory_path, remove=replace)
 
 # -----------------------------------------------------------------
 
-def copy_directories(directory_paths, directory_path):
+def copy_directories(directory_paths, directory_path, replace=False):
 
     """
     This function ...
     :param directory_paths:
     :param directory_path:
+    :param replace:
     :return:
     """
 
-    for dirpath in directory_paths: copy_directory(dirpath, directory_path)
+    for dirpath in directory_paths: copy_directory(dirpath, directory_path, replace=replace)
 
 # -----------------------------------------------------------------
 
@@ -1904,7 +1916,7 @@ def move_files(file_paths, directory_path):
     :return:
     """
 
-    for file_path in file_paths: copy_file(file_path, directory_path)
+    for file_path in file_paths: move_file(file_path, directory_path)
 
 # -----------------------------------------------------------------
 

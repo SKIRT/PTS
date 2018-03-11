@@ -242,10 +242,20 @@ class SkirtSimulation(object):
         return not sequences.is_empty(self.analysed_extraction)
 
     @property
+    def extraction_features(self):
+        features = []
+        # extraction_names = [progress_name, timeline_name, memory_name]
+        from ..launch.options import progress_name, timeline_name, memory_name
+        if self.analysis.extraction.progress: features.append(progress_name)
+        if self.analysis.extraction.timeline: features.append(timeline_name)
+        if self.analysis.extraction.memory: features.append(memory_name)
+        return features
+
+    @property
     def analysed_all_extraction(self):
         from ..tools import sequences
-        from ..launch.options import extraction_names
-        return sequences.contains_all(self.analysed_extraction, extraction_names)
+        #from ..launch.options import extraction_names
+        return sequences.contains_all(self.analysed_extraction, self.extraction_features)
 
     ## Unset analysed plotting
     def unset_analysed_plotting(self):
@@ -264,10 +274,23 @@ class SkirtSimulation(object):
         return not sequences.is_empty(self.analysed_plotting)
 
     @property
+    def plotting_features(self):
+        features = []
+        # plotting_names = [progress_name, timeline_name, memory_name, seds_name, grids_name]
+        from ..launch.options import progress_name, timeline_name, memory_name, seds_name, grids_name
+        if self.analysis.plotting.progress: features.append(progress_name)
+        if self.analysis.plotting.timeline: features.append(timeline_name)
+        if self.analysis.plotting.memory: features.append(memory_name)
+        if self.analysis.plotting.seds: features.append(seds_name)
+        if self.analysis.plotting.grids: features.append(grids_name)
+        return features
+
+    @property
     def analysed_all_plotting(self):
         from ..tools import sequences
-        from ..launch.options import plotting_names
-        return sequences.contains_all(self.analysed_plotting, plotting_names)
+        #from ..launch.options import plotting_names
+        #return sequences.contains_all(self.analysed_plotting, plotting_names)
+        return sequences.contains_all(self.analysed_plotting, self.plotting_features)
 
     ## Unset analysed misc
     def unset_analysed_misc(self):
@@ -286,10 +309,22 @@ class SkirtSimulation(object):
         return not sequences.is_empty(self.analysed_misc)
 
     @property
+    def misc_features(self):
+        features = []
+        # misc_names = [rgb_name, animations_name, fluxes_name, fluxes_from_images_name, images_name]
+        from ..launch.options import rgb_name, animations_name, fluxes_name, fluxes_from_images_name, images_name
+        if self.analysis.misc.rgb: features.append(rgb_name)
+        if self.analysis.misc.animations: features.append(animations_name)
+        if self.analysis.misc.fluxes: features.append(fluxes_name)
+        if self.analysis.misc.fluxes_from_images: features.append(fluxes_from_images_name)
+        if self.analysis.misc.images: features.append(images_name)
+        return features
+
+    @property
     def analysed_all_misc(self):
         from ..tools import sequences
-        from ..launch.options import misc_names
-        return sequences.contains_all(self.analysed_misc, misc_names)
+       # from ..launch.options import misc_names
+        return sequences.contains_all(self.analysed_misc, self.misc_features)
 
     ## Unset analysed batch
     def unset_analysed_batch(self):
