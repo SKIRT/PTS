@@ -215,6 +215,9 @@ if config.cache_volume is not None:
     manager.config.cache_misc = config.cache_misc
     manager.config.cache_images = config.cache_images
 
+    # Cache after analysis of simulation
+    manager.config.cache_after_analysis = True
+
 # Set reference SEDs for plotting simulated SEDS
 reference_sed_paths = OrderedDict()
 reference_sed_paths["Observed clipped fluxes"] = environment.observed_sed_path

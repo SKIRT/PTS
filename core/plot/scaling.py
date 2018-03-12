@@ -71,7 +71,7 @@ phase_labels_timing = {"total": "Total runtime", "setup": "Setup time", "stellar
                     "instruments communication": "Instrument tables communication time",
                     "intermediate": "Intermediate time"}
 
-#phase_labels_memory = {"total", "total simulation peak memory"}
+# -----------------------------------------------------------------
 
 # For legend, be concise
 phase_names_for_legend = dict()
@@ -92,6 +92,7 @@ phase_names_for_legend["intermediate"] = "intermediate"
 
 # -----------------------------------------------------------------
 
+# Phases that are parallel or serial in nature
 parallel_phases = ["total", "stellar", "spectra", "dust"]
 overhead_phases = ["waiting", "communication"]
 serial_phases = ["writing", "setup"]
@@ -175,9 +176,7 @@ dont_fit_phases = ["setup", "intermediate", "writing", "waiting"]
 # -----------------------------------------------------------------
 
 multiprocessing_phases = ["communication", "waiting"]
-
 phases_not_relevant_for_multithreading = ["communication", "waiting"] # start from nprocesses = 2 or higher (otherwise we have runtimes of zero, doesn't work on a log-log plot)
-
 phases_not_logaritmic_runtimes = ["communication", "waiting"]
 
 # -----------------------------------------------------------------
@@ -411,6 +410,42 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_prepare(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.is_prepared
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.hybridisation and self.config.fit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.output is not None
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -423,13 +458,13 @@ class ScalingPlotter(Configurable):
         self.setup(**kwargs)
 
         # 2. Prepare data into plottable format
-        if not self.is_prepared: self.prepare()
+        if self.do_prepare: self.prepare()
 
         # 3. Do fitting
-        if not self.config.hybridisation and self.config.fit: self.fit()
+        if self.do_fit: self.fit()
 
         # 4. Write
-        if self.config.output is not None: self.write()
+        if self.do_write: self.write()
 
         # 5. Plot
         self.plot()
@@ -460,10 +495,12 @@ class ScalingPlotter(Configurable):
         # Call the setup function of the base class
         super(ScalingPlotter, self).setup(**kwargs)
 
+        # All timing
         if self.config.all_timing:
             self.config.properties = scaling_properties_timing
             self.config.phases = simulation_phases_timing
 
+        # All memory
         if self.config.all_memory:
             self.config.properties = scaling_properties_memory
             self.config.phases = simulation_phases_memory
@@ -482,69 +519,17 @@ class ScalingPlotter(Configurable):
         # Check for 'all_properties' flag
         if self.config.all_properties: self.config.properties = scaling_properties
 
-        # Timing or memory specified
-        self.timing = kwargs.pop("timing", None)
-        self.memory = kwargs.pop("memory", None)
+        # Get timing table
+        self.get_timing(**kwargs)
 
-        # If path of timing table is given
-        if self.config.timing_table is not None: self.timing = TimingTable.from_file(self.config.timing_table)
-
-        # If path of memory table is given
-        if self.config.memory_table is not None: self.memory = MemoryTable.from_file(self.config.memory_table)
+        # Get memory table
+        self.get_memory(**kwargs)
 
         # If data input path is given
-        if self.config.data_input is not None:
+        if self.config.data_input is not None: self.load_data_input()
 
-            timing_data_path = fs.join(self.config.data_input, "timing_data.dat")
-            if fs.is_file(timing_data_path):
-
-                self.timing_data = load_dict(timing_data_path)
-                self.serial_timing = load_dict(fs.join(self.config.data_input, "serial_timing_data.dat"))
-                self.serial_timing_ncores = load_dict(fs.join(self.config.data_input, "serial_timing_ncores.dat"))
-                self._different_parameters_timing = load_list(fs.join(self.config.data_input, "different_parameters_timing.dat"))
-                self.ignore_parameter_sets_timing = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_timing.dat"))
-
-                # Set flag
-                self.is_prepared = True
-
-            memory_data_path = fs.join(self.config.data_input, "memory_data.dat")
-            if fs.is_file(memory_data_path):
-
-                self.memory_data = load_dict(fs.join(self.config.data_input, "memory_data.dat"))
-                self.serial_memory = load_dict(fs.join(self.config.data_input, "serial_memory_data.dat"))
-                self.serial_memory_ncores = load_dict(fs.join(self.config.data_input, "serial_memory_ncores.dat"))
-                self._different_parameters_memory = load_list(fs.join(self.config.data_input, "different_parameters_memory.dat"))
-                self.ignore_parameter_sets_memory = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_memory.dat"))
-
-                # Set flag
-                self.is_prepared = True
-
-            if self.is_prepared: return
-            else:
-
-                timing_path = fs.join(self.config.data_input, "timing.dat")
-                memory_path = fs.join(self.config.data_input, "memory.dat")
-
-                # Load timing and/or memory table
-                if fs.is_file(timing_path): self.timing = TimingTable.from_file(timing_path)
-                if fs.is_file(memory_path): self.memory = MemoryTable.from_file(memory_path)
-
-        else:
-
-            # If either extracted timing or memory information is not passed
-            if self.timing is None or self.memory is None:
-
-                # If simulations are passed
-                if "simulations" in kwargs: self.simulations = kwargs.pop("simulations")
-
-                # If simulations have been added
-                elif len(self.simulations) > 0: pass
-
-                # Load simulations from working directory if none have been added
-                else: self.load_simulations()
-
-                # Do extraction
-                self.extract()
+        # No input data is given and timing or memory table not obtained
+        elif (not self.has_timing) or (not self.has_memory): self.extract_data(**kwargs)
 
         # Even out properties in the timing and memory tables
         self.even_out_ski_properties()
@@ -568,6 +553,128 @@ class ScalingPlotter(Configurable):
 
         # Check the coverage of the timing and memory data
         self.check_coverage()
+
+    # -----------------------------------------------------------------
+
+    def get_timing(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Get table
+        if "timing" in kwargs: self.timing = kwargs.pop("timing")
+
+        # Load table
+        elif self.config.timing_table is not None: self.timing = TimingTable.from_file(self.config.timing_table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.timing is not None
+
+    # -----------------------------------------------------------------
+
+    def get_memory(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Get table
+        if "memory" in kwargs: self.memory = kwargs.pop("memory")
+
+        # If path of memory table is given
+        elif self.config.memory_table is not None: self.memory = MemoryTable.from_file(self.config.memory_table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.memory is not None
+
+    # -----------------------------------------------------------------
+
+    def load_data_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load timing data
+        timing_data_path = fs.join(self.config.data_input, "timing_data.dat")
+        if fs.is_file(timing_data_path):
+            self.timing_data = load_dict(timing_data_path)
+            self.serial_timing = load_dict(fs.join(self.config.data_input, "serial_timing_data.dat"))
+            self.serial_timing_ncores = load_dict(fs.join(self.config.data_input, "serial_timing_ncores.dat"))
+            self._different_parameters_timing = load_list(fs.join(self.config.data_input, "different_parameters_timing.dat"))
+            self.ignore_parameter_sets_timing = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_timing.dat"))
+
+            # Set flag
+            self.is_prepared = True
+
+        # Load memory data
+        memory_data_path = fs.join(self.config.data_input, "memory_data.dat")
+        if fs.is_file(memory_data_path):
+            self.memory_data = load_dict(fs.join(self.config.data_input, "memory_data.dat"))
+            self.serial_memory = load_dict(fs.join(self.config.data_input, "serial_memory_data.dat"))
+            self.serial_memory_ncores = load_dict(fs.join(self.config.data_input, "serial_memory_ncores.dat"))
+            self._different_parameters_memory = load_list(fs.join(self.config.data_input, "different_parameters_memory.dat"))
+            self.ignore_parameter_sets_memory = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_memory.dat"))
+
+            # Set flag
+            self.is_prepared = True
+
+        # Data not prepared yet?
+        if self.is_prepared: return
+        else:
+
+            timing_path = fs.join(self.config.data_input, "timing.dat")
+            memory_path = fs.join(self.config.data_input, "memory.dat")
+
+            # Load timing and/or memory table
+            if fs.is_file(timing_path): self.timing = TimingTable.from_file(timing_path)
+            if fs.is_file(memory_path): self.memory = MemoryTable.from_file(memory_path)
+
+    # -----------------------------------------------------------------
+
+    def extract_data(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # If simulations are passed
+        if "simulations" in kwargs: self.simulations = kwargs.pop("simulations")
+
+        # If simulations have been added
+        elif len(self.simulations) > 0: pass
+
+        # Load simulations from working directory if none have been added
+        else: self.load_simulations()
+
+        # Do extraction
+        self.extract()
 
     # -----------------------------------------------------------------
 
@@ -644,6 +751,7 @@ class ScalingPlotter(Configurable):
                 # Change the simulation name
                 simulation.name = unique_name
 
+            # If memory has to be extracted
             if extract_memory:
 
                 # Add an entry to the memory table

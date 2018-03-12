@@ -532,6 +532,18 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def distance(self):
 
         """

@@ -2580,10 +2580,11 @@ class RemoteDataCube(RemoteImage):
             if to_convolve: for_convolution.append(fltr)
 
         # Calculate convolved frames (if necessary)
-        if len(for_convolution) > 0:
+        nconvolution = len(for_convolution)
+        if nconvolution > 0:
 
             # Debugging
-            log.debug(str(len(for_convolution)) + " filters require spectral convolution")
+            log.debug(str(nconvolution) + " filters require spectral convolution (" + ", ".join(str(fltr) for fltr in for_convolution) + ")")
             convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions)
 
         # No spectral convolution needed

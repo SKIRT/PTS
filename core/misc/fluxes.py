@@ -1532,11 +1532,11 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
 
     # Show which wavelengths are used to create filter frames
     if len(wavelengths_for_filters) > 0:
-        log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
+        log.debug("Used the following wavelengths for the spectral convolution for the other filters (in micron):")
         log.debug("")
         for fltr in wavelengths_for_filters:
             filter_name = str(fltr)
-            wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
+            wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
             log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
         log.debug("")
 

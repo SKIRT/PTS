@@ -169,6 +169,7 @@ _assignment_command_name = "assignment"
 _runtimes_command_name = "runtimes"
 _memory_command_name = "memory"
 _timeline_command_name = "timeline"
+_scaling_command_name = "scaling"
 _base_command_name = "base"
 _simulation_command_name = "simulation"
 
@@ -237,6 +238,7 @@ plot_commands = OrderedDict()
 plot_commands[_runtimes_command_name] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
 plot_commands[_memory_command_name] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
 plot_commands[_timeline_command_name] = ("plot_timeline_command", True, "plot simulation timeline", "simulation")
+plot_commands[_scaling_command_name] = ("plot_scaling_command", True, "plot scaling of simulations", "host")
 
 # -----------------------------------------------------------------
 
@@ -13816,6 +13818,21 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def plot_scaling_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        from ..plot.scaling import ScalingPlotter
+        plotter = ScalingPlotter()
+        plotter.run(timing=self.timing, memory=self.memory)
+
+    # -----------------------------------------------------------------
+
     def reanalyse(self):
 
         """
@@ -14093,6 +14110,9 @@ class SimulationManager(Configurable):
             # Analyse
             self.analyse_simulation(simulation.name, config=self.config.analysis)
 
+            # Cache now?
+            if self.do_caching and self.config.cache_after_analysis: self.cache_simulation(simulation.name)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -14160,31 +14180,44 @@ class SimulationManager(Configurable):
         # Inform the user
         log.info("Caching output of the simulations ...")
 
-        # Loop over the retrieved simulations
-        for simulation in self.all_retrieved_simulations:
+        # Loop over the analysed simulations
+        for simulation in self.all_analysed_simulations:
 
-            # Debugging
-            log.debug("Caching output of simulation '" + simulation.name + "' ...")
+            # Cache this simulation
+            self.cache_simulation(simulation.name)
 
-            # Cache output
-            if self.config.cache_output:
-                if self.is_cached_output(simulation.name): log.warning("Simulation output is already cached for simulation '" + simulation.name + "': skipping ...")
-                else: self.cache_simulation_output(simulation.name)
+    # -----------------------------------------------------------------
 
-            # Cache datacubes
-            if self.config.cache_datacubes:
-                if self.is_cached_output(simulation.name): log.warning("Simulation output is already cached for simulation '" + simulation.name + "': skipping ...")
-                else: self.cache_simulation_datacubes(simulation.name)
+    def cache_simulation(self, simulation_name):
 
-            # Cache misc output
-            if self.config.cache_misc and simulation.analysed_all_misc:
-                if self.is_cached_misc(simulation.name): log.warning("Simulation miscellaneous output is already cached for simulation '" + simulation.name + "': skipping ...")
-                else: self.cache_simulation_misc(simulation.name)
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
 
-            # Cache images
-            if self.config.cache_images and simulation.analysed_all_misc:
-                if self.is_cached_misc(simulation.name): log.warning("Simulation miscellaneous output is already cached for simulation '" + simulation.name + "': skipping ...")
-                else: self.cache_simulation_images(simulation.name)
+        # Debugging
+        log.debug("Caching simulation '" + simulation.name + "' ...")
+
+        # Cache output
+        if self.config.cache_output:
+            if self.is_cached_output(simulation.name): log.warning("Simulation output is already cached for simulation '" + simulation.name + "': skipping ...")
+            else: self.cache_simulation_output(simulation.name)
+
+        # Cache datacubes
+        if self.config.cache_datacubes:
+            if self.is_cached_output(simulation.name): log.warning("Simulation output is already cached for simulation '" + simulation.name + "': skipping ...")
+            else: self.cache_simulation_datacubes(simulation.name)
+
+        # Cache misc output
+        if self.config.cache_misc and simulation.analysed_all_misc:
+            if self.is_cached_misc(simulation.name): log.warning("Simulation miscellaneous output is already cached for simulation '" + simulation.name + "': skipping ...")
+            else: self.cache_simulation_misc(simulation.name)
+
+        # Cache images
+        if self.config.cache_images and simulation.analysed_all_misc:
+            if self.is_cached_misc(simulation.name): log.warning("Simulation miscellaneous output is already cached for simulation '" + simulation.name + "': skipping ...")
+            else: self.cache_simulation_images(simulation.name)
 
 # -----------------------------------------------------------------
 

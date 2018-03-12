@@ -2497,7 +2497,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False, wavelength=None):
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
+                   brightness_strict=False, wavelength=None):
 
         """
         This function ...
@@ -2531,11 +2532,8 @@ class Frame(NDDataArray):
         # Debugging
         log.debug("Conversion factor: " + str(factor))
 
-        # Multiply the frame with the conversion factor
-        self.__imul__(factor)
-
-        # Set the new unit
-        self.unit = to_unit
+        # Convert
+        self.convert_by_factor(factor, to_unit)
 
         # Return the conversion factor
         return factor
@@ -2546,18 +2544,55 @@ class Frame(NDDataArray):
 
         """
         This function ...
-        :param to_unit: 
-        :param distance:  
+        :param to_unit:
+        :param distance:
         :param density:
         :param brightness:
         :param density_strict:
         :param brightness_strict:
         :param wavelength:
-        :return: 
+        :return:
         """
 
         new = self.copy()
         new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def convert_by_factor(self, factor, new_unit):
+
+        """
+        This function SHOULD BE USED WITH CARE! UNIT CONVERSION IS LEFT UP TO THE USER
+        :param factor:
+        :param new_unit:
+        :return:
+        """
+
+        # Multiply the frame with the conversion factor
+        self.__imul__(factor)
+
+        # Set the new unit
+        self.unit = new_unit
+
+    # -----------------------------------------------------------------
+
+    def converted_by_factor(self, factor, new_unit):
+
+        """
+        This function ...
+        :param factor:
+        :param new_unit:
+        :return:
+        """
+
+        # Create multiplicated frame
+        new = self * factor
+
+        # Set the new unit
+        new.unit = new_unit
+
+        # Return the new frame
         return new
 
     # -----------------------------------------------------------------

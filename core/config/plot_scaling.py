@@ -13,6 +13,10 @@ from pts.core.config.plot import definition as plot_definition
 
 # -----------------------------------------------------------------
 
+parallelization_modes = ["multithreading", "multiprocessing", "hybrid"]
+
+# -----------------------------------------------------------------
+
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
@@ -23,14 +27,15 @@ definition.add_flag("recursive", "look for simulation in directories recursively
 definition.add_positional_optional("properties", "string_list", "plot the scaling of these properties", choices=scaling_properties, default=scaling_properties)
 definition.add_positional_optional("phases", "string_list", "simulation phases for which to do the plotting", choices=simulation_phases, default=["total"])
 
+# Timing and memory table paths
 definition.add_optional("timing_table", "file_path", "path to the timing table file")
 definition.add_optional("memory_table", "file_path", "path to the memory table file")
 
+# Data input directory
 definition.add_optional("data_input", "directory_path", "path to the directory where plotting data has been written out, for re-use")
 
 definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
 
-parallelization_modes = ["multithreading", "multiprocessing", "hybrid"]
 definition.add_optional("modes", "string_list", "parallelization modes to plot (not for hybridization mode)", choices=parallelization_modes, default=parallelization_modes)
 definition.add_flag("use_task_parallel", "use data from task parallelized simulations in the plots", True)
 definition.add_flag("use_task_data_parallel", "use data from task+data parallelized simulations in the plots", True)

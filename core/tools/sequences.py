@@ -752,12 +752,13 @@ def all_true(lst, ignore_none=False):
 
 # -----------------------------------------------------------------
 
-def find_first_not_none(lst, ignore=None):
+def find_first_not_none(lst, ignore=None, return_none=False):
 
     """
     This function ...
     :param lst:
     :param ignore:
+    :param return_none:
     :return:
     """
 
@@ -766,16 +767,18 @@ def find_first_not_none(lst, ignore=None):
         if item is not None: return item
 
     # Shouldn't get here
-    raise ValueError("No not-None values")
+    if return_none: return None
+    else: raise ValueError("No not-None values")
 
 # -----------------------------------------------------------------
 
-def find_first(lst, ignore=None):
+def find_first(lst, ignore=None, return_none=False):
 
     """
     This function ...
     :param lst:
     :param ignore:
+    :param return_none:
     :return:
     """
 
@@ -783,7 +786,8 @@ def find_first(lst, ignore=None):
         if item != ignore: return item
 
     # Shouldn't get here
-    raise ValueError("No not-" + str(ignore) + " values")
+    if return_none: return None
+    else: raise ValueError("No not-" + str(ignore) + " values")
 
 # -----------------------------------------------------------------
 

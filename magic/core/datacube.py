@@ -36,6 +36,7 @@ from ...core.tools.parallelization import ParallelTarget
 from ...core.tools import types
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -1066,6 +1067,7 @@ class DataCube(Image):
         :return:
         """
 
+        # Initialize a list to contain the convolved frames
         convolved_frames = []
 
         # Calculate convolved frames
@@ -1074,17 +1076,17 @@ class DataCube(Image):
         if needs_convolution:
 
             # Debugging
-            log.debug(str(nconvolution) + " filters require spectral convolution")
+            log.debug(str(nconvolution) + " filters require spectral convolution (" + ", ".join(str(fltr) for fltr in filters) + ")")
 
             # Make the frames by convolution
             convolved_frames, wavelengths_for_filters = self.convolve_with_filters(filters, nprocesses=nprocesses, check_previous_sessions=check_previous_sessions, return_wavelengths=True)
 
             # Show which wavelengths are used to create filter frames
-            log.debug("Used the following wavelengths for the spectral convolution for the other filters:")
+            log.debug("Used the following wavelengths for the spectral convolution for the other filters (in micron):")
             log.debug("")
             for fltr in wavelengths_for_filters:
                 filter_name = str(fltr)
-                wavelength_strings = [str(wavelength) for wavelength in wavelengths_for_filters[fltr]]
+                wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
                 log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
             log.debug("")
 
@@ -1135,17 +1137,18 @@ class DataCube(Image):
                                                                                                skip_ignored_bad_closest=skip_ignored_bad_closest)
 
         # Show which wavelengths are used to create filter frames
-        log.debug("Used the following wavelengths of the datacubes to create frames without spectral convolution:")
-        log.debug("")
-        for index in used_wavelength_indices:
-            wavelength = self.get_wavelength(index)
-            wavelength_micron = wavelength.to("micron").value
-            used_filters = used_wavelength_indices[index]
-            filter_names = [str(f) for f in used_filters]
-            nfilters = len(filter_names)
-            if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
-            else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
-        log.debug("")
+        if len(used_wavelength_indices) > 0:
+            log.debug("Used the following wavelengths of the datacubes to create frames without spectral convolution:")
+            log.debug("")
+            for index in used_wavelength_indices:
+                wavelength = self.get_wavelength(index)
+                wavelength_micron = wavelength.to("micron").value
+                used_filters = used_wavelength_indices[index]
+                filter_names = [str(f) for f in used_filters]
+                nfilters = len(filter_names)
+                if nfilters == 1: log.debug(" - " + str(wavelength_micron) + " micron: " + filter_names[0])
+                else: log.debug(" - " + str(wavelength_micron) + " micron: " + fmt.bold + ", ".join(filter_names) + fmt.reset)
+            log.debug("")
 
         # Create convolved frames
         convolved_frames = self._create_convolved_frames(for_convolution, nprocesses=nprocesses,
@@ -1450,6 +1453,34 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def check_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking the units of the frames ...")
+
+        # Get the unit
+        unit = sequences.find_first_not_none([self.frames[index].unit for index in range(self.nframes)], return_none=True)
+        if unit is None:
+            log.warning("Datacube has no unit")
+            return
+
+        # Loop over the frames, check the unit
+        for index in range(self.nframes):
+
+            # Get the frame unit
+            frame_unit = self.frames[index].unit
+
+            # Check
+            if frame_unit is None: self.frames[index].unit = unit
+            elif frame_unit != unit: raise ValueError("Frame " + str(index+1) + " has a different unit: '" + tostr(frame_unit) + "' instead of '" + tostr(unit) + "'")
+
+    # -----------------------------------------------------------------
+
     def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """
@@ -1477,7 +1508,9 @@ class DataCube(Image):
             wavelength = wavelengths[index]
 
             # Create converted frame, passing the wavelength for (potential) use in the conversion
-            frame = self.frames[index].converted_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
+            frame = self.frames[index].converted_to(to_unit, distance=distance, density=density, brightness=brightness,
+                                                    density_strict=density_strict, brightness_strict=brightness_strict,
+                                                    wavelength=wavelength)
 
             # Add the frame
             frame_name = "frame" + str(nframes)
@@ -1491,6 +1524,82 @@ class DataCube(Image):
 
         # Return the new datacube
         return new
+
+    # -----------------------------------------------------------------
+
+    def convert_by_factor(self, factor, new_unit):
+
+        """
+        This function ...
+        :param factor:
+        :param new_unit:
+        :return:
+        """
+
+        # Loop over the frames
+        for i in range(self.nframes):
+
+            # Debugging
+            log.debug("Converting frame " + str(i + 1) + " ...")
+
+            # Convert
+            self.frames[i].convert_by_factor(factor, new_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_by_factor(self, factor, new_unit):
+
+        """
+        This function ...
+        :param factor:
+        :param new_unit:
+        :return:
+        """
+
+        # Create new
+        new = self.__class__(name=self.name)
+
+        # Get the wavelengths
+        wavelengths = self.wavelengths(unit="micron", add_unit=True)
+
+        # Add the frames
+        nframes = 0
+        for index in range(self.nframes):
+
+            # Create converted frame
+            frame = self.frames[index].converted_to_factor(factor, new_unit)
+
+            # Add the frame
+            frame_name = "frame" + str(nframes)
+            new.add_frame(frame, frame_name)
+
+            # Increment the number of frames
+            nframes += 1
+
+        # Create and set the wavelength grid
+        new.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
+
+        # Return the new datacube
+        return new
+
+    # -----------------------------------------------------------------
+
+    def get_conversion_factor(self, new_unit):
+
+        """
+        This function ...
+        :param new_unit:
+        :return:
+        """
+
+        # Get the conversion factor to the new unit
+        factor = self.unit.conversion_factor(new_unit, distance=self.distance, pixelscale=self.pixelscale)
+
+        # Debugging
+        log.debug("The conversion factor is '" + str(factor))
+
+        # Return the factor
+        return factor
 
     # -----------------------------------------------------------------
 
@@ -1525,20 +1634,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already brightness
         if self.is_brightness: return
 
         # Inform the user
         log.info("Converting the datacube to the corresponding brightness unit ...")
 
-        # Loop over the frames
-        for i in range(self.nframes):
+        # Get the unit
+        unit = self.corresponding_brightness_unit
 
-            # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_brightness()
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
 
-            # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+        # Convert
+        self.convert_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1549,14 +1661,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already brightness
         if self.is_brightness: return self.copy()
 
         # Inform the user
         log.info("Creating a datacube in the corresponding brightness unit ...")
 
-        # Convert
-        return self.converted_to(self.corresponding_brightness_unit)
+        # Get the unit
+        unit = self.corresponding_brightness_unit
+
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
+
+        # Return converted
+        return self.converted_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1651,20 +1772,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already
         if self.is_per_angular_or_intrinsic_area: return
 
         # Inform the user
         log.info("Converting the datacube to the corresponding angular or intrinsic area unit ...")
 
-        # Loop over the frames
-        for i in range(self.nframes):
+        # Get the unit
+        unit = self.corresponding_angular_or_intrinsic_area_unit
 
-            # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_angular_or_intrinsic_area_unit()
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
 
-            # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+        # Convert
+        self.convert_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1675,14 +1799,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already
         if self.is_per_angular_or_intrinsic_area: return self.copy()
 
         # Inform the user
         log.info("Creating a datacube in the corresponding angular or intrinsic area unit ...")
 
-        # Convert
-        return self.converted_to(self.corresponding_angular_or_intrinsic_area_unit)
+        # Get the unit
+        unit = self.corresponding_angular_or_intrinsic_area_unit
+
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
+
+        # Return converted
+        return self.converted_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1705,20 +1838,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already
         if not self.is_per_angular_or_intrinsic_area: return
 
         # Inform the user
         log.info("Converting the datacube to the corresponding non- angular or intrinsic area unit ...")
 
-        # Loop over the frames
-        for i in range(self.nframes):
+        # Get the corresponding non angular or intrinsic area unit
+        unit = self.corresponding_non_angular_or_intrinsic_area_unit
 
-            # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_non_angular_or_intrinsic_area_unit()
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
 
-            # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+        # Convert
+        self.convert_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1735,8 +1871,14 @@ class DataCube(Image):
         # Inform the user
         log.info("Creating a datacube in the corresponding non- angular or intrinsic area unit ...")
 
-        # Convert
-        return self.converted_to(self.corresponding_non_angular_or_intrinsic_area_unit)
+        # Get the unit
+        unit = self.corresponding_non_angular_or_intrinsic_area_unit
+
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
+
+        # Return converted
+        return self.converted_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1759,20 +1901,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already per angular area
         if self.is_per_angular_area: return
 
         # Inform the user
         log.info("Converting the datacube to the corresponding angular area unit ...")
 
-        # Loop over the frames
-        for i in range(self.nframes):
+        # Get the new unit
+        unit = self.corresponding_angular_area_unit
 
-            # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_angular_area_unit()
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
 
-            # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+        # Convert by the factor
+        self.convert_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1783,14 +1928,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already per ngular are
         if self.is_per_angular_area: return self.copy()
 
         # Inform the user
         log.info("Creating a datacube in the corresponding angular area unit ...")
 
-        # Convert
-        return self.converted_to(self.corresponding_angular_area_unit)
+        # Get the new unit
+        unit = self.corresponding_angular_area_unit
+
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
+
+        # Return converted
+        return self.converted_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1813,20 +1967,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already per intrinsic area
         if self.is_per_intrinsic_area: return
 
         # Inform the user
         log.info("Converting the datacube to the corresponding intrinsic area unit ...")
 
-        # Loop over the frames
-        for i in range(self.nframes):
+        # Get the corresponding intrinsic area unit
+        unit = self.corresponding_intrinsic_area_unit
 
-            # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_intrinsic_area_unit()
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
 
-            # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+        # Convert
+        self.convert_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1836,6 +1993,9 @@ class DataCube(Image):
         Thins function ...
         :return:
         """
+
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
 
         # Already per intrinsic area: return a copy
         if self.is_per_intrinsic_area: return self.copy()
@@ -1855,20 +2015,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already not a brightness
         if not self.is_brightness: return
 
         # Inform the user
         log.info("Converting the datacube to the corresponding non-brightness unit ...")
 
-        # Loop over the frames
-        for i in range(self.nframes):
+        # Get the new unit
+        unit = self.corresponding_non_brightness_unit
 
-            # Convert the frame
-            factor = self.frames[i].convert_to_corresponding_non_brightness_unit()
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
 
-            # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+        # Convert
+        self.convert_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1879,14 +2042,23 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already not a brightness: return a copy
         if not self.is_brightness: return self.copy()
 
         # Inform the user
         log.info("Creating a datacube in the corresponding non-brightness unit ...")
 
-        # Create
-        return self.converted_to(self.corresponding_non_brightness_unit)
+        # Get the new unit
+        unit = self.corresponding_non_brightness_unit
+
+        # Get the conversion factor
+        factor = self.get_conversion_factor(unit)
+
+        # Return converted
+        return self.converted_by_factor(factor, unit)
 
     # -----------------------------------------------------------------
 
@@ -1922,6 +2094,9 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already wavelength density
         if self.is_wavelength_density: return
 
@@ -1954,6 +2129,9 @@ class DataCube(Image):
         This function ...
         :return:
         """
+
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
 
         # Already wavelength density
         if self.is_wavelength_density: return self.copy()
@@ -1997,6 +2175,9 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # Already frequency density
         if self.is_frequency_density: return
 
@@ -2026,6 +2207,9 @@ class DataCube(Image):
         This function ...
         :return:
         """
+
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
 
         # Already frequency density
         if self.is_frequency_density: return self.copy()
@@ -2069,6 +2253,9 @@ class DataCube(Image):
         :return:
         """
 
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
+
         # ALready neutral density
         if self.is_neutral_density: return
 
@@ -2098,6 +2285,9 @@ class DataCube(Image):
         Thisf unction ...
         :return:
         """
+
+        # Check whether unit is defined
+        if not self.has_unit: raise ValueError("Unit of the datacube is not defined")
 
         # Already neutral density
         if self.is_neutral_density: return self.copy()
