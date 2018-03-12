@@ -11989,12 +11989,13 @@ class SimulationManager(Configurable):
             # Set the column names and units
             column_names = []
             column_units = []
-            for name in self.status_column_names: column_names.append(name)
-            for unit in self.status_column_units: column_units.append(unit)
+            for name in self.status_column_names: column_names.append(fmt.bold + name + fmt.reset)
+            for unit in self.status_column_units: column_units.append("[" + unit + "]" if unit != "" else "")
             if extra is not None:
                for col in extra:
-                   column_names.append(extra_column_names[col])
-                   column_units.append(extra_column_units[col] if col in extra_column_units else None)
+                   column_names.append(fmt.bold + extra_column_names[col] + fmt.reset)
+                   if col in extra_column_units: column_units.append("[" + extra_column_units[col] + "]" if extra_column_units[col] != "" else "")
+                   else: column_units.append(None)
 
             # Show the header
             print_row(*column_names)

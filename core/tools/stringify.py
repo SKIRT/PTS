@@ -232,7 +232,7 @@ def get_strings(values, return_types=False, value_kwargs=None, add_quotes=False,
         strings.append(val)
 
     # Return the strings
-    if return_types: return strings, ptypes
+    if return_types: return strings, list(ptypes), ptype
     else: return strings
 
 # -----------------------------------------------------------------
@@ -266,14 +266,10 @@ def stringify_list(value, **kwargs):
     quote_character = kwargs.pop("quote_character", "'")
 
     # Get strings
-    strings, ptypes = get_strings(value, return_types=True, value_kwargs=value_kwargs, add_quotes=add_quotes, quote_character=quote_character)
+    strings, ptypes, ptype = get_strings(value, return_types=True, value_kwargs=value_kwargs, add_quotes=add_quotes, quote_character=quote_character)
 
     from ..basics.configuration import parent_type
     from ..basics.log import log
-
-    #print("PTYPES", ptypes)
-
-    ptypes = list(ptypes)
 
     if len(ptypes) == 1: ptype = ptypes[0]
     elif sequences.all_equal(ptypes): ptype = ptypes[0]
@@ -281,9 +277,11 @@ def stringify_list(value, **kwargs):
 
         # Investigate the different ptypes
         parent_types = [parent_type(type_name) for type_name in ptypes]
+
         # Check
         for i in range(len(parent_types)):
             if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_types))
+
         #print("Parent types:", parent_types)
         if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
         elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")

@@ -1088,7 +1088,7 @@ class DataCube(Image):
                 filter_name = str(fltr)
                 #wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
                 string = get_list_string_max_nvalues([wavelength.to("micron").value for wavelength in wavelengths_for_filters[fltr]], 10)  # max 10 values
-                log.debug(" - " + filter_name + ": " + string + fmt.bold + " (" + str(len(wavelengths_for_filters[fltr])) + ")" + fmt.reset)
+                log.debug(" - " + fmt.bold + filter_name + fmt.reset + ": " + string + fmt.bold + " (" + str(len(wavelengths_for_filters[fltr])) + ")" + fmt.reset)
             log.debug("")
 
             # Set the filters just to be sure
