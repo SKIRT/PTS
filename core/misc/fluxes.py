@@ -512,6 +512,9 @@ class ObservedFluxCalculator(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Getting the frames for the different filters from the datacube ...")
+
         # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
         nprocesses = 1
         frames = datacube.frames_for_filters(self.filters, convolve=self.spectral_convolution_filters,
@@ -540,6 +543,9 @@ class ObservedFluxCalculator(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Applying masks to the frames ...")
+
         # Get the unit, pixelscale and distance of the images
         unit = sequences.get_all_equal_value([frame.unit for frame in frames.values()])
         if distance is None: distance = sequences.get_all_equal_value([frame.distance for frame in frames.values()], ignore_none=True)
@@ -560,11 +566,17 @@ class ObservedFluxCalculator(Configurable):
                 log.warning("The '" + str(fltr) + "' frame could not be created ...")
                 continue
 
+            # Debugging
+            log.debug("Obtaining mask for the '" + str(fltr) + "' filter ...")
+
             # Get the frame
             frame = frames[fltr]
 
             # Get mask
             mask = self.get_mask(instr_name, fltr)
+
+            # Debugging
+            log.debug("Applying mask to the '" + str(fltr) + "' frame after rebinning ...")
 
             # Convert the unit prior to rebinning
             frame.convert_by_factor(rebinning_factor, rebinning_unit)
@@ -585,8 +597,14 @@ class ObservedFluxCalculator(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Converting units of the frames ...")
+
         # Loop over the frames
         for fltr in frames:
+
+            # Debugging
+            log.debug("Converting the '" + str(fltr) + "' image ...")
 
             # Get the frame
             frame = frames[fltr]

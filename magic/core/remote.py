@@ -875,7 +875,12 @@ class RemoteFrame(object):
         else: raise ValueError("Invalid value for 'to_unit': must be photometric unit or string")
 
         # Send command
-        self.session.send_line_and_raise(self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")")
+        command = self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")"
+        #self.session.send_line_and_raise(self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")")
+        #self.session.send_line_and_raise(command)
+
+        # Convert, get factor
+        return self.session.get_simple_variable(command)
 
     # -----------------------------------------------------------------
 
@@ -1853,7 +1858,12 @@ class RemoteImage(object):
         else: raise ValueError("Invalid value for 'to_unit': must be photometric unit or string")
 
         # Send command
-        self.session.send_line_and_raise(self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")")
+        command = self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")"
+        #self.session.send_line_and_raise(self.label + ".convert_to('" + to_unit_string + "', distance=" + parse_distance_string + ", density=" + tostr(density) + ", brightness=" + tostr(brightness) + ", density_strict=" + tostr(density_strict) + ", brightness_strict=" + tostr(brightness_strict) + ")")
+        #self.session.send_line_and_raise(command)
+
+        # Convert, get factor
+        return self.session.get_simple_variable(command)
 
     # -----------------------------------------------------------------
 

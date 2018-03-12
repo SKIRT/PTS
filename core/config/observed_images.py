@@ -82,3 +82,9 @@ definition.add_optional("min_npoints", "positive_integer", "minimum number of po
 definition.add_optional("min_npoints_fwhm", "positive_integer", "minimum number of points required in FWHM filter wavelength range", default_min_points_per_fwhm)
 
 # -----------------------------------------------------------------
+
+# Artifical sky and stars
+definition.add_flag("sky", "add artificial sky", False)
+definition.add_flag("stars", "add artificial stars", False)
+
+# -----------------------------------------------------------------

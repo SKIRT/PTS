@@ -1597,7 +1597,7 @@ class DataCube(Image):
         factor = self.unit.conversion_factor(new_unit, distance=self.distance, pixelscale=self.pixelscale)
 
         # Debugging
-        log.debug("The conversion factor is '" + str(factor))
+        log.debug("The conversion factor is " + str(factor))
 
         # Return the factor
         return factor

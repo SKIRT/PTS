@@ -35,6 +35,7 @@ from ..tools.stringify import tostr
 from ..tools import numbers
 from .datacubes import DatacubesMiscMaker, get_datacube_instrument_name
 from ..basics.range import QuantityRange
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -356,6 +357,78 @@ class ObservedImageMaker(DatacubesMiscMaker):
     # -----------------------------------------------------------------
 
     @property
+    def do_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.sky
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.stars
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_conversion(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.keep_intermediate
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_remote(self):
 
         """
@@ -424,22 +497,22 @@ class ObservedImageMaker(DatacubesMiscMaker):
         if self.rebinning: self.rebin()
 
         # 8. Add sky
-        self.add_sky()
+        if self.do_sky: self.add_sky()
 
         # 9. Add stars
-        self.add_stars()
+        if self.do_stars: self.add_stars()
 
         # 10. Do unit conversions
-        if self.unit is not None: self.convert_units()
+        if self.do_conversion: self.convert_units()
 
         # 11. Write the results
-        if self.output_path is not None: self.write()
+        if self.do_write: self.write()
 
         # 12. Clear intermediate results
-        if not self.config.keep_intermediate: self.clear()
+        if self.do_clear: self.clear()
 
         # 13. Plot
-        if self.config.plot: self.plot()
+        if self.do_plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -1604,7 +1677,175 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Return the kernel
         return kernel
 
-    #  -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def get_filter_names_for_convolution(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
+        # Debugging
+        log.debug("Checking for which filters convolution has to be performed on the frame ...")
+
+        # Initialize list for the filter names
+        filter_names = []
+
+        # Loop over the filters
+        for filter_name in self.images[instr_name]:
+
+            # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
+            if not self.has_kernel_path(filter_name) and not self.has_psf_fwhm(filter_name):
+
+                # Debugging
+                log.debug("The filter '" + filter_name + "' is not in the kernel paths nor is PSF FWHM defined: no convolution")
+                continue
+
+            # Check whether the end result is already there
+            if self.has_image(instr_name, filter_name):
+
+                log.success("The result for the '" + filter_name + "' image from the '" + instr_name + "' instrument is already present: skipping convolution ...")
+                continue
+
+            # Get the frame
+            frame = self.images[instr_name][filter_name]
+
+            # Check whether intermediate result is there
+            # Remote frame?
+            if isinstance(frame, RemoteFrame):
+
+                # Get path
+                path = self.remote_intermediate_convolve_path_for_image(instr_name, filter_name)
+
+                # Check
+                if self.remote.is_file(path):
+
+                    # Success
+                    log.success("Convolved '" + filter_name + "' image from the '" + instr_name + "' instrument is found in remote directory '" + self.remote_intermediate_convolve_path + "': not making it again")
+                    # Load as remote frame
+                    frame = RemoteFrame.from_remote_file(path, self.session)
+                    # Replace the frame by the convolved frame
+                    self.images[instr_name][filter_name] = frame
+                    # Skip
+                    continue
+
+                else: pass  # go on
+
+            # Regular frame?
+            elif isinstance(frame, Frame):
+
+                # Get path
+                path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+
+                # Check
+                if fs.is_file(path):
+
+                    # Success
+                    log.success("Convolved '" + filter_name + "' image from the '" + instr_name + "' instrument is found in directory '" + self.intermediate_convolve_path + "': not making it again")
+                    # Load as frame
+                    frame = Frame.from_file(path)
+                    # Replace the frame by the convolved frame
+                    self.images[instr_name][filter_name] = frame
+                    # Skip
+                    continue
+
+                else: pass  # go on
+
+            # Invalid
+            else: raise RuntimeError("Something went wrong")
+
+            # Add the filter name
+            filter_names.append(filter_name)
+
+        # Return the filter names
+        return filter_names
+
+    # -----------------------------------------------------------------
+
+    def check_fwhm_pixelscale(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking the ratio between the FWHM and the pixelscale ...")
+
+        # Check whether the pixelscale is defined
+        pixelscale = self.images[instr_name][filter_name].pixelscale
+        if pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
+
+        # Check whether FWHM is defined
+        target_fwhm = self.get_fwhm_for_filter(filter_name)
+        if target_fwhm is None: raise ValueError("The FWHM cannot be determined for the '" + filter_name + "' image")
+
+        # Compare FWHM and pixelscale
+        if target_fwhm > self.config.max_fwhm_pixelscale_ratio * pixelscale.average:
+
+            # GIVE WARNING
+            log.warning("The target FWHM (" + tostr(target_fwhm) + ") is greater than " + tostr(self.config.max_fwhm_pixelscale_ratio) + " times the pixelscale of the image (" + tostr(pixelscale.average) + ")")
+            log.warning("Downsampling the image to a more reasonable pixelscale prior to convolution ...")
+
+            # Get the original FWHM to pixelscale ratio
+            original_fwhm_pixelscale_ratio = (target_fwhm / pixelscale.average).to("").value
+
+            # When rebinning has to be performed, check the target pixelscale
+            if self.needs_rebinning(instr_name, filter_name):
+
+                # Get the target coordinate system
+                target_wcs = self.rebin_coordinate_systems[instr_name][filter_name]
+
+                # Get the target pixelscale
+                target_pixelscale = target_wcs.average_pixelscale
+                target_downsample_factor = (target_pixelscale / pixelscale.average).to("").value
+
+                # Get the target FWHM to pixelscale ratio
+                target_fwhm_pixelscale_ratio = (target_fwhm / target_pixelscale).to("").value
+
+                # Get the geometric mean between original and target ratios
+                ratio = numbers.geometric_mean(original_fwhm_pixelscale_ratio, target_fwhm_pixelscale_ratio)
+
+                # Translate this ratio into a pixelscale
+                new_pixelscale = target_fwhm / ratio
+
+                # Determine the downsample factor
+                downsample_factor = (new_pixelscale / pixelscale.average).to("").value
+                downsample_factor = numbers.nearest_even_integer_below(downsample_factor, below=target_downsample_factor)
+
+            # No rebinning: we can freely choose the downsampling factor
+            else:
+
+                # Define the ideal FWHM to pixelscale ratio
+                ideal_fwhm_pixelscale_ratio = 25
+
+                # Translate this ratio into a pixelscale
+                ideal_pixelscale = target_fwhm / ideal_fwhm_pixelscale_ratio
+
+                # Determine the downsample factor
+                downsample_factor = (ideal_pixelscale / pixelscale.average).to("").value
+                downsample_factor = numbers.nearest_even_integer(downsample_factor)
+
+            # Debugging
+            log.debug("The downsampling factor is " + tostr(downsample_factor))
+
+            # DOWNSAMPLE
+            self.images[instr_name][filter_name].downsample(downsample_factor)
+
+            # Re-determine the pixelscale
+            pixelscale = self.images[instr_name][filter_name].pixelscale
+
+        # Return the pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
 
     def convolve(self):
 
@@ -1616,188 +1857,139 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Inform the user
         log.info("Convolving the images ...")
 
-        from ...magic.core.remote import RemoteFrame
-        from ...magic.core.frame import Frame
-
         # Loop over the images
         for instr_name in self.images:
 
             # Debugging
             log.debug("Convolving images from the '" + instr_name + "' instrument ...")
 
+            # Get the filter names
+            filter_names = self.get_filter_names_for_convolution(instr_name)
+
             # Loop over the filters
-            for filter_name in self.images[instr_name]:
+            for filter_name in filter_names:
 
-                # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
-                if not self.has_kernel_path(filter_name) and not self.has_psf_fwhm(filter_name):
+                # Check the ratio between the FWHM and the pixelscale
+                pixelscale = self.check_fwhm_pixelscale(instr_name, filter_name)
 
-                    # Debugging
-                    log.debug("The filter '" + filter_name + "' is not in the kernel paths nor is PSF FWHM defined: no convolution")
-                    continue
-
-                # Check whether the end result is already there
-                if self.has_image(instr_name, filter_name):
-                    log.success("The result for the '" + filter_name + "' image from the '" + instr_name + "' instrument is already present: skipping convolution ...")
-                    continue
-
-                # Get the frame
-                frame = self.images[instr_name][filter_name]
-
-                # Check whether intermediate result is there
-                # Remote frame?
-                if isinstance(frame, RemoteFrame):
-                    # Get path
-                    path = self.remote_intermediate_convolve_path_for_image(instr_name, filter_name)
-                    if self.remote.is_file(path):
-                        # Success
-                        log.success("Convolved '" + filter_name + "' image from the '" + instr_name + "' instrument is found in remote directory '" + self.remote_intermediate_convolve_path + "': not making it again")
-                        # Load as remote frame
-                        frame = RemoteFrame.from_remote_file(path, self.session)
-                        # Replace the frame by the convolved frame
-                        self.images[instr_name][filter_name] = frame
-                        # Skip
-                        continue
-                    else: pass # go on
-
-                # Regular frame?
-                elif isinstance(frame, Frame):
-                    # Get path
-                    path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
-                    if fs.is_file(path):
-                        # Success
-                        log.success("Convolved '" + filter_name + "' image from the '" + instr_name + "' instrument is found in directory '" + self.intermediate_convolve_path + "': not making it again")
-                        # Load as frame
-                        frame = Frame.from_file(path)
-                        # Replace the frame by the convolved frame
-                        self.images[instr_name][filter_name] = frame
-                        # Skip
-                        continue
-                    else: pass # go on
-
-                # Invalid
-                else: raise RuntimeError("Something went wrong")
-
-                # Check whether the pixelscale is defined
-                pixelscale = self.images[instr_name][filter_name].pixelscale
-                if pixelscale is None: raise ValueError("Pixelscale of the '" + filter_name + "' image of the '" + instr_name + "' datacube is not defined, convolution not possible")
-
-                # Get kernel for this filter
-                #kernel = self.get_kernel_for_filter(filter_name, pixelscale)
-
-                # CHECK THE RATIO BETWEEN FWHM AND PIXELSCALE
-                target_fwhm = self.get_fwhm_for_filter(filter_name)
-                if target_fwhm is None: raise ValueError("The FWHM cannot be determined for the '" + filter_name + "' image")
-                if target_fwhm > self.config.max_fwhm_pixelscale_ratio * pixelscale.average:
-
-                    # GIVE WARNING
-                    log.warning("The target FWHM (" + tostr(target_fwhm) + ") is greater than " + tostr(self.config.max_fwhm_pixelscale_ratio) + " times the pixelscale of the image (" + tostr(pixelscale.average) + ")")
-                    log.warning("Downsampling the image to a more reasonable pixelscale prior to convolution ...")
-
-                    # Get the original FWHM to pixelscale ratio
-                    original_fwhm_pixelscale_ratio = (target_fwhm / pixelscale.average).to("").value
-
-                    # When rebinning has to be performed, check the
-                    if self.needs_rebinning(instr_name, filter_name):
-
-                        # Get the target coordinate system
-                        target_wcs = self.rebin_coordinate_systems[instr_name][filter_name]
-
-                        # Get the target pixelscale
-                        target_pixelscale = target_wcs.average_pixelscale
-                        target_downsample_factor = (target_pixelscale / pixelscale.average).to("").value
-
-                        # Get the target FWHM to pixelscale ratio
-                        target_fwhm_pixelscale_ratio = (target_fwhm / target_pixelscale).to("").value
-
-                        # Get the geometric mean between original and target ratios
-                        ratio = numbers.geometric_mean(original_fwhm_pixelscale_ratio, target_fwhm_pixelscale_ratio)
-
-                        # Translate this ratio into a pixelscale
-                        new_pixelscale = target_fwhm / ratio
-
-                        # Determine the downsample factor
-                        downsample_factor = (new_pixelscale / pixelscale.average).to("").value
-                        downsample_factor = numbers.nearest_even_integer_below(downsample_factor, below=target_downsample_factor)
-
-                    # No rebinning: we can freely choose the downsampling factor
-                    else:
-
-                        # Define the ideal FWHM to pixelscale ratio
-                        ideal_fwhm_pixelscale_ratio = 25
-
-                        # Translate this ratio into a pixelscale
-                        ideal_pixelscale = target_fwhm / ideal_fwhm_pixelscale_ratio
-
-                        # Determine the downsample factor
-                        downsample_factor = (ideal_pixelscale / pixelscale.average).to("").value
-                        downsample_factor = numbers.nearest_even_integer(downsample_factor)
-
-                    # Debugging
-                    log.debug("The downsampling factor is " + tostr(downsample_factor))
-
-                    # DOWNSAMPLE
-                    self.images[instr_name][filter_name].downsample(downsample_factor)
-
-                    # Re-determine the pixelscale
-                    pixelscale = self.images[instr_name][filter_name].pixelscale
-
-                # Determine the path to save the kernel
-                saved_kernel_path = self.kernel_path_for_image(instr_name, filter_name)
-
-                # Exists? -> load the kernel from file
-                if fs.is_file(saved_kernel_path):
-
-                    # Success
-                    log.success("Kernel file for the '" + filter_name + "' of the '" + instr_name + "' instrument is found in directory '" + self.kernels_path + "'")
-
-                    # Load the kernel
-                    kernel = ConvolutionKernel.from_file(saved_kernel_path)
-
-                # Create or get the kernel
-                else:
-
-                    # Get the kernel
-                    kernel = self.get_kernel_for_filter(filter_name, pixelscale)
-
-                    # Write the kernel
-                    if self.config.write_kernels: kernel.saveto(saved_kernel_path)
+                # Get kernel
+                kernel = self.get_kernel_for_image(instr_name, filter_name, pixelscale)
 
                 # Debugging
                 log.debug("Convolving the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
-                # Convert into remote frame if necessary
-                if self.remote_convolve_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_convolve_threshold:
-
-                    # Convert into remote
-                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
+                # Convert to remote frame if necessary
+                self.check_remote_convolution(instr_name, filter_name)
 
                 # Convolve the frame
                 self.images[instr_name][filter_name].convolve(kernel)
 
                 # If intermediate results have to be written
-                if self.config.write_intermediate:
+                if self.config.write_intermediate: self.write_intermediate_convolved(instr_name, filter_name)
 
-                    # Remote frame?
-                    frame = self.images[instr_name][filter_name]
-                    if isinstance(frame, RemoteFrame):
+    # -----------------------------------------------------------------
 
-                        # Determine the path
-                        path = self.remote_intermediate_convolve_path_for_image(instr_name, filter_name)
+    def get_kernel_for_image(self, instr_name, filter_name, pixelscale):
 
-                        # Save the frame remotely
-                        frame.saveto_remote(path)
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :param pixelscale:
+        :return:
+        """
 
-                    # Regular frame?
-                    elif isinstance(frame, Frame):
+        # Debugging
+        log.debug("Getting convolution kernel for '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
-                        # Determine the path
-                        path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+        # Determine the path to save the kernel
+        saved_kernel_path = self.kernel_path_for_image(instr_name, filter_name)
 
-                        # Save the frame locally
-                        frame.saveto(path)
+        # Exists? -> load the kernel from file
+        if fs.is_file(saved_kernel_path):
 
-                    # Invalid
-                    else: raise ValueError("Something went wrong")
+            # Success
+            log.success("Kernel file for the '" + filter_name + "' of the '" + instr_name + "' instrument is found in directory '" + self.kernels_path + "'")
+
+            # Load the kernel
+            kernel = ConvolutionKernel.from_file(saved_kernel_path)
+
+        # Create or get the kernel
+        else:
+
+            # Get the kernel
+            kernel = self.get_kernel_for_filter(filter_name, pixelscale)
+
+            # Write the kernel
+            if self.config.write_kernels: kernel.saveto(saved_kernel_path)
+
+        # Return the kernel
+        return kernel
+
+    # -----------------------------------------------------------------
+
+    def check_remote_convolution(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
+        # Debugging
+        log.debug("Checking '" + filter_name + "' frame for '" + instr_name + "' instrument for remote convolution ...")
+
+        # Get the frame
+        frame = self.images[instr_name][filter_name]
+
+        # Convert into remote frame if necessary
+        if self.remote_convolve_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_convolve_threshold:
+            self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
+
+    # -----------------------------------------------------------------
+
+    def write_intermediate_convolved(self, instr_name, filter_name):
+
+        """
+        Thisf unction ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
+
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
+        # Debugging
+        log.debug("Writing convolved '" + filter_name + "' image for '" + instr_name + "' instrument ...")
+
+        # Get the frame
+        frame = self.images[instr_name][filter_name]
+
+        # Remote frame?
+        if isinstance(frame, RemoteFrame):
+
+            # Determine the path
+            path = self.remote_intermediate_convolve_path_for_image(instr_name, filter_name)
+
+            # Save the frame remotely
+            frame.saveto_remote(path)
+
+        # Regular frame?
+        elif isinstance(frame, Frame):
+
+            # Determine the path
+            path = self.intermediate_convolve_path_for_image(instr_name, filter_name)
+
+            # Save the frame locally
+            frame.saveto(path)
+
+        # Invalid
+        else: raise ValueError("Something went wrong")
 
     # -----------------------------------------------------------------
 
@@ -1847,6 +2039,142 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
     # -----------------------------------------------------------------
 
+    def get_filter_names_for_rebinning(self, instr_name):
+
+        """
+        This function ...
+        :param instr_name:
+        :return:
+        """
+
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
+        # Debugging
+        log.debug("Checking for which filters rebinning has to be performed on the frame ...")
+
+        # Initialize list for the filter names
+        filter_names = []
+
+        # Loop over the filters
+        for filter_name in self.images[instr_name]:
+
+            # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
+            if filter_name not in self.rebin_coordinate_systems[instr_name]:
+                # Debugging
+                log.debug("The filter '" + filter_name + "' is not in the rebin coordinate systems for this instrument: no rebinning")
+                continue
+
+            # Check whether the end result is already there
+            if self.has_image(instr_name, filter_name):
+                log.success("The result for the '" + filter_name + "' image from the '" + instr_name + "' instrument is already present: skipping rebinning ...")
+                continue
+
+            # Get the frame
+            frame = self.images[instr_name][filter_name]
+
+            # Check whether intermediate result is there
+            # Remote frame?
+            if isinstance(frame, RemoteFrame):
+
+                # Get path
+                path = self.remote_intermediate_rebin_path_for_image(instr_name, filter_name)
+
+                # Check
+                if self.remote.is_file(path):
+
+                    # Success
+                    log.success("Rebinned '" + filter_name + "' image from the '" + instr_name + "' instrument is found in remote directory '" + self.remote_intermediate_rebin_path + "': not making it again")
+                    # Load as remote frame
+                    frame = RemoteFrame.from_remote_file(path, self.session)
+                    # Replace the frame by the rebinned frame
+                    self.images[instr_name][filter_name] = frame
+                    # Skip
+                    continue
+
+                else: pass  # go on
+
+            # Regular frame
+            elif isinstance(frame, Frame):
+
+                # Get path
+                path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+
+                # Check
+                if fs.is_file(path):
+                    # Success
+                    log.success("Rebinned '" + filter_name + "' image from the '" + instr_name + "' instrument is found in directory '" + self.intermediate_rebin_path + "': not making it again")
+                    # Load as frame
+                    frame = Frame.from_file(path)
+                    # Replace the frame by the rebinned frame
+                    self.images[instr_name][filter_name] = frame
+                    # Skip
+                    continue
+
+                else: pass  # go on
+
+            # Invalid
+            else: raise RuntimeError("Something went wrong")
+
+            # Add the filter name
+            filter_names.append(filter_name)
+
+        # Return the filter name
+        return filter_names
+
+    # -----------------------------------------------------------------
+
+    def get_units(self, instr_name, filter_names=None):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_names:
+        :return:
+        """
+
+        # Set filter names
+        if filter_names is None: filter_names = self.images[instr_name].keys()
+
+        # Return the units
+        return [self.images[instr_name][filter_name].unit for filter_name in filter_names]
+
+    # -----------------------------------------------------------------
+
+    def get_pixelscales(self, instr_name, filter_names=None):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_names:
+        :return:
+        """
+
+        # Set filter names
+        if filter_names is None: filter_names = self.images[instr_name].keys()
+
+        # Return the pixelscales
+        return [self.images[instr_name][filter_name].pixelscale for filter_name in filter_names]
+
+    # -----------------------------------------------------------------
+
+    def get_average_pixelscales(self, instr_name, filter_names=None):
+
+        """
+        This function ...
+        :param instr_name:
+        :param filter_names:
+        :return:
+        """
+
+        # Set filter names
+        if filter_names is None: filter_names = self.images[instr_name].keys()
+
+        # Return the pixelscales
+        return [self.images[instr_name][filter_name].average_pixelscale for filter_name in filter_names]
+
+    # -----------------------------------------------------------------
+
     def rebin(self):
 
         """
@@ -1856,9 +2184,6 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
         # Inform the user
         log.info("Rebinning the images to the requested coordinate systems ...")
-
-        from ...magic.core.remote import RemoteFrame
-        from ...magic.core.frame import Frame
 
         # Loop over the datacubes
         for instr_name in self.images:
@@ -1870,59 +2195,32 @@ class ObservedImageMaker(DatacubesMiscMaker):
                 log.debug("The instrument '" + instr_name + "' is not in the rebin coordinate systems: no rebinning")
                 continue
 
+            # Get the frames for rebinning
+            filter_names = self.get_filter_names_for_rebinning(instr_name)
+
+            # Debugging
+            log.debug("Determining new unit and conversion factor prior to rebinning ...")
+
+            # Get the unit of the frames
+            units = self.get_units(instr_name, filter_names=filter_names)
+            frame_unit = sequences.get_all_equal_value(units)
+
+            # Obtain the conversion factor to intrinsic or angular area (intensity or surface brightness)
+            rebinning_unit = frame_unit.corresponding_angular_or_intrinsic_area_unit
+            distance = self.distances[instr_name] if self.has_distance(instr_name) else None
+
+            # Check whether pixelscale is the same between frames
+            # pixelscale = self.datacubes[instr_name].pixelscale # can be different for each frame from during convolution step (downsampling)
+            #pixelscales = self.get_pixelscales(instr_name, filter_names=filter_names)
+            pixelscales = self.get_average_pixelscales(instr_name, filter_names=filter_names)
+            if sequences.all_equal(pixelscales): rebinning_factor = frame_unit.corresponding_angular_or_intrinsic_area_unit_conversion_factor(distance=distance, pixelscale=pixelscales[0])
+            else: rebinning_factor = None
+
             # Debugging
             log.debug("Rebinning images from the '" + instr_name + "' instrument ...")
 
-            # Loop over the filters
-            for filter_name in self.images[instr_name]:
-
-                # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
-                if filter_name not in self.rebin_coordinate_systems[instr_name]:
-
-                    # Debugging
-                    log.debug("The filter '" + filter_name + "' is not in the rebin coordinate systems for this instrument: no rebinning")
-                    continue
-
-                # Check whether the end result is already there
-                if self.has_image(instr_name, filter_name):
-                    log.success("The result for the '" + filter_name + "' image from the '" + instr_name + "' instrument is already present: skipping rebinning ...")
-                    continue
-
-                # Get the frame
-                frame = self.images[instr_name][filter_name]
-
-                # Check whether intermediate result is there
-                # Remote frame?
-                if isinstance(frame, RemoteFrame):
-                    # Get path
-                    path = self.remote_intermediate_rebin_path_for_image(instr_name, filter_name)
-                    if self.remote.is_file(path):
-                        # Success
-                        log.success("Rebinned '" + filter_name + "' image from the '" + instr_name + "' instrument is found in remote directory '" + self.remote_intermediate_rebin_path + "': not making it again")
-                        # Load as remote frame
-                        frame = RemoteFrame.from_remote_file(path, self.session)
-                        # Replace the frame by the rebinned frame
-                        self.images[instr_name][filter_name] = frame
-                        # Skip
-                        continue
-                    else: pass # go on
-                # Regular frame
-                elif isinstance(frame, Frame):
-                    # Get path
-                    path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
-                    if fs.is_file(path):
-                        # Success
-                        log.success("Rebinned '" + filter_name + "' image from the '" + instr_name + "' instrument is found in directory '" + self.intermediate_rebin_path + "': not making it again")
-                        # Load as frame
-                        frame = Frame.from_file(path)
-                        # Replace the frame by the rebinned frame
-                        self.images[instr_name][filter_name] = frame
-                        # Skip
-                        continue
-                    else: pass # go on
-
-                # Invalid
-                else: raise RuntimeError("Something went wrong")
+            # Loop over the frames for rebinning
+            for filter_name in filter_names:
 
                 # Get target WCS
                 wcs = self.rebin_coordinate_systems[instr_name][filter_name]
@@ -1939,62 +2237,119 @@ class ObservedImageMaker(DatacubesMiscMaker):
                 # Debugging
                 log.debug("Rebinning the '" + filter_name + "' image of the '" + instr_name + "' instrument ...")
 
-                # Get the original unit
+                # Check whether rebinning is required
                 original_unit = self.images[instr_name][filter_name].unit
-                converted = False
+                needs_conversion = not original_unit.is_per_angular_or_intrinsic_area
 
-                # Check if this is a surface brightness or intensity
-                #if not (original_unit.is_intensity or original_unit.is_surface_brightness):
-                if not original_unit.is_per_angular_or_intrinsic_area:
+                # Set variables
+                back_conversion_unit = None
+                back_conversion_factor = None
 
-                    # Determine the new (surface brightness or intensity) unit
-                    #new_unit = original_unit / u("sr")
-                    #new_unit = original_unit.corresponding_angular_area_unit
-                    new_unit = original_unit.corresponding_angular_or_intrinsic_area_unit
+                # Convert each frame with the same factor (all the same pixelscale)
+                if rebinning_factor is not None:
 
                     # Debugging
-                    log.debug("Converting the unit from " + tostr(original_unit, add_physical_type=True) + " to " + tostr(new_unit, add_physical_type=True) + " in order to be able to perform rebinning ...")
+                    log.debug("Converting the '" + filter_name + "' frame of the '" + instr_name + "' instrument to '" + tostr(rebinning_unit, add_physical_type=True) + "' with a factor of '" + rebinning_factor + "' ...")
 
                     # Convert
-                    self.images[instr_name][filter_name].convert_to(new_unit)
-                    converted = True
+                    self.images[instr_name][filter_name].convert_by_factor(rebinning_factor, rebinning_unit)
+
+                    # For back-conversion
+                    back_conversion_unit = frame_unit
+                    back_conversion_factor = 1./rebinning_factor
+
+                # Needs conversion
+                elif needs_conversion:
+
+                    # Debugging
+                    log.debug("Converting the unit from " + tostr(original_unit, add_physical_type=True) + " to " + tostr(rebinning_unit, add_physical_type=True) + " in order to be able to perform rebinning ...")
+
+                    # Convert
+                    factor = self.images[instr_name][filter_name].convert_to(rebinning_unit)
+
+                    # For back-conversion
+                    back_conversion_unit = original_unit
+                    back_conversion_factor = 1./factor
+
+                # Not required to convert
+                else: log.debug("Unit conversion prior to rebinning is not required")
 
                 # Convert to remote frame if necessary
-                if self.remote_rebin_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_rebin_threshold:
-
-                    # Convert
-                    self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
+                self.check_remote_rebinning(instr_name, filter_name)
 
                 # Rebin
                 self.images[instr_name][filter_name].rebin(wcs)
 
-                # Convert the unit back
-                if converted: self.images[instr_name][filter_name].convert_to(original_unit)
+                # Convert back to the original frame unit
+                if back_conversion_unit is not None: self.images[instr_name][filter_name].convert_by_factor(back_conversion_factor, back_conversion_unit)
 
                 # If intermediate results have to be written
-                if self.config.write_intermediate:
+                if self.config.write_intermediate: self.write_intermediate_rebinned(instr_name, filter_name)
 
-                    # Remote frame?
-                    frame = self.images[instr_name][filter_name]
-                    if isinstance(frame, RemoteFrame):
+    # -----------------------------------------------------------------
 
-                        # Determine the path
-                        path = self.remote_intermediate_rebin_path_for_image(instr_name, filter_name)
+    def check_remote_rebinning(self, instr_name, filter_name):
 
-                        # Save the frame remotely
-                        frame.saveto_remote(path)
+        """
+        This function ...
+        :param instr_name:
+        :param filter_name:
+        :return:
+        """
 
-                    # Regular frame?
-                    elif isinstance(frame, Frame):
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
 
-                        # Determine the path
-                        path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+        # Debugging
+        log.debug("Checking '" + filter_name + "' frame for '" + instr_name + "' instrument for remote rebinning ...")
 
-                        # Save the frame
-                        frame.saveto(path)
+        # Get the frame
+        frame = self.images[instr_name][filter_name]
 
-                    # Invalid
-                    else: raise ValueError("Something went wrong")
+        # Check criteria
+        if self.remote_rebin_threshold is not None and isinstance(frame, Frame) and frame.data_size > self.remote_rebin_threshold:
+            self.images[instr_name][filter_name] = RemoteFrame.from_local(frame, self.session)
+
+    # -----------------------------------------------------------------
+
+    def write_intermediate_rebinned(self, instr_name, filter_name):
+
+        """
+        This function ...
+        :param instr_name: 
+        :param filter_name: 
+        :return: 
+        """
+
+        from ...magic.core.remote import RemoteFrame
+        from ...magic.core.frame import Frame
+
+        # Debugging
+        log.debug("Writing rebinned '" + filter_name + "' frame for '" + instr_name + "' instrument ...")
+
+        # Get the frame
+        frame = self.images[instr_name][filter_name]
+
+        # Remote frame?
+        if isinstance(frame, RemoteFrame):
+
+            # Determine the path
+            path = self.remote_intermediate_rebin_path_for_image(instr_name, filter_name)
+
+            # Save the frame remotely
+            frame.saveto_remote(path)
+
+        # Regular frame?
+        elif isinstance(frame, Frame):
+
+            # Determine the path
+            path = self.intermediate_rebin_path_for_image(instr_name, filter_name)
+
+            # Save the frame
+            frame.saveto(path)
+
+        # Invalid
+        else: raise ValueError("Something went wrong")
 
     # -----------------------------------------------------------------
 
@@ -2045,7 +2400,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
                 factor = self.images[instr_name][filter_name].convert_to(self.unit)
 
                 # Debugging
-                log.debug("The conversion factor is '" + str(factor) + "'")
+                log.debug("The conversion factor is " + str(factor))
 
     # -----------------------------------------------------------------
 
