@@ -1306,7 +1306,7 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
-    def corresponding_non_brightness_unit(self, **kwargs):
+    def corresponding_non_brightness_unit_conversion_factor(self, **kwargs):
 
         """
         This function ...
@@ -1422,7 +1422,7 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
-    def corresponding_non_angular_or_intrinsic_area_unit(self, **kwargs):
+    def corresponding_non_angular_or_intrinsic_area_unit_conversion_factor(self, **kwargs):
 
         """
         This function ...

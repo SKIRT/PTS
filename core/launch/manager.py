@@ -3484,6 +3484,70 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_status(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Analysed
+        if simulation.analysed:
+            simulation_status = "analysed"
+
+        # Partly analysed
+        elif simulation.analysed_any:
+
+            analysed = []
+            if simulation.analysed_all_extraction: analysed.append("extraction")
+            if simulation.analysed_all_plotting: analysed.append("plotting")
+            if simulation.analysed_all_misc: analysed.append("misc")
+            if simulation.analysed_batch: analysed.append("batch")
+            if simulation.analysed_scaling: analysed.append("scaling")
+            if simulation.analysed_all_extra: analysed.append("extra")
+
+            if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
+            else: simulation_status = "analysed: started"
+
+        # Retrieved
+        elif simulation.retrieved:
+            simulation_status = "retrieved"
+
+        # Finished
+        elif simulation.finished:
+            simulation_status = "finished"
+
+        # Not yet retrieved
+        else:
+
+            host_id = simulation.host_id
+            screen_states = self.screens[host_id]
+            jobs_status = self.jobs[host_id]
+            with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation,
+                                                                                   screen_states=screen_states,
+                                                                                   jobs_status=jobs_status)
+
+        # Check success flag in assignment
+        if self.config.fix_success and not self.assignment.is_launched(
+                simulation.name) and not is_invalid_or_unknown_status(simulation_status):
+            log.warning(
+                "Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
+            self.assignment.set_success_for_simulation(simulation.name)
+
+        # Retrieve finished simulations?
+        if simulation_status == finished_name and self.config.retrieve:
+            self.retrieve_simulation(simulation_name)
+            simulation_status = "retrieved"
+
+        # Return the status
+        return simulation_status
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def status(self):
 
@@ -3498,49 +3562,8 @@ class SimulationManager(Configurable):
         # Loop over the simulations
         for simulation_name in self.simulation_names:
 
-            # Get the simulation
-            simulation = self.get_simulation(simulation_name)
-
-            # Analysed
-            if simulation.analysed: simulation_status = "analysed"
-
-            # Partly analysed
-            elif simulation.analysed_any:
-
-                analysed = []
-                if simulation.analysed_all_extraction: analysed.append("extraction")
-                if simulation.analysed_all_plotting: analysed.append("plotting")
-                if simulation.analysed_all_misc: analysed.append("misc")
-                if simulation.analysed_batch: analysed.append("batch")
-                if simulation.analysed_scaling: analysed.append("scaling")
-                if simulation.analysed_all_extra: analysed.append("extra")
-
-                if len(analysed) > 0: simulation_status = "analysed: " + ", ".join(analysed)
-                else: simulation_status = "analysed: started"
-
-            # Retrieved
-            elif simulation.retrieved: simulation_status = "retrieved"
-
-            # Finished
-            elif simulation.finished: simulation_status = "finished"
-
-            # Not yet retrieved
-            else:
-
-                host_id = simulation.host_id
-                screen_states = self.screens[host_id]
-                jobs_status = self.jobs[host_id]
-                with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
-
-            # Check success flag in assignment
-            if self.config.fix_success and not self.assignment.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
-                log.warning("Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
-                self.assignment.set_success_for_simulation(simulation.name)
-
-            # Retrieve finished simulations?
-            if simulation_status == finished_name and self.config.retrieve:
-                self.retrieve_simulation(simulation_name)
-                simulation_status = "retrieved"
+            # Get the simulation status
+            simulation_status = self.get_simulation_status(simulation_name)
 
             # Add the status
             status_list.append(simulation_status)
