@@ -490,16 +490,64 @@ class ObservedFluxCalculator(Configurable):
         :return:
         """
 
+        # Get the frames
+        frames = self.get_frames_from_datacube(datacube)
+
+        # Mask the frames
+        self.mask_frames(frames, instr_name, distance=datacube.distance, pixelscale=datacube.pixelscale)
+
+        # Convert unit
+        self.convert_frames(frames)
+
+        # Return the frames
+        return frames
+
+    # -----------------------------------------------------------------
+
+    def get_frames_from_datacube(self, datacube):
+
+        """
+        This function ...
+        :param datacube:
+        :return:
+        """
+
         # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
         nprocesses = 1
         frames = datacube.frames_for_filters(self.filters, convolve=self.spectral_convolution_filters,
                                              nprocesses=nprocesses,
                                              check_previous_sessions=True, as_dict=True,
                                              check=self.config.check_wavelengths,
-                                             min_npoints=self.config.min_npoints, min_npoints_fwhm=self.config.min_npoints_fwhm,
+                                             min_npoints=self.config.min_npoints,
+                                             min_npoints_fwhm=self.config.min_npoints_fwhm,
                                              ignore_bad=self.config.ignore_bad,
                                              skip_ignored_bad_convolution=self.config.skip_ignored_bad_convolution,
                                              skip_ignored_bad_closest=self.config.skip_ignored_bad_closest)
+
+        # Return the frames
+        return frames
+
+    # -----------------------------------------------------------------
+
+    def mask_frames(self, frames, instr_name, distance=None, pixelscale=None):
+
+        """
+        This function ...
+        :param frames:
+        :param instr_name:
+        :param distance:
+        :param pixelscale:
+        :return:
+        """
+
+        # Get the unit, pixelscale and distance of the images
+        unit = sequences.get_all_equal_value([frame.unit for frame in frames.values()])
+        if distance is None: distance = sequences.get_all_equal_value([frame.distance for frame in frames.values()], ignore_none=True)
+        if pixelscale is None: pixelscale = sequences.get_all_equal_value([frame.average_pixelscale for frame in frames.values()], ignore_none=True)
+
+        # Obtain the conversion factor to intrinsic or angular area (intensity or surface brightness)
+        rebinning_unit = unit.corresponding_angular_or_intrinsic_area_unit
+        rebinning_factor = unit.corresponding_angular_or_intrinsic_area_unit_conversion_factor(distance=distance, pixelscale=pixelscale)
 
         # Finish the images
         for fltr in frames:
@@ -518,17 +566,33 @@ class ObservedFluxCalculator(Configurable):
             # Get mask
             mask = self.get_mask(instr_name, fltr)
 
-            # Rebin the frame
-            frame.rebin(mask.wcs, convert=True)
+            # Convert the unit prior to rebinning
+            frame.convert_by_factor(rebinning_factor, rebinning_unit)
 
-            # Convert unit
-            frame.convert_to(self.config.unit)
+            # Rebin the frame, don't convert back (conversion is done in the step hereafter)
+            frame.rebin(mask.wcs)
 
             # Mask
             frame.apply_mask_nans(mask)
 
-        # Return the frames
-        return frames
+    # -----------------------------------------------------------------
+
+    def convert_frames(self, frames):
+
+        """
+        This function ...
+        :param frames:
+        :return:
+        """
+
+        # Loop over the frames
+        for fltr in frames:
+
+            # Get the frame
+            frame = frames[fltr]
+
+            # Convert unit
+            frame.convert_to(self.config.unit)
 
     # -----------------------------------------------------------------
 

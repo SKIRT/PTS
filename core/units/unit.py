@@ -911,6 +911,18 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    def corresponding_flux_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_flux_unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
     @property
     def corresponding_luminosity_unit(self):
 
@@ -946,6 +958,17 @@ class PhotometricUnit(CompositeUnit):
 
         # Create the new unit
         return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_luminosity_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_luminosity_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -999,6 +1022,17 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    def corresponding_intensity_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_intensity_unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
     @property
     def corresponding_bolometric_unit(self):
 
@@ -1031,6 +1065,18 @@ class PhotometricUnit(CompositeUnit):
 
         # Create the new unit
         return PhotometricUnit(new_unit_string, density=False, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_bolometric_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_bolometric_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1071,6 +1117,18 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    def corresponding_wavelength_density_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_wavelength_density_unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
     @property
     def corresponding_frequency_density_unit(self):
 
@@ -1108,6 +1166,18 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    def corresponding_frequency_density_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_frequency_density_unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
     @property
     def corresponding_neutral_density_unit(self):
 
@@ -1138,6 +1208,18 @@ class PhotometricUnit(CompositeUnit):
 
         # Create the new unit
         return PhotometricUnit(new_unit_string, density=True, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_neutral_density_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_neutral_density_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1178,6 +1260,18 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    def corresponding_brightness_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_brightness_unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
     @property
     def corresponding_non_brightness_unit(self):
 
@@ -1209,6 +1303,18 @@ class PhotometricUnit(CompositeUnit):
 
         # Create and return the new unit
         return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_non_brightness_unit(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_non_brightness_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1261,6 +1367,18 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    def corresponding_angular_or_intrinsic_area_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_angular_or_intrinsic_area_unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
     @property
     def corresponding_non_angular_or_intrinsic_area_unit(self):
 
@@ -1301,6 +1419,18 @@ class PhotometricUnit(CompositeUnit):
 
         # Create and return the new unit
         return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=False, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_non_angular_or_intrinsic_area_unit(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_non_angular_or_intrinsic_area_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1352,6 +1482,18 @@ class PhotometricUnit(CompositeUnit):
 
         # Create and return the new unit
         return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_angular_area_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_angular_area_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1415,6 +1557,18 @@ class PhotometricUnit(CompositeUnit):
 
         # Create and return the new unit
         return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    def corresponding_intrinsic_area_unit_conversion_factor(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        return self.conversion_factor(self.corresponding_intrinsic_area_unit, **kwargs)
 
     # -----------------------------------------------------------------
 
