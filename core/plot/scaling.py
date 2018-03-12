@@ -548,8 +548,8 @@ class ScalingPlotter(Configurable):
                 self.distinct_parameter_sets_memory.append(parameters)
 
         # Check consistency between the timing and memory tables
-        #self.check_consistency_tolerant()
-        self.check_consistency_strict()
+        if self.config.tolerant: self.check_consistency_tolerant()
+        else: self.check_consistency_strict()
 
         # Check the coverage of the timing and memory data
         self.check_coverage()
@@ -848,18 +848,21 @@ class ScalingPlotter(Configurable):
                 continue
 
             # Get the timing parameters
-            timing_parameters = self.timing.ski_parameters_for_simulation(simulation_name)
+            timing_parameters = self.timing.ski_parameters_for_simulation(simulation_name, which="all")
 
             # "Wavelengths", "Packages", "Dust cells", "Grid type", "Min level", "Max level",
             # "Search method", "Sample count", "Max optical depth", "Max mass fraction",
             # "Max density dispersion", "Self-absorption", "Transient heating"
 
             # Get the memory parameters
-            memory_parameters = self.memory.ski_parameters_for_simulation(simulation_name)
+            memory_parameters = self.memory.ski_parameters_for_simulation(simulation_name, which="all")
 
             # "Wavelengths", "Dust cells", "Grid type", "Min level", "Max level", "Search method",
             # "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion",
             # "Self-absorption", "Transient heating", "Number of pixels"
+
+            #print(timing_parameters)
+            #print(memory_parameters)
 
             # Compare the number of wavelengths
             if timing_parameters["Wavelengths"] != memory_parameters["Wavelengths"]: raise RuntimeError("Number of wavelengths not equal for simulation '" + simulation_name + "'")
@@ -885,11 +888,14 @@ class ScalingPlotter(Configurable):
         # Debugging
         log.debug("Checking whether the timing and memory tables are consistent ...")
 
+        # Get simulation names in timing and memory table
         timing_simulation_names = sorted(self.timing.simulation_names)
         memory_simulation_names = sorted(self.memory.simulation_names)
 
+        # Get the differences
         result = cmp(timing_simulation_names, memory_simulation_names)
 
+        # Check
         if result != 0: raise RuntimeError("The timing and memory tables are not consistent")
 
     # -----------------------------------------------------------------
@@ -1182,7 +1188,7 @@ class ScalingPlotter(Configurable):
         values = []
 
         for parameter in self.different_parameters_memory:
-            value = self.timing[parameter][index]
+            value = self.memory[parameter][index]
             if hasattr(value, "dtype") and np.issubdtype(str(value.dtype), np.string_): value = str(value) # dtype('S..') to str
             values.append(value)
 
@@ -1342,9 +1348,12 @@ class ScalingPlotter(Configurable):
             # Get the simulation name and the corresponding index in the memory table
             simulation_name = self.timing["Simulation name"][i]
             j = self.memory.index_for_simulation(simulation_name)
+            if j is None: continue
+            #print(i, j)
 
             # Get the relevant timing parameters
             timing_parameters = self.get_parameter_set_timing(i)
+            #print(timing_parameters)
 
             # Ignore parameter set
             if i in self.ignore_timing_entries: self.ignore_parameter_sets_timing.add(timing_parameters)
@@ -1352,10 +1361,11 @@ class ScalingPlotter(Configurable):
             # Get the relevant memory parameters
             memory_parameters = self.get_parameter_set_memory(j)
             if j in self.ignore_memory_entries: self.ignore_parameter_sets_memory.add(memory_parameters)
+            #print(memory_parameters)
 
             # Get the number of processes and threads
-            processes = self.timing["Processes"][i]
-            threads_per_core = self.timing["Threads per core"][i]
+            processes = int(self.timing["Processes"][i])
+            threads_per_core = int(self.timing["Threads per core"][i])
             cores_per_process = int(self.timing["Cores"][i] / processes)
             threads = threads_per_core * cores_per_process
             processors = processes * threads
@@ -1408,6 +1418,7 @@ class ScalingPlotter(Configurable):
                     for phase in self.simulation_phases_and_subphases_memory: serial_memory[memory_parameters][phase].append(memory_per_phase[phase])
                     serial_memory_ncores[memory_parameters] = processors
 
+            # Determine variable
             processes_or_processors = processes if self.config.hybridisation else processors
 
             # Add the processor count for this parallelization mode
@@ -3037,6 +3048,11 @@ class ScalingPlotter(Configurable):
         if self.config.xlog: plt.xscale('log')
         if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale('log')
 
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
+
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks_ncores = sorted(ticks_ncores)
@@ -3282,6 +3298,11 @@ class ScalingPlotter(Configurable):
             log.warning("Could not make a plot for the speedups of the " + phase_names[phase] + " because there was no valid data")
             return
 
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
+
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks_ncores = sorted(ticks_ncores)
@@ -3485,6 +3506,11 @@ class ScalingPlotter(Configurable):
         if self.config.xlog: plt.xscale('log')
         if self.config.ylog: log.warning("Not using y log scale for efficieny plots")
 
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
+
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks_ncores = sorted(ticks_ncores)
@@ -3668,6 +3694,11 @@ class ScalingPlotter(Configurable):
         # Use a logarithmic scale for the x axis (nthreads)
         if self.config.xlog: plt.xscale("log")
         if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale("log")
+
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -3873,6 +3904,11 @@ class ScalingPlotter(Configurable):
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale('log')
 
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
+
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks_ncores = sorted(ticks_ncores)
@@ -4040,6 +4076,11 @@ class ScalingPlotter(Configurable):
         plt.xscale("log")
         plt.yscale("log")
 
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
+
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks_ncores = sorted(ticks_ncores)
@@ -4170,6 +4211,11 @@ class ScalingPlotter(Configurable):
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale("log")
         plt.yscale("log")
+
+        # Check if there less than 2 data points
+        if len(ticks) < 2:
+            log.warning("Not enough data for plotting")
+            return
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)

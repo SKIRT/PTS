@@ -124,3 +124,7 @@ definition.sections["extrapolation"].sections["memory"].add_flag("extrapolate_nc
 definition.sections["extrapolation"].sections["memory"].add_flag("in_memory", "not only extrapolate for normalizing, but also plot the serial time as if it were a genuine data point")
 
 # -----------------------------------------------------------------
+
+definition.add_flag("tolerant", "don't compare timing and memory tables in a strict way", True)
+
+# -----------------------------------------------------------------

@@ -238,7 +238,7 @@ plot_commands = OrderedDict()
 plot_commands[_runtimes_command_name] = ("plot_runtimes_command", True, "plot simulation runtimes", "host_parallelization")
 plot_commands[_memory_command_name] = ("plot_memory_command", True, "plot simulation memory usages", "host_parallelization")
 plot_commands[_timeline_command_name] = ("plot_timeline_command", True, "plot simulation timeline", "simulation")
-plot_commands[_scaling_command_name] = ("plot_scaling_command", True, "plot scaling of simulations", "host")
+plot_commands[_scaling_command_name] = ("plot_scaling_command", True, "plot scaling of simulations", None)
 
 # -----------------------------------------------------------------
 
@@ -13867,7 +13867,14 @@ class SimulationManager(Configurable):
         """
 
         from ..plot.scaling import ScalingPlotter
+
+        # Get config
+        #config =
+
+        # Create plotter
         plotter = ScalingPlotter()
+
+        # Run the plotter
         plotter.run(timing=self.timing, memory=self.memory)
 
     # -----------------------------------------------------------------
