@@ -45,7 +45,7 @@ from ..plot.sed import SEDPlotter
 from ..tools import formatting as fmt
 from ..remote.remote import Remote
 from ..prep.deploy import Deployer
-from ..tools.stringify import tostr
+from ..tools.stringify import tostr, get_list_string_max_nvalues
 from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
@@ -1600,8 +1600,9 @@ def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors
         log.debug("")
         for fltr in wavelengths_for_filters:
             filter_name = str(fltr)
-            wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
-            log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+            #wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
+            string = get_list_string_max_nvalues([wavelength.to("micron").value for wavelength in wavelengths_for_filters[fltr]], 10) # max 10 values
+            log.debug(" - " + filter_name + ": " + string + fmt.bold + " (" + str(len(wavelengths_for_filters[fltr])) + ")" + fmt.reset)
         log.debug("")
 
     # Return the mock observed SED

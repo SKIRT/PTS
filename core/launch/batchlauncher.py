@@ -546,6 +546,23 @@ class SimulationStatusTable(SmartTable):
 
         return self.is_aborted(simulation_name) or self.is_cancelled(simulation_name) or self.is_crashed(simulation_name)
 
+    # -----------------------------------------------------------------
+
+    def reset_for_simulation(self, simulation_name, status):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param status:
+        :return:
+        """
+
+        # Get index
+        index = self.index_for_simulation(simulation_name)
+
+        # Set value
+        self.set_value("Status", index, status)
+
 # -----------------------------------------------------------------
 
 class SimulationAssignmentTable(SmartTable):

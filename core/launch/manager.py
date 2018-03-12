@@ -3527,15 +3527,11 @@ class SimulationManager(Configurable):
             host_id = simulation.host_id
             screen_states = self.screens[host_id]
             jobs_status = self.jobs[host_id]
-            with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation,
-                                                                                   screen_states=screen_states,
-                                                                                   jobs_status=jobs_status)
+            with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
 
         # Check success flag in assignment
-        if self.config.fix_success and not self.assignment.is_launched(
-                simulation.name) and not is_invalid_or_unknown_status(simulation_status):
-            log.warning(
-                "Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
+        if self.config.fix_success and not self.assignment.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
+            log.warning("Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
             self.assignment.set_success_for_simulation(simulation.name)
 
         # Retrieve finished simulations?
@@ -3570,6 +3566,25 @@ class SimulationManager(Configurable):
 
         # Create the table and return
         return SimulationStatusTable.from_columns(self.simulation_names, status_list)
+
+    # -----------------------------------------------------------------
+
+    def reset_status_for_simulation(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        # If status is not created yet, return
+        if not self.has_status: return
+
+        # Get the new status
+        simulation_status = self.get_simulation_status(simulation_name)
+
+        # Set the new status
+        self.status.reset_for_simulation(simulation_name, simulation_status)
 
     # -----------------------------------------------------------------
 
@@ -14220,7 +14235,10 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Caching simulation '" + simulation.name + "' ...")
+        log.debug("Caching simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
 
         # Cache output
         if self.config.cache_output:

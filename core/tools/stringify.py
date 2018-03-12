@@ -192,6 +192,51 @@ def can_get_item(value):
 
 # -----------------------------------------------------------------
 
+def get_strings(values, return_types=False, value_kwargs=None, add_quotes=False, quote_character="'"):
+
+    """
+    This function ...
+    :param values:
+    :param return_types:
+    :param value_kwargs:
+    :param add_quotes:
+    :param quote_character:
+    :return:
+    """
+
+    if value_kwargs is None: value_kwargs = {}
+
+    strings = []
+    ptype = None
+    ptypes = set()
+
+    # Loop over the values
+    for entry in values:
+
+        # parsetype, val = stringify_not_list(entry)
+        parsetype, val = stringify(entry, **value_kwargs)
+
+        # from ..basics.configuration import parent_type
+        # if add_quotes and parent_type(parsetype) == "string":
+        if add_quotes and types.is_string_type(entry): val = quote_character + val + quote_character
+
+        if ptype is None: ptype = parsetype
+        elif ptype != parsetype:
+            # raise ValueError("Nonuniform list")
+            ptype = "mixed"
+
+        # Add the parse type
+        ptypes.add(parsetype)
+
+        # Add the string
+        strings.append(val)
+
+    # Return the strings
+    if return_types: return strings, ptypes
+    else: return strings
+
+# -----------------------------------------------------------------
+
 def stringify_list(value, **kwargs):
 
     """
@@ -220,30 +265,8 @@ def stringify_list(value, **kwargs):
     add_quotes = kwargs.pop("add_quotes", False)
     quote_character = kwargs.pop("quote_character", "'")
 
-    strings = []
-    ptype = None
-    ptypes = set()
-    for entry in value:
-
-        #print("Herekwargs", kwargs)
-
-        #parsetype, val = stringify_not_list(entry)
-        parsetype, val = stringify(entry, **value_kwargs)
-
-        #from ..basics.configuration import parent_type
-        #if add_quotes and parent_type(parsetype) == "string":
-        if add_quotes and types.is_string_type(entry): val = quote_character + val + quote_character
-
-        if ptype is None: ptype = parsetype
-        elif ptype != parsetype:
-            #raise ValueError("Nonuniform list")
-            ptype = "mixed"
-
-        # Add the parse type
-        ptypes.add(parsetype)
-
-        # Add the string
-        strings.append(val)
+    # Get strings
+    strings, ptypes = get_strings(value, return_types=True, value_kwargs=value_kwargs, add_quotes=add_quotes, quote_character=quote_character)
 
     from ..basics.configuration import parent_type
     from ..basics.log import log
@@ -267,8 +290,6 @@ def stringify_list(value, **kwargs):
 
     # Get delimiter for list
     delimiter = kwargs.pop("delimiter", ",")
-
-    #print("PTYPE", ptype)
 
     # Return the type and the string
     if ptype.endswith("list"):
@@ -746,6 +767,41 @@ def stringify_list_fancy(lst, **kwargs):
         else: string = code + string + reset
 
     return ptype, lines_prefix + ("\n" + lines_prefix).join(wrap(string.replace(",", delimiter), width))
+
+# -----------------------------------------------------------------
+
+def get_list_string_max_nvalues(lst, nvalues, **kwargs):
+
+    """
+    This function ...
+    :param lst:
+    :param values:
+    :param kwargs:
+    :return:
+    """
+
+    # Define string
+    ellipsis = ", ... , "
+
+    # Get options
+    delimiter = kwargs.pop("delimiter", ", ")
+
+    # Get strings
+    strings = get_strings(lst)
+
+    # Return
+    if len(lst) <= nvalues: return delimiter.join(strings)
+
+    # Add ellipses
+    else:
+
+        if nvalues % 2 == 0: nbegin = nend = int(0.5 * nvalues)
+        else:
+            nbegin = int(0.5 * nvalues)
+            nend = nvalues - nbegin
+
+        # Create string, return
+        return delimiter.join(strings[:nbegin]) + ellipsis + delimiter.join(strings[-nend:])
 
 # -----------------------------------------------------------------
 

@@ -35,7 +35,7 @@ from ..basics.vector import Pixel
 from ...core.tools.parallelization import ParallelTarget
 from ...core.tools import types
 from ...core.tools import formatting as fmt
-from ...core.tools.stringify import tostr
+from ...core.tools.stringify import tostr, get_list_string_max_nvalues
 from ...core.tools import sequences
 
 # -----------------------------------------------------------------
@@ -1086,8 +1086,9 @@ class DataCube(Image):
             log.debug("")
             for fltr in wavelengths_for_filters:
                 filter_name = str(fltr)
-                wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
-                log.debug(" - " + filter_name + ": " + ", ".join(wavelength_strings))
+                #wavelength_strings = [str(wavelength.to("micron").value) for wavelength in wavelengths_for_filters[fltr]]
+                string = get_list_string_max_nvalues([wavelength.to("micron").value for wavelength in wavelengths_for_filters[fltr]], 10)  # max 10 values
+                log.debug(" - " + filter_name + ": " + string + fmt.bold + " (" + str(len(wavelengths_for_filters[fltr])) + ")" + fmt.reset)
             log.debug("")
 
             # Set the filters just to be sure
