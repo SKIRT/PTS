@@ -1991,6 +1991,7 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
         # Convert the units from counts/s/sr to counts/s
         pixelsr = frame_weighted.pixelarea.to("sr").value
         frame_weighted *= pixelsr
+        frame *= pixelsr
         #errors_weighted *= pixelsr
 
         # Create mask where the weights are nans
