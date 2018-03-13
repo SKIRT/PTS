@@ -404,6 +404,7 @@ class Generation(object):
         :return:
         """
 
+        if not self.has_assignment_table: return None
         return SimulationAssignmentTable.from_file(self.assignment_table_path)
 
     # -----------------------------------------------------------------
@@ -1320,7 +1321,9 @@ class Generation(object):
         """
 
         host_id = self.get_host_id(name)
+        if host_id is None: return False
         simulation_id = self.get_simulation_id(name)
+        if simulation_id is None: return False
         #print(name, host_id, simulation_id)
         if not has_simulation_for_host(host_id, simulation_id): return False
         else:
@@ -1356,6 +1359,7 @@ class Generation(object):
         :return:
         """
 
+        if not self.has_assignment_table: return None
         return self.assignment_table.get_host_id_for_simulation(name)
 
     # -----------------------------------------------------------------
@@ -1368,6 +1372,7 @@ class Generation(object):
         :return:
         """
 
+        if not self.has_assignment_table: return None
         return self.assignment_table.get_cluster_name_for_simulation(name)
 
     # -----------------------------------------------------------------
@@ -1380,6 +1385,7 @@ class Generation(object):
         :return:
         """
 
+        if not self.has_assignment_table: return None
         return self.assignment_table.get_simulation_id_for_simulation(name)
 
     # -----------------------------------------------------------------
@@ -3042,11 +3048,18 @@ class Generation(object):
                 host_id = self.get_host_id(simulation_name)
                 simulation_id = self.get_simulation_id(simulation_name)
 
-                # Give warning
-                log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
+                if host_id is None or simulation_id is None:
+
+                    if host_id is None: log.warning("Could not determine the host ID for simulation '" + simulation_name + "'")
+                    if simulation_id is None: log.warning("Could not determine the simulation ID for simulation '" + simulation_name + "'")
+
+                    load_simulation = False
 
                 # Find simulation on other host?
-                if find_simulations:
+                elif find_simulations:
+
+                    # Give warning
+                    log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
 
                     # Give warning
                     log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")

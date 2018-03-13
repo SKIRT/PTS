@@ -106,7 +106,7 @@ chi_squared = generation.chi_squared_table
 # -----------------------------------------------------------------
 
 # Check
-if not generation.has_assignment_table: raise RuntimeError("No assignment for this generation")
+#if not generation.has_assignment_table: raise RuntimeError("No assignment for this generation")
 
 # -----------------------------------------------------------------
 
@@ -231,9 +231,13 @@ manager.config.screen_scripts = fs.files_in_path(generation.path, extension="sh"
 manager.config.analyse = config.analyse
 manager.config.analysis = config.analysis
 
+if not generation.has_assignment_table:
+    simulations = generation.simulations_basic
+else: simulations = None
+
 # Run the manager
 manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
-            status=status, info_tables=[parameters, chi_squared], remotes=remotes)
+            status=status, info_tables=[parameters, chi_squared], remotes=remotes, simulations=simulations)
 
 # -----------------------------------------------------------------
 
