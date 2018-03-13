@@ -1406,13 +1406,13 @@ class SimulationManager(Configurable):
         log.debug("Initializing simulations ...")
 
         # Load the simulation assignment scheme
-        if "assignment" in kwargs: self.initialize_from_assignment(kwargs.pop("assignment"))
+        if kwargs.get("assignment", None) is not None: self.initialize_from_assignment(kwargs.pop("assignment"))
 
         # From simulations
-        elif "simulations" in kwargs: self.initialize_from_simulations(kwargs.pop("simulations"))
+        elif kwargs.get("simulations", None) is not None: self.initialize_from_simulations(kwargs.pop("simulations"))
 
         # From simulation names
-        elif "simulation_names" in kwargs: self.initialize_from_simulation_names(kwargs.pop("simulation_names"))
+        elif kwargs.get("simulation_names", None) is not None: self.initialize_from_simulation_names(kwargs.pop("simulation_names"))
 
         # From assignment
         elif self.config.assignment is not None:
