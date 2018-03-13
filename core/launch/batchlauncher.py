@@ -1247,6 +1247,26 @@ class SimulationAssignmentTable(SmartTable):
         values = [name, host_id, cluster_name, simulation_id, success]
         self.add_row(values)
 
+    # -----------------------------------------------------------------
+
+    def add_simulation(self, name, host_id=None, cluster_name=None, simulation_id=None, success=True):
+
+        """
+        This function ...
+        :param name:
+        :param host_id:
+        :param cluster_name:
+        :param simulation_id:
+        :param success:
+        :return:
+        """
+
+        if host_id is None:
+            if cluster_name is not None: raise ValueError("Cannot pass cluster name if host ID is not defined")
+            if simulation_id is not None: raise ValueError("Cannot pass simulation ID if host ID is not defined")
+            self.add_local_simulation(name, success)
+        else: self.add_remote_simulation(name, host_id, cluster_name=cluster_name, simulation_id=simulation_id, success=success)
+
 # -----------------------------------------------------------------
 
 default_extraction_dirname = "extr"

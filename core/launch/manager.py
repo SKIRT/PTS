@@ -78,6 +78,7 @@ from ..simulation.output import misc_output_types as misc_type_names
 from ..simulation.jobscript import SKIRTJobScript
 from ..simulation.screen import ScreenScript
 from ..remote.ensemble import SKIRTRemotesEnsemble
+from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 
 # -----------------------------------------------------------------
 
@@ -1048,7 +1049,7 @@ class SimulationManager(Configurable):
         if self.config.cache_misc and self.config.cache_images: self.config.cache_images = False # images will be cached, as all misc output
 
         # Get the status
-        if "status" in kwargs: self.status = kwargs.pop("status")
+        if kwargs.get("status", None) is not None: self.status = kwargs.pop("status")
         elif self.config.status is not None: self.status = SimulationStatusTable.from_file(self.config.status)
 
         # Initialize simulations and assignment scheme
@@ -3384,13 +3385,18 @@ class SimulationManager(Configurable):
 
             # Get simulation properties
             simulation_name = simulation.name
-            simulation_id = simulation.id
-            host_id = simulation.host_id
-            cluster_name = simulation.cluster_name
+
+            # Remote simulation?
+            if isinstance(simulation, RemoteSimulation):
+                simulation_id = simulation.id
+                host_id = simulation.host_id
+                cluster_name = simulation.cluster_name
+            elif isinstance(SkirtSimulation): simulation_id = host_id = cluster_name = None
+            else: raise ValueError("Invalid type for simulation '" + simulation_name + "'")
 
             # Add to assignment
-            self.assignment.add_remote_simulation(simulation_name, host_id, cluster_name=cluster_name,
-                                                  simulation_id=simulation_id, success=self.config.success)
+            self.assignment.add_simulation(simulation_name, host_id=host_id, cluster_name=cluster_name,
+                                           simulation_id=simulation_id, success=self.config.success)
 
             # Add the simulation
             self.simulations[host_id][simulation_name] = simulation

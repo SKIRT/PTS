@@ -136,7 +136,7 @@ if len(chi_squared) > 0:
 # -----------------------------------------------------------------
 
 # Create remotes ensemble
-if not config.offline: remotes = SKIRTRemotesEnsemble(generation.host_ids)
+if not config.offline and generation.has_assignment_table: remotes = SKIRTRemotesEnsemble(generation.host_ids)
 else: remotes = None
 
 # -----------------------------------------------------------------
