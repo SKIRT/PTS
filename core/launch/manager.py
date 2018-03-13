@@ -1504,8 +1504,9 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Get the host ID if necessary
-        if host_id is None: host_id = self.host_id_for_simulation(simulation_name)
+        # Get the host ID if necessary:
+        # if there is not a group under 'None' (host ID unknown) in the simulations dictionary
+        if host_id is None and None not in self.simulations: host_id = self.host_id_for_simulation(simulation_name)
 
         # Checks
         if host_id not in self.simulations: raise ValueError("No simulations for host '" + host_id + "'")
@@ -3391,7 +3392,11 @@ class SimulationManager(Configurable):
                 simulation_id = simulation.id
                 host_id = simulation.host_id
                 cluster_name = simulation.cluster_name
-            elif isinstance(SkirtSimulation): simulation_id = host_id = cluster_name = None
+
+            # Regular simulation object
+            elif isinstance(simulation, SkirtSimulation): simulation_id = host_id = cluster_name = None
+
+            # Invalid
             else: raise ValueError("Invalid type for simulation '" + simulation_name + "'")
 
             # Add to assignment
