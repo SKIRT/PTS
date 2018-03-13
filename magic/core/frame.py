@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import math
 import numpy as np
 import urllib
 from scipy import ndimage
@@ -4641,7 +4642,8 @@ class Frame(NDDataArray):
         if self.wcs is not None:
 
             rotated_wcs = self.wcs.deepcopy()
-            rotated_wcs.rotateCD(angle)  # STILL UNTESTED
+            #rotated_wcs.rotate_wcs(angle)  # STILL UNTESTED
+            rotate_wcs(rotated_wcs, angle)
 
             # Replace wcs
             self.wcs = rotated_wcs
@@ -4688,7 +4690,8 @@ class Frame(NDDataArray):
         #rotated_wcs = CoordinateSystem(rotated_header)
 
         rotated_wcs = self.wcs.deepcopy()
-        rotated_wcs.rotateCD(angle) # STILL UNTESTED
+        #rotated_wcs.rotate_wcs(angle) # STILL UNTESTED
+        rotate_wcs(rotated_wcs, angle)
 
         # Return the rotated frame
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -5486,5 +5489,34 @@ def log10(frame):
     """
 
     return frame.get_log10()
+
+# -----------------------------------------------------------------
+
+def create_rotate_matrix(degs):
+
+    """
+    Return a rotation matrix for counterclockwise rotation by ``deg`` degrees.
+    """
+
+    rads = math.radians(degs)
+    s = math.sin(rads)
+    c = math.cos(rads)
+
+    # Return the matrix
+    return np.array([[c, -s], [s, c]])
+
+# -----------------------------------------------------------------
+
+def rotate_wcs(wcs, angle):
+
+    """
+    This function ...
+    :param wcs:
+    :param angle:
+    :return:
+    """
+
+    if hasattr(wcs.wcs, 'cd'): wcs.wcs.cd = np.dot(create_rotate_matrix(angle.to("deg").value), wcs.wcs.cd)
+    else: wcs.wcs.pc = np.dot(create_rotate_matrix(angle.to("deg").value), wcs.wcs.pc)
 
 # -----------------------------------------------------------------

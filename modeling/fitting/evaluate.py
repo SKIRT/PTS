@@ -170,21 +170,6 @@ def get_parameter_values_from_genome(genome, fitting_run, minima, maxima, nbits,
 
 # -----------------------------------------------------------------
 
-def generate_simulation_name():
-
-    """
-    THis function ...
-    :return: 
-    """
-
-    # Create a unique name for this combination of parameter values
-    simulation_name = time.unique_name(precision="micro")
-
-    # Return the name
-    return simulation_name
-
-# -----------------------------------------------------------------
-
 def make_test_definition(simulation_name, ski, parameter_values, object_name, simulation_input, scientific=False,
                          fancy=False, ndigits=None):
 

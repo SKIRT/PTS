@@ -2335,7 +2335,8 @@ class ParameterExplorer(FittingComponent):
                 definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name,
                                                 self.simulation_input, self.generation_info.path, scientific=True, fancy=True,
                                                 ndigits=self.fitting_run.ndigits_dict)
-            else: definition = make_test_definition(simulation_name, self.ski, parameter_values, self.object_name, self.simulation_input, scientific=True, fancy=True, ndigits=self.fitting_run.ndigits_dict)
+            else: definition = make_test_definition(simulation_name, self.ski, parameter_values, self.object_name,
+                                                    self.simulation_input, scientific=True, fancy=True, ndigits=self.fitting_run.ndigits_dict)
 
             # Put the parameters in the queue and get the simulation object
             self.launcher.add_to_queue(definition, simulation_name)
@@ -2366,6 +2367,9 @@ class ParameterExplorer(FittingComponent):
 
         # Check the launched simulations
         if not self.testing: self.check_simulations()
+
+        # Save the succesful simulation files in their own directories
+        self.save_simulations()
 
     # -----------------------------------------------------------------
 
@@ -2465,6 +2469,30 @@ class ParameterExplorer(FittingComponent):
 
         # Unexpected
         else: raise RuntimeError("Unexpected error where nsmulations > nmodels")
+
+    # -----------------------------------------------------------------
+
+    def save_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the simulation files in the generation's simulation directories ...")
+
+        # Loop over the simulations
+        for simulation in self.simulations:
+
+            # Check whether the simulation is succesfully launched
+            if simulation.name not in self.parameters_table.simulation_names: continue
+
+            # Determine the filepath
+            filepath = fs.join(simulation.base_path, "initial.sim")
+
+            # Save the simulation file
+            simulation.saveto(filepath, update_path=False)
 
     # -----------------------------------------------------------------
 
@@ -2579,8 +2607,7 @@ class ParameterExplorer(FittingComponent):
         for name in self.model_names:
 
             # Generate the simulation name
-            #simulation_name = generate_simulation_name()
-            simulation_name = self.run_name + "__" + self.generation_name + "__" + str(counter)
+            simulation_name = self.object_name + "__" + self.run_name + "__" + self.generation_name + "__" + str(counter)
 
             # Debugging
             log.debug("Adding an entry to the individuals table with:")
