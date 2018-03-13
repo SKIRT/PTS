@@ -20,7 +20,7 @@ from collections import OrderedDict, defaultdict
 from .component import FittingComponent
 from ...core.basics.log import log
 from .initialization.base import calculate_weights_filters
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, memoize_method
 from .tables import WeightsTable
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
@@ -38,6 +38,7 @@ from .tables import GenerationsTable
 from ...core.filter.filter import parse_filter
 from ...core.plot.transmission import plot_filters
 from .generation import GenerationInfo
+from .run import generations_dirname, parameters_dirname, distributions_dirname, prob_dirname, best_dirname
 
 # -----------------------------------------------------------------
 
@@ -110,6 +111,54 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_create_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.as_run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_backup_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.in_place
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.show
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -120,6 +169,12 @@ class Refitter(FittingComponent):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # As run: create run directory
+        if self.do_create_run: self.create_run()
+
+        # Make a backup of the current fitting run
+        if self.do_backup_run: self.backup_run()
 
         # 2. Get the weights
         self.get_weights()
@@ -152,10 +207,22 @@ class Refitter(FittingComponent):
         self.write()
 
         # 11. Show
-        if self.config.show: self.show()
+        if self.do_show: self.show()
 
         # 12. Plot
-        if self.config.plot: self.plot()
+        if self.do_plot: self.plot()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def refitting_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.refitting_path
 
     # -----------------------------------------------------------------
 
@@ -167,7 +234,7 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.fitting_run.refitting_path, self.config.name)
+        return fs.create_directory_in(self.refitting_path, self.config.name)
 
     # -----------------------------------------------------------------
 
@@ -314,6 +381,30 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def in_place(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.in_place is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def backup_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.in_place
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -324,6 +415,10 @@ class Refitter(FittingComponent):
 
         # Call the setup function of the base class
         super(Refitter, self).setup(**kwargs)
+
+        # Check options
+        if self.as_run and self.in_place: raise ValueError("Cannot refit as new fitting run and refit in-place simultaneously")
+        if self.config.name is None and not (self.as_run or self.in_place): raise ValueError("Refitting name must be specified when not refitting as new run or in-place")
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.fitting_run)
@@ -340,8 +435,323 @@ class Refitter(FittingComponent):
         self.best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
         self.best_parameters_table._setup()
 
-        # As run: create run directory
-        if self.as_run: self.create_fitting_run()
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def backup_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.refitting_path, self.backup_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def backup_generations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.backup_path, "generations")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def backup_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.create_directory_in(self.backup_generations_path, generation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def backup_path_for_simulation(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return fs.create_directory_in(self.backup_path_for_generation(generation_name), simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_prob(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.fitting_run.prob_path, recursive=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_best(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.fitting_run.best_path, recursive=True)
+
+    # -----------------------------------------------------------------
+
+    def backup_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Making a backup of the current fitting results ...")
+
+        # Backup the fitting configuration
+        self.backup_config()
+
+        # Backup the weights
+        self.backup_weights()
+
+        # Backup the best parameters table
+        self.backup_best_parameters()
+
+        # Backup the prob directory
+        if self.has_prob: self.backup_prob()
+
+        # Backup the best directory
+        if self.has_best: self.backup_best()
+
+        # Backup the fluxes
+        self.backup_fluxes()
+
+        # Backup the fluxes plots
+        self.backup_fluxes_plots()
+
+        # Backup the differences
+        self.backup_differences()
+
+        # Backup the chi squared tables
+        self.backup_chi_squared()
+
+    # -----------------------------------------------------------------
+
+    def backup_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Making a backup of the fitting configuration ...")
+
+        # Copy the configuration
+        fs.copy_file(self.fitting_run.fitting_configuration_path, self.backup_path)
+
+    # -----------------------------------------------------------------
+
+    def backup_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Making a backup of the weights ...")
+
+        # Copy the weights
+        fs.copy_file(self.fitting_run.weights_table_path, self.backup_path)
+
+    # -----------------------------------------------------------------
+
+    def backup_best_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Making a backup of the best parameters table ...")
+
+        # Copy the file
+        fs.copy_file(self.fitting_run.best_parameters_table_path, self.backup_path)
+
+    # -----------------------------------------------------------------
+
+    def backup_prob(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a backup of the model and parameter probabilities ...")
+
+        # Copy the directory
+        fs.copy_directory(self.fitting_run.prob_path, self.backup_path)
+
+    # -----------------------------------------------------------------
+
+    def backup_best(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a backup of the best simulations ...")
+
+        # Copy the directory
+        fs.copy_directory(self.fitting_run.best_path, self.backup_path)
+
+    # -----------------------------------------------------------------
+
+    def backup_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a backup of the mock fluxes ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Creating backups for generation '" + generation_name + "' ...")
+
+            # Get the generation
+            generation = self.generations[generation_name]
+
+            # Loop over the simulations
+            for simulation_name in generation.simulation_names:
+
+                # Check whether the simulation has fluxes
+                if not generation.has_mock_sed(simulation_name):
+                    log.warning("No mock SED for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+                    continue
+
+                # Debugging
+                log.debug("Creating backup for simulation '" + simulation_name + "' ...")
+
+                # Copy the fluxes file
+                fs.copy_file(generation.get_simulation_mock_sed_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def backup_fluxes_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a backup of the mock fluxes plots ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Creating backups for generation '" + generation_name + "' ...")
+
+            # Get the generation
+            generation = self.generations[generation_name]
+
+            # Loop over the simulations
+            for simulation_name in generation.simulation_names:
+
+                # Check whether the simulation has fluxes plot
+                if not generation.has_mock_sed_plot(simulation_name):
+                    log.warning("No mock SED plot for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+                    continue
+
+                # Debugging
+                log.debug("Creating backup for simulation '" + simulation_name + "' ...")
+
+                # Copy the plot file
+                fs.copy_file(generation.get_simulation_mock_sed_plot_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def backup_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a backup of the flux differences ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Creating backups for generation '" + generation_name + "' ...")
+
+            # Get the generation
+            generation = self.generations[generation_name]
+
+            # Loop over the simulations
+            for simulation_name in generation.simulation_names:
+
+                # Check whether the simulation has differences
+                if not generation.has_sed_differences(simulation_name):
+                    log.warning("No differences table for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+                    continue
+
+                # Debugging
+                log.debug("Creating backup for simulation '" + simulation_name + "' ...")
+
+                # Copy the file
+                fs.copy_file(generation.get_simulation_sed_differences_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
+
+    # -----------------------------------------------------------------
+
+    def backup_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a backup of the chi squared tables ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Creating backup for generation '" + generation_name + "' ...")
+
+            # Get the generation
+            generation = self.generations[generation_name]
+
+            # Copy the file
+            fs.copy_file(generation.chi_squared_table_path, self.backup_path_for_generation(generation_name))
 
     # -----------------------------------------------------------------
 
@@ -477,7 +887,7 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_fitting_run(self):
+    def create_run(self):
 
         """
         This function ...

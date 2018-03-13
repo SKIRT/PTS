@@ -45,6 +45,32 @@ from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
+# Files
+engine_filename = "engine.pickle"
+prng_filename = "prng.pickle"
+optimizer_config_filename = "optimizer.cfg"
+configuration_filename = "configuration.cfg"
+template_filename = "template.ski"
+grids_filename = "grids.dat"
+weights_filename = "weights.dat"
+timing_filename = "timing.dat"
+memory_filename = "memory.dat"
+generations_filename = "generations.dat"
+best_parameters_filename = "best_parameters.dat"
+input_maps_filename = "input_maps.dat"
+
+# Directories
+generations_dirname = "generations"
+wavelength_grids_dirname = "wavelength grids"
+best_dirname = "best"
+prob_dirname = "prob"
+geometries_dirname = "geometries"
+refitting_dirname = "refitting"
+distributions_dirname = "distributions"
+parameters_dirname = "parameters"
+
+# -----------------------------------------------------------------
+
 class FittingRun(object):
     
     """
@@ -78,60 +104,60 @@ class FittingRun(object):
         ## Optimizer:
 
         # Set the path to the main genetic engine
-        self.main_engine_path = fs.join(self.path, "engine.pickle")
+        self.main_engine_path = fs.join(self.path, engine_filename)
 
         # Set the path to the main PRNG
-        self.main_prng_path = fs.join(self.path, "prng.pickle")
+        self.main_prng_path = fs.join(self.path, prng_filename)
 
         # Set the path to the optimizer configuration
-        self.optimizer_config_path = fs.join(self.path, "optimizer.cfg")
+        self.optimizer_config_path = fs.join(self.path, optimizer_config_filename)
 
         ##
 
         # Set the path to the fitting configuration file
-        self.fitting_configuration_path = fs.join(self.path, "configuration.cfg")
+        self.fitting_configuration_path = fs.join(self.path, configuration_filename)
 
         # Set the path to the template ski file
-        self.template_ski_path = fs.join(self.path, "template.ski")
+        self.template_ski_path = fs.join(self.path, template_filename)
 
         # Set the path to the fit/generations directory
-        if passive: self.generations_path = fs.join(self.path, "generations")
-        else: self.generations_path = fs.create_directory_in(self.path, "generations")
+        if passive: self.generations_path = fs.join(self.path, generations_dirname)
+        else: self.generations_path = fs.create_directory_in(self.path, generations_dirname)
 
         # Set the path to the fit/wavelength grids directory
-        if passive: self.wavelength_grids_path = fs.join(self.path, "wavelength grids")
-        else: self.wavelength_grids_path = fs.create_directory_in(self.path, "wavelength grids")
+        if passive: self.wavelength_grids_path = fs.join(self.path, wavelength_grids_dirname)
+        else: self.wavelength_grids_path = fs.create_directory_in(self.path, wavelength_grids_dirname)
 
         # Set the path to the wavelength grids table
-        self.wavelength_grids_table_path = fs.join(self.wavelength_grids_path, "grids.dat")
+        self.wavelength_grids_table_path = fs.join(self.wavelength_grids_path, grids_filename)
 
         # Set the path to the fit/best directory
-        if passive: self.best_path = fs.join(self.path, "best")
-        else: self.best_path = fs.create_directory_in(self.path, "best")
+        if passive: self.best_path = fs.join(self.path, best_dirname)
+        else: self.best_path = fs.create_directory_in(self.path, best_dirname)
 
         # Set the path to the fit/prob directory
-        if passive: self.prob_path = fs.join(self.path, "prob")
-        else: self.prob_path = fs.create_directory_in(self.path, "prob")
+        if passive: self.prob_path = fs.join(self.path, prob_dirname)
+        else: self.prob_path = fs.create_directory_in(self.path, prob_dirname)
 
         # Set the path to the fit/geometries directory
-        if passive: self.geometries_path = fs.join(self.path, "geometries")
-        else: self.geometries_path = fs.create_directory_in(self.path, "geometries")
+        if passive: self.geometries_path = fs.join(self.path, geometries_dirname)
+        else: self.geometries_path = fs.create_directory_in(self.path, geometries_dirname)
 
         # -----------------------------------------------------------------
 
         ## REFITTING DIRECTORY
-        if passive: self.refitting_path = fs.join(self.path, "refitting")
-        else: self.refitting_path = fs.create_directory_in(self.path, "refitting")
+        if passive: self.refitting_path = fs.join(self.path, refitting_dirname)
+        else: self.refitting_path = fs.create_directory_in(self.path, refitting_dirname)
 
         ## WEIGHTS TABLE
 
         # Set the path to the weights table file
-        self.weights_table_path = fs.join(self.path, "weights.dat")
+        self.weights_table_path = fs.join(self.path, weights_filename)
 
         ## TIMING TABLE
 
         # Set the path to the timing table file
-        self.timing_table_path = fs.join(self.path, "timing.dat")
+        self.timing_table_path = fs.join(self.path, timing_filename)
 
         # Initialize the timing table if necessary
         if not passive and not fs.is_file(self.timing_table_path):
@@ -141,7 +167,7 @@ class FittingRun(object):
         ## MEMORY TABLE
 
         # Set the path to the memory table file
-        self.memory_table_path = fs.join(self.path, "memory.dat")
+        self.memory_table_path = fs.join(self.path, memory_filename)
 
         # Initialize the memory table if necessary
         if not passive and not fs.is_file(self.memory_table_path):
@@ -151,7 +177,7 @@ class FittingRun(object):
         ## GENERATIONS TABLE
 
         # Set the path to the generations table
-        self.generations_table_path = fs.join(self.path, "generations.dat")
+        self.generations_table_path = fs.join(self.path, generations_filename)
 
         # Initialize the generations table if necessary
         if not passive and not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
@@ -161,21 +187,21 @@ class FittingRun(object):
         ## PROBABILITY DISTRIBUTION TABLES
 
         # The directory with the probability distributions for the different generations
-        if passive: self.prob_generations_path = fs.join(self.prob_path, "generations")
-        else: self.prob_generations_path = fs.create_directory_in(self.prob_path, "generations")
+        if passive: self.prob_generations_path = fs.join(self.prob_path, generations_dirname)
+        else: self.prob_generations_path = fs.create_directory_in(self.prob_path, generations_dirname)
 
         # The directory with the probability distributions for the different free parameters
-        if passive: self.prob_distributions_path = fs.join(self.prob_path, "distributions")
-        else: self.prob_distributions_path = fs.create_directory_in(self.prob_path, "distributions")
+        if passive: self.prob_distributions_path = fs.join(self.prob_path, distributions_dirname)
+        else: self.prob_distributions_path = fs.create_directory_in(self.prob_path, distributions_dirname)
 
         # The directory with the combined probability tables for the different free parameters
-        if passive: self.prob_parameters_path = fs.join(self.prob_path, "parameters")
-        else: self.prob_parameters_path = fs.create_directory_in(self.prob_path, "parameters")
+        if passive: self.prob_parameters_path = fs.join(self.prob_path, parameters_dirname)
+        else: self.prob_parameters_path = fs.create_directory_in(self.prob_path, parameters_dirname)
 
         ## BEST PARAMETERS TABLE
 
         # Set the path to the best parameters table
-        self.best_parameters_table_path = fs.join(self.path, "best_parameters.dat")
+        self.best_parameters_table_path = fs.join(self.path, best_parameters_filename)
 
         # Initialize the best parameters table if necessary
         if not passive and not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:
@@ -183,7 +209,7 @@ class FittingRun(object):
             best_parameters_table.saveto(self.best_parameters_table_path)
 
         ## INPUT MAP PATHS FILE
-        self.input_maps_file_path = fs.join(self.path, "input_maps.dat")
+        self.input_maps_file_path = fs.join(self.path, input_maps_filename)
 
     # -----------------------------------------------------------------
 

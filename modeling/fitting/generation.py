@@ -854,7 +854,13 @@ class Generation(object):
         :return:
         """
 
-        return fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.dat")
+        # Define the two paths
+        fluxes_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.dat")
+        image_fluxes_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.dat")
+
+        # Return the correct path
+        if self.use_images: return image_fluxes_path
+        else: return fluxes_path
 
     # -----------------------------------------------------------------
 
@@ -890,7 +896,13 @@ class Generation(object):
         :return:
         """
 
-        return fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
+        # Define two paths
+        fluxes_plot_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
+        image_fluxes_plot_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.pdf")
+
+        # Return the correct path
+        if self.use_images: return image_fluxes_plot_path
+        else: return fluxes_plot_path
 
     # -----------------------------------------------------------------
 

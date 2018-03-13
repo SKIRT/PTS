@@ -23,7 +23,7 @@ definition = definition.copy()
 # -----------------------------------------------------------------
 
 # Name for the refitting
-definition.add_required("name", "string", "name for the refitting")
+definition.add_positional_optional("name", "string", "name for the refitting (required when not refitting in-place or as new fitting run)")
 
 # The fitting run for which to adapt the configuration
 if runs.empty: raise RuntimeError("No fitting runs are present")
@@ -35,11 +35,13 @@ definition.add_positional_optional("generations", "string_list", "generation nam
 
 # -----------------------------------------------------------------
 
-# AS NEW FITTING RUN?
+# Refit as a new fitting run (copy current fitting run)
 definition.add_optional("as_run", "string", "create new fitting run", forbidden=runs.names)
+definition.add_flag("in_place", "string", "change everything in place, but make a backup with the specified name", False)
 
 # -----------------------------------------------------------------
 
+# New fitting filters
 definition.add_optional("filters", "filter_list", "filters to use for the evaluation (None means default fitting filters)")
 definition.add_optional("regimes", "string_list", "wavelength regimes to use", default=wavelength_regimes, choices=wavelength_regimes)
 definition.add_optional("not_filters", "lazy_filter_list", "filters to ignore for the fitting")

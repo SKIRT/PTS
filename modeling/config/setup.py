@@ -19,7 +19,7 @@ types["images"] = "Model any object based on observational images and a ski file
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition()
+definition = ConfigurationDefinition(write_config=False)
 
 # Add required settings
 definition.add_required("type", "string", "type of modeling", choices=types)
