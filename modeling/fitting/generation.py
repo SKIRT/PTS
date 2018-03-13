@@ -404,7 +404,6 @@ class Generation(object):
         :return:
         """
 
-        if not self.has_assignment_table: return None
         return SimulationAssignmentTable.from_file(self.assignment_table_path)
 
     # -----------------------------------------------------------------
@@ -451,6 +450,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulation_directory_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.path, returns="name")
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def simulation_names(self):
 
@@ -459,9 +470,9 @@ class Generation(object):
         :return:
         """
 
-        directory_names = fs.directories_in_path(self.path, returns="name")
+        directory_names = self.simulation_directory_names
         simulation_names = self.individuals_table.simulation_names
-        if not sequences.same_contents(directory_names, simulation_names): raise ValueError("Mismatch between individuals table simulation names and ")
+        if not sequences.same_contents(directory_names, simulation_names): raise ValueError("Mismatch between individuals table simulation names and directory names")
         return simulation_names
 
     # -----------------------------------------------------------------
@@ -855,7 +866,13 @@ class Generation(object):
         :return:
         """
 
-        return fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.dat")
+        # Define the two paths
+        fluxes_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.dat")
+        image_fluxes_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.dat")
+
+        # Return the correct path
+        if self.use_images: return image_fluxes_path
+        else: return fluxes_path
 
     # -----------------------------------------------------------------
 
@@ -891,7 +908,13 @@ class Generation(object):
         :return:
         """
 
-        return fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
+        # Define two paths
+        fluxes_plot_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
+        image_fluxes_plot_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.pdf")
+
+        # Return the correct path
+        if self.use_images: return image_fluxes_plot_path
+        else: return fluxes_plot_path
 
     # -----------------------------------------------------------------
 
@@ -1329,9 +1352,7 @@ class Generation(object):
         """
 
         simulations = []
-        #simulation_ids = self.assignment_table.ids_for_remote(host_id)
         simulation_names = self.assignment_table.simulations_for_remote(host_id)
-        #for simulation_id in simulation_ids:
         for simulation_name in simulation_names:
             simulation = self.get_simulation_basic(simulation_name)
             simulations.append(simulation)
@@ -1485,6 +1506,11 @@ class Generation(object):
         # Create the simulation object
         simulation = SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
 
+        # Set the analysis paths
+        simulation.extraction_path = self.get_simulation_extract_path(name)
+        simulation.plotting_path = self.get_simulation_plot_path(name)
+        simulation.misc_path = self.get_simulation_misc_path(name)
+
         # Set the modeling path
         simulation.analysis.modeling_path = self.modeling_path
 
@@ -1530,11 +1556,30 @@ class Generation(object):
         :return:
         """
 
-        sims = []
-        for host_id in self.host_ids:
-            simulations = self.get_simulations_basic_for_host(host_id)
-            sims.extend(simulations)
-        return sims
+        simulations = []
+
+        # If there is an assignment table
+        if self.has_assignment_table:
+
+            # Loop over the host IDs in the assignment tables
+            for host_id in self.host_ids:
+
+                # Create simulations and add them
+                simulations = self.get_simulations_basic_for_host(host_id)
+                simulations.extend(simulations)
+
+        # No assignment tables
+        else:
+
+            # Loop over all simulation names
+            for simulation_name in self.simulation_names:
+
+                # Create simulation and add it
+                simulation = self.get_simulation_basic(simulation_name)
+                simulations.append(simulation)
+
+        # Return the simulation objects
+        return simulations
 
     # -----------------------------------------------------------------
 

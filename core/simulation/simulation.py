@@ -459,13 +459,25 @@ class SkirtSimulation(object):
     def extraction_path(self):
         return self.analysis.extraction.path
 
+    @extraction_path.setter
+    def extraction_path(self, value):
+        self.analysis.extraction.path = value
+
     @property
     def plotting_path(self):
         return self.analysis.plotting.path
 
+    @plotting_path.setter
+    def plotting_path(self, value):
+        self.analysis.plotting.path = value
+
     @property
     def misc_path(self):
         return self.analysis.misc.path
+
+    @misc_path.setter
+    def misc_path(self, value):
+        self.analysis.misc.path = value
 
     # -----------------------------------------------------------------
 

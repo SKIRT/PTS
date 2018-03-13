@@ -65,10 +65,9 @@ definition.add_flag("clear_remotes", "clear temporary data and sessions on all r
 definition.add_optional("max_nobservations_mosaic", "positive_integer", "maximum number of observations to use for the mosaics and poisson frames (for debugging purposes)")
 
 # Things to disable certain unstable functionality
-definition.add_flag("make_poisson", "make the poisson error mosaic maps", True)
+definition.add_flag("make_poisson", "make the poisson error mosaic maps", False)
 definition.add_flag("perform_photometry", "perform photometry (as opposed to just using the DustPedia photometry", True)
 definition.add_flag("sources_weak", "weak source finding", False)
-
 definition.add_flag("sources_manual", "don't find sources, but mark them from the catalog, and let the selection be done manually", False)
 
 # Parallelization

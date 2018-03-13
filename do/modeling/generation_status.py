@@ -26,6 +26,7 @@ from pts.core.launch.manager import SimulationManager, extra_columns
 from pts.core.tools import filesystem as fs
 from pts.core.remote.host import find_host_ids
 from pts.core.config.analyse_simulation import definition as analysis_definition
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -106,7 +107,9 @@ chi_squared = generation.chi_squared_table
 # -----------------------------------------------------------------
 
 # Check
-#if not generation.has_assignment_table: raise RuntimeError("No assignment for this generation")
+if not generation.has_assignment_table:
+    #raise RuntimeError("No assignment for this generation")
+    log.warning("Assignment table is not present for this generation, trying to work without ...")
 
 # -----------------------------------------------------------------
 
@@ -231,12 +234,20 @@ manager.config.screen_scripts = fs.files_in_path(generation.path, extension="sh"
 manager.config.analyse = config.analyse
 manager.config.analysis = config.analysis
 
-if not generation.has_assignment_table:
-    simulations = generation.simulations_basic
-else: simulations = None
+# -----------------------------------------------------------------
+
+# Determine input: assignment table or simulation objects
+if generation.has_assignment_table:
+    assignment = generation.assignment_table
+    simulations = None
+else:
+    assignment = None
+    simulations = generation.simulations_basic # basic because there will be no information about which host ID or simulation ID so simulation files cannot be located
+
+# -----------------------------------------------------------------
 
 # Run the manager
-manager.run(assignment=generation.assignment_table, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
+manager.run(assignment=assignment, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
             status=status, info_tables=[parameters, chi_squared], remotes=remotes, simulations=simulations)
 
 # -----------------------------------------------------------------
