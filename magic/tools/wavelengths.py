@@ -61,17 +61,24 @@ spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
 # -----------------------------------------------------------------
 
 # Define names of the physical regimes
-sf = "sf"
-stellar = "stellar"
+#sf = "sf"
+#stellar = "stellar"
+#microwave = "microwave"
+
+# Define names of the physical regimes
+ionizing = "ionizing"
+young = "young"
+evolved = "evolved"
 mix = "mix"
 aromatic = "aromatic"
 thermal = "thermal"
-microwave = "microwave"
 
 # -----------------------------------------------------------------
 
 # The names of the physical regimes
-physical_regimes = [sf, stellar, mix, aromatic, thermal, microwave]
+#physical_regimes = [sf, stellar, mix, aromatic, thermal, microwave]
+#physical_regimes = [sf, stellar, mix, aromatic, thermal]
+physical_regimes = [ionizing, young, evolved, mix, aromatic, thermal]
 
 # Define the ranges of the subgrids
 physical_ranges = OrderedDict()
@@ -84,12 +91,15 @@ physical_ranges = OrderedDict()
 #physical_ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
 
 # NEW
-physical_ranges[sf] = QuantityRange(0.01, 0.39, unit="micron")
-physical_ranges[stellar] = QuantityRange(0.39, 1., unit="micron")
+physical_ranges[ionizing] = QuantityRange(0.01, 0.085, unit="micron")
+physical_ranges[young] = QuantityRange(0.085, 0.39, unit="micron")
+#physical_ranges[sf] = QuantityRange(0.01, 0.39, unit="micron")
+physical_ranges[evolved] = QuantityRange(0.39, 1., unit="micron")
 physical_ranges[mix] = QuantityRange(1., 7., unit="micron")
 physical_ranges[aromatic] = QuantityRange(7., 27., unit="micron")
-physical_ranges[thermal] = QuantityRange(27., 1000., unit="micron")
-physical_ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
+#physical_ranges[thermal] = QuantityRange(27., 1000., unit="micron")
+physical_ranges[thermal] = QuantityRange(27., 2000., unit="micron")
+#physical_ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
 
 # -----------------------------------------------------------------
 
