@@ -31,6 +31,14 @@ extinction_wavelength_range = QuantityRange(0.005, 10., "micron")
 
 # -----------------------------------------------------------------
 
+
+
+# Define names of regimes
+regime_names = [uv]
+
+# -----------------------------------------------------------------
+
+# Define the wavelength ranges
 spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
                                    (("UV", "Lyman-alpha"), (0.121, 0.122)),
                                    (("UV", "FUV"), (0.122, 0.2)),
@@ -61,11 +69,6 @@ spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
 # -----------------------------------------------------------------
 
 # Define names of the physical regimes
-#sf = "sf"
-#stellar = "stellar"
-#microwave = "microwave"
-
-# Define names of the physical regimes
 ionizing = "ionizing"
 young = "young"
 evolved = "evolved"
@@ -76,8 +79,6 @@ thermal = "thermal"
 # -----------------------------------------------------------------
 
 # The names of the physical regimes
-#physical_regimes = [sf, stellar, mix, aromatic, thermal, microwave]
-#physical_regimes = [sf, stellar, mix, aromatic, thermal]
 physical_regimes = [ionizing, young, evolved, mix, aromatic, thermal]
 
 # Define the ranges of the subgrids
@@ -248,6 +249,9 @@ def name_in_spectrum(wavelength):
         range = spectrum_wavelengths[key]
         if range[0] <= wavelength_in_micron <= range[1]: return key
 
+    # Nothing?
+    return None
+
 # -----------------------------------------------------------------
 
 def regime_for_wavelength(wavelength):
@@ -262,6 +266,28 @@ def regime_for_wavelength(wavelength):
 
 # -----------------------------------------------------------------
 
+def physical_regime_for_wavelength(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    # Loop over all possible physical regimes
+    for name in physical_regimes:
+
+        # Get the range
+        regime_range = physical_ranges[name]
+
+        # Check the range
+        if wavelength in regime_range: return name
+
+    # Nothing?
+    return None
+
+# -----------------------------------------------------------------
+
 def regime_for_filter(fltr):
 
     """
@@ -270,10 +296,103 @@ def regime_for_filter(fltr):
     :return:
     """
 
+    # Parse the filter
     from ...core.tools import types
     from ...core.filter.filter import parse_filter
     if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+    # Return the regime
     return name_in_spectrum(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def physical_regime_for_filter(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    # Parse the filter
+    from ...core.tools import types
+    from ...core.filter.filter import parse_filter
+    if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+    # Return the physical regime
+    return physical_regime_for_wavelength(fltr.wavelength)
+
+# -----------------------------------------------------------------
+
+def is_ionizing(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    return physical_regime_for_wavelength(wavelength) == ionizing
+
+# -----------------------------------------------------------------
+
+def is_young(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    return physical_regime_for_wavelength(wavelength) == young
+
+# -----------------------------------------------------------------
+
+def is_evolved(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    return physical_regime_for_wavelength(wavelength) == evolved
+
+# -----------------------------------------------------------------
+
+def is_mix(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    return physical_regime_for_wavelength(wavelength) == mix
+
+# -----------------------------------------------------------------
+
+def is_aromatic(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    return physical_regime_for_wavelength(wavelength) == aromatic
+
+# -----------------------------------------------------------------
+
+def is_thermal(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    return physical_regime_for_wavelength(wavelength) == thermal
 
 # -----------------------------------------------------------------
 

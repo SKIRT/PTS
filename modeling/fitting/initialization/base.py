@@ -12,25 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from collections import OrderedDict
-
 # Import the relevant PTS classes and modules
 from ..component import FittingComponent
 from ....core.tools import filesystem as fs
-from ....magic.tools import wavelengths
 from ....core.basics.log import log
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator, WavelengthGridsTable
 from ..tables import WeightsTable
 from ....core.tools.serialization import write_dict
 from ....core.prep.smile import SKIRTSmileSchema
 from ...build.suite import ModelSuite
-from ....core.tools.utils import lazyproperty
-from ....core.tools import sequences
-
-# -----------------------------------------------------------------
-
-wavelength_regimes = ["uv", "optical", "nir", "mir", "fir", "submm-microwave"]
+from ..weights import WeightsCalculator
 
 # -----------------------------------------------------------------
 
@@ -194,177 +185,6 @@ class FittingInitializerBase(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def regimes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Only UV
-        if self.config.only_uv:
-
-            if self.config.no_uv: raise ValueError("Error")
-            if self.config.only_optical: raise ValueError("Error")
-            if self.config.only_nir: raise ValueError("Error")
-            if self.config.only_mir: raise ValueError("Error")
-            if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm_microwave: raise ValueError("Error")
-            regimes = ["uv"]
-
-        # Only optical
-        elif self.config.only_optical:
-
-            if self.config.no_optical: raise ValueError("Error")
-            if self.config.only_uv: raise ValueError("Error")
-            if self.config.only_nir: raise ValueError("Error")
-            if self.config.only_mir: raise ValueError("Error")
-            if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm_microwave: raise ValueError("Error")
-            regimes = ["optical"]
-
-        # Only NIR
-        elif self.config.only_nir:
-
-            if self.config.no_nir: raise ValueError("Error")
-            if self.config.only_uv: raise ValueError("Error")
-            if self.config.only_optical: raise ValueError("Error")
-            if self.config.only_mir: raise ValueError("Error")
-            if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm_microwave: raise ValueError("Error")
-            regimes = ["nir"]
-
-        # Only MIR
-        elif self.config.only_mir:
-
-            if self.config.no_mir: raise ValueError("Error")
-            if self.config.only_uv: raise ValueError("Error")
-            if self.config.only_optical: raise ValueError("Error")
-            if self.config.only_nir: raise ValueError("Error")
-            if self.config.only_fir: raise ValueError("Error")
-            if self.config.only_submm_microwave: raise ValueError("Error")
-            regimes = ["mir"]
-
-        # Only FIR
-        elif self.config.only_fir:
-
-            if self.config.no_fir: raise ValueError("Error")
-            if self.config.only_uv: raise ValueError("Error")
-            if self.config.only_optical: raise ValueError("Error")
-            if self.config.only_nir: raise ValueError("Error")
-            if self.config.only_mir: raise ValueError("Error")
-            if self.config.only_submm_microwave: raise ValueError("Error")
-            regimes = ["fir"]
-
-        # Only submm/microwave
-        elif self.config.only_submm_microwave:
-
-            if self.config.no_submm_microwave: raise ValueError("Error")
-            if self.config.only_uv: raise ValueError("Error")
-            if self.config.only_optical: raise ValueError("Error")
-            if self.config.only_nir: raise ValueError("Error")
-            if self.config.only_mir: raise ValueError("Error")
-            if self.config.only_fir: raise ValueError("Error")
-            regimes = ["submm-microwave"]
-
-        # Regimes
-        else: regimes = self.config.regimes[:]
-
-        # Ignore certain regimes?
-        if self.config.no_uv: regimes = sequences.removed_item(regimes, "uv")
-        if self.config.no_optical: regimes = sequences.removed_item(regimes, "optical")
-        if self.config.no_nir: regimes = sequences.removed_item(regimes, "nir")
-        if self.config.no_mir: regimes = sequences.removed_item(regimes, "mir")
-        if self.config.no_fir: regimes = sequences.removed_item(regimes, "fir")
-        if self.config.no_submm_microwave: regimes = sequences.removed_item(regimes, "submm-microwave")
-
-        # Check number of regimes
-        if len(regimes) == 0: raise ValueError("No regimes")
-
-        # Return the regimes
-        return regimes
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def uv_weight(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "uv" in self.regimes: return self.config.uv
-        else: return 0.
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def optical_weight(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "optical" in self.regimes: return self.config.optical
-        else: return 0.
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def nir_weight(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "nir" in self.regimes: return self.config.nir
-        else: return 0.
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def mir_weight(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "mir" in self.regimes: return self.config.mir
-        else: return 0.
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def fir_weight(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "fir" in self.regimes: return self.config.fir
-        else: return 0.
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def submm_microwave_weight(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "submm-microwave" in self.regimes: return self.config.submm_microwave
-        else: return 0.
-
-    # -----------------------------------------------------------------
-
     def calculate_weights(self):
 
         """
@@ -376,10 +196,17 @@ class FittingInitializerBase(FittingComponent):
         log.info("Calculating the weight to give to each band ...")
 
         # Get the weights
-        weights = calculate_weights_filters(self.fitting_run.fitting_filters, uv=self.uv_weight, optical=self.optical_weight, nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight, submm_microwave=self.submm_microwave_weight)
+        #weights = calculate_weights_filters(self.fitting_run.fitting_filters, uv=self.uv_weight, optical=self.optical_weight, nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight, submm_microwave=self.submm_microwave_weight)
 
         # Add to weights table
-        for fltr in weights: self.weights.add_point(fltr, weights[fltr])
+        #for fltr in weights: self.weights.add_point(fltr, weights[fltr])
+
+        # Calculate weights
+        calculator = WeightsCalculator(self.config.weighing)
+        calculator.run(filters=self.fitting_run.fitting_filters)
+
+        # Set weights
+        self.weights = calculator.table
 
     # -----------------------------------------------------------------
 
@@ -533,221 +360,5 @@ class FittingInitializerBase(FittingComponent):
 
         # Write
         write_dict(self.input_map_paths, self.input_maps_path)
-
-# -----------------------------------------------------------------
-
-def calculate_weights_filters_old(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
-
-    """
-    This function ...
-    :param filters:
-    :param uv:
-    :param optical:
-    :param nir:
-    :param mir:
-    :param fir:
-    :param submm_microwave:
-    :return:
-    """
-
-    # Get bands per regime
-    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes_old(filters)
-
-    # Get nbands per regime
-    nuv = len(uv_bands)
-    noptical = len(optical_bands)
-    nnir = len(nir_bands)
-    nmir = len(mir_bands)
-    nfir = len(fir_bands)
-    nsubmm_microwave = len(submm_microwave_bands)
-
-    # Determine regime weights
-    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_radio_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=uv, optical=optical, nir=nir, mir=mir, fir=fir, submm_microwave=submm_microwave)
-
-    # Initialize dictionary for the weights per filter
-    weights = OrderedDict()
-
-    # Loop over the bands in each group and set the weight in the weights table
-    for fltr in uv_bands: weights[fltr] = uv_weight
-    for fltr in optical_bands: weights[fltr] = optical_weight
-    for fltr in nir_bands: weights[fltr] = nir_weight
-    for fltr in mir_bands: weights[fltr] = mir_weight
-    for fltr in fir_bands: weights[fltr] = fir_weight
-    for fltr in submm_microwave_bands: weights[fltr] = submm_radio_weight
-
-    # Return the weights
-    return weights
-
-# -----------------------------------------------------------------
-
-def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
-
-    """
-    This function ...
-    :param filters:
-    :param uv:
-    :param optical:
-    :param nir:
-    :param mir:
-    :param fir:
-    :param submm_microwave:
-    :return:
-    """
-
-    # Get bands per regime
-    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes(filters)
-
-    # Get nbands per regime
-    nuv = len(uv_bands)
-    noptical = len(optical_bands)
-    nnir = len(nir_bands)
-    nmir = len(mir_bands)
-    nfir = len(fir_bands)
-    nsubmm_microwave = len(submm_microwave_bands)
-
-    # Determine regime weights
-    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_radio_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=uv, optical=optical, nir=nir, mir=mir, fir=fir, submm_microwave=submm_microwave)
-
-    # Initialize dictionary for the weights per filter
-    weights = OrderedDict()
-
-    # Loop over the bands in each group and set the weight in the weights table
-    for fltr in uv_bands: weights[fltr] = uv_weight
-    for fltr in optical_bands: weights[fltr] = optical_weight
-    for fltr in nir_bands: weights[fltr] = nir_weight
-    for fltr in mir_bands: weights[fltr] = mir_weight
-    for fltr in fir_bands: weights[fltr] = fir_weight
-    for fltr in submm_microwave_bands: weights[fltr] = submm_radio_weight
-
-    # Return the weights
-    return weights
-
-# -----------------------------------------------------------------
-
-def split_filters_regimes_old(filters):
-
-    """
-    This function ...
-    :param filters:
-    :return:
-    """
-
-    # Initialize lists to contain the filters of the different wavelength ranges
-    uv_bands = []
-    optical_bands = []
-    nir_bands = []
-    mir_bands = []
-    fir_bands = []
-    submm_microwave_bands = []
-
-    # Loop over the observed SED filters
-    for fltr in filters:
-
-        # Get the central wavelength
-        wavelength = fltr.wavelength
-
-        # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
-        spectrum = wavelengths.name_in_spectrum(wavelength)
-
-        # Determine to which group
-        if spectrum[0] == "UV": uv_bands.append(fltr)
-        elif spectrum[0] == "Optical": optical_bands.append(fltr)
-        elif spectrum[0] == "Optical/IR": optical_bands.append(fltr)
-        elif spectrum[0] == "IR":
-            if spectrum[1] == "NIR": nir_bands.append(fltr)
-            elif spectrum[1] == "MIR": mir_bands.append(fltr)
-            elif spectrum[1] == "FIR": fir_bands.append(fltr)
-            else: raise RuntimeError("Unknown IR range")
-        elif spectrum[0] == "Submm": submm_microwave_bands.append(fltr)
-        elif spectrum[0] == "Radio" and spectrum[1] == "Microwave": submm_microwave_bands.append(fltr)
-        else: raise RuntimeError("Unknown wavelength range: " + str(spectrum))
-
-    # Return
-    return uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands
-
-# -----------------------------------------------------------------
-
-def get_nbands_per_regime_old(filters):
-
-    """
-    This function ...
-    :param filters:
-    :return:
-    """
-
-    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes_old(filters)
-    return len(uv_bands), len(optical_bands), len(nir_bands), len(mir_bands), len(fir_bands), len(submm_microwave_bands)
-
-# -----------------------------------------------------------------
-
-def calculate_weights_old(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
-
-    """
-    This function ...
-    :param nuv:
-    :param noptical:
-    :param nnir:
-    :param nmir:
-    :param nfir:
-    :param nsubmm_microwave:
-    :param uv:
-    :param optical:
-    :param nir:
-    :param mir:
-    :param fir:
-    :param submm_microwave:
-    :return:
-    """
-
-    # Set the number of groups
-    number_of_groups = 0
-
-    # Check which groups are present
-    has_uv = nuv > 0
-    has_optical = noptical > 0
-    has_nir = nnir > 0
-    has_mir = nmir > 0
-    has_fir = nfir > 0
-    has_submm_microwave = nsubmm_microwave > 0
-
-    if has_uv: number_of_groups += 1
-    if has_optical: number_of_groups += 1
-    if has_nir: number_of_groups += 1
-    if has_mir: number_of_groups += 1
-    if has_fir: number_of_groups += 1
-    if has_submm_microwave: number_of_groups += 1
-
-    nall_groups = 6
-
-    # Determine total number of data points
-    number_of_data_points = nuv + noptical + nnir + nmir + nfir + nsubmm_microwave
-
-    # Determine normalizations
-    total_normalization = uv + optical + nir + mir + fir + submm_microwave
-    uv = float(uv) / total_normalization * nall_groups
-    optical = float(optical) / total_normalization * nall_groups
-    nir = float(nir) / total_normalization * nall_groups
-    mir = float(mir) / total_normalization * nall_groups
-    fir = float(fir) / total_normalization * nall_groups
-    submm = float(submm_microwave) / total_normalization * nall_groups
-
-    # Determine the weight for each group of filters
-    uv_weight = uv / (nuv * number_of_groups) * number_of_data_points if has_uv else 0.0
-    optical_weight = optical / (noptical * number_of_groups) * number_of_data_points if has_optical else 0.0
-    nir_weight = nir / (nnir * number_of_groups) * number_of_data_points if has_nir else 0.0
-    mir_weight = mir / (nmir * number_of_groups) * number_of_data_points if has_mir else 0.0
-    fir_weight = fir / (nfir * number_of_groups) * number_of_data_points if has_fir else 0.0
-    submm_microwave_weight = submm / (nsubmm_microwave * number_of_groups) * number_of_data_points if has_submm_microwave else 0.0
-
-    # Debugging
-    if has_uv: log.debug("UV: number of bands = " + str(nuv) + ", weight = " + str(uv_weight))
-    if has_optical: log.debug("Optical: number of bands = " + str(noptical) + ", weight = " + str(optical_weight))
-    if has_nir: log.debug("NIR: number of bands = " + str(nnir) + ", weight = " + str(nir_weight))
-    if has_mir: log.debug("MIR: number of bands = " + str(nmir) + ", weight = " + str(mir_weight))
-    if has_fir: log.debug("FIR: number of bands = " + str(nfir) + ", weight = " + str(fir_weight))
-    if has_submm_microwave: log.debug("Submm/microwave: number of bands = " + str(nsubmm_microwave) + ", weight = " + str(submm_microwave_weight))
-
-    # Return the weights
-    return uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_microwave_weight
 
 # -----------------------------------------------------------------

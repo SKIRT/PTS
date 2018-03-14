@@ -8,7 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.config.component import definition
-from pts.modeling.fitting.initialization.base import wavelength_regimes
+from pts.modeling.config.calculate_weights import definition as calculate_weights_definition
 
 # -----------------------------------------------------------------
 
@@ -43,7 +43,6 @@ definition.add_flag("in_place", "string", "change everything in place, but make 
 
 # New fitting filters
 definition.add_optional("filters", "filter_list", "filters to use for the evaluation (None means default fitting filters)")
-definition.add_optional("regimes", "string_list", "wavelength regimes to use", default=wavelength_regimes, choices=wavelength_regimes)
 definition.add_optional("not_filters", "lazy_filter_list", "filters to ignore for the fitting")
 
 # -----------------------------------------------------------------
@@ -67,30 +66,8 @@ definition.add_flag("fluxes_from_images", "use images to calculate observed flux
 
 # -----------------------------------------------------------------
 
-definition.add_optional("uv", "positive_real", "default relative weight for UV bands", 1.)
-definition.add_optional("optical", "positive_real", "default relative weight for optical bands", 1.)
-definition.add_optional("nir", "positive_real", "default relative weight for NIR bands", 1.)
-definition.add_optional("mir", "positive_real", "default relative weight for MIR bands", 1.)
-definition.add_optional("fir", "positive_real", "defult relative weight for FIR bands", 1.)
-definition.add_optional("submm_microwave", "positive_real", "default relative weight for submm/microwave bands", 1.)
-
-# -----------------------------------------------------------------
-
-definition.add_flag("only_uv", "only give weight to UV bands")
-definition.add_flag("only_optical", "only give weight to optical bands")
-definition.add_flag("only_nir", "only give weight to NIR bands")
-definition.add_flag("only_mir", "only give weight to MIR bands")
-definition.add_flag("only_fir", "only give weight to FIR bands")
-definition.add_flag("only_submm_microwave", "only give weight to submm/microwave bands")
-
-# -----------------------------------------------------------------
-
-definition.add_flag("no_uv", "give no weight to UV bands")
-definition.add_flag("no_optical", "give no weight to optical bands")
-definition.add_flag("no_nir", "give no weight to NIR bands")
-definition.add_flag("no_mir", "give no weight to MIR bands")
-definition.add_flag("no_fir", "give no weight to FIR bands")
-definition.add_flag("no_submm_microwave", "give no weight to submm/microwave bands")
+# For weights
+definition.import_section("weighing", "wavelength filter weighing", calculate_weights_definition)
 
 # -----------------------------------------------------------------
 
