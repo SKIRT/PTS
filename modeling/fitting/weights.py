@@ -22,6 +22,7 @@ from ...core.tools.utils import lazyproperty
 from .tables import WeightsTable
 from ...core.tools import sequences
 from ...magic.tools import wavelengths
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -73,6 +74,9 @@ class WeightsCalculator(Configurable):
         # Call the constructor of the base class
         super(WeightsCalculator, self).__init__(*args, **kwargs)
 
+        # The filters for which to calculate the weight
+        self.filters = None
+
         # Create the table to contain the weights
         self.table = WeightsTable()
 
@@ -110,6 +114,10 @@ class WeightsCalculator(Configurable):
 
         # Call the setup function of the base class
         super(WeightsCalculator, self).setup(**kwargs)
+
+        # Get the filters
+        if kwargs.get("filters", None) is not None: self.filters = kwargs.pop("filters")
+        else: self.filters = self.config.filters
 
         # Check flags that should not be enabled in physical mode
         if self.config.physical:
@@ -351,6 +359,18 @@ class WeightsCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def include_uv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return uv_name in self.regimes
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def uv_weight(self):
 
@@ -359,8 +379,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if uv_name in self.regimes: return self.config.uv
+        if self.include_uv: return self.config.uv
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_optical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return optical_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -372,8 +404,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if optical_name in self.regimes: return self.config.optical
+        if self.include_optical: return self.config.optical
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_nir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return nir_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -385,8 +429,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if nir_name in self.regimes: return self.config.nir
+        if self.include_nir: return self.config.nir
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_mir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return mir_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -398,8 +454,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if mir_name in self.regimes: return self.config.mir
+        if self.include_mir: return self.config.mir
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_fir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fir_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -411,8 +479,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if fir_name in self.regimes: return self.config.fir
+        if self.include_fir: return self.config.fir
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_submm_microwave(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return submm_microwave_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -424,8 +504,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if submm_microwave_name in self.regimes: return self.config.submm_microwave
+        if self.include_submm_microwave: return self.config.submm_microwave
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ionizing_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -437,8 +529,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if ionizing_name in self.regimes: return self.config.ionizing
+        if self.include_ionizing: return self.config.ionizing
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return young_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -450,8 +554,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if young_name in self.regimes: return self.config.young
+        if self.include_young: return self.config.young
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_evolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return evolved_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -463,8 +579,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if evolved_name in self.regimes: return self.config.evolved
+        if self.include_evolved: return self.config.evolved
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_mix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return mix_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -476,8 +604,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if mix_name in self.regimes: return self.config.mix
+        if self.include_mix: return self.config.mix
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_aromatic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return aromatic_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -489,8 +629,20 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if aromatic_name in self.regimes: return self.config.aromatic
+        if self.include_aromatic: return self.config.aromatic
         else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @property
+    def include_thermal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return thermal_name in self.regimes
 
     # -----------------------------------------------------------------
 
@@ -502,7 +654,7 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        if thermal_name in self.regimes: return self.config.thermal
+        if self.include_thermal: return self.config.thermal
         else: return 0.
 
     # -----------------------------------------------------------------
@@ -533,14 +685,6 @@ class WeightsCalculator(Configurable):
         :return:
         """
 
-        # Show weight per regime
-        print("UV", self.uv_weight)
-        print("Optical", self.optical_weight)
-        print("NIR", self.nir_weight)
-        print("MIR", self.mir_weight)
-        print("FIR", self.fir_weight)
-        print("Submm/Microwave", self.submm_microwave_weight)
-
         # Get the weights
         return calculate_weights_filters(self.config.filters, uv=self.uv_weight, optical=self.optical_weight,
                                             nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight,
@@ -554,14 +698,6 @@ class WeightsCalculator(Configurable):
         This function ...
         :return:
         """
-
-        # Show weights per regime
-        print("Ionizing", self.ionizing_weight)
-        print("Young", self.young_weight)
-        print("Evolved", self.evolved_weight)
-        print("Mix", self.mix_weight)
-        print("Aromatic", self.aromatic_weight)
-        print("Thermal", self.thermal_weight)
 
         # Get the weights
         return calculate_weights_filters_physical(self.config.filters, ionizing=self.ionizing_weight, young=self.young_weight,
@@ -613,8 +749,109 @@ class WeightsCalculator(Configurable):
         # Inform the user
         log.info("Showing ...")
 
+        # Show the regime weights
+        self.show_regimes()
+
         # Table
         self.show_table()
+
+    # -----------------------------------------------------------------
+
+    def show_regimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the regime weights ...")
+
+        # Physical
+        if self.config.physical: self.show_regimes_physical()
+
+        # Original
+        else: self.show_regimes_original()
+
+    # -----------------------------------------------------------------
+
+    def show_regimes_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Show weights per regime
+        print("")
+        print(fmt.underlined + fmt.yellow + "REGIMES:" + fmt.reset)
+        print("")
+
+        # Ionizing
+        if self.include_ionizing: print(fmt.green + " - " + fmt.bold + "Ionizing: " + fmt.reset_bold + str(self.ionizing_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Ionizing: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Young
+        if self.include_young: print(fmt.green + " - " + fmt.bold + "Young: " + fmt.reset_bold + str(self.young_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Young: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Evolved
+        if self.include_evolved: print(fmt.green + " - " + fmt.bold + "Evolved: " + fmt.reset_bold + str(self.evolved_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Evolved: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Mix
+        if self.include_mix: print(fmt.green + " - " + fmt.bold + "Mix: " + fmt.reset_bold + str(self.mix_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Mix: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Aromatic
+        if self.include_aromatic: print(fmt.green + " - " + fmt.bold + "Aromatic: " + fmt.reset_bold + str(self.aromatic_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Aromatic: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Thermal
+        if self.include_thermal: print(fmt.green + " - " + fmt.bold + "Thermal: " + fmt.reset_bold + str(self.thermal_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Thermal: " + fmt.reset_bold + "--" + fmt.reset)
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_regimes_original(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Show weight per regime
+        print("")
+        print(fmt.underlined + fmt.yellow + "REGIMES:" + fmt.reset)
+        print("")
+
+        # UV
+        if self.include_uv: print(fmt.green + " - " + fmt.bold + "UV: " + fmt.reset_bold + str(self.uv_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "UV: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Optical
+        if self.include_optical: print(fmt.green + " - " + fmt.bold + "Optical: " + fmt.reset_bold + str(self.optical_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Optical: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # NIR
+        if self.include_nir: print(fmt.green + " - " + fmt.bold + "NIR: " + fmt.reset_bold + str(self.nir_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "NIR: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # MIR
+        if self.include_mir: print(fmt.green + " - " + fmt.bold + "MIR: " + fmt.reset_bold + str(self.mir_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "MIR: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # FIR
+        if self.include_fir: print(fmt.green + " - " + fmt.bold + "FIR: " + fmt.reset_bold + str(self.fir_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "FIR: " + fmt.reset_bold + "--" + fmt.reset)
+
+        # Submm-microwave
+        if self.include_submm_microwave: print(fmt.green + " - " + fmt.bold + "Submm-microwave: " + fmt.reset_bold + str(self.submm_microwave_weight) + fmt.reset)
+        else: print(fmt.red + " - " + fmt.bold + "Submm-microwave: " + fmt.reset_bold + "--" + fmt.reset)
+
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -629,6 +866,7 @@ class WeightsCalculator(Configurable):
         log.info("Showing the weights table ...")
 
         # Show the weights
+        print("")
         print(self.table)
 
 # -----------------------------------------------------------------

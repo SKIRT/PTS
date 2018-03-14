@@ -1081,14 +1081,9 @@ class Refitter(FittingComponent):
         # Inform the user
         log.info("Calculating the weight to give to each band ...")
 
-        # Get the weights
-        #weights = calculate_weights_filters(self.filters, uv=self.uv_weight, optical=self.optical_weight, nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight, submm_microwave=self.submm_microwave_weight)
-
-        # Add to weights table
-        #for fltr in weights: self.weights.add_point(fltr, weights[fltr])
-
         # Calculate
         calculator = WeightsCalculator(self.config.weighing)
+        calculator.config.write = False
         calculator.run(filters=self.filters)
 
         # Set weights

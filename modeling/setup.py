@@ -37,7 +37,7 @@ for index in range(len(table["Command"])):
 # -----------------------------------------------------------------
 
 # Determine commands for which the cwd doesn't need to be a modeling directory
-not_modeling_cwd_commands = ["setup"]
+not_modeling_cwd_commands = ["setup", "calculate_weights"]
 
 # -----------------------------------------------------------------
 
@@ -54,6 +54,8 @@ def setup(command_name, cwd, configuration_method_argument=None):
     # Check directory
     # NOW CALLED IN DO/RUN.PY: TO AVOID CONFIG BEING WRITTEN OUT BEFORE
     #check_modeling_cwd(command_name, cwd)
+
+    if command_name in not_modeling_cwd_commands: return
 
     # Add command to history
     mark_start(command_name, cwd)

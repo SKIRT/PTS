@@ -31,13 +31,6 @@ extinction_wavelength_range = QuantityRange(0.005, 10., "micron")
 
 # -----------------------------------------------------------------
 
-
-
-# Define names of regimes
-regime_names = [uv]
-
-# -----------------------------------------------------------------
-
 # Define the wavelength ranges
 spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
                                    (("UV", "Lyman-alpha"), (0.121, 0.122)),

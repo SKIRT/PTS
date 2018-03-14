@@ -68,6 +68,7 @@ reinitialize_fit | -- | fitting.reinitialization.FittingReinitializer | interact
 *analyse_sed_fit_model | -- | fitting.modelanalyser.SEDFitModelAnalyser | arguments | Analyse fit model with SED
 *analyse_images_fit_model | -- | fitting.modelanalyser.ImagesFitModelAnalyser | arguments | Analyse fit model with images
 refit | -- | fitting.refitter.Refitter | arguments | Refit one or more generations based on existing simulation output
+calculate_weights | -- | fitting.weights.WeightsCalculator | arguments | Calculate the weights for each band
 
 # ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run
