@@ -167,6 +167,8 @@ def has_valid_timestamp(line):
     :return:
     """
 
+    if line == "": return False
+
     # Split
     date, time, message = split_line(line)
 
