@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.evolve.refit_models_generation Refit the models (calculate the chis squared) for the simulations of a generation.
+## \package pts.do.evolve.generation_refit Refit the models (calculate the chis squared) for the simulations of a generation.
 
 # -----------------------------------------------------------------
 
@@ -58,7 +58,7 @@ definition.add_optional("min_probability", "positive_real", "minimum probability
 definition.add_flag("save_plots", "save the plots in appropriate directories")
 
 # Create the configuration
-config = parse_arguments("refit_models_generation", definition, "Refit the models (calculate the chis squared) for the simulations of a generation")
+config = parse_arguments("generation_refit", definition, "Refit the models (calculate the chis squared) for the simulations of a generation")
 
 # -----------------------------------------------------------------
 

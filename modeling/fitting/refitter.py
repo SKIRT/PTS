@@ -172,7 +172,7 @@ class Refitter(FittingComponent):
         if self.do_create_run: self.create_run()
 
         # 3. Make a backup of the current fitting run
-        if self.do_backup_run: self.backup_run()
+        #if self.do_backup_run: self.backup_run()
 
         # 2. Get the weights
         self.get_weights()
@@ -182,6 +182,8 @@ class Refitter(FittingComponent):
 
         # 4. Get the differences
         self.get_differences()
+
+        exit()
 
         # 5. Calculate the chi squared values
         self.calculate_chi_squared()
@@ -1084,7 +1086,6 @@ class Refitter(FittingComponent):
         # Calculate
         calculator = WeightsCalculator(self.config.weighing)
         calculator.config.write = False
-        calculator.run(filters=self.filters)
 
         # Set weights
         self.weights = calculator.table

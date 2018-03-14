@@ -37,7 +37,7 @@ definition.add_positional_optional("generations", "string_list", "generation nam
 
 # Refit as a new fitting run (copy current fitting run)
 definition.add_optional("as_run", "string", "create new fitting run", forbidden=runs.names)
-definition.add_flag("in_place", "string", "change everything in place, but make a backup with the specified name", False)
+definition.add_optional("in_place", "string", "change everything in place, but make a backup with the specified name")
 
 # -----------------------------------------------------------------
 
@@ -61,8 +61,8 @@ definition.add_flag("rediff", "recalculate differences", None)
 # -----------------------------------------------------------------
 
 # Flux calculation options
-definition.add_flag("spectral_convolution", "enable spectral convolution for calculating fluxes (None means default for generation)")
-definition.add_flag("fluxes_from_images", "use images to calculate observed fluxes (None means default for generation)")
+definition.add_flag("spectral_convolution", "enable spectral convolution for calculating fluxes (None means default for generation)", None)
+definition.add_flag("fluxes_from_images", "use images to calculate observed fluxes (None means default for generation)", None)
 
 # -----------------------------------------------------------------
 

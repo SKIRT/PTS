@@ -104,6 +104,42 @@ class WeightsCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nfilters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.filters)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nfilters > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nfilters == 0
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -118,6 +154,9 @@ class WeightsCalculator(Configurable):
         # Get the filters
         if kwargs.get("filters", None) is not None: self.filters = kwargs.pop("filters")
         else: self.filters = self.config.filters
+
+        # Check that there are filters
+        if self.no_filters: raise ValueError("No filters")
 
         # Check flags that should not be enabled in physical mode
         if self.config.physical:
@@ -686,7 +725,7 @@ class WeightsCalculator(Configurable):
         """
 
         # Get the weights
-        return calculate_weights_filters(self.config.filters, uv=self.uv_weight, optical=self.optical_weight,
+        return calculate_weights_filters(self.filters, uv=self.uv_weight, optical=self.optical_weight,
                                             nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight,
                                             submm_microwave=self.submm_microwave_weight)
 
@@ -700,7 +739,7 @@ class WeightsCalculator(Configurable):
         """
 
         # Get the weights
-        return calculate_weights_filters_physical(self.config.filters, ionizing=self.ionizing_weight, young=self.young_weight,
+        return calculate_weights_filters_physical(self.filters, ionizing=self.ionizing_weight, young=self.young_weight,
                                                   evolved=self.evolved_weight, mix=self.mix_weight, aromatic=self.aromatic_weight,
                                                   thermal=self.thermal_weight)
 
