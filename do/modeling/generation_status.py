@@ -244,6 +244,11 @@ else:
     assignment = None
     simulations = generation.simulations_basic # basic because there will be no information about which host ID or simulation ID so simulation files cannot be located
 
+    # Fix simulation status
+    for simulation in simulations:
+        simulation_status = status.get_status(simulation.name)
+        if simulation_status == "analysed": simulation.analysed = True
+
 # -----------------------------------------------------------------
 
 # Run the manager
