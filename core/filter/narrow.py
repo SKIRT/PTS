@@ -400,6 +400,18 @@ class NarrowBandFilter(Filter):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_halpha(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self._name == "Halpha"
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """
