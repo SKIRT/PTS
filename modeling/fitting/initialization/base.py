@@ -536,6 +536,50 @@ class FittingInitializerBase(FittingComponent):
 
 # -----------------------------------------------------------------
 
+def calculate_weights_filters_old(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
+
+    """
+    This function ...
+    :param filters:
+    :param uv:
+    :param optical:
+    :param nir:
+    :param mir:
+    :param fir:
+    :param submm_microwave:
+    :return:
+    """
+
+    # Get bands per regime
+    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes_old(filters)
+
+    # Get nbands per regime
+    nuv = len(uv_bands)
+    noptical = len(optical_bands)
+    nnir = len(nir_bands)
+    nmir = len(mir_bands)
+    nfir = len(fir_bands)
+    nsubmm_microwave = len(submm_microwave_bands)
+
+    # Determine regime weights
+    uv_weight, optical_weight, nir_weight, mir_weight, fir_weight, submm_radio_weight = calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=uv, optical=optical, nir=nir, mir=mir, fir=fir, submm_microwave=submm_microwave)
+
+    # Initialize dictionary for the weights per filter
+    weights = OrderedDict()
+
+    # Loop over the bands in each group and set the weight in the weights table
+    for fltr in uv_bands: weights[fltr] = uv_weight
+    for fltr in optical_bands: weights[fltr] = optical_weight
+    for fltr in nir_bands: weights[fltr] = nir_weight
+    for fltr in mir_bands: weights[fltr] = mir_weight
+    for fltr in fir_bands: weights[fltr] = fir_weight
+    for fltr in submm_microwave_bands: weights[fltr] = submm_radio_weight
+
+    # Return the weights
+    return weights
+
+# -----------------------------------------------------------------
+
 def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
 
     """
@@ -580,7 +624,7 @@ def calculate_weights_filters(filters, uv=1, optical=1, nir=1, mir=1, fir=1, sub
 
 # -----------------------------------------------------------------
 
-def split_filters_regimes(filters):
+def split_filters_regimes_old(filters):
 
     """
     This function ...
@@ -623,7 +667,7 @@ def split_filters_regimes(filters):
 
 # -----------------------------------------------------------------
 
-def get_nbands_per_regime(filters):
+def get_nbands_per_regime_old(filters):
 
     """
     This function ...
@@ -631,12 +675,12 @@ def get_nbands_per_regime(filters):
     :return:
     """
 
-    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes(filters)
+    uv_bands, optical_bands, nir_bands, mir_bands, fir_bands, submm_microwave_bands = split_filters_regimes_old(filters)
     return len(uv_bands), len(optical_bands), len(nir_bands), len(mir_bands), len(fir_bands), len(submm_microwave_bands)
 
 # -----------------------------------------------------------------
 
-def calculate_weights(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
+def calculate_weights_old(nuv, noptical, nnir, nmir, nfir, nsubmm_microwave, uv=1, optical=1, nir=1, mir=1, fir=1, submm_microwave=1):
 
     """
     This function ...

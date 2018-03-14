@@ -19,6 +19,7 @@ from collections import OrderedDict
 from ...core.basics.map import Map
 from ...core.basics.range import QuantityRange
 from ...core.units.parsing import parse_unit as u
+from ...core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -56,6 +57,39 @@ spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
                                    # (("Radio", "ULF"), (1e11, 1e12)),  # 100 km to 1,000 km
                                    # (("Radio", "SLF"), (1e11, 1e12)),  # 1,000 km to 10,000 km
                                    # (("Radio", "ELF"), (1e12, 1e13))]) # 1,000 km to 100,000 km
+
+# -----------------------------------------------------------------
+
+# Define names of the physical regimes
+sf = "sf"
+stellar = "stellar"
+mix = "mix"
+aromatic = "aromatic"
+thermal = "thermal"
+microwave = "microwave"
+
+# -----------------------------------------------------------------
+
+# The names of the physical regimes
+physical_regimes = [sf, stellar, mix, aromatic, thermal, microwave]
+
+# Define the ranges of the subgrids
+physical_ranges = OrderedDict()
+
+# FIRST: USED FOR CREATING WAVELENGTH GRIDS
+#physical_ranges[sf] = QuantityRange(0.02, 0.085, unit="micron")
+#physical_ranges[stellar] = QuantityRange(0.085, 3., unit="micron")
+#physical_ranges[aromatic] = QuantityRange(3., 27., unit="micron")
+#physical_ranges[thermal] = QuantityRange(27., 1000., unit="micron")
+#physical_ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
+
+# NEW
+physical_ranges[sf] = QuantityRange(0.01, 0.39, unit="micron")
+physical_ranges[stellar] = QuantityRange(0.39, 1., unit="micron")
+physical_ranges[mix] = QuantityRange(1., 7., unit="micron")
+physical_ranges[aromatic] = QuantityRange(7., 27., unit="micron")
+physical_ranges[thermal] = QuantityRange(27., 1000., unit="micron")
+physical_ranges[microwave] = QuantityRange(1000., 2000, unit="micron")
 
 # -----------------------------------------------------------------
 
@@ -143,6 +177,34 @@ def regimes_in_range(wavelength_range, lower=True, divisions=True, subdivisions=
     # Return
     if as_dict: return regimes
     else: return list(regimes)
+
+# -----------------------------------------------------------------
+
+def physical_regimes_in_range(wavelength_range):
+
+    """
+    This function ...
+    :param wavelength_range:
+    :return:
+    """
+
+    # List for the names of the regimes
+    regimes = []
+
+    # Loop over the physical regimes
+    for name in physical_regimes:
+
+        # In range
+        regime_range = physical_ranges[name]
+        both_below = regime_range.max < wavelength_range.min
+        both_above = regime_range.min > wavelength_range.max
+        if both_below or both_above: continue
+
+        # Add
+        regimes.append(name)
+
+    # Return the regime names
+    return regimes
 
 # -----------------------------------------------------------------
 
