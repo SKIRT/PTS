@@ -170,10 +170,10 @@ class Refitter(FittingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # As run: create run directory
+        # 2. As run: create run directory
         if self.do_create_run: self.create_run()
 
-        # Make a backup of the current fitting run
+        # 3. Make a backup of the current fitting run
         if self.do_backup_run: self.backup_run()
 
         # 2. Get the weights

@@ -1504,8 +1504,9 @@ class SimulationManager(Configurable):
         :return:
         """
 
-        # Get the host ID if necessary
-        if host_id is None: host_id = self.host_id_for_simulation(simulation_name)
+        # Get the host ID if necessary:
+        # if there is not a group under 'None' (host ID unknown) in the simulations dictionary
+        if host_id is None and None not in self.simulations: host_id = self.host_id_for_simulation(simulation_name)
 
         # Checks
         if host_id not in self.simulations: raise ValueError("No simulations for host '" + host_id + "'")
@@ -3243,8 +3244,126 @@ class SimulationManager(Configurable):
         """
 
         # Get the simulation
-        simulation = self.get_simulation(simulation_name) #, host_id=host_id)
-        return simulation.parallelization
+        simulation = self.get_simulation(simulation_name)
+
+        # Check if the parallelization is defined
+        if simulation.parallelization is not None: return simulation.parallelization
+        elif self.is_screen_execution(simulation_name): return self.get_parallelization_for_simulation_screen(simulation_name)
+        elif self.is_job_execution(simulation_name): return self.get_parallelization_for_simulation_job(simulation_name)
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    def get_parallelization_for_simulation_screen(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        screen_script = self.get_screen_script(simulation_name)
+        if screen_script is None: raise RuntimeError("Cannot determine parallelization scheme: original screen script not found")
+        parallelization = screen_script.get_parallelization(simulation_name)
+        return parallelization
+
+    # -----------------------------------------------------------------
+
+    def get_parallelization_for_simulation_job(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        job_script = self.get_job_script(simulation_name)
+        if job_script is None: raise RuntimeError("Cannot determine parallelization scheme: original job script not found")
+        parallelization = job_script.parallelization
+        return parallelization
+
+    # -----------------------------------------------------------------
+
+    def get_logging_options_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Screen
+        if self.is_screen_execution(simulation_name): return self.get_logging_options_for_simulation_screen(simulation_name)
+            
+        # Job
+        elif self.is_job_execution(simulation_name): return self.get_logging_options_for_simulation_job(simulation_name)
+
+        # Not supported
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+        
+    def get_logging_options_for_simulation_screen(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        screen_script = self.get_screen_script(simulation_name)
+        if screen_script is None: raise RuntimeError("Cannot determine logging options: original screen script not found")
+        logging_options = screen_script.get_logging_options(simulation_name)
+        return logging_options
+
+    # -----------------------------------------------------------------
+
+    def get_logging_options_for_simulation_job(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        job_script = self.get_job_script(simulation_name)
+        if job_script is None: raise RuntimeError("Cannot determine logging options: original job script not found")
+        logging_options = job_script.logging_options
+        return logging_options
+
+    # -----------------------------------------------------------------
+
+    def get_scheduling_options_for_simulation(self, simulation_name):
+
+        """
+        THis function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Screen: none
+        if self.is_screen_execution(simulation_name): return None
+
+        # Job
+        elif self.is_job_execution(simulation_name): return self.get_scheduling_options_for_simulation_job(simulation_name)
+
+        # Not supported
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    def get_scheduling_options_for_simulation_job(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        job_script = self.get_job_script(simulation_name)
+        if job_script is None: raise RuntimeError("Cannot determine scheduling options: original job script not found")
+        scheduling_options = job_script.scheduling_options
+        return scheduling_options
 
     # -----------------------------------------------------------------
 
@@ -3391,7 +3510,11 @@ class SimulationManager(Configurable):
                 simulation_id = simulation.id
                 host_id = simulation.host_id
                 cluster_name = simulation.cluster_name
-            elif isinstance(SkirtSimulation): simulation_id = host_id = cluster_name = None
+
+            # Regular simulation object
+            elif isinstance(simulation, SkirtSimulation): simulation_id = host_id = cluster_name = None
+
+            # Invalid
             else: raise ValueError("Invalid type for simulation '" + simulation_name + "'")
 
             # Add to assignment
@@ -7877,6 +8000,7 @@ class SimulationManager(Configurable):
         definition = ConfigurationDefinition(write_config=False)
         definition.add_required("host", "host", "remote host to move the simulation to")
         definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme for the simulation")
+        definition.add_flag("new_logging", "specify new logging options", False)
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
@@ -7914,6 +8038,12 @@ class SimulationManager(Configurable):
         # Get the simulation names
         splitted, simulation_names, config = self.parse_simulations_command(command, self.move_simulations_definition, **kwargs)
 
+        # Set options
+        parallelization = config.parallelization
+        if config.new_logging: logging_options = config.logging
+        else: logging_options = None # original logging options will be used
+        scheduling_options = config.scheduling
+
         # Loop over the simulation names
         for simulation_name in simulation_names:
 
@@ -7925,7 +8055,7 @@ class SimulationManager(Configurable):
             if config.host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(config.host) + "'")
 
             # Move simulation
-            self.move_simulation(simulation_name, config.host, config.parallelization, config.logging, config.scheduling)
+            self.move_simulation(simulation_name, config.host, parallelization, logging_options, scheduling_options)
 
     # -----------------------------------------------------------------
 
@@ -7943,6 +8073,10 @@ class SimulationManager(Configurable):
 
         # Debugging
         log.debug("Moving simulation '" + simulation_name + "' to host '" + tostr(host) + "' ...")
+
+        # Get logging options from previous launch
+        if logging_options is None: logging_options = self.get_logging_options_for_simulation(simulation_name)
+        # Parallelization and scheduling options will have to be determined automatically for the new host if not specified
 
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
@@ -9699,6 +9833,7 @@ class SimulationManager(Configurable):
         definition = ConfigurationDefinition(write_config=False)
         definition.add_flag("finished", "relaunch already finished simulations", False)
         definition.add_positional_optional("parallelization", "parallelization", "new parallelization scheme (by default, previous one is used)")
+        definition.add_flag("new_logging", "adapt the logging options", False)
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
@@ -9728,8 +9863,14 @@ class SimulationManager(Configurable):
                 self.unanalyse_simulation(simulation_name)
             else: raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
 
+        # Set the options
+        parallelization = config.parallelization
+        if config.new_logging: logging_options = config.logging
+        else: logging_options = None
+        scheduling_options = config.scheduling
+
         # Relaunch the simulation
-        self.relaunch_simulation(simulation_name, parallelization=config.parallelization, logging_options=config.logging, scheduling_options=config.scheduling)
+        self.relaunch_simulation(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
 
     # -----------------------------------------------------------------
 
@@ -9823,16 +9964,10 @@ class SimulationManager(Configurable):
         """
 
         # Set the parallelization scheme
-        if parallelization is None:
-            screen_script = self.get_screen_script(simulation_name)
-            if screen_script is None: raise RuntimeError("Cannot determine parallelization scheme: original screen script not found")
-            parallelization = screen_script.get_parallelization(simulation_name)
+        if parallelization is None: parallelization = self.get_parallelization_for_simulation(simulation_name)
 
         # Set the logging options
-        if logging_options is None:
-            screen_script = self.get_screen_script(simulation_name)
-            if screen_script is None: raise RuntimeError("Cannot determine logging options: original screen script not found")
-            logging_options = screen_script.get_logging_options(simulation_name)
+        if logging_options is None: logging_options = self.get_logging_options_for_simulation(simulation_name)
 
         # Unlaunch: remove remote and local output and analysis output
         self.unlaunch_simulation(simulation_name)
@@ -9871,22 +10006,13 @@ class SimulationManager(Configurable):
         log.debug("Relaunching simulation '" + simulation_name + "' as a new job ...")
 
         # Set the parallelization scheme
-        if parallelization is None:
-            job_script = self.get_job_script(simulation_name)
-            if job_script is None: raise RuntimeError("Cannot determine parallelization scheme: original job script not found")
-            parallelization = job_script.parallelization
+        if parallelization is None: parallelization = self.get_parallelization_for_simulation(simulation_name)
 
         # Set the logging options
-        if logging_options is None:
-            job_script = self.get_job_script(simulation_name)
-            if job_script is None: raise RuntimeError("Cannot determine logging options: original job script not found")
-            logging_options = job_script.logging_options
+        if logging_options is None: simulation_name = self.get_logging_options_for_simulation(simulation_name)
 
         # Set the scheduling options
-        if scheduling_options is None:
-            job_script = self.get_job_script(simulation_name)
-            if job_script is None: raise RuntimeError("Cannot determine scheduling options: original job script not found")
-            scheduling_options = job_script.scheduling_options
+        if scheduling_options is None: scheduling_options = self.get_scheduling_options_for_simulation(simulation_name)
 
         # Unlaunch: remove remote and local output and analysis output
         self.unlaunch_simulation(simulation_name)
@@ -10031,7 +10157,8 @@ class SimulationManager(Configurable):
         self._adapted_assignment = True
 
         # Reset status?
-        if self.has_moved or self.has_relaunched: self.reset_status()
+        #if self.has_moved or self.has_relaunched: self.reset_status()
+        for simulation in self.launched_simulations: self.reset_status_for_simulation(simulation.name)
 
     # -----------------------------------------------------------------
 
@@ -14126,6 +14253,9 @@ class SimulationManager(Configurable):
         # Reanalyse simulation
         reanalyse_simulation(simulation, steps, features, not_steps=not_steps, not_features=not_features, config=config)
 
+        # Reset the status
+        self.reset_status_for_simulation(simulation_name)
+
     # -----------------------------------------------------------------
 
     def analyse(self):
@@ -14219,6 +14349,9 @@ class SimulationManager(Configurable):
 
         # Analyse the simulation
         analyse_simulation(simulation, config=config)
+
+        # Reset the status
+        self.reset_status_for_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 

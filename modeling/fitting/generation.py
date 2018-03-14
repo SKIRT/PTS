@@ -450,7 +450,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def simulation_directory_names(self):
 
         """
@@ -458,7 +458,17 @@ class Generation(object):
         :return:
         """
 
-        return fs.directories_in_path(self.path, returns="name")
+        # As from now, simulation names all start with the name of the galaxy
+        dirnames = fs.directories_in_path(self.path, returns="name", startswith=self.object_name)
+        if len(dirnames) > 0: return dirnames
+
+        # Before last change, simulation names started with the name of the fitting run
+        dirnames = fs.directories_in_path(self.path, returns="name", startswith=self.fitting_run_name)
+        if len(dirnames) > 0: return dirnames
+
+        # Initially, simulation names were just timestamps
+        dirnames = fs.directories_in_path(self.path, returns="name")
+        return dirnames
 
     # -----------------------------------------------------------------
 
@@ -470,10 +480,19 @@ class Generation(object):
         :return:
         """
 
-        directory_names = self.simulation_directory_names
-        simulation_names = self.individuals_table.simulation_names
-        if not sequences.same_contents(directory_names, simulation_names): raise ValueError("Mismatch between individuals table simulation names and directory names")
-        return simulation_names
+        #directory_names = self.simulation_directory_names
+        #simulation_names = self.individuals_table.simulation_names
+        #if not sequences.same_contents(directory_names, simulation_names): raise ValueError("Mismatch between individuals table simulation names and directory names")
+        #return simulation_names
+
+        # Get the names from the individuals table
+        names = self.individuals_table.simulation_names
+
+        # Check whether there is a directory for each name
+        if not sequences.contains_all(self.simulation_directory_names, names): raise ValueError("Some simulation directories are missing")
+
+        # Return the names
+        return names
 
     # -----------------------------------------------------------------
 
