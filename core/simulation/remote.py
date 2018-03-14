@@ -2778,7 +2778,7 @@ class SKIRTRemote(Remote):
 
         # Return string from simulation status
         status_string = str(LogSimulationStatus(file_path, self))
-        if crashed_name not in status_string: raise RuntimeError("Something went wrong")
+        if crashed_name not in status_string: raise RuntimeError("Something went wrong: status from log file is '" + status_string + "' but simulation is supposed to be crashed")
         return status_string
 
     # -----------------------------------------------------------------
@@ -2792,7 +2792,7 @@ class SKIRTRemote(Remote):
 
         # Return string from simulation status
         status_string = str(LogSimulationStatus(file_path, self))
-        if not is_running_status(status_string): raise RuntimeError("Something went wrong")
+        if not is_running_status(status_string): raise RuntimeError("Something went wrong: status from log file is '" + status_string + "' but simulation is supposed to be running")
         return status_string
 
     # -----------------------------------------------------------------

@@ -1467,10 +1467,16 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Trying to find the simulation '" + simulation_name + "' ...")
+
         the_host_id = None
 
         # Loop over the remotes
         for host_id in self.simulations_for_hosts:
+
+            # Debugging
+            log.debug("Trying to find the simulation amongst the simulations of host '" + host_id + "' ...")
 
             # Check whether the simulation name is in the
             if simulation_name in self.simulations_for_hosts[host_id]:
@@ -3643,20 +3649,22 @@ class SimulationManager(Configurable):
             else: simulation_status = "analysed: started"
 
         # Retrieved
-        elif simulation.retrieved:
+        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved:
             simulation_status = "retrieved"
 
         # Finished
-        elif simulation.finished:
+        elif isinstance(simulation, RemoteSimulation) and simulation.finished:
             simulation_status = "finished"
 
-        # Not yet retrieved
-        else:
+        # Remote simulation that is not yet retrieved
+        elif isinstance(simulation, RemoteSimulation):
 
             host_id = simulation.host_id
             screen_states = self.screens[host_id]
             jobs_status = self.jobs[host_id]
             with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
+
+        else: simulation_status = "unknown"
 
         # Check success flag in assignment
         if self.config.fix_success and not self.assignment.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
@@ -12158,8 +12166,11 @@ class SimulationManager(Configurable):
                 else: color = "red"
 
                 # Create strings
-                host_string = tostr(simulation.host)
-                id_string = tostr(simulation.id)
+                if isinstance(simulation, RemoteSimulation):
+                    host_string = tostr(simulation.host)
+                    id_string = tostr(simulation.id)
+                elif isinstance(simulation, SkirtSimulation): host_string = id_string = "--"
+                else: raise ValueError("Invalid simulation object")
 
                 # Set parts
                 parts = []

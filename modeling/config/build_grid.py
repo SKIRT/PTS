@@ -47,3 +47,7 @@ definition.add_optional("tree_path", "string", "filepath for the tree grid file"
 definition.add_optional("parallelization", "parallelization", "parallelization scheme", default_parallelization, convert_default=True)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("plot_dust_cell_distribution", "...", False)
+
+# -----------------------------------------------------------------

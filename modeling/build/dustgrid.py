@@ -382,7 +382,7 @@ class DustGridBuilder(Configurable):
         # finish after this line has been printed (when the next one comes)
         # NO: not this message: it is possible that it is not printed as the writing settings that are enabled depend on the quality measures that are requested
         #self.launcher.config.finish_after = "Writing dust cell properties"
-        self.launcher.config.finish_at = "There are no stellar components"
+        #self.launcher.config.finish_at = "There are no stellar components"
         self.launcher.config.debug_output = True
 
         # Set analysis options: no plotting is done in a function later
@@ -1065,7 +1065,7 @@ class DustGridBuilder(Configurable):
         self.plot_grid()
 
         # Plot
-        self.plot_dust_cell_distribution()
+        if self.config.plot_dust_cell_distribution: self.plot_dust_cell_distribution()
 
     # -----------------------------------------------------------------
 

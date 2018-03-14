@@ -3216,9 +3216,9 @@ def get_volume_path(volname):
     :return:
     """
 
-    from .introspection import is_linux, is_macos
+    from .introspection import is_linux, is_macos, username
     if is_macos(): return join("/Volumes", volname)
-    elif is_linux(): return join("/media", volname)
+    elif is_linux(): return join("/media", username(), volname)
     else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
 
 # -----------------------------------------------------------------

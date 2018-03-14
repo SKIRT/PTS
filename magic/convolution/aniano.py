@@ -29,6 +29,8 @@ from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.tools import network
 from ..core import fits
+from ...core.filter.broad import BroadBandFilter
+from ...core.filter.narrow import NarrowBandFilter
 
 # -----------------------------------------------------------------
 
@@ -37,10 +39,15 @@ aniano_kernels_highres_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kern
 aniano_kernels_lowres_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/Kernels_fits_Files/Low_Resolution/"
 aniano_psf_files_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/PSF_fits_Files/"
 
-# 2017 !
-aniano_kernels_highres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Hi_Resolution/"
-aniano_kernels_lowres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Low_Resolution/"
-aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_FITS_Files/"
+# 2017 !: REMOVED!!!
+#aniano_kernels_highres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Hi_Resolution/"
+#aniano_kernels_lowres_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Low_Resolution/"
+#aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_FITS_Files/"
+
+# 2018: should contain everything
+aniano_kernels_highres_link_2018 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2018/Kernels_FITS_Files/Hi_Resolution/"
+aniano_kernels_lowres_link_2018 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2018/Kernels_FITS_Files/Low_Resolution/"
+aniano_psf_files_link_2018 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2018/PSF_FITS_Files/"
 
 # -----------------------------------------------------------------
 
@@ -48,9 +55,9 @@ aniano_psf_files_link_2017 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ke
 # aniano_kernels_lowres_link = aniano_kernels_lowres_link_2012
 # aniano_psf_files_link = aniano_psf_files_link_2012
 
-aniano_kernels_highres_link = aniano_kernels_highres_link_2017
-aniano_kernels_lowres_link = aniano_kernels_lowres_link_2017
-aniano_psf_files_link = aniano_psf_files_link_2017
+aniano_kernels_highres_link = aniano_kernels_highres_link_2018
+aniano_kernels_lowres_link = aniano_kernels_lowres_link_2018
+aniano_psf_files_link = aniano_psf_files_link_2018
 
 # -----------------------------------------------------------------
 
@@ -316,8 +323,8 @@ class AnianoKernels(Kernels):
         :param from_fwhm:
         :param to_fwhm:
         :param return_name:
-        :param from_model: BiGauss is for SDSS
-        :param to_model: BiGauss is for SDSS
+        :param from_model:
+        :param to_model:
         :param check_valid:
         :return:
         """
@@ -334,12 +341,15 @@ class AnianoKernels(Kernels):
 
             # Set model
             # ARE THERE OTHER FILTERS FOR WHICH IT SHOULD BE BIGAUSS?
-            if from_filter.is_sdss: from_model = "BiGauss"
-            else: from_model = "Gauss"
+            if isinstance(from_filter, BroadBandFilter) and from_filter.is_sdss: from_model = "BiGauss"
+            elif isinstance(from_filter, NarrowBandFilter) and from_filter.is_halpha: from_model = "BiGauss"
+            elif from_model is None: from_model = "Gauss" # default is Gauss
 
             # Determine aniano name for the FWHM
             fwhm_arcsec = from_fwhm.to("arcsec").value
-            aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec) # BiGauss is for SDSS
+            #aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+            if int(round(fwhm_arcsec)) < 10: aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+            else: aniano_name = from_model + "_" + closest_half_integer_string(fwhm_arcsec)
             log.warning("The convolution kernel will be based on the FWHM of the original image, which is specified as " + str(from_fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
             from_psf_name = aniano_name
 
@@ -354,12 +364,15 @@ class AnianoKernels(Kernels):
 
             # Set model
             # ARE THERE OTHER FILTERS FOR WHICH IT SHOULD BE BIGAUSS?
-            if to_filter.is_sdss: to_model = "BiGauss"
-            else: to_model = "Gauss"
+            if isinstance(to_filter, BroadBandFilter) and to_filter.is_sdss: to_model = "BiGauss"
+            elif isinstance(to_filter, NarrowBandFilter) and to_filter.is_halpha: to_model = "BiGauss"
+            elif to_model is None: to_model = "Gauss" # default is Gauss
 
             # Determine aniano name for the FWHM
             fwhm_arcsec = to_fwhm.to("arcsec").value
-            aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)  # BiGauss is for SDSS
+            #aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+            if int(round(fwhm_arcsec)) < 10: aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+            else: aniano_name = to_model + "_" + closest_half_integer_string(fwhm_arcsec)
             log.warning("The convolution kernel will be based on the FWHM of the target image, which is specified as " + str(to_fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
             to_psf_name = aniano_name
 
