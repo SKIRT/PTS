@@ -203,7 +203,7 @@ class SkirtSimulation(object):
         for attr_name in default_attributes:
 
             # Create a copy
-            value = copy.copy(default_attributes[attr_name])
+            value = copy.deepcopy(default_attributes[attr_name])
 
             # Set the attribute
             setattr(self, attr_name, value)
@@ -1102,7 +1102,7 @@ class RemoteSimulation(SkirtSimulation):
         for attr_name in default_remote_attributes:
 
             # Create a copy
-            value = copy.copy(default_remote_attributes[attr_name])
+            value = copy.deepcopy(default_remote_attributes[attr_name])
 
             # Set the attribute
             setattr(self, attr_name, value)

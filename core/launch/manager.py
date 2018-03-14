@@ -1467,10 +1467,16 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Trying to find the simulation '" + simulation_name + "' ...")
+
         the_host_id = None
 
         # Loop over the remotes
         for host_id in self.simulations_for_hosts:
+
+            # Debugging
+            log.debug("Trying to find the simulation amongst the simulations of host '" + host_id + "' ...")
 
             # Check whether the simulation name is in the
             if simulation_name in self.simulations_for_hosts[host_id]:
