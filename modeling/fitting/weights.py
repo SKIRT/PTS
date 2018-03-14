@@ -111,8 +111,39 @@ class WeightsCalculator(Configurable):
         # Call the setup function of the base class
         super(WeightsCalculator, self).setup(**kwargs)
 
-        # Check
+        # Check flags that should not be enabled in physical mode
+        if self.config.physical:
 
+            if self.config.only_uv: raise ValueError("Error")
+            if self.config.only_optical: raise ValueError("Error")
+            if self.config.only_nir: raise ValueError("Error")
+            if self.config.only_mir: raise ValueError("Error")
+            if self.config.only_fir: raise ValueError("Error")
+            if self.config.only_submm_microwave: raise ValueError("Error")
+
+            if self.config.no_uv: raise ValueError("Error")
+            if self.config.no_optical: raise ValueError("Error")
+            if self.config.no_nir: raise ValueError("Error")
+            if self.config.no_mir: raise ValueError("Error")
+            if self.config.no_fir: raise ValueError("Error")
+            if self.config.no_submm_microwave: raise ValueError("Error")
+
+        # Check flags that should not be enabled in original mode
+        else:
+
+            if self.config.only_ionizing: raise ValueError("Error")
+            if self.config.only_young: raise ValueError("Error")
+            if self.config.only_evolved: raise ValueError("Error")
+            if self.config.only_mix: raise ValueError("Error")
+            if self.config.only_aromatic: raise ValueError("Error")
+            if self.config.only_thermal: raise ValueError("Error")
+
+            if self.config.no_ionizing: raise ValueError("Error")
+            if self.config.no_young: raise ValueError("Error")
+            if self.config.no_evolved: raise ValueError("Error")
+            if self.config.no_mix: raise ValueError("Error")
+            if self.config.no_aromatic: raise ValueError("Error")
+            if self.config.no_thermal: raise ValueError("Error")
 
     # -----------------------------------------------------------------
 
@@ -398,7 +429,104 @@ class WeightsCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if ionizing_name in self.regimes: return self.config.ionizing
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if young_name in self.regimes: return self.config.young
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evolved_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if evolved_name in self.regimes: return self.config.evolved
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mix_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if mix_name in self.regimes: return self.config.mix
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def aromatic_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if aromatic_name in self.regimes: return self.config.aromatic
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def thermal_weight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if thermal_name in self.regimes: return self.config.thermal
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
     def calculate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the weight to give to each band ...")
+
+        # Get the weights
+        if self.config.physical: weights = self.calculate_weights_physical()
+        else: weights = self.calculate_weights_original()
+
+        # Add to weights table
+        for fltr in weights: self.table.add_point(fltr, weights[fltr])
+
+    # -----------------------------------------------------------------
+
+    def calculate_weights_original(self):
 
         """
         This function ...
@@ -413,15 +541,32 @@ class WeightsCalculator(Configurable):
         print("FIR", self.fir_weight)
         print("Submm/Microwave", self.submm_microwave_weight)
 
-        # Inform the user
-        log.info("Calculating the weight to give to each band ...")
+        # Get the weights
+        return calculate_weights_filters(self.config.filters, uv=self.uv_weight, optical=self.optical_weight,
+                                            nir=self.nir_weight, mir=self.mir_weight, fir=self.fir_weight,
+                                            submm_microwave=self.submm_microwave_weight)
+
+    # -----------------------------------------------------------------
+
+    def calculate_weights_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Show weights per regime
+        print("Ionizing", self.ionizing_weight)
+        print("Young", self.young_weight)
+        print("Evolved", self.evolved_weight)
+        print("Mix", self.mix_weight)
+        print("Aromatic", self.aromatic_weight)
+        print("Thermal", self.thermal_weight)
 
         # Get the weights
-        weights = calculate_weights_filters(config.filters, uv=uv_weight, optical=optical_weight, nir=nir_weight,
-                                            mir=mir_weight, fir=fir_weight, submm_microwave=submm_microwave_weight)
-
-        # Add to weights table
-        for fltr in weights: self.table.add_point(fltr, weights[fltr])
+        return calculate_weights_filters_physical(self.config.filters, ionizing=self.ionizing_weight, young=self.young_weight,
+                                                  evolved=self.evolved_weight, mix=self.mix_weight, aromatic=self.aromatic_weight,
+                                                  thermal=self.thermal_weight)
 
     # -----------------------------------------------------------------
 
@@ -546,12 +691,12 @@ def calculate_weights_filters_physical(filters, ionizing=1, young=1, evolved=1, 
     """
     This function ...
     :param filters:
-    :param uv:
-    :param optical:
-    :param nir:
-    :param mir:
-    :param fir:
-    :param submm_microwave:
+    :param ionizing:
+    :param young:
+    :param evolved:
+    :param mix:
+    :param aromatic:
+    :param thermal:
     :return:
     """
 
