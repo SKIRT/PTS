@@ -183,8 +183,6 @@ class Refitter(FittingComponent):
         # 4. Get the differences
         self.get_differences()
 
-        exit()
-
         # 5. Calculate the chi squared values
         self.calculate_chi_squared()
 
@@ -1904,7 +1902,7 @@ class Refitter(FittingComponent):
         log.info("Writing ...")
 
         # Write the fitting configuration
-        if self.as_run: self.write_config()
+        self.write_config()
 
         # Write the runs table
         if self.as_run: self.write_table()
@@ -1957,8 +1955,13 @@ class Refitter(FittingComponent):
         # Inform the user
         log.info("Writing the new fitting configuration ...")
 
+        # Determine the path
+        if self.as_run: path = self.new_fitting_config_path
+        elif self.in_place: path = self.fitting_run.fitting_configuration_path
+        else: path = fs.join(self.path, "configuration.cfg")
+
         # Save the config
-        self.new_fitting_config.saveto(self.new_fitting_config_path)
+        self.new_fitting_config.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2003,6 +2006,7 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "weights.dat")
+        elif self.in_place: path = self.fitting_run.weights_table_path
         else: path = self.weights_table_path
 
         # Write the table with weights
@@ -2040,6 +2044,7 @@ class Refitter(FittingComponent):
 
                 # Determine the path
                 if self.as_run: path = fs.join(self.new_simulation_misc_paths[generation_name][simulation_name], "differences.dat")
+                elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), simulation_name, "differences.dat")
                 else: path = fs.join(self.simulation_paths[generation_name][simulation_name], "differences.dat")
 
                 # Save
@@ -2068,6 +2073,7 @@ class Refitter(FittingComponent):
 
             # Determine the path
             if self.as_run: path = fs.join(self.new_generation_paths[generation_name], "chi_squared.dat")
+            elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), "chi_squared.dat")
             else: path = self.chi_squared_table_paths[generation_name]
 
             # Save the table
@@ -2084,6 +2090,7 @@ class Refitter(FittingComponent):
         """
 
         if self.as_run: return fs.join(self.new_prob_generation_paths[generation_name], "models.dat")
+        elif self.in_place: return fs.join(self.fitting_run.prob_generations_path, generation_name, "models.dat")
         else: return fs.join(self.prob_generations_paths[generation_name], "models.dat")
 
     # -----------------------------------------------------------------
@@ -2122,6 +2129,7 @@ class Refitter(FittingComponent):
         """
 
         if self.as_run: return fs.join(self.new_prob_generation_paths[generation_name], parameter_label + ".dat")
+        elif self.in_place: return fs.join(self.fitting_run.prob_generations_path, generation_name, parameter_label + ".dat")
         else: return fs.join(self.prob_generations_paths[generation_name], parameter_label + ".dat")
 
     # -----------------------------------------------------------------
@@ -2175,6 +2183,7 @@ class Refitter(FittingComponent):
 
         # Determine the path for the table
         if self.as_run: return fs.join(self.new_prob_parameters_path, label + ".dat")
+        elif self.in_place: return fs.join(self.fitting_run.prob_parameters_path, label + ".dat")
         else: return fs.join(self.prob_parameters_path, label + ".dat")
 
     # -----------------------------------------------------------------
@@ -2215,6 +2224,7 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "best_parameters.dat")
+        elif self.in_place: path = fs.join(self.fitting_run.best_parameters_table_path)
         else: path = fs.join(self.path, "best_parameters.dat")
 
         # Save the best parameters table
@@ -2232,6 +2242,7 @@ class Refitter(FittingComponent):
 
         # Determine the path for the table
         if self.as_run: return fs.join(self.new_prob_distributions_path, label + ".dat")
+        elif self.in_place: return fs.join(self.fitting_run.prob_distributions_path, label + ".dat")
         else: return fs.join(self.prob_distributions_path, label + ".dat")
 
     # -----------------------------------------------------------------

@@ -2301,7 +2301,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def get_output(self, simulation_name):
 
         """
@@ -2314,7 +2314,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    def reset_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        self.get_output._reset_for_args(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def get_noutput(self, simulation_name):
 
         """
@@ -2402,7 +2413,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def get_extraction_output(self, simulation_name):
 
         """
@@ -2415,7 +2426,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    def reset_extraction_output(self, simulation_name):
+
+        """
+        Thisf unction ...
+        :param simulation_name:
+        :return:
+        """
+
+        self.get_extraction_output._reset_for_args(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def get_nextraction_output(self, simulation_name):
 
         """
@@ -2569,7 +2591,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def get_plotting_output(self, simulation_name):
 
         """
@@ -2582,7 +2604,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    def reset_plotting_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        self.get_plotting_output._reset_for_args(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def get_nplotting_output(self, simulation_name):
 
         """
@@ -2684,7 +2717,7 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def get_misc_output(self, simulation_name):
 
         """
@@ -2697,7 +2730,18 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    def reset_misc_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        self.get_misc_output._reset_for_args(simulation_name)
+        
+    # -----------------------------------------------------------------
+
     def get_nmisc_output(self, simulation_name):
 
         """
@@ -9077,6 +9121,9 @@ class SimulationManager(Configurable):
 
         # Loop over the directories
         for dirpath in dirpaths:
+
+            # Check whether the directory exists
+            if not fs.is_directory(dirpath): raise RuntimeError("The directory '" + dirpath + "' does not exist")
 
             # Determine relative directory path
             relpath = fs.relative_to(dirpath, directory_path)
