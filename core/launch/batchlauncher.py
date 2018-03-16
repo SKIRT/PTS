@@ -223,6 +223,20 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def set_status(self, simulation_name, simulation_status):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param simulation_status:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        self.set_value("Status", index, simulation_status)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def nsimulations(self):
 

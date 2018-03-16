@@ -89,6 +89,9 @@ definition.add_flag("cache_datacubes", "automatically cache the datacubes of ret
 definition.add_flag("cache_misc", "automatically cache the misc output of analysed simulations")
 definition.add_flag("cache_images", "automatically cache the images output of analysed simulations")
 
+# Correct analysis status
+definition.add_flag("correct_status", "correct the status", True)
+
 # Get configuration
 config = parse_arguments("generation_status", definition, "View the status of the simulations of a certain generation")
 
@@ -261,7 +264,50 @@ for simulation_name in status.simulation_names:
     # Check
     analysed = generation.is_analysed(simulation_name)
     if is_analysed_status(simulation_status) and not analysed:
-        log.warning("Simulation '" + simulation_name + "' is supposed to be analysed, but chi squared value is missing form the chi squared table")
+
+        log.warning("Simulation '" + simulation_name + "' is supposed to be analysed, but chi squared value is missing form the chi squared table: unsetting analysed flag")
+
+        # Correct the status
+        if config.correct_status:
+
+            # Inform
+            log.warning("Correcting the status ...")
+
+            # Check the analysis output
+            has_misc = generation.has_misc_output(simulation_name)
+            has_plotting = generation.has_plotting_output(simulation_name)
+            has_extraction = generation.has_extraction_output(simulation_name)
+
+            # Has any analysis output
+            if has_extraction or has_plotting or has_misc:
+
+                analysed = []
+                if has_extraction: analysed.append("extraction")
+                if has_plotting: analysed.append("plotting")
+                if has_misc: analysed.append("misc")
+                simulation_status = "analysed: " + ", ".join(analysed)
+
+            # Has simulation output
+            elif generation.is_retrieved(simulation_name): simulation_status = "retrieved"
+
+            # No simulation output
+            else: simulation_status = "unknown"
+
+            # Set the status for the simulation in the table
+            status.set_status(simulation_name, simulation_status)
+
+            # Fix the simulation properties
+            if generation.has_simulation(simulation_name): continue
+            else:
+
+                # Load the simulation object
+                simulation = generation.get_simulation(simulation_name)
+
+                # Unset analysed flag
+                simulation.analysed = False
+
+                # Save the simulation object
+                simulation.save()
 
 # -----------------------------------------------------------------
 
