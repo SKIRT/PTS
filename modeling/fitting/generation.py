@@ -3176,6 +3176,78 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def timing_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.timing_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.memory_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def timing_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.timing_table
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.memory_table
+
+    # -----------------------------------------------------------------
+
+    def has_timing(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.timing_table.has_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_memory(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.memory_table.has_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def get_status(self, remotes=None, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
                    retrieve=False, check_paths=False, fix_success=True):
 
@@ -3308,6 +3380,8 @@ class Generation(object):
                 has_misc = self.has_misc_output(simulation_name)
                 has_plotting = self.has_plotting_output(simulation_name)
                 has_extraction = self.has_extraction_output(simulation_name)
+                has_timing = self.has_timing(simulation_name)
+                has_memory = self.has_memory(simulation_name)
 
                 # Has chi squared
                 if self.is_analysed(simulation_name): simulation_status = "analysed"
@@ -3319,6 +3393,7 @@ class Generation(object):
                     if has_extraction: analysed.append("extraction")
                     if has_plotting: analysed.append("plotting")
                     if has_misc: analysed.append("misc")
+                    if has_timing and has_memory: analysed.append("batch")
                     simulation_status = "analysed: " + ", ".join(analysed)
 
                 # Has simulation output

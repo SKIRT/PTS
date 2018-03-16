@@ -706,7 +706,7 @@ class SkySubtractor(Configurable):
         # Debugging
         log.debug("The mean value before subtraction is " + str(self.mean_frame))
         log.debug("The median value before subtraction is " + str(self.median_frame))
-        log.debug("THe standard deviation before subtration is " + str(self.stddev_frame))
+        log.debug("The standard deviation before subtration is " + str(self.stddev_frame))
 
         # Debugging
         log.debug("The mean value before subtraction without sigma-clipping is " + str(self.mean_frame_not_clipped))
@@ -729,6 +729,8 @@ class SkySubtractor(Configurable):
         #log.debug("The mean sky value after subtraction is " + str(self.mean_subtracted))
         #log.debug("The median sky value after subtraction is " + str(self.median_subtracted))
         #log.debug("The global noise is " + str(self.noise))
+
+    # -----------------------------------------------------------------
 
     def set_statistics(self):
 

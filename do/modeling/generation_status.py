@@ -28,6 +28,7 @@ from pts.core.remote.host import find_host_ids
 from pts.core.config.analyse_simulation import definition as analysis_definition
 from pts.core.basics.log import log
 from pts.core.simulation.remote import is_analysed_status
+from pts.core.launch.batchlauncher import SimulationStatusTable
 
 # -----------------------------------------------------------------
 
@@ -255,6 +256,10 @@ else:
 
 # -----------------------------------------------------------------
 
+to_fix_status = dict()
+
+# -----------------------------------------------------------------
+
 # Loop over the status entries and check whether analysed simulations actually have their chi squared value set
 for simulation_name in status.simulation_names:
 
@@ -265,7 +270,8 @@ for simulation_name in status.simulation_names:
     analysed = generation.is_analysed(simulation_name)
     if is_analysed_status(simulation_status) and not analysed:
 
-        log.warning("Simulation '" + simulation_name + "' is supposed to be analysed, but chi squared value is missing form the chi squared table: unsetting analysed flag")
+        # Warning
+        log.warning("Simulation '" + simulation_name + "' is supposed to be analysed, but chi squared value is missing form the chi squared table")
 
         # Correct the status
         if config.correct_status:
@@ -293,21 +299,60 @@ for simulation_name in status.simulation_names:
             # No simulation output
             else: simulation_status = "unknown"
 
+            # Show new status
+            log.warning("New status: '" + simulation_status + "'")
+
             # Set the status for the simulation in the table
-            status.set_status(simulation_name, simulation_status)
+            #status.set_status(simulation_name, simulation_status) # NO: GET_STATUS METHOD IS MEMOIZED SO WE NEED NEW SIMULATION STATUS TABLE OBJECT
+            to_fix_status[simulation_name] = simulation_status
 
             # Fix the simulation properties
-            if generation.has_simulation(simulation_name): continue
+            if not generation.has_simulation(simulation_name): continue
             else:
 
                 # Load the simulation object
                 simulation = generation.get_simulation(simulation_name)
 
-                # Unset analysed flag
-                simulation.analysed = False
+                # Needs fixing?
+                if simulation.analysed:
 
-                # Save the simulation object
-                simulation.save()
+                    # Fix
+                    log.warning("Fixing simulation 'analysed' flag ...")
+
+                    # Unset analysed flag
+                    simulation.analysed = False
+
+                    # Save the simulation object
+                    simulation.save()
+
+# -----------------------------------------------------------------
+
+# Needs fixing
+if len(to_fix_status) > 0:
+
+    # Get number of simulations for which fixing is necessary
+    nfix = len(to_fix_status)
+
+    # Warning
+    log.warning("Simulation status table needs fixing for " + str(nfix) + " simulations")
+
+    # Create lists
+    simulation_names = []
+    status_list = []
+
+    # Loop over the simulations
+    for simulation_name in status.simulation_names:
+
+        # Get the correct status
+        if simulation_name in to_fix_status: correct_status = to_fix_status[simulation_name]
+        else: correct_status = status.get_status(simulation_name)
+
+        # Add to columns
+        simulation_names.append(simulation_name)
+        status_list.append(correct_status)
+
+    # Create new status table (because status table class is full with lazyproperties and memoized methods)
+    status = SimulationStatusTable.from_columns(simulation_names, status_list)
 
 # -----------------------------------------------------------------
 

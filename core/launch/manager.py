@@ -40,7 +40,9 @@ from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict, create_subdict
 from ..tools import sequences
 from ..basics.log import no_debugging
-from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status, retrieved_name, analysed_name
+from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status
+from ..simulation.remote import retrieved_name, analysed_name, is_analysed_status, is_analysing_status
+from ..simulation.remote import is_analysing_or_analysed_status, is_retrieved_status, is_finished_status
 from ..basics.configuration import prompt_string, prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
@@ -3671,12 +3673,14 @@ class SimulationManager(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Getting status of simulation '" + simulation_name + "' ...")
+
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
 
         # Analysed
-        if simulation.analysed:
-            simulation_status = "analysed"
+        if simulation.analysed: simulation_status = "analysed"
 
         # Partly analysed
         elif simulation.analysed_any:
@@ -3693,12 +3697,10 @@ class SimulationManager(Configurable):
             else: simulation_status = "analysed: started"
 
         # Retrieved
-        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved:
-            simulation_status = "retrieved"
+        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved: simulation_status = "retrieved"
 
         # Finished
-        elif isinstance(simulation, RemoteSimulation) and simulation.finished:
-            simulation_status = "finished"
+        elif isinstance(simulation, RemoteSimulation) and simulation.finished: simulation_status = "finished"
 
         # Remote simulation that is not yet retrieved
         elif isinstance(simulation, RemoteSimulation):
@@ -3735,6 +3737,9 @@ class SimulationManager(Configurable):
 
         # Initialize lists
         status_list = []
+
+        # Debugging
+        log.debug("Creating simulation status table ...")
 
         # Loop over the simulations
         for simulation_name in self.simulation_names:
@@ -12179,6 +12184,10 @@ class SimulationManager(Configurable):
         #if path is not None: table = SmartTable()
         #else: table = None
         table = None
+        #print(self.status)
+        #for index in range(len(self.status)):
+        #    status = self.status.get_value("Status", index)
+        #    print(status)
 
         # Print in columns
         with fmt.print_in_columns() as print_row:
@@ -12210,14 +12219,15 @@ class SimulationManager(Configurable):
 
                 # Get the status
                 status = self.get_status(simulation_name)
+                #print(simulation_name, status)
 
                 # Get index string
                 index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
 
                 # Set color
-                if status == analysed_name: color = "green"
-                elif status == retrieved_name: color = "yellow"
-                elif status == finished_name: color = "yellow"
+                if is_analysing_or_analysed_status(status): color = "green"
+                elif is_retrieved_status(status): color = "yellow"
+                elif is_finished_status(status): color = "yellow"
                 elif is_running_status(status): color = None
                 else: color = "red"
 
