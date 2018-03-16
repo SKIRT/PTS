@@ -1468,7 +1468,8 @@ class Refitter(FittingComponent):
         """
 
         # Find the corresponding flux in the SED derived from observation
-        observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
+        #observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
+        return self.reference_sed.photometry_for_filter(fltr, unit="Jy")
 
     # -----------------------------------------------------------------
 
@@ -1481,7 +1482,8 @@ class Refitter(FittingComponent):
         """
 
         # Find the corresponding flux error in the SED derived from observation
-        observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+        #observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+        return self.reference_sed.error_for_filter(fltr, unit="Jy")
 
     # -----------------------------------------------------------------
 
@@ -1530,21 +1532,24 @@ class Refitter(FittingComponent):
                     # Get instrument, band and flux density
                     instrument = mock_sed["Instrument"][i]
                     band = mock_sed["Band"][i]
-                    fluxdensity = mock_sed["Photometry"][i]
+                    #fluxdensity = mock_sed["Photometry"][i]
+                    fluxdensity = mock_sed.get_photometry(i, unit="Jy")
 
                     # Find the corresponding flux in the SED derived from observation
-                    observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
-
+                    #observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
                     # Find the corresponding flux error in the SED derived from observation
-                    observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+                    #observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
+                    observed_fluxdensity = self.get_fluxdensity(fltr)
+                    observed_fluxdensity_error = self.get_fluxdensity_error(fltr)
 
                     # If no match with (instrument, band) is found in the observed SED
                     if observed_fluxdensity is None:
                         log.warning("The observed flux density could not be found for the " + instrument + " " + band + " band")
                         continue
 
+                    # Calculate the difference
                     difference = fluxdensity - observed_fluxdensity
-                    relative_difference = difference / observed_fluxdensity
+                    relative_difference = float(difference / observed_fluxdensity)
 
                     # Find the index of the current band in the weights table
                     index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
@@ -1552,7 +1557,9 @@ class Refitter(FittingComponent):
                     weight = self.weights["Weight"][index]
 
                     # Calculate the chi squared term
-                    chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2
+                    difference_value = difference.to("Jy").value
+                    error_value = observed_fluxdensity_error.to("Jy").value
+                    chi_squared_term = weight * difference_value ** 2 / error_value ** 2
 
                     # Add entry to the table
                     differences.add_entry(instrument, band, difference, relative_difference, chi_squared_term)

@@ -55,7 +55,7 @@ class FluxDifferencesTable(SmartTable):
         # Add column info
         self.add_column_info("Instrument", str, None, "Instrument")
         self.add_column_info("Band", str, None, "Band")
-        self.add_column_info("Flux difference", float, None, "Flux difference")
+        self.add_column_info("Flux difference", float, "Jy", "Flux difference")
         self.add_column_info("Relative difference", float, None, "Relative flux difference")
         self.add_column_info("Chi squared term", float, None, "Chi squared term")
 
