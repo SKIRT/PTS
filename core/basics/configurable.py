@@ -14,11 +14,15 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+import traceback
+from collections import OrderedDict
+from abc import ABCMeta, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from .configuration import find_command
+from .log import log
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -466,5 +470,762 @@ class HierarchicConfigurable(Configurable):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+class InvalidCommandError(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, message, command):
+
+        """
+        Thisf unction ...
+        :param message:
+        :param command:
+        """
+
+        # Call the base class constructor with the parameters it needs
+        super(InvalidCommandError, self).__init__(message)
+
+        # The command
+        self.command = command
+
+# -----------------------------------------------------------------
+
+class InteractiveConfigurable(Configurable):
+
+    """
+    This class ...
+    """
+
+    # Define class properties
+    __metaclass__ = ABCMeta
+    _commands = None
+    _subcommands = None
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(InteractiveConfigurable, self).__init__(*args, **kwargs)
+
+        # The commands that have been executed
+        self.commands = []
+
+    # -----------------------------------------------------------------
+
+    def run_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Running commands ...")
+
+        # Loop over the commands
+        for command in self.config.commands:
+
+            # Debugging
+            log.debug("Running '" + command + "' ...")
+
+            # Process command, give error if fails
+            self.process_command(command)
+
+            # Add command
+            self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
+    def interactive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .configuration import prompt_string
+
+        # Inform the user
+        log.info("Entering interactive mode ...")
+
+        # Enter loop
+        while True:
+
+            # Get next command, break if no command is given
+            command = prompt_string("command", "command to be executed")
+            if not command: break
+
+            # DEVELOPER COMMAND
+            if command.startswith("$"):
+                self._run_developer_command(command)
+                continue
+
+            # Process command
+            success = True
+            try: self.process_command(command)
+            except InvalidCommandError as e:
+                log.warning("Invalid command: '" + e.command + "'")
+                success = False
+            except Exception as e:
+                traceback.print_exc()
+                log.error(str(e))
+                success = False
+
+            # Add command, if succesful
+            if success: self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncommands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.commands)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ncommands > 0
+
+    # -----------------------------------------------------------------
+
+    def process_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Run the command
+        self._run_command(command, self._commands)
+
+    # -----------------------------------------------------------------
+
+    def _run_command(self, command, cmds):
+
+        """
+        This function ...
+        :param command:
+        :param cmds:
+        :return:
+        """
+
+        # Get first word
+        first = command.split(" ")[0]
+
+        # Check whether interactive
+        if first.startswith("*"):
+            interactive = True
+            command = command[1:]
+            first = first[1:]
+        else: interactive = False
+
+        # Find key
+        if first not in cmds: raise InvalidCommandError("Invalid command: '" + first + "'", command)
+        key = first
+
+        # Has subcommands
+        if self.has_subcommands(key): self._run_subcommand(command)
+
+        # Regular command
+        else: self._run_command_impl(command, cmds, interactive=interactive)
+
+    # -----------------------------------------------------------------
+
+    def _run_developer_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Clean
+        command = command[1:].strip()
+
+        # Create evaluation command
+        eval_command = "self." + command
+
+        # Evaluate
+        eval(eval_command)
+
+    # -----------------------------------------------------------------
+
+    def _run_subcommand(self, command, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param interactive:
+        :return:
+        """
+
+        from ..tools import strings
+        from ..tools import formatting as fmt
+        from .configuration import ConfigurationDefinition, get_help, prompt_string
+
+        # Get first word == key
+        key = command.split(" ")[0]
+
+        # Get the possible subcommands
+        subcommands = self.get_subcommands(key)
+
+        # Get command without main command
+        subcommand = strings.split_at_first(command, key)[1].strip()
+
+        # No subcommand?
+        if not strings.startswith_any(subcommand, subcommands):
+
+            # Show help for the main command
+            if "-h" in subcommand or "--help" in subcommand:
+
+                # Set subcommands with descriptions
+                subcommands_descriptions = OrderedDict()
+                for subkey in subcommands:
+                    function_name, pass_command, description, subject = subcommands[subkey]
+                    subcommands_descriptions[subkey] = description
+
+                # Create definition for the subcommands
+                definition = ConfigurationDefinition(write_config=False)
+                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                help = get_help(key, definition, add_logging=False, add_cwd=False)
+
+                # Show help
+                for line in help: print(fmt.red + line + fmt.reset)
+
+            # Nothing more than the main command is given as input
+            elif subcommand == "":
+
+                # Interactive mode: prompt between the different subcommands
+                if interactive:
+
+                    # Set subcommands with descriptions
+                    subcommands_descriptions = OrderedDict()
+                    for subkey in subcommands:
+                        function_name, pass_command, description, subject = subcommands[subkey]
+                        subcommands_descriptions[subkey] = description
+
+                    # Prompt for the subcommand
+                    subcommand = prompt_string("subcommand", "subcommand", choices=subcommands_descriptions)
+
+                    # Run the subcommand in interactive mode
+                    self._run_command_impl(subcommand, subcommands, main_command=key, interactive=True)
+
+                # Not enough input
+                else: raise InvalidCommandError("Not enough input for '" + key + "' command", command)
+
+            # Invalid command
+            else: raise InvalidCommandError("Invalid command: '" + subcommand + "'", command)
+
+        # Run the command
+        else: self._run_command_impl(subcommand, subcommands, main_command=key, interactive=interactive)
+
+    # -----------------------------------------------------------------
+
+    def _run_command_impl(self, command, cmds, main_command=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param cmds:
+        :param main_command:
+        :param interactive:
+        :return:
+        """
+
+        from ..tools import formatting as fmt
+
+        # Get first word == key
+        key = command.split(" ")[0]
+
+        # Get function name and description
+        function_name, pass_command, description, subject = cmds[key]
+
+        # Show help for the command
+        if "-h" in command or "--help" in command:
+
+            # Get the help info
+            help = self.get_help_for_key(key, cmds, main_command=main_command)
+
+            # Show help
+            if help is None: print(fmt.red + "no input required" + fmt.reset)
+            else:
+                for line in help: print(fmt.red + line + fmt.reset)
+
+        # Actually run
+        else:
+
+            # Get the function
+            function = getattr(self, function_name)
+
+            # Call the function
+            if pass_command: function(command, interactive=interactive)
+            else: function(interactive=interactive)
+
+    # -----------------------------------------------------------------
+
+    def has_subcommands(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        return command in self._subcommands.keys()
+
+    # -----------------------------------------------------------------
+
+    def get_subcommands(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        if command not in self._subcommands: raise InvalidCommandError("Invalid command: '" + command + "'", command)
+        return self._subcommands[command]
+
+    # -----------------------------------------------------------------
+
+    def get_definition_for_function_name(self, function_name):
+
+        """
+        This function ...
+        :param function_name:
+        :return:
+        """
+
+        # Get definition
+        definition_property_name = function_name.split("_command")[0] + "_definition"
+        definition = getattr(self, definition_property_name, None)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def get_kwargs_for_function_name(self, function_name):
+
+        """
+        This function ...
+        :param function_name:
+        :return:
+        """
+
+        # Get kwargs
+        kwargs_property_name = function_name.split("_command")[0] + "_kwargs"
+        kwargs = getattr(self, kwargs_property_name, {})
+
+        # Return
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def get_help_for_key(self, key, cmds, main_command=None):
+
+        """
+        This function ...
+        :param key:
+        :param cmds:
+        :param main_command:
+        :return:
+        """
+
+        from .configuration import get_help
+
+        # Get properties
+        function_name, pass_command, description, subject = cmds[key]
+        if subject is None: return None # no help for this command (simple command that doesn't need input)
+
+        # Get the definition
+        definition = self.get_definition_for_function_name(function_name)
+
+        # Get the kwargs
+        kwargs = self.get_kwargs_for_function_name(function_name)
+
+        # Set command name
+        if main_command is None: name = key
+        else: name = main_command + " " + key
+
+        # Get help lines
+        if subject is None: help = self.get_help_command(definition, name=name)
+        else:
+
+            # Get the definition automatically
+            get_definition_function_name = "get_" + subject + "_command_definition"
+            get_definition_function = getattr(self, get_definition_function_name, None)
+            if get_definition_function is None: raise ValueError("Invalid subject '" + subject + "'")
+            definition = get_definition_function(definition, name=name, **kwargs)
+
+            # Get the help
+            help = get_help(name, definition, add_logging=False, add_cwd=False)
+
+        # Return the help info
+        return help
+
+    # -----------------------------------------------------------------
+
+    def get_usage_for_key(self, key, cmds, main_command=None):
+
+        """
+        This function ...
+        :param key:
+        :param cmds:
+        :param main_command:
+        :return:
+        """
+
+        from .configuration import get_usage
+
+        # Get properties
+        function_name, pass_command, description, subject = cmds[key]
+        #if subject is None: return None # no usage for this command (simple command that doesn't need input)
+
+        # Get the definition
+        definition = self.get_definition_for_function_name(function_name)
+
+        # Get the kwargs
+        kwargs = self.get_kwargs_for_function_name(function_name)
+
+        # Set command name
+        if main_command is None: name = key
+        else: name = main_command + " " + key
+
+        # Get usage lines
+        if subject is None: usage = self.get_usage_command(definition, name=name)
+        else:
+
+            # Get the definition
+            get_definition_function_name = "get_" + subject + "_command_definition"
+            get_definition_function = getattr(self, get_definition_function_name, None)
+            if get_definition_function is None: raise ValueError("Invalid subject '" + subject + "'")
+            definition = get_definition_function(definition, name=name, **kwargs)
+
+            # Get the usage
+            usage = get_usage(name, definition, add_logging=False, add_cwd=False)
+
+        # Return the usage info
+        return usage
+
+    # -----------------------------------------------------------------
+
+    def get_usage_command(self, definition, name):
+
+        """
+        This function ...
+        :param definition:
+        :param name:
+        :return:
+        """
+
+        from .configuration import get_usage
+
+        # Return the usage
+        return get_usage(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def get_help_command(self, definition, name):
+
+        """
+        This function ...
+        :param definition:
+        :param name:
+        :return:
+        """
+
+        from .configuration import get_help
+
+        # Return the usage
+        return get_help(name, definition, add_logging=False, add_cwd=False)
+
+    # -----------------------------------------------------------------
+
+    def show_help(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        from .configuration import ConfigurationDefinition, get_usage
+        from ..tools import formatting as fmt
+
+        # Inform the user
+        log.info("Showing help ...")
+
+        print("")
+
+        # Loop over the commands
+        for key in self._commands:
+
+            # Get properties
+            function_name, pass_command, description, subject = self._commands[key]
+
+            # Show
+            print(" - " + fmt.bold + key + fmt.reset + ": " + description)
+
+            if function_name is None and not self.has_subcommands(key): raise RuntimeError("Something went wrong")
+
+            # Show usage
+            if pass_command:
+
+                # Get usage
+                usage = self.get_usage_for_key(key, self._commands)
+
+                # Show
+                for line in usage: print("    " + fmt.blue + line + fmt.reset)
+
+            # Command with subcommands
+            elif self.has_subcommands(key):
+
+                # Set subcommands with descriptions
+                subcommands = self.get_subcommands(key)
+                subcommands_descriptions = OrderedDict()
+                for subkey in subcommands:
+                    function_name, pass_command, description, subject = subcommands[subkey]
+                    subcommands_descriptions[subkey] = description
+
+                # Create definition for the subcommands
+                definition = ConfigurationDefinition(write_config=False)
+                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                usage = get_usage(key, definition, add_logging=False, add_cwd=False)
+
+                # Show usage
+                for line in usage: print("    " + fmt.blue + line + fmt.reset)
+
+                # Show help for subcommands
+                self._show_help_subcommands(subcommands, key)
+
+            # No input needed
+            else: print("    " + fmt.blue + "no input" + fmt.reset)
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def _show_help_subcommands(self, subcommands, main_command):
+
+        """
+        This function ...
+        :param subcommands:
+        :param main_command:
+        :return:
+        """
+
+        from ..tools import formatting as fmt
+
+        # Loop over the commands
+        for key in subcommands:
+
+            # Get description
+            function_name, pass_command, description, subject = subcommands[key]
+
+            # Show
+            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
+
+            # Show usage
+            # if not pass_command or subject is None: continue
+            if pass_command:
+
+                # Get usage
+                usage = self.get_usage_for_key(key, subcommands, main_command=main_command)
+
+                # Show
+                for line in usage: print("      " + fmt.blue + line + fmt.reset)
+
+            # No input expected
+            else: print("        " + fmt.blue + "no input" + fmt.reset)
+
+    # -----------------------------------------------------------------
+
+    def get_config_from_command(self, command, definition, name=None, index=1, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param definition:
+        :param name:
+        :param index:
+        :param interactive:
+        :return:
+        """
+
+        from ..tools import strings
+        from .configuration import prompt_settings, parse_arguments
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        parse_command = splitted[index:]
+
+        # Interactively get the settings
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
+
+        # Parse arguments
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
+                                 initialize=False, add_logging=False, add_cwd=False)
+
+        # Return the configuration
+        return config
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def class_pts_user_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def history_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        return fs.join(self.class_pts_user_path, "history.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.get_lines(self.history_path) if self.has_history else []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.history_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_history_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .configuration import ConfigurationDefinition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_flag("all", "show all of the history (also from previous sessions)", False)
+        definition.add_optional("path", "string", "write the history to a file")
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_history_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Parse command
+        config = self.get_config_from_command(command, self.show_history_definition)
+
+        # Show history
+        self.show_history(all=config.all, path=config.path)
+
+    # -----------------------------------------------------------------
+
+    def show_history(self, all=False, path=None):
+
+        """
+        This function ...
+        :param all:
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing history of commands ...")
+
+        # Lines to write
+        lines = []
+
+        # Show all history?
+        if all:
+            print("")
+            for command in self.history:
+                print(command)
+                lines.append(command)
+
+        print("")
+        for command in self.commands:
+            print(command)
+            lines.append(command)
+        print("")
+
+        # Write to file
+        if path is not None: fs.write_lines(path, lines)
+
+    # -----------------------------------------------------------------
+
+    def write_history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the history ...")
+
+        # Write
+        fs.add_lines(self.history_path, self.commands, create=True)
 
 # -----------------------------------------------------------------

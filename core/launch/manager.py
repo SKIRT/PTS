@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import traceback
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import InteractiveConfigurable
 from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help, prompt_choice, prompt_settings
 from ..basics.log import log
 from ..tools.stringify import tostr
@@ -40,10 +39,9 @@ from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict, create_subdict
 from ..tools import sequences
 from ..basics.log import no_debugging
-from ..simulation.remote import is_finished_status, is_running_status, finished_name, is_invalid_or_unknown_status
-from ..simulation.remote import retrieved_name, analysed_name, is_analysed_status, is_analysing_status
+from ..simulation.remote import is_running_status, finished_name, is_invalid_or_unknown_status
 from ..simulation.remote import is_analysing_or_analysed_status, is_retrieved_status, is_finished_status
-from ..basics.configuration import prompt_string, prompt_variable
+from ..basics.configuration import prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
 from ..simulation.adapter import adapt_simulation, adapt_analysis, adapt_simulations, adapt_analysis_simulations
@@ -87,28 +85,6 @@ from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 # Define types
 datacube_types = [output_type_names.total_images, output_type_names.count_images, output_type_names.direct_images, output_type_names.transparent_images, output_type_names.scattered_images, output_type_names.dust_images, output_type_names.dust_scattered_images]
 image_types = [misc_type_names.images, misc_type_names.images_for_fluxes]
-
-# -----------------------------------------------------------------
-
-class InvalidCommandError(Exception):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, message, command):
-
-        """
-        Thisf unction ...
-        :param message:
-        :param command:
-        """
-
-        # Call the base class constructor with the parameters it needs
-        super(InvalidCommandError, self).__init__(message)
-
-        # The command
-        self.command = command
 
 # -----------------------------------------------------------------
 
@@ -290,6 +266,17 @@ cache_commands[_plotting_command_name] = ("cache_simulations_plotting_command", 
 cache_commands[_misc_command_name] = ("cache_simulations_misc_command", True, "cache simulation misc output", "simulations")
 cache_commands[_datacube_command_name] = ("cache_simulations_datacubes_command", True, "cache datacubes", "simulations")
 cache_commands[_images_command_name] = ("cache_simulations_images_command", True, "cache images", "simulations")
+
+# -----------------------------------------------------------------
+
+subcommands = OrderedDict()
+subcommands[_show_command_name] = show_commands
+subcommands[_plot_command_name] = plot_commands
+subcommands[_open_command_name] = open_commands
+subcommands[_adapt_command_name] = adapt_commands
+subcommands[_compare_command_name] = compare_commands
+subcommands[_clear_command_name] = clear_commands
+subcommands[_cache_command_name] = cache_commands
 
 # -----------------------------------------------------------------
 
@@ -511,11 +498,16 @@ extra_column_units[_memory_extra_name] = "GB"
 
 # -----------------------------------------------------------------
 
-class SimulationManager(Configurable):
+class SimulationManager(InteractiveConfigurable):
 
     """
     This class ...
     """
+
+    _commands = commands
+    _subcommands = subcommands
+
+    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
@@ -547,9 +539,6 @@ class SimulationManager(Configurable):
 
         # The relaunched simulations
         self.relaunched = RelaunchedSimulationsTable()
-
-        # The commands that have been executed
-        self.commands = []
 
         # The batch simulation launcher
         self.launcher = BatchLauncher()
@@ -4136,564 +4125,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Running commands ...")
-
-        # Loop over the commands
-        for command in self.config.commands:
-
-            # Debugging
-            log.debug("Running '" + command + "' ...")
-
-            # Process command, give error if fails
-            self.process_command(command)
-
-            # Add command
-            self.commands.append(command)
-
-    # -----------------------------------------------------------------
-
-    def interactive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Entering interactive mode ...")
-
-        # Enter loop
-        while True:
-
-            # Get next command, break if no command is given
-            command = prompt_string("command", "command to be executed")
-            if not command: break
-
-            # DEVELOPER COMMAND
-            if command.startswith("$"):
-                self._run_developer_command(command)
-                continue
-
-            # Process command
-            success = True
-            try: self.process_command(command)
-            except InvalidCommandError as e:
-                log.warning("Invalid command: '" + e.command + "'")
-                success = False
-            except Exception as e:
-                traceback.print_exc()
-                log.error(str(e))
-                success = False
-
-            # Add command, if succesful
-            if success: self.commands.append(command)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ncommands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.commands)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ncommands > 0
-
-    # -----------------------------------------------------------------
-
-    def has_subcommands(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        return command in [_show_command_name, _plot_command_name, _open_command_name, _adapt_command_name, _compare_command_name, _clear_command_name, _cache_command_name]
-
-    # -----------------------------------------------------------------
-
-    def get_subcommands(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        if command == _show_command_name: return show_commands
-        elif command == _plot_command_name: return plot_commands
-        elif command == _open_command_name: return open_commands
-        elif command == _adapt_command_name: return adapt_commands
-        elif command == _compare_command_name: return compare_commands
-        elif command == _clear_command_name: return clear_commands
-        elif command == _cache_command_name: return cache_commands
-        else: raise InvalidCommandError("Invalid command: '" + command + "'", command)
-
-    # -----------------------------------------------------------------
-
-    def _run_developer_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Clean
-        command = command[1:].strip()
-
-        # Create evaluation command
-        eval_command = "self." + command
-
-        # Evaluate
-        eval(eval_command)
-
-    # -----------------------------------------------------------------
-
-    def _run_command(self, command, cmds):
-
-        """
-        This function ...
-        :param command:
-        :param cmds:
-        :return:
-        """
-
-        # Get first word
-        first = command.split(" ")[0]
-
-        # Check whether interactive
-        if first.startswith("*"):
-            interactive = True
-            command = command[1:]
-            first = first[1:]
-        else: interactive = False
-
-        # Find key
-        if first not in cmds: raise InvalidCommandError("Invalid command: '" + first + "'", command)
-        key = first
-
-        # Has subcommands
-        if self.has_subcommands(key): self._run_subcommand(command)
-
-        # Regular command
-        else: self._run_command_impl(command, cmds, interactive=interactive)
-
-    # -----------------------------------------------------------------
-
-    def _run_subcommand(self, command, interactive=False):
-
-        """
-        This function ...
-        :param command:
-        :param interactive:
-        :return:
-        """
-
-        # Get first word == key
-        key = command.split(" ")[0]
-
-        # Get the possible subcommands
-        subcommands = self.get_subcommands(key)
-
-        # Get command without main command
-        subcommand = strings.split_at_first(command, key)[1].strip()
-
-        # No subcommand?
-        if not strings.startswith_any(subcommand, subcommands):
-
-            # Show help for the main command
-            if "-h" in subcommand or "--help" in subcommand:
-
-                # Set subcommands with descriptions
-                subcommands_descriptions = OrderedDict()
-                for subkey in subcommands:
-                    function_name, pass_command, description, subject = subcommands[subkey]
-                    subcommands_descriptions[subkey] = description
-
-                # Create definition for the subcommands
-                definition = ConfigurationDefinition(write_config=False)
-                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
-                help = get_help(key, definition, add_logging=False, add_cwd=False)
-
-                # Show help
-                for line in help: print(fmt.red + line + fmt.reset)
-
-            # Nothing more than the main command is given as input
-            elif subcommand == "":
-
-                # Interactive mode: prompt between the different subcommands
-                if interactive:
-
-                    # Set subcommands with descriptions
-                    subcommands_descriptions = OrderedDict()
-                    for subkey in subcommands:
-                        function_name, pass_command, description, subject = subcommands[subkey]
-                        subcommands_descriptions[subkey] = description
-
-                    # Prompt for the subcommand
-                    subcommand = prompt_string("subcommand", "subcommand", choices=subcommands_descriptions)
-
-                    # Run the subcommand in interactive mode
-                    self._run_command_impl(subcommand, subcommands, main_command=key, interactive=True)
-
-                # Not enough input
-                else: raise InvalidCommandError("Not enough input for '" + key + "' command", command)
-
-            # Invalid command
-            else: raise InvalidCommandError("Invalid command: '" + subcommand + "'", command)
-
-        # Run the command
-        else: self._run_command_impl(subcommand, subcommands, main_command=key, interactive=interactive)
-
-    # -----------------------------------------------------------------
-
-    def _run_command_impl(self, command, cmds, main_command=None, interactive=False):
-
-        """
-        This function ...
-        :param command:
-        :param cmds:
-        :param main_command:
-        :param interactive:
-        :return:
-        """
-
-        # Get first word == key
-        key = command.split(" ")[0]
-
-        # Get function name and description
-        function_name, pass_command, description, subject = cmds[key]
-
-        # Show help for the command
-        if "-h" in command or "--help" in command:
-
-            # Get the help info
-            help = self.get_help_for_key(key, cmds, main_command=main_command)
-
-            # Show help
-            if help is None: print(fmt.red + "no input required" + fmt.reset)
-            else:
-                for line in help: print(fmt.red + line + fmt.reset)
-
-        # Actually run
-        else:
-
-            # Get the function
-            function = getattr(self, function_name)
-
-            # Call the function
-            if pass_command: function(command, interactive=interactive)
-            else: function(interactive=interactive)
-
-    # -----------------------------------------------------------------
-
-    def process_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        # Run the command
-        self._run_command(command, commands)
-
-    # -----------------------------------------------------------------
-
-    def get_definition_for_function_name(self, function_name):
-
-        """
-        This function ...
-        :param function_name:
-        :return:
-        """
-
-        # Get definition
-        definition_property_name = function_name.split("_command")[0] + "_definition"
-        definition = getattr(self, definition_property_name, None)
-
-        # Return
-        return definition
-
-    # -----------------------------------------------------------------
-
-    def get_kwargs_for_function_name(self, function_name):
-
-        """
-        This function ...
-        :param function_name:
-        :return:
-        """
-
-        # Get kwargs
-        kwargs_property_name = function_name.split("_command")[0] + "_kwargs"
-        kwargs = getattr(self, kwargs_property_name, {})
-
-        # Return
-        return kwargs
-
-    # -----------------------------------------------------------------
-
-    def get_usage_for_key(self, key, cmds, main_command=None):
-
-        """
-        This function ...
-        :param key:
-        :param cmds:
-        :param main_command:
-        :return:
-        """
-
-        # Get properties
-        function_name, pass_command, description, subject = cmds[key]
-        #if subject is None: return None # no usage for this command (simple command that doesn't need input)
-
-        # Get the definition
-        definition = self.get_definition_for_function_name(function_name)
-
-        # Get the kwargs
-        kwargs = self.get_kwargs_for_function_name(function_name)
-
-        # Set command name
-        if main_command is None: name = key
-        else: name = main_command + " " + key
-
-        # Get usage lines
-        if subject is None: usage = self.get_usage_command(definition, name=name)
-        elif subject == _simulation_subject_name: usage = self.get_usage_simulation_command(definition, name=name, **kwargs)
-        elif subject == _simulations_subject_name: usage = self.get_usage_simulations_command(definition, name=name, **kwargs)
-        elif subject == _two_simulations_subject_name: usage = self.get_usage_two_simulations_command(definition, name=name, **kwargs)
-        elif subject == _host_subject_name: usage = self.get_usage_host_command(definition, name=name, **kwargs)
-        elif subject == _hosts_subject_name: usage = self.get_usage_hosts_command(definition, name=name, **kwargs)
-        elif subject == _host_parallelization_subject_name: usage = self.get_usage_host_and_parallelization_command(definition, name=name, **kwargs)
-        else: raise ValueError("Invalid subject '" + subject + "'")
-
-        # Return the usage info
-        return usage
-
-    # -----------------------------------------------------------------
-
-    def get_help_for_key(self, key, cmds, main_command=None):
-
-        """
-        This function ...
-        :param key:
-        :param cmds:
-        :param main_command:
-        :return:
-        """
-
-        # Get properties
-        function_name, pass_command, description, subject = cmds[key]
-        if subject is None: return None # no help for this command (simple command that doesn't need input)
-
-        # Get the definition
-        definition = self.get_definition_for_function_name(function_name)
-
-        # Get the kwargs
-        kwargs = self.get_kwargs_for_function_name(function_name)
-
-        # Set command name
-        if main_command is None: name = key
-        else: name = main_command + " " + key
-
-        # Get help lines
-        if subject is None: help = self.get_help_command(definition, name=name)
-        elif subject == _simulation_subject_name: help = self.get_help_simulation_command(definition, name=name, **kwargs)
-        elif subject == _simulations_subject_name: help = self.get_help_simulations_command(definition, name=name, **kwargs)
-        elif subject == _two_simulations_subject_name: help = self.get_help_two_simulations_command(definition, name=name, **kwargs)
-        elif subject == _host_subject_name: help = self.get_help_host_command(definition, name=name, **kwargs)
-        elif subject == _hosts_subject_name: help = self.get_help_hosts_command(definition, name=name, **kwargs)
-        elif subject == _host_parallelization_subject_name: help = self.get_help_host_and_parallelization_command(definition, name=name, **kwargs)
-        else: raise ValueError("Invalid subject '" + subject + "'")
-
-        # Return the help info
-        return help
-
-    # -----------------------------------------------------------------
-
-    def show_help(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Showing help ...")
-
-        print("")
-
-        # Loop over the commands
-        for key in commands:
-
-            # Get properties
-            function_name, pass_command, description, subject = commands[key]
-
-            # Show
-            print(" - " + fmt.bold + key + fmt.reset + ": " + description)
-
-            if function_name is None and not self.has_subcommands(key): raise RuntimeError("Something went wrong")
-
-            # Show usage
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, commands)
-
-                # Show
-                for line in usage: print("    " + fmt.blue + line + fmt.reset)
-
-            # Command with subcommands
-            elif self.has_subcommands(key):
-
-                # Set subcommands with descriptions
-                subcommands = self.get_subcommands(key)
-                subcommands_descriptions = OrderedDict()
-                for subkey in subcommands:
-                    function_name, pass_command, description, subject = subcommands[subkey]
-                    subcommands_descriptions[subkey] = description
-
-                # Create definition for the subcommands
-                definition = ConfigurationDefinition(write_config=False)
-                definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
-                usage = get_usage(key, definition, add_logging=False, add_cwd=False)
-
-                # Show usage
-                for line in usage: print("    " + fmt.blue + line + fmt.reset)
-
-                # Show help for subcommands
-                self._show_help_subcommands(subcommands, key)
-
-            # No input needed
-            else: print("    " + fmt.blue + "no input" + fmt.reset)
-
-        print("")
-
-    # -----------------------------------------------------------------
-
-    def _show_help_subcommands(self, subcommands, main_command):
-
-        """
-        This function ...
-        :param subcommands:
-        :param main_command:
-        :return:
-        """
-
-        # Loop over the commands
-        for key in subcommands:
-
-            # Get description
-            function_name, pass_command, description, subject = subcommands[key]
-
-            # Show
-            print("    * " + fmt.bold + key + fmt.reset + ": " + description)
-
-            # Show usage
-            # if not pass_command or subject is None: continue
-            if pass_command:
-
-                # Get usage
-                usage = self.get_usage_for_key(key, subcommands, main_command=main_command)
-
-                # Show
-                for line in usage: print("      " + fmt.blue + line + fmt.reset)
-
-            # No input expected
-            else: print("        " + fmt.blue + "no input" + fmt.reset)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def show_history_definition(self):
-        
-        """
-        This function ...
-        :return: 
-        """
-        
-        definition = ConfigurationDefinition(write_config=False)
-        definition.add_flag("all", "show all of the history (also from previous sessions)", False)
-        definition.add_optional("path", "string", "write the history to a file")
-        return definition
-        
-    # -----------------------------------------------------------------
-
-    def show_history_command(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
-
-        # Parse command
-        config = self.get_config_from_command(command, self.show_history_definition)
-
-        # Show history
-        self.show_history(all=config.all, path=config.path)
-
-    # -----------------------------------------------------------------
-
-    def show_history(self, all=False, path=None):
-
-        """
-        This function ...
-        :param all:
-        :param path:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Showing history of commands ...")
-
-        # Lines to write
-        lines = []
-
-        # Show all history?
-        if all:
-            print("")
-            for command in self.history:
-                print(command)
-                lines.append(command)
-
-        print("")
-        for command in self.commands:
-            print(command)
-            lines.append(command)
-        print("")
-
-        # Write to file
-        if path is not None: fs.write_lines(path, lines)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def show_hosts_definition(self):
 
@@ -6508,65 +5939,6 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_config_from_command(self, command, definition, name=None, index=1, interactive=False):
-
-        """
-        This function ...
-        :param command:
-        :param definition:
-        :param name:
-        :param index:
-        :param interactive:
-        :return:
-        """
-
-        # Parse
-        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-        if name is None: name = splitted[0]
-
-        # Set parse command
-        parse_command = splitted[index:]
-
-        # Interactively get the settings
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
-
-        # Parse arguments
-        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
-                                 initialize=False, add_logging=False, add_cwd=False)
-
-        # Return the configuration
-        return config
-
-    # -----------------------------------------------------------------
-
-    def get_usage_command(self, definition, name):
-
-        """
-        This function ...
-        :param definition:
-        :param name:
-        :return:
-        """
-
-        # Return the usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    def get_help_command(self, definition, name):
-
-        """
-        This function ...
-        :param definition:
-        :param name:
-        :return:
-        """
-
-        # Return the usage
-        return get_help(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
     def get_host_command_definition(self, command_definition=None, required=True, choices=None, required_to_optional=True):
 
         """
@@ -6635,43 +6007,45 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_usage_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required:
-        :param choices:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
-
-        # Return the usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_usage_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
+    # 
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required:
+    #     :param choices:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    # 
+    #     # Get the definition
+    #     definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
+    # 
+    #     # Return the usage
+    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
-    def get_help_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required:
-        :param choices:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the efinition
-        definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
-
-        # Return the help info
-        return get_help(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_help_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
+    # 
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required:
+    #     :param choices:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    # 
+    #     # Get the efinition
+    #     definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
+    # 
+    #     # Return the help info
+    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -6758,41 +6132,43 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_usage_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required:
-        :param choices:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
-
-        # Return usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_usage_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
+    #
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required:
+    #     :param choices:
+    #     :return:
+    #     """
+    #
+    #     # Get the definition
+    #     definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
+    #
+    #     # Return usage
+    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
-    def get_help_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required:
-        :param choices:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
-
-        # Return the help info
-        return get_help(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_help_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
+    # 
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required:
+    #     :param choices:
+    #     :return:
+    #     """
+    # 
+    #     # Get the definition
+    #     definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
+    # 
+    #     # Return the help info
+    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -6882,39 +6258,41 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_usage_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_usage_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
+    #
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    #
+    #     # Get the definition
+    #     definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
+    #
+    #     # Return the usage
+    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
-    def get_help_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the help info
-        return get_help(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_help_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
+    # 
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    # 
+    #     # Get the definition
+    #     definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
+    # 
+    #     # Return the help info
+    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -7000,39 +6378,41 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_usage_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE REQUIRED ANUMORE
+    # def get_usage_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
+    #
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    #
+    #     # Get the definition
+    #     definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
+    #
+    #     # Return the usage
+    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
-    def get_help_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the help info
-        return get_help(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE REQUIRED ANYMORE
+    # def get_help_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
+    #
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    #
+    #     # Get the definition
+    #     definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
+    #
+    #     # Return the help info
+    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -7098,39 +6478,41 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_usage_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_usage_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+    # 
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    # 
+    #     # Get the definition
+    #     definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+    # 
+    #     # Return the usage
+    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
-    def get_help_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the help info
-        return get_help(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_help_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+    #
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    #
+    #     # Get the definition
+    #     definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+    #
+    #     # Return the help info
+    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -7196,40 +6578,42 @@ class SimulationManager(Configurable):
         return splitted, simulation_a_name, simulation_b_name, config
 
     # -----------------------------------------------------------------
-
-    def get_usage_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the usage
-        return get_usage(name, definition, add_logging=False, add_cwd=False)
+    
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_usage_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+    #
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    #
+    #     # Get the definition
+    #     definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+    #
+    #     # Return the usage
+    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
-    def get_help_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-
-        """
-        This function ...
-        :param command_definition:
-        :param name:
-        :param required_to_optional:
-        :return:
-        """
-
-        # Get the definition
-        definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-
-        # Return the help info
-        return get_help(name, definition, add_logging=False, add_cwd=False)
+    # SHOULDN'T BE NECESSARY ANYMORE
+    # def get_help_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
+    # 
+    #     """
+    #     This function ...
+    #     :param command_definition:
+    #     :param name:
+    #     :param required_to_optional:
+    #     :return:
+    #     """
+    # 
+    #     # Get the definition
+    #     definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+    # 
+    #     # Return the help info
+    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -13258,55 +12642,15 @@ class SimulationManager(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def history_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path
-        return fs.join(introspection.pts_user_manager_dir, "history.dat")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def history(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.get_lines(self.history_path) if self.has_history else []
-
-    # -----------------------------------------------------------------
-
     @property
-    def has_history(self):
+    def class_pts_user_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.history_path)
-
-    # -----------------------------------------------------------------
-
-    def write_history(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the history ...")
-
-        # Write
-        fs.add_lines(self.history_path, self.commands, create=True)
+        return introspection.pts_user_manager_dir
 
     # -----------------------------------------------------------------
 

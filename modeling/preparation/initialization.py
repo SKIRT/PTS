@@ -153,9 +153,6 @@ class PreparationInitializer(PreparationComponent):
         # Set the path for the source finder to the preparation path
         self.config.sources.path = self.prep_path
 
-        # Set other options
-        self.config.catalog_overlapping = self.config.catalog_overlapping
-
         # Setup the remote PTS launcher
         if self.config.remote is not None: self.launcher.setup(self.config.remote)
         else: self.finder = SourceFinder(self.config.sources) # Create the source finder
