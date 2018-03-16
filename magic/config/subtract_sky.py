@@ -95,8 +95,8 @@ definition.add_section("zero_outside", "setting zero outside")
 definition.sections["zero_outside"].add_optional("factor", "real", "factor", 2.0)
 
 # Flags
-definition.add_flag("write", "writing")
-definition.add_flag("plot", "plotting")
+definition.add_flag("write", "writing", True)
+definition.add_flag("plot", "plotting", False)
 
 # Add extra mask to output
 definition.add_flag("add_extra_mask", "add the extra mask to the output maps", True)
