@@ -129,7 +129,7 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return self.in_place
+        return self.in_place and fs.is_empty(self.backup_path)
 
     # -----------------------------------------------------------------
 
@@ -172,42 +172,42 @@ class Refitter(FittingComponent):
         if self.do_create_run: self.create_run()
 
         # 3. Make a backup of the current fitting run
-        #if self.do_backup_run: self.backup_run()
+        if self.do_backup_run: self.backup_run()
 
-        # 2. Get the weights
+        # 4. Get the weights
         self.get_weights()
 
-        # 3. Get the fluxes
+        # 5. Get the fluxes
         self.get_fluxes()
 
-        # 4. Get the differences
+        # 6. Get the differences
         self.get_differences()
 
-        # 5. Calculate the chi squared values
+        # 7. Calculate the chi squared values
         self.calculate_chi_squared()
 
-        # 6. Get the parameters of the best models for each generation
+        # 8. Get the parameters of the best models for each generation
         self.get_best_parameters()
 
-        # 7. Calculate the probabilities
+        # 9. Calculate the probabilities
         self.calculate_probabilities()
 
-        # 8. Calculate the probability distributions
+        # 10. Calculate the probability distributions
         self.create_distributions()
 
-        # 9. Get best simulation
+        # 11. Get best simulation
         self.get_best_simulations()
 
-        # 10. Create the configuration
+        # 12. Create the configuration
         self.create_config()
 
-        # 10. Writing
+        # 13. Writing
         self.write()
 
-        # 11. Show
+        # 14. Show
         if self.do_show: self.show()
 
-        # 12. Plot
+        # 15. Plot
         if self.do_plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -417,6 +417,7 @@ class Refitter(FittingComponent):
         # Check options
         if self.as_run and self.in_place: raise ValueError("Cannot refit as new fitting run and refit in-place simultaneously")
         if self.config.name is None and not (self.as_run or self.in_place): raise ValueError("Refitting name must be specified when not refitting as new run or in-place")
+        if self.in_place and self.config.generations is not None: raise ValueError("Cannot specify generations when refitting is done in place")
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.fitting_run)
@@ -1084,6 +1085,8 @@ class Refitter(FittingComponent):
         # Calculate
         calculator = WeightsCalculator(self.config.weighing)
         calculator.config.write = False
+        calculator.config.show = True
+        calculator.run(filters=self.filters)
 
         # Set weights
         self.weights = calculator.table
@@ -1143,9 +1146,35 @@ class Refitter(FittingComponent):
             # Loop over the simulation names
             for simulation_name in generation.simulation_names:
 
+                #print(simulation_name, generation.has_misc_cached(simulation_name))
+                #continue
+
                 # Get the mock SED filepath
-                if not generation.has_mock_sed(simulation_name): raise IOError("Mock SED file is not found for simulation '" + simulation_name + "'")
-                fluxes = generation.get_simulation_mock_sed(simulation_name)
+                #if not generation.has_mock_sed(simulation_name): raise IOError("Mock SED file is not found for simulation '" + simulation_name + "'")
+
+                # Debugging
+                log.debug("Loading mock fluxes for the '" + simulation_name + "' simulation ...")
+
+                # From images
+                if generation.use_images:
+                    if not generation.has_image_fluxes_for_simulation(simulation_name):
+                        log.warning("No fluxes for '" + simulation_name + "': skipping ...")
+                        continue
+
+                    # Load
+                    fluxes = generation.get_image_fluxes_for_simulation(simulation_name)
+
+                # Regular
+                else:
+                    if not generation.has_fluxes_for_simulation(simulation_name):
+                        log.warning("No fluxes for '" + simulation_name + "': skipping ...")
+                        continue
+
+                    # Load
+                    fluxes = generation.get_fluxes_for_simulation(simulation_name)
+
+                # Load
+                #fluxes = generation.get_simulation_mock_sed(simulation_name)
 
                 # Set fluxes
                 self.fluxes[generation_name][simulation_name] = fluxes
@@ -1303,7 +1332,7 @@ class Refitter(FittingComponent):
         flux_calculator.config.plot = True
 
         # Run
-        flux_calculator.run(simulation=simulation, output_path=output_path, filter_names=self.filter_names, instrument_names=[earth_instrument_name], reference_sed=self.observed_sed)
+        flux_calculator.run(simulation=simulation, output_path=output_path, filter_names=self.filter_names, instrument_names=[earth_instrument_name], reference_sed=self.reference_sed)
 
         # Get the mock observed SED for the earth instrument
         return flux_calculator.mock_seds[earth_instrument_name]
@@ -1355,7 +1384,9 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        if self.config.rediff is not None: return self.config.rediff
+        if self.config.rediff is not None:
+            if not self.config.rediff and self.config.additional_error is not None: raise ValueError("The differences have to be calculated again if an additional relative error has to be used")
+            return self.config.rediff
         else: return self.different_filters or self.reflux or self.reweigh # also after reweighing because chi squared terms are calculated during differences!
 
     # -----------------------------------------------------------------
@@ -1406,6 +1437,51 @@ class Refitter(FittingComponent):
 
                 # Set table
                 self.differences[generation_name][simulation_name] = differences
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the original observed SED
+        sed = self.observed_sed.copy()
+
+        # Add the additional relative errors
+        if self.config.additional_error is not None: sed.add_relative_error(self.config.additional_error)
+
+        # Return the SED
+        return sed
+
+    # -----------------------------------------------------------------
+
+    def get_fluxdensity(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Find the corresponding flux in the SED derived from observation
+        observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
+
+    # -----------------------------------------------------------------
+
+    def get_fluxdensity_error(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Find the corresponding flux error in the SED derived from observation
+        observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
 
     # -----------------------------------------------------------------
 
@@ -1887,7 +1963,7 @@ class Refitter(FittingComponent):
 
         # Adapt fitting filters?
         if self.different_filters: self.new_fitting_config.filters = self.filters
-        else: raise RuntimeError("No diff filters")
+        else: log.warning("No diff filters") #raise RuntimeError("No diff filters")
 
     # -----------------------------------------------------------------
 
@@ -1909,6 +1985,12 @@ class Refitter(FittingComponent):
 
         # Weights
         self.write_weights()
+
+        # Write the observed SED
+        self.write_sed()
+
+        # Fluxes?
+        #self.write_fluxes()
 
         # Differences
         self.write_differences()
@@ -2002,7 +2084,7 @@ class Refitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the table with weights to " + self.weights_table_path + " ...")
+        log.info("Writing the table with weights ...")
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "weights.dat")
@@ -2011,6 +2093,26 @@ class Refitter(FittingComponent):
 
         # Write the table with weights
         self.weights.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the observed SED ...")
+
+        # Determine the path
+        if self.as_run: path = fs.join(self.new_run_path, "observed_sed.dat")
+        elif self.in_place: path = fs.join(self.fitting_run.path, "observed_sed.dat")
+        else: path = fs.join(self.path, "observed_sed.dat")
+
+        # Write the reference SED
+        self.reference_sed.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2035,6 +2137,10 @@ class Refitter(FittingComponent):
 
             # Loop over the simulations
             for simulation_name in generation.simulation_names:
+
+                if simulation_name not in self.differences[generation_name]:
+                    log.warning("No differences for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+                    continue
 
                 # Debugging
                 log.debug("Writing the flux difference table of simulation '" + simulation_name + "' ...")
@@ -2110,6 +2216,10 @@ class Refitter(FittingComponent):
 
             # Determine the path
             path = self.get_model_probabilities_table_path_for_generation(generation_name)
+
+            # Check whether the directory exists for this generation
+            dirpath = fs.directory_of(path)
+            if not fs.is_directory(dirpath): fs.create_directory(dirpath, recursive=True)
 
             # Get the table
             table = self.model_probabilities[generation_name]

@@ -28,7 +28,7 @@ from ...core.basics.configuration import Configuration
 from ...evolve.optimize.components import get_crossover, get_crossover_origins, get_genome_class, get_mutator, get_selector, get_scaling, get_initializator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, memoize_method
 from ...core.launch.batchlauncher import SimulationAssignmentTable
 from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host, get_simulation_path_for_host, is_invalid_or_unknown_status
 from ...core.remote.host import find_host_ids
@@ -1426,10 +1426,124 @@ class Generation(object):
         :return:
         """
 
+        host_id = self.get_host_id(name)
+        simulation_id = self.get_simulation_id(name)
+        #print(host_id, simulation_id)
+
+        if has_simulation_for_host(host_id, simulation_id): simulation = get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
+        else: simulation = self.get_simulation_basic(name)
+
         # Load and return the simulation
-        simulation = get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
+        #simulation = get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
+
+        # Return the simulation
         if simulation.name != name: raise RuntimeError("Wrong simulation!")
         return simulation
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_simulation(name).output
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_extraction_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_simulation(name).extraction_output
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_plotting_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_simulation(name).plotting_output
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_misc_output(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_simulation(name).misc_output
+
+    # -----------------------------------------------------------------
+
+    def has_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return misc.has_single_fluxes
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return ObservedSED.from_file(misc.single_fluxes)
+
+    # -----------------------------------------------------------------
+
+    def has_image_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        #print(self.get_simulation_misc_path(simulation_name), misc.image_fluxes)
+        return misc.has_single_image_fluxes
+
+    # -----------------------------------------------------------------
+
+    def get_image_fluxes_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        misc = self.get_misc_output(simulation_name)
+        return ObservedSED.from_file(misc.single_image_fluxes)
 
     # -----------------------------------------------------------------
 

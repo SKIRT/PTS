@@ -418,6 +418,18 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
+    def get_wavelength(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Wavelength", index)
+
+    # -----------------------------------------------------------------
+
     def value_for_index(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
 
         """

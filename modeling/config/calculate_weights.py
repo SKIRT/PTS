@@ -78,4 +78,7 @@ definition.add_flag("no_thermal", "give no weight to thermal regime")
 # Write the weights?
 definition.add_flag("write", "write the weights table", True)
 
+# Show?
+definition.add_flag("show", "show the weights", True)
+
 # -----------------------------------------------------------------

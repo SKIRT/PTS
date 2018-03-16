@@ -100,7 +100,7 @@ class WeightsCalculator(Configurable):
         if self.config.write: self.write()
 
         # Show
-        self.show()
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 

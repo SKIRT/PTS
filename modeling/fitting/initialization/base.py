@@ -198,6 +198,7 @@ class FittingInitializerBase(FittingComponent):
         # Calculate weights
         calculator = WeightsCalculator(self.config.weighing)
         calculator.config.write = False
+        calculator.config.show = True
         calculator.run(filters=self.fitting_run.fitting_filters)
 
         # Set weights

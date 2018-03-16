@@ -254,14 +254,6 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        # # Do imports
-        # from .sed import get_observed_sed as get_sed_other
-        # from .galaxy import get_observed_sed as get_sed_galaxy
-        #
-        # # Return the observed SED
-        # if self.modeling_type == "galaxy": return get_sed_galaxy(self.config.path)
-        # else: return get_sed_other(self.config.path)
-
         # Return the observed SED
         if self.is_galaxy_modeling: return self.environment.observed_sed
         elif self.is_sed_modeling: return self.environment.observed_sed
@@ -289,14 +281,6 @@ class ModelingComponent(Configurable):
         This function ...
         :return:
         """
-
-        # # Do imports
-        # from .sed import get_observed_sed_file_path as get_path_other
-        # from .galaxy import get_observed_sed_file_path as get_path_galaxy
-        #
-        # # Return the observed sed
-        # if self.modeling_type == "galaxy": return get_path_galaxy(self.config.path)
-        # else: return get_path_other(self.config.path)
 
         # Return the correct path
         if self.is_galaxy_modeling: return self.environment.observed_sed_path

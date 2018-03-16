@@ -858,6 +858,152 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
+    def get_lower_error(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        # Get the value
+        value = self.get_value("Error-", index, add_unit=True)
+        if value is None: return None
+
+        # Convert unit if necessary
+        if unit is not None:
+
+            # Parse the unit
+            unit = u(unit, density=density, brightness=brightness)
+
+            # Create conversion info
+            if conversion_info is None: conversion_info = dict()
+            conversion_info["wavelength"] = self.wavelength_for_index(index)
+            if self.distance is not None: conversion_info["distance"] = self.distance
+
+            # Create converted value
+            value = value.to(unit, **conversion_info)
+
+        # Remove unit if requested
+        if not add_unit: value = value.value
+
+        # Return the value
+        return value
+
+    # -----------------------------------------------------------------
+
+    def get_upper_error(self, index, add_unit=True, unit=None, density=False, brightness=False, conversion_info=None):
+
+        """
+        This function ...
+        :param index:
+        :param add_unit:
+        :param unit:
+        :param density:
+        :param brightness:
+        :param conversion_info:
+        :return:
+        """
+
+        # Get the value
+        value = self.get_value("Error+", index, add_unit=True)
+        if value is None: return None
+
+        # Convert unit if necessary
+        if unit is not None:
+
+            # Parse the unit
+            unit = u(unit, density=density, brightness=brightness)
+
+            # Create conversion info
+            if conversion_info is None: conversion_info = dict()
+            conversion_info["wavelength"] = self.wavelength_for_index(index)
+            if self.distance is not None: conversion_info["distance"] = self.distance
+
+            # Create converted value
+            value = value.to(unit, **conversion_info)
+
+        # Remove unit if requested
+        if not add_unit: value = value.value
+
+        # Return the value
+        return value
+
+    # -----------------------------------------------------------------
+
+    def set_lower_error(self, index, value):
+
+        """
+        This function ...
+        :param index:
+        :param value:
+        :return:
+        """
+
+        self.set_value("Error-", index, value)
+
+    # -----------------------------------------------------------------
+
+    def set_upper_error(self, index, value):
+
+        """
+        This function ...
+        :param index:
+        :param value:
+        :return:
+        """
+
+        self.set_value("Error+", index, value)
+
+    # -----------------------------------------------------------------
+
+    def add_relative_error(self, relative_error):
+
+        """
+        This function ...
+        :param relative_error:
+        :return:
+        """
+
+        # Loop over the points in the SED
+        for index in range(len(self)):
+
+            # Calculate the additional error
+            #wavelength = self.get_wavelength(index)
+            value = self.get_photometry(index)
+            additional_error = value * relative_error
+            unit = value.unit
+            additional_error_value = additional_error.to(unit).value
+
+            # Set the lower error
+            lower = self.get_lower_error(index)
+            if lower is not None:
+
+                # Add the additional error in quadrature
+                lower_value = lower.to(unit).value
+                lower = -np.sqrt(lower_value ** 2 + additional_error_value ** 2) * unit
+
+                # Set the new error
+                self.set_lower_error(index, lower)
+
+            # Set the upper error
+            upper = self.get_upper_error(index)
+            if upper is not None:
+
+                # Add the additional error in quadrature
+                upper_value = upper.to(unit).value
+                upper = np.sqrt(upper_value**2 + additional_error_value**2) * unit
+
+                # Set the new error bar
+                self.set_upper_error(index, upper)
+
+    # -----------------------------------------------------------------
+
     def photometry_for_band(self, instrument, band, unit=None, add_unit=True, density=False, brightness=False):
 
         """

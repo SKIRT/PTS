@@ -78,3 +78,8 @@ definition.add_flag("plot_counts", "plot the counts", True)
 definition.add_flag("plot_chi_squared", "plot the chi squared distributions", True)
 
 # -----------------------------------------------------------------
+
+# Additional relative error
+definition.add_flag("additional_error", "percentage", "additional percentual error for the observed flux points")
+
+# -----------------------------------------------------------------

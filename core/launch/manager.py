@@ -1468,7 +1468,7 @@ class SimulationManager(Configurable):
         """
 
         # Debugging
-        log.debug("Trying to find the simulation '" + simulation_name + "' ...")
+        #log.debug("Trying to find the simulation '" + simulation_name + "' ...")
 
         the_host_id = None
 
@@ -1476,7 +1476,7 @@ class SimulationManager(Configurable):
         for host_id in self.simulations_for_hosts:
 
             # Debugging
-            log.debug("Trying to find the simulation amongst the simulations of host '" + host_id + "' ...")
+            #log.debug("Trying to find the simulation amongst the simulations of host '" + host_id + "' ...")
 
             # Check whether the simulation name is in the
             if simulation_name in self.simulations_for_hosts[host_id]:
@@ -5440,6 +5440,7 @@ class SimulationManager(Configurable):
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("contributions", "string_list", "contributions for which to plot the datacubes", default_contributions, choices=contributions)
         definition.add_optional("instruments", "string_list", "instruments for which to plot the datacubes")
+        definition.add_flag("share_normalization", "share normalization between the different frames", False)
 
         # Return
         return definition
@@ -5459,17 +5460,18 @@ class SimulationManager(Configurable):
         simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.plot_datacubes_definition, **kwargs)
 
         # Plot
-        self.plot_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments)
+        self.plot_simulation_datacubes(simulation_name, contributions=config.contributions, instruments=config.instruments, share_normalization=config.share_normalization)
 
     # -----------------------------------------------------------------
 
-    def plot_simulation_datacubes(self, simulation_name, contributions=None, instruments=None):
+    def plot_simulation_datacubes(self, simulation_name, contributions=None, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param contributions:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5477,32 +5479,33 @@ class SimulationManager(Configurable):
         log.debug("Plotting simulated datacubes for simulation '" + simulation_name + "' ...")
 
         # Total
-        if contributions is None or "total" in contributions: self.plot_total_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "total" in contributions: self.plot_total_datacubes(simulation_name, instruments=instruments, share_normalization=share_normalization)
 
         # Direct
-        if contributions is None or "direct" in contributions: self.plot_direct_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "direct" in contributions: self.plot_direct_datacubes(simulation_name, instruments=instruments, share_normalization=share_normalization)
 
         # Transparent
-        if contributions is None or "transparent" in contributions: self.plot_transparent_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "transparent" in contributions: self.plot_transparent_datacubes(simulation_name, instruments=instruments, share_normalization=share_normalization)
 
         # Scattered
-        if contributions is None or "scattered" in contributions: self.plot_scattered_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "scattered" in contributions: self.plot_scattered_datacubes(simulation_name, instruments=instruments, share_normalization=share_normalization)
 
         # Dust
-        if contributions is None or "dust" in contributions: self.plot_dust_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "dust" in contributions: self.plot_dust_datacubes(simulation_name, instruments=instruments, share_normalization=share_normalization)
 
         # Dust-scattered
-        if contributions is None or "dustscattered" in contributions: self.plot_dustscattered_datacubes(simulation_name, instruments=instruments)
+        if contributions is None or "dustscattered" in contributions: self.plot_dustscattered_datacubes(simulation_name, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
-    def _plot_datacubes(self, simulation_name, paths, instruments=None):
+    def _plot_datacubes(self, simulation_name, paths, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param paths:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5526,16 +5529,17 @@ class SimulationManager(Configurable):
             datacube = DataCube.from_file(path, wavelength_grid)
 
             # Plot
-            plotting.plot_datacube(datacube, title=instr_name, share_normalization=False, show_axes=False)
+            plotting.plot_datacube(datacube, title=instr_name, share_normalization=share_normalization, show_axes=False)
 
     # -----------------------------------------------------------------
 
-    def plot_total_datacubes(self, simulation_name, instruments=None):
+    def plot_total_datacubes(self, simulation_name, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5546,16 +5550,17 @@ class SimulationManager(Configurable):
         output = self.get_output(simulation_name)
 
         # Plot the datacubes
-        self._plot_datacubes(simulation_name, output.total_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.total_images, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
-    def plot_direct_datacubes(self, simulation_name, instruments=None):
+    def plot_direct_datacubes(self, simulation_name, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5566,16 +5571,17 @@ class SimulationManager(Configurable):
         output = self.get_output(simulation_name)
 
         # Plot the datacubes
-        self._plot_datacubes(simulation_name, output.direct_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.direct_images, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
-    def plot_transparent_datacubes(self, simulation_name, instruments=None):
+    def plot_transparent_datacubes(self, simulation_name, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5586,16 +5592,17 @@ class SimulationManager(Configurable):
         output = self.get_output(simulation_name)
 
         # Plot the datacubes
-        self._plot_datacubes(simulation_name, output.transparent_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.transparent_images, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
-    def plot_scattered_datacubes(self, simulation_name, instruments=None):
+    def plot_scattered_datacubes(self, simulation_name, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5606,16 +5613,17 @@ class SimulationManager(Configurable):
         output = self.get_output(simulation_name)
 
         # Plot the datacubes
-        self._plot_datacubes(simulation_name, output.scattered_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.scattered_images, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
-    def plot_dust_datacubes(self, simulation_name, instruments=None):
+    def plot_dust_datacubes(self, simulation_name, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5626,16 +5634,17 @@ class SimulationManager(Configurable):
         output = self.get_output(simulation_name)
 
         # Plot the datacubes
-        self._plot_datacubes(simulation_name, output.dust_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.dust_images, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
-    def plot_dustscattered_datacubes(self, simulation_name, instruments=None):
+    def plot_dustscattered_datacubes(self, simulation_name, instruments=None, share_normalization=False):
 
         """
         This function ...
         :param simulation_name:
         :param instruments:
+        :param share_normalization:
         :return:
         """
 
@@ -5646,7 +5655,7 @@ class SimulationManager(Configurable):
         output = self.get_output(simulation_name)
 
         # Show
-        self._plot_datacubes(simulation_name, output.dust_scattered_images, instruments=instruments)
+        self._plot_datacubes(simulation_name, output.dust_scattered_images, instruments=instruments, share_normalization=share_normalization)
 
     # -----------------------------------------------------------------
 
