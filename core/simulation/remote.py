@@ -60,7 +60,33 @@ def is_analysed_status(stat):
     :return:
     """
 
+    # completely analysed
+    return stat == analysed_name
+
+# -----------------------------------------------------------------
+
+def is_analysing_or_analysed_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    # still analysing or completely analysed
     return stat.startswith(analysed_name)
+
+# -----------------------------------------------------------------
+
+def is_analysing_status(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return is_analysing_or_analysed_status(stat) and not is_analysed_status(stat)
 
 # -----------------------------------------------------------------
 
@@ -72,7 +98,7 @@ def is_retrieved_status(stat):
     :return:
     """
 
-    return stat == retrieved_name or is_analysed_status(stat)
+    return stat == retrieved_name or is_analysing_or_analysed_status(stat)
 
 # -----------------------------------------------------------------
 

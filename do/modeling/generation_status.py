@@ -27,6 +27,7 @@ from pts.core.tools import filesystem as fs
 from pts.core.remote.host import find_host_ids
 from pts.core.config.analyse_simulation import definition as analysis_definition
 from pts.core.basics.log import log
+from pts.core.simulation.remote import is_analysed_status
 
 # -----------------------------------------------------------------
 
@@ -248,6 +249,19 @@ else:
     for simulation in simulations:
         simulation_status = status.get_status(simulation.name)
         if simulation_status == "analysed": simulation.analysed = True
+
+# -----------------------------------------------------------------
+
+# Loop over the status entries and check whether analysed simulations actually have their chi squared value set
+for simulation_name in status.simulation_names:
+
+    # Get the simulation status
+    simulation_status = status.get_status(simulation_name)
+
+    # Check
+    analysed = generation.is_analysed(simulation_name)
+    if is_analysed_status(simulation_status) and not analysed:
+        log.warning("Simulation '" + simulation_name + "' is supposed to be analysed, but chi squared value is missing form the chi squared table")
 
 # -----------------------------------------------------------------
 
