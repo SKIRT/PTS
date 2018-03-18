@@ -30,6 +30,7 @@ from ..tools import introspection
 from ..tools import types
 from ..basics import containers
 from ..tools import formatting as fmt
+from ..basics.configuration import prompt_choices, prompt_yn
 
 # -----------------------------------------------------------------
 
@@ -53,6 +54,276 @@ properties["remove_remote_output"] = "remove remote output directory"
 properties["remove_remote_simulation_directory"] = "remove remote simulation directory"
 properties["remove_local_output"] = "remove local output after analysis"
 properties["retrieved"] = "retrieved flag"
+
+# -----------------------------------------------------------------
+
+def select_simulation_settings(successive=False, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
+                               startswith=None, endswith=None):
+
+    """
+    This function ...
+    :param successive:
+    :param contains:
+    :param not_contains:
+    :param exact_name:
+    :param exact_not_name:
+    :param startswith:
+    :param endswith:
+    :return:
+    """
+
+    # Initialize list for the selected settings
+    settings = []
+
+    # Select options in succession
+    if successive:
+
+        # Loop over the properties
+        for name in properties:
+
+            # Checks
+            if contains is not None and contains not in name: continue
+            if not_contains is not None and not_contains in name: continue
+            if exact_name is not None and name != exact_name: continue
+            if exact_not_name is not None and name == exact_not_name: continue
+            if startswith is not None and not name.startswith(startswith): continue
+            if endswith is not None and not name.endswith(endswith): continue
+
+            # Select?
+            description = properties[name]
+            if not prompt_yn(name, "select '" + description + "'?", default=False): continue
+
+            # Add the setting
+            settings.append(name)
+
+    # Show all options at the same time
+    else: settings = prompt_choices("settings", "simulation settings", properties)
+
+    # Return the choosen settings
+    return settings
+
+# -----------------------------------------------------------------
+
+def select_analysis_options(successive=False, hierarchic=True, contains=None, not_contains=None, exact_name=None,
+                            exact_not_name=None, startswith=None, endswith=None):
+
+    """
+    This function ...
+    :param successive:
+    :param hierarchic:
+    :param contains:
+    :param not_contains:
+    :param exact_name:
+    :param exact_not_name:
+    :param startswith:
+    :param endswith:
+    :return:
+    """
+
+    # Initialize list for the selected options
+    options = []
+
+    # Hierachic: first properties, then sections
+    if hierarchic:
+
+        ## Properties
+
+        # Get properties
+        all_properties = get_analysis_property_names_and_descriptions()
+
+        # Subset of properties
+        properties = OrderedDict()
+
+        # Loop over the properties
+        for name in all_properties:
+
+            # Checks
+            if contains is not None and contains not in name: continue
+            if not_contains is not None and not_contains in name: continue
+            if exact_name is not None and name != exact_name: continue
+            if exact_not_name is not None and name == exact_not_name: continue
+            if startswith is not None and not name.startswith(startswith): continue
+            if endswith is not None and not name.endswith(endswith): continue
+
+            # Add
+            properties[name] = all_properties[name]
+
+        # Show
+        print("")
+        print(fmt.yellow + fmt.bold + "PROPERTIES" + fmt.reset)
+        print("")
+
+        # Select properties in succession
+        if successive:
+
+            # Loop over the properties
+            for name in properties:
+
+                # Select?
+                description = properties[name]
+                if not prompt_yn(name, "select '" + description + "'?", default=False): continue
+
+                # Add the property
+                options.append(name)
+
+        # Show all properties at the same time
+        else: options += prompt_choices("properties", "analysis properties", properties)
+
+        ## Sections
+
+        # Get sections
+        sections = get_analysis_section_names_and_descriptions()
+
+        # Loop over the sections
+        for section_name in sections:
+
+            # Get section description
+            section_description = sections[section_name]
+
+            # Show section
+            print("")
+            print(fmt.yellow + fmt.bold + section_name.upper() + fmt.reset_bold + ": " + section_description)
+            print("")
+
+            # Debug
+            log.debug("Entering section '" + section_name + "' ...")
+
+            # Get properties
+            all_section_properties = get_analysis_property_names_and_descriptions_for_section(section_name)
+
+            # Make selection
+            section_properties = OrderedDict()
+
+            # Loop over the properties
+            for name in all_section_properties:
+
+                # Checks
+                if contains is not None and contains not in name: continue
+                if not_contains is not None and not_contains in name: continue
+                if exact_name is not None and name != exact_name: continue
+                if exact_not_name is not None and name == exact_not_name: continue
+                if startswith is not None and not name.startswith(startswith): continue
+                if endswith is not None and not name.endswith(endswith): continue
+
+                # Add
+                section_properties[name] = all_section_properties[name]
+
+            # Select properties in succession
+            if successive:
+
+                # Loop over the properties
+                for name in section_properties:
+
+                    # Select
+                    description = section_properties[name]
+                    if not prompt_yn(name, "select '" + description + "' in '" + section_name + "'?", default=False): continue
+
+                    # Add the property
+                    options.append((section_name, name))
+
+            # Show all properties at the same time
+            else:
+
+                # Select
+                section_options = prompt_choices("properties", section_name + " properties", section_properties)
+
+                # Add
+                for name in section_options: options.append((section_name, name))
+
+    # Not hierarchic
+    else:
+
+        # Get properties
+        all_properties = get_analysis_property_names_and_descriptions()
+
+        # Make subset
+        properties = OrderedDict()
+
+        # Loop over the properties
+        for name in all_properties:
+
+            # Checks
+            if contains is not None and contains not in name: continue
+            if not_contains is not None and not_contains in name: continue
+            if exact_name is not None and name != exact_name: continue
+            if exact_not_name is not None and name == exact_not_name: continue
+            if startswith is not None and not name.startswith(startswith): continue
+            if endswith is not None and not name.endswith(endswith): continue
+
+            # Add property
+            properties[name] = all_properties[name]
+
+        # Get sections
+        sections = get_analysis_section_names_and_descriptions()
+
+        # Add section properties
+        for section_name in sections:
+
+            # Get properties
+            all_section_properties = get_analysis_property_names_and_descriptions_for_section(section_name)
+
+            # Make subset
+            section_properties = OrderedDict()
+
+            # Loop over the properties
+            for name in all_section_properties:
+
+                # Checks
+                if contains is not None and contains not in name: continue
+                if not_contains is not None and not_contains in name: continue
+                if exact_name is not None and name != exact_name: continue
+                if exact_not_name is not None and name == exact_not_name: continue
+                if startswith is not None and not name.startswith(startswith): continue
+                if endswith is not None and not name.endswith(endswith): continue
+
+                # Add the property
+                section_properties[name] = all_section_properties[name]
+
+            # Loop over the properties
+            for name in section_properties:
+
+                # Create full property name
+                full_name = section_name + "/" + name
+
+                # Get description
+                description = section_properties[name]
+
+                # Add
+                properties[full_name] = description
+
+        # Select properties in succession
+        if successive:
+
+            # Loop over the properties
+            for full_name in properties:
+
+                # Select?
+                description = properties[full_name]
+                if not prompt_yn(full_name, "select '" + description + "'?", default=False): continue
+
+                # Add the property
+                if "/" in full_name:
+                    section_name, property_name = full_name.split("/")
+                    options.append((section_name, property_name))
+                else: options.append(full_name)
+
+        # Show all properties at the same time
+        else:
+
+            # Get the choices
+            choices = prompt_choices("properties", "analysis properties", properties)
+
+            # Add the choices
+            for full_name in choices:
+
+                # Add the property
+                if "/" in full_name:
+                    section_name, property_name = full_name.split("/")
+                    options.append((section_name, property_name))
+                else: options.append(full_name)
+
+    # Return the choosen options
+    return options
 
 # -----------------------------------------------------------------
 

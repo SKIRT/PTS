@@ -324,6 +324,21 @@ def is_tuple(value):
 
 # -----------------------------------------------------------------
 
+def is_string_tuple(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_tuple(value): return False
+    for element in value:
+        if not is_string_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
 def is_integer_tuple(value):
 
     """

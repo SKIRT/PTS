@@ -17,7 +17,7 @@ from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import InteractiveConfigurable
-from ..basics.configuration import ConfigurationDefinition, parse_arguments, get_usage, get_help, prompt_choice, prompt_settings
+from ..basics.configuration import ConfigurationDefinition, parse_arguments, prompt_choice, prompt_settings, prompt_yn
 from ..basics.log import log
 from ..tools.stringify import tostr
 from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
@@ -44,6 +44,7 @@ from ..simulation.remote import is_analysing_or_analysed_status, is_retrieved_st
 from ..basics.configuration import prompt_variable
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
+from ..simulation.shower import select_simulation_settings, select_analysis_options
 from ..simulation.adapter import adapt_simulation, adapt_analysis, adapt_simulations, adapt_analysis_simulations
 from ..config.show_simulation_settings import definition as show_simulation_definition
 from ..config.adapt_simulation_settings import definition as adapt_simulations_definition
@@ -141,6 +142,7 @@ _analysis_command_name = "analysis"
 _steps_command_name = "steps"
 _adapt_command_name = "adapt"
 _compare_command_name = "compare"
+_steal_command_name = "steal"
 _retrieve_command_name = "retrieve"
 _analyse_command_name = "analyse"
 _reanalyse_command_name = "reanalyse"
@@ -196,7 +198,8 @@ commands[_settings_command_name] = ("show_simulation_settings_command", True, "s
 commands[_analysis_command_name] = ("show_analysis_options_command", True, "show analysis options", "simulation")
 commands[_steps_command_name] = ("show_analysis_steps_command", True, "show analysis steps", "simulation")
 commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
-commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between two simulations", "two_simulations")
+commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between simulations", "simulations")
+commands[_steal_command_name] = (None, None, "take on simulation settings or analysis options from one simulation to another", "two_simulations")
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve a simulation from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse a simulation", "simulations")
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
@@ -241,8 +244,15 @@ adapt_commands[_analysis_command_name] = ("adapt_analysis_options_command", True
 
 # Define compare commands
 compare_commands = OrderedDict()
-compare_commands[_simulation_command_name] = ("compare_simulation_settings_command", True, "compare simulation settings", "two_simulations")
-compare_commands[_analysis_command_name] = ("compare_analysis_options_command", True, "compare analysis options", "two_simulations")
+compare_commands[_simulation_command_name] = ("compare_simulation_settings_command", True, "compare simulation settings", "simulations")
+compare_commands[_analysis_command_name] = ("compare_analysis_options_command", True, "compare analysis options", "simulations")
+
+# -----------------------------------------------------------------
+
+# Define steal commands
+steal_commands = OrderedDict()
+steal_commands[_simulation_command_name] = ("steal_simulation_settings_command", True, "steal simulation settings", "two_simulations")
+steal_commands[_analysis_command_name] = ("steal_analysis_options_command", True, "steal analysis options", "two_simulations")
 
 # -----------------------------------------------------------------
 
@@ -275,6 +285,7 @@ subcommands[_plot_command_name] = plot_commands
 subcommands[_open_command_name] = open_commands
 subcommands[_adapt_command_name] = adapt_commands
 subcommands[_compare_command_name] = compare_commands
+subcommands[_steal_command_name] = steal_commands
 subcommands[_clear_command_name] = clear_commands
 subcommands[_cache_command_name] = cache_commands
 
@@ -7304,14 +7315,17 @@ class SimulationManager(InteractiveConfigurable):
         name = _compare_command_name + " " + _simulation_command_name
 
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name=name, **kwargs)
+        #splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_simulation_settings_definition, name=name, **kwargs)
+        # Get the simulation names
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.compare_simulation_settings_definition, name=name, **kwargs)
 
         # Compare
-        self.compare_simulation_settings(simulation_a_name, simulation_b_name, config=config)
+        #self.compare_simulation_settings(simulation_a_name, simulation_b_name, config=config)
+        self.compare_simulation_settings(simulation_names, config=config)
 
     # -----------------------------------------------------------------
 
-    def compare_simulation_settings(self, simulation_a_name, simulation_b_name, config=None):
+    def compare_two_simulation_settings(self, simulation_a_name, simulation_b_name, config=None):
 
         """
         This function ...
@@ -7330,6 +7344,28 @@ class SimulationManager(InteractiveConfigurable):
 
         # Compare
         compare_simulations(simulation_a, simulation_b, config=config)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def compare_simulation_settings(self, simulation_names, config=None):
+
+        """
+        This function ....
+        :param simulation_names:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        nsimulations = len(simulation_names)
+        log.debug("Comparing " + str(nsimulations) + "' simulations ...")
+
+        # Get the simulations
+        simulations = self.get_simulations(simulation_names)
+
+        # Compare
+        compare_simulations(*simulations, config=config)
         print("")
 
     # -----------------------------------------------------------------
@@ -7362,14 +7398,16 @@ class SimulationManager(InteractiveConfigurable):
         name = _compare_command_name + " " + _simulation_command_name
 
         # Parse
-        splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name=name, **kwargs)
+        #splitted, simulation_a_name, simulation_b_name, config = self.parse_two_simulations_command(command, self.compare_analysis_options_definition, name=name, **kwargs)
+        splitted, simulation_names, config = self.parse_simulations_command(command, self.compare_analysis_options_definition, name=name, **kwargs)
 
         # Compare
-        self.compare_analysis_options(simulation_a_name, simulation_b_name, config=config)
+        #self.compare_analysis_options(simulation_a_name, simulation_b_name, config=config)
+        self.compare_analysis_options(simulation_names, config=config)
 
     # -----------------------------------------------------------------
 
-    def compare_analysis_options(self, simulation_a_name, simulation_b_name, config=None):
+    def compare_two_analysis_options(self, simulation_a_name, simulation_b_name, config=None):
 
         """
         This function ...
@@ -7389,6 +7427,326 @@ class SimulationManager(InteractiveConfigurable):
         # Compare
         compare_analysis(simulation_a, simulation_b, config=config)
         print("")
+
+    # -----------------------------------------------------------------
+
+    def compare_analysis_options(self, simulation_names, config=None):
+        
+        """
+        This function ...
+        :param simulation_names: 
+        :param config: 
+        :return: 
+        """
+
+        # Debugging
+        nsimulations = len(simulation_names)
+        log.debug("Comparing analysis options between " + str(nsimulations) + " simulations ...")
+
+        # Get the simulations
+        simulations = self.get_simulations(simulation_names)
+
+        # Compare
+        compare_analysis(*simulations, config=config)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def steal_simulation_settings_definition(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Select certain settings
+        definition.add_positional_optional("matching", "string", "only select settings with a name matching this string")
+        definition.add_optional("contains", "string", "only select settings containing this string in their name")
+        definition.add_optional("not_contains", "string", "don't select settings containing this string in their name")
+        definition.add_optional("exact_name", "string", "only select settings with this exact string as their name")
+        definition.add_optional("exact_not_name", "string", "don't select settings with this exact string as their name")
+        definition.add_optional("startswith", "string", "only select settings whose name starts with this string")
+        definition.add_optional("endswith", "string", "only select settings whose name starts with this string")
+
+        # Flags
+        definition.add_flag("successive", "select settings successively", False)
+        definition.add_flag("confirm", "confirm before adapting", True)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def steal_simulation_settings_command(self, command, **kwargs):
+        
+        """
+        This function ...
+        :param command: 
+        :param kwargs: 
+        :return: 
+        """
+
+        # Set name
+        name = _steal_command_name + " " + _simulation_command_name
+
+        # Get simulation names and config
+        splitted, simulation_name, other_simulation_name, config = self.parse_two_simulations_command(command, self.steal_simulation_settings_definition, name=name, **kwargs)
+
+        # Give warning
+        if self.is_retrieved(simulation_name): log.warning("Simulation '" + simulation_name + "' is already retrieved. Changing simulation settings will not have any effect on the output")
+        else: log.warning("Simulation settings can be adapted but this will possibly not affect anything about the simulation output")
+
+        # Check settings
+        if config.matching is not None:
+            if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
+            config.contains = config.matching
+
+        # Steal
+        self.steal_simulation_settings(simulation_name, other_simulation_name, successive=config.successive,
+                                       confirm=config.confirm)
+
+    # -----------------------------------------------------------------
+
+    def steal_simulation_settings(self, simulation_name, from_simulation_name, successive=False, confirm=True,
+                                  contains=None, not_contains=None, exact_name=None, exact_not_name=None,
+                                  startswith=None, endswith=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param from_simulation_name:
+        :param successive:
+        :param confirm:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :param startswith:
+        :param endswith:
+        :return:
+        """
+
+        # Get the settings
+        settings = select_simulation_settings(successive=successive, contains=contains, not_contains=not_contains,
+                                              exact_name=exact_name, exact_not_name=exact_not_name, startswith=startswith,
+                                              endswith=endswith)
+
+        # Get the simulations
+        simulation = self.get_simulation(simulation_name)
+        from_simulation = self.get_simulation(from_simulation_name)
+
+        # Loop over the settings
+        for name in settings:
+
+            # Get the values
+            old_value = getattr(simulation, name)
+            value = getattr(from_simulation, name)
+
+            # Check
+            if old_value == value:
+                log.success("Property '" + name + "' is equal for both simulations: skipping ...")
+                continue
+
+            # Confirm?
+            if confirm:
+
+                print("")
+                print("Are you sure you want to change the property '" + name + "' of simulation '" + simulation_name + "' from:")
+                print(" - " + tostr(old_value))
+                print("to:")
+                print(" - " + tostr(value) + "?")
+
+                # Prompt for confirmation
+                if not prompt_yn("change", "change value", default=True): continue
+
+            # Debugging
+            else: log.debug("Changing property '" + name + "' of simulation '" + simulation_name + "' from '" + tostr(old_value) + "' to '" + tostr(value) + "' ...")
+
+            # Set the value
+            setattr(simulation, name, value)
+
+            # Show success
+            log.success("Property '" + name + "' adapted")
+
+        # Debugging
+        log.debug("Saving the simulation ...")
+
+        # Save the simulation
+        simulation.save()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def steal_analysis_options_definition(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Select certain settings
+        definition.add_positional_optional("matching", "string", "only select options with a name matching this string")
+        definition.add_optional("contains", "string", "only select options containing this string in their name")
+        definition.add_optional("not_contains", "string", "don't select options containing this string in their name")
+        definition.add_optional("exact_name", "string", "only select options with this exact string as their name")
+        definition.add_optional("exact_not_name", "string", "don't select options with this exact string as their name")
+        definition.add_optional("startswith", "string", "only select options whose name starts with this string")
+        definition.add_optional("endswith", "string", "only select options whose name starts with this string")
+        
+        # Flags
+        definition.add_flag("successive", "select options successively", False)
+        definition.add_flag("hierarchic", "select properties first, then properties of sections", True)
+        definition.add_flag("confirm", "confirm before adapting", True)
+        
+        # Return the definition
+        return definition
+        
+    # -----------------------------------------------------------------
+
+    def steal_analysis_options_command(self, command, **kwargs):
+        
+        """
+        This function ...
+        :param command: 
+        :param kwargs: 
+        :return: 
+        """
+
+        # Set command name
+        name = _steal_command_name + " " + _analysis_command_name
+
+        # Get simulation names and config
+        splitted, simulation_name, from_simulation_name, config = self.parse_two_simulations_command(command, self.steal_analysis_options_definition, name=name, **kwargs)
+
+        # Check
+        if self.is_analysed(simulation_name): log.warning("Simulation '" + simulation_name + "' is already analysed. Simulation will have to be re-analysed")
+
+        # Check settings
+        if config.matching is not None:
+            if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
+            config.contains = config.matching
+
+        # Steal
+        self.steal_analysis_options(simulation_name, from_simulation_name, successive=config.successive,
+                                    hierarchic=config.hierarchic, confirm=config.confirm)
+
+    # -----------------------------------------------------------------
+
+    def steal_analysis_options(self, simulation_name, from_simulation_name, successive=False, hierarchic=True,
+                               confirm=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
+                               startswith=None, endswith=None):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param from_simulation_name:
+        :param successive:
+        :param hierarchic:
+        :param confirm:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :param startswith:
+        :param endswith:
+        :return:
+        """
+        
+        # Get the options
+        options = select_analysis_options(successive=successive, hierarchic=hierarchic, contains=contains,
+                                          not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
+                                          startswith=startswith, endswith=endswith)
+
+        # Get the simulations
+        simulation = self.get_simulation(simulation_name)
+        from_simulation = self.get_simulation(from_simulation_name)
+
+        # Loop over the options
+        for spec in options:
+
+            # Property of section
+            if types.is_string_tuple(spec):
+
+                # Get the values
+                section_name = spec[0]
+                property_name = spec[1]
+                old_value = simulation.analysis[section_name][property_name]
+                value = simulation.analysis[section_name][property_name]
+
+                # Check
+                if old_value == value:
+                    log.success("The " + section_name + " property '" + property_name + "' is equal for both simulations: skipping ...")
+                    continue
+
+                # Confirm?
+                if confirm:
+
+                    print("")
+                    print("Are you sure you want to change the " + section_name + " property '" + property_name + "' of simulation '" + simulation_name + "' from:")
+                    print(" - " + tostr(old_value))
+                    print("to:")
+                    print(" - " + tostr(value) + "?")
+
+                    # Prompt for confirmation
+                    if not prompt_yn("change", "change value", default=True): continue
+
+                # Debugging
+                else: log.debug("Changing the " + section_name + " property '" + property_name + "' of simulation '" + simulation_name + "' from '" + tostr(old_value) + "' to '" + tostr(value) + "' ...")
+
+                # Set value
+                simulation.analysis[section_name][property_name] = value
+
+                # Show success
+                log.success("Property '" + property_name + "' adapted")
+
+            # Property
+            elif types.is_string_type(spec):
+
+                # Get the values
+                old_value = simulation.analysis[spec]
+                value = simulation.analysis[spec]
+
+                # Check
+                if old_value == value:
+                    log.success("Property '" + spec + "' is equal for both simulations: skipping ...")
+                    continue
+
+                # Confirm?
+                if confirm:
+
+                    print("")
+                    print("Are you sure you want to change the analysis property '" + spec + "' of simulation '" + simulation_name + "' from '" + tostr(old_value) + "' to '" + tostr(value) + "' ...")
+                    print(" - " + tostr(old_value))
+                    print("to:")
+                    print(" - " + tostr(value) + "?")
+
+                    # Prompt for confirmation
+                    if not prompt_yn("change", "change value", default=True): continue
+
+                # Debugging
+                else: log.debug("Changing the analysis property '" + spec + "' of simulation '" + simulation_name + "' from '" + tostr(old_value) + "' to '" + tostr(value) + "' ...")
+
+                # Set value
+                simulation.analysis[spec] = value
+
+                # Show success
+                log.success("Property '" + spec + "' adapted")
+
+            # Invalid
+            else: raise RuntimeError("Something went wrong")
+
+        # Debugging
+        log.debug("Saving the simulation ...")
+
+        # Save the simulation
+        simulation.save()
 
     # -----------------------------------------------------------------
 

@@ -4119,6 +4119,8 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
     :return:
     """
 
+    from ..tools import formatting as fmt
+
     # Fixed
     for name in definition.fixed:
 
@@ -4195,7 +4197,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                            log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                     value = []
                     while True:
@@ -4221,7 +4223,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                            log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                     value = []  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -4246,7 +4248,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     for suggestion in suggestions:
                         if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                         else: suggestion_description = ""
-                        log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                        log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4269,7 +4271,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     label = tostr(choice_value)
                     choice_description = ""
                     if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
+                    log.info(" - [" + str(index) + "] " + fmt.bold + label + fmt.reset_bold + choice_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4290,7 +4292,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     label = tostr(choice_value)
                     choice_description = ""
                     if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
+                    log.info(" - [" + str(index) + "] " + fmt.bold + label + fmt.reset_bold + choice_description)
 
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4399,7 +4401,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                            log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                     value = []  # to remove warning
                     while True:
@@ -4428,7 +4430,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                            log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -4458,7 +4460,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     for suggestion in suggestions:
                         if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                         else: suggestion_description = ""
-                        log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                        log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4488,7 +4490,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     label = tostr(choice_value)
                     choice_description = ""
                     if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
+                    log.info(" - [" + str(index) + "] " + fmt.bold + label + fmt.reset_bold + choice_description)
 
                 value = default # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4512,7 +4514,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     label = tostr(choice_value)
                     choice_description = ""
                     if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
+                    log.info(" - [" + str(index) + "] " + fmt.bold + label + fmt.reset_bold + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4629,7 +4631,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                            log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                     value = []  # to remove warning
                     while True:
@@ -4658,7 +4660,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                         for suggestion in suggestions:
                             if isinstance(suggestion, dict): suggestion_description = ": " + suggestions[suggestion]
                             else: suggestion_description = ""
-                            log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                            log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -4689,7 +4691,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     for suggestion in suggestions:
                         if isinstance(suggestions, dict): suggestion_description = ": " + suggestions[suggestion]
                         else: suggestion_description = ""
-                        log.info(" - " + stringify.stringify(suggestion)[1] + suggestion_description)
+                        log.info(" - " + fmt.bold + stringify.stringify(suggestion)[1] + fmt.reset_bold +  suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4720,7 +4722,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     label = tostr(choice_value)
                     choice_description = ""
                     if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
+                    log.info(" - [" + str(index) + "] " + fmt.bold + label + fmt.reset_bold + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -4746,7 +4748,7 @@ def add_settings_interactive(config, definition, prompt_optional=True, settings=
                     label = tostr(choice_value)
                     choice_description = ""
                     if choice_descriptions is not None: choice_description = ": " + choice_descriptions[choice_value]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
+                    log.info(" - [" + str(index) + "] " + fmt.bold + label + fmt.reset_bold + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:

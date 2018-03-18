@@ -37,8 +37,9 @@ hidden = "\033[8m"
 
 # Reset
 reset = "\033[0m"
-reset_bold = "\033[21m"
-reset_dim = "\033[22m"
+#reset_bold = "\033[21m" # Doesn't work on MacOS
+reset_bold = "\033[22m" # 22 resets both dim and bold
+reset_dim = "\033[22m" # 22 resets both dim and bold
 reset_underlined = "\033[24m"
 reset_blink = "\033[25m"
 reset_inverted = "\033[27m"
