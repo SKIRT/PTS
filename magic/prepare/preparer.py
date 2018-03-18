@@ -23,9 +23,10 @@ from ..core.list import NamedImageList
 from ...core.tools import filesystem as fs
 from ...core.basics.table import SmartTable
 from ...core.tools.utils import lazyproperty
-from ...core.basics.configuration import ConfigurationDefinition
+from ...core.basics.configuration import ConfigurationDefinition, parse_arguments, prompt_settings
 from ..config.find_sources import definition as find_sources_definition
 from ..config.extract import definition as extract_sources_definition
+from ...core.tools import types, strings
 
 # -----------------------------------------------------------------
 
@@ -494,6 +495,106 @@ class ImagePreparer(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_image_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("image", "integer_or_string", "image index or name")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_image_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True,
+                            interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only image name
+
+        # Get the definition
+        definition = self.get_image_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
+
+        # Parse arguments
+        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+
+        # Get simulation name
+        if types.is_integer_type(config.simulation): image_name = self.names[config.pop("image")]
+        else: image_name = config.pop("image")
+
+        # Return
+        return splitted, image_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_image_name_from_command(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, image_name, config = self.parse_image_command(command, name=name, interactive=interactive)
+
+        # Return the image name
+        return image_name
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, image_name, config = self.parse_image_command(command, command_definition=command_definition, name=name, interactive=interactive)
+
+        # Return image name and config
+        return image_name, config
+
+    # -----------------------------------------------------------------
+
     @property
     def names(self):
 
@@ -539,6 +640,41 @@ class ImagePreparer(InteractiveConfigurable):
         """
 
         return [self.get_filter(name) for name in self.names]
+
+    # -----------------------------------------------------------------
+
+    def get_index_for_filter(self, fltr):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.filters.index(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_name_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.names[self.get_index_for_filter(fltr)]
+
+    # -----------------------------------------------------------------
+
+    def get_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_image(self.get_name_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -662,8 +798,117 @@ class ImagePreparer(InteractiveConfigurable):
             if self.is_initialized(name): continue
             yield name
 
+    # -----------------------------------------------------------------
+
     @property
-    def not_
+    def not_source_found_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_source_found(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_source_extracted_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_source_extracted(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_extinction_corrected_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_extinction_corrected(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_convolved_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_convolved(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_rebinned_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_rebinned(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_background_subtracted_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_background_subtracted(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_errors_created_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_errors_created(name): continue
+            yield name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def not_unit_converted_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.names:
+            if self.is_unit_converted(name): continue
+            yield name
 
     # -----------------------------------------------------------------
 
@@ -720,9 +965,20 @@ class ImagePreparer(InteractiveConfigurable):
         refresh = kwargs.pop("refresh", False)
 
         # Refresh if requested
-        if refresh: self.reset_status()
+        #if refresh: self.reset_status()
 
         # ...
+
+    # -----------------------------------------------------------------
+
+    def reset_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

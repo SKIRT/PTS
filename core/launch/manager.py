@@ -7678,7 +7678,7 @@ class SimulationManager(InteractiveConfigurable):
                 section_name = spec[0]
                 property_name = spec[1]
                 old_value = simulation.analysis[section_name][property_name]
-                value = simulation.analysis[section_name][property_name]
+                value = from_simulation.analysis[section_name][property_name]
 
                 # Check
                 if old_value == value:
@@ -7711,7 +7711,7 @@ class SimulationManager(InteractiveConfigurable):
 
                 # Get the values
                 old_value = simulation.analysis[spec]
-                value = simulation.analysis[spec]
+                value = from_simulation.analysis[spec]
 
                 # Check
                 if old_value == value:
