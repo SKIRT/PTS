@@ -96,7 +96,7 @@ default_attributes["parallelization"] = None
 default_attributes["analysis"] = AnalysisOptions()
 
 # The paths to the extra simulation analysers
-default_attributes["analyser_paths"] = []
+#default_attributes["analyser_paths"] = []
 
 # Flag indicating whether this simulation has been analysed or not
 default_attributes["analysed"] = False
@@ -207,6 +207,16 @@ class SkirtSimulation(object):
 
             # Set the attribute
             setattr(self, attr_name, value)
+
+    @property
+    def analyser_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis.analyser_paths
 
     ## Set analysed flags
     def set_analysed(self, value=True, all=False):
@@ -972,6 +982,22 @@ class SkirtSimulation(object):
             simulation.analysis.plotting.ignore_filters = [parse_filter(name) for name in simulation.analysis_plotting_ignore_filter_names]
             # Remove the 'hack' attribute, make the simulation object 'normal' again
             delattr(simulation, "analysis_plotting_ignore_filter_names")
+
+        # THIS IS A FIX FOR SIMULATIONS THAT STILL HAVE THE ANALYSER_PATHS AS AN ATTRIBUTE, INSTEAD OF BEING DEFINED
+        # IN THE ANALYSIS OPTIONS
+        if "analyser_paths" in simulation.__dict__:
+
+            # Get the paths
+            analyser_paths = simulation.__dict__.pop("analyser_paths")
+
+            # Check that the analyser paths in the analysis options are not defined
+            if "analyser_paths" in simulation.analysis: raise RuntimeError("Something is wrong")
+
+            # Update the analysis options
+            simulation.update_analysis_options()
+
+            # Set the analyser paths in the analysis options
+            simulation.analysis.analyser_paths = analyser_paths
 
         # Return the simulation object
         return simulation

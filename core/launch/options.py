@@ -325,6 +325,9 @@ class AnalysisOptions(Options):
         # Properties relevant for simulations part of radiative transfer modeling
         self.add_property("modeling_path", "string", "modeling directory path", None)
 
+        # The paths to the extra simulation analysers
+        self.add_property("analyser_paths", "string_list", "paths to the extra simulation analysers", [])
+
         # Set options
         self.set_options(kwargs)
 

@@ -53,15 +53,15 @@ commands[_history_command_name] = ("show_history_command", True, "show history o
 commands[_status_command_name] = ("show_status_command", True, "show preparation status", None)
 
 # Preparation of image commands
-commands[_initialize_command_name] = ("initialize_image", True, "initialize an image", "image")
-commands[_find_command_name] = ("find_sources_image", True, "find sources in an image", "image")
-commands[_extract_command_name] = ("extract_sources_image", True, "extract sources in an image", "image")
-commands[_correct_command_name] = ("correct_extinction_image", True, "correct an image for galactic extinction", "image")
-commands[_convolve_command_name] = ("convolve_image", True, "convolve an image", "image")
-commands[_rebin_command_name] = ("rebin_image", True, "rebin an image", "image")
-commands[_subtract_command_name] = ("subtract_background_image", True, "subtract the background from an image", "image")
-commands[_errors_command_name] = ("create_errors_image", True, "create errormap for an image", "image")
-commands[_units_command_name] = ("convert_units_image", True, "convert the units of an image", "image")
+commands[_initialize_command_name] = ("initialize_image_command", True, "initialize an image", "image")
+commands[_find_command_name] = ("find_sources_image_command", True, "find sources in an image", "image")
+commands[_extract_command_name] = ("extract_sources_image_command", True, "extract sources in an image", "image")
+commands[_correct_command_name] = ("correct_extinction_image_command", True, "correct an image for galactic extinction", "image")
+commands[_convolve_command_name] = ("convolve_image_command", True, "convolve an image", "image")
+commands[_rebin_command_name] = ("rebin_image_command", True, "rebin an image", "image")
+commands[_subtract_command_name] = ("subtract_background_image_command", True, "subtract the background from an image", "image")
+commands[_errors_command_name] = ("create_errors_image_command", True, "create errormap for an image", "image")
+commands[_units_command_name] = ("convert_units_image_command", True, "convert the units of an image", "image")
 
 # -----------------------------------------------------------------
 
