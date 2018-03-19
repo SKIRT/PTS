@@ -6018,48 +6018,6 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_usage_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
-    # 
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required:
-    #     :param choices:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    # 
-    #     # Get the definition
-    #     definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
-    # 
-    #     # Return the usage
-    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_help_host_command(self, command_definition=None, name=None, required=True, choices=None, required_to_optional=True):
-    # 
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required:
-    #     :param choices:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    # 
-    #     # Get the efinition
-    #     definition = self.get_host_command_definition(command_definition, required=required, choices=choices, required_to_optional=required_to_optional)
-    # 
-    #     # Return the help info
-    #     return get_help(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
     def get_host_from_command(self, command, name=None, index=1, required=True, choices=None, interactive=False):
 
         """
@@ -6140,46 +6098,6 @@ class SimulationManager(InteractiveConfigurable):
         # Return
         hosts = config.pop("hosts")
         return splitted, hosts, config
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_usage_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
-    #
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required:
-    #     :param choices:
-    #     :return:
-    #     """
-    #
-    #     # Get the definition
-    #     definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
-    #
-    #     # Return usage
-    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_help_hosts_command(self, command_definition=None, name=None, required=False, choices=None):
-    # 
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required:
-    #     :param choices:
-    #     :return:
-    #     """
-    # 
-    #     # Get the definition
-    #     definition = self.get_hosts_command_definition(command_definition, required=required, choices=choices)
-    # 
-    #     # Return the help info
-    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -6269,44 +6187,6 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_usage_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
-    #
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    #
-    #     # Get the definition
-    #     definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
-    #
-    #     # Return the usage
-    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_help_host_and_parallelization_command(self, command_definition=None, name=None, required_to_optional=True):
-    # 
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    # 
-    #     # Get the definition
-    #     definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
-    # 
-    #     # Return the help info
-    #     return get_help(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
     def get_host_and_parallelization_from_command(self, command, name=None, index=1, interactive=False):
 
         """
@@ -6389,44 +6269,6 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    # SHOULDN'T BE REQUIRED ANUMORE
-    # def get_usage_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
-    #
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    #
-    #     # Get the definition
-    #     definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
-    #
-    #     # Return the usage
-    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE REQUIRED ANYMORE
-    # def get_help_simulation_command(self, command_definition=None, name=None, required_to_optional=True):
-    #
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    #
-    #     # Get the definition
-    #     definition = self.get_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
-    #
-    #     # Return the help info
-    #     return get_help(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
     def get_simulations_command_definition(self, command_definition=None, required_to_optional=True):
 
         """
@@ -6486,44 +6328,6 @@ class SimulationManager(InteractiveConfigurable):
 
         # Return
         return splitted, simulation_names, config
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_usage_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-    # 
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    # 
-    #     # Get the definition
-    #     definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-    # 
-    #     # Return the usage
-    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_help_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-    #
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    #
-    #     # Get the definition
-    #     definition = self.get_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-    #
-    #     # Return the help info
-    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 
@@ -6587,44 +6391,6 @@ class SimulationManager(InteractiveConfigurable):
 
         # Return
         return splitted, simulation_a_name, simulation_b_name, config
-
-    # -----------------------------------------------------------------
-    
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_usage_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-    #
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    #
-    #     # Get the definition
-    #     definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-    #
-    #     # Return the usage
-    #     return get_usage(name, definition, add_logging=False, add_cwd=False)
-
-    # -----------------------------------------------------------------
-
-    # SHOULDN'T BE NECESSARY ANYMORE
-    # def get_help_two_simulations_command(self, command_definition=None, name=None, required_to_optional=True):
-    # 
-    #     """
-    #     This function ...
-    #     :param command_definition:
-    #     :param name:
-    #     :param required_to_optional:
-    #     :return:
-    #     """
-    # 
-    #     # Get the definition
-    #     definition = self.get_two_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
-    # 
-    #     # Return the help info
-    #     return get_help(name, definition, add_logging=False, add_cwd=False)
 
     # -----------------------------------------------------------------
 

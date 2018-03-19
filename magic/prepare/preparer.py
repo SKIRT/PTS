@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -44,6 +43,8 @@ _subtract_command_name = "subtract"
 _errors_command_name = "errors"
 _units_command_name = "units"
 
+_plot_command_name = "plot"
+
 # -----------------------------------------------------------------
 
 commands = OrderedDict()
@@ -63,6 +64,9 @@ commands[_rebin_command_name] = ("rebin_image_command", True, "rebin an image", 
 commands[_subtract_command_name] = ("subtract_background_image_command", True, "subtract the background from an image", "image")
 commands[_errors_command_name] = ("create_errors_image_command", True, "create errormap for an image", "image")
 commands[_units_command_name] = ("convert_units_image_command", True, "convert the units of an image", "image")
+
+# Plotting
+commands[_plot_command_name] = (None, None, "plot", "image")
 
 # -----------------------------------------------------------------
 
@@ -576,7 +580,7 @@ class ImagePreparer(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+    def get_image_name_and_config_from_command(self, command, command_definition, name=None, interactive=False):
 
         """
         This function ...
@@ -1406,6 +1410,15 @@ class ImagePreparer(InteractiveConfigurable):
         :return:
         """
 
+        # Get image name
+        image_name, config = self.get_image_name_and_config_from_command(command, self.rebin_image_definition, **kwargs)
+
+        # Check
+        if self.is_rebinned(image_name): raise RuntimeError("Image '" + image_name + "' is already rebinned")
+
+        # Rebin
+        self.rebin_image(image_name)
+
     # -----------------------------------------------------------------
 
     def rebin_image(self, name):
@@ -1441,6 +1454,9 @@ class ImagePreparer(InteractiveConfigurable):
         :return:
         """
 
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
     # -----------------------------------------------------------------
 
     def subtract_background_image_command(self, command, **kwargs):
@@ -1451,6 +1467,15 @@ class ImagePreparer(InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Get image name
+        image_name, config = self.get_image_name_and_config_from_command(command, self.subtract_background_image_definition, **kwargs)
+
+        # Check
+        if self.is_background_subtracted(image_name): raise RuntimeError("Image '" + image_name + "' is already background subtracted")
+
+        # Subtract
+        self.subtract_background_image(image_name)
 
     # -----------------------------------------------------------------
 
@@ -1499,6 +1524,15 @@ class ImagePreparer(InteractiveConfigurable):
         :return:
         """
 
+        # Get image name
+        image_name, config = self.get_image_name_and_config_from_command(command, self.create_errors_image_definition, **kwargs)
+
+        # Check
+        if self.is_errors_created(image_name): raise RuntimeError("Error map is already create for image '" + image_name + "'")
+
+        # Create
+        self.create_errors_image(image_name)
+
     # -----------------------------------------------------------------
 
     def create_errors_image(self, name):
@@ -1540,13 +1574,22 @@ class ImagePreparer(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def convert_units_image_command(self, command):
+    def convert_units_image_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
         :return:
         """
+
+        # Get image name
+        image_name, config = self.get_image_name_and_config_from_command(command, self.convert_units_image_definition, **kwargs)
+
+        # Check
+        if self.is_unit_converted(image_name): raise RuntimeError("Image '" + image_name + "' is already unit converted")
+
+        # Convert
+        self.convert_units_image(image_name)
 
     # -----------------------------------------------------------------
 

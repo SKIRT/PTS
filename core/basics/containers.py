@@ -1277,8 +1277,40 @@ def dict_from_sequence(sequence, attribute=None, key=None):
     # Check
     if attribute is not None and key is not None: raise ValueError("Cannot specify both key and attribute name")
 
-    if attribute is not None: return OrderedDict((getattr(item, attribute), item) for item in sequence)
-    elif key is not None: return OrderedDict((item[key], item) for item in sequence)
+    # With attributes
+    if attribute is not None:
+
+        # One attribute
+        if types.is_string_type(attribute): return OrderedDict((getattr(item, attribute), item) for item in sequence)
+
+        # Multiple attributes
+        elif types.is_string_tuple(attribute) or types.is_string_sequence(attribute):
+
+            new = OrderedDict()
+            for item in sequence:
+                attributes = [getattr(item, attr) for attr in attribute]
+                new[tuple(attributes)] = item
+            return new
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'attribute'")
+
+    # With key
+    elif key is not None:
+
+        # Multiple keys
+        if types.is_sequence(key) or types.is_tuple(key):
+
+            new = OrderedDict()
+            for item in sequence:
+                values = [item[k] for k in key]
+                new[tuple(values)] = item
+            return new
+
+        # Single key
+        else: return OrderedDict((item[key], item) for item in sequence)
+
+    # Invalid
     else: raise ValueError("Either key or attribute should be specified")
 
 # -----------------------------------------------------------------
@@ -1328,5 +1360,44 @@ def create_nested_defaultdict(nlevels, initializer):
         #for _ in range(level-1): prev_init = lambda: defaultdict(copy.copy(prev_init))
         # Create defaultdict and return
         #return defaultdict(prev_init)
+
+# -----------------------------------------------------------------
+
+def invert_dictionary(dictionary, one_to_one=False):
+
+    """
+    This function ...
+    :param dictionary:
+    :param one_to_one:
+    :return:
+    """
+
+    from ..tools.utils import is_mutable
+
+    # Create new dictionary
+    new = DefaultOrderedDict(list)
+
+    # Loop over the items in the original dictionary
+    for key in dictionary:
+
+        value = dictionary[key]
+
+        if types.is_sequence(value): value = tuple(value)
+        elif types.is_dictionary(value): value = tuple(value.items())
+        elif is_mutable(value): raise ValueError("Unsupported mutable type: " + str(type(value)))
+
+        new[value].append(key)
+
+    # Return the dictionary
+    if one_to_one:
+        result = OrderedDict()
+        for key in new:
+            values = new[key]
+            nvalues = len(values)
+            if nvalues == 0: continue
+            if nvalues > 1: raise ValueError("Cannot create one-to-one dictionary: multiple occurences of value '" + str(key) + "'")
+            result[key] = values[0]
+        return result
+    else: return new
 
 # -----------------------------------------------------------------

@@ -21,7 +21,7 @@ from ..launch.options import get_analysis_property_names_and_descriptions, get_a
 from ..tools.utils import lazyproperty
 from ..simulation.remote import get_simulation_for_host
 from ..basics.log import log
-from ..tools.stringify import stringify, tostr
+from ..tools.stringify import stringify, stringify_list_fancy
 from ..tools import sequences
 from ..basics.configuration import parent_type
 from ..tools import filesystem as fs
@@ -457,12 +457,12 @@ class SimulationShower(Configurable):
         # Get simulations
         if "simulations" in kwargs:
             simulations = kwargs.pop("simulations")
-            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute=["host_id", "id"])
             elif types.is_dictionary(simulations): self.simulations = simulations
             else: raise ValueError("Simulations must be specified as sequence or dictionary")
         elif "simulation" in kwargs:
             simulation = kwargs.pop("simulation")
-            self.simulations[simulation.id] = simulation
+            self.simulations[(simulation.host_id, simulation.id)] = simulation
 
         # Load the simulations
         if not self.has_simulations: self.load_simulations()
@@ -482,7 +482,7 @@ class SimulationShower(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def simulation_ids(self):
+    def simulation_keys(self):
 
         """
         This function ...
@@ -490,6 +490,30 @@ class SimulationShower(Configurable):
         """
 
         return self.simulations.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [key[0] for key in self.simulations.keys()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [key[1] for key in self.simulations.keys()]
 
     # -----------------------------------------------------------------
 
@@ -538,7 +562,7 @@ class SimulationShower(Configurable):
         """
 
         if not self.has_single_simulation: raise ValueError("Not a single simulation")
-        return self.simulations[self.simulation_ids[0]]
+        return self.simulations[self.simulation_keys[0]]
 
     # -----------------------------------------------------------------
 
@@ -597,14 +621,15 @@ class SimulationShower(Configurable):
             # Loop over the names
             for name in self.config.names:
                 if name not in self.all_simulations: raise ValueError("Simulation '" + name + "' is not a simulation of host '" + self.config.remote + "'")
+                host_id = self.all_simulations[name].host_id
                 simulation_id = self.all_simulations[name].id
-                self.simulations[simulation_id] = self.all_simulations[name]
+                self.simulations[(host_id, simulation_id)] = self.all_simulations[name]
 
         # From IDS
         elif self.config.ids is not None:
 
             # Load the simulations and put them in the dictionary
-            for simulation_id in self.config.ids: self.simulations[simulation_id] = get_simulation_for_host(self.config.remote, simulation_id)
+            for simulation_id in self.config.ids: self.simulations[(self.config.remote, simulation_id)] = get_simulation_for_host(self.config.remote, simulation_id)
 
         # Nothing
         else: raise ValueError("Names or IDs must be specified")
@@ -717,26 +742,62 @@ class SimulationShower(Configurable):
             description = properties[name]
 
             # Get the values for all the simulations
-            values = get_values_for_simulations(self.simulations, name)
+            values_for_names = get_values_for_simulations(self.simulations, name, keys="name")
+            names_for_values = containers.invert_dictionary(values_for_names)
 
             # Get unique values
-            unique_values = sequences.unique_values(values.values())
+            unique_values = sequences.unique_values(values_for_names.values())
             nunique_values = len(unique_values)
 
+            # One unique value
             if nunique_values == 1:
 
+                # Stringify
                 ptype, string = stringify(unique_values[0])
-                type_string = " [" + ptype + "]" if ptype is not None else ""
-                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
 
+                # Empty string, list, tuple, ...
+                if string == "":
+
+                    type_string = "[empty " + ptype + "]" if ptype is not None else "[empty]"
+                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + type_string + fmt.reset)
+
+                # Normal value
+                else:
+
+                    type_string = " [" + ptype + "]" if ptype is not None else ""
+                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
+
+            # Different unique values
             else:
 
+                # Show name of the property
                 print(fmt.red + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + fmt.reset)
 
+                # Loop over the unique values
                 for value in unique_values:
+
+                    # Get the corresponding simulations
+                    simulation_names = names_for_values[value]
+                    nsimulations = len(simulation_names)
+
+                    # Stringify
                     ptype, string = stringify(value)
-                    type_string = " [" + ptype + "]" if ptype is not None else ""
-                    print("   * " + string + type_string)
+
+                    # Empty string, list, tuple, ...
+                    if string == "":
+
+                        type_string = "[empty " + ptype + "]" if ptype is not None else "[empty]"
+                        print("   * " + type_string + fmt.bold + " (" + str(nsimulations) + ")" + fmt.reset_bold)
+
+                    # Normal value
+                    else:
+
+                        type_string = " [" + ptype + "]" if ptype is not None else ""
+                        print("   * " + string + type_string + fmt.bold + " (" + str(nsimulations) + ")" + fmt.reset_bold)
+
+                    # Show simulation names
+                    _, simulation_names_string = stringify_list_fancy(simulation_names, lines_prefix="     ")
+                    print(fmt.yellow + simulation_names_string + fmt.reset)
 
 # -----------------------------------------------------------------
 
@@ -802,12 +863,12 @@ class AnalysisShower(Configurable):
         # Get simulations
         if "simulations" in kwargs:
             simulations = kwargs.pop("simulations")
-            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute="id")
+            if types.is_sequence(simulations) or types.is_tuple(simulations): self.simulations = containers.dict_from_sequence(simulations, attribute=["host_id", "id"])
             elif types.is_dictionary(simulations): self.simulations = simulations
             else: raise ValueError("Simulations must be specified as sequence or dictionary")
         elif "simulation" in kwargs:
             simulation = kwargs.pop("simulation")
-            self.simulations[simulation.id] = simulation
+            self.simulations[(simulation.host_id, simulation.id)] = simulation
 
         # Load the simulations
         if not self.has_simulations: self.load_simulations()
@@ -827,7 +888,7 @@ class AnalysisShower(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def simulation_ids(self):
+    def simulation_keys(self):
 
         """
         This function ...
@@ -835,6 +896,30 @@ class AnalysisShower(Configurable):
         """
 
         return self.simulations.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [key[0] for key in self.simulations.keys()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [key[1] for key in self.simulations.keys()]
 
     # -----------------------------------------------------------------
 
@@ -882,7 +967,7 @@ class AnalysisShower(Configurable):
         """
 
         if not self.has_single_simulation: raise ValueError("Not a single simulation")
-        return self.simulations[self.simulation_ids[0]]
+        return self.simulations[self.simulation_keys[0]]
 
     # -----------------------------------------------------------------
 
@@ -940,23 +1025,23 @@ class AnalysisShower(Configurable):
 
             # Loop over the names
             for name in self.config.names:
+                host_id = self.all_simulations[name].host_id
                 simulation_id = self.all_simulations[name].id
-                self.simulations[simulation_id] = self.all_simulations[name]
+                self.simulations[(host_id, simulation_id)] = self.all_simulations[name]
 
         # From IDS
         elif self.config.ids is not None:
 
             # Load the simulations and put them in the dictionary
-            for simulation_id in self.config.ids: self.simulations[simulation_id] = get_simulation_for_host(self.config.remote, simulation_id)
+            for simulation_id in self.config.ids: self.simulations[(self.config.remote, simulation_id)] = get_simulation_for_host(self.config.remote, simulation_id)
 
         # Nothing
         else: raise ValueError("Names or IDs must be specified")
 
         # Update analysis options in each simulation
         if self.config.update:
-            for simulation_id in self.simulation_ids:
-                self.simulations[simulation_id].update_analysis_options()
-                #print(self.simulations[simulation_id].analysis.misc)
+            for key in self.simulation_keys:
+                self.simulations[key].update_analysis_options()
 
     # -----------------------------------------------------------------
 
@@ -1123,41 +1208,67 @@ class AnalysisShower(Configurable):
             description = self.properties[name]
 
             # Get the analysis options for all the simulations
-            values = get_analysis_values_for_simulations(self.simulations, name)
+            #values = get_analysis_values_for_simulations(self.simulations, name)
+            values_for_names = get_analysis_values_for_simulations(self.simulations, name, keys="name")
+            names_for_values = containers.invert_dictionary(values_for_names)
 
             # Get unique values
-            unique_values = sequences.unique_values(values.values())
+            unique_values = sequences.unique_values(values_for_names.values())
             nunique_values = len(unique_values)
 
             # Get the ptype
-            ptype = self.get_ptype(name)
+            #ptype = self.get_ptype(name)
 
             # Only one unique value
-            if len(unique_values) == 1:
+            if nunique_values == 1:
 
+                # Stringify the value
                 default = unique_values[0]
                 ptype, string = stringify(default)
-                type_string = " [" + ptype + "]" if ptype is not None else ""
-                print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
+
+                # Empty string, list, tuple, ...
+                if string == "":
+
+                    type_string = "[empty " + ptype + "]" if ptype is not None else "[empty]"
+                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + type_string + fmt.reset)
+
+                # Normal value
+                else:
+
+                    type_string = " [" + ptype + "]" if ptype is not None else ""
+                    print(fmt.green + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "): " + string + type_string + fmt.reset)
 
             # Multiple unique values
             else:
 
-                # Prompt to change this property
-                #change = prompt_proceed("Change the analysis option '" + name + "' for all simulations? Values are:\n - " + "\n - ".join(tostr(value) for value in unique_values))
-                #if not change: continue
-                #default = None
-                #ptype = get_common_ptype(unique_values)
-                #choices = None
-                #suggestions = unique_values
-
+                # Show the name of the property
                 print(fmt.red + " - " + fmt.bold + name + fmt.reset_bold + " (" + description + "):" + fmt.reset)
 
+                # Show the different unique values
                 for value in unique_values:
 
+                    # Get the simulations for this value
+                    simulation_names = names_for_values[value]
+                    nsimulations = len(simulation_names)
+
+                    # Stringify the property
                     ptype, string = stringify(value)
-                    type_string = " [" + ptype + "]" if ptype is not None else ""
-                    print("   * " + string + type_string)
+
+                    # Empty string, list, tuple, ...
+                    if string == "":
+
+                        type_string = "[empty " + ptype + "]" if ptype is not None else "[empty]"
+                        print("   * " + type_string + fmt.bold + " (" + str(nsimulations) + ")" + fmt.reset_bold)
+
+                    # Normal value
+                    else:
+
+                        type_string = " [" + ptype + "]" if ptype is not None else ""
+                        print("   * " + string + type_string + fmt.bold + " (" + str(nsimulations) + ")" + fmt.reset_bold)
+
+                    # Show simulation names
+                    _, simulation_names_string = stringify_list_fancy(simulation_names, lines_prefix="     ")
+                    print(fmt.yellow + simulation_names_string + fmt.reset)
 
     # -----------------------------------------------------------------
 
@@ -1208,8 +1319,7 @@ class AnalysisShower(Configurable):
                 nunique_values = len(unique_values)
 
                 # Get the ptype
-                ptype = self.get_ptype(name, section_name)
-
+                #ptype = self.get_ptype(name, section_name)
                 #print(name, ptype, unique_values)
 
                 # Only one unique value
@@ -1248,26 +1358,35 @@ def get_analysis_value_for_simulation(simulation, name, section=None):
 
 # -----------------------------------------------------------------
 
-def get_analysis_values_for_simulations(simulations, name, section=None):
+def get_analysis_values_for_simulations(simulations, name, section=None, keys="id"):
 
     """
     This function ...
     :param simulations:
     :param name:
     :param section:
+    :param keys:
     :return:
     """
 
     values = dict()
 
     # Loop over the simulations
-    for simulation_id in simulations:
+    for key in simulations:
+
+        # Get simulation
+        simulation = simulations[key]
 
         # Get value
-        value = get_analysis_value_for_simulation(simulations[simulation_id], name, section=section)
+        value = get_analysis_value_for_simulation(simulation, name, section=section)
+
+        # Set key
+        if keys == "id": key = simulation.id
+        elif keys == "name": key = simulation.name
+        else: raise ValueError("Invalid value for 'key'")
 
         # Set value
-        values[simulation_id] = value
+        values[key] = value
 
     # Return the values
     return values
@@ -1288,25 +1407,34 @@ def get_value_for_simulation(simulation, name):
 
 # -----------------------------------------------------------------
 
-def get_values_for_simulations(simulations, name):
+def get_values_for_simulations(simulations, name, keys="id"):
 
     """
     This function ...
     :param simulations:
     :param name:
+    :param keys:
     :return:
     """
 
     values = dict()
 
     # Loop over the simulations
-    for simulation_id in simulations:
+    for key in simulations:
+
+        # Get the simulation
+        simulation = simulations[key]
 
         # Get value
-        value = get_value_for_simulation(simulations[simulation_id], name)
+        value = get_value_for_simulation(simulation, name)
+
+        # Set the key
+        if keys == "id": key = simulation.id
+        elif keys == "name": key = simulation.name
+        else: raise ValueError("Invalid value for 'key'")
 
         # Set value
-        values[simulation_id] = value
+        values[key] = value
 
     # Return the values
     return values

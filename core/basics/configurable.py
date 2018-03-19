@@ -881,7 +881,7 @@ class InteractiveConfigurable(Configurable):
             get_definition_function_name = "get_" + subject + "_command_definition"
             get_definition_function = getattr(self, get_definition_function_name, None)
             if get_definition_function is None: raise ValueError("Invalid subject '" + subject + "'")
-            definition = get_definition_function(definition, name=name, **kwargs)
+            definition = get_definition_function(definition, **kwargs)
 
             # Get the help
             help = get_help(name, definition, add_logging=False, add_cwd=False)
@@ -925,7 +925,7 @@ class InteractiveConfigurable(Configurable):
             get_definition_function_name = "get_" + subject + "_command_definition"
             get_definition_function = getattr(self, get_definition_function_name, None)
             if get_definition_function is None: raise ValueError("Invalid subject '" + subject + "'")
-            definition = get_definition_function(definition, name=name, **kwargs)
+            definition = get_definition_function(definition, **kwargs)
 
             # Get the usage
             usage = get_usage(name, definition, add_logging=False, add_cwd=False)
