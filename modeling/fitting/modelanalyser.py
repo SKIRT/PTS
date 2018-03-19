@@ -621,7 +621,7 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def fit_sed(self):
 
         """
@@ -629,8 +629,15 @@ class SEDFitModelAnalyser(FittingComponent):
         :return:
         """
 
-        if self.generation_info.fit_not_clipped: return self.truncated_sed
-        else: return self.observed_sed
+        # Load the appropriate observed SED
+        if self.generation_info.fit_not_clipped: sed = self.truncated_sed.copy()
+        else: sed = self.observed_sed.copy()
+
+        # Add additional relative error?
+        if self.config.additional_error is not None: sed.add_relative_error(self.config.additional_error)
+
+        # Return the SED
+        return sed
 
     # -----------------------------------------------------------------
 

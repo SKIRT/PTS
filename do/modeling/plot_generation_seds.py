@@ -40,6 +40,9 @@ definition.add_required("generation", "string", "generation name")
 # Number of random simulations
 definition.add_optional("random", "positive_integer", "pick a specified number of random simulations to plot")
 
+# Additional relative error
+definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+
 # Output file
 definition.add_optional("output", "string", "output file name")
 
@@ -58,6 +61,20 @@ generation = fitting_run.get_generation(config.generation)
 
 # Create the SED plotter
 plotter = SEDPlotter()
+
+# -----------------------------------------------------------------
+
+# Inform the user
+log.info("Loading the observed SEDs ...")
+
+# Get the SEDs
+clipped_sed = environment.observed_sed
+truncated_sed = environment.truncated_sed
+
+# Add relative error
+if config.additional_error is not None:
+    clipped_sed.add_relative_error(config.additional_error)
+    truncated_sed.add_relative_error(config.additional_error)
 
 # -----------------------------------------------------------------
 

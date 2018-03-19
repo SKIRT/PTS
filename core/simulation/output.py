@@ -929,6 +929,20 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def has_other_filename(self, filename):
+
+        """
+        This function ...
+        :param filename:
+        :return:
+        """
+
+        for filepath in self.files[other_name]:
+            if fs.name(filepath) == filename: return True
+        return False
+
+    # -----------------------------------------------------------------
+
     def __iter__(self):
 
         """

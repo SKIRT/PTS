@@ -1691,15 +1691,16 @@ class Generation(object):
 
         simulations = []
 
+        # DOESN'T WORK WELL WHEN ASSIGNMENT TABLE IS INCORRECT?
         # If there is an assignment table
         if self.has_assignment_table:
 
-            # Loop over the host IDs in the assignment tables
-            for host_id in self.host_ids:
+             # Loop over the host IDs in the assignment tables
+             for host_id in self.host_ids:
 
-                # Create simulations and add them
-                simulations = self.get_simulations_basic_for_host(host_id)
-                simulations.extend(simulations)
+                 # Create simulations and add them
+                 simulations_host = self.get_simulations_basic_for_host(host_id)
+                 simulations.extend(simulations_host)
 
         # No assignment tables
         else:
@@ -3361,7 +3362,9 @@ class Generation(object):
 
                 # Check paths
                 if check_paths:
-                    if remotes is None or host_id not in remotes: log.warning("Cannot check paths if remote is not passed")
+                    if remotes is None or host_id not in remotes:
+                        #log.warning("Cannot check paths if remote is not passed")
+                        check_simulation_paths(simulation) # without checking remote paths
                     else: check_simulation_paths(simulation, remote=remotes[host_id])
 
             # Don't load the simulation
@@ -3585,23 +3588,23 @@ def check_simulation_paths(simulation, remote=None, other_remote_input_path=None
     if not fs.is_directory(simulation.output_path): raise IOError("Local output directory '" + simulation.output_path + "' is missing")
     if not fs.is_directory(simulation.base_path): raise IOError("Local simulation directory '" + simulation.base_path + "' is missing")
     if not fs.is_file(simulation.ski_path): raise IOError("Local ski file '" + simulation.ski_path + "' is missing")
-    if simulation_name not in simulation.output_path: raise RuntimeError("Something went wrong")
-    if simulation_name not in simulation.base_path: raise RuntimeError("Something went wrong")
-    if simulation_name not in simulation.ski_path: raise RuntimeError("Something went wrong")
+    if simulation_name not in simulation.output_path: raise RuntimeError("Something went wrong: wrong output path for simulation '" + simulation_name + "'")
+    if simulation_name not in simulation.base_path: raise RuntimeError("Something went wrong: wrong base path for simulation '" + simulation_name + "'")
+    if simulation_name not in simulation.ski_path: raise RuntimeError("Something went wrong: wrong skifile path for simulation '" + simulation_name + "'")
 
     # Check analysis paths
     if simulation.analysis.extraction.path is not None:
         path = simulation.analysis.extraction.path
         if not fs.is_directory(path): raise IOError("Extraction directory '" + path + "' is missing")
-        if simulation_name not in path: raise RuntimeError("Something went wrong")
+        if simulation_name not in path: raise RuntimeError("Something went wrong: wrong extraction path for simulation '" + simulation_name + "'")
     if simulation.analysis.plotting.path is not None:
         path = simulation.analysis.plotting.path
         if not fs.is_directory(path): raise IOError("Plotting directory '" + path + "' is missing")
-        if simulation_name not in path: raise RuntimeError("Something went wrong")
+        if simulation_name not in path: raise RuntimeError("Something went wrong: wrong plotting path for simulation '" + simulation_name + "'")
     if simulation.analysis.misc.path is not None:
         path = simulation.analysis.misc.path
         if not fs.is_directory(path): raise IOError("Misc directory '" + path + "' is missing")
-        if simulation_name not in path: raise RuntimeError("Something went wrong")
+        if simulation_name not in path: raise RuntimeError("Something went wrong: wrong misc path for simulation '" + simulation_name + "'")
 
     # Check remote paths
     if remote is not None:
@@ -3611,8 +3614,8 @@ def check_simulation_paths(simulation, remote=None, other_remote_input_path=None
             if other_remote_input_path is not None and remote.is_directory(other_remote_input_path) and not remote.is_empty(other_remote_input_path): simulation.remote_input_path = other_remote_input_path
             else: raise IOError("Remote input path for simulation '" + simulation_name + "' is not found")
         if not remote.is_directory(simulation.remote_output_path): raise IOError("Remote output path '" + simulation.remote_output_path + "' is missing")
-        if simulation_name not in simulation.remote_ski_path: raise RuntimeError("Something went wrong")
-        if simulation_name not in simulation.remote_simulation_path: raise RuntimeError("Something went wrong")
-        if simulation_name not in simulation.remote_output_path: raise RuntimeError("Something went wrong")
+        if simulation_name not in simulation.remote_ski_path: raise RuntimeError("Something went wrong: wrong remote skifile path for simulation '" + simulation_name + "'")
+        if simulation_name not in simulation.remote_simulation_path: raise RuntimeError("Something went wrong: wrong remote base path for simulation '" + simulation_name + "'")
+        if simulation_name not in simulation.remote_output_path: raise RuntimeError("Something went wrong: wrong remote output path for simulation '" + simulation_name + "'")
 
 # -----------------------------------------------------------------

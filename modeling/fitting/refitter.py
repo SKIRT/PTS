@@ -1433,6 +1433,11 @@ class Refitter(FittingComponent):
 
                 # Get the differences filepath
                 if not generation.has_sed_differences(simulation_name): raise IOError("Differences file is not found for simulation '" + simulation_name + "'")
+
+                # Debugging
+                log.debug("Loading the differences for the '" + simulation_name + "' simulation ...")
+
+                # Load
                 differences = generation.get_simulation_sed_differences(simulation_name)
 
                 # Set table
@@ -1558,7 +1563,7 @@ class Refitter(FittingComponent):
 
                     # Calculate the chi squared term
                     difference_value = difference.to("Jy").value
-                    error_value = observed_fluxdensity_error.to("Jy").value
+                    error_value = observed_fluxdensity_error.average.to("Jy").value
                     chi_squared_term = weight * difference_value ** 2 / error_value ** 2
 
                     # Add entry to the table
@@ -1566,6 +1571,10 @@ class Refitter(FittingComponent):
 
                 # Set table
                 self.differences[generation_name][simulation_name] = differences
+
+            # Show the number of simulations of this generation for which differences have been calculated
+            nsimulations = len(self.differences[generation_name])
+            log.debug("Flux differences have been calculated for " + str(nsimulations) + " simulations of generation '" + generation_name + "'")
 
     # -----------------------------------------------------------------
 
@@ -1997,7 +2006,7 @@ class Refitter(FittingComponent):
         self.write_sed()
 
         # Fluxes?
-        #self.write_fluxes()
+        if self.reflux: self.write_fluxes()
 
         # Differences
         self.write_differences()
@@ -2123,6 +2132,53 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def write_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the mock fluxes ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Debugging
+            log.debug("Writing the mock fluxes of generation '" + generation_name + "' ...")
+
+            # Get the generation
+            generation = self.generations[generation_name]
+
+            # Determine fluxes directory name
+            if generation.use_images: directory_name = "image fluxes"
+            else: directory_name = "fluxes"
+
+            # Loop over the simulations
+            for simulation_name in generation.simulation_names:
+
+                # Check
+                if simulation_name not in self.fluxes[generation_name]:
+                    log.warning("No fluxes for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+                    continue
+
+                # Debugging
+                log.debug("Writing the mock fluxes of simulation '" + simulation_name + "' ...")
+
+                # Get the fluxes
+                fluxes = self.fluxes[generation_name][simulation_name]
+
+                # Determine the path
+                if self.as_run: path = fs.join(self.new_simulation_misc_paths[generation_name][simulation_name], directory_name, "fluxes_earth.dat")
+                elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), simulation_name, "misc", directory_name, "fluxes_earth.dat")
+                else: path = fs.join(self.simulation_paths[generation_name][simulation_name], "fluxes_earth.dat")
+
+                # Save
+                fluxes.saveto(path)
+
+    # -----------------------------------------------------------------
+
     def write_differences(self):
 
         """
@@ -2145,6 +2201,7 @@ class Refitter(FittingComponent):
             # Loop over the simulations
             for simulation_name in generation.simulation_names:
 
+                # Check
                 if simulation_name not in self.differences[generation_name]:
                     log.warning("No differences for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
                     continue
@@ -2157,7 +2214,7 @@ class Refitter(FittingComponent):
 
                 # Determine the path
                 if self.as_run: path = fs.join(self.new_simulation_misc_paths[generation_name][simulation_name], "differences.dat")
-                elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), simulation_name, "differences.dat")
+                elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), simulation_name, "misc", "differences.dat")
                 else: path = fs.join(self.simulation_paths[generation_name][simulation_name], "differences.dat")
 
                 # Save
@@ -2506,10 +2563,16 @@ class Refitter(FittingComponent):
                 # Determine the plot path
                 sed_plot_path = self.generations[generation_name].get_simulation_sed_plot_path(simulation_name)
 
-                # Copy the SED file to the generation path
+                # Copy the SED plot file to the generation path
                 if not self.as_run:
+
+                    # Determine filename
                     filename = "best_" + str(index) + "_" + simulation_name + ".pdf"
-                    fs.copy_file(sed_plot_path, self.generation_paths[generation_name], new_name=filename)
+
+                    # Copy plot file
+                    if self.as_run: fs.copy_file(sed_plot_path, self.new_generation_paths[generation_name], new_name=filename)
+                    elif self.in_place: fs.copy_file(sed_plot_path, self.fitting_run.get_generation_path(generation_name), new_name=filename)
+                    else: fs.copy_file(sed_plot_path, self.generation_paths[generation_name], new_name=filename)
 
                 # Show the plot
                 if self.config.show_best_sed: fs.open_file(sed_plot_path)
@@ -2541,7 +2604,8 @@ class Refitter(FittingComponent):
                 counts_distributions = self.best_simulation_counts_distributions[generation_name]
 
                 # Determine path
-                if self.as_run: path = None
+                if self.as_run: path = fs.join(self.new_generation_paths[generation_name], "best_counts.pdf")
+                elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), "best_counts.pdf")
                 else: path = fs.join(self.generation_paths[generation_name], "best_counts.pdf")
 
                 # Plot
@@ -2624,10 +2688,10 @@ class Refitter(FittingComponent):
         if self.config.plot_chi_squared: self.plot_chi_squared()
 
         # Plot the parameter probabilities per generation
-        self.plot_probabilities()
+        if self.config.plot_probabilities: self.plot_probabilities()
 
         # Plot the probability distributions as histograms
-        self.plot_distributions()
+        if self.config.plot_distributions: self.plot_distributions()
 
     # -----------------------------------------------------------------
 
@@ -2651,7 +2715,8 @@ class Refitter(FittingComponent):
             title = "Chi squared values of generation '" + generation_name.replace("_", "\_") + "'"
 
             # Determine path
-            if self.as_run: path = None
+            if self.as_run: path = fs.join(self.new_generation_paths[generation_name], "chi_squared.pdf")
+            elif self.in_place: fs.join(self.fitting_run.get_generation_path(generation_name), "chi_squared.pdf")
             else: path = fs.join(self.generation_paths[generation_name], "chi_squared.pdf")
 
             # Plot chi squared?
@@ -2674,6 +2739,7 @@ class Refitter(FittingComponent):
 
             # Determine the path
             if self.as_run: path = fs.join(self.new_prob_generation_paths[generation_name], "probabilities.pdf")
+            elif self.in_place: path = fs.join(self.fitting_run.prob_generations_path, generation_name, "probabilities.pdf")
             else: path = fs.join(self.prob_generations_paths[generation_name], "probabilities.pdf")
 
             # Make distributions
@@ -2700,6 +2766,7 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_prob_distributions_path, "distributions.pdf")
+        elif self.in_place: path = fs.join(self.fitting_run.prob_distributions_path, "distributions.pdf")
         else: path = fs.join(self.prob_distributions_path, "distributions.pdf")
 
         # Plot in different panels

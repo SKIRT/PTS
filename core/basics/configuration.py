@@ -2301,23 +2301,29 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def import_section(self, name, description, definition):
+    def import_section(self, name, description, definition, sections=True, fixed=True, required=True, pos_optional=True,
+                       optional=True, flags=True):
 
         """
         This function ...
         :param name:
         :param description:
         :param definition:
+        :param sections:
+        :param fixed:
+        :param required:
+        :param pos_optional:
+        :param optional:
+        :param flags:
         :return:
         """
 
         # Determine prefix
-        #if self.prefix is None: prefix = name
-        #else: prefix = self.prefix + "/" + name
         prefix = name
 
         # Add the section
-        self.sections[name] = copy.deepcopy(definition)
+        self.sections[name] = definition.copy(sections=sections, fixed=fixed, required=required,
+                                              pos_optional=pos_optional, optional=optional, flags=flags)
         self.sections[name].prefix = prefix
         self.section_descriptions[name] = description
 

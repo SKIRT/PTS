@@ -15,7 +15,7 @@ from pts.modeling.fitting.weights import all_regime_names
 definition = ConfigurationDefinition()
 
 # The filters
-definition.add_required("filters", "lazy_broad_band_filter_list", "list of filters")
+definition.add_positional_optional("filters", "lazy_broad_band_filter_list", "list of filters")
 
 # Regimes
 definition.add_optional("regimes", "string_list", "wavelength regimes to use", choices=all_regime_names)

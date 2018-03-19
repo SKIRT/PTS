@@ -93,13 +93,13 @@ class WeightsCalculator(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Calculate weights
+        # 2. Calculate weights
         self.calculate()
 
-        # Write
+        # 3. Write
         if self.config.write: self.write()
 
-        # Show
+        # 4. Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------

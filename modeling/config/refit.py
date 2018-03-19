@@ -31,7 +31,7 @@ elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting r
 else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
 
 # Generations?
-definition.add_positional_optional("generations", "string_list", "generation names")
+definition.add_optional("generations", "string_list", "generation names")
 
 # -----------------------------------------------------------------
 
@@ -67,19 +67,25 @@ definition.add_flag("fluxes_from_images", "use images to calculate observed flux
 # -----------------------------------------------------------------
 
 # For weights
-definition.import_section("weighing", "wavelength filter weighing", calculate_weights_definition)
+definition.import_section("weighing", "wavelength filter weighing", calculate_weights_definition, pos_optional=False)
 
 # -----------------------------------------------------------------
 
 definition.add_optional("nbest", "positive_integer", "number of best simulations to show", 10)
 definition.add_flag("show_best_sed", "plot the SED of the best simulation", False)
 definition.add_flag("show_counts", "show the counts of different parameter values in the best simulations", True)
+
+# -----------------------------------------------------------------
+
+# Plotting flags
 definition.add_flag("plot_counts", "plot the counts", True)
 definition.add_flag("plot_chi_squared", "plot the chi squared distributions", True)
+definition.add_flag("plot_probabilities", "plot probabilities", True)
+definition.add_flag("plot_distributions", "plot distributions", True)
 
 # -----------------------------------------------------------------
 
 # Additional relative error
-definition.add_flag("additional_error", "percentage", "additional percentual error for the observed flux points")
+definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
 
 # -----------------------------------------------------------------

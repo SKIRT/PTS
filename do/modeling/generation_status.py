@@ -30,6 +30,7 @@ from pts.core.basics.log import log
 from pts.core.simulation.remote import is_analysed_status
 from pts.core.launch.batchlauncher import SimulationStatusTable
 from pts.core.tools import sequences
+from pts.modeling.fitting.generation import check_simulation_paths
 
 # -----------------------------------------------------------------
 
@@ -366,6 +367,19 @@ if len(to_fix_status) > 0:
 
     # Create new status table (because status table class is full with lazyproperties and memoized methods)
     status = SimulationStatusTable.from_columns(simulation_names, status_list)
+
+# -----------------------------------------------------------------
+
+# Check paths
+if config.check_paths:
+
+    for simulation_name in generation.simulation_names:
+
+        if not generation.has_simulation(simulation_name): continue # simulation objects created on the fly are assumed to have correct paths
+        simulation = generation.get_simulation(simulation_name)
+
+        # Check paths
+        check_simulation_paths(simulation)
 
 # -----------------------------------------------------------------
 
