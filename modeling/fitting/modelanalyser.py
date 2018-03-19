@@ -724,7 +724,7 @@ class SEDFitModelAnalyser(FittingComponent):
 
             # No weight?
             if not self.has_weight(fltr):
-                log.warning("A weight is not found for the '" + fltr + "' filter: skipping ...")
+                log.warning("A weight is not found for the '" + str(fltr) + "' filter: skipping ...")
                 continue
 
             # Get the weight
@@ -735,7 +735,7 @@ class SEDFitModelAnalyser(FittingComponent):
 
             # No observed flux?
             if not self.has_observed_flux(fltr):
-                log.warning("The observed flux density could not be found for the " + instrument + " '" + fltr + "' filter")
+                log.warning("The observed flux density could not be found for the " + instrument + " '" + str(fltr) + "' filter")
                 continue
 
             # Get fluxdensity and error
