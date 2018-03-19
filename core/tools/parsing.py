@@ -1053,15 +1053,19 @@ def integer_list(argument):
     if "-" in argument and "," in argument:
 
         parts = argument.split(",")
-        #print("PARTS", parts)
         total_int_list = []
         for part in parts: total_int_list += integer_list(part)
         return total_int_list
 
     # Split the string
+    # THERE SHOULDN'T BE MORE THAN TWO PARTS, SINCE IF THERE WERE MULTIPLE '-'s, THERE NEED TO BE ALSO AT LEAST ONE ',',
+    # SO WE'D CATCH THAT ABOVE
     splitted = argument.split('-')
 
+    # Nothing
     if len(splitted) == 0: raise ValueError("No range given")
+
+    # No range
     elif len(splitted) == 1:
 
         splitted = splitted[0].split(",")
@@ -1076,12 +1080,59 @@ def integer_list(argument):
         #return list(set([int(value) for value in splitted]))
         return [integer(value) for value in splitted]
 
+    # One range
     elif len(splitted) == 2:
 
         if not (splitted[0].isdigit() and splitted[1].isdigit()): ValueError("Not a valid integer range")
         return _range(int(splitted[0]), int(splitted[1])+1)
 
-    else: raise ValueError("Values must be seperated by commas or by a '-' in the case of a range")
+    # Invalid
+    else: raise ValueError("Values must be separated by commas or by a '-' in the case of a range")
+
+# -----------------------------------------------------------------
+
+def integer_and_string_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    if argument == "": return []
+
+    if "-" in argument and "," in argument:
+
+        parts = argument.split(",")
+        total_list = []
+        for part in parts: total_list += integer_and_string_list(part)
+        return total_list
+
+    # Split the string
+    # THERE SHOULDN'T BE MORE THAN TWO PARTS, SINCE IF THERE WERE MULTIPLE '-'s, THERE NEED TO BE ALSO AT LEAST ONE ',',
+    # SO WE'D CATCH THAT ABOVE
+    splitted = argument.split("-")
+
+    # Nothing
+    if len(splitted) == 0: raise ValueError("No range given")
+
+    # No range
+    elif len(splitted) == 1:
+
+        # Split elements separated by commas
+        splitted = splitted[0].split(",")
+
+        # Return
+        return [integer_or_string(value) for value in splitted]
+
+    # One range
+    elif len(splitted) == 2:
+
+        if not (splitted[0].isdigit() and splitted[1].isdigit()): ValueError("Not a valid integer range")
+        return _range(int(splitted[0]), int(splitted[1])+1)
+
+    # Invalid
+    else: raise ValueError("Values must be separated by commas or by a '-' in the case of a range")
 
 # -----------------------------------------------------------------
 

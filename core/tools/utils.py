@@ -640,11 +640,10 @@ class memoize_method_reset(object):
       return fn
 
    def _reset_for_args(self, *args):
-
+       if args not in self.cache: return
        del self.cache[args]
 
    def _reset(self):
-
       self.cache = {}
 
 # -----------------------------------------------------------------

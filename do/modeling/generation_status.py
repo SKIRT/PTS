@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments, prompt_yn
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
@@ -83,6 +83,7 @@ definition.add_flag("check_paths", "check simulation paths", False)
 definition.add_flag("correct_paths", "correct simulation paths instead of raising errors", False)
 definition.add_flag("confirm_correction", "confirm before correcting paths", False)
 definition.add_flag("fix_success", "check success flags in assignment table")
+definition.add_flag("check_analysis", "check analysis output", False)
 
 # Analysis settings
 definition.import_section("analysis", "analyser options", analysis_definition)
@@ -376,8 +377,10 @@ if len(to_fix_status) > 0:
 # Check paths
 if config.check_paths:
 
+    # Loop over all simulations
     for simulation_name in generation.simulation_names:
 
+        # Get simulation object
         if not generation.has_simulation(simulation_name): continue # simulation objects created on the fly are assumed to have correct paths
         simulation = generation.get_simulation(simulation_name)
 
@@ -393,7 +396,121 @@ if config.check_paths:
 # -----------------------------------------------------------------
 
 # Check whether simulations with chi squared (analysed simuations) also have the other analysis output
+if config.check_analysis:
 
+    # Simulation names to have status reset
+    reset_status = []
+
+    # Loop over the simulations
+    for simulation_name in generation.simulation_names:
+
+        # Has simulation object?
+        if not generation.has_simulation(simulation_name): continue
+
+        # Check different analysis output
+        has_misc = generation.has_misc_output(simulation_name)
+        has_plotting = generation.has_plotting_output(simulation_name)
+        has_extraction = generation.has_extraction_output(simulation_name)
+        has_timing = generation.has_timing(simulation_name)
+        has_memory = generation.has_memory(simulation_name)
+        has_chi_squared = generation.is_analysed(simulation_name)
+
+        # Load the simulation
+        simulation = generation.get_simulation(simulation_name)
+
+        # Check extraction
+        if not has_extraction and simulation.analysed_any_extraction:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no extraction output but extraction is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_extraction()
+            reset_status.append(simulation_name)
+
+        # Check plotting
+        if not has_plotting and simulation.analysed_any_plotting:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no plotting output but plotting is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_plotting()
+            reset_status.append(simulation_name)
+
+        # Check misc
+        if not has_misc and simulation.analysed_any_misc:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no miscellaneous output but miscellaneous analysis is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_misc()
+            reset_status.append(simulation_name)
+
+        # Check batch
+        if not (has_timing or has_memory) and simulation.analysed_batch:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no timing or memory entry but batch analysis is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_batch()
+            reset_status.append(simulation_name)
+
+        # Check extra
+        if not has_chi_squared and simulation.analysed_all_extra:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no chi squared value but extra analysis is supposed to be executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_extra()
+            reset_status.append(simulation_name)
+
+        # Check
+        #if has_chi_squared and not (has_extraction and has_plotting and has_misc and (has_timing or has_memory)):
+        if has_chi_squared and not (has_extraction and has_plotting and has_misc): # sometimes timing and memory entries are missing but that is not actually a problem
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' has a chi squared value but other analysis output seems to be missing")
+
+            # Get the chi squared value
+            chisq = chi_squared.chi_squared_for(simulation_name)
+
+            # Remove from chi squared table and re-analyse?
+            if prompt_yn("reanalyse", "remove the chi squared value of " + str(chisq) + " for simulation '" + simulation_name + "' and re-analyse this simulation?"):
+
+                # Debugging
+                log.debug("Removing simulation '" + simulation_name + "' simulation from the chi squared table ...")
+
+                # Remove from the chi squared table
+                chi_squared.remove_simulation(simulation_name)
+                chi_squared.save()
+
+                # Debugging
+                log.debug("Adding re-analyse command for simulation '" + simulation_name + "' ...")
+
+                # Add re-analyse command
+                reanalyse_command = "reanalyse '" + simulation_name + "' --analysis/basic/local --analysis/basic/ignore_missing_data --analysis/ignore_missing_data --analysis/basic/ignore_bad --analysis/basic/not_skip_ignored_bad_convolution"
+                manager.config.commands.append(reanalyse_command)
+
+        # Save the simulation
+        simulation.save()
+
+    # Reset status
+    for simulation_name in reset_status:
+
+        # Debugging
+        log.debug("Resetting status for simulation '" + simulation_name + "' ...")
+
+        # Reset
+        status.reset_for_simulation(simulation_name, "retrieved")
 
 # -----------------------------------------------------------------
 

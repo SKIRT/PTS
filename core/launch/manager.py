@@ -6303,7 +6303,7 @@ class SimulationManager(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("simulations", "integer_list", "simulation indices")
+        definition.add_required("simulations", "integer_and_string_list", "simulation indices or names")
 
         # Add definition settings
         if command_definition is not None:
@@ -6347,7 +6347,11 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get simulation names
         simulation_names = []
-        for index in config.simulations: simulation_names.append(self.simulation_names[index])
+        for index_or_name in config.simulations:
+            if types.is_string_type(index_or_name): simulation_name = index_or_name
+            elif types.is_integer_type(index_or_name): simulation_name = self.simulation_names[index_or_name]
+            else: raise ValueError("Invalid type")
+            simulation_names.append(simulation_name)
 
         # Return
         return splitted, simulation_names, config

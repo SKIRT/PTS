@@ -2349,7 +2349,7 @@ def add_lines(filepath, lines, create=False):
     """
 
     # Create the file?
-    if is_file(filepath):
+    if not is_file(filepath):
         if create: mode = "w"
         else: raise IOError("File '" + filepath + "' is not present")
     else: mode = "a"

@@ -39,7 +39,7 @@ from ..simulation.parallelization import Parallelization, get_possible_nprocesse
 from ..tools import monitoring
 from ..advanced.memoryestimator import estimate_memory
 from ..tools import sequences
-from ..tools.utils import lazyproperty, memoize_method
+from ..tools.utils import lazyproperty, memoize_method, memoize_method_reset
 from ..basics.map import Map
 from ..advanced.parallelizationtool import determine_parallelization
 from ..tools import parallelization
@@ -209,7 +209,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def get_status(self, simulation_name):
 
         """
@@ -402,7 +402,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_queued(self, simulation_name):
 
         """
@@ -416,7 +416,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_running(self, simulation_name):
 
         """
@@ -442,7 +442,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_finished(self, simulation_name):
 
         """
@@ -468,7 +468,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_retrieved(self, simulation_name):
 
         """
@@ -482,7 +482,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_analysed(self, simulation_name):
 
         """
@@ -496,7 +496,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_aborted(self, simulation_name):
 
         """
@@ -510,7 +510,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_cancelled(self, simulation_name):
 
         """
@@ -524,7 +524,7 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
+    @memoize_method_reset
     def is_crashed(self, simulation_name):
 
         """
@@ -571,11 +571,66 @@ class SimulationStatusTable(SmartTable):
         :return:
         """
 
-        # Get index
-        index = self.index_for_simulation(simulation_name)
+        # Set the status
+        self.set_status(simulation_name, status)
 
-        # Set value
-        self.set_value("Status", index, status)
+        # Reset properties
+        self.reset_properties()
+
+        # Reset methods
+        self.reset_methods(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def reset_methods(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # TODO: detect memoized methods automatically
+
+        raise NotImplementedError("This function is not working yet")
+
+        #print(dir(self.get_status))
+        #call_function = self.get_status.__dir__["__call__"]
+        #print(dir(call_function))
+        #print(vars(self.get_status))
+        #call_function = vars(self.get_status)["__call__"]
+        #call_function = self.get_status.__getattr__("__call__")
+        #print(call_function)
+
+        # Reset memoized methods
+        self.get_status._reset_for_args(simulation_name)
+        self.is_queued._reset_for_args(simulation_name)
+        self.is_running._reset_for_args(simulation_name)
+        self.is_finished._reset_for_args(simulation_name)
+        self.is_retrieved._reset_for_args(simulation_name)
+        self.is_analysed._reset_for_args(simulation_name)
+        self.is_aborted._reset_for_args(simulation_name)
+        self.is_cancelled._reset_for_args(simulation_name)
+        self.is_crashed._reset_for_args(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def reset_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: detect lazyproperties automatically
+
+        del self.simulation_names
+        del self.finished_names
+        del self.nfinished
+        del self.retrieved_names
+        del self.nretrieved
+        del self.analysed_names
+        del self.nanalysed
 
 # -----------------------------------------------------------------
 
