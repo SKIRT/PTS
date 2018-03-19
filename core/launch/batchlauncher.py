@@ -578,7 +578,7 @@ class SimulationStatusTable(SmartTable):
         self.reset_properties()
 
         # Reset methods
-        self.reset_methods(simulation_name)
+        #self.reset_methods(simulation_name)
 
     # -----------------------------------------------------------------
 

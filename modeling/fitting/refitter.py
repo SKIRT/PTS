@@ -2716,7 +2716,7 @@ class Refitter(FittingComponent):
 
             # Determine path
             if self.as_run: path = fs.join(self.new_generation_paths[generation_name], "chi_squared.pdf")
-            elif self.in_place: fs.join(self.fitting_run.get_generation_path(generation_name), "chi_squared.pdf")
+            elif self.in_place: path = fs.join(self.fitting_run.get_generation_path(generation_name), "chi_squared.pdf")
             else: path = fs.join(self.generation_paths[generation_name], "chi_squared.pdf")
 
             # Plot chi squared?
