@@ -29,6 +29,7 @@ from pts.core.config.analyse_simulation import definition as analysis_definition
 from pts.core.basics.log import log
 from pts.core.simulation.remote import is_analysed_status
 from pts.core.launch.batchlauncher import SimulationStatusTable
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -321,6 +322,18 @@ for simulation_name in status.simulation_names:
 
                     # Unset analysed flag
                     simulation.analysed = False
+
+                    # Save the simulation object
+                    simulation.save()
+
+                # Needs fixing?
+                if "SEDFitModelAnalyser" in simulation.analysed_extra:
+
+                    # Fix
+                    log.warning("Fixing simulation 'analysed_extra' classes ...")
+
+                    # Unset extra analysis
+                    simulation.analysed_extra = sequences.removed(simulation.analysed_extra, "SEDFitModelAnalyser")
 
                     # Save the simulation object
                     simulation.save()

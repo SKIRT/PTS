@@ -208,6 +208,9 @@ def select_analysis_options(successive=False, hierarchic=True, contains=None, no
                 # Add
                 section_properties[name] = all_section_properties[name]
 
+            # Any?
+            if len(section_properties) == 0: continue
+
             # Select properties in succession
             if successive:
 
@@ -682,8 +685,13 @@ class SimulationShower(Configurable):
             if default is not None:
 
                 ptype, pstring = stringify(default)
-                type_string = " [" + ptype + "]" if ptype is not None else ""
-                print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + pstring + type_string)
+
+                if pstring == "":
+                    type_string = "[empty " + ptype + "]" if ptype is not None else ""
+                    print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + type_string)
+                else:
+                    type_string = " [" + ptype + "]" if ptype is not None else ""
+                    print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + pstring + type_string)
 
             else: print(" - " + fmt.bold + name + fmt.reset + "(" + description +  "): None")
 

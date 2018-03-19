@@ -199,7 +199,7 @@ commands[_analysis_command_name] = ("show_analysis_options_command", True, "show
 commands[_steps_command_name] = ("show_analysis_steps_command", True, "show analysis steps", "simulation")
 commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
 commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between simulations", "simulations")
-commands[_steal_command_name] = (None, None, "take on simulation settings or analysis options from one simulation to another", "two_simulations")
+commands[_steal_command_name] = (None, None, "take on simulation settings or analysis options from one simulation to another", "simulations_simulation")
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve a simulation from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse a simulation", "simulations")
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
@@ -251,8 +251,8 @@ compare_commands[_analysis_command_name] = ("compare_analysis_options_command", 
 
 # Define steal commands
 steal_commands = OrderedDict()
-steal_commands[_simulation_command_name] = ("steal_simulation_settings_command", True, "steal simulation settings", "two_simulations")
-steal_commands[_analysis_command_name] = ("steal_analysis_options_command", True, "steal analysis options", "two_simulations")
+steal_commands[_simulation_command_name] = ("steal_simulation_settings_command", True, "steal simulation settings", "simulations_simulation")
+steal_commands[_analysis_command_name] = ("steal_analysis_options_command", True, "steal analysis options", "simulations_simulation")
 
 # -----------------------------------------------------------------
 
@@ -6331,6 +6331,68 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_simulations_simulation_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("simulations", "integer_list", "simulation indices")
+        definition.add_required("simulation", "integer_or_string", "simulation index or name")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_simulations_simulation_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
+        
+        """
+        This function ...
+        :param command: 
+        :param command_definition: 
+        :param name: 
+        :param index: 
+        :param required_to_optional: 
+        :param interactive: 
+        :return: 
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Get the definition
+        definition = self.get_simulations_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
+
+        # Parse arguments
+        else: config = parse_arguments(name, definition, command=splitted[index:], error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+
+        # Get simulation names
+        simulation_names = [self.simulation_names[index] for index in config.pop("simulations")]
+
+        # Get simulation name
+        if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
+        else: simulation_name = config.pop("simulation")
+
+        # Return
+        return splitted, simulation_names, simulation_name, config
+
+    # -----------------------------------------------------------------
+
     def get_two_simulations_command_definition(self, command_definition=None, required_to_optional=True):
 
         """
@@ -7260,26 +7322,33 @@ class SimulationManager(InteractiveConfigurable):
         name = _steal_command_name + " " + _simulation_command_name
 
         # Get simulation names and config
-        splitted, simulation_name, other_simulation_name, config = self.parse_two_simulations_command(command, self.steal_simulation_settings_definition, name=name, **kwargs)
-
-        # Give warning
-        if self.is_retrieved(simulation_name): log.warning("Simulation '" + simulation_name + "' is already retrieved. Changing simulation settings will not have any effect on the output")
-        else: log.warning("Simulation settings can be adapted but this will possibly not affect anything about the simulation output")
+        splitted, simulation_names, from_simulation_name, config = self.parse_simulations_simulation_command(command, self.steal_simulation_settings_definition, name=name, **kwargs)
 
         # Check settings
         if config.matching is not None:
             if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
             config.contains = config.matching
 
-        # Steal
-        self.steal_simulation_settings(simulation_name, other_simulation_name, successive=config.successive,
-                                       confirm=config.confirm)
+        # Get the settings here (so they don't have to be selected for each stealing simulation)
+        settings = select_simulation_settings(successive=config.successive, contains=config.contains, not_contains=config.not_contains,
+                                              exact_name=config.exact_name, exact_not_name=config.exact_not_name,
+                                              startswith=config.startswith, endswith=config.endswith)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names:
+
+            # Give warning
+            if self.is_retrieved(simulation_name): log.warning("Simulation '" + simulation_name + "' is already retrieved. Changing simulation settings will not have any effect on the output")
+            else: log.warning("Simulation settings can be adapted but this will possibly not affect anything about the simulation output")
+
+            # Steal
+            self.steal_simulation_settings(simulation_name, from_simulation_name, confirm=config.confirm, settings=settings)
 
     # -----------------------------------------------------------------
 
     def steal_simulation_settings(self, simulation_name, from_simulation_name, successive=False, confirm=True,
                                   contains=None, not_contains=None, exact_name=None, exact_not_name=None,
-                                  startswith=None, endswith=None):
+                                  startswith=None, endswith=None, settings=None):
 
         """
         This function ...
@@ -7293,13 +7362,14 @@ class SimulationManager(InteractiveConfigurable):
         :param exact_not_name:
         :param startswith:
         :param endswith:
+        :param settings:
         :return:
         """
 
-        # Get the settings
-        settings = select_simulation_settings(successive=successive, contains=contains, not_contains=not_contains,
-                                              exact_name=exact_name, exact_not_name=exact_not_name, startswith=startswith,
-                                              endswith=endswith)
+        # Get the settings if necessary
+        if settings is None: settings = select_simulation_settings(successive=successive, contains=contains, not_contains=not_contains,
+                                                          exact_name=exact_name, exact_not_name=exact_not_name, startswith=startswith,
+                                                          endswith=endswith)
 
         # Get the simulations
         simulation = self.get_simulation(simulation_name)
@@ -7389,25 +7459,32 @@ class SimulationManager(InteractiveConfigurable):
         name = _steal_command_name + " " + _analysis_command_name
 
         # Get simulation names and config
-        splitted, simulation_name, from_simulation_name, config = self.parse_two_simulations_command(command, self.steal_analysis_options_definition, name=name, **kwargs)
-
-        # Check
-        if self.is_analysed(simulation_name): log.warning("Simulation '" + simulation_name + "' is already analysed. Simulation will have to be re-analysed")
+        splitted, simulation_names, from_simulation_name, config = self.parse_simulations_simulation_command(command, self.steal_analysis_options_definition, name=name, **kwargs)
 
         # Check settings
         if config.matching is not None:
             if config.contains is not None: raise ValueError("Cannot specify both matching string and containing string")
             config.contains = config.matching
 
-        # Steal
-        self.steal_analysis_options(simulation_name, from_simulation_name, successive=config.successive,
-                                    hierarchic=config.hierarchic, confirm=config.confirm)
+        # Get the options here (so they don't have to be selected for each stealing simulation)
+        options = select_analysis_options(successive=config.successive, hierarchic=config.hierarchic, contains=config.contains,
+                                          not_contains=config.not_contains, exact_name=config.exact_name,
+                                          exact_not_name=config.exact_not_name, startswith=config.startswith, endswith=config.endswith)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names:
+
+            # Check
+            if self.is_analysed(simulation_name): log.warning("Simulation '" + simulation_name + "' is already analysed. Simulation will have to be re-analysed")
+
+            # Steal
+            self.steal_analysis_options(simulation_name, from_simulation_name, confirm=config.confirm, options=options)
 
     # -----------------------------------------------------------------
 
     def steal_analysis_options(self, simulation_name, from_simulation_name, successive=False, hierarchic=True,
                                confirm=True, contains=None, not_contains=None, exact_name=None, exact_not_name=None,
-                               startswith=None, endswith=None):
+                               startswith=None, endswith=None, options=None):
 
         """
         This function ...
@@ -7422,13 +7499,14 @@ class SimulationManager(InteractiveConfigurable):
         :param exact_not_name:
         :param startswith:
         :param endswith:
+        :param options:
         :return:
         """
         
-        # Get the options
-        options = select_analysis_options(successive=successive, hierarchic=hierarchic, contains=contains,
-                                          not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
-                                          startswith=startswith, endswith=endswith)
+        # Get the options if necessary
+        if options is None: options = select_analysis_options(successive=successive, hierarchic=hierarchic, contains=contains,
+                                              not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
+                                              startswith=startswith, endswith=endswith)
 
         # Get the simulations
         simulation = self.get_simulation(simulation_name)
@@ -7488,7 +7566,7 @@ class SimulationManager(InteractiveConfigurable):
                 if confirm:
 
                     print("")
-                    print("Are you sure you want to change the analysis property '" + spec + "' of simulation '" + simulation_name + "' from '" + tostr(old_value) + "' to '" + tostr(value) + "' ...")
+                    print("Are you sure you want to change the analysis property '" + spec + "' of simulation '" + simulation_name + "' from:")
                     print(" - " + tostr(old_value))
                     print("to:")
                     print(" - " + tostr(value) + "?")

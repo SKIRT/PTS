@@ -482,8 +482,13 @@ class SimplePropertyComposite(object):
             if self.get_fixed(name): suffix = " FIXED"
             else: suffix = ""
 
-            if bold: print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + tostr(default) + " [" + ptype + "]" + suffix)
-            else: print(" - " + name + " (" + description + "): " + tostr(default) + " [" + ptype + "]" + suffix)
+            # Set ptype string
+            if hasattr(default, '__len__') and len(default) == 0: ptype_string = "[empty " + ptype + "]"
+            else: ptype_string = " [" + ptype + "]"
+
+            # Show
+            if bold: print(" - " + fmt.bold + name + fmt.reset + " (" + description + "): " + tostr(default) + ptype_string + suffix)
+            else: print(" - " + name + " (" + description + "): " + tostr(default) + ptype_string + suffix)
 
         # Recursive: also loop over the sections
         if recursive:
