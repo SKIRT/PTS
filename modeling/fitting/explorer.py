@@ -29,7 +29,7 @@ from ...core.tools.stringify import stringify_not_list, stringify
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.remote.host import load_host
 from ...core.basics.configuration import ConfigurationDefinition, create_configuration_interactive
-from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual, make_test_definition
+from .evaluate import prepare_simulation, get_parameter_values_for_named_individual, make_test_definition
 from ...core.simulation.input import SimulationInput
 from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr

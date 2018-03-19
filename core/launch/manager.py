@@ -1954,6 +1954,29 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_screen_output(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the screenlog path
+        filepath = self.get_screen_log_path(simulation_name)
+        remote_ski_path = self.get_remote_skifile_path(simulation_name)
+
+        # Show the remote logfile path
+        log.debug("Remote screen log path: '" + filepath + "'")
+
+        # Get the lines
+        lines = self.get_remote_for_simulation(simulation_name).get_lines_between(filepath, remote_ski_path, "Finished simulation")
+
+        # Return the lines
+        return lines
+
+    # -----------------------------------------------------------------
+
     def get_job_id(self, simulation_name):
 
         """
@@ -6630,13 +6653,8 @@ class SimulationManager(InteractiveConfigurable):
             # Read the log file
             lines = remote.read_lines(remote_log_file_path)
 
-        # Print the lines of the log file
-        print("")
-        if summarize: show_log_summary(lines, debug_output=True)
-        elif short: show_log_summary(lines, debug_output=False)
-        else:
-            for line in lines: print(line)
-        print("")
+        # Show the lines
+        self.show_simulation_output_lines(lines, summarize=summarize, short=short)
 
     # -----------------------------------------------------------------
 
@@ -6656,27 +6674,11 @@ class SimulationManager(InteractiveConfigurable):
         # Debugging
         log.debug("Showing output of screen session '" + screen_name + "' for simulation '" + simulation_name + "' ...")
 
-        # Get the screenlog path
-        filepath = self.get_screen_log_path(simulation_name)
-        #print(filepath)
+        # Get the screen output lines for the simulation
+        lines = self.get_screen_output(simulation_name)
 
-        remote_ski_path = self.get_remote_skifile_path(simulation_name)
-
-        # Get the lines
-        lines = self.get_remote_for_simulation(simulation_name).get_lines_between(filepath, remote_ski_path, "Finished simulation")
-        
-        # Show
-        print("")
-        if summarize: show_log_summary(lines, debug_output=True)
-        elif short: show_log_summary(lines, debug_output=False)
-        else:
-            for line in lines:
-
-                # Show the line
-                if not time.has_valid_timestamp(line): print(fmt.red + line + fmt.reset)
-                else: print(line)
-
-        print("")
+        # Show the lines
+        self.show_simulation_output_lines(lines, summarize=summarize, short=short)
 
     # -----------------------------------------------------------------
 
@@ -6702,6 +6704,21 @@ class SimulationManager(InteractiveConfigurable):
         if nlines == 0:
             log.warning("No output for job '" + str(job_id) + "'")
             return
+
+        # Show
+        self.show_simulation_output_lines(lines, summarize=summarize, short=short)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_output_lines(self, lines, summarize=False, short=False):
+
+        """
+        This function ...
+        :param lines:
+        :param summarize:
+        :param short:
+        :return:
+        """
 
         # Show
         print("")
@@ -6771,9 +6788,11 @@ class SimulationManager(InteractiveConfigurable):
         # Debugging
         log.debug("Showing error output of screen session '" + screen_name + "' for simulation '" + simulation_name + "' ...")
 
-        # Get the screenlog path
-        filepath = self.get_screen_log_path(simulation_name)
-        print(filepath)
+        # Get the screen output lines for the simulation
+        lines = self.get_screen_output(simulation_name)
+
+        # Show the lines
+        self.show_simulation_error_lines(lines)
 
     # -----------------------------------------------------------------
 
@@ -6793,6 +6812,21 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get the error lines
         lines = self.get_job_error(simulation_name)
+
+        # Show lines
+        self.show_simulation_error_lines(lines)
+
+    # -----------------------------------------------------------------
+
+    def show_simulation_error_lines(self, lines):
+        
+        """
+        This function ...
+        :param lines: 
+        :return: 
+        """
+
+        # Check number of lines
         nlines = len(lines)
         if nlines == 0:
             print(fmt.red + "no error output" + fmt.reset)

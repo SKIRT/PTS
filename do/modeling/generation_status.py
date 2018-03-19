@@ -392,6 +392,11 @@ if config.check_paths:
 
 # -----------------------------------------------------------------
 
+# Check whether simulations with chi squared (analysed simuations) also have the other analysis output
+
+
+# -----------------------------------------------------------------
+
 # Run the manager
 manager.run(assignment=assignment, timing=fitting_run.timing_table, memory=fitting_run.memory_table,
             status=status, info_tables=[parameters, chi_squared], remotes=remotes, simulations=simulations)
