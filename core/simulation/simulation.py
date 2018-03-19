@@ -173,8 +173,9 @@ class SkirtSimulation(object):
             self._prefix = logfiles[0][0:len(logfiles[0])-len("_log.txt")]
 
         self.ski_path = ski_path
-        self.input_path = self._inpath
-        self.output_path = self._outpath
+        # BETTER AS PROPERTIES SO THAT SETTING THEM WILL NOT LEAVE INCONSISTENT STATE!
+        #self.input_path = self._inpath
+        #self.output_path = self._outpath
 
         # Try to obtain ski path from file with name prefix.ski in current working directory
         if self.ski_path is None and fs.is_file(fs.join(fs.cwd(), prefix + ".ski")): self.ski_path = fs.join(fs.cwd(), prefix + ".ski")
@@ -207,6 +208,26 @@ class SkirtSimulation(object):
 
             # Set the attribute
             setattr(self, attr_name, value)
+
+    @property
+    def input_path(self):
+
+        return self._inpath
+
+    @input_path.setter
+    def input_path(self, value):
+
+        self._inpath = value
+
+    @property
+    def output_path(self):
+
+        return self._outpath
+
+    @output_path.setter
+    def output_path(self, value):
+
+        self._outpath = value
 
     @property
     def analyser_paths(self):

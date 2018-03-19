@@ -30,7 +30,7 @@ from pts.core.basics.log import log
 from pts.core.simulation.remote import is_analysed_status
 from pts.core.launch.batchlauncher import SimulationStatusTable
 from pts.core.tools import sequences
-from pts.modeling.fitting.generation import check_simulation_paths
+from pts.modeling.fitting.generation import check_simulation_paths, correct_simulation_paths
 
 # -----------------------------------------------------------------
 
@@ -80,6 +80,8 @@ definition.add_flag("retrieve", "retrieve finished simulations", False)
 definition.add_flag("analyse", "analyse retrieved simulations", False)
 definition.add_flag("produce_missing", "produce missing simulation files", False)
 definition.add_flag("check_paths", "check simulation paths", False)
+definition.add_flag("correct_paths", "correct simulation paths instead of raising errors", False)
+definition.add_flag("confirm_correction", "confirm before correcting paths", False)
 definition.add_flag("fix_success", "check success flags in assignment table")
 
 # Analysis settings
@@ -173,6 +175,7 @@ backup_path = fs.join(manage_current_path, "backup")
 status = generation.get_status(remotes, lazy=config.lazy, find_simulations=config.find_simulations,
                                find_remotes=config.find_remotes, produce_missing=config.produce_missing,
                                retrieve=config.retrieve, check_paths=config.check_paths,
+                               correct_paths=config.correct_paths, confirm_correction=config.confirm_correction,
                                fix_success=config.fix_success)
 
 # -----------------------------------------------------------------
@@ -379,7 +382,13 @@ if config.check_paths:
         simulation = generation.get_simulation(simulation_name)
 
         # Check paths
-        check_simulation_paths(simulation)
+        try: check_simulation_paths(simulation)
+        except RuntimeError as e:
+            if config.correct_paths:
+                log.warning(str(e))
+                log.warning("Fixing simulation paths ...")
+                correct_simulation_paths(simulation, confirm=config.confirm_correction)
+            else: raise e
 
 # -----------------------------------------------------------------
 
