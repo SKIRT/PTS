@@ -656,7 +656,7 @@ class Refitter(FittingComponent):
                 log.debug("Creating backup for simulation '" + simulation_name + "' ...")
 
                 # Copy the fluxes file
-                fs.copy_file(generation.get_simulation_mock_sed_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
+                fs.copy_file(generation.get_mock_sed_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -1146,35 +1146,16 @@ class Refitter(FittingComponent):
             # Loop over the simulation names
             for simulation_name in generation.simulation_names:
 
-                #print(simulation_name, generation.has_misc_cached(simulation_name))
-                #continue
-
-                # Get the mock SED filepath
-                #if not generation.has_mock_sed(simulation_name): raise IOError("Mock SED file is not found for simulation '" + simulation_name + "'")
+                # Check whether mock SED is present
+                if not generation.has_mock_sed(simulation_name):
+                    log.warning("No mock fluxes for '" + simulation_name + "': skipping ...")
+                    continue
 
                 # Debugging
                 log.debug("Loading mock fluxes for the '" + simulation_name + "' simulation ...")
 
-                # From images
-                if generation.use_images:
-                    if not generation.has_image_fluxes_for_simulation(simulation_name):
-                        log.warning("No fluxes for '" + simulation_name + "': skipping ...")
-                        continue
-
-                    # Load
-                    fluxes = generation.get_image_fluxes_for_simulation(simulation_name)
-
-                # Regular
-                else:
-                    if not generation.has_fluxes_for_simulation(simulation_name):
-                        log.warning("No fluxes for '" + simulation_name + "': skipping ...")
-                        continue
-
-                    # Load
-                    fluxes = generation.get_fluxes_for_simulation(simulation_name)
-
-                # Load
-                #fluxes = generation.get_simulation_mock_sed(simulation_name)
+                # Load the fluxes
+                fluxes = generation.get_mock_sed(simulation_name)
 
                 # Set fluxes
                 self.fluxes[generation_name][simulation_name] = fluxes
@@ -1525,7 +1506,7 @@ class Refitter(FittingComponent):
 
                 # Get mock SED
                 if not generation.has_mock_sed(simulation_name): raise IOError("Mock SED is not found for simulation '" + simulation_name + "'")
-                mock_sed = generation.get_simulation_mock_sed(simulation_name)
+                mock_sed = generation.get_mock_sed(simulation_name)
 
                 # Loop over the entries in the fluxdensity table (SED) derived from the simulation
                 #for i in range(len(mock_sed)):

@@ -244,8 +244,8 @@ for index, match in enumerate(matches):
         # Create SEDs
         seds = OrderedDict()
         seds.update(reference_seds)
-        seds["Generation a"] = generation_a.get_simulation_mock_sed(name_a)
-        seds["Generation b"] = generation_b.get_simulation_mock_sed(name_b)
+        seds["Generation a"] = generation_a.get_mock_sed(name_a)
+        seds["Generation b"] = generation_b.get_mock_sed(name_b)
 
         # Plot
         plot_seds(seds)

@@ -117,7 +117,7 @@ for simulation_name in simulation_names:
     misc_path = generation.get_simulation_misc_path(simulation_name)
 
     # Get the mock sed
-    mock_sed = generation.get_simulation_mock_sed(simulation_name)
+    mock_sed = generation.get_mock_sed(simulation_name)
 
     # Create the fit model analyser
     analyser = SEDFitModelAnalyser()

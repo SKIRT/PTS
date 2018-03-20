@@ -71,7 +71,7 @@ for simulation_name in generation.simulation_names:
     fluxes_path = generation.get_simulation_misc_fluxes_path(simulation_name)
 
     # Get the mock sed
-    sed = generation.get_simulation_mock_sed(simulation_name)
+    sed = generation.get_mock_sed(simulation_name)
 
     # Determine the path to the plot file
     path = fs.join(fluxes_path, "earth_fluxes.pdf")

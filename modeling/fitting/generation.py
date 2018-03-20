@@ -878,75 +878,157 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_mock_sed_path(self, name):
+    def get_mock_sed_path(self, simulation_name):
 
         """
         This function ...
-        :param name:
+        :param simulation_name:
         :return:
         """
 
-        # Define the two paths
-        fluxes_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.dat")
-        image_fluxes_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.dat")
+        # Use images
+        if self.use_images: return self.get_image_fluxes_path_for_simulation(simulation_name)
 
-        # Return the correct path
-        if self.use_images: return image_fluxes_path
-        else: return fluxes_path
+        # Regular
+        else: return self.get_fluxes_path_for_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
-    def has_mock_sed(self, name):
+    def has_mock_sed(self, simulation_name):
 
         """
         This function ...
-        :param name:
+        :param simulation_name:
         :return:
         """
 
-        return fs.is_file(self.get_simulation_mock_sed_path(name))
+        # Use images
+        if self.use_images: return self.has_image_fluxes_for_simulation(simulation_name)
+
+        # Regular
+        else: return self.has_fluxes_for_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
-    def get_simulation_mock_sed(self, name):
+    def get_mock_sed(self, simulation_name):
 
         """
         This function ...
-        :param name:
+        :param simulation_name:
         :return:
         """
 
-        return ObservedSED.from_file(self.get_simulation_mock_sed_path(name))
+        return ObservedSED.from_file(self.get_mock_sed_path(simulation_name))
 
     # -----------------------------------------------------------------
 
-    def get_simulation_mock_sed_plot_path(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Define two paths
-        fluxes_plot_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
-        image_fluxes_plot_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.pdf")
-
-        # Return the correct path
-        if self.use_images: return image_fluxes_plot_path
-        else: return fluxes_plot_path
+    # def get_simulation_mock_sed_plot_path(self, name):
+    #
+    #     """
+    #     This function ...
+    #     :param name:
+    #     :return:
+    #     """
+    #
+    #     # Define two paths
+    #     fluxes_plot_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
+    #     image_fluxes_plot_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.pdf")
+    #
+    #     # Return the correct path
+    #     if self.use_images: return image_fluxes_plot_path
+    #     else: return fluxes_plot_path
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def has_mock_sed_plot(self, name):
+    #
+    #     """
+    #     This function ...
+    #     :param name:
+    #     :return:
+    #     """
+    #
+    #     return fs.is_file(self.get_simulation_mock_sed_plot_path(name))
 
     # -----------------------------------------------------------------
 
-    def has_mock_sed_plot(self, name):
+    def get_image_fluxes_plot_path_for_simulation(self, simulation_name):
 
         """
         This function ...
-        :param name:
+        :param simulation_name:
         :return:
         """
 
-        return fs.is_file(self.get_simulation_mock_sed_plot_path(name))
+        return self.get_misc_output(simulation_name).single_images_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes_plot_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).single_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def has_image_fluxes_plot_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).has_single_images_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def has_fluxes_plot_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).has_single_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    def get_mock_sed_plot_path(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Use images
+        if self.use_images: return self.get_image_fluxes_plot_path_for_simulation(simulation_name)
+
+        # Regular
+        else: return self.get_fluxes_plot_path_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_mock_sed_plot(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Use images
+        if self.use_images: return self.has_image_fluxes_plot_for_simulation(simulation_name)
+
+        # Regular
+        else: return self.has_fluxes_plot_for_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -1452,7 +1534,7 @@ class Generation(object):
         :return:
         """
 
-        return self.get_simulation(name).output
+        return self.get_simulation_or_basic(name).output
 
     # -----------------------------------------------------------------
 
@@ -1465,7 +1547,7 @@ class Generation(object):
         :return:
         """
 
-        return self.get_simulation(name).extraction_output
+        return self.get_simulation_or_basic(name).extraction_output
 
     # -----------------------------------------------------------------
 
@@ -1478,7 +1560,7 @@ class Generation(object):
         :return:
         """
 
-        return self.get_simulation(name).plotting_output
+        return self.get_simulation_or_basic(name).plotting_output
 
     # -----------------------------------------------------------------
 
@@ -1491,7 +1573,7 @@ class Generation(object):
         :return:
         """
 
-        return self.get_simulation(name).misc_output
+        return self.get_simulation_or_basic(name).misc_output
 
     # -----------------------------------------------------------------
 
@@ -1503,8 +1585,19 @@ class Generation(object):
         :return:
         """
 
-        misc = self.get_misc_output(simulation_name)
-        return misc.has_single_fluxes
+        return self.get_misc_output(simulation_name).has_single_fluxes
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).single_fluxes
 
     # -----------------------------------------------------------------
 
@@ -1516,8 +1609,7 @@ class Generation(object):
         :return:
         """
 
-        misc = self.get_misc_output(simulation_name)
-        return ObservedSED.from_file(misc.single_fluxes)
+        return ObservedSED.from_file(self.get_fluxes_path_for_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -1529,9 +1621,19 @@ class Generation(object):
         :return:
         """
 
-        misc = self.get_misc_output(simulation_name)
-        #print(self.get_simulation_misc_path(simulation_name), misc.image_fluxes)
-        return misc.has_single_image_fluxes
+        return self.get_misc_output(simulation_name).has_single_image_fluxes
+
+    # -----------------------------------------------------------------
+
+    def get_image_fluxes_path_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).single_image_fluxes
 
     # -----------------------------------------------------------------
 
@@ -1543,8 +1645,7 @@ class Generation(object):
         :return:
         """
 
-        misc = self.get_misc_output(simulation_name)
-        return ObservedSED.from_file(misc.single_image_fluxes)
+        return ObservedSED.from_file(self.get_image_fluxes_path_for_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 

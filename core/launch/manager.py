@@ -9791,8 +9791,8 @@ class SimulationManager(InteractiveConfigurable):
         # Get the original simulation
         original_simulation = self.get_simulation(simulation.name)
 
-        # Analyser paths
-        simulation.analyser_paths = original_simulation.analyser_paths
+        # Analyser paths: NO, this is in the analysis options now!
+        #simulation.analyser_paths = original_simulation.analyser_paths
 
         # Options for retrieval
         simulation.retrieve_types = original_simulation.retrieve_types
