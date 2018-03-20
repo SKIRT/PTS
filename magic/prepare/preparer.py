@@ -66,7 +66,7 @@ commands[_errors_command_name] = ("create_errors_image_command", True, "create e
 commands[_units_command_name] = ("convert_units_image_command", True, "convert the units of an image", "image")
 
 # Plotting
-commands[_plot_command_name] = (None, None, "plot", "image")
+commands[_plot_command_name] = (None, None, "plotting", "image")
 
 # -----------------------------------------------------------------
 

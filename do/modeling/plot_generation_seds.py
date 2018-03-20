@@ -15,9 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
-from pts.core.plot.sed import SEDPlotter
-from pts.core.basics.log import log
-from pts.core.tools import sequences
+from pts.modeling.fitting.statistics import FittingStatistics
 
 # -----------------------------------------------------------------
 
@@ -51,73 +49,23 @@ config = parse_arguments("plot_generation_seds", definition, "Plot the seds of a
 
 # -----------------------------------------------------------------
 
-# Load the fitting run
-fitting_run = runs.load(config.run)
-
-# Get the generation
-generation = fitting_run.get_generation(config.generation)
-
-# -----------------------------------------------------------------
-
-# Create the SED plotter
-plotter = SEDPlotter()
+# Set plot command
+plot_command = 'plot seds "' + config.generation + '"'
+if config.random is not None: plot_command += " --random " + str(config.random)
+if config.additional_error is not None: plot_command += " --additional_error " + str(config.additional_error * 100)
+if config.output is not None: plot_command += ' --path "' + config.output + '"'
 
 # -----------------------------------------------------------------
 
-# Inform the user
-log.info("Loading the observed SEDs ...")
+# Create the fitting statistics
+statistics = FittingStatistics()
 
-# Get the SEDs
-clipped_sed = environment.observed_sed
-truncated_sed = environment.truncated_sed
+# Set properties
+statistics.config.run = config.run
+statistics.config.interactive = False
+statistics.config.commands = [plot_command]
 
-# Add relative error
-if config.additional_error is not None:
-    clipped_sed.add_relative_error(config.additional_error)
-    truncated_sed.add_relative_error(config.additional_error)
-
-# -----------------------------------------------------------------
-
-# Inform the user
-log.info("Adding the observed SEDs ...")
-
-# Add observed SEDs
-plotter.add_sed(environment.observed_sed, "Clipped observed fluxes")
-plotter.add_sed(environment.truncated_sed, "Truncated observed fluxes")
-
-# -----------------------------------------------------------------
-
-# Add simulation SEDs
-log.info("Adding the simulated SEDs ...")
-
-# Get the simulation names
-names = generation.simulation_names
-nsimulations = len(names)
-
-# Set number of SEDs
-if config.random is not None: nseds = config.random
-else: nseds = nsimulations
-
-# Get selected simulation names
-if config.random is not None: names = sequences.random_subset(names, config.random)
-
-# -----------------------------------------------------------------
-
-# Loop over the simulation names
-for index, simulation_name in enumerate(names):
-
-    # Debugging
-    log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index+1) + " of " + str(nseds) + ") ...")
-
-    # Get the simulated SED
-    sed = generation.get_simulation_sed(simulation_name)
-
-    # Add the SED
-    plotter.add_sed(sed, simulation_name, ghost=True, residuals=False)
-
-# -----------------------------------------------------------------
-
-# Run the plotter
-plotter.run(output=config.output)
+# Run
+statistics.run()
 
 # -----------------------------------------------------------------

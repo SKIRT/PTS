@@ -79,6 +79,54 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_create_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.config.per_generation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_animate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.visualise
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_writing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.write
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plotting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -90,6 +138,9 @@ class SEDFitter(FittingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Get the chi squared values
+        self.get_chi_squared()
+
         # 2. Get the parameters of the best models for each generation
         self.get_best_parameters()
 
@@ -97,16 +148,16 @@ class SEDFitter(FittingComponent):
         self.calculate_probabilities()
 
         # 4. Calculate the probability distributions
-        if not self.config.per_generation: self.create_distributions()
+        if self.do_create_distributions: self.create_distributions()
 
         # 5. Make an animation of the fitting procedure
-        if self.config.visualise: self.animate()
+        if self.do_animate: self.animate()
 
         # 6. Writing
-        self.write()
+        if self.do_writing: self.write()
 
         # 7. Plot
-        if self.config.plot: self.plot()
+        if self.do_plotting: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -222,6 +273,141 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the chi squared values
+        if self.config.recalculate_chisquared: self.calculate_chi_squared()
+
+        # Load the chi squared values
+        else: self.load_chi_squared()
+
+    # -----------------------------------------------------------------
+
+    def load_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the chi squared values ...")
+
+        # Loop over the generations
+        for generation_name in self.generation_names: pass
+
+    # -----------------------------------------------------------------
+
+    def calculate_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the chi squared values ...")
+
+        # Open the chi squared table
+        chi_squared = generation.chi_squared_table
+
+        # -----------------------------------------------------------------
+
+        # Only remove certain simulations
+        if config.simulations is not None:
+
+            # Loop over the simulations, remove the chi squared entry
+            for simulation_name in simulation_names:
+
+                # Does simulation exist in table?
+                if not chi_squared.has_simulation(simulation_name): continue
+
+                # Remove entry from table
+                chi_squared.remove_simulation(simulation_name)
+
+        # Remove all simulations
+        else: chi_squared.remove_all_simulations()
+
+        # -----------------------------------------------------------------
+
+        # Save the chi squared table
+        chi_squared.save()
+
+        nzeros = 0
+
+        # Loop over the simulations, run the SED fit model analyser
+        for simulation_name in simulation_names:
+
+            # Debugging
+            log.debug("Refitting the '" + simulation_name + "' simulation ...")
+
+            # Get the simulation object
+            simulation = generation.get_simulation_or_basic(simulation_name)
+
+            # Get simulation misc directory
+            misc_path = generation.get_simulation_misc_path(simulation_name)
+
+            # Get the mock sed
+            mock_sed = generation.get_mock_sed(simulation_name)
+
+            # Create the fit model analyser
+            analyser = SEDFitModelAnalyser()
+
+            # Set options
+            analyser.config.write = False
+
+            # Run the analyser
+            analyser.run(simulation=simulation, fitting_run=fitting_run, mock_sed=mock_sed)
+
+            # Get the chi squared
+            chisq = analyser.chi_squared
+
+            # Get the differences table
+            differences = analyser.differences
+            differences.sort()
+
+            # Plot the chi squared terms?
+            #if config.plot_terms:
+
+            # Calculate the probability
+            probability = np.exp(-0.5 * chisq)
+            if probability == 0: nzeros += 1
+
+            # Show chi squared
+            log.debug("The chi squared value for simulation '" + simulation_name + "' is " + str(
+                chisq) + " and the probability is " + str(probability))
+
+            # Debugging
+            log.debug("Adding to the chi squared table ...")
+
+            # Set the chi squared value
+            chi_squared.add_entry(simulation_name, chisq)
+
+            # Save the chi squared table
+            chi_squared.save()
+
+            # Debugging
+            log.debug("Writing the differences table ...")
+
+            # Set the differences path
+            differences_path = generation.get_simulation_misc_differences_path(simulation_name)
+
+            # Save the differences table
+            differences.saveto(differences_path)
+
+        # Show number of zeros
+        if nzeros > 5:
+            log.warning(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probabilities of zero")
+        else:
+            log.debug(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probability of zero")
+
+    # -----------------------------------------------------------------
+
     def get_best_parameters(self):
 
         """"
@@ -229,13 +415,14 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Getting the parameter values of the best model for the finished generations (if not already done) ...")
+        log.info("Getting the parameter values of the best model for the generations (if not already done) ...")
 
-        # Loop over the finished generations
+        # Loop over the generations
         for generation_name in self.generation_names:
 
-            # Check if the generation is already in the best parameters table
-            if generation_name in self.fitting_run.best_parameters_table.generation_names: continue
+            # Check if the generation is already in the best parameters table:
+            # NO: Refitting can be performed
+            #if generation_name in self.fitting_run.best_parameters_table.generation_names: continue
 
             # Debugging
             log.debug("Getting the best parameter values for generation '" + generation_name + "' ...")

@@ -598,6 +598,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def has_simulation_sed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_simulation_sed_path(name))
+
+    # -----------------------------------------------------------------
+
     def get_simulation_sed(self, name):
 
         """
