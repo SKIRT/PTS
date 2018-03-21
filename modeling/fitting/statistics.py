@@ -2026,7 +2026,7 @@ class FittingStatistics(InteractiveConfigurable):
         log.debug("Adding the simulated SEDs ...")
 
         # Loop over the simulation names
-        for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name)):
+        for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name, nsimulations)):
 
             # Debugging
             log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index + 1) + " of " + str(nsimulations) + ") ...")
@@ -2070,7 +2070,7 @@ class FittingStatistics(InteractiveConfigurable):
         log.debug("Adding the mock SEDs ...")
 
         # Loop over the simluation names
-        for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name)):
+        for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name, nsimulations)):
 
             # Debugging
             log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index + 1) + " of " + str(nsimulations) + ") ...")

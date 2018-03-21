@@ -1022,7 +1022,13 @@ class Refitter(FittingComponent):
 
         #if self.config.filters is None: return False
         #else: return sequences.has_other(self.config.filters, self.fitting_run.fitting_filters)
-        return sequences.has_other(self.filters, self.fitting_run.fitting_filters)
+        answer = sequences.has_other(self.filters, self.fitting_run.fitting_filters)
+
+        # Give warning
+        if answer: log.warning("Fluxes are requested in filters additional to the original fitting filters: this will require the mock flux calculation to be performed again")
+
+        # Return
+        return answer
 
     # -----------------------------------------------------------------
 
