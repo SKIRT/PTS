@@ -379,8 +379,7 @@ class SEDFitter(FittingComponent):
             if probability == 0: nzeros += 1
 
             # Show chi squared
-            log.debug("The chi squared value for simulation '" + simulation_name + "' is " + str(
-                chisq) + " and the probability is " + str(probability))
+            log.debug("The chi squared value for simulation '" + simulation_name + "' is " + str(chisq) + " and the probability is " + str(probability))
 
             # Debugging
             log.debug("Adding to the chi squared table ...")
@@ -401,10 +400,8 @@ class SEDFitter(FittingComponent):
             differences.saveto(differences_path)
 
         # Show number of zeros
-        if nzeros > 5:
-            log.warning(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probabilities of zero")
-        else:
-            log.debug(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probability of zero")
+        if nzeros > 5: log.warning(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probabilities of zero")
+        else: log.debug(str(nzeros) + " out of " + str(nsimulations) + " simulations have a probability of zero")
 
     # -----------------------------------------------------------------
 

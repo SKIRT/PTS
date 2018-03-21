@@ -691,7 +691,7 @@ class Refitter(FittingComponent):
                 log.debug("Creating backup for simulation '" + simulation_name + "' ...")
 
                 # Copy the plot file
-                fs.copy_file(generation.get_simulation_mock_sed_plot_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
+                fs.copy_file(generation.get_mock_sed_plot_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -2755,7 +2755,7 @@ class Refitter(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def get_best_simulations(nsimulations, parameter_labels, chi_squared_table, parameters_table, parameter_units):
+def get_best_simulations(nsimulations, parameter_labels, chi_squared_table, parameters_table, parameter_units, return_unique_values_scalar=False):
 
     """
     This function ...
@@ -2764,6 +2764,7 @@ def get_best_simulations(nsimulations, parameter_labels, chi_squared_table, para
     :param chi_squared_table:
     :param parameters_table:
     :param parameter_units:
+    :param return_unique_values_scalar:
     :return:
     """
 
@@ -2803,7 +2804,8 @@ def get_best_simulations(nsimulations, parameter_labels, chi_squared_table, para
             counts[label][value_scalar] += 1
 
     # Return the simulation names
-    return simulation_names, counts
+    if return_unique_values_scalar: return simulation_names, counts, unique_values_scalar
+    else: return simulation_names, counts
 
 # -----------------------------------------------------------------
 
@@ -2893,13 +2895,14 @@ def show_best_simulations_impl(simulation_names, chi_squared_values, parameters,
             # Get index of value and index of initial value
             i = unique_values_scalar[label].index(value_scalar)
             j = nr.locate_continuous(unique_values_scalar[label], initial_value_scalar, scale=parameter_scales[label])
-            if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
-            j = int(round(j))
+            if j is not None:
+                if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
+                j = int(round(j))
 
             # Show
             indicator = "[ "
             for _ in range(nunique_values):
-                if _ == j: character = "+"
+                if j is not None and _ == j: character = "+"
                 else: character = "o"
                 if _ == i: indicator += fmt.red + character + fmt.reset + " "
                 else: indicator += character + " "
@@ -2924,22 +2927,14 @@ def get_and_show_best_simulations(nsimulations, parameter_labels, chi_squared_ta
     :return:
     """
 
-    unique_values = parameters_table.unique_parameter_values
-    unique_values_scalar = dict()
-    for label in unique_values:
-        values = list(sorted([value.to(parameter_units[label]).value for value in unique_values[label]]))
-        unique_values_scalar[label] = values
+    # Get best simulations and counts
+    simulation_names, counts, unique_values_scalar = get_best_simulations(nsimulations, parameter_labels, chi_squared_table, parameters_table, parameter_units, return_unique_values_scalar=True)
 
-    # Initialize the counts dictionary
-    counts = dict()
-    for label in parameter_labels: counts[label] = defaultdict(int)
+    # Create list for chi squared values
+    chi_squared_values = []
 
-    # Fill with zeros
-    for label in parameter_labels:
-        for value in unique_values_scalar[label]: counts[label][value] = 0
-
-    # Get best simulation names
-    simulation_names = chi_squared_table.get_best_simulation_names(nsimulations)
+    # Create list for parameter values
+    parameters = []
 
     # Loop over the simulations
     for index, simulation_name in enumerate(simulation_names):
@@ -2950,44 +2945,12 @@ def get_and_show_best_simulations(nsimulations, parameter_labels, chi_squared_ta
         # Get parameter values
         parameter_values = parameters_table.parameter_values_for_simulation(simulation_name)
 
-        # Show
-        print("")
-        print(" " + str(index + 1) + ". " + fmt.green + fmt.underlined + simulation_name + fmt.reset)
-        print("")
+        # Add the values
+        chi_squared_values.append(chisq)
+        parameters.append(parameter_values)
 
-        # Show chi squared and parameter values
-        print("  - chi squared: " + str(chisq))
-        print("  - parameters:")
-        for label in parameter_values:
-
-            # Get properties
-            unit = parameter_units[label]
-            initial_value = initial_values[label]
-            initial_value_scalar = initial_value.to(unit).value
-            value = parameter_values[label]
-            value_scalar = value.to(unit).value
-            nunique_values = len(unique_values_scalar[label])
-
-            # Get index of value and index of initial value
-            i = unique_values_scalar[label].index(value_scalar)
-            j = nr.locate_continuous(unique_values_scalar[label], initial_value_scalar, scale=parameter_scales[label])
-            if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
-            j = int(round(j))
-
-            # Show
-            indicator = "[ "
-            for _ in range(nunique_values):
-                if _ == j: character = "+"
-                else: character = "o"
-                if _ == i: indicator += fmt.red + character + fmt.reset + " "
-                else: indicator += character + " "
-            indicator += "]"
-
-            # Show
-            print("     * " + fmt.bold + label + fmt.reset + ": " + tostr(value) + "   " + indicator)
-
-            # Add count for this parameter
-            counts[label][value_scalar] += 1
+    # Show best simulations
+    show_best_simulations_impl(simulation_names, chi_squared_values, parameters, parameter_units, unique_values_scalar, parameter_scales, initial_values)
 
     # Return the simulation names
     return simulation_names, counts
