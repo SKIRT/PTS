@@ -139,6 +139,14 @@ def is_close(value, other_value, rtol=1.e-5, atol=1.e-8):
     :return:
     """
 
+    # Check whether values have unit
+    if hasattr(value, "unit"):
+        unit = value.unit
+        if not hasattr(other_value, "unit"): raise ValueError("Both values must have a unit, or neither")
+        value = value.value
+        other_value = other_value.to(unit).value
+
+    # Check values
     return np.isclose(value, other_value, rtol=rtol, atol=atol)
 
 # -----------------------------------------------------------------

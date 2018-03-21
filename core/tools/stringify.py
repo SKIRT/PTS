@@ -39,9 +39,11 @@ def tostr(value, **kwargs):
     scientific_int = kwargs.pop("scientific_int", True) # also represent integers in scientific notation
 
     # Set default number of decimal places
-    decimal_places = kwargs.pop("decimal_places", None) # let it be done automatically in the str_from_... function
+    #decimal_places = kwargs.pop("decimal_places", None) # let it be done automatically in the str_from_... function
     #print(str(value), "nd", decimal_places)
-    ndigits = kwargs.pop("ndigits", None)
+    #ndigits = kwargs.pop("ndigits", None)
+    decimal_places = kwargs.get("decimal_places", None)
+    ndigits = kwargs.get("ndigits", None)
 
     # Set scientific flag flexibly, if scientific flag was not passed explicitly
     if scientific is None:

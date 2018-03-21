@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import traceback
+
 # Import the relevant PTS classes and modules
 from . import stringify
 from . import filesystem as fs
@@ -518,16 +521,23 @@ class print_in_columns(object):
 
     # -----------------------------------------------------------------
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, tb):
 
         """
         This function ...
         :param exc_type:
         :param exc_value:
-        :param traceback:
+        :param tb:
         :return:
         """
 
+        #print(exc_type, exc_value, traceback)
+        if exc_type is not None:
+            traceback.print_tb(tb)
+            log.error(str(exc_type(exc_value)))
+            return
+
+        # Print
         print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent, tostr_kwargs=self.tostr_kwargs, colors=self.colors)
 
 # -----------------------------------------------------------------

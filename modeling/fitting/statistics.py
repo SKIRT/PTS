@@ -35,6 +35,7 @@ from ...core.plot.distribution import plot_distributions
 from ...core.tools.stringify import tostr
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import filesystem as fs
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -172,8 +173,11 @@ class FittingStatistics(InteractiveConfigurable):
         # 3. Interactive
         if self.do_interactive: self.interactive()
 
-        # Show
+        # 4. Show
         self.show()
+
+        # 5. Write the history
+        if self.has_commands: self.write_history()
 
     # -----------------------------------------------------------------
 
@@ -646,6 +650,19 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_generation_index(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.generation_names.index(generation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_generation(self, generation_name):
 
         """
@@ -667,6 +684,59 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.get_generation(generation_name).simulation_names
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_sorted_simulation_indices(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return sequences.argsort(self.get_chi_squared_values_simulations(generation_name))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_sorted_simulation_names(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return [self.get_simulation_names(generation_name)[index] for index in self.get_sorted_simulation_indices(generation_name)]
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_nsimulations(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).nsimulations
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_index(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation_names(generation_name).index(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -693,6 +763,19 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.get_chi_squared_table(generation_name).best_simulation_name
+
+    # -----------------------------------------------------------------
+
+    def is_best_simulation(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_best_simulation_name(generation_name) == simulation_name
 
     # -----------------------------------------------------------------
 
@@ -1022,6 +1105,23 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_chi_squared_values_simulations(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # IN THE SAME ORDER AS THE GET_SIMULATION_NAMES
+
+        values = []
+        for simulation_name in self.get_simulation_names(generation_name): values.append(self.get_chi_squared(generation_name, simulation_name))
+        return values
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_chi_squared_distribution(self, generation_name, nbins=50, clip_above=None):
 
         """
@@ -1326,6 +1426,32 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_parameter_values_scalar(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        # Initialize dictionary
+        values_scalar = OrderedDict()
+
+        # Get the values
+        values = self.get_parameter_values(generation_name, simulation_name)
+
+        # Loop over the parameters
+        for label in values:
+            value = values[label].to(self.get_parameter_unit(label)).value
+            values_scalar[label] = value
+
+        # Return the scalar values
+        return values_scalar
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_unique_parameter_values(self, generation_name):
 
         """
@@ -1452,6 +1578,54 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_most_probable_parameter_values(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        values = OrderedDict()
+        for label in self.parameter_labels: values[label] = self.get_most_probable_parameter_value(generation_name, label)
+        return values
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_most_probable_parameter_labels_for_simulation(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        # Get values for simulation
+        #values = self.get_parameter_values(generation_name, simulation_name)
+        values = self.get_parameter_values_scalar(generation_name, simulation_name)
+
+        # Initialize list for the labels
+        labels = []
+
+        # Loop over the labels
+        for label in self.parameter_labels:
+
+            value = values[label]
+            most_probable_value = self.get_most_probable_parameter_value(generation_name, label)
+            #print(value, most_probable_value, value == most_probable_value, numbers.is_close(value, most_probable_value))
+
+            # Check whether most probable
+            if value == most_probable_value: labels.append(label)
+            #if numbers.is_close(value, most_probable_value): labels.append(label)
+
+        # Return the labels
+        return labels
+
+    # -----------------------------------------------------------------
+
     def show_generations(self, **kwargs):
 
         """
@@ -1474,7 +1648,13 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_flag("sort", "sort the simulations based on their chi squared value", False)
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1492,20 +1672,69 @@ class FittingStatistics(InteractiveConfigurable):
         generation_name, config = self.get_generation_name_and_config_from_command(command, self.show_simulations_definition, **kwargs)
 
         # Show
-        self.show_simulations(generation_name)
+        self.show_simulations(generation_name, sort=config.sort)
 
     # -----------------------------------------------------------------
 
-    def show_simulations(self, generation_name):
+    def show_simulations(self, generation_name, sort=False):
 
         """
         This function ...
         :param generation_name:
+        :param sort:
         :return:
         """
 
         # Debugging
         log.debug("Showing simulations of generation '" + generation_name + "' ...")
+
+        table = None
+
+        print("")
+
+        # Get the indices
+        if sort: indices = self.get_sorted_simulation_indices(generation_name)
+        else: indices = range(self.get_nsimulations(generation_name))
+
+        # Print in columns
+        with fmt.print_in_columns() as print_row:
+
+            # Loop over the simulations
+            for index in indices:
+
+                # Get the simulation name
+                simulation_name = self.get_simulation_names(generation_name)[index]
+                #print(simulation_name)
+
+                # Get index string
+                index_string = "[" + strings.integer(index, 3, fill=" ") + "] "
+
+                # Get chi squared
+                chisq = self.get_chi_squared(generation_name, simulation_name)
+                chisq_string = tostr(chisq, decimal_places=3)
+
+                # Set parts
+                parts = []
+                parts.append(" - ")
+                parts.append(index_string)
+                parts.append(fmt.bold + simulation_name + fmt.reset_bold)
+                parts.append(chisq_string)
+
+                labels_most_probable = self.get_most_probable_parameter_labels_for_simulation(generation_name, simulation_name)
+                parts.append(", ".join(labels_most_probable))
+
+                # Set color
+                if self.is_best_simulation(generation_name, simulation_name): color = "green"
+                else: color = None
+
+                # Print the row
+                print_row(*parts, color=color)
+
+                # Add to the columns
+                #if columns is not None:
+                #    for j, part in enumerate(parts): columns[j].append(part)
+
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -1931,6 +2160,20 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def plot_ranks_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
     def plot_ranks_command(self, command, **kwargs):
 
         """
@@ -1939,6 +2182,9 @@ class FittingStatistics(InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Set all kwargs
+        kwargs.update(self.plot_ranks_kwargs)
 
         # Get generation name
         generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_ranks_definition, **kwargs)
