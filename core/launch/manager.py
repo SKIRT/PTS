@@ -67,7 +67,6 @@ from ..data.sed import load_multiple_seds
 from ..misc.fluxes import get_sed_instrument_name
 from ..misc.images import get_datacube_instrument_name
 from ..simulation.status import show_log_summary
-from ..tools import introspection
 from ..data.sed import ObservedSED
 from ..plot.timeline import plot_timeline
 from ..extract.timeline import TimeLineTable, extract_timeline
@@ -12883,14 +12882,14 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def class_pts_user_path(self):
+    def history_filename(self):
 
         """
         This function ...
         :return:
         """
 
-        return introspection.pts_user_manager_dir
+        return "manager.dat"
 
     # -----------------------------------------------------------------
 

@@ -1201,6 +1201,18 @@ class ChiSquaredTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def best_simulation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.argmin(self["Chi squared"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def best_simulation_name(self):
 
         """
@@ -1208,8 +1220,7 @@ class ChiSquaredTable(SmartTable):
         :return:
         """
 
-        index = np.argmin(self["Chi squared"])
-        return self["Simulation name"][index]
+        return self["Simulation name"][self.best_simulation_index]
 
     # -----------------------------------------------------------------
 
@@ -1263,7 +1274,7 @@ class ChiSquaredTable(SmartTable):
         :return:
         """
 
-        index = np.argmin(self["Chi squared"])
+        index = self.best_simulation_index
         return self["Simulation name"][index], self["Chi squared"][index]
 
     # -----------------------------------------------------------------
@@ -1649,6 +1660,18 @@ class ParameterProbabilitiesTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def most_probable_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.argmax(self["Probability"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def most_probable_value(self):
 
         """
@@ -1656,7 +1679,6 @@ class ParameterProbabilitiesTable(SmartTable):
         :return:
         """
 
-        index = np.argmax(self["Probability"])
-        return self["Value"][index]
+        return self["Value"][self.most_probable_index]
 
 # -----------------------------------------------------------------

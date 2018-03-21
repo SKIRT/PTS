@@ -17,8 +17,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import InteractiveConfigurable
-from ...core.basics.configuration import ConfigurationDefinition, prompt_settings, parse_arguments
-from ...core.tools import filesystem as fs
+from ...core.basics.configuration import ConfigurationDefinition
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
 from ..core.environment import load_modeling_environment
@@ -29,23 +28,36 @@ from .sedfitting import chi_squared_table_to_probabilities
 from ...core.basics.distribution import Distribution
 from ...core.plot.sed import SEDPlotter
 from ...core.tools import sequences
-from .refitter import get_and_show_best_simulations
+from .refitter import show_best_simulations_impl
+from ...core.plot.sed import plot_seds
+from ...core.tools import formatting as fmt
+from ...core.plot.distribution import plot_distributions
+from ...core.tools.stringify import tostr
+from ...core.basics.containers import DefaultOrderedDict
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
+# Standard commands
 _help_command_name = "help"
 _history_command_name = "history"
 _status_command_name = "status"
 
+# Commands
 _generations_command_name = "generations"
+_simulations_command_name = "simulations"
 _best_command_name = "best"
+_counts_command_name = "counts"
+_parameters_command_name = "parameters"
 _plot_command_name = "plot"
 
+# Plotting
 _terms_command_name = "terms"
 _ranks_command_name = "ranks"
 _chisquared_command_name = "chisquared"
 _prob_command_name = "prob"
 _seds_command_name = "seds"
+_sed_command_name = "sed"
 
 # -----------------------------------------------------------------
 
@@ -59,22 +71,38 @@ commands[_status_command_name] = ("show_status_command", True, "show generation 
 
 # Other commands
 commands[_generations_command_name] = ("show_generations", False, "show generations", None)
-commands[_best_command_name] = ("show_best_command", True, "show best models", None)
+commands[_simulations_command_name] = ("show_simulations_command", True, "show simulations of a generation", "generation")
+commands[_best_command_name] = ("show_best_command", True, "show best models", "generation")
+commands[_counts_command_name] = ("show_counts_command", True, "show counts statistics", "generation")
+commands[_parameters_command_name] = ("show_parameters_command", True, "show parameters statistics", "generation")
 commands[_plot_command_name] = (None, None, "plotting", None)
 
 # -----------------------------------------------------------------
 
 # Plot commands
 plot_commands = OrderedDict()
-plot_commands[_terms_command_name] = ("plot_terms_command", True, "plot the chi squared terms", "generation")
+plot_commands[_terms_command_name] = ("plot_terms_command", True, "plot the chi squared terms", "generation_simulation")
 plot_commands[_ranks_command_name] = ("plot_ranks_command", True, "plot the chi squared as a function of rank", "generation")
 plot_commands[_chisquared_command_name] = ("plot_chi_squared_command", True, "plot the distribution of chi squared values", "generation")
 plot_commands[_prob_command_name] = ("plot_probabilities_command", True, "plot the distribution of probabilities", "generation")
 plot_commands[_seds_command_name] = ("plot_seds_command", True, "plot the simulation SEDs of a generation", "generation")
+plot_commands[_best_command_name] = ("plot_best_command", True, "plot the SEDs (simulated or mock) of the best simulation(s) of a generation", "generation")
+plot_commands[_sed_command_name] = ("plot_sed_command", True, "plot the SED (simulated or mock) of a particular simulation", "generation_simulation")
+plot_commands[_counts_command_name] = ("plot_counts_command", True, "plot the best parameter counts", "generation")
 
 # Set subcommands
 subcommands = OrderedDict()
 subcommands[_plot_command_name] = plot_commands
+
+# -----------------------------------------------------------------
+
+simulated_choice = "simulated"
+mock_choice = "mock"
+simulated_or_mock = [simulated_choice, mock_choice]
+
+chisquared_choice = "chisquared"
+prob_choice = "prob"
+chisquared_or_prob = [chisquared_choice, prob_choice]
 
 # -----------------------------------------------------------------
 
@@ -173,7 +201,7 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("generation", "string", "generation name")
+        definition.add_required("generation", "string", "generation name", choices=self.generation_names)
 
         # Add definition settings
         if command_definition is not None:
@@ -205,16 +233,13 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Set parse command
         if command_definition is not None: parse_command = splitted[index:]
-        else: parse_command = splitted[index:index + 1]  # only image name
+        else: parse_command = splitted[index:index + 1]  # only generation name
 
         # Get the definition
         definition = self.get_generation_command_definition(command_definition, required_to_optional=required_to_optional)
 
-        # Get settings interactively
-        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
-
-        # Parse arguments
-        else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+        # Get the configuration
+        config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
 
         # Get generation name
         generation_name = config.pop("generation")
@@ -258,6 +283,103 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Return image name and config
         return generation_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_generation_simulation_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("generation", "string", "generation name", choices=self.generation_names)
+        definition.add_required("simulation", "string", "simulation name")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_generation_simulation_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only generation name
+
+        # Get the definition
+        definition = self.get_generation_simulation_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get the configuration
+        config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
+
+        # Get generation name
+        generation_name = config.pop("generation")
+        simulation_name = config.pop("simulation")
+
+        # Return
+        return splitted, generation_name, simulation_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_generation_name_and_simulation_name_from_command(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, generation_name, simulation_name, config = self.parse_generation_simulation_command(command, name=name, interactive=interactive)
+
+        # Return the names
+        return generation_name, simulation_name
+
+    # -----------------------------------------------------------------
+
+    def get_generation_name_simulation_name_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, generation_name, simulation_name, config = self.parse_generation_simulation_command(command, command_definition, name=name, interactive=interactive)
+
+        # Return the names
+        return generation_name, simulation_name, config
 
     # -----------------------------------------------------------------
 
@@ -339,6 +461,37 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_reference_seds(self, additional_error=None):
+
+        """
+        This function ...
+        :param additional_error:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the observed SEDs ...")
+
+        # Create dictionary
+        seds = OrderedDict()
+
+        # Add relative error
+        if additional_error is not None:
+            clipped_sed = self.clipped_sed.copy()
+            truncated_sed = self.truncated_sed.copy()
+            clipped_sed.add_relative_error(additional_error)
+            truncated_sed.add_relative_error(additional_error)
+        else: clipped_sed, truncated_sed = self.clipped_sed, self.truncated_sed
+
+        # Add observed SEDs
+        seds["Clipped observed fluxes"] = clipped_sed
+        seds["Truncated observed fluxes"] = truncated_sed
+
+        # Return the seds
+        return seds
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def fitting_runs(self):
 
@@ -360,6 +513,99 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.fitting_runs.load(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.free_parameter_ranges
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_ranges.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.parameter_units
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_unit(self, label):
+
+        """
+        Thisf unction ...
+        :param label:
+        :return:
+        """
+
+        return self.parameter_units[label]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initial_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.first_guess_parameter_values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.grid_settings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_scales(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the scales
+        scales = dict()
+
+        # Get the scales for each free parameter
+        for label in self.parameter_labels:
+            key = label + "_scale"
+            scales[label] = self.grid_settings[key]
+
+        # Return the scales dict
+        return scales
 
     # -----------------------------------------------------------------
 
@@ -421,6 +667,70 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.get_generation(generation_name).simulation_names
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulation_index(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_chi_squared_table(generation_name).best_simulation_index
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulation_name(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_chi_squared_table(generation_name).best_simulation_name
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulation_chi_squared(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_chi_squared(generation_name, self.get_best_simulation_name(generation_name))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulation_parameters(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_parameter_values(generation_name, self.get_best_simulation_name(generation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_most_probable_simulation_name(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).most_probable_model
 
     # -----------------------------------------------------------------
 
@@ -620,6 +930,58 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def has_sed_plot(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).has_sed_plot(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_sed_plot_path(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_simulation_sed_plot_path(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_mock_sed_plot(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).has_mock_sed_plot(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_mock_sed_plot_path(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_mock_sed_plot_path(simulation_name)
+
+    # -----------------------------------------------------------------
+
     def get_chi_squared_table(self, generation_name):
 
         """
@@ -629,6 +991,20 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.get_generation(generation_name).chi_squared_table
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_chi_squared(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_chi_squared_table(generation_name).chi_squared_for(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -678,6 +1054,145 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Create and return the distribution
         return Distribution.by_rank("Simulation rank", values, y_name="Chi squared")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulation_names(self, generation_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Return the list of simulation names
+        return self.get_chi_squared_table(generation_name).get_best_simulation_names(nsimulations)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulations_chi_squared_values(self, generation_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Create list for chi squared values
+        chi_squared_values = []
+
+        # Loop over the simulations
+        for simulation_name in self.get_best_simulation_names(generation_name, nsimulations=nsimulations):
+
+            # Get the chi squared value
+            chisq = self.get_chi_squared(generation_name, simulation_name)
+
+            # Add the value
+            chi_squared_values.append(chisq)
+
+        # Return the list of chi squared values
+        return chi_squared_values
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulations_parameters(self, generation_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Create list for parameter values
+        parameters = []
+
+        # Loop over the simulations
+        for simulation_name in self.get_best_simulation_names(generation_name, nsimulations=nsimulations):
+
+            # Get parameter values
+            parameter_values = self.get_parameter_values(generation_name, simulation_name)
+
+            # Add the value
+            parameters.append(parameter_values)
+
+        # Return the list of parameter dictionaries
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulations_parameter_counts(self, generation_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Initialize the counts dictionary
+        counts = OrderedDict()
+        for label in self.parameter_labels: counts[label] = DefaultOrderedDict(int)
+
+        # Get unique values
+        unique_values = self.get_unique_parameter_values_scalar(generation_name)
+
+        # Fill with zeros
+        for label in self.parameter_labels:
+            for value in unique_values[label]: counts[label][value] = 0
+
+        # Get best simulation names
+        simulation_names = self.get_best_simulation_names(generation_name, nsimulations)
+
+        # Loop over the simulations
+        for index, simulation_name in enumerate(simulation_names):
+
+            # Get parameter values
+            parameter_values = self.get_parameter_values(generation_name, simulation_name)
+
+            # Get the counts
+            for label in parameter_values:
+
+                # Get properties
+                unit = self.get_parameter_unit(label)
+                value = parameter_values[label]
+                value_scalar = value.to(unit).value
+
+                # Add count for this parameter
+                counts[label][value_scalar] += 1
+
+        # Return the counts dictionary
+        return counts
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_best_simulations_parameter_count_distributions(self, generation_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Initialize dictionary
+        counts_distributions = OrderedDict()
+
+        # Get the counts
+        counts = self.get_best_simulations_parameter_counts(generation_name, nsimulations)
+
+        # Make counts distributions
+        for label in self.parameter_labels: counts_distributions[label] = Distribution.from_counts(label, counts[label].values(), counts[label].keys(), sort=True)
+
+        # Return
+        return counts_distributions
 
     # -----------------------------------------------------------------
 
@@ -796,6 +1311,59 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_parameter_values(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_parameters_table(generation_name).parameter_values_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_unique_parameter_values(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Create list of unique values for each free parameter
+        return self.get_parameters_table(generation_name).unique_parameter_values
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_unique_parameter_values_scalar(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Initialize dictionary
+        unique_values_scalar = OrderedDict()
+
+        # Get values
+        unique_values = self.get_unique_parameter_values(generation_name)
+
+        # Loop over the parameters
+        for label in unique_values:
+            values = list(sorted([value.to(self.get_parameter_unit(label)).value for value in unique_values[label]]))
+            unique_values_scalar[label] = values
+
+        # Return the scalar values
+        return unique_values_scalar
+
+    # -----------------------------------------------------------------
+
     def get_scores_table(self, generation_name):
 
         """
@@ -856,6 +1424,34 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_parameter_probabilities_table(self, generation_name, label):
+
+        """
+        This function ...
+        :param generation_name:
+        :param label:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_parameter_probabilities_table(label)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_most_probable_parameter_value(self, generation_name, label):
+
+        """
+        This function ...
+        :param generation_name:
+        :param label:
+        :return:
+        """
+
+        return self.get_parameter_probabilities_table(generation_name, label).most_probable_value
+
+    # -----------------------------------------------------------------
+
     def show_generations(self, **kwargs):
 
         """
@@ -871,7 +1467,7 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_best_definition(self):
+    def show_simulations_definition(self):
 
         """
         This function ...
@@ -879,7 +1475,55 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_simulations_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.show_simulations_definition, **kwargs)
+
+        # Show
+        self.show_simulations(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_simulations(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing simulations of generation '" + generation_name + "' ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_best_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_positional_optional("nsimulations", "positive_integer", "number of simulations to show", 5)
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -912,170 +1556,304 @@ class FittingStatistics(InteractiveConfigurable):
         # Debugging
         log.debug("Showing best " + str(nsimulations) + " simulations for generation '" + generation_name + "' ...")
 
-        # Get parameter ranges
-        parameter_ranges = fitting_run.free_parameter_ranges
-        parameter_labels = parameter_ranges.keys()
-
-        # Get parameter units
-        parameter_units = fitting_run.parameter_units
-
         # Show ranges
         print("")
         print("Parameter ranges:")
         print("")
-        for label in parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(parameter_ranges[label]))
+        for label in self.parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges[label]))
 
-        # -----------------------------------------------------------------
+        # Get the simulation names
+        simulation_names = self.get_best_simulation_names(generation_name, nsimulations=nsimulations)
 
-        # Get the scales
-        grid_settings = fitting_run.grid_settings
-        parameter_scales = dict()
-        for label in parameter_labels:
-            key = label + "_scale"
-            parameter_scales[label] = grid_settings[key]
+        # Get chi squared values and parameters of the best simulations
+        chi_squared_values = self.get_best_simulations_chi_squared_values(generation_name, nsimulations=nsimulations)
+        parameters = self.get_best_simulations_parameters(generation_name, nsimulations=nsimulations)
 
-        # -----------------------------------------------------------------
-
-        # Get the chi squared table
-        chi_squared = generation.chi_squared_table
-
-        # -----------------------------------------------------------------
-
-        # Load parameters table
-        parameters = generation.parameters_table
-
-        # -----------------------------------------------------------------
-
-        initial_parameter_values = fitting_run.first_guess_parameter_values
+        # Get unique parameter values for generation
+        unique_values = self.get_unique_parameter_values_scalar(generation_name)
 
         # Show
-        simulation_names, counts = get_and_show_best_simulations(nsimulations, parameter_labels, chi_squared,
-                                                                 parameters, parameter_units, parameter_scales,
-                                                                 initial_parameter_values)
+        show_best_simulations_impl(simulation_names, chi_squared_values, parameters, self.parameter_units, unique_values, self.parameter_scales, self.initial_parameter_values)
         print("")
 
-        # FOR PLOT SED
-        # # Show SED?
-        # if config.sed:
-        #
-        #     # Loop over the simulations
-        #     for simulation_name in simulation_names:
-        #         # Determine the plot path
-        #         sed_plot_path = generation.get_simulation_sed_plot_path(simulation_name)
-        #
-        #         # Show the plot
-        #         fs.open_file(sed_plot_path)
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_counts_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("nsimulations", "positive_integer", "number of best simulations to count", 10)
+
+        # Return the definition
+        return definition
 
     # -----------------------------------------------------------------
 
-    def show_counts(self, generation_name):
+    def show_counts_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.show_counts_definition, **kwargs)
+
+        # Show
+        self.show_counts(generation_name, nsimulations=config.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    def show_counts(self, generation_name, nsimulations=10):
 
         """
         This function ...
         :param generation_name:
+        :param nsimulations:
         :return:
         """
 
-        # Make counts distributions
-        counts_distributions = dict()
-        for label in parameter_labels: counts_distributions[label] = Distribution.from_counts(label,
-                                                                                              counts[label].values(),
-                                                                                              counts[label].keys(),
-                                                                                              sort=True)
+        # Debugging
+        log.debug("Showing the counts statistics of generation '" + generation_name + "' ...")
+
+        # Get the counts
+        counts = self.get_best_simulations_parameter_counts(generation_name, nsimulations)
 
         # Show counts
-        if config.counts:
-            print("Counts in best simulations:")
-            for label in parameter_labels:
-                print("")
-                print(" - " + fmt.bold + label + fmt.reset + ":")
-                print("")
-                for value in sorted(counts[label].keys()):
-                    count = counts[label][value]
-                    relcount = float(count) / config.nsimulations
-                    print("    * " + tostr(value) + ": " + str(counts[label][value]) + " (" + tostr(
-                        relcount * 100) + "%)")
+        print("Counts in best simulations:")
 
-        # Plot the distributions
-        if config.plot_counts: plot_distributions(counts_distributions, logscale=True, panels=True, frequencies=True)
+        # Loop over the parameters
+        for label in self.parameter_labels:
+
+            print("")
+            print(" - " + fmt.bold + label + fmt.reset + ":")
+            print("")
+            for value in sorted(counts[label].keys()):
+
+                count = counts[label][value]
+                relcount = float(count) / nsimulations
+                print("    * " + tostr(value) + ": " + str(counts[label][value]) + " (" + tostr(relcount * 100) + "%)")
 
     # -----------------------------------------------------------------
 
-    def show_parameters(self, generation_name):
+    @lazyproperty
+    def show_parameters_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_parameters_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.show_parameters_definition, **kwargs)
+
+        # Show
+        self.show_parameters(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_parameters(self, generation_name, nsimulations=10):
 
         """
         This function ...
         :param generation_name:
+        :param nsimulations:
         :return:
         """
 
-        # Get best simulation name and chi squared
-        best_simulation_name, best_chi_squared = chi_squared.best_simulation_name_and_chi_squared
+        # Debugging
+        log.debug("Showing the parameter statistics of generation '" + generation_name + "' ...")
 
-        # Get best simulation parameter values
-        best_parameter_values = parameters.parameter_values_for_simulation(best_simulation_name)
+        # Get best simulation and its parameter values
+        best_simulation_name = self.get_best_simulation_name(generation_name)
+        best_parameter_values = self.get_best_simulation_parameters(generation_name)
 
         # Most probable model: should be same as simulation with lowest chi squared
-        most_probable_simulation_name = generation.most_probable_model
-        # print(most_probable_simulation_name)
+        most_probable_simulation_name = self.get_most_probable_simulation_name(generation_name)
         assert most_probable_simulation_name == best_simulation_name
+
+        # Get counts distributions
+        if nsimulations > 1: counts_distributions = self.get_best_simulations_parameter_count_distributions(generation_name, nsimulations)
+        else: counts_distributions = None
 
         print("")
         print("Statistics:")
 
         # Loop over the free parameter labels
-        for label in parameter_labels:
+        for label in self.parameter_labels:
 
             print("")
             print(" - " + fmt.bold + label + fmt.reset + ":")
             print("")
 
             # Get most probable parameter value
-            most_probable_value = generation.get_most_probable_parameter_value(label)
+            most_probable_value = self.get_most_probable_parameter_value(generation_name, label)
 
-            print("    * Initial guess value: " + tostr(initial_parameter_values[label], ndigits=3))
+            # Show
+            print("    * Initial guess value: " + tostr(self.initial_parameter_values[label], ndigits=3))
             print("    * Best simulation value: " + tostr(best_parameter_values[label], ndigits=3))
-            print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(
-                parameter_units[label]))
-            if config.nsimulations > 1: print(
-                "    * Most counted in " + str(config.nsimulations) + " best simulations: " + tostr(
-                    counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(parameter_units[label]))
+            print("    * Most probable value: " + tostr(most_probable_value, ndigits=3) + " " + tostr(self.parameter_units[label]))
+            if nsimulations > 1: print("    * Most counted in " + str(nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(self.parameter_units[label]))
+
         print("")
 
     # -----------------------------------------------------------------
 
-    def plot_best(self, generation_name):
+    @lazyproperty
+    def plot_best_definition(self):
 
         """
         This function ...
         :return:
         """
 
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("nsimulations", "positive_integer", "number of simulations to show", 1)
+        definition.add_positional_optional("simulated_or_mock", "string", "plot simulated SED or mock fluxes", choices=simulated_or_mock, default=simulated_choice)
+        definition.add_optional("path", "string", "save the plot file")
+        definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_best_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_definition, **kwargs)
+
+        # Simulated SEDs
+        if config.simulated_or_mock == simulated_choice: self.plot_best_seds(generation_name, nsimulations=config.nsimulations, additional_error=config.additional_error, path=config.path)
+
+        # Mock SEDs
+        elif config.simulated_or_mock == mock_choice: self.plot_best_fluxes(generation_name, nsimulations=config.nsimulations, additional_error=config.additional_error, path=config.path)
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'simulated_or_mock'")
+
+    # -----------------------------------------------------------------
+
+    def plot_best_seds(self, generation_name, nsimulations=5, additional_error=None, path=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :param additional_error:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the simulated SEDs for the best " + str(nsimulations) + " simulations of generation '" + generation_name + "' ...")
+
         # Create the SED plotter
         plotter = SEDPlotter()
 
-        # Inform the user
-        log.info("Adding the observed SEDs ...")
+        # Debugging
+        log.debug("Adding the observed SEDs ...")
 
         # Add observed SEDs
-        plotter.add_sed(environment.observed_sed, "Clipped observed fluxes")
-        plotter.add_sed(environment.truncated_sed, "Truncated observed fluxes")
+        seds = self.get_reference_seds(additional_error=additional_error)
+        for label in seds: plotter.add_sed(seds[label], label)
+
+        # Debugging
+        log.debug("Adding the simulated SEDs ...")
 
         # Loop over the simulation names
-        nseds = config.nsimulations
-        for index, simulation_name in enumerate(simulation_names):
+        for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name)):
+
             # Debugging
-            log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index + 1) + " of " + str(
-                nseds) + ") ...")
+            log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index + 1) + " of " + str(nsimulations) + ") ...")
 
             # Get the simulated SED
-            sed = generation.get_simulation_sed(simulation_name)
+            sed = self.get_sed(generation_name, simulation_name)
 
             # Add the SED
             plotter.add_sed(sed, simulation_name, ghost=True, residuals=False)
 
         # Run the plotter
-        plotter.run(output=config.seds_output)
+        plotter.run(output=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_best_fluxes(self, generation_name, nsimulations=1, additional_error=None, path=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :param additional_error:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the mock fluxes for the best " + str(nsimulations) + " simulations of generation '" + generation_name + "' ...")
+
+        # Create the SED plotter
+        plotter = SEDPlotter()
+
+        # Debugging
+        log.debug("Adding the observed SEDs ...")
+
+        # Add observed SEDs
+        seds = self.get_reference_seds(additional_error=additional_error)
+        for label in seds: plotter.add_sed(seds[label], label)
+
+        # Debugging
+        log.debug("Adding the mock SEDs ...")
+
+        # Loop over the simluation names
+        for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name)):
+
+            # Debugging
+            log.debug("Adding SED of the '" + simulation_name + "' simulation (" + str(index + 1) + " of " + str(nsimulations) + ") ...")
+
+            # Get the mock SED
+            fluxes = self.get_mock_sed(generation_name, simulation_name)
+
+            # Add the SED
+            plotter.add_sed(fluxes, simulation_name)
+
+        # Run the plotter
+        plotter.run(output=path)
 
     # -----------------------------------------------------------------
 
@@ -1087,9 +1865,13 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("simulation", "string", "simulation name")
+
+        # Add options
         definition.add_optional("path", "string", "write the plot file")
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1104,10 +1886,10 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         # Get generation name
-        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_terms_definition, **kwargs)
+        generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_terms_definition, **kwargs)
 
         # Plot
-        self.plot_terms(generation_name, config.simulation)
+        self.plot_terms(generation_name, simulation_name, path=config.path)
 
     # -----------------------------------------------------------------
 
@@ -1137,9 +1919,14 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("chisquared_or_prob", "string", "plot chi squared values or probabilities", choices=["chisquared", "prob"])
+
+        # Add options
+        definition.add_required("chisquared_or_prob", "string", "plot chi squared values or probabilities", choices=chisquared_or_prob)
         definition.add_optional("path", "string", "write the plot file")
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1157,10 +1944,13 @@ class FittingStatistics(InteractiveConfigurable):
         generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_ranks_definition, **kwargs)
 
         # Chi squared values
-        if config.chisquared_or_prob == "chisquared": self.plot_ranks_chisquared(generation_name)
+        if config.chisquared_or_prob == chisquared_choice: self.plot_ranks_chisquared(generation_name)
 
         # Probabilities
-        elif config.chisquared_or_prob == "prob": self.plot_ranks_probabilities(generation_name)
+        elif config.chisquared_or_prob == prob_choice: self.plot_ranks_probabilities(generation_name)
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'chisquared_or_prob'")
 
     # -----------------------------------------------------------------
 
@@ -1206,10 +1996,15 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_optional("nbins", "positive_integer", "number of bins", 50)
         definition.add_optional("max_chisquared", "positive_real", "maximum chi squared to show")
         definition.add_optional("path", "string", "save the plot file")
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1258,10 +2053,15 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_optional("nbins", "positive_integer", "number of bins", 50)
         definition.add_optional("min_probability", "positive_real", "minimum probability to show")
         definition.add_optional("path", "string", "save the plot file")
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1303,6 +2103,202 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def plot_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("simulated_or_mock", "string", "plot simulated SED or mock fluxes", choices=simulated_or_mock, default=simulated_choice)
+        definition.add_optional("path", "string", "save the plot file")
+        definition.add_flag("from_file", "use an already existing plot file", False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation and simulation name
+        generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_sed_definition, **kwargs)
+
+        # Simulated
+        if config.simulated_or_mock == simulated_choice: self.plot_sed(generation_name, simulation_name, from_file=config.from_file)
+
+        # Mock
+        elif config.simulated_or_mock == mock_choice: self.plot_fluxes(generation_name, simulation_name, from_file=config.from_file)
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'simulated_or_mock'")
+
+    # -----------------------------------------------------------------
+
+    def plot_sed(self, generation_name, simulation_name, additional_error=None, path=None, from_file=False):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param additional_error:
+        :param path:
+        :param from_file:
+        :return:
+        """
+
+        # Checks
+        if from_file:
+            if not self.has_sed_plot(generation_name, simulation_name): raise ValueError("No SED plot for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+            if additional_error is not None: log.warning("The SED plot was probably not made with the same additional relative error for the observed points of " + str(additional_error) + ": ignoring ...")
+
+        # Load from file
+        if from_file: self.get_sed_plot(generation_name, simulation_name, path=path)
+
+        # Make new plot
+        else: self.make_sed_plot(generation_name, simulation_name, additional_error=additional_error, path=path)
+
+    # -----------------------------------------------------------------
+
+    def get_sed_plot(self, generation_name, simulation_name, path=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param path:
+        :return:
+        """
+
+        # Get the plot filepath
+        filepath = self.get_sed_plot_path(generation_name, simulation_name)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_sed_plot(self, generation_name, simulation_name, additional_error=None, path=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param additional_error:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting simulated SED for simulation '" + simulation_name + "' of generation '" + generation_name + "' ...")
+
+        # Get the simulated SED
+        sed = self.get_sed(generation_name, simulation_name)
+
+        # Get the reference SEDs
+        observed_seds = self.get_reference_seds(additional_error=additional_error)
+
+        # Set SEDs
+        seds = OrderedDict()
+        seds.update(observed_seds)
+        seds["Simulation"] = sed
+
+        # Make (and show) the plot
+        plot_seds(seds, path=path, show_file=True)
+
+    # -----------------------------------------------------------------
+
+    def plot_fluxes(self, generation_name, simulation_name, additional_error=None, path=None, from_file=False):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param additional_error:
+        :param path:
+        :param from_file:
+        :return:
+        """
+
+        # Checks
+        if from_file:
+            if not self.has_mock_sed_plot(generation_name, simulation_name): raise ValueError("No mock fluxes plot for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
+            if additional_error is not None: log.warning("The fluxes plot was probably not made with the same additional relative error for the observed points of " + str(additional_error) + ": ignoring ...")
+
+        # Load from file
+        if from_file: self.get_fluxes_plot(generation_name, simulation_name, path=path)
+
+        # Make new plot
+        else: self.make_fluxes_plot(generation_name, simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes_plot(self, generation_name, simulation_name, path=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param path:
+        :return:
+        """
+
+        # Get the plot filepath
+        filepath = self.get_mock_sed_plot_path(generation_name, simulation_name)
+
+        # Copy plot file to destination?
+        if path is not None: fs.copy_file(filepath, path)
+
+        # No destination path given, show the plot
+        else: fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def make_fluxes_plot(self, generation_name, simulation_name, additional_error=None, path=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param additional_error:
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting mock fluxes for simulation '" + simulation_name + "' of generation '" + generation_name + "' ...")
+
+        # Get the mock fluxes
+        fluxes = self.get_mock_sed(generation_name, simulation_name)
+
+        # Get the reference SEDs
+        observed_seds = self.get_reference_seds(additional_error=additional_error)
+
+        # Set SEDs
+        seds = OrderedDict()
+        seds.update(observed_seds)
+        seds["Mock fluxes"] = fluxes
+
+        # Make (and show) the plot
+        plot_seds(seds, path=path, show_file=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def plot_seds_definition(self):
 
         """
@@ -1310,10 +2306,15 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
         definition.add_optional("path", "string", "save the plot file")
         definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
         definition.add_optional("random", "positive_integer", "pick a specified number of random simulations to plot")
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1352,23 +2353,14 @@ class FittingStatistics(InteractiveConfigurable):
         # Create the SED plotter
         plotter = SEDPlotter()
 
-        # Inform the user
-        log.info("Loading the observed SEDs ...")
-
-        # Add relative error
-        if additional_error is not None:
-            clipped_sed = self.clipped_sed.copy()
-            truncated_sed = self.truncated_sed.copy()
-            clipped_sed.add_relative_error(additional_error)
-            truncated_sed.add_relative_error(additional_error)
-        else: clipped_sed, truncated_sed = self.clipped_sed, self.truncated_sed
+        # Get the reference SEDs
+        seds = self.get_reference_seds(additional_error=additional_error)
 
         # Inform the user
         log.info("Adding the observed SEDs ...")
 
         # Add observed SEDs
-        plotter.add_sed(clipped_sed, "Clipped observed fluxes")
-        plotter.add_sed(truncated_sed, "Truncated observed fluxes")
+        for name in seds: plotter.add_sed(seds[name], name)
 
         # Add simulation SEDs
         log.info("Adding the simulated SEDs ...")
@@ -1401,6 +2393,62 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def plot_counts_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("nsimulations", "positive_integer", "number of simulations to show", 10)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_counts_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_counts_definition, **kwargs)
+
+        # Plot
+        self.plot_counts(generation_name, nsimulations=config.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    def plot_counts(self, generation_name, nsimulations=10):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting best parameter counts distributions for generation '" + generation_name + "' ...")
+
+        # Get counts distributions
+        counts_distributions = self.get_best_simulations_parameter_count_distributions(generation_name, nsimulations)
+
+        # Plot the distributions
+        plot_distributions(counts_distributions, logscale=True, panels=True, frequencies=True)
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -1417,14 +2465,13 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
-    def class_pts_user_path(self):
+    def history_filename(self):
 
         """
         This function ...
         :return:
         """
 
-        #return introspection.pts_user_manager_dir
-        return None
+        return "statistics"
 
 # -----------------------------------------------------------------

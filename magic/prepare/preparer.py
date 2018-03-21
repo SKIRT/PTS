@@ -1640,4 +1640,16 @@ class ImagePreparer(InteractiveConfigurable):
         # Inform the user
         log.info("Plotting ...")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def history_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "preparer"
+
 # -----------------------------------------------------------------

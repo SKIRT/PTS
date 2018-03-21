@@ -2771,6 +2771,7 @@ def get_best_simulations(nsimulations, parameter_labels, chi_squared_table, para
     counts = dict()
     for label in parameter_labels: counts[label] = defaultdict(int)
 
+    # Create list of unique values for each free parameter
     unique_values = parameters_table.unique_parameter_values
     unique_values_scalar = dict()
     for label in unique_values:
@@ -2819,11 +2820,18 @@ def show_best_simulations(simulation_names, chi_squared_table, parameters_table,
     :return:
     """
 
+    # Create list of unique parameter values for each free parameter
     unique_values = parameters_table.unique_parameter_values
     unique_values_scalar = dict()
     for label in unique_values:
         values = list(sorted([value.to(parameter_units[label]).value for value in unique_values[label]]))
         unique_values_scalar[label] = values
+
+    # Create list for chi squared values
+    chi_squared_values = []
+
+    # Create list for parameter values
+    parameters = []
 
     # Loop over the simulations
     for index, simulation_name in enumerate(simulation_names):
@@ -2833,6 +2841,36 @@ def show_best_simulations(simulation_names, chi_squared_table, parameters_table,
 
         # Get parameter values
         parameter_values = parameters_table.parameter_values_for_simulation(simulation_name)
+
+        # Add the values
+        chi_squared_values.append(chisq)
+        parameters.append(parameter_values)
+
+    # Show
+    show_best_simulations_impl(simulation_names, chi_squared_values, parameters, parameter_units, unique_values_scalar, parameter_scales, initial_values)
+
+# -----------------------------------------------------------------
+
+def show_best_simulations_impl(simulation_names, chi_squared_values, parameters, parameter_units, unique_values_scalar, parameter_scales, initial_values):
+
+    """
+    This function ...
+    :param simulation_names:
+    :param chi_squared_values:
+    :param parameters:
+    :param unique_values_scalar:
+    :param parameter_scales:
+    :param initial_values:
+    :return:
+    """
+
+    # Checks
+    nsimulations = len(simulation_names)
+    if len(chi_squared_values) != nsimulations: raise ValueError("Invalid number of chi squared values")
+    if len(parameters) != nsimulations: raise ValueError("Invalid number of parameter dictionaries")
+
+    # Loop over the simulations
+    for index, simulation_name, chisq, parameter_values in zip(range(nsimulations), simulation_names, chi_squared_values, parameters):
 
         # Show
         print("")

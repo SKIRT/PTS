@@ -813,6 +813,30 @@ class InteractiveConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_config_from_definition(self, name, definition, command, interactive=False):
+
+        """
+        This function ...
+        :param name:
+        :param definition:
+        :param command:
+        :param interactive:
+        :return:
+        """
+
+        from .configuration import prompt_settings, parse_arguments
+
+        # Get settings interactively
+        if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
+
+        # Parse arguments
+        else: config = parse_arguments(name, definition, command=command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
+
+        # Return the configuration
+        return config
+
+    # -----------------------------------------------------------------
+
     def get_definition_for_function_name(self, function_name):
 
         """
@@ -1100,8 +1124,21 @@ class InteractiveConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def history_pts_user_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import introspection
+        return introspection.pts_user_history_dir
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
-    def class_pts_user_path(self):
+    def history_filename(self):
 
         """
         This function ...
@@ -1121,7 +1158,7 @@ class InteractiveConfigurable(Configurable):
         """
 
         # Determine the path
-        return fs.join(self.class_pts_user_path, "history.dat")
+        return fs.join(self.history_pts_user_path, self.history_filename)
 
     # -----------------------------------------------------------------
 
