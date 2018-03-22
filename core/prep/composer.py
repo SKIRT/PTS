@@ -20,6 +20,14 @@ from ..basics.log import log
 from ..basics.configurable import InteractiveConfigurable
 from .smile import SKIRTSmileSchema
 from ..simulation.skifile import SkiFile
+from ..tools.utils import lazyproperty
+from ..basics.configuration import prompt_choice
+
+# -----------------------------------------------------------------
+
+oligo_type = "oligo"
+pan_type = "pan"
+oligo_or_pan = [oligo_type, pan_type]
 
 # -----------------------------------------------------------------
 
@@ -154,8 +162,21 @@ class ModelComposer(InteractiveConfigurable):
         # Get the ski file
         if kwargs.get("skifile", None) is not None: self.ski = kwargs.pop("skifile")
         elif kwargs.get("ski", None) is not None: self.ski = kwargs.pop("ski")
-        elif self.config.skifile is not None: self.ski = SkiFile(self.config.skifile)
+        elif self.config.from_file is not None: self.ski = SkiFile(self.config.skifile)
         else: self.create_ski_template()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.name is not None: return self.config.name
+        else: return self.ski.prefix
 
     # -----------------------------------------------------------------
 
@@ -169,8 +190,26 @@ class ModelComposer(InteractiveConfigurable):
         # Debugging
         log.debug("Creating empty ski template ...")
 
+        # Oligo or pan?
+        if self.config.type is None: simulation_type = prompt_choice("type", "simulation type", "")
+        else: simulation_type = self.config.type
+
         # Create template ski file
-        self.ski = self.smile.create_panchromatic_template()
+        if simulation_type == oligo_type: self.ski = self.smile.create_oligochromatic_template()
+        elif simulation_type == pan_type: self.ski =self.smile.create_panchromatic_template()
+        else: raise ValueError("Invalid value for 'simulation_type'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ski.simulation_type
 
     # -----------------------------------------------------------------
 
@@ -207,5 +246,20 @@ class ModelComposer(InteractiveConfigurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the ski file ...")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def history_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "composer"
 
 # -----------------------------------------------------------------

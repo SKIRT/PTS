@@ -176,6 +176,13 @@ class SkiFile8:
     def simulation_class(self):
         return self.get_simulation().tag
 
+    ## This property returns the simulation type
+    @property
+    def simulation_type(self):
+        if self.oligochromatic(): return "oligo"
+        elif self.panchromatic(): return "pan"
+        else: raise RuntimeError("Something went wrong")
+
     ## This property returns whether the ski file required input
     @property
     def needs_input(self): return len(self.input_files) > 0
