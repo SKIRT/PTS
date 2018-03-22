@@ -36,6 +36,7 @@ from ...core.tools.stringify import tostr
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import filesystem as fs
 from ...core.tools import numbers
+from ...core.plot.transmission import plot_filters
 
 # -----------------------------------------------------------------
 
@@ -59,6 +60,7 @@ _chisquared_command_name = "chisquared"
 _prob_command_name = "prob"
 _seds_command_name = "seds"
 _sed_command_name = "sed"
+_filters_command_name = "filters"
 
 # -----------------------------------------------------------------
 
@@ -90,6 +92,7 @@ plot_commands[_seds_command_name] = ("plot_seds_command", True, "plot the simula
 plot_commands[_best_command_name] = ("plot_best_command", True, "plot the SEDs (simulated or mock) of the best simulation(s) of a generation", "generation")
 plot_commands[_sed_command_name] = ("plot_sed_command", True, "plot the SED (simulated or mock) of a particular simulation", "generation_simulation")
 plot_commands[_counts_command_name] = ("plot_counts_command", True, "plot the best parameter counts", "generation")
+plot_commands[_filters_command_name] = ("plot_filters", False, "plot the fitting filters", None)
 
 # Set subcommands
 subcommands = OrderedDict()
@@ -517,6 +520,18 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.fitting_runs.load(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.fitting_filters
 
     # -----------------------------------------------------------------
 
@@ -2692,6 +2707,21 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Plot the distributions
         plot_distributions(counts_distributions, logscale=True, panels=True, frequencies=True)
+
+    # -----------------------------------------------------------------
+
+    def plot_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the fitting filters ...")
+
+        # Plot the fitting filters
+        plot_filters(self.fitting_filters)
 
     # -----------------------------------------------------------------
 
