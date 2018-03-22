@@ -18,12 +18,12 @@ definition = ConfigurationDefinition()
 
 # Name and type of simulation
 definition.add_positional_optional("name", "string", "name for the model")
-definition.add_positional_optional("type", "string", "simulation type", choices=oligo_or_pan)
+#definition.add_positional_optional("type", "string", "simulation type", choices=oligo_or_pan)
 
 # -----------------------------------------------------------------
 
 # Ski file path
-definition.add_optional("from_file", "file_path", "ski file path")
+definition.add_optional("from_ski", "file_path", "ski file path")
 
 # -----------------------------------------------------------------
 
