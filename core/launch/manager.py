@@ -145,6 +145,7 @@ _steal_command_name = "steal"
 _retrieve_command_name = "retrieve"
 _analyse_command_name = "analyse"
 _reanalyse_command_name = "reanalyse"
+_mimic_command_name = "mimic"
 _assignment_command_name = "assignment"
 _runtimes_command_name = "runtimes"
 _memory_command_name = "memory"
@@ -202,6 +203,7 @@ commands[_steal_command_name] = (None, None, "take on simulation settings or ana
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve a simulation from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse a simulation", "simulations")
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
+commands[_mimic_command_name] = ("mimic_simulation_command", True, "mimic a simulation", "simulation")
 
 # -----------------------------------------------------------------
 
@@ -14012,6 +14014,46 @@ class SimulationManager(InteractiveConfigurable):
 
         # Reset the status
         self.reset_status_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mimic_simulation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def mimic_simulation_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the simulation name and config
+        simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.mimic_simulation_definition, **kwargs)
+
+        # Mimic the simulation
+        self.mimic_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def mimic_simulation(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
 
     # -----------------------------------------------------------------
 

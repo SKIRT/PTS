@@ -79,7 +79,7 @@ class SimulationData(object):
         """
 
         # Get the output
-        output = SimulationOutput.from_cwd(prefix)
+        output = SimulationOutput.from_cwd(prefix=prefix)
 
         # Create
         return cls(output)
@@ -96,7 +96,7 @@ class SimulationData(object):
         """
 
         # Get the output
-        output = SimulationOutput.from_paths(paths)
+        output = SimulationOutput(*paths)
 
         # Create
         return cls(output)
@@ -560,7 +560,7 @@ class SimulationData(object):
         :return:
         """
 
-        from ..misc.datacubes import get_instrument_name
+        from ..misc.datacubes import get_datacube_instrument_name
         from ...magic.core.datacube import DataCube
 
         # Initialize dictionary
@@ -570,7 +570,7 @@ class SimulationData(object):
         for path in self.image_paths:
 
             # Get the instrument name
-            instrument_name = get_instrument_name(path, self.simulation_prefix)
+            instrument_name = get_datacube_instrument_name(path, self.simulation_prefix)
 
             # Get the contribution
             filename = fs.strip_extension(fs.name(path))

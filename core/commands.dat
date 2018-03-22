@@ -13,6 +13,7 @@ depends | -- | prep.dependencies.DependenciesChecker | arguments | Check and sho
 generate_wavelength_grids | -- | prep.wavelengthgrids.WavelengthGridGenerator | arguments | Generate wavelength grids
 generate_dust_grids | -- | prep.dustgrids.DustGridGenerator | arguments | Generate dust grids
 create_model | -- | prep.creator.ModelCreator | arguments | Create a SKIRT model
+compose | -- | prep.composer.ModelComposer | arguments | Create a radiative transfer model
 
 # TESTS
 scaling | -- | test.scaling.ScalingTest | interactive | Test the scaling of SKIRT on a particular system

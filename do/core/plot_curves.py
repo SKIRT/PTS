@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.basics.curve import Curve
-from pts.core.basics.plot import MPLPlot
+from pts.core.basics.plot import MPLFigure
 from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -30,6 +30,7 @@ config = parse_arguments("plot_curves", definition)
 
 # -----------------------------------------------------------------
 
+# Load the curves
 curves = dict()
 for filepath in config.files:
     name = fs.strip_extension(fs.name(filepath))
@@ -37,18 +38,23 @@ for filepath in config.files:
 
 # -----------------------------------------------------------------
 
-plot = MPLPlot()
-for name in curves: plot.add_curve(curves[name], name)
+# Initialize figure
+figure = MPLFigure()
+
+# -----------------------------------------------------------------
+
+# Add the curves
+for name in curves: figure.add_curve(curves[name], name)
 
 # -----------------------------------------------------------------
 
 if config.loglog:
-    plot.set_x_log_scale()
-    plot.set_y_log_scale()
+    figure.set_x_log_scale()
+    figure.set_y_log_scale()
 
 # -----------------------------------------------------------------
 
 # Plot
-plot.finish()
+figure.finish()
 
 # -----------------------------------------------------------------

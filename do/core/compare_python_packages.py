@@ -70,7 +70,7 @@ for dependency in introspection.get_all_dependencies():
         remote_version = remote_packages[dependency]
     else:
         # Check again for present by importing
-        remotely_present = rmeote_python.is_present_package(dependency)
+        remotely_present = remote_python.is_present_package(dependency)
         remote_version = None
 
     # If present both locally and remotely

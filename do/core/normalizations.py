@@ -40,6 +40,6 @@ ski = SkiFile(config.ski)
 
 # -----------------------------------------------------------------
 
-show_normalizations(ski, flux=config.flux)
+show_normalizations(ski, flux_unit=config.flux)
 
 # -----------------------------------------------------------------
