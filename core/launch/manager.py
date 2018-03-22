@@ -825,7 +825,7 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        return self.config.write and (self.config.write_assignment or self.config.write_status or self.config.write_moved)
+        return self.config.write and (self.config.write_assignment or self.config.write_status or self.config.write_moved or self.config.write_relaunched or self.config.write_commands)
 
     # -----------------------------------------------------------------
 

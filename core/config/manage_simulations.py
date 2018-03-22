@@ -37,7 +37,7 @@ definition.add_optional("memory", "file_path", "memory table path")
 definition.add_optional("commands", "string_list", "commands to be run in interactive mode")
 
 # Interactive mode
-definition.add_flag("interactive", "use interactive mode")
+definition.add_flag("interactive", "use interactive mode", default=None)
 
 # Offline?
 definition.add_flag("offline", "offline mode")
@@ -112,10 +112,10 @@ definition.add_flag("cache_after_analysis", "cache immediately after a simulatio
 # Writing
 definition.add_flag("write", "writing", True)
 definition.add_flag("write_assignment", "write the assignent scheme", None)
-definition.add_flag("write_status", False)
-definition.add_flag("write_moved", False)
-definition.add_flag("write_relaunched", False)
-definition.add_flag("write_commands", False)
+definition.add_flag("write_status", "write the status table", False)
+definition.add_flag("write_moved", "write the moved simulations table", False)
+definition.add_flag("write_relaunched", "write the relaunched simulations table", False)
+definition.add_flag("write_commands", "write the commands", False)
 
 # -----------------------------------------------------------------
 

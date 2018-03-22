@@ -67,6 +67,7 @@ finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Fin
 reinitialize_fit | -- | fitting.reinitialization.FittingReinitializer | interactive | Re-initialize a fitting run for a particular model, from a previous fitting run, or from an analysis run
 *analyse_sed_fit_model | -- | fitting.modelanalyser.SEDFitModelAnalyser | arguments | Analyse fit model with SED
 *analyse_images_fit_model | -- | fitting.modelanalyser.ImagesFitModelAnalyser | arguments | Analyse fit model with images
+manage_generation | -- | fitting.manager.GenerationManager | arguments | Manage the simulations of a generation
 refit | -- | fitting.refitter.Refitter | arguments | Refit one or more generations based on existing simulation output
 expand | -- | fitting.expander.ParameterExpander | arguments | Expand the parameter space of a generation in a certain direction
 calculate_weights | -- | fitting.weights.WeightsCalculator | arguments | Calculate the weights for each band
