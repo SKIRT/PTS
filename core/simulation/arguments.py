@@ -28,6 +28,7 @@ from ..tools import types
 from ..tools import strings
 from ..tools.utils import lazyproperty
 from ..tools import numbers
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -89,7 +90,7 @@ class SkirtArguments(object):
         self.parallel.threads = parallelization.threads if parallelization is not None else None # The number of parallel threads per simulation
         self.parallel.processes = parallelization.processes if parallelization is not None else None # The number of parallel processes per simulation
         self.parallel.dataparallel = parallelization.data_parallel if parallelization is not None else False  # Run in data parallelization mode
-        self.parallel.threads_per_core = parallelization.threads_per_core if parallelization is not None else False
+        self.parallel.threads_per_core = parallelization.threads_per_core if parallelization is not None else 1 # default is no hyperthreading
 
         # Simulation name (not required)
         self.simulation_name = simulation_name
@@ -604,7 +605,10 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             cores_per_process = int(cores_per_process)
 
             # Remote is not specified: assume most recent version
-            if remote is None: command += ["--map-by", "socket:pe=" + str(cores_per_process), "--bind-to", "core"]
+            if remote is None:
+
+                # Only add the map by and bind to options if we are not on the MacOS platform
+                if not introspection.is_macos(): command += ["--map-by", "socket:pe=" + str(cores_per_process), "--bind-to", "core"]
 
             # Check if --map-by and --bind-to options are available
             elif remote.mpi_has_bind_to_option and remote.mpi_has_map_by_option: command += ["--map-by", "socket:pe=" + str(cores_per_process), "--bind-to", "core"]
@@ -617,7 +621,8 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
 
         # Add report bindings option
         if remote is None:
-            if report_bindings is None: report_bindings = True # assume most recent version
+            if report_bindings is None: report_bindings = not introspection.is_macos() # not on MacOS, else assume most recent version
+            elif introspection.is_macos(): raise ValueError("Reporting the process binding is not available on MacOS")
         elif report_bindings is None: report_bindings = remote.mpi_has_report_bindings_option
         if report_bindings: command += ["--report-bindings"]
 
