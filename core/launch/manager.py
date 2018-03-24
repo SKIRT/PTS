@@ -280,6 +280,7 @@ cache_commands[_images_command_name] = ("cache_simulations_images_command", True
 
 # -----------------------------------------------------------------
 
+# Set subcommands
 subcommands = OrderedDict()
 subcommands[_show_command_name] = show_commands
 subcommands[_plot_command_name] = plot_commands

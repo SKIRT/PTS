@@ -345,9 +345,9 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition = ConfigurationDefinition()
         definition.add_required("name", "string", "name for this dust component")
         definition.add_optional("title", "string", "short description for this component")
-        definition.add_optional("geometry", "string", "SKIRT base geometry for the component", self.smile.concrete_geometries)
-        definition.add_optional("normalization", "string", "normalization for the component", self.smile.concrete_dust_normalizations)
-        definition.add_optional("mix", "string", "dust mix for the component", self.smile.concrete_dust_mixes)
+        definition.add_optional("geometry", "string", "SKIRT base geometry for the component", choices=self.smile.concrete_geometries)
+        definition.add_optional("normalization", "string", "normalization for the component", choices=self.smile.concrete_dust_normalizations)
+        definition.add_optional("mix", "string", "dust mix for the component", choices=self.smile.concrete_dust_mixes)
 
         # Prompt for settings
         setter = InteractiveConfigurationSetter("additional dust component", add_cwd=False, add_logging=False)

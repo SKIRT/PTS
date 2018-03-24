@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.prep.composer import oligo_or_pan
+from pts.core.prep.composer import oligo_or_pan, pan_type
 
 # -----------------------------------------------------------------
 
@@ -18,7 +18,7 @@ definition = ConfigurationDefinition()
 
 # Name and type of simulation
 definition.add_positional_optional("name", "string", "name for the model")
-#definition.add_positional_optional("type", "string", "simulation type", choices=oligo_or_pan)
+definition.add_optional("type", "string", "simulation type", pan_type, choices=oligo_or_pan)
 
 # -----------------------------------------------------------------
 

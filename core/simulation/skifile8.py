@@ -1357,10 +1357,6 @@ class SkiFile8:
         # Return the list of names
         return ids
 
-    @property
-    def nstellar_components(self):
-        return len(self.get_stellar_component_ids())
-
     ## This function checks whether a stellar component with a certain ID is present
     def has_stellar_component(self, component_id):
         return component_id in self.get_stellar_component_ids()

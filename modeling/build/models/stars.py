@@ -997,9 +997,9 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         definition = ConfigurationDefinition()
         definition.add_required("name", "string", "name for this stellar component")
         definition.add_optional("title", "string", "short description for this component")
-        definition.add_optional("geometry", "string", "SKIRT base geometry for the component", self.smile.concrete_geometries)
-        definition.add_optional("sed", "string", "SED template for the component", self.smile.concrete_stellar_seds)
-        definition.add_optional("normalization", "string", "normalization for the component", self.smile.concrete_stellar_normalizations)
+        definition.add_optional("geometry", "string", "SKIRT base geometry for the component", choices=self.smile.concrete_geometries)
+        definition.add_optional("sed", "string", "SED template for the component", choices=self.smile.concrete_stellar_seds)
+        definition.add_optional("normalization", "string", "normalization for the component", choices=self.smile.concrete_stellar_normalizations)
 
         # Prompt for settings
         setter = InteractiveConfigurationSetter("additional stellar component", add_cwd=False, add_logging=False)
