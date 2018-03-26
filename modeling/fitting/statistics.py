@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -32,11 +33,11 @@ from .refitter import show_best_simulations_impl
 from ...core.plot.sed import plot_seds
 from ...core.tools import formatting as fmt
 from ...core.plot.distribution import plot_distributions
-from ...core.tools.stringify import tostr
+from ...core.tools.stringify import tostr, yes_or_no
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import filesystem as fs
-from ...core.tools import numbers
 from ...core.plot.transmission import plot_filters
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,12 @@ _simulations_command_name = "simulations"
 _best_command_name = "best"
 _counts_command_name = "counts"
 _parameters_command_name = "parameters"
+_compare_command_name = "compare"
+_closest_command_name = "closest"
 _plot_command_name = "plot"
+
+# Compare
+_fluxes_command_name = "fluxes"
 
 # Plotting
 _terms_command_name = "terms"
@@ -72,13 +78,31 @@ commands[_help_command_name] = ("show_help", False, "show help", None)
 commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
 commands[_status_command_name] = ("show_status_command", True, "show generation status", None)
 
-# Other commands
+# Show stuff
 commands[_generations_command_name] = ("show_generations", False, "show generations", None)
 commands[_simulations_command_name] = ("show_simulations_command", True, "show simulations of a generation", "generation")
 commands[_best_command_name] = ("show_best_command", True, "show best models", "generation")
 commands[_counts_command_name] = ("show_counts_command", True, "show counts statistics", "generation")
 commands[_parameters_command_name] = ("show_parameters_command", True, "show parameters statistics", "generation")
+
+# Commands with subcommands
+commands[_compare_command_name] = (None, None, "compare simulations", None)
+commands[_closest_command_name] = (None, None, "compare closest simulations between generations", None)
 commands[_plot_command_name] = (None, None, "plotting", None)
+
+# -----------------------------------------------------------------
+
+# Compare commands
+compare_commands = OrderedDict()
+compare_commands[_parameters_command_name] = ("compare_parameters_command", True, "compare parameters between two simulations", "two_generation_simulations")
+compare_commands[_seds_command_name] = ("compare_seds_command", True, "compare SEDs between two simulations", "two_generation_simulations")
+compare_commands[_fluxes_command_name] = ("compare_fluxes_command", True, "compare fluxes between two simulations", "two_generation_simulations")
+
+# Closest commands
+closest_commands = OrderedDict()
+closest_commands[_parameters_command_name] = ("show_closest_parameters_command", True, "compare closest simulation parameters between generations", "two_generations")
+closest_commands[_seds_command_name] = ("plot_closest_seds_command", True, "compare simulated SEDs of closest simulations between generations", "two_generations")
+closest_commands[_fluxes_command_name] = ("plot_closest_fluxes_command", True, "compare mock fluxes of closest simulations between generations", "two_generations")
 
 # -----------------------------------------------------------------
 
@@ -96,6 +120,8 @@ plot_commands[_filters_command_name] = ("plot_filters", False, "plot the fitting
 
 # Set subcommands
 subcommands = OrderedDict()
+subcommands[_compare_command_name] = compare_commands
+subcommands[_closest_command_name] = closest_commands
 subcommands[_plot_command_name] = plot_commands
 
 # -----------------------------------------------------------------
@@ -387,6 +413,214 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Return the names
         return generation_name, simulation_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_two_generations_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("generation_a", "integer_or_string", "generation a index or name", choices=self.generation_names)
+        definition.add_required("generation_b", "integer_or_string", "generation b index or name", choices=self.generation_names)
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_two_generations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only generation name
+
+        # Get the definition
+        definition = self.get_two_generations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get the configuration
+        config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
+
+        # Get generation a name
+        if types.is_integer_type(config.generation_a): generation_a_name = self.generation_names[config.generation_a]
+        else: generation_a_name = config.generation_a
+
+        # Get generation b name
+        if types.is_integer_type(config.generation_b): generation_b_name = self.generation_names[config.generation_b]
+        else: generation_b_name = config.generation_b
+
+        # Return
+        return splitted, generation_a_name, generation_b_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_two_generation_names_from_command(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, generation_a_name, generation_b_name, config = self.parse_two_generations_command(command, name=name, interactive=interactive)
+
+        # Return the names
+        return generation_a_name, generation_b_name
+
+    # -----------------------------------------------------------------
+
+    def get_two_generation_names_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, generation_a_name, generation_b_name, config = self.parse_two_generations_command(command, command_definition, name=name, interactive=interactive)
+
+        # Return the names
+        return generation_a_name, generation_b_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_two_generation_simulations_command_definition(self, command_definition=None, required_to_optional=True):
+        
+        """
+        This function ...
+        :param command_definition: 
+        :param required_to_optional: 
+        :return: 
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("generation_simulation_a", "integer_or_string_pair", "generation and simulation index or name of simulation a")
+        definition.add_required("generation_simulation_b", "integer_or_string_pair", "generation and simulation index or name of simulation b")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_two_generation_simulations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
+        
+        """
+        This function ...
+        :param command: 
+        :param command_definition: 
+        :param name: 
+        :param index: 
+        :param required_to_optional: 
+        :param interactive: 
+        :return: 
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only generation name
+
+        # Get the definition
+        definition = self.get_two_generation_simulations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get the configuration
+        config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
+
+        # Get generation_simulation_a
+        generation_simulation_a_name = (None, None)
+        if types.is_integer_type(config.generation_simulation_a[0]): generation_simulation_a_name[0] = self.generation_names[config.generation_simulation_a[0]]
+        else: generation_simulation_a_name[0] = config.generation_simulation_a[0]
+        if types.is_integer_type(config.generation_simulation_a[1]): generation_simulation_a_name[1] = self.get_simulation_names(generation_simulation_a_name[0])[config.generation_simulation_a[1]]
+        else: generation_simulation_a_name[1] = config.generation_simulation_a[1]
+
+        # Get generation_simulation_b_name
+        generation_simulation_b_name = (None, None)
+        if types.is_integer_type(config.generation_simulation_b[0]): generation_simulation_b_name[0] = self.generation_names[config.generation_simulation_b[0]]
+        else: generation_simulation_b_name[0] = config.generation_simulation_b[0]
+        if types.is_integer_type(config.generation_simulation_b[1]): generation_simulation_b_name[1] = self.get_simulation_names(generation_simulation_b_name[0])[config.generation_simulation_b[1]]
+        else: generation_simulation_b_name[1] = config.generation_simulation_b[1]
+
+        # Return
+        return splitted, generation_simulation_a_name, generation_simulation_b_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_two_generation_simulation_names(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted, generation_simulation_a_name, generation_simulation_b_name, config = self.parse_two_generation_simulations_command(command, name=name, interactive=interactive)
+
+        # Return
+        return generation_simulation_a_name, generation_simulation_b_name
+
+    # -----------------------------------------------------------------
+
+    def get_two_generation_simulation_names_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted, generation_simulation_a_name, generation_simulation_b_name, config = self.parse_two_generation_simulations_command(command, command_definition, name=name, interactive=interactive)
+
+        # Return
+        return generation_simulation_a_name, generation_simulation_b_name, config
 
     # -----------------------------------------------------------------
 
@@ -1649,8 +1883,34 @@ class FittingStatistics(InteractiveConfigurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Showing the generations ...")
+
         # Loop over the generations
-        for generation_name in self.generation_names: print(" - " + generation_name)
+        for generation_name in self.generation_names:
+
+            # Show name
+            print(fmt.underlined + fmt.yellow + generation_name + fmt.reset)
+            print("")
+
+            # Show info
+            self.show_generation_info(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_generation_info(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Get the generation
+        generation = self.get_generation(generation_name)
+
+        # Show info of generation
+        show_generation_info(generation)
         print("")
 
     # -----------------------------------------------------------------
@@ -1965,6 +2225,495 @@ class FittingStatistics(InteractiveConfigurable):
             if nsimulations > 1: print("    * Most counted in " + str(nsimulations) + " best simulations: " + tostr(counts_distributions[label].most_frequent, ndigits=3) + " " + tostr(self.parameter_units[label]))
 
         print("")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_matches(self, generation_a_name, generation_b_name):
+
+        """
+        This function ...
+        :param generation_a_name:
+        :param generation_b_name:
+        :return:
+        """
+
+        # Get the parameters tables
+        parameters_a = self.get_parameters_table(generation_a_name)
+        parameters_b = self.get_parameters_table(generation_b_name)
+
+        # Initialize dictionary
+        closest = dict()
+
+        # Loop over the simulations of one generation
+        for index in range(len(parameters_a)):
+
+            # Get the simulation name
+            simulation_name = parameters_a.get_simulation_name(index)
+
+            # Get parameter values
+            values = parameters_a.get_parameter_values(index)
+
+            # Find the simulation with the closest parameter values for the other generation
+            closest_index = parameters_b.closest_simulation_for_parameter_values(values, return_index=True)
+            closest_simulation_name = parameters_b.get_simulation_name(closest_index)
+
+            # Get the closest values
+            closest_values = parameters_b.get_parameter_values(closest_index)
+
+            # Loop over the labels
+            diff_keys = []
+            for label in self.parameter_labels:
+
+                # Get both values
+                value = values[label]
+                closest_value = closest_values[label]
+
+                # Calculate the difference
+                diff = np.exp(abs(np.log(value / closest_value)))
+
+                # Add the difference
+                diff_keys.append(diff)
+
+            # Calculate difference
+            diff = np.sqrt(np.sum(np.power(diff_keys, 2)))
+
+            # Add to the dictionary
+            if closest_simulation_name in closest:
+                current_diff = closest[closest_simulation_name][1]
+                if diff < current_diff: closest[closest_simulation_name] = (simulation_name, diff)
+            else: closest[closest_simulation_name] = (simulation_name, diff)
+
+        # Return the dictionary
+        return closest
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_closest_simulations(self, generation_a_name, generation_b_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_a_name:
+        :param generation_b_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Get matches
+        closest = self.get_simulation_matches(generation_a_name, generation_b_name)
+
+        # Keep only the closest matches
+        matches = []
+
+        # Sort from best match to worse match
+        for closest_simulation_name in sorted(closest, key=lambda name: closest[name][1]):
+
+            simulation_name = closest[closest_simulation_name][0]
+            diff = closest[closest_simulation_name][1]
+            matches.append((simulation_name, closest_simulation_name, diff))
+            if len(matches) == nsimulations: break
+
+        # Return the pairs
+        return matches
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def compare_parameters_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def compare_parameters_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get
+        generation_simulation_name_a, generation_simulation_name_b = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_parameters_definition, **kwargs)
+
+        # Compare
+        self.compare_parameters(generation_simulation_name_a, generation_simulation_name_b)
+
+    # -----------------------------------------------------------------
+
+    def compare_parameters(self, generation_simulation_name_a, generation_simulation_name_b):
+
+        """
+        This function ...
+        :param generation_simulation_name_a:
+        :param generation_simulation_name_b:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Comparing parameters between simulation '" + tostr(generation_simulation_name_a) + "' and '" + tostr(generation_simulation_name_b) + "' ...")
+
+        # Get generation names and simulation names
+        generation_a_name = generation_simulation_name_a[0]
+        generation_b_name = generation_simulation_name_b[0]
+        simulation_a_name = generation_simulation_name_a[1]
+        simulation_b_name = generation_simulation_name_b[1]
+
+        # Get the parameters tables
+        parameters_a = self.get_parameters_table(generation_a_name)
+        parameters_b = self.get_parameters_table(generation_b_name)
+
+        # Get parameter values
+        values_a = parameters_a.parameter_values_for_simulation(simulation_a_name)
+        values_b = parameters_b.parameter_values_for_simulation(simulation_b_name)
+
+        # Loop over the parameter values
+        for label in self.parameter_labels:
+
+            # Convert to scalar values
+            unit = self.get_parameter_unit(label)
+            value_a = values_a[label].to(unit).value
+            value_b = values_b[label].to(unit).value
+
+            # Calculate relative difference
+            reldiff = np.exp(abs(np.log(value_a / value_b))) - 1
+
+            # Show
+            print(" - " + fmt.bold + label + fmt.reset + ": " + fmt.yellow + tostr(value_a, decimal_places=4) + fmt.reset + ", " + fmt.cyan + tostr(value_b, decimal_places=4) + fmt.reset + " " + tostr(unit) + " (" + tostr(reldiff * 100, decimal_places=3) + "%)")
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def compare_seds_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def compare_seds_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get
+        generation_simulation_name_a, generation_simulation_name_b = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_seds_definition, **kwargs)
+
+        # Compare
+        self.compare_seds(generation_simulation_name_a, generation_simulation_name_b)
+
+    # -----------------------------------------------------------------
+
+    def compare_seds(self, generation_simulation_name_a, generation_simulation_name_b, add_references=False,
+                     additional_error=None):
+
+        """
+        This function ...
+        :param generation_simulation_name_a:
+        :param generation_simulation_name_b:
+        :param add_references:
+        :param additional_error:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Comparing simulated SEDs between simulation '" + tostr(generation_simulation_name_a) + "' and '" + tostr(generation_simulation_name_b) + "' ...")
+
+        # Get generation names and simulation names
+        generation_a_name = generation_simulation_name_a[0]
+        generation_b_name = generation_simulation_name_b[0]
+        simulation_a_name = generation_simulation_name_a[1]
+        simulation_b_name = generation_simulation_name_b[1]
+
+        # Get the generations
+        generation_a = self.get_generation(generation_a_name)
+        generation_b = self.get_generation(generation_b_name)
+
+        # Create SEDs
+        seds = OrderedDict()
+        if add_references: seds.update(self.get_reference_seds(additional_error=additional_error))
+        seds["Generation a"] = generation_a.get_simulation_sed(simulation_a_name)
+        seds["Generation b"] = generation_b.get_simulation_sed(simulation_b_name)
+
+        # Plot
+        plot_seds(seds, models_residuals=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def compare_fluxes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def compare_fluxes_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get
+        generation_simulation_name_a, generation_simulation_name_b = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_fluxes_definition, **kwargs)
+
+        # Compare
+        self.compare_fluxes(generation_simulation_name_a, generation_simulation_name_b)
+
+    # -----------------------------------------------------------------
+
+    def compare_fluxes(self, generation_simulation_name_a, generation_simulation_name_b, add_references=True,
+                       additional_error=None):
+
+        """
+        This function ...
+        :param generation_simulation_name_a:
+        :param generation_simulation_name_b:
+        :param add_references:
+        :param additional_error:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Comparing mock SEDs between simulation '" + tostr(generation_simulation_name_a) + "' and '" + tostr(generation_simulation_name_b) + "' ...")
+
+        # Get generation names and simulation names
+        generation_a_name = generation_simulation_name_a[0]
+        generation_b_name = generation_simulation_name_b[0]
+        simulation_a_name = generation_simulation_name_a[1]
+        simulation_b_name = generation_simulation_name_b[1]
+
+        # Get the generations
+        generation_a = self.get_generation(generation_a_name)
+        generation_b = self.get_generation(generation_b_name)
+
+        # Create SEDs
+        seds = OrderedDict()
+        if add_references: seds.update(self.get_reference_seds(additional_error=additional_error))
+        seds["Generation a"] = generation_a.get_mock_sed(simulation_a_name)
+        seds["Generation b"] = generation_b.get_mock_sed(simulation_b_name)
+
+        # Plot
+        plot_seds(seds)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_closest_parameters_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Number of best maching simulations
+        definition.add_optional("nsimulations", "positive_integer", "number of best matching simulations", 5)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_closest_parameters_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation names
+        generation_a_name, generation_b_name, config = self.get_two_generation_names_and_config_from_command(command, self.show_closest_parameters_definition, **kwargs)
+
+        # Compare
+        self.show_closest_parameters(generation_a_name, generation_b_name, nsimulations=config.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    def show_closest_parameters(self, generation_a_name, generation_b_name, nsimulations=5):
+
+        """
+        This function ...
+        :param generation_a_name:
+        :param generation_b_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Get the matches
+        closest = self.get_closest_simulations(generation_a_name, generation_b_name, nsimulations)
+
+        # Loop over the matches
+        for index, match in enumerate(closest):
+
+            # Get simulation names
+            name_a, name_b = match[0], match[1]
+
+            # Show simulation names
+            print(str(index + 1) + ". " + fmt.underlined + fmt.green + name_a + fmt.reset + ", " + fmt.underlined + fmt.green + name_b + fmt.reset + ":")
+            print("")
+
+            # Make generation simulation combinations
+            generation_simulation_name_a = (generation_a_name, name_a)
+            generation_simulation_name_b = (generation_b_name, name_b)
+
+            # Compare
+            self.compare_parameters(generation_simulation_name_a, generation_simulation_name_b)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_closest_seds_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_closest_seds_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation names
+        generation_a_name, generation_b_name, config = self.get_two_generation_names_and_config_from_command(command, self.plot_closest_seds_definition, **kwargs)
+
+        # Compare
+        self.plot_closest_seds(generation_a_name, generation_b_name, nsimulations=config.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    def plot_closest_seds(self, generation_a_name, generation_b_name, nsimulations=1):
+
+        """
+        This function ...
+        :param generation_a_name:
+        :param generation_b_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Get the matches
+        closest = self.get_closest_simulations(generation_a_name, generation_b_name, nsimulations)
+
+        # Loop over the matches
+        for index, match in enumerate(closest):
+
+            # Get simulation names
+            name_a, name_b = match[0], match[1]
+
+            # Show simulation names
+            print(str(index + 1) + ". " + fmt.underlined + fmt.green + name_a + fmt.reset + ", " + fmt.underlined + fmt.green + name_b + fmt.reset + ":")
+            print("")
+
+            # Make generation simulation combinations
+            generation_simulation_name_a = (generation_a_name, name_a)
+            generation_simulation_name_b = (generation_b_name, name_b)
+
+            # Compare
+            self.compare_seds(generation_simulation_name_a, generation_simulation_name_b)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_closest_fluxes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_closest_fluxes_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation names
+        generation_a_name, generation_b_name, config = self.get_two_generation_names_and_config_from_command(command, self.plot_closest_fluxes_definition, **kwargs)
+
+        # Compare
+        self.plot_closest_fluxes(generation_a_name, generation_b_name, nsimulations=config.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    def plot_closest_fluxes(self, generation_a_name, generation_b_name, nsimulations=1):
+
+        """
+        This function ...
+        :param generation_a_name:
+        :param generation_b_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Get the matches
+        closest = self.get_closest_simulations(generation_a_name, generation_b_name, nsimulations)
+
+        # Loop over the matches
+        for index, match in enumerate(closest):
+
+            # Get simulation names
+            name_a, name_b = match[0], match[1]
+
+            # Show simulation names
+            print(str(index + 1) + ". " + fmt.underlined + fmt.green + name_a + fmt.reset + ", " + fmt.underlined + fmt.green + name_b + fmt.reset + ":")
+            print("")
+
+            # Make generation simulation combinations
+            generation_simulation_name_a = (generation_a_name, name_a)
+            generation_simulation_name_b = (generation_b_name, name_b)
+
+            # Compare
+            self.compare_fluxes(generation_simulation_name_a, generation_simulation_name_b)
 
     # -----------------------------------------------------------------
 
@@ -2749,5 +3498,24 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return "statistics"
+
+# -----------------------------------------------------------------
+
+def show_generation_info(generation):
+
+    """
+    This function ...
+    :param generation:
+    :return:
+    """
+
+    print(" - " + fmt.bold + "Method: " + fmt.reset + generation.method)
+    print(" - " + fmt.bold + "Wavelength grid: " + fmt.reset + generation.wavelength_grid_name)
+    print(" - " + fmt.bold + "Representation: " + fmt.reset + generation.model_representation_name)
+    print(" - " + fmt.bold + "Number of photon packages: " + fmt.reset + yes_or_no(generation.npackages))
+    print(" - " + fmt.bold + "Dust self-absorption: " + fmt.reset + yes_or_no(generation.selfabsorption))
+    print(" - " + fmt.bold + "Transient heating: " + fmt.reset + yes_or_no(generation.transient_heating))
+    print(" - " + fmt.bold + "Spectral convolution: " + fmt.reset + yes_or_no(generation.spectral_convolution))
+    print(" - " + fmt.bold + "Use images: " + fmt.reset + yes_or_no(generation.use_images))
 
 # -----------------------------------------------------------------

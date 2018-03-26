@@ -815,6 +815,21 @@ def integer_pair(argument):
 
 # -----------------------------------------------------------------
 
+def integer_or_string_pair(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(integer_or_string, argument.split(","))
+        return a, b
+    except: raise ValueError("Pair must be of format a,b")
+
+# -----------------------------------------------------------------
+
 def real_pair(argument):
 
     """

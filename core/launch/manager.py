@@ -56,7 +56,7 @@ from ..tools import tables
 from ..tools import time
 from ..config.analyse_simulation import definition as analyse_simulation_definition
 from .analyser import all_steps
-from .options import LoggingOptions, SchedulingOptions
+from .options import LoggingOptions, SchedulingOptions, AnalysisOptions
 from ..remote.load import show_status
 from ..remote.mounter import mount_remote
 from ..simulation.skifile import show_normalizations
@@ -79,6 +79,7 @@ from ..simulation.jobscript import SKIRTJobScript
 from ..simulation.screen import ScreenScript
 from ..remote.ensemble import SKIRTRemotesEnsemble
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
+from ..simulation.definition import SingleSimulationDefinition
 
 # -----------------------------------------------------------------
 
@@ -146,6 +147,7 @@ _retrieve_command_name = "retrieve"
 _analyse_command_name = "analyse"
 _reanalyse_command_name = "reanalyse"
 _mimic_command_name = "mimic"
+_launch_command_name = "launch"
 _assignment_command_name = "assignment"
 _runtimes_command_name = "runtimes"
 _memory_command_name = "memory"
@@ -204,6 +206,7 @@ commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retri
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse a simulation", "simulations")
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
 commands[_mimic_command_name] = ("mimic_simulation_command", True, "mimic a simulation", "simulation")
+commands[_launch_command_name] = ("launch_simulation_command", True, "launch a new simulation", None)
 
 # -----------------------------------------------------------------
 
@@ -479,6 +482,95 @@ class RelaunchedSimulationsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+class NewSimulationsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    # Add column info
+    _column_info = OrderedDict()
+    _column_info["Simulation name"] = (str, None, "name of the simulation")
+    _column_info["Ski filepath"] = (str, None, "path of the skifile")
+    _column_info["Host ID"] = (str, None, "host ID")
+    _column_info["ID"] = (str, None, "simulation ID")
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(NewSimulationsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_all_column_info(self._column_info)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        return tables.find_index(self, simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def add_simulation(self, name, ski_path, host_id=None, simulation_id=None):
+
+        """
+        This function ...
+        :param name:
+        :param ski_path:
+        :param host_id:
+        :param simulation_id:
+        :return:
+        """
+
+        # Set values
+        values = [name, ski_path, host_id, simulation_id]
+
+        # Add the row
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def set_id(self, simulation_name, id):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param id:
+        :return:
+        """
+
+        index = self.index_for_simulation(simulation_name)
+        self.set_value("ID", index, new_id)
+
+# -----------------------------------------------------------------
+
 _screen_extra_name = "screen"
 _job_extra_name = "job"
 _disk_extra_name = "disk"
@@ -552,6 +644,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # The relaunched simulations
         self.relaunched = RelaunchedSimulationsTable()
+
+        # The new simulations
+        self.new = NewSimulationsTable()
 
         # The batch simulation launcher
         self.launcher = BatchLauncher()
@@ -9770,6 +9865,42 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nnew(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.new)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_new(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nnew > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new.simulation_names
+
+    # -----------------------------------------------------------------
+
     def is_relaunched(self, simulation_name):
 
         """
@@ -9779,6 +9910,18 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         return simulation_name in self.relaunched_simulation_names
+
+    # -----------------------------------------------------------------
+
+    def is_new(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self.new_simulation_names
 
     # -----------------------------------------------------------------
 
@@ -9835,6 +9978,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # Set relaunched simulation IDs
         self.set_relaunched_simulation_ids()
+
+        # Set new simulation IDs
+        self.set_new_simulation_ids()
 
         # Debugging
         log.debug("Creating backup of assignment scheme ...")
@@ -9944,6 +10090,24 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def set_new_simulation_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the simulation IDs of the new simulations ...")
+
+        # Set new IDs
+        for simulation in self.new_simulations:
+
+            # Set the new ID of the new simulation
+            self.new.set_id(simulation.name, simulation.id)
+
+    # -----------------------------------------------------------------
+
     @property
     def launched_simulations(self):
 
@@ -10033,6 +10197,34 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         return len(self.relaunched_simulations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def new_simulations(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        simulations = []
+        for simulation in self.launched_simulations:
+            if not self.is_new(simulation.name): continue
+            simulations.append(simulation)
+        return simulations
+        
+    # -----------------------------------------------------------------
+
+    @property
+    def nnew_simulations(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.new_simulations)
 
     # -----------------------------------------------------------------
 
@@ -14026,8 +14218,35 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Name
+        definition.add_required("name", "string", "name for the new simulation")
+
+        # Labeled values
+        definition.add_optional("labeled", "dictionary", "new values for labeled properties")
+
+        # Flags
+        definition.add_flag("adapt_settings", "adapt simulation settings")
+        definition.add_flag("adapt_analysis", "adapt analysis options")
+
+        # Return the definition
         return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mimic_simulation_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
 
     # -----------------------------------------------------------------
 
@@ -14040,21 +14259,180 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        # Add kwargs
+        kwargs.update(self.mimic_simulation_kwargs)
+
         # Get the simulation name and config
         simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.mimic_simulation_definition, **kwargs)
 
         # Mimic the simulation
-        self.mimic_simulation(simulation_name)
+        self.mimic_simulation(simulation_name, config.name)
 
     # -----------------------------------------------------------------
 
-    def mimic_simulation(self, simulation_name):
+    def mimic_simulation(self, simulation_name, new_simulation_name, new_values=None):
         
         """
         This function ...
-        :param simulation_name: 
+        :param simulation_name:
+        :param new_simulation_name:
+        :param new_values:
         :return: 
         """
+
+        # Check whether the new simulation name is unique
+        if new_simulation_name in self.simulation_names: raise ValueError("Simulation name '" + new_simulation_name + "' already in use")
+
+        # Create copy of the original ski file
+        ski = self.get_skifile(simulation_name).copy()
+
+        # Adapt labeled values
+        if new_values is not None: ski.set_labeled_values(new_values)
+        #else: # use composer to adapt the model
+
+        # Get original simulation settings
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # # Check settings
+        # if config.matching is not None:
+        #     if config.contains is not None: raise ValueError(
+        #         "Cannot specify both matching string and containing string")
+        #     config.contains = config.matching
+        #
+        # # Get the settings here (so they don't have to be selected for each stealing simulation)
+        # settings = select_simulation_settings(successive=config.successive, contains=config.contains,
+        #                                       not_contains=config.not_contains,
+        #                                       exact_name=config.exact_name, exact_not_name=config.exact_not_name,
+        #                                       startswith=config.startswith, endswith=config.endswith)
+
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(definition, new_simulation_name, host_id=host_id,
+                                   parallelization=parallelization,
+                                   logging_options=logging_options, scheduling_options=scheduling_options,
+                                   analysis_options=simulation.analysis)
+
+        # Add entry to new table
+        self.new.add_simulation(name, ski_path, host_id=host_id)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def launch_simulation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition()
+
+        # Name for the simulation
+        definition.add_required("name", "string", "name for the simulation")
+        
+        # Ski file
+        definition.add_required("ski", "file_path", "name/path of the ski file")
+
+        # Remote host
+        definition.add_positional_optional("remote", "string", "remote host on which to run the simulation (if none is specified, the simulation is run locally", choices=find_host_ids())
+
+        # Input and output
+        definition.add_optional("input", "directory_path", "input directory for the simulation(s)", letter="i")
+        definition.add_optional("output", "directory_path", "output directory for the simulation(s)", letter="o")
+
+        # Simulation options
+        definition.add_positional_optional("parallelization", "parallelization", "parallelization scheme for the simulation")
+        definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
+        definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
+
+        # Analysis options
+        definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
+
+        # Options from other simulations
+        definition.add_optional("parallelization_from", "integer_or_string", "take parallelization from other simulation")
+        definition.add_optional("logging_from", "integer_or_string", "take logging options from other simulation")
+        definition.add_optional("scheduling_from", "integer_or_string", "take scheduling options from other simulation")
+        definition.add_optional("analysis_from", "integer_or_string", "take the analysis options from other simulation")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def launch_simulation_command(self, command, **kwargs):
+
+        """
+        This function ...
+        """
+        
+        # Get the configuration
+        config = self.get_config_from_command(command, self.launch_simulation_definition, **kwargs)
+
+        # Get parallelization
+        if config.parallelization_from is not None:
+            if config.parallelization is not None: raise ValueError("Cannot specify parallelization and take parallelization from other simulation")
+            parallelization = self.get_parallelization_for_simulation(config.parallelization_from)
+        else: parallelization = config.parallelization
+
+        # Get logging options
+        if config.logging_from is not None: logging_options = self.get_logging_options_for_simulation(config.logging_from)
+        else: logging_options = LoggingOptions(**config.logging)
+
+        # Get scheduling options
+        if config.scheduling_from is not None: scheduling_options = self.get_scheduling_options_for_simulation(config.scheduling_from)
+        else: scheduling_options = SchedulingOptions(**config.scheduling)
+
+        # Get analysis options
+        # TODO: ADAPT PATHS FOR THIS NEW SIMULATION
+        if config.analysis_from is not None: analysis_options = self.get_simulation(config.analysis_from).analysis
+        else: analysis_options = AnalysisOptions(**config.analysis)
+
+        # Launch simulation
+        self.launch_simulation(config.name, config.ski, host_id=config.remote, input_path=config.input,
+                               output_path=config.output,
+                               parallelization=parallelization, logging_options=logging_options,
+                               scheduling_options=scheduling_options, analysis_options=analysis_options)
+
+    # -----------------------------------------------------------------
+
+    def launch_simulation(self, name, ski_path, host_id=None, input_path=None, output_path=None, parallelization=None,
+                          logging_options=None, scheduling_options=None, analysis_options=None):
+
+        """
+        This function ...
+        :param name: 
+        :param ski_path:
+        :param host_id:
+        :param input_path:
+        :param output_path: 
+        :param parallelization: 
+        :param logging_options:
+        :param scheduling_options:
+        :param analysis_options:
+        :return: 
+        """
+
+        # Set output path if not specified
+        base_path = fs.directory_of(ski_path)
+        if output_path is None:
+            output_path = fs.join(base_path, "out")
+            if fs.is_directory(output_path): raise IOError("Output directory '" + output_path + "' already exists")
+            fs.create_directory(output_path, recursive=True)
+
+        # Make simulation definition
+        definition = SingleSimulationDefinition(ski_path, output_path, input_path, name=name)
+
+        # Set local flag (otherwise host is assigned automatically)
+        local = host_id is None
+
+        # Add the simulation to the queue
+        self.launcher.add_to_queue(definition, name, host_id=host_id, parallelization=parallelization,
+                                   logging_options=logging_options, scheduling_options=scheduling_options,
+                                   analysis_options=analysis_options, local=local)
+
+        # Add entry to new simulations table
+        self.new.add_simulation(name, ski_path, host_id=host_id)
 
     # -----------------------------------------------------------------
 
