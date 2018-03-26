@@ -1315,7 +1315,7 @@ class SEDPlotter(Configurable):
                         error = errors[k] / model_value * 100. # NORMALIZE TO MODEL VALUE
 
                         #yerr, lolims, uplims = process_errorbar(error)
-                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                        yerr, lolims, uplims = process_errorbar_for_value(fluxes[k], error, lolim_abs_value=-75, uplim_value=75)
                         residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
                     # Next residual plot
@@ -1678,7 +1678,7 @@ class SEDPlotter(Configurable):
                         error = errorbar / model_value * 100.  # NORMALIZE TO MODEL VALUE
 
                         #yerr, lolims, uplims = process_errorbar(error)
-                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                        yerr, lolims, uplims = process_errorbar_for_value(fluxes[k], error, lolim_abs_value=-75, uplim_value=75)
 
                         # Plot on residual axes
                         residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker,

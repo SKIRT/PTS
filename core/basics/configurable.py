@@ -579,9 +579,13 @@ class InteractiveConfigurable(Configurable):
                 log.warning("Invalid command: '" + e.command + "'")
                 success = False
             except Exception as e:
-                traceback.print_exc()
-                log.error(str(e))
-                success = False
+                message = str(e)
+                if "too few arguments" in message: log.error("Too few arguments")
+                elif "invalid choice" in message: log.error(str(e))
+                else:
+                    traceback.print_exc()
+                    log.error(str(e))
+                    success = False
 
             # Add command, if succesful
             if success: self.commands.append(command)

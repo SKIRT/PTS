@@ -234,7 +234,7 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("generation", "string", "generation name", choices=self.generation_names)
+        definition.add_required("generation", "integer_or_string", "generation name") #choices=self.generation_names)
 
         # Add definition settings
         if command_definition is not None:
@@ -275,7 +275,8 @@ class FittingStatistics(InteractiveConfigurable):
         config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
 
         # Get generation name
-        generation_name = config.pop("generation")
+        if types.is_integer_type(config.generation): generation_name = self.generation_names[config.pop("generation")]
+        else: generation_name = config.pop("generation")
 
         # Return
         return splitted, generation_name, config
@@ -330,8 +331,8 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("generation", "string", "generation name", choices=self.generation_names)
-        definition.add_required("simulation", "string", "simulation name")
+        definition.add_required("generation", "integer_or_string", "generation name or index") # choices=self.generation_names)
+        definition.add_required("simulation", "integer_or_string", "simulation name or index")
 
         # Add definition settings
         if command_definition is not None:
@@ -371,8 +372,10 @@ class FittingStatistics(InteractiveConfigurable):
         config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
 
         # Get generation name
-        generation_name = config.pop("generation")
-        simulation_name = config.pop("simulation")
+        if types.is_integer_type(config.generation): generation_name = self.generation_names[config.pop("generation")]
+        else: generation_name = config.pop("generation")
+        if types.is_integer_type(config.simulation): simulation_name = self.get_simulation_names(generation_name)[config.pop("simulation")]
+        else: simulation_name = config.pop("simulation")
 
         # Return
         return splitted, generation_name, simulation_name, config
@@ -427,8 +430,8 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("generation_a", "integer_or_string", "generation a index or name", choices=self.generation_names)
-        definition.add_required("generation_b", "integer_or_string", "generation b index or name", choices=self.generation_names)
+        definition.add_required("generation_a", "integer_or_string", "generation a index or name") # choices=self.generation_names)
+        definition.add_required("generation_b", "integer_or_string", "generation b index or name") # choices=self.generation_names)
 
         # Add definition settings
         if command_definition is not None:
@@ -468,12 +471,12 @@ class FittingStatistics(InteractiveConfigurable):
         config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
 
         # Get generation a name
-        if types.is_integer_type(config.generation_a): generation_a_name = self.generation_names[config.generation_a]
-        else: generation_a_name = config.generation_a
+        if types.is_integer_type(config.generation_a): generation_a_name = self.generation_names[config.pop("generation_a")]
+        else: generation_a_name = config.pop("generation_a")
 
         # Get generation b name
-        if types.is_integer_type(config.generation_b): generation_b_name = self.generation_names[config.generation_b]
-        else: generation_b_name = config.generation_b
+        if types.is_integer_type(config.generation_b): generation_b_name = self.generation_names[config.pop("generation_b")]
+        else: generation_b_name = config.pop("generation_b")
 
         # Return
         return splitted, generation_a_name, generation_b_name, config
@@ -569,18 +572,20 @@ class FittingStatistics(InteractiveConfigurable):
         config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
 
         # Get generation_simulation_a
-        generation_simulation_a_name = (None, None)
-        if types.is_integer_type(config.generation_simulation_a[0]): generation_simulation_a_name[0] = self.generation_names[config.generation_simulation_a[0]]
-        else: generation_simulation_a_name[0] = config.generation_simulation_a[0]
-        if types.is_integer_type(config.generation_simulation_a[1]): generation_simulation_a_name[1] = self.get_simulation_names(generation_simulation_a_name[0])[config.generation_simulation_a[1]]
-        else: generation_simulation_a_name[1] = config.generation_simulation_a[1]
+        generation_simulation_a_name = [None, None]
+        generation_simulation_a = config.pop("generation_simulation_a")
+        if types.is_integer_type(generation_simulation_a[0]): generation_simulation_a_name[0] = self.generation_names[generation_simulation_a[0]]
+        else: generation_simulation_a_name[0] = generation_simulation_a[0]
+        if types.is_integer_type(generation_simulation_a[1]): generation_simulation_a_name[1] = self.get_simulation_names(generation_simulation_a_name[0])[generation_simulation_a[1]]
+        else: generation_simulation_a_name[1] = generation_simulation_a[1]
 
         # Get generation_simulation_b_name
-        generation_simulation_b_name = (None, None)
-        if types.is_integer_type(config.generation_simulation_b[0]): generation_simulation_b_name[0] = self.generation_names[config.generation_simulation_b[0]]
+        generation_simulation_b_name = [None, None]
+        generation_simulation_b = config.pop("generation_simulation_b")
+        if types.is_integer_type(generation_simulation_b[0]): generation_simulation_b_name[0] = self.generation_names[generation_simulation_b[0]]
         else: generation_simulation_b_name[0] = config.generation_simulation_b[0]
-        if types.is_integer_type(config.generation_simulation_b[1]): generation_simulation_b_name[1] = self.get_simulation_names(generation_simulation_b_name[0])[config.generation_simulation_b[1]]
-        else: generation_simulation_b_name[1] = config.generation_simulation_b[1]
+        if types.is_integer_type(generation_simulation_b[1]): generation_simulation_b_name[1] = self.get_simulation_names(generation_simulation_b_name[0])[generation_simulation_b[1]]
+        else: generation_simulation_b_name[1] = generation_simulation_b[1]
 
         # Return
         return splitted, generation_simulation_a_name, generation_simulation_b_name, config
@@ -3459,10 +3464,11 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_filters(self):
+    def plot_filters(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
