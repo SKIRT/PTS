@@ -1481,6 +1481,18 @@ def string_tuple_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def string_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return tuple(string_list(argument))
+
+# -----------------------------------------------------------------
+
 def unit(argument):
 
     """

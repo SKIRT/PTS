@@ -38,6 +38,7 @@ from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import filesystem as fs
 from ...core.plot.transmission import plot_filters
 from ...core.tools import types
+from ...core.config.plot_seds import default_residual_reference, residual_references
 
 # -----------------------------------------------------------------
 
@@ -128,11 +129,23 @@ subcommands[_plot_command_name] = plot_commands
 
 simulated_choice = "simulated"
 mock_choice = "mock"
-simulated_or_mock = [simulated_choice, mock_choice]
+simulated_or_mock = (simulated_choice, mock_choice)
 
 chisquared_choice = "chisquared"
 prob_choice = "prob"
-chisquared_or_prob = [chisquared_choice, prob_choice]
+chisquared_or_prob = (chisquared_choice, prob_choice)
+
+# -----------------------------------------------------------------
+
+clipped_name = "clipped"
+truncated_name = "truncated"
+asymptotic_sed = "asymptotic"
+
+default_sed_references = (clipped_name, truncated_name)
+sed_reference_descriptions = dict()
+sed_reference_descriptions[clipped_name] = "Observed clipped fluxes"
+sed_reference_descriptions[truncated_name] = "Observed truncated fluxes"
+sed_reference_descriptions[asymptotic_sed] = "Observed asymptotic fluxes"
 
 # -----------------------------------------------------------------
 
@@ -707,11 +720,25 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_reference_seds(self, additional_error=None):
+    @property
+    def asymptotic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_environment.asymptotic_sed
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_reference_seds(self, additional_error=None, references=default_sed_references):
 
         """
         This function ...
         :param additional_error:
+        :param references:
         :return:
         """
 
@@ -721,17 +748,23 @@ class FittingStatistics(InteractiveConfigurable):
         # Create dictionary
         seds = OrderedDict()
 
-        # Add relative error
-        if additional_error is not None:
-            clipped_sed = self.clipped_sed.copy()
-            truncated_sed = self.truncated_sed.copy()
-            clipped_sed.add_relative_error(additional_error)
-            truncated_sed.add_relative_error(additional_error)
-        else: clipped_sed, truncated_sed = self.clipped_sed, self.truncated_sed
-
         # Add observed SEDs
-        seds["Clipped observed fluxes"] = clipped_sed
-        seds["Truncated observed fluxes"] = truncated_sed
+        for label in references:
+
+            # Get sed
+            if label == clipped_name: sed = self.clipped_sed
+            elif label == truncated_name: sed = self.truncated_sed
+            elif label == asymptotic_sed: sed = self.asymptotic_sed
+            else: raise ValueError("Invalid reference SED name")
+
+            # Add relative error?
+            if additional_error is not None:
+                sed = sed.copy()
+                sed.add_or_set_relative_error(additional_error)
+
+            # Add
+            description = sed_reference_descriptions[label]
+            seds[description] = sed
 
         # Return the seds
         return seds
@@ -3132,6 +3165,9 @@ class FittingStatistics(InteractiveConfigurable):
         definition.add_positional_optional("simulated_or_mock", "string", "plot simulated SED or mock fluxes", choices=simulated_or_mock, default=simulated_choice)
         definition.add_optional("path", "string", "save the plot file")
         definition.add_flag("from_file", "use an already existing plot file", False)
+        definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+        definition.add_optional("references", "string_tuple", "SED references to plot", default_sed_references, choices=sed_reference_descriptions)
+        definition.add_optional("residual_reference", "string", "reference for the residuals", default_residual_reference, choices=residual_references)
 
         # Return
         return definition
@@ -3151,17 +3187,18 @@ class FittingStatistics(InteractiveConfigurable):
         generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_sed_definition, **kwargs)
 
         # Simulated
-        if config.simulated_or_mock == simulated_choice: self.plot_sed(generation_name, simulation_name, from_file=config.from_file)
+        if config.simulated_or_mock == simulated_choice: self.plot_sed(generation_name, simulation_name, additional_error=config.additional_error, from_file=config.from_file, references=config.references, residual_reference=config.residual_reference)
 
         # Mock
-        elif config.simulated_or_mock == mock_choice: self.plot_fluxes(generation_name, simulation_name, from_file=config.from_file)
+        elif config.simulated_or_mock == mock_choice: self.plot_fluxes(generation_name, simulation_name, additional_error=config.additional_error, from_file=config.from_file, references=config.references, residual_reference=config.residual_reference)
 
         # Invalid
         else: raise ValueError("Invalid value for 'simulated_or_mock'")
 
     # -----------------------------------------------------------------
 
-    def plot_sed(self, generation_name, simulation_name, additional_error=None, path=None, from_file=False):
+    def plot_sed(self, generation_name, simulation_name, additional_error=None, path=None, from_file=False,
+                 references=default_sed_references, residual_reference=default_residual_reference):
 
         """
         This function ...
@@ -3170,6 +3207,8 @@ class FittingStatistics(InteractiveConfigurable):
         :param additional_error:
         :param path:
         :param from_file:
+        :param references:
+        :param residual_reference:
         :return:
         """
 
@@ -3177,12 +3216,14 @@ class FittingStatistics(InteractiveConfigurable):
         if from_file:
             if not self.has_sed_plot(generation_name, simulation_name): raise ValueError("No SED plot for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
             if additional_error is not None: log.warning("The SED plot was probably not made with the same additional relative error for the observed points of " + str(additional_error) + ": ignoring ...")
+            if references != default_sed_references: log.warning("The SED plot was probably not made with the same reference SEDs: ignoring ...")
 
         # Load from file
         if from_file: self.get_sed_plot(generation_name, simulation_name, path=path)
 
         # Make new plot
-        else: self.make_sed_plot(generation_name, simulation_name, additional_error=additional_error, path=path)
+        else: self.make_sed_plot(generation_name, simulation_name, additional_error=additional_error, path=path,
+                                 references=references, residual_reference=residual_reference)
 
     # -----------------------------------------------------------------
 
@@ -3207,7 +3248,8 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def make_sed_plot(self, generation_name, simulation_name, additional_error=None, path=None):
+    def make_sed_plot(self, generation_name, simulation_name, additional_error=None, path=None,
+                      references=default_sed_references, residual_reference=default_residual_reference):
 
         """
         This function ...
@@ -3215,6 +3257,8 @@ class FittingStatistics(InteractiveConfigurable):
         :param simulation_name:
         :param additional_error:
         :param path:
+        :param references:
+        :param residual_reference:
         :return:
         """
 
@@ -3225,7 +3269,7 @@ class FittingStatistics(InteractiveConfigurable):
         sed = self.get_sed(generation_name, simulation_name)
 
         # Get the reference SEDs
-        observed_seds = self.get_reference_seds(additional_error=additional_error)
+        observed_seds = self.get_reference_seds(additional_error=additional_error, references=references)
 
         # Set SEDs
         seds = OrderedDict()
@@ -3233,11 +3277,12 @@ class FittingStatistics(InteractiveConfigurable):
         seds["Simulation"] = sed
 
         # Make (and show) the plot
-        plot_seds(seds, path=path, show_file=True)
+        plot_seds(seds, path=path, show_file=True, residual_reference=residual_reference)
 
     # -----------------------------------------------------------------
 
-    def plot_fluxes(self, generation_name, simulation_name, additional_error=None, path=None, from_file=False):
+    def plot_fluxes(self, generation_name, simulation_name, additional_error=None, path=None, from_file=False,
+                    references=default_sed_references, residual_reference=default_residual_reference):
 
         """
         This function ...
@@ -3246,6 +3291,8 @@ class FittingStatistics(InteractiveConfigurable):
         :param additional_error:
         :param path:
         :param from_file:
+        :param references:
+        :param residual_reference:
         :return:
         """
 
@@ -3253,12 +3300,13 @@ class FittingStatistics(InteractiveConfigurable):
         if from_file:
             if not self.has_mock_sed_plot(generation_name, simulation_name): raise ValueError("No mock fluxes plot for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
             if additional_error is not None: log.warning("The fluxes plot was probably not made with the same additional relative error for the observed points of " + str(additional_error) + ": ignoring ...")
+            if references != default_sed_references: log.warning("The fluxes plot was probably not made with the same reference SEDs: ignoring ...")
 
         # Load from file
         if from_file: self.get_fluxes_plot(generation_name, simulation_name, path=path)
 
         # Make new plot
-        else: self.make_fluxes_plot(generation_name, simulation_name)
+        else: self.make_fluxes_plot(generation_name, simulation_name, references=references, residual_reference=residual_reference)
 
     # -----------------------------------------------------------------
 
@@ -3283,7 +3331,8 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def make_fluxes_plot(self, generation_name, simulation_name, additional_error=None, path=None):
+    def make_fluxes_plot(self, generation_name, simulation_name, additional_error=None, path=None,
+                         references=default_sed_references, residual_reference=default_residual_reference):
 
         """
         This function ...
@@ -3291,6 +3340,8 @@ class FittingStatistics(InteractiveConfigurable):
         :param simulation_name:
         :param additional_error:
         :param path:
+        :param references:
+        :param residual_reference:
         :return:
         """
 
@@ -3301,7 +3352,7 @@ class FittingStatistics(InteractiveConfigurable):
         fluxes = self.get_mock_sed(generation_name, simulation_name)
 
         # Get the reference SEDs
-        observed_seds = self.get_reference_seds(additional_error=additional_error)
+        observed_seds = self.get_reference_seds(additional_error=additional_error, references=references)
 
         # Set SEDs
         seds = OrderedDict()
@@ -3309,7 +3360,7 @@ class FittingStatistics(InteractiveConfigurable):
         seds["Mock fluxes"] = fluxes
 
         # Make (and show) the plot
-        plot_seds(seds, path=path, show_file=True)
+        plot_seds(seds, path=path, show_file=True, residual_reference=residual_reference)
 
     # -----------------------------------------------------------------
 
@@ -3328,6 +3379,8 @@ class FittingStatistics(InteractiveConfigurable):
         definition.add_optional("path", "string", "save the plot file")
         definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
         definition.add_optional("random", "positive_integer", "pick a specified number of random simulations to plot")
+        definition.add_optional("references", "string_tuple", "SED references to plot", default_sed_references, choices=sed_reference_descriptions)
+        definition.add_optional("residual_reference", "string", "reference for the residuals", default_residual_reference, choices=residual_references)
 
         # Return the definition
         return definition
@@ -3351,7 +3404,8 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_seds(self, generation_name, path=None, additional_error=None, random=None):
+    def plot_seds(self, generation_name, path=None, additional_error=None, random=None,
+                  references=default_sed_references, residual_reference=default_residual_reference):
 
         """
         This function ...
@@ -3359,6 +3413,8 @@ class FittingStatistics(InteractiveConfigurable):
         :param path:
         :param additional_error:
         :param random:
+        :param references:
+        :param residual_reference:
         :return:
         """
 
@@ -3366,10 +3422,10 @@ class FittingStatistics(InteractiveConfigurable):
         log.debug("Plotting the model SEDs of generation '" + generation_name + "' ...")
 
         # Create the SED plotter
-        plotter = SEDPlotter()
+        plotter = SEDPlotter(residual_reference=residual_reference)
 
         # Get the reference SEDs
-        seds = self.get_reference_seds(additional_error=additional_error)
+        seds = self.get_reference_seds(additional_error=additional_error, references=references)
 
         # Inform the user
         log.info("Adding the observed SEDs ...")

@@ -1737,7 +1737,7 @@ class ConfigurationDefinition(object):
             if prefix is not None: name = prefix + "/" + name
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
-            if real_type.__name__.endswith("_list"): choices = None
+            if real_type.__name__.endswith("_list") or real_type.__name__.endswith("_tuple"): choices = None
 
             # Add argument to argument parser
 
@@ -1777,7 +1777,7 @@ class ConfigurationDefinition(object):
             if prefix is not None: name = prefix + "/" + name
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
-            if real_type.__name__.endswith("_list"): choices = None
+            if real_type.__name__.endswith("_list") or real_type.__name__.endswith("_tuple"): choices = None
 
             # Construct type
             if min_value is not None or max_value is not None or forbidden is not None: the_type = construct_type(real_type, min_value, max_value, forbidden)
@@ -1810,7 +1810,7 @@ class ConfigurationDefinition(object):
                 letter = None
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
-            if real_type.__name__.endswith("_list"): choices = None
+            if real_type.__name__.endswith("_list") or real_type.__name__.endswith("_tuple"): choices = None
 
             # Construct type
             the_type = construct_type(real_type, min_value, max_value, forbidden)
@@ -2536,7 +2536,7 @@ class ConfigurationDefinition(object):
         if default is not None and choices is not None:
 
             # List-type default value
-            if types.is_sequence(default):
+            if types.is_sequence(default) or types.is_tuple(default):
                 if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ") + ")")
 
             # Regular default value
@@ -2636,7 +2636,7 @@ class ConfigurationDefinition(object):
         if default is not None and choices is not None:
 
             # List-type default value
-            if types.is_sequence(default):
+            if types.is_sequence(default) or types.is_tuple(default):
                 if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ") + ")")
 
             # Regular default value
@@ -4989,6 +4989,11 @@ def parse_default(default, user_type, real_type):
         real_base_type = getattr(parsing, user_type_name.split("_list")[0])
         default = [get_real_value(arg, real_base_type) for arg in default]
 
+    elif user_type_name.endswith("tuple") and types.is_tuple(default):
+
+        real_base_type = getattr(parsing, user_type_name.split("_tuple")[0])
+        default = [get_real_value(arg, real_base_type) for arg in default]
+
     else: default = get_real_value(default, real_type)
 
     # Return the default value
@@ -5010,9 +5015,10 @@ def check_default(default, user_type):
     if default_type != user_type and not are_related_types(default_type, user_type):
 
         # List-like property
-        if user_type.endswith("list"):
+        if user_type.endswith("list") or user_type.endswith("tuple"):
 
-            base_type = user_type.split("_list")[0]
+            if user_type.endswith("list"): base_type = user_type.split("_list")[0]
+            else: base_type = user_type.split("_tuple")[0]
 
             # Ascending and descending lists
             if base_type.startswith("ascending"):

@@ -734,6 +734,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def asymptotic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ObservedSED.from_file(self.asymptotic_sed_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_dustpedia_sed(self):
 
         """

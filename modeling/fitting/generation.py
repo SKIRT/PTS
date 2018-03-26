@@ -505,7 +505,7 @@ class Generation(object):
         :return:
         """
 
-        if name not in self.simulation_names: raise ValueError("Simulation does not exist")
+        if name not in self.simulation_names: raise ValueError("Simulation does not exist in this generation")
         return fs.join(self.path, name)
 
     # -----------------------------------------------------------------
