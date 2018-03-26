@@ -27,6 +27,7 @@ from ..basics.instruments import FullInstrument
 from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, faceon_name
 from .run import info_filename
 from ...core.tools import formatting as fmt
+from ...core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -82,19 +83,19 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # 3. Create the analysis run
         self.create_analysis_run()
 
-        # 4. Create the wavelength grid
-        self.create_wavelength_grid()
+        # 4. Get the wavelength grid
+        self.get_wavelength_grid()
 
-        # 5. Create the dust grid
-        self.create_dust_grid()
+        # 5. Get the dust grid
+        self.get_dust_grid()
 
         # 6. Load the deprojections
         self.load_deprojections()
 
-        # 7. Create the projections
-        self.create_projections()
+        # 7. Get the projections
+        self.get_projections()
 
-        # 8. Create the instruments
+        # 8. Get the instruments
         self.create_instruments()
 
         # 9. Adapt ski file
@@ -253,6 +254,19 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_fitting_run: raise RuntimeError("Not from fitting run")
+        return self.fitting_runs.load(self.analysis_run_info.fitting_run)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def use_file_tree_dust_grid(self):
 
         """
@@ -283,6 +297,41 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    def get_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load from representaiton
+        if self.from_representation: self.load_projections()
+
+        # Create new projections
+        else: self.create_projections()
+
+    # -----------------------------------------------------------------
+
+    def load_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the projections ...")
+
+        # Set the projection systems
+        self.projections[earth_name] = self.representation.earth_projection
+        self.projections[faceon_name] = self.representation.faceon_projection
+        self.projections[edgeon_name] = self.representation.edgeon_projection
+
+        # Set reference deprojection
+        # TODO: how to obtain this?
+
+    # -----------------------------------------------------------------
+
     def create_projections(self):
 
         """
@@ -298,6 +347,45 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Set the deprojection name in the analysis info
         self.analysis_run_info.reference_deprojection = deprojection_name
+
+    # -----------------------------------------------------------------
+
+    def get_instruments(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Load from representation
+        #if self.from_representation: self.load_instruments()
+
+        # Create new instruments
+        #else: self.create_instruments()
+
+        # Create from loaded projections
+        self.create_instruments()
+
+    # -----------------------------------------------------------------
+
+    # def load_instruments(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Loading the instruments ...")
+    #
+    #     # Set the instruments
+    #     self.instruments[earth_name] =
+    #
+    #     # Create a faceon instrument
+    #     self.instruments[faceon_name] =
+    #
+    #     # Create an edgeon instrument
+    #     self.instruments[edgeon_name] =
 
     # -----------------------------------------------------------------
 
@@ -325,6 +413,95 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         properties["scattering_levels"] = 0 # no scattering levels
         properties["counts"] = True # record photon counts (for Poisson noise)
         return properties
+
+    # -----------------------------------------------------------------
+
+    def get_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load from fitting run
+        if self.config.wavelength_grid is not None: self.load_wavelength_grid()
+
+        # Create new
+        else: self.create_wavelength_grid()
+
+    # -----------------------------------------------------------------
+
+    def load_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the wavelength grid ...")
+
+        # Set filepath
+        filepath = fs.join(self.fitting_run.wavelength_grids_path, self.config.wavelength_grid + ".dat")
+        if not fs.is_file(filepath): raise ValueError("Wavelength grid '" + self.config.wavelength_grid + "' not found")
+
+        # Load
+        self.wavelength_grid = WavelengthGrid.from_skirt_input(filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load from representation
+        if self.from_representation: self.load_dust_grid()
+
+        # Create new
+        else: self.create_dust_grid()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.representation is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_representation: raise RuntimeError("Representation name not specified")
+        return self.model_suite.get_representation(self.config.representation)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the dust grid ...")
+
+        # Set the dust grid
+        self.dust_grid = self.representation.dust_grid
 
     # -----------------------------------------------------------------
 

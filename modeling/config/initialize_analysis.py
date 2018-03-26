@@ -35,6 +35,9 @@ definition.add_optional("name", "string", "name for the analysis run") #forbidde
 
 # -----------------------------------------------------------------
 
+# Wavelength grid from fitting run
+definition.add_optional("wavelength_grid", "string", "wavelength grid from fitting run (only if origin is fitting run)")
+
 # Settings for the wavelength grid generation
 definition.add_section("wg", "settings for the wavelength grids")
 definition.sections["wg"].add_optional("npoints", "positive_integer", "range of the wavelength grid size", 450)
@@ -42,6 +45,9 @@ definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to 
 definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.1 micron > 2000 micron", convert_default=True)
 
 # -----------------------------------------------------------------
+
+# Dust grid from fitting run
+definition.add_optional("representation", "string", "representation name")
 
 # Dust grid properties
 definition.add_section("dg", "settings for the dust grid")
