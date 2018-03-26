@@ -2145,6 +2145,10 @@ class MPLFigure(Figure):
                     limits = y_limits[index]
                     next_plot.set_ylim(*limits)
 
+                # Is this not last plot? -> hide x labels
+                if index != size - 1:
+                    next_plot.hide_xticks()
+
                 plots.append(next_plot)
 
             last_plot = plots[-1]
@@ -2156,6 +2160,7 @@ class MPLFigure(Figure):
             # Set shared x scale
             #last_plot.set_xscale(x_scale)
 
+        # Not sharing
         else:
 
             if x_label is not None: raise ValueError("Cannot specify one x label when not sharing axis")

@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.config.plot import definition as plot_definition
 from pts.core.basics.plot import plotting_libraries, mpl
+from pts.core.plot.sed import residual_references
 
 # -----------------------------------------------------------------
 
@@ -18,7 +19,6 @@ default_format = "pdf"
 # -----------------------------------------------------------------
 
 default_residual_reference = "models"
-residual_references = ["models", "observations"]
 
 # -----------------------------------------------------------------
 
@@ -92,7 +92,19 @@ definition.add_flag("interpolate_models_for_residuals", "interpolate models to g
 
 # -----------------------------------------------------------------
 
+# Load only certain files
+definition.add_optional("contains", "string", "only load SED files containing this string in their name")
+definition.add_optional("not_contains", "string", "don't load SED files containing this string in their name")
+definition.add_optional("exact_name", "string", "only load SED files with this exact string as their name")
+definition.add_optional("exact_not_name", "string", "don't load SED files with this exact string as their name")
+definition.add_optional("startswith", "string", "only load SED files whose name starts with this string")
+definition.add_optional("endswith", "string", "only load SED files whose name starts with this string")
+
+# -----------------------------------------------------------------
+
 # Additional relative error
 definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+definition.add_optional("additional_for", "string_list", "observed SED labels on which to apply the additional error")
+definition.add_optional("additional_not_for", "string_list", "observed SED labels on which to not apply the additional error")
 
 # -----------------------------------------------------------------

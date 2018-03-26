@@ -59,6 +59,12 @@ color_plt_identifiers = color_hex.keys()
 
 # -----------------------------------------------------------------
 
+models_reference = "models"
+observations_reference = "observations"
+residual_references = [models_reference, observations_reference]
+
+# -----------------------------------------------------------------
+
 def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf"):
 
     """
@@ -545,7 +551,10 @@ class SEDPlotter(Configurable):
         log.info("Loading SED files in the current working directory ...")
 
         # Loop over the files
-        for path, name in fs.files_in_path(self.config.path, extension="dat", returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.config.path, extension="dat", returns=["path", "name"],
+                                           contains=self.config.contains, not_contains=self.config.not_contains,
+                                           exact_name=self.config.exact_name, exact_not_name=self.config.exact_not_name,
+                                           startswith=self.config.startswith, endswith=self.config.endswith):
 
             # Skip emission lines
             if "Lines" in name: continue
@@ -579,6 +588,10 @@ class SEDPlotter(Configurable):
 
         # Loop over the observed SEDs
         for label in self.observations:
+
+            # Check
+            if self.config.additional_for is not None and label not in self.config.additional_for: continue
+            if self.config.additional_not_for is not None and label in self.config.additional_not_for: continue
 
             # Debugging
             log.debug("Adding additional relative errors to the data points of the '" + label + "' observed SED ...")
@@ -880,13 +893,6 @@ class SEDPlotter(Configurable):
                 # Add the patch and label
                 if patch is not None and new_label:
 
-                    #patch0 = patch[0]
-                    #print(type(patch), vars(patch).keys())
-                    #print(type(patch0), vars(patch0).keys())
-                    #print()
-                    #label = patch0.get_label()
-                    #print(label)
-
                     # Remove the color -> make a new patch?
                     patch = lines.Line2D([], [], marker=marker, markersize=7, label=labels[k], linewidth=0, markeredgecolor="black", markerfacecolor="white", markeredgewidth=1)
 
@@ -935,8 +941,9 @@ class SEDPlotter(Configurable):
 
                 if value is not None and error is not None:
 
-                    yerr, lolims, uplims = process_errorbar(error)
-                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims)
+                    #yerr, lolims, uplims = process_errorbar(error)
+                    yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
             # The next observation is not the first anymore
             first = False
@@ -1185,10 +1192,11 @@ class SEDPlotter(Configurable):
         log.debug("Plotting one observed SED with model SEDs ...")
 
         # Setup the figure
-        if self.config.residual_reference == "observations": nplots = 2
-        elif self.config.residual_reference == "models": nplots = 1 + self.nmodels_for_residuals
+        if self.config.residual_reference == observations_reference: nplots = 2
+        elif self.config.residual_reference == models_reference: nplots = 1 + self.nmodels_for_residuals
         else: raise ValueError("")
 
+        # Set subplot height ratios
         height_ratios = [4] + [1] * (nplots-1)
 
         # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
@@ -1254,7 +1262,7 @@ class SEDPlotter(Configurable):
             self.plot_wavelength(self.main_plot, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
             # Observations as reference: plot at 0.0 (all in one panel)
-            if self.config.residual_reference == "observations":
+            if self.config.residual_reference == observations_reference:
 
                 # Get the (only) residual plot
                 residual_plot = self.residual_plots[0]
@@ -1263,11 +1271,13 @@ class SEDPlotter(Configurable):
                 value = 0.0
                 if errors[k] is not None:
                     error = errors[k] / fluxes[k] * 100.
-                    yerr, lolims, uplims = process_errorbar(error)
-                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
+
+                    #yerr, lolims, uplims = process_errorbar(error)
+                    yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                    residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
             # Models as reference: plot points at the relative difference with the models (one panel for each model)
-            elif self.config.residual_reference == "models":
+            elif self.config.residual_reference == models_reference:
 
                 from astropy.units import Unit
 
@@ -1301,9 +1311,12 @@ class SEDPlotter(Configurable):
                     residual_plot = self.residual_plots[residual_plot_index]
                     #value = 0.0
                     if errors[k] is not None:
+
                         error = errors[k] / model_value * 100. # NORMALIZE TO MODEL VALUE
-                        yerr, lolims, uplims = process_errorbar(error)
-                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
+
+                        #yerr, lolims, uplims = process_errorbar(error)
+                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+                        residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
                     # Next residual plot
                     residual_plot_index += 1
@@ -1503,15 +1516,18 @@ class SEDPlotter(Configurable):
         log.debug("Plotting multiple observed SEDs with models ...")
 
         # Determine number of plot rows
-        if self.config.residual_reference == "observations": nplots = 1 + self.nobservations
-        elif self.config.residual_reference == "models": nplots = 1 + self.nmodels_for_residuals
+        if self.config.residual_reference == observations_reference: nplots = 1 + self.nobservations
+        elif self.config.residual_reference == models_reference: nplots = 1 + self.nmodels_for_residuals
         else: raise ValueError("Invalid residual reference")
+
+        # Set subplot height ratios
         height_ratios = [4] + [1] * (nplots - 1)
 
         # CREATE MAIN PLOT AND RESIDUAL PLOT(S)
         plots = self.figure.create_column(nplots, share_axis=True, height_ratios=height_ratios)
         self.main_plot = plots[0]
         self.residual_plots = plots[1:]
+        #print(self.residual_plots)
 
         # Make iterable from distinct colors
         different_colors = iter(dark_pretty_colors)
@@ -1593,20 +1609,37 @@ class SEDPlotter(Configurable):
                     legend_labels.append(labels[k])
 
                 # Observations as reference: plot at 0.0 (all in one panel)
-                if self.config.residual_reference == "observations":
+                if self.config.residual_reference == observations_reference:
+
+                    #print(label, observation_index, wavelengths[k])
 
                     # Get the residual plot
                     residual_plot = self.residual_plots[observation_index]
+                    #print(residual_plot)
 
                     # Plot measurement points on residual plot
                     value = 0.0
+                    #if errors[k] is not None:
+
                     if errors[k] is not None:
+
+                        # Process and plot errorbar
                         error = errors[k] / fluxes[k] * 100.
-                        yerr, lolims, uplims = process_errorbar(error)
-                        residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims)
+
+                        #print(label, wavelengths[k], observation_color, observation_index, residual_plot._plot)
+
+                        #yerr, lolims, uplims = process_errorbar(error)
+                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
+
+                        residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
+
+                    else:
+                        #residual_plot.scatter(wavelengths[k], value, marker=marker, s=7, c=observation_color, edgecolors="black")
+                        yerr = [[0], [0]]
+                        residual_plot.errorbar(wavelengths[k], value, yerr=yerr, fmt=marker, markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
                 # Models as reference: plot points at the relative difference with the models (one panel for each model)
-                elif self.config.residual_reference == "models":
+                elif self.config.residual_reference == models_reference:
 
                     from astropy.units import Unit
 
@@ -1614,6 +1647,8 @@ class SEDPlotter(Configurable):
 
                     # Loop over the models
                     for model_label in self.models:
+
+                        # Get entry
                         sed, plot_residuals, ghost = self.models[model_label]
 
                         # Don't plot residuals for this model
@@ -1642,12 +1677,13 @@ class SEDPlotter(Configurable):
 
                         error = errorbar / model_value * 100.  # NORMALIZE TO MODEL VALUE
 
-                        yerr, lolims, uplims = process_errorbar(error)
+                        #yerr, lolims, uplims = process_errorbar(error)
+                        yerr, lolims, uplims = process_errorbar_for_value(value, error, lolim_abs_value=-75, uplim_value=75)
 
                         # Plot on residual axes
                         residual_plot.errorbar(wavelengths[k], rel_residual, yerr=yerr, fmt=marker,
                                                markersize=7, color=observation_color, markeredgecolor='black', ecolor=observation_color,
-                                               capthick=2, lolims=lolims, uplims=uplims)
+                                               capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
                         # Next residual plot
                         residual_plot_index += 1
@@ -1656,7 +1692,7 @@ class SEDPlotter(Configurable):
                 else: raise RuntimeError("Invalid value for 'residual_reference'")
 
             # IF OBSERVATIONS ARE THE REFERENCE FOR THE RESIDUAL AXES
-            if self.config.residual_reference == "observations":
+            if self.config.residual_reference == observations_reference:
 
                 # Get the residual plot
                 residual_plot = self.residual_plots[observation_index]
@@ -1787,24 +1823,29 @@ class SEDPlotter(Configurable):
 
                 #print("a", label, new_label)
 
-                lower_flux = flux + error.lower
-                upper_flux = flux + error.upper
+                #lower_flux = flux + error.lower
+                #upper_flux = flux + error.upper
 
-                lolims = False
-                uplims = False
+                #lolims = False
+                #uplims = False
 
-                if lower_flux <= 0:
-                    flux_lower_flux = float("-inf")
-                    uplims = [[True]]
-                else: flux_lower_flux = flux / lower_flux
+                #if lower_flux <= 0:
+                #    flux_lower_flux = float("-inf")
+                #    uplims = [[True]]
+                #else: flux_lower_flux = flux / lower_flux
 
-                if error.lower == numbers.min_inf: uplims = [[True]]
-                if error.upper == numbers.inf: lolims = [[True]]
+                #if error.lower == numbers.min_inf: uplims = [[True]]
+                #if error.upper == numbers.inf: lolims = [[True]]
 
-                flux_upper_flux = flux / upper_flux
+                #flux_upper_flux = flux / upper_flux
+                #yerr = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
 
-                yerr = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
-                patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
+                logflux = np.log10(flux)
+                yerr, lolims, uplims = process_errorbar_for_value(flux, error, min_allowed_value=0, return_log=True, lolim_abs_value=0)
+                #print(label, yerr)
+                if yerr[0][0] == numbers.inf: yerr[0][0] = 20 # logflux - np.log10(self._min_flux) LARGE ENOUGH SO THAT IT GOES COMPLETELY DOWN
+                if yerr[1][0] == numbers.inf: yerr[1][0] = np.log10(self._max_flux) - logflux
+                patch = axis.errorbar(wavelength, logflux, yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
             else:
                 #print("b", label, new_label)
@@ -1821,14 +1862,19 @@ class SEDPlotter(Configurable):
                 lolims = False
                 uplims = False
 
-                yerr = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
+                #yerr = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
                 #yerr, lolims, uplims = process_errorbar(ErrorBar(np.log10(flux)-np.log10(flux + error.lower), np.log10(flux) - np.log10(flux + error.upper)))
 
-                if error.lower == numbers.min_inf: uplims = [[True]]
-                if error.upper == numbers.inf: lolims = [[True]]
+                #if error.lower == numbers.min_inf: uplims = [[True]]
+                #if error.upper == numbers.inf: lolims = [[True]]
 
                 #print("c", wavelength, flux)
-                patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
+                logflux = np.log10(flux)
+                yerr, lolims, uplims = process_errorbar_for_value(flux, error, min_allowed_value=0, return_log=True, lolim_abs_value=0)
+                #print(label, yerr)
+                if yerr[0][0] == numbers.inf: yerr[0][0] = 20 #logflux - np.log10(self._min_flux)  LARGE ENOUGH SO THAT IT GOES COMPLETELY DOWN
+                if yerr[1][0] == numbers.inf: yerr[1][0] = np.log10(self._max_flux) - logflux
+                patch = axis.errorbar(wavelength, logflux, yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims, capsize=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
             else:
@@ -2015,6 +2061,13 @@ class SEDPlotter(Configurable):
             res_axis.set_xscale('log')
             res_axis.set_ylabel(r"Res. $[\%]$", fontsize='large')
 
+        # Hide x ticks of all but last residual plot
+        if len(self.residual_plots) > 0:
+            #for j in range(len(self.residual_plots)-1):
+                #self.residual_plots[j].hide_xticks()
+            last_residual_plot_index = len(self.residual_plots)-1
+            self.residual_plots[last_residual_plot_index].set_xticks(fontsize=self.config.plot.ticks_fontsize)
+
         # Set x label of the last residual plot
         if len(self.residual_plots) > 0: self.residual_plots[len(self.residual_plots)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
         else: self.main_plot.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
@@ -2023,6 +2076,7 @@ class SEDPlotter(Configurable):
         self.main_plot.set_xscale('log')
 
         # Set ticks
+        #if len(self.residual_plots) == 0: self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
         self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
         self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize) # minor = False is possible
 
@@ -2318,29 +2372,168 @@ def get_plot_flux_limits(min_flux, max_flux):
 
 # -----------------------------------------------------------------
 
-def process_errorbar(error):
+def process_errorbar(error, lolim_value=None, uplim_value=None, default_error=1.):
 
     """
     This function ...
     :param error:
+    :param lolim_value:
+    :param uplim_value:
+    :param default_error:
     :return:
     """
 
-    lolims = False
-    uplims = False
+    lolim = False
+    uplim = False
 
     error_limits = [[abs(error.lower), abs(error.upper)]]
 
+    # No lower limit
     if error.no_lower:
 
-        error_limits[0][0] = error_limits[0][1]
-        uplims = [[True]]
+        if lolim_value is not None: low_value = lolim_value
+        elif error.has_upper: low_value = abs(error_limits[0][1])
+        else: low_value = default_error
 
+        # Set
+        error_limits[0][0] = low_value
+        uplim = True
+
+    # No upper value
     if error.no_upper:
 
-        error_limits[0][1] = error_limits[0][0]
-        lolims = [[True]]
+        if uplim_value is not None: up_value = uplim_value
+        elif error.has_lower: up_value = abs(error_limits[0][0])
+        else: up_value = default_error
 
+        # Set
+        error_limits[0][1] = up_value
+        lolim = True
+
+    # Set variables
+    lolims = [[lolim]]
+    uplims = [[uplim]]
+
+    # Return
+    yerr = np.array(error_limits).T
+    return yerr, lolims, uplims
+
+# -----------------------------------------------------------------
+
+def process_errorbar_for_value(value, error, lolim_value=None, uplim_value=None, lolim_abs_value=None,
+                               uplim_abs_value=None, default_rel_error=None, default_error=None, min_allowed_value=None,
+                               max_allowed_value=None, return_log=False):
+
+    """
+    Thisf unction ...
+    :param value:
+    :param error:
+    :param lolim_value:
+    :param uplim_value:
+    :param lolim_abs_value:
+    :param uplim_abs_value:
+    :param default_rel_error:
+    :param default_error:
+    :param min_allowed_value:
+    :param max_allowed_value:
+    :param return_log:
+    :return:
+    """
+
+    lowerr = abs(error.lower)
+    uperr = abs(error.upper)
+
+    value_min_lower = value - lowerr
+    value_plus_upper = value + uperr
+
+    # Initialize
+    low_value = None
+    up_value = None
+
+    #if lower_flux <= 0:
+    #    flux_lower_flux = float("-inf")
+    #    uplims = [[True]]
+    #else: flux_lower_flux = flux / lower_flux
+
+    # Is upper limit?
+    if min_allowed_value is not None and value_min_lower < min_allowed_value:
+        uplim = True
+        low_value = abs(min_allowed_value - value)
+    elif error.no_lower: uplim = True
+    else: uplim = False
+
+    # Is lower limit?
+    if max_allowed_value is not None and value_plus_upper > max_allowed_value:
+        lolim = True
+        up_value = max_allowed_value - value
+    elif error.no_upper: lolim = True
+    else: lolim = False
+
+    # Set limits
+    error_limits = [[lowerr, uperr]]
+
+    # No lower limit
+    if uplim:
+
+        if low_value is None:
+
+            if lolim_value is not None:
+                if lolim_abs_value is not None: raise ValueError("Cannot specify both lolim value and lolum abs value")
+                low_value = lolim_value
+            elif lolim_abs_value is not None: low_value = abs(lolim_abs_value - value)
+            elif error.has_upper: low_value = abs(error_limits[0][1])
+            elif default_rel_error is not None:
+                if default_error is not None: raise ValueError("Cannot specify both relative default error and default error")
+                low_value = default_rel_error * value
+            elif default_error is not None: low_value = default_error
+            else: raise ValueError("Default error is not given")
+
+        # Set
+        error_limits[0][0] = low_value
+        #uplim = True
+
+    # No upper limit
+    if lolim:
+
+        if up_value is None:
+
+            if uplim_value is not None:
+                if uplim_abs_value is not None: raise ValueError("Cannot specify both uplim value and uplim abs value")
+                up_value = uplim_value
+            elif uplim_abs_value is not None: up_value = uplim_abs_value - value
+            elif error.has_lower: up_value = abs(error_limits[0][0])
+            elif default_rel_error is not None:
+                if default_error is not None: raise ValueError("Cannot specify both relative default error and default error")
+                up_value = default_rel_error * value
+            elif default_error is not None: up_value = default_error
+            else: raise ValueError("Default error is not given")
+
+        # Set
+        error_limits[0][1] = up_value
+        #lolim = True
+
+    # Set variables
+    lolims = [[lolim]]
+    uplims = [[uplim]]
+
+    # Return for log scale
+    if return_log:
+
+        logvalue = np.log10(value)
+
+        lowerr = error_limits[0][0]
+        uperr = error_limits[0][1]
+
+        value_min_lower = value - lowerr
+        value_plus_upper = value + uperr
+
+        logvalue_min_lower = np.log10(value_min_lower)
+        logvalue_plus_upper = np.log10(value_plus_upper)
+
+        # Set errobar
+        error_limits = [[logvalue - logvalue_min_lower, logvalue_plus_upper - logvalue]]
+
+    # Return
     yerr = np.array(error_limits).T
     return yerr, lolims, uplims
 
