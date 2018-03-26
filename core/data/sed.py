@@ -29,6 +29,7 @@ from ..units.parsing import parse_unit as u
 from ..filter.filter import parse_filter
 from ..tools import arrays
 from ..simulation import textfile
+from ..basics.table import is_pts_data_format
 
 # -----------------------------------------------------------------
 
@@ -88,7 +89,23 @@ def load_sed(path, wavelength_unit=None, photometry_unit=None):
     :return:
     """
 
+
+    # SKIRT format
     if is_from_skirt(path): return SED.from_skirt(path)
+
+    # PTS data format
+    elif is_pts_data_format(path):
+
+        from ..tools import filesystem as fs
+
+        # Get column names
+        column_names_string = fs.get_last_header_line(path)
+
+        # Observed SED or SED?
+        if "Observatory" in column_names_string and "Instrument" in column_names_string: return ObservedSED.from_file(path)
+        else: return SED.from_file(path)
+
+    # Other formats
     else:
 
         # Try PTS (or at least ECSV) format
@@ -128,7 +145,7 @@ def load_multiple_seds(path, wavelength_unit=None, photometry_unit=None, as_dict
     seds = []
     names = []
 
-    # From SKIRT
+    # SKIRT format
     if is_from_skirt(path):
 
         ncols = get_ncolumns(path)
@@ -143,7 +160,23 @@ def load_multiple_seds(path, wavelength_unit=None, photometry_unit=None, as_dict
                 seds.append(sed)
                 names.append(contribution)
 
-    # Not from SKIRT
+    # PTS data format
+    elif is_pts_data_format(path):
+
+        from ..tools import filesystem as fs
+
+        # Get column names
+        column_names_string = fs.get_last_header_line(path)
+
+        # Observed SED or SED?
+        if "Observatory" in column_names_string and "Instrument" in column_names_string: sed = ObservedSED.from_file(path)
+        else: sed = SED.from_file(path)
+
+        # Add entry
+        seds.append(sed)
+        names.append(fs.strip_extension(fs.name(path)))
+
+    # Other formats
     else:
 
         # Try PTS (or at least ECSV) format
@@ -156,6 +189,7 @@ def load_multiple_seds(path, wavelength_unit=None, photometry_unit=None, as_dict
             if "Observatory" in table.colnames and "Instrument" in table.colnames: sed = ObservedSED.from_file(path)
             else: sed = SED.from_file(path)
 
+            # Add entry
             seds.append(sed)
             names.append(fs.strip_extension(fs.name(path)))
 

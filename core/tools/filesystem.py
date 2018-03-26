@@ -2299,6 +2299,18 @@ def get_first_header_line(filepath):
 
 # -----------------------------------------------------------------
 
+def get_last_header_line(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    return get_header_lines(filepath)[-1]
+
+# -----------------------------------------------------------------
+
 def get_header_labels(filepath):
 
     """

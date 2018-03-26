@@ -17,21 +17,12 @@ import re
 import warnings
 from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
-#import numpy as np
 _range = range
 
 # Import the relevant PTS classes and modules
-#from ..basics.range import IntegerRange, RealRange, QuantityRange # imported below to accomodate clean python installs
 from . import filesystem as fs
 from . import types
-# Imported below to accomodate clean python installs
-#from ..filter.broad import BroadBandFilter
-#from ..filter.broad import identifiers as broad_band_identifiers
-#from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
-#from ..filter.filter import parse_filter
-#from ..basics.errorbar import ErrorBar
-#from ..basics.unit import PhotometricUnit, parse_unit
-#from ..basics.quantity import parse_quantity
+# Other imports in functions below to accomodate clean python installs
 
 # -----------------------------------------------------------------
 

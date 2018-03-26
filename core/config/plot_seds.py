@@ -22,6 +22,12 @@ residual_references = ["models", "observations"]
 
 # -----------------------------------------------------------------
 
+# SEDs
+seds = ["mappings", "bruzual_charlot"]
+default_ages = "8.0 Gyr,0.1 Gyr"
+
+# -----------------------------------------------------------------
+
 # Create configuration definition
 definition = ConfigurationDefinition()
 
@@ -67,12 +73,6 @@ definition.add_flag("ignore_upper", "ignore upper limit points", False)
 
 # -----------------------------------------------------------------
 
-# ADD TEMPLATE SEDS?
-
-# SEDs
-seds = ["mappings", "bruzual_charlot"]
-default_ages = "8.0 Gyr,0.1 Gyr"
-
 # Add SEDs
 definition.add_flag("add_templates", "add template SEDs")
 definition.add_optional("templates", "string_list", "template SEDs to add", default=seds, choices=seds)
@@ -89,5 +89,10 @@ definition.add_optional("ages", "time_quantity_list", "ages for Bruzual-Charlot 
 # -----------------------------------------------------------------
 
 definition.add_flag("interpolate_models_for_residuals", "interpolate models to get the photometry at specific wavelengths", True)
+
+# -----------------------------------------------------------------
+
+# Additional relative error
+definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
 
 # -----------------------------------------------------------------

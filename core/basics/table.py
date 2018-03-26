@@ -35,6 +35,19 @@ string_column_none_default = "--"
 
 # -----------------------------------------------------------------
 
+def is_pts_data_format(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    first = fs.get_first_line(path)
+    return "PTS data format" in first
+
+# -----------------------------------------------------------------
+
 def has_same_values_for_column(tables, column_name, reference_column_name, reference_values):
 
     """

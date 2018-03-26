@@ -366,6 +366,9 @@ class SEDPlotter(Configurable):
         # Add SED files present in the current working directory (if nothing is added manually)
         if self.no_seds: self.load_seds()
 
+        # Add additional errors
+        if self.config.additional_error is not None: self.add_relative_errors()
+
         # Add SED templates
         if self.config.add_templates: self.create_templates()
 
@@ -561,6 +564,33 @@ class SEDPlotter(Configurable):
 
                 # Add the SED
                 self.add_sed(sed, label=name)
+
+    # -----------------------------------------------------------------
+
+    def add_relative_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding relative errors ...")
+
+        # Loop over the observed SEDs
+        for label in self.observations:
+
+            # Debugging
+            log.debug("Adding additional relative errors to the data points of the '" + label + "' observed SED ...")
+
+            # Get the observed SED, make copy
+            observation = self.observations[label].copy()
+
+            # Add the relative error
+            observation.add_relative_error(self.config.additional_error)
+
+            # Set
+            self.observations[label] = observation
 
     # -----------------------------------------------------------------
 
@@ -918,7 +948,7 @@ class SEDPlotter(Configurable):
             # Create rectangle for this observation
             rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
             legend_rectangles.append(rectangle)
-            rectangle_labels.append(label)
+            rectangle_labels.append(label.replace("_", "\_"))
 
         # Extra legend: the different observations
         # fancybox=True makes the legend corners rounded
@@ -1014,7 +1044,7 @@ class SEDPlotter(Configurable):
                 errors = sed.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], model_label, errors=errors, linecolor=line_colors_models[counter])
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], model_label.replace("_", "\_"), errors=errors, linecolor=line_colors_models[counter])
                 model_colors[model_label] = line_colors_models[counter]
                 model_styles[model_label] = line_styles[counter]
 
@@ -1104,7 +1134,7 @@ class SEDPlotter(Configurable):
                     residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
                     # Plot
-                    residual_plot.plot(wavelengths_residuals, residuals, linestyle=linestyle, color=linecolor, label=model_label)
+                    residual_plot.plot(wavelengths_residuals, residuals, linestyle=linestyle, color=linecolor, label=model_label.replace("_", "\_"))
 
         # Finish the plot
         self.finish_plot()
@@ -1288,6 +1318,8 @@ class SEDPlotter(Configurable):
 
         # Plot models on the residual axis, WHEN OBSERVATION IS THE REFERENCE
         for model_label in self.models:
+
+            # Get entry
             sed, plot_residuals, ghost = self.models[model_label]
 
             if not plot_residuals: continue
@@ -1339,6 +1371,8 @@ class SEDPlotter(Configurable):
 
         # Add model SEDs
         for model_label in self.models:
+
+            # Get entry
             sed, plot_residuals, ghost = self.models[model_label]
 
             if self.nmodels == 1: model_label = "model"
@@ -1353,7 +1387,9 @@ class SEDPlotter(Configurable):
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 log_model = np.log10(fluxes)
-                self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models[counter], color=line_colors_models[counter], label=model_label)
+
+                # Plot
+                self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models[counter], color=line_colors_models[counter], label=model_label.replace("_", "\_"))
 
                 # Get lowest and highest flux and wavelength for this curve
                 lowest = np.min(fluxes)
@@ -1402,7 +1438,9 @@ class SEDPlotter(Configurable):
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
                 log_model = np.log10(fluxes)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
-                self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+
+                # Plot
+                self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label.replace("_", "\_"))
 
                 ## SAME AS ABOVE::
                 # Get lowest and highest flux and wavelength for this curve
@@ -1626,6 +1664,8 @@ class SEDPlotter(Configurable):
                 # Residuals
                 counter = 0
                 for model_label in self.models:
+
+                    # Get entry
                     sed, plot_residuals, ghost = self.models[model_label]
 
                     if not plot_residuals: continue
@@ -1643,13 +1683,13 @@ class SEDPlotter(Configurable):
 
                     if ghost: residual_plot.plot(wavelengths_residuals, residuals, ls="-", color='lightgrey')
                     else:
-                        residual_plot.plot(wavelengths_residuals, residuals, ls=line_styles[counter], color='black', label=model_label)
+                        residual_plot.plot(wavelengths_residuals, residuals, ls=line_styles[counter], color='black', label=model_label.replace("_", "\_"))
                         counter += 1
 
             # Create rectangle for this observation
             rectangle = patches.Rectangle((0, 0), 1, 1, fc=observation_color)
             legend_rectangles.append(rectangle)
-            rectangle_labels.append(label)
+            rectangle_labels.append(label.replace("_", "\_"))
 
             # Increment the observation index
             observation_index += 1
@@ -1660,6 +1700,8 @@ class SEDPlotter(Configurable):
         counter = 0
         counter_no_residuals = 0
         for model_label in self.models:
+
+            # Get entry
             sed, plot_residuals, ghost = self.models[model_label]
 
             # Get fluxes, wavelengths and errors
@@ -1675,7 +1717,7 @@ class SEDPlotter(Configurable):
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label, adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label.replace("_", "\_"), adjust_extrema=False)
                 counter += 1
 
             else:
@@ -1743,6 +1785,8 @@ class SEDPlotter(Configurable):
 
             if error is not None:
 
+                #print("a", label, new_label)
+
                 lower_flux = flux + error.lower
                 upper_flux = flux + error.upper
 
@@ -1762,13 +1806,17 @@ class SEDPlotter(Configurable):
                 yerr = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
                 patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
-            else: patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor) #markerfacecolor=color) #label=label)
+            else:
+                #print("b", label, new_label)
+                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor) #markerfacecolor=color) #label=label)
 
         # A data point of this instrument has already been plotted
         else:
 
             # There is an error bar
             if error is not None:
+
+                #print("c", label, new_label)
 
                 lolims = False
                 uplims = False
@@ -1783,7 +1831,9 @@ class SEDPlotter(Configurable):
                 patch = axis.errorbar(wavelength, np.log10(flux), yerr=yerr, fmt=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor, ecolor=color, capthick=2, lolims=lolims, uplims=uplims)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else: patch = axis.plot(wavelength, np.log10(flux), markersize=markersize, color=color, markeredgecolor=markeredgecolor)
+            else:
+                #print("d", label, new_label)
+                patch = axis.plot(wavelength, np.log10(flux), marker=marker, markersize=markersize, color=color, markeredgecolor=markeredgecolor)
 
         # Return the patch if requested
         if return_new: return patch, new_label
@@ -1791,7 +1841,6 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    # instruments, bands, wavelengths, fluxes, errors, colors
     def draw_observation(self, instruments, bands, wavelengths, fluxes, errors, colors):
 
         """
@@ -1804,6 +1853,8 @@ class SEDPlotter(Configurable):
         :param colors:
         :return:
         """
+
+        #print(instruments, bands, wavelengths, fluxes, errors, colors)
 
         # Get labels and descriptions
         labels, descriptions = get_labels_and_descriptions(instruments, bands)
@@ -1834,9 +1885,12 @@ class SEDPlotter(Configurable):
 
             # Get next color
             color = colors[k]
+            #print(color)
 
             # Get marker
             marker = markers[unique_labels.index(labels[k])]
+
+            #print(fluxes[k], errors[k])
 
             # Plot on the main axis with the specified marker and color
             #print("fluxes", fluxes)
