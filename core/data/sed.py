@@ -1008,7 +1008,6 @@ class ObservedSED(FilterCurve):
         for index in range(len(self)):
 
             # Calculate the additional error
-            #wavelength = self.get_wavelength(index)
             value = self.get_photometry(index)
             additional_error = value * relative_error
             unit = value.unit
@@ -1035,6 +1034,57 @@ class ObservedSED(FilterCurve):
 
                 # Set the new error bar
                 self.set_upper_error(index, upper)
+
+    # -----------------------------------------------------------------
+
+    def add_or_set_relative_error(self, relative_error):
+
+        """
+        This function ...
+        :param relative_error:
+        :return:
+        """
+
+        # Loop over the points in the SED
+        for index in range(len(self)):
+
+            # Calculate the additional error
+            value = self.get_photometry(index)
+            additional_error = value * relative_error
+            unit = value.unit
+            additional_error_value = additional_error.to(unit).value
+
+            # Get the lower error
+            lower = self.get_lower_error(index)
+
+            # Add lower error
+            if lower is not None:
+
+                # Add the additional error in quadrature
+                lower_value = lower.to(unit).value
+                lower = -np.sqrt(lower_value ** 2 + additional_error_value ** 2) * unit
+
+            # Set new lower error
+            else: lower = -additional_error_value * unit
+
+            # Set the new error
+            self.set_lower_error(index, lower)
+
+            # Get the upper error
+            upper = self.get_upper_error(index)
+
+            # Add upper error
+            if upper is not None:
+
+                # Add the additional error in quadrature
+                upper_value = upper.to(unit).value
+                upper = np.sqrt(upper_value ** 2 + additional_error_value ** 2) * unit
+
+            # Set new upper error
+            else: upper = additional_error_value * unit
+
+            # Set the new error
+            self.set_upper_error(index, upper)
 
     # -----------------------------------------------------------------
 

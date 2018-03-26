@@ -587,7 +587,7 @@ class SEDPlotter(Configurable):
             observation = self.observations[label].copy()
 
             # Add the relative error
-            observation.add_relative_error(self.config.additional_error)
+            observation.add_or_set_relative_error(self.config.additional_error)
 
             # Set
             self.observations[label] = observation
@@ -1890,7 +1890,7 @@ class SEDPlotter(Configurable):
             # Get marker
             marker = markers[unique_labels.index(labels[k])]
 
-            #print(fluxes[k], errors[k])
+            #print(labels[k], fluxes[k], errors[k])
 
             # Plot on the main axis with the specified marker and color
             #print("fluxes", fluxes)
