@@ -37,6 +37,7 @@ from .tables import GenerationsTable
 from ...core.filter.filter import parse_filter
 from .generation import GenerationInfo
 from .weights import WeightsCalculator
+from .backup import FitBackupper
 
 # -----------------------------------------------------------------
 
@@ -420,7 +421,8 @@ class Refitter(FittingComponent):
         if self.in_place and self.config.generations is not None: raise ValueError("Cannot specify generations when refitting is done in place")
 
         # Load the fitting run
-        self.fitting_run = self.load_fitting_run(self.config.fitting_run)
+        if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
+        else: self.fitting_run = self.load_fitting_run(self.config.fitting_run)
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
@@ -521,236 +523,20 @@ class Refitter(FittingComponent):
         # Debugging
         log.info("Making a backup of the current fitting results ...")
 
-        # Backup the fitting configuration
-        self.backup_config()
+        # Create the backupper
+        backupper = FitBackupper()
 
-        # Backup the weights
-        self.backup_weights()
+        # Set the name for the backup
+        backupper.config.name = self.backup_name
 
-        # Backup the best parameters table
-        self.backup_best_parameters()
+        # Set the generation names
+        backupper.config.generations = self.generation_names
 
-        # Backup the prob directory
-        if self.has_prob: self.backup_prob()
+        # Set modeling path
+        backupper.config.path = self.config.path
 
-        # Backup the best directory
-        if self.has_best: self.backup_best()
-
-        # Backup the fluxes
-        self.backup_fluxes()
-
-        # Backup the fluxes plots
-        self.backup_fluxes_plots()
-
-        # Backup the differences
-        self.backup_differences()
-
-        # Backup the chi squared tables
-        self.backup_chi_squared()
-
-    # -----------------------------------------------------------------
-
-    def backup_config(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.info("Making a backup of the fitting configuration ...")
-
-        # Copy the configuration
-        fs.copy_file(self.fitting_run.fitting_configuration_path, self.backup_path)
-
-    # -----------------------------------------------------------------
-
-    def backup_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.info("Making a backup of the weights ...")
-
-        # Copy the weights
-        fs.copy_file(self.fitting_run.weights_table_path, self.backup_path)
-
-    # -----------------------------------------------------------------
-
-    def backup_best_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.info("Making a backup of the best parameters table ...")
-
-        # Copy the file
-        fs.copy_file(self.fitting_run.best_parameters_table_path, self.backup_path)
-
-    # -----------------------------------------------------------------
-
-    def backup_prob(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a backup of the model and parameter probabilities ...")
-
-        # Copy the directory
-        fs.copy_directory(self.fitting_run.prob_path, self.backup_path)
-
-    # -----------------------------------------------------------------
-
-    def backup_best(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a backup of the best simulations ...")
-
-        # Copy the directory
-        fs.copy_directory(self.fitting_run.best_path, self.backup_path)
-
-    # -----------------------------------------------------------------
-
-    def backup_fluxes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a backup of the mock fluxes ...")
-
-        # Loop over the generations
-        for generation_name in self.generation_names:
-
-            # Debugging
-            log.debug("Creating backups for generation '" + generation_name + "' ...")
-
-            # Get the generation
-            generation = self.generations[generation_name]
-
-            # Loop over the simulations
-            for simulation_name in generation.simulation_names:
-
-                # Check whether the simulation has fluxes
-                if not generation.has_mock_sed(simulation_name):
-                    log.warning("No mock SED for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
-                    continue
-
-                # Debugging
-                log.debug("Creating backup for simulation '" + simulation_name + "' ...")
-
-                # Copy the fluxes file
-                fs.copy_file(generation.get_mock_sed_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
-
-    # -----------------------------------------------------------------
-
-    def backup_fluxes_plots(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a backup of the mock fluxes plots ...")
-
-        # Loop over the generations
-        for generation_name in self.generation_names:
-
-            # Debugging
-            log.debug("Creating backups for generation '" + generation_name + "' ...")
-
-            # Get the generation
-            generation = self.generations[generation_name]
-
-            # Loop over the simulations
-            for simulation_name in generation.simulation_names:
-
-                # Check whether the simulation has fluxes plot
-                if not generation.has_mock_sed_plot(simulation_name):
-                    log.warning("No mock SED plot for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
-                    continue
-
-                # Debugging
-                log.debug("Creating backup for simulation '" + simulation_name + "' ...")
-
-                # Copy the plot file
-                fs.copy_file(generation.get_mock_sed_plot_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
-
-    # -----------------------------------------------------------------
-
-    def backup_differences(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a backup of the flux differences ...")
-
-        # Loop over the generations
-        for generation_name in self.generation_names:
-
-            # Debugging
-            log.debug("Creating backups for generation '" + generation_name + "' ...")
-
-            # Get the generation
-            generation = self.generations[generation_name]
-
-            # Loop over the simulations
-            for simulation_name in generation.simulation_names:
-
-                # Check whether the simulation has differences
-                if not generation.has_sed_differences(simulation_name):
-                    log.warning("No differences table for simulation '" + simulation_name + "' of generation '" + generation_name + "'")
-                    continue
-
-                # Debugging
-                log.debug("Creating backup for simulation '" + simulation_name + "' ...")
-
-                # Copy the file
-                fs.copy_file(generation.get_simulation_sed_differences_path(simulation_name), self.backup_path_for_simulation(generation_name, simulation_name))
-
-    # -----------------------------------------------------------------
-
-    def backup_chi_squared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a backup of the chi squared tables ...")
-
-        # Loop over the generations
-        for generation_name in self.generation_names:
-
-            # Debugging
-            log.debug("Creating backup for generation '" + generation_name + "' ...")
-
-            # Get the generation
-            generation = self.generations[generation_name]
-
-            # Copy the file
-            fs.copy_file(generation.chi_squared_table_path, self.backup_path_for_generation(generation_name))
+        # Run the backupper
+        backupper.run(fitting_run=self.fitting_run)
 
     # -----------------------------------------------------------------
 
