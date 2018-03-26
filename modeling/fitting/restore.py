@@ -78,7 +78,7 @@ class FitRestorer(FittingComponent):
 
         # Load the fitting run
         if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
-        else: self.fitting_run = self.load_fitting_run(self.config.fitting_run)
+        else: self.fitting_run = self.load_fitting_run(self.config.run)
 
     # -----------------------------------------------------------------
 

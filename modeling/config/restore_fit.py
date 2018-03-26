@@ -28,10 +28,10 @@ else: definition.add_required("run", "string", "name of the fitting run", choice
 # Name of the fit to restore
 definition.add_required("name", "string", "name of the fit to restore")
 
-# Backup?
-definition.add_flag("backup", "make a backup of the current fit", True)
-
 # Name for the current fit to backup
 definition.add_required("backup_name", "string", "name for the current fit to backup")
+
+# Backup?
+definition.add_flag("backup", "make a backup of the current fit", True)
 
 # -----------------------------------------------------------------
