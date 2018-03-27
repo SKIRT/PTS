@@ -134,6 +134,66 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_set_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_all_ranges
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_create_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.testing
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_set_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.needs_input
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.testing
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -149,19 +209,19 @@ class ParameterExplorer(FittingComponent):
         self.load_ski()
 
         # 3. Set the parameter ranges
-        if not self.has_all_ranges: self.set_ranges()
+        if self.do_set_ranges: self.set_ranges()
 
         # 4. Set the generation info
         self.set_info()
 
         # 5. Create the generation
-        if not self.testing: self.create_generation()
+        if self.do_create_generation: self.create_generation()
 
         # 6. Generate the model parameters
         self.generate_models()
 
         # 7. Set the paths to the input files
-        if self.needs_input: self.set_input()
+        if self.do_set_input: self.set_input()
 
         # 8. Adjust the ski template
         self.adjust_ski()
@@ -170,13 +230,13 @@ class ParameterExplorer(FittingComponent):
         self.fill_tables()
 
         # 10. Writing
-        if not self.testing: self.write()
+        if self.do_write: self.write()
 
         # 11. Show stuff
         self.show()
 
         # 12. Plot
-        if self.config.plot: self.plot()
+        if self.do_plot: self.plot()
 
         # 13. Launch the simulations for different parameter values
         self.launch_or_finish()
@@ -800,7 +860,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.remotes = self.remote_host_ids                         # The remote host(s) on which to run the simulations
         self.launcher.config.attached = self.config.attached                   # Run remote simulations in attached mode
         self.launcher.config.group_simulations = self.config.group             # Group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
-        self.launcher.config.group_walltime = self.config.walltime             # The preferred walltime for jobs of a group of simulations
+        self.launcher.config.group_walltime = self.config.group_walltime             # The preferred walltime for jobs of a group of simulations
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations, but allow them to be launched manually)
         self.launcher.config.progress_bar = True  # show progress bars for local execution

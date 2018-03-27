@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import warnings
 
 # Import the relevant PTS classes and modules
 from ..remote.jobscript import JobScript
@@ -159,13 +160,14 @@ class SKIRTJobScript(JobScript):
     This class
     """
 
-    def __init__(self, name, arguments, cluster, skirt_path, mpi_command, walltime, modules, mail=False,
-                 bind_to_cores=False, extra_header_lines=None):
+    def __init__(self, name, arguments, host_id, cluster, skirt_path, mpi_command, walltime, modules, mail=False,
+                 bind_to_cores=False, extra_header_lines=None, remote=None):
 
         """
         The constructor ...
         :param name:
         :param arguments:
+        :param host_id:
         :param cluster:
         :param skirt_path:
         :param mpi_command:
@@ -173,6 +175,7 @@ class SKIRTJobScript(JobScript):
         :param mail:
         :param bind_to_cores:
         :param extra_header_lines:
+        :param remote:
         """
 
         # Determine the paths to the output and error files
@@ -238,7 +241,8 @@ class SKIRTJobScript(JobScript):
             ppn = cores_per_node
 
         # Call the constructor of the base class
-        super(SKIRTJobScript, self).__init__(name, walltime, nodes, ppn, output_file_path, error_file_path, mail, extra_header_lines=extra_header_lines)
+        super(SKIRTJobScript, self).__init__(name, walltime, nodes, ppn, output_file_path, error_file_path, mail,
+                                             extra_header_lines=extra_header_lines)
 
         # Save the arguments
         self.arguments = arguments
@@ -246,8 +250,14 @@ class SKIRTJobScript(JobScript):
         # Add the appropriate syntax for hybrid / multithreaded runs
         mpi_command += " --hybrid " + str(processes_per_node)
 
+        # Pass the remote to the to_command function
+        if remote is None:
+            warnings.warn("If the remote instance is not passed, the remote will be loaded for each separate job script, which is very inefficient")
+            remote = host_id
+
         # Write the command string to the job script
-        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command, bind_to_cores=bind_to_cores, to_string=True, report_bindings=False)
+        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command,
+                                       bind_to_cores=bind_to_cores, to_string=True, report_bindings=False, remote=remote)
 
         # Add the SKIRT command
         self.add_command(command, "Launch SKIRT")

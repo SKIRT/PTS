@@ -7,15 +7,16 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import find_host_ids
-from pts.modeling.analysis.run import AnalysisRuns
-from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.magic.tools import wavelengths
 from pts.modeling.config.component import definition
+from pts.core.launch.options import LoggingOptions, SchedulingOptions
 
 # -----------------------------------------------------------------
 
-modeling_path = verify_modeling_cwd()
-runs = AnalysisRuns(modeling_path)
+# Get the analysis runs
+environment = load_modeling_environment_cwd()
+runs = environment.analysis_runs
 
 # -----------------------------------------------------------------
 
@@ -37,10 +38,10 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 # -----------------------------------------------------------------
 
 # Optional settings
-definition.add_optional("remote", "string", "remote host on which to launch the simulations", choices=find_host_ids())
-definition.add_optional("cluster_name", "string", "cluster of the remote host to use for the simulation")
+definition.add_positional_optional("remote", "string", "remote host on which to launch the simulations", choices=find_host_ids())
+definition.add_positional_optional("cluster_name", "string", "cluster of the remote host to use for the simulation")
 definition.add_flag("group", "group simulations in larger jobs")
-definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
+definition.add_optional("group_walltime", "real", "the preferred walltime per group job (for schedulers)")
 
 # -----------------------------------------------------------------
 
@@ -74,15 +75,20 @@ definition.add_optional("resolution_reference", "string", "use the map with this
 # The number of parallel processes for local execution
 definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
+
+# Enable data-parallelization?
 definition.add_flag("data_parallel_local", "use data-parallelization", False)
-definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
+# SET TO FALSE FOR NOW BECAUSE SOMETHING IS BROKEN: SKIRT CRASHES WHEN WRITING ABSORPTION DATA (ONLY IN DATA-PARALLEL MODE)
+definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", False)  # was None
 
 # Specify parallelization
-#definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution")
-#definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution")
-# SET TO FALSE FOR NOW BECAUSE SOMETHING IS BROKEN: SKIRT CRASHES WHEN WRITING ABSORPTION DATA (ONLY IN DATA-PARALLEL MODE)
-definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution", False)
-definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution", False)
+definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution")
+definition.add_optional("parallelization_remote", "parallelization", "parallelization scheme for remote execution")
+
+# -----------------------------------------------------------------
+
+definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
+definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
 # -----------------------------------------------------------------
 
@@ -91,15 +97,15 @@ definition.add_optional("old_scale_heights", "real", "number of times to take th
 
 # -----------------------------------------------------------------
 
-# Parallelization options
-definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations", 4)
-definition.add_flag("data_parallel", "data parallelization mode", False)
-
-# -----------------------------------------------------------------
-
 # EXTRA SIMULATION OUTPUT
 definition.add_flag("temperatures", "get dust temperature data from the simulation", False)
 definition.add_flag("emissivities", "get dust emissivity data from the simulation", False)
 definition.add_flag("isrf", "get ISRF data from the simulation", False)
+
+# -----------------------------------------------------------------
+
+# If previous launch failed, but input was already uploaded
+definition.add_optional("remote_input", "string_string_dictionary", "dictionary of input file paths, the filenames (keys) have to be those defined in the input.dat file of the analysis run")
+definition.add_optional("remote_input_path", "string", "remote directory where the uploaded input files can be found")
 
 # -----------------------------------------------------------------

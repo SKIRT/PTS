@@ -72,7 +72,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         self.instruments = dict()
 
         # The scheduling options for the different simulations (if using a remote host with scheduling system)
-        self.scheduling_options = dict()
+        #self.scheduling_options = dict()
 
         # The parameter values
         self.parameter_values = None
@@ -120,9 +120,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # 10. Set the parallelization scheme
         self.set_parallelization()
-
-        # 11. Estimate the runtimes, create the scheduling options
-        if self.uses_scheduler: self.estimate_runtimes()
 
         # 12. Writing
         self.write()
@@ -213,7 +210,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Basic options
         self.launcher.config.shared_input = True                    # The input directories for the different simulations are shared
         self.launcher.config.group_simulations = self.config.group  # group simulations into larger jobs
-        self.launcher.config.group_walltime = self.config.walltime  # the preferred walltime for jobs of a group of simulations
+        self.launcher.config.group_walltime = self.config.group_walltime  # the preferred walltime for jobs of a group of simulations
 
         # Set remote host
         if self.config.remote is not None:
@@ -230,6 +227,10 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # SET RETRIEVE TYPES (ONLY RELEVANT FOR REMOTE EXECUTION)
         self.launcher.config.retrieve_types = self.retrieve_types
+
+        # Don't retrieve and analyse after launching
+        self.launcher.config.retrieve = False
+        self.launcher.config.analyse = False
 
     # -----------------------------------------------------------------
 
@@ -248,6 +249,13 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # Get the parameter values
         self.parameter_values = self.analysis_run.parameter_values
+
+        # Show the model name
+        print("")
+        print(fmt.yellow + fmt.underlined + "Model name: " + fmt.reset + self.model_name)
+        if self.generation_name is not None: print(fmt.yellow + fmt.underlined + "Generation name: " + fmt.reset + self.generation_name)
+        if self.simulation_name is not None: print(fmt.yellow + fmt.underlined + "Simulation name: " + fmt.reset + self.simulation_name)
+        if self.chi_squared is not None: print(fmt.yellow + fmt.underlined + "Chi-squared: " + fmt.reset + tostr(self.chi_squared))
 
         # Show the parameter values
         print("")
@@ -270,6 +278,42 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
         # Load analysis wavelength grid
         else: self.load_wavelength_grid()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.generation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.chi_squared
 
     # -----------------------------------------------------------------
 
@@ -725,49 +769,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
-    def estimate_runtimes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Estimating the runtimes based on the results of previously finished simulations ...")
-
-        # Create a RuntimeEstimator instance
-        estimator = RuntimeEstimator.from_file(self.timing_table_path)
-
-        # Debugging
-        log.debug("Estimating the runtime for host '" + self.remote_host_id + "' ...")
-
-        # Get the parallelization scheme that we have defined for this remote host
-        #parallelization = self.launcher.parallelization_for_host(self.remote_host_id)
-        parallelization = self.parallelization
-
-        # Dictionary of estimated walltimes for the different simulations
-        walltimes = dict()
-
-        # Loop over the different ski files`
-        for contribution in self.ski_contributions:
-
-            # Get the ski file
-            ski = self.ski_contributions[contribution]
-
-            # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, nwavelengths=len(self.wavelength_grid), ncells=self.ndust_cells)
-
-            # Debugging
-            log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
-
-            # Set the estimated walltime
-            walltimes[contribution] = runtime
-
-        # Create and set scheduling options for each host that uses a scheduling system
-        for contribution in walltimes: self.scheduling_options[contribution] = SchedulingOptions.from_dict({"walltime": walltimes[contribution]})
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -917,6 +918,18 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def scheduling_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SchedulingOptions(**self.config.scheduling)
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -959,7 +972,8 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
             self.launcher.add_to_queue(definition, simulation_name)
 
             # Set scheduling options for this simulation
-            if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])
+            #if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])
+            if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options)
 
         # Set parallelization and nprocesses
         if self.uses_remote:
@@ -972,7 +986,11 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         # Memory usage
         memory = None
 
+        # Set remote input path
+        if self.remote_input_path is not None: self.launcher.set_remote_input_path_for_host(self.host_id, self.remote_input_path)
+
         # Run the launcher, schedules the simulations
-        self.launcher.run(memory=memory, ncells=self.ndust_cells, nwavelengths=self.nwavelengths, parallelization_local=parallelization_local, nprocesses_local=nprocesses_local)
+        self.launcher.run(memory=memory, ncells=self.ndust_cells, nwavelengths=self.nwavelengths,
+                          parallelization_local=parallelization_local, nprocesses_local=nprocesses_local)
 
 # -----------------------------------------------------------------

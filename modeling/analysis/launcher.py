@@ -412,40 +412,53 @@ class AnalysisLauncherBase(AnalysisComponent):
         filenames = self.input_filenames
 
         # Get the runs
-        runs = self.cached_analysis_runs
+        #runs = self.cached_analysis_runs
 
         # Loop over the remote hosts
-        for host_id in runs:
+        #for host_id in runs:
 
-            # Loop over the analysis runs
-            for run_name in runs[host_id].names:
+            # Only for the host id used for simulations
+            #if host_id != self.host_id: continue
 
-                # Load the analysis run
-                run = runs[host_id].load(run_name)
+        # Check
+        #if self.host_id not in runs: return
+        #runs_host = runs[self.host_id]
 
-                # Get SKIRT input paths from a previous script in this analysis run with the same host
-                remote_input_paths = run.get_remote_script_input_paths_for_host(self.host_id)
+        # None
+        if not self.analysis_context.has_cached_for_host(self.host_id): return []
 
-                # Loop over the each of the remote input directories
-                for remote_input_path in remote_input_paths:
+        # Get the runs
+        runs = self.analysis_context.get_cached_runs_for_remote(self.host_id)
 
-                    # Check whether the directory still exists
-                    if not self.remote.is_directory(remote_input_path): continue
+        # Loop over the analysis runs
+        for run_name in runs.names:
 
-                    # Loop over the filenames
-                    for filename in filenames:
+            # Load the analysis run
+            run = runs.load(run_name)
 
-                        # Skip wavelength files (will not be the same from other analysis run)
-                        if filename == wavelengths_filename: continue
+            # Get SKIRT input paths from a previous script in this analysis run with the same host
+            remote_input_paths = run.get_remote_script_input_paths_for_host(self.host_id)
 
-                        # Skip dust grid tree files (will not be the same from other analysis run)
-                        if filename == dustgridtree_filename: continue
+            # Loop over the each of the remote input directories
+            for remote_input_path in remote_input_paths:
 
-                        # Determine the remote file path
-                        remote_filepath = fs.join(remote_input_path, filename)
+                # Check whether the directory still exists
+                if not self.remote.is_directory(remote_input_path): continue
 
-                        # If the file (still) exists, add it
-                        if self.remote.is_file(remote_filepath): remote_paths[filename] = remote_filepath
+                # Loop over the filenames
+                for filename in filenames:
+
+                    # Skip wavelength files (will not be the same from other analysis run)
+                    if filename == wavelengths_filename: continue
+
+                    # Skip dust grid tree files (will not be the same from other analysis run)
+                    if filename == dustgridtree_filename: continue
+
+                    # Determine the remote file path
+                    remote_filepath = fs.join(remote_input_path, filename)
+
+                    # If the file (still) exists, add it
+                    if self.remote.is_file(remote_filepath): remote_paths[filename] = remote_filepath
 
         # Return the dictionary of paths
         return remote_paths

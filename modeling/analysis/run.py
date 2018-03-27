@@ -159,18 +159,6 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
-    # @abstractproperty
-    # def galaxy_name(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     pass
-
-    # -----------------------------------------------------------------
-
     @property
     def from_generation(self):
 
@@ -4322,6 +4310,284 @@ class CachedAnalysisRuns(AnalysisRunBase):
         """
 
         return CachedAnalysisRun.from_path(self.single_path, self.remote)
+
+    # -----------------------------------------------------------------
+
+    # ABSTRACT PROPERTIES FROM BASE CLASS?
+
+    @property
+    def colour_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_simulation_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_grid_simulation_logfile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_maps_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nattenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nold_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nyoung_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
 
 # -----------------------------------------------------------------
 

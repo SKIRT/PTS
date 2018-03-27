@@ -1716,9 +1716,9 @@ class SKIRTRemote(Remote):
         header_lines.append("")
 
         # Create the job script
-        jobscript = SKIRTJobScript(name, arguments, self.host.cluster, self.skirt_path, self.host.mpi_command, walltime,
+        jobscript = SKIRTJobScript(name, arguments, self.host.id, self.host.cluster, self.skirt_path, self.host.mpi_command, walltime,
                                    modules, mail=mail, bind_to_cores=self.host.force_process_binding,
-                                   extra_header_lines=header_lines) #, hyperthreading=self.use_hyperthreading_skirt)
+                                   extra_header_lines=header_lines, remote=self) #, hyperthreading=self.use_hyperthreading_skirt)
 
         # Save the job script locally
         if save_jobscript: jobscript.saveto(local_jobscript_path)
@@ -2259,6 +2259,11 @@ class SKIRTRemote(Remote):
 
         # Simulation is finished
         elif simulation.finished: simulation_status = "finished"
+
+        # No handle?
+        elif simulation.handle is None:
+            log.warning("Simulation '" + simulation.name + "' has no execution handle")
+            simulation_status = "unknown"
 
         # Simulation is a job
         elif simulation.handle.type == "job":

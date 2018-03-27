@@ -3791,11 +3791,12 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_nnodes_for_host(self, host_id):
+    def get_nnodes_for_host(self, host_id, return_none=False):
 
         """
         THis function ...
         :param host_id:
+        :param return_none:
         :return:
         """
 
@@ -3808,6 +3809,7 @@ class BatchLauncher(Configurable):
             # Get the number of nodes from configuration
             if self.config.nnodes_per_host is not None and host_id in self.config.nnodes_per_host: return self.config.nnodes_per_host[host_id]
             elif self.config.nnodes is not None: return self.config.nnodes
+            elif return_none: return None
             else: raise ValueError("Number of nodes must be specified for host with scheduling system")
 
         # Remote does not use a scheduling system
@@ -3951,7 +3953,7 @@ class BatchLauncher(Configurable):
 
         # Set properties
         properties = Map()
-        properties.nnodes = self.get_nnodes_for_host(remote)
+        properties.nnodes = self.get_nnodes_for_host(remote, return_none=True)
         properties.nsockets = self.get_nsockets_for_host(remote)
         properties.ncores = self.get_ncores_for_host(remote)
         properties.memory = self.get_memory_for_host(remote)
@@ -5341,7 +5343,9 @@ class BatchLauncher(Configurable):
             print("")
 
             # Show the properties
-            for name in prop: print(" - " + name + ": " + tostr(prop[name]))
+            for name in prop:
+                if prop[name] is None: continue
+                print(" - " + fmt.bold + name + fmt.reset + ": " + tostr(prop[name]))
             print("")
 
     # -----------------------------------------------------------------

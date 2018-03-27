@@ -54,7 +54,7 @@ definition.add_flag("local", "run everything locally")
 definition.add_flag("attached", "run remote simulations in attached mode")
 definition.add_optional("nsimulations", "even_positive_integer", "number of simulations to launch in one batch/generation", 100)
 definition.add_flag("group", "group simulations in larger jobs")
-definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
+definition.add_optional("group_walltime", "real", "the preferred walltime per group job (for schedulers)")
 
 # -----------------------------------------------------------------
 

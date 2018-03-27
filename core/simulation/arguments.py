@@ -418,7 +418,8 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=True, to_string=False, remote=None, report_bindings=None):
+    def to_command(self, scheduler, skirt_path=None, mpirun_path=None, bind_to_cores=True, to_string=False, remote=None,
+                   report_bindings=None):
 
         """
         This function ...
@@ -568,7 +569,8 @@ class SkirtArguments(object):
 
 # -----------------------------------------------------------------
 
-def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler, remote=None, report_bindings=None):
+def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler, remote=None,
+                  report_bindings=None):
 
     """
     This function ...
@@ -583,6 +585,16 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
     :param report_bindings:
     :return:
     """
+
+    from ..remote.remote import Remote
+    from ..remote.host import Host
+
+    # Set remote
+    if remote is not None:
+        # Load remote host if only the host ID is passed
+        if types.is_string_type(remote): remote = Remote(host_id=remote)
+        elif isinstance(remote, Host): remote = Remote()
+        elif not isinstance(remote, Remote): raise ValueError("Invalid value for 'remote': should be remote instance, host instance or host ID string")
 
     # Multiprocessing mode
     if processes > 1:

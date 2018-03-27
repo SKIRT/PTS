@@ -44,11 +44,6 @@ if runs.empty: raise RuntimeError("No analysis runs are present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
 
-# Parallelization options
-#definition.add_optional("nnodes", "integer", "number of nodes to use for the simulations (for scheduler)", 4)
-#definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 10)
-#definition.add_flag("data_parallel", "data parallelization mode", False)
-
 # -----------------------------------------------------------------
 
 # Simulation options

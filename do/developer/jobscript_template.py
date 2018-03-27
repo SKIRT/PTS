@@ -71,7 +71,7 @@ name = definition.prefix
 skirt_path = "skirt"
 mpi_command = "mpirun"
 walltime = config.walltime
-jobscript = SKIRTJobScript(name, arguments, host.cluster, skirt_path, mpi_command, walltime, modules, mail=False, bind_to_cores=False)
+jobscript = SKIRTJobScript(name, arguments, host.id, host.cluster, skirt_path, mpi_command, walltime, modules, mail=False, bind_to_cores=False)
 
 lines = jobscript.to_lines()
 

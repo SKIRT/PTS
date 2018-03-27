@@ -197,6 +197,18 @@ class AnalysisContext(object):
 
     # -----------------------------------------------------------------
 
+    def has_cached_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return host_id in self.cache_host_ids
+
+    # -----------------------------------------------------------------
+
     def get_run_names_for_host_id(self, host_id):
 
         """
