@@ -46,7 +46,7 @@ definition.sections["wg"].add_optional("range", "quantity_range", "range of wave
 
 # -----------------------------------------------------------------
 
-# Dust grid from fitting run
+# Representation from model building
 definition.add_optional("representation", "string", "representation name")
 
 # Dust grid properties

@@ -2336,6 +2336,11 @@ class Refitter(FittingComponent):
                 # Determine the plot path
                 sed_plot_path = self.generations[generation_name].get_simulation_sed_plot_path(simulation_name)
 
+                # Check whether the file is present
+                if not fs.is_file(sed_plot_path):
+                    log.warning("SED plot file for simulation '" + simulation_name + "' is not present: skipping ...")
+                    continue
+
                 # Copy the SED plot file to the generation path
                 if not self.as_run:
 

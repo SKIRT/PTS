@@ -21,12 +21,13 @@ from ....core.basics.log import log
 from ....core.advanced.runtimeestimator import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions
 from ....core.tools.utils import lazyproperty
-from ...misc.interface import ModelSimulationInterface
+from ...misc.interface import ModelSimulationInterface, earth_name, faceon_name
 from ...basics.instruments import SimpleInstrument
 from ..launcher import AnalysisLauncherBase
 from ....core.tools import formatting as fmt
 from ....core.tools.stringify import tostr
 from ....core.simulation.output import output_types as ot
+from ....core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -52,7 +53,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         """
 
         # Call the constructor of the base class
-        #super(DustHeatingContributionLauncher, self).__init__(*args, **kwargs)
         DustHeatingAnalysisComponent.__init__(self, no_config=True)
         ModelSimulationInterface.__init__(self, no_config=True)
         AnalysisLauncherBase.__init__(self, *args, **kwargs)
@@ -98,13 +98,13 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         self.get_model()
 
         # 3. Create the wavelength grid
-        self.create_wavelength_grid(check_filters=False)
+        self.get_wavelength_grid()
 
         # 4. Load the deprojections
         self.load_deprojections()
 
-        # 5. Create the projections
-        self.create_projections()
+        # 5. Get the projections
+        self.get_projections()
 
         # 6. Create the instruments
         self.create_instruments()
@@ -258,6 +258,79 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
 
     # -----------------------------------------------------------------
 
+    def get_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create new wavelength grid?
+        if self.config.new_wavelength_grid: self.create_wavelength_grid(check_filters=False)
+
+        # Load analysis wavelength grid
+        else: self.load_wavelength_grid()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.fitting_run_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_fitting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.from_fitting
+
+    # -----------------------------------------------------------------
+
+    def load_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the wavelength grid ...")
+
+        # Check whether from fitting run
+        if not self.from_fitting: raise RuntimeError("Not from fitting run: cannot get wavelength grid")
+
+        # Set filepath
+        filepath = fs.join(self.fitting_run.wavelength_grids_path, self.config.wavelength_grid + ".dat")
+        if not fs.is_file(filepath): raise ValueError("Wavelength grid '" + self.config.wavelength_grid + "' not found")
+
+        # Load
+        self.wavelength_grid = WavelengthGrid.from_skirt_input(filepath)
+
+    # -----------------------------------------------------------------
+
     @property
     def host_id(self):
 
@@ -318,6 +391,62 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         """
 
         return self.analysis_run.info
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.representation is not None
+
+    # -----------------------------------------------------------------
+
+    def get_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.from_representation: self.load_projections()
+
+        # Create new
+        else: self.create_projections()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.from_representation: raise RuntimeError("Representation name not specified")
+        return self.model_suite.get_representation(self.config.representation)
+
+    # -----------------------------------------------------------------
+
+    def load_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the projections ...")
+
+        # Set the projection systems
+        self.projections[earth_name] = self.representation.earth_projection
+        self.projections[faceon_name] = self.representation.faceon_projection
 
     # -----------------------------------------------------------------
 

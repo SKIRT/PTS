@@ -441,6 +441,9 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Inform the user
         log.info("Loading the wavelength grid ...")
 
+        # Check whether from fitting run
+        if not self.from_fitting_run: raise RuntimeError("Not from fitting run: cannot get wavelength grid")
+
         # Set filepath
         filepath = fs.join(self.fitting_run.wavelength_grids_path, self.config.wavelength_grid + ".dat")
         if not fs.is_file(filepath): raise ValueError("Wavelength grid '" + self.config.wavelength_grid + "' not found")
