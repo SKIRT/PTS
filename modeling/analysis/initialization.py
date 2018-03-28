@@ -66,6 +66,18 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_build_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.from_representation
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -102,7 +114,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         self.adapt_ski()
 
         # 10. Build the dust grid
-        self.build_dust_grid()
+        if self.do_build_dust_grid: self.build_dust_grid()
 
         # 11. Set the input
         self.set_input()
@@ -505,6 +517,9 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Set the dust grid
         self.dust_grid = self.representation.dust_grid
+
+        # Copy the dust grid building output
+        fs.copy_files_from_directory(self.representation.grid_path, self.analysis_run.dust_grid_build_path)
 
     # -----------------------------------------------------------------
 
