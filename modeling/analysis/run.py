@@ -362,62 +362,62 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
-    def out_path(self):
+    def total_out_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, "out")
+        return self.output_path_for_contribution("total")
 
     # -----------------------------------------------------------------
 
     @property
-    def output_path(self):
+    def total_output_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.out_path
+        return self.total_out_path
 
     # -----------------------------------------------------------------
 
     @property
-    def logfile_path(self):
+    def total_logfile_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.out_path, self.galaxy_name + "_log.txt")
+        return fs.join(self.total_out_path, self.galaxy_name + "_log.txt")
 
     # -----------------------------------------------------------------
 
     @property
-    def extr_path(self):
+    def total_extr_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, extract_name)
+        return fs.join(self.contributions_path, "total", extract_name)
 
     # -----------------------------------------------------------------
 
     @property
-    def extract_path(self):
+    def total_extract_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.extr_path
+        return self.total_extr_path
 
     # -----------------------------------------------------------------
 
@@ -429,7 +429,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.extr_path, "progress.dat")
+        return fs.join(self.total_extr_path, "progress.dat")
 
     # -----------------------------------------------------------------
 
@@ -441,7 +441,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.extr_path, "timeline.dat")
+        return fs.join(self.total_extr_path, "timeline.dat")
 
     #  -----------------------------------------------------------------
 
@@ -453,31 +453,31 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.extr_path, "memory.dat")
+        return fs.join(self.total_extr_path, "memory.dat")
 
     # -----------------------------------------------------------------
 
     @property
-    def plot_path(self):
+    def total_plot_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, plot_name)
+        return fs.join(self.contributions_path, "total", plot_name)
 
     # -----------------------------------------------------------------
 
     @property
-    def misc_path(self):
+    def total_misc_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, misc_name)
+        return fs.join(self.contributions_path, "total", misc_name)
 
     # -----------------------------------------------------------------
 

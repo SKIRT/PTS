@@ -675,7 +675,10 @@ class InteractiveConfigurable(Configurable):
         eval_command = "self." + command
 
         # Evaluate
-        eval(eval_command)
+        result = eval(eval_command)
+
+        # Show the result, if applicable
+        if result is not None: print(result)
 
     # -----------------------------------------------------------------
 

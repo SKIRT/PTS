@@ -382,10 +382,10 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Creating the instruments ...")
 
         # Create full earth instrument
-        self.instruments[full_earth_name] = FullInstrument.from_projection(self.earth_projection, **self.earth_instrument_properties)
+        self.instruments[full_earth_name] = FullInstrument.from_projection(self.earth_projection, **self.full_instrument_properties)
 
         # Create simple earth instrument
-        self.instruments[simple_earth_name] = SimpleInstrument.from_projection(self.earth_projection, **self.earth_instrument_properties)
+        self.instruments[simple_earth_name] = SimpleInstrument.from_projection(self.earth_projection)
 
         # Create simple faceon instrument
         self.instruments[simple_faceon_name] = SimpleInstrument.from_projection(self.faceon_projection)
@@ -403,12 +403,24 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return FullInstrument
+        return None
 
     # -----------------------------------------------------------------
 
     @property
     def earth_instrument_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_instrument_properties(self):
 
         """
         This function ...

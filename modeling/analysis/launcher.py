@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.heating.launch Contains the DustHeatingContributionLauncher class.
+## \package pts.modeling.analysis.launcher Contains the AnalysisLauncher class.
 
 # -----------------------------------------------------------------
 
@@ -19,7 +19,7 @@ from ...core.launch.batchlauncher import BatchLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.basics.log import log
 from ...core.launch.options import SchedulingOptions
-from ..misc.interface import ModelSimulationInterface, earth_name, faceon_name, edgeon_name
+from ..misc.interface import earth_name, faceon_name, edgeon_name
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 from ...core.simulation.output import output_types as ot
@@ -50,7 +50,7 @@ component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
 
 # -----------------------------------------------------------------
 
-class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
+class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
     """
     This class...
@@ -65,14 +65,15 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         """
 
         # Call the constructor of the base class
-        AnalysisComponent.__init__(self, no_config=True)
+        #AnalysisComponent.__init__(self, no_config=True)
         #ModelSimulationInterface.__init__(self, no_config=True)
-        ModelSimulationInterface.__init__(self, *args, **kwargs)
+        #ModelSimulationInterface.__init__(self, *args, **kwargs)
+        AnalysisComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 
-        # The analysis run
-        self.analysis_run = None
+        # The model definition
+        self.definition = None
 
         # The ski file for the model
         self.ski = None
@@ -87,12 +88,6 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
 
         # The ski files for the different contributions
         self.ski_contributions = dict()
-
-        # The wavelength grid
-        self.wavelength_grid = None
-
-        # The instruments
-        self.instruments = dict()
 
         # The parameter values
         self.parameter_values = None
@@ -141,14 +136,26 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @property
-    def heating(self):
+    def model_name(self):
 
         """
         This function ...
         :return:
         """
 
-        return True
+        return self.definition.name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analysis_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_runs.load(self.config.run)
 
     # -----------------------------------------------------------------
 
@@ -161,11 +168,22 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         """
 
         # Call the setup function of the base class
-        #super(DustHeatingContributionLauncher, self).setup(**kwargs)
         super(AnalysisLauncher, self).setup(**kwargs)
 
         # Set options for the batch launcher
         self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.wavelength_grid
 
     # -----------------------------------------------------------------
 
@@ -311,7 +329,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
 
         # Write the batch launcher output
         self.launcher.config.write = True
-        self.launcher.config.path = self.heating_path
+        self.launcher.config.path = self.analysis_run_path
 
         # Keep remote input and output
         self.launcher.config.keep = self.config.keep
@@ -319,14 +337,14 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @property
-    def heating_path(self):
+    def analysis_run_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.analysis_run.heating_path
+        return self.analysis_run.path
 
     # -----------------------------------------------------------------
 
@@ -497,28 +515,28 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
-    @property
-    def instrument_class(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return SimpleInstrument
-        return None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def earth_instrument_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return dict()  # no specific properties
+    # @property
+    # def instrument_class(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     #return SimpleInstrument
+    #     return None
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @property
+    # def earth_instrument_properties(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return dict()  # no specific properties
 
     # -----------------------------------------------------------------
 
@@ -723,12 +741,6 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         # Debugging
         log.debug("Adding the instruments ...")
 
-        # Remove the existing instruments
-        #self.ski.remove_all_instruments()
-
-        # Add the instruments
-        #for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
-
         # Loop over the contributions
         for contribution in self.ski_contributions:
 
@@ -845,10 +857,10 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         log.debug("Searching for input files that are already present on the remote host ...")
 
         # Find remote directory
-        if not self.heating:
-            remote_input_path = self.find_remote_directory_with_all_input()
-        else:
-            remote_input_path = None
+        #if not self.heating:
+        remote_input_path = self.find_remote_directory_with_all_input()
+        #else:
+        #    remote_input_path = None
 
         # Set the original paths
         self.input_paths = self.local_input_paths
@@ -977,13 +989,13 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
 
                     # If it is the wavelength file, check the number of wavelengths
                     if filename == wavelengths_filename:
-                        if self.heating:
-                            continue  # Don't add remote wavelengths file for heating launcher
-                        else:
-                            remote_wavelengths_path = remote_filepath
-                            remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
-                            if remote_nwavelengths != self.nwavelengths: continue
-                            remote_paths[filename] = remote_filepath
+                        #if self.heating:
+                        #    continue  # Don't add remote wavelengths file for heating launcher
+                        #else:
+                        remote_wavelengths_path = remote_filepath
+                        remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
+                        if remote_nwavelengths != self.nwavelengths: continue
+                        remote_paths[filename] = remote_filepath
 
         # Return the dictionary of paths
         return remote_paths
@@ -1330,7 +1342,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return self.analysis_run.extract_path
+        return self.analysis_run.total_extract_path
 
     # -----------------------------------------------------------------
 
@@ -1342,7 +1354,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return self.analysis_run.plot_path
+        return self.analysis_run.total_plot_path
 
     # -----------------------------------------------------------------
 
@@ -1354,7 +1366,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return self.analysis_run.misc_path
+        return self.analysis_run.total_misc_path
 
     # -----------------------------------------------------------------
 
@@ -1392,7 +1404,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         self.analysis_options.plotting.timeline = True
         self.analysis_options.plotting.seds = True
         self.analysis_options.plotting.grids = False # are already plotted for each initialized analysis run
-        self.analysis_options.plotting.reference_seds = [self.observed_sed_path]
+        self.analysis_options.plotting.reference_seds = [self.observed_sed_path, self.truncated_sed_path]
 
         # Ignore filters for plotting
         self.analysis_options.plotting.ignore_filters = self.ignore_sed_plot_filters
@@ -1473,7 +1485,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return [str(fltr) for fltr in self.observed_filter_names_in_range_without_iras]
+        return [str(fltr) for fltr in self.observed_filters_in_range_without_iras]
 
     # -----------------------------------------------------------------
 
@@ -1491,11 +1503,11 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         self.analysis_options.misc.path = self.misc_path
 
         # Make RGB images
-        self.analysis_options.misc.rgb = True
+        #self.analysis_options.misc.rgb = True
 
         # MAKE datacube ANIMATIONS
-        self.analysis_options.misc.animations = True
-        self.analysis_options.misc.write_animation_frames = True
+        #self.analysis_options.misc.animations = True
+        #self.analysis_options.misc.write_animation_frames = True
 
         # Recreate observed fluxes and images
         self.analysis_options.misc.fluxes = True
@@ -1623,7 +1635,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         for contribution in self.ski_contributions:
 
             # Determine the path
-            path = self.analysis_run.heating_ski_path_for_contribution(contribution)
+            path = self.get_ski_path_for_contribution(contribution)
 
             # Debugging
             log.debug("Writing the ski file for the " + contribution + " stellar population to '" + path + "' ...")
@@ -1704,7 +1716,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        path = self.analysis_run.heating_simulation_path_for_contribution(contribution)
+        path = self.analysis_run.simulation_path_for_contribution(contribution)
         if not fs.is_directory(path): fs.create_directory(path)
         return path
 
@@ -1719,7 +1731,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        path = self.analysis_run.heating_output_path_for_contribution(contribution)
+        path = self.analysis_run.output_path_for_contribution(contribution)
         if not fs.is_directory(path): fs.create_directory(path)
         return path
 
@@ -1734,7 +1746,7 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return self.analysis_run.heating_ski_path_for_contribution(contribution)
+        return self.analysis_run.ski_path_for_contribution(contribution)
 
     # -----------------------------------------------------------------
 
