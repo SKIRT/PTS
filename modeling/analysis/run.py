@@ -105,6 +105,7 @@ extract_name = "extr"
 plot_name = "plot"
 misc_name = "misc"
 evaluation_name = "evaluation"
+contributions_name = "contributions"
 attenuation_name = "attenuation"
 colours_name = "colours"
 residuals_name = "residuals"
@@ -493,6 +494,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def contributions_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, contributions_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def attenuation_path(self):
 
         """
@@ -816,19 +829,43 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
-    def heating_simulation_path_for_contribution(self, contribution):
-
-        """
-        This function ...
-        :param contribution:
-        :return:
-        """
-
-        return fs.create_directory_in(self.heating_path, contribution)
+    # def heating_simulation_path_for_contribution(self, contribution):
+    #
+    #     """
+    #     This function ...
+    #     :param contribution:
+    #     :return:
+    #     """
+    #
+    #     return fs.create_directory_in(self.heating_path, contribution)
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def heating_ski_path_for_contribution(self, contribution):
+    #
+    #     """
+    #     This function ...
+    #     :param contribution:
+    #     :return:
+    #     """
+    #
+    #     return fs.join(self.heating_simulation_path_for_contribution(contribution), self.galaxy_name + ".ski")
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def heating_output_path_for_contribution(self, contribution):
+    #
+    #     """
+    #     This function ...
+    #     :param contribution:
+    #     :return:
+    #     """
+    #
+    #     return fs.join(self.heating_simulation_path_for_contribution(contribution), "out")
 
     # -----------------------------------------------------------------
 
-    def heating_ski_path_for_contribution(self, contribution):
+    def simulation_path_for_contribution(self, contribution):
 
         """
         This function ...
@@ -836,11 +873,11 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.heating_simulation_path_for_contribution(contribution), self.galaxy_name + ".ski")
+        return fs.create_directory_in(self.contributions_path, contribution)
 
     # -----------------------------------------------------------------
 
-    def heating_output_path_for_contribution(self, contribution):
+    def ski_path_for_contribution(self, contribution):
 
         """
         This function ...
@@ -848,7 +885,19 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.heating_simulation_path_for_contribution(contribution), "out")
+        return fs.join(self.simulation_path_for_contribution(contribution), self.galaxy_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    def output_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return fs.create_directory_in(self.simulation_path_for_contribution(contribution), "out")
 
     # -----------------------------------------------------------------
 
@@ -1288,11 +1337,8 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.dust_grid_build_path): fs.create_directory(self.dust_grid_build_path)
         if not fs.is_directory(self.dust_grid_simulation_out_path): fs.create_directory(self.dust_grid_simulation_out_path)
 
-        # Simulation directories
-        if not fs.is_directory(self.output_path): fs.create_directory(self.output_path)
-        if not fs.is_directory(self.extract_path): fs.create_directory(self.extract_path)
-        if not fs.is_directory(self.plot_path): fs.create_directory(self.plot_path)
-        if not fs.is_directory(self.misc_path): fs.create_directory(self.misc_path)
+        # Contributions directory
+        if not fs.is_directory(self.contributions_path): fs.create_directory(self.contributions_path)
 
         # Evaluation
         if not fs.is_directory(self.evaluation_path): fs.create_directory(self.evaluation_path)
@@ -2603,7 +2649,7 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
-    def get_heating_ski_for_contribution(self, contribution):
+    def get_ski_for_contribution(self, contribution):
 
         """
         This function ...
@@ -2611,8 +2657,7 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        path = self.heating_ski_path_for_contribution(contribution)
-        return SkiFile(path)
+        return SkiFile(self.ski_path_for_contribution(contribution))
 
     # -----------------------------------------------------------------
 
@@ -4040,8 +4085,7 @@ class CachedAnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        path = self.heating_ski_path_for_contribution(contribution)
-        return SkiFile.from_remote_file(path, self.remote)
+        return SkiFile.from_remote_file(self.ski_path_for_contribution(contribution), self.remote)
 
     # -----------------------------------------------------------------
 

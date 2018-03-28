@@ -1760,10 +1760,6 @@ class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        # Get the simulation path
-        # THE SIMULATION PATH IS CREATED BY CALLING THIS METHOD
-        simulation_path = self.get_simulation_path_for_contribution(contribution)
-
         # Get the ski path for this simulation
         ski_path = self.get_ski_path_for_contribution(contribution)
 

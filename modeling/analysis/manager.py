@@ -122,15 +122,22 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
 
         # TODO: what to do when assignment table is missing?
 
+        # Load the assignment
+        if not self.has_assignment: raise RuntimeError("No assignment table found")
+        assignment = SimulationAssignmentTable.from_file(self.assignment_path)
+
         # Set input
         input = dict()
-        input["assignment"] = self.assignment
+        input["assignment"] = assignment
         input["timing"] = self.timing_table
         input["memory"] = self.memory_table
         #input["status"] = status
         #input["info_tables"] = [self.parameters_table, self.chi_squared_table]
         #input["remotes"] = remotes
         #input["simulations"] = simulations
+
+        # Interactive
+        self.config.interactive = True
 
         # Setup
         SimulationManager.setup(self, **input)
@@ -169,19 +176,19 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
         :return:
         """
 
-        return fs.join(self.analysis_path, "assignment.dat")
+        return fs.join(self.analysis_run_path, "assignment.dat")
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def assignment(self):
+    @property
+    def has_assignment(self):
 
         """
         This function ...
         :return:
         """
 
-        return SimulationAssignmentTable.from_file(self.assignment_path)
+        return fs.is_file(self.assignment_path)
 
     # -----------------------------------------------------------------
 
@@ -193,7 +200,7 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.timing_table
+        return self.analysis_context.timing_table
 
     # -----------------------------------------------------------------
 
@@ -205,7 +212,7 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.memory_table
+        return self.analysis_context.memory_table
 
     # -----------------------------------------------------------------
 
