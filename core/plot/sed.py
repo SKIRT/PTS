@@ -2211,9 +2211,9 @@ class SEDPlotter(Configurable):
         self.figure.set_borders(self.config.plot)
 
         # Set flux axis limits
-        print(self.min_flux, self.max_flux)
+        #print(self.min_flux, self.max_flux)
         plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
-        print(plot_min, plot_max)
+        #print(plot_min, plot_max)
         self.main_plot.set_ylim((plot_min, plot_max))
 
         # Set wavelength axis limits

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import InteractiveConfigurable
+from ..basics.configurable import InteractiveConfigurable, InvalidCommandError
 from ..basics.configuration import ConfigurationDefinition, parse_arguments, prompt_choice, prompt_settings, prompt_yn
 from ..basics.log import log
 from ..tools.stringify import tostr
@@ -80,6 +80,8 @@ from ..simulation.screen import ScreenScript
 from ..remote.ensemble import SKIRTRemotesEnsemble
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from ..simulation.definition import SingleSimulationDefinition
+from ..simulation.remote import get_simulation_for_host
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -1182,6 +1184,9 @@ class SimulationManager(InteractiveConfigurable):
             elif remotes is None: pass
             else: raise ValueError("Invalid type for 'remotes'")
 
+        # Set remotes from config
+        if self.config.remotes is not None: self.add_host_ids(self.config.remotes)
+
         # Set launcher options
         self.set_launcher_options()
 
@@ -1470,8 +1475,9 @@ class SimulationManager(InteractiveConfigurable):
 
             table_paths = []
             for simulation in self.all_simulations: table_paths.append(simulation.analysis.timing_table_path)
-            timing_table_path = sequences.get_all_equal_value(table_paths, ignore_none=True, return_none=True)
-            if timing_table_path is not None: self.timing = TimingTable.from_file(timing_table_path)
+            if not sequences.all_none(table_paths):
+                timing_table_path = sequences.get_all_equal_value(table_paths, ignore_none=True, return_none=True)
+                if timing_table_path is not None: self.timing = TimingTable.from_file(timing_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1489,8 +1495,9 @@ class SimulationManager(InteractiveConfigurable):
 
             table_paths = []
             for simulation in self.all_simulations: table_paths.append(simulation.analysis.memory_table_path)
-            memory_table_path = sequences.get_all_equal_value(table_paths, ignore_none=True, return_none=True)
-            if memory_table_path is not None: self.memory = MemoryTable.from_file(memory_table_path)
+            if not sequences.all_none(table_paths):
+                memory_table_path = sequences.get_all_equal_value(table_paths, ignore_none=True, return_none=True)
+                if memory_table_path is not None: self.memory = MemoryTable.from_file(memory_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1514,6 +1521,9 @@ class SimulationManager(InteractiveConfigurable):
         # From simulation names
         elif kwargs.get("simulation_names", None) is not None: self.initialize_from_simulation_names(kwargs.pop("simulation_names"))
 
+        # From simulation IDs
+        elif kwargs.get("simulation_ids", None) is not None: self.initialize_from_simulation_ids(kwargs.pop("simulation_ids"))
+
         # From assignment
         elif self.config.assignment is not None:
 
@@ -1522,6 +1532,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # From simulation names
         elif self.config.simulation_names is not None: self.initialize_from_simulation_names(self.config.simulation_names)
+
+        # From simulation IDs
+        elif self.config.simulation_ids is not None: self.initialize_from_simulation_ids(self.config.simulation_ids)
 
         # From directories
         elif self.config.from_directories:
@@ -1611,7 +1624,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get the host ID if necessary:
         # if there is not a group under 'None' (host ID unknown) in the simulations dictionary
-        if host_id is None and None not in self.simulations: host_id = self.host_id_for_simulation(simulation_name)
+        if host_id is None and None not in self.simulations:
+            host_id = self.host_id_for_simulation(simulation_name)
+            if host_id is None: raise ValueError("Host ID for simulation '" + simulation_name + "' is not found")
 
         # Checks
         if host_id not in self.simulations: raise ValueError("No simulations for host '" + host_id + "'")
@@ -3746,6 +3761,44 @@ class SimulationManager(InteractiveConfigurable):
 
                 # Add the simulation
                 self.simulations[host_id][simulation_name] = simulation
+
+    # -----------------------------------------------------------------
+
+    def initialize_from_simulation_ids(self, ids):
+
+        """
+        This function ...
+        :param ids:
+        :return:
+        """
+
+        # Check whether only one remote host is specified
+        if self.config.remotes is None: raise ValueError("Remote host is not specified")
+        nremotes = len(self.config.remotes)
+        if nremotes != 1: raise ValueError("Only one remote host can be specified when giving simulation IDs")
+        host_id = self.config.remotes[0]
+
+        # Initialize assignment table
+        self.assignment = SimulationAssignmentTable()
+        self._new_assignment = True
+
+        # Get the simulation IDs for the remote host
+        simulation_ids = introspection.simulation_ids_for_host(host_id)
+
+        # Loop over the simulation IDs
+        for simulation_id in ids:
+
+            # Check whether the simulation exists
+            if simulation_id not in simulation_ids: raise ValueError("There is no simulation with ID '" + str(simulation_id) + "' for remote host '" + host_id + "'")
+
+            # Load the simulation
+            simulation = get_simulation_for_host(host_id, simulation_id)
+
+            # Add to assignment
+            self.assignment.add_simulation_object(simulation, success=self.config.success)
+
+            # Add the simulation
+            self.simulations[host_id][simulation.name] = simulation
 
     # -----------------------------------------------------------------
 
@@ -6382,7 +6435,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get simulation name
         if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
-        else: simulation_name = config.pop("simulation")
+        else:
+            simulation_name = config.pop("simulation")
+            if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name: '" + simulation_name + "'", command)
 
         # Return
         return splitted, simulation_name, config
@@ -6445,7 +6500,9 @@ class SimulationManager(InteractiveConfigurable):
         # Get simulation names
         simulation_names = []
         for index_or_name in config.simulations:
-            if types.is_string_type(index_or_name): simulation_name = index_or_name
+            if types.is_string_type(index_or_name):
+                simulation_name = index_or_name
+                if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_name + "'", command)
             elif types.is_integer_type(index_or_name): simulation_name = self.simulation_names[index_or_name]
             else: raise ValueError("Invalid type")
             simulation_names.append(simulation_name)
@@ -6510,7 +6567,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get simulation name
         if types.is_integer_type(config.simulation): simulation_name = self.simulation_names[config.pop("simulation")]
-        else: simulation_name = config.pop("simulation")
+        else:
+            simulation_name = config.pop("simulation")
+            if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_name + "'", command)
 
         # Return
         return splitted, simulation_names, simulation_name, config
@@ -6569,11 +6628,15 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get simulation_a name
         if types.is_integer_type(config.simulation_a): simulation_a_name = self.simulation_names[config.pop("simulation_a")]
-        else: simulation_a_name = config.pop("simulation_a")
+        else:
+            simulation_a_name = config.pop("simulation_a")
+            if simulation_a_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_a_name + "'", command)
 
         # Get simulation_b name
         if types.is_integer_type(config.simulation_b): simulation_b_name = self.simulation_names[config.pop("simulation_b")]
-        else: simulation_b_name = config.pop("simulation_b")
+        else:
+            simulation_b_name = config.pop("simulation_b")
+            if simulation_b_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_b_name + "'", command)
 
         # Return
         return splitted, simulation_a_name, simulation_b_name, config
@@ -11851,6 +11914,32 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         return self.get_remote(host_id).home_directory
+
+    # -----------------------------------------------------------------
+
+    def add_host_id(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        # Add
+        self.remotes.add_host_id(host_id)
+
+    # -----------------------------------------------------------------
+
+    def add_host_ids(self, host_ids):
+
+        """
+        This function ...
+        :param host_ids:
+        :return:
+        """
+
+        # Add multiple
+        self.remotes.add_host_ids(host_ids)
 
     # -----------------------------------------------------------------
 

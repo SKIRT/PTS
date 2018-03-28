@@ -169,8 +169,9 @@ def has_valid_timestamp(line):
 
     if line == "": return False
 
-    # Split
-    date, time, message = split_line(line)
+    # Try splitting
+    try: date, time, message = split_line(line)
+    except IndexError: return False
 
     # Check
     return is_valid_timestamp(date + " " + time)

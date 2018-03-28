@@ -53,7 +53,7 @@ from ..tools import numbers
 from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status
 from ..simulation.remote import is_analysed_status, is_aborted_status, is_cancelled_status, is_crashed_status
 from ..tools import types
-from ..simulation.simulation import SkirtSimulation
+from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 
 # -----------------------------------------------------------------
 
@@ -1335,6 +1335,33 @@ class SimulationAssignmentTable(SmartTable):
             if simulation_id is not None: raise ValueError("Cannot pass simulation ID if host ID is not defined")
             self.add_local_simulation(name, success)
         else: self.add_remote_simulation(name, host_id, cluster_name=cluster_name, simulation_id=simulation_id, success=success)
+
+    # -----------------------------------------------------------------
+
+    def add_simulation_object(self, simulation, success=True):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # Local simulation
+        if isinstance(simulation, SkirtSimulation): self.add_local_simulation(simulation.name, success=success)
+
+        # Remote simulation
+        elif isinstance(simulation, RemoteSimulation):
+
+            # Get simulation properties
+            simulation_id = simulation.id
+            host_id = simulation.host_id
+            cluster_name = simulation.cluster_name
+
+            # Add
+            self.add_simulation(simulation.name, host_id=host_id, cluster_name=cluster_name, simulation_id=simulation_id, success=success)
+
+        # Invalid
+        else: raise ValueError("Invalid simulation object of type '" + str(type(simulation)) + "'")
 
 # -----------------------------------------------------------------
 

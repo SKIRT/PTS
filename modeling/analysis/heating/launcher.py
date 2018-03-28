@@ -232,6 +232,22 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent, ModelSimulat
         self.launcher.config.retrieve = False
         self.launcher.config.analyse = False
 
+        # Write the batch launcher output
+        self.launcher.config.write = True
+        self.launcher.config.path = self.heating_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_path
+
     # -----------------------------------------------------------------
 
     def get_model(self):

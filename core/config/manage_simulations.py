@@ -29,6 +29,11 @@ definition.add_optional("status", "file_path", "path of status file")
 # Remotes for which to find corresponding simulations
 definition.add_optional("remotes", "string_list", "remote hosts for which to look for matching simulations (not necessary when assignment is specified)", default=host_ids, choices=host_ids)
 
+# To specify the simulations
+definition.add_optional("simulation_names", "string_list", "names of the simulations to look for")
+definition.add_optional("simulation_ids", "integer_list", "IDs of the simulations (only if one remote host is specified)")
+definition.add_flag("from_directories", "use directory names as simulation names")
+
 # Timing and memory table
 definition.add_optional("timing", "file_path", "timing table path")
 definition.add_optional("memory", "file_path", "memory table path")
