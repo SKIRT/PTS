@@ -55,6 +55,10 @@ definition.add_optional("unit", "photometric_unit", "photometric unit", "Jy", co
 definition.add_optional("residual_reference", "string", "reference for the residuals", default_residual_reference, choices=residual_references)
 definition.add_flag("models_residuals", "plot residuals for only model SEDs", False)
 
+# Minimum and maximum reference
+definition.add_optional("minmax_wavelength_reference", "string", "reference for determining the minimum and maximum of the wavelength axis (default is both models and observations)", choices=residual_references)
+definition.add_optional("minmax_photometry_reference", "string", "reference for determining the minimum and maximum of the photometry axis (default is both models and observations)", choices=residual_references)
+
 # The plotting library to use
 definition.add_optional("library", "string", "plotting library", mpl, plotting_libraries)
 

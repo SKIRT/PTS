@@ -1770,6 +1770,101 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def adjust_wavelength_minmax_observations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.minmax_wavelength_reference is None: return True # both observations and models
+        else: return self.config.minmax_wavelength_reference == observations_reference # only observations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def adjust_wavelength_minmax_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.minmax_wavelength_reference is None: return True  # both observations and models
+        else: return self.config.minmax_wavelength_reference == models_reference  # only models
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def adjust_photometry_minmax_observations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.minmax_photometry_reference is None: return True # both observations and models
+        else: return self.config.minmax_photometry_reference == observations_reference # only observations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def adjust_photometry_minmax_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.minmax_photometry_reference is None: return True # both observations and models
+        else: return self.config.minmax_photometry_reference == models_reference # only models
+
+    # -----------------------------------------------------------------
+
+    def adjust_photometry_minmax(self, flux, error=None):
+
+        """
+        This function ...
+        :param flux:
+        :param error:
+        :return:
+        """
+
+        if error is not None:
+
+            if error.lower == numbers.min_inf:
+                if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
+            else:
+                lower_flux = flux + error.lower
+                if self._min_flux is None or lower_flux < self._min_flux: self._min_flux = lower_flux
+
+            if error.upper == numbers.inf:
+                if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
+            else:
+                upper_flux = flux + error.upper
+                if self._max_flux is None or upper_flux > self._max_flux: self._max_flux = upper_flux
+
+        else:
+
+            if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
+            if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
+
+    # -----------------------------------------------------------------
+
+    def adjust_wavelength_minmax(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        if self._min_wavelength is None or wavelength < self._min_wavelength: self._min_wavelength = wavelength
+        if self._max_wavelength is None or wavelength > self._max_wavelength: self._max_wavelength = wavelength
+
+    # -----------------------------------------------------------------
+
     def plot_wavelength(self, axis, label, used_labels, wavelength, flux, error, marker, color, return_new=False,
                         markersize=7, markeredgecolor="black"):
 
@@ -1790,28 +1885,10 @@ class SEDPlotter(Configurable):
         """
 
         # Keep track of minimum and maximum flux
-        if error is not None:
-
-            if error.lower == numbers.min_inf:
-                if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
-            else:
-                lower_flux = flux + error.lower
-                if self._min_flux is None or lower_flux < self._min_flux: self._min_flux = lower_flux
-
-            if error.upper == numbers.inf:
-                if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
-            else:
-                upper_flux = flux + error.upper
-                if self._max_flux is None or upper_flux > self._max_flux: self._max_flux = upper_flux
-
-        else:
-
-            if self._min_flux is None or flux < self._min_flux: self._min_flux = flux
-            if self._max_flux is None or flux > self._max_flux: self._max_flux = flux
+        if self.adjust_photometry_minmax_observations: self.adjust_photometry_minmax(flux, error=error)
 
         # Keep track of the minimal and maximal wavelength
-        if self._min_wavelength is None or wavelength < self._min_wavelength: self._min_wavelength = wavelength
-        if self._max_wavelength is None or wavelength > self._max_wavelength: self._max_wavelength = wavelength
+        if self.adjust_wavelength_minmax_observations: self.adjust_wavelength_minmax(wavelength)
 
         # Check if a data point of this instrument has already been plotted
         new_label = label not in used_labels
@@ -1946,7 +2023,50 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def draw_model(self, axis, wavelengths, fluxes, linestyle, label=None, errors=None, linecolor='black', errorcolor='cyan', adjust_extrema=True):
+    def adjust_photometry_minmax_fluxes(self, fluxes, errors=None):
+
+        """
+        This function ...
+        :param fluxes:
+        :param errors:
+        :return:
+        """
+
+        if errors is not None:
+            zipped = zip(fluxes, errors)
+            lower_flux_model = min(filter(None, [flux - error.lower for flux, error in zipped]))
+            upper_flux_model = max(filter(None, [flux + error.upper for flux, error in zipped]))
+            if lower_flux_model < self._min_flux or self._min_flux is None: self._min_flux = lower_flux_model
+            if upper_flux_model > self._max_flux or self._max_flux is None: self._max_flux = upper_flux_model
+        else:
+            # Keep track of the minimal and maximal flux
+            min_flux_model = min(filter(None,
+                                        fluxes))  # ignores zeros; see http://stackoverflow.com/questions/21084714/find-the-lowest-value-that-is-not-null-using-python
+            max_flux_model = max(filter(None, fluxes))  # idem.
+            if min_flux_model < self._min_flux or self._min_flux is None: self._min_flux = min_flux_model
+            if max_flux_model > self._max_flux or self._max_flux is None: self._max_flux = max_flux_model
+
+    # -----------------------------------------------------------------
+
+    def adjust_wavelength_minmax_wavelengths(self, wavelengths):
+
+        """
+        This function ...
+        :param wavelengths:
+        :return:
+        """
+
+        # Keep track of the minimal and maximal wavelength
+        min_wavelength_model = min(wavelengths)
+        max_wavelength_model = max(wavelengths)
+
+        if min_wavelength_model < self._min_wavelength or self._min_wavelength is None: self._min_wavelength = min_wavelength_model
+        if max_wavelength_model > self._max_wavelength or self._max_wavelength is None: self._max_wavelength = max_wavelength_model
+
+    # -----------------------------------------------------------------
+
+    def draw_model(self, axis, wavelengths, fluxes, linestyle, label=None, errors=None, linecolor='black',
+                   errorcolor='cyan', adjust_extrema=True):
 
         """
         This function ...
@@ -1964,24 +2084,8 @@ class SEDPlotter(Configurable):
 
         if adjust_extrema:
 
-            if errors is not None:
-                zipped = zip(fluxes, errors)
-                lower_flux_model = min(filter(None, [flux - error.lower for flux, error in zipped]))
-                upper_flux_model = max(filter(None, [flux + error.upper for flux, error in zipped]))
-                if lower_flux_model < self._min_flux or self._min_flux is None: self._min_flux = lower_flux_model
-                if upper_flux_model > self._max_flux or self._max_flux is None: self._max_flux = upper_flux_model
-            else:
-                # Keep track of the minimal and maximal flux
-                min_flux_model = min(filter(None, fluxes))  # ignores zeros; see http://stackoverflow.com/questions/21084714/find-the-lowest-value-that-is-not-null-using-python
-                max_flux_model = max(filter(None, fluxes))  # idem.
-                if min_flux_model < self._min_flux or self._min_flux is None: self._min_flux = min_flux_model
-                if max_flux_model > self._max_flux or self._max_flux is None: self._max_flux = max_flux_model
-
-            # Keep track of the minimal and maximal wavelength
-            min_wavelength_model = min(wavelengths)
-            max_wavelength_model = max(wavelengths)
-            if min_wavelength_model < self._min_wavelength or self._min_wavelength is None: self._min_wavelength = min_wavelength_model
-            if max_wavelength_model > self._max_wavelength or self._max_wavelength is None: self._max_wavelength = max_wavelength_model
+            if self.adjust_photometry_minmax_models: self.adjust_photometry_minmax_fluxes(fluxes, errors=errors)
+            if self.adjust_wavelength_minmax_models: self.adjust_wavelength_minmax_wavelengths(wavelengths)
 
         # Plot the data points (as a line) on the axis
         log_model = np.log10(fluxes)
