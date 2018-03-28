@@ -359,6 +359,12 @@ class SEDPlotter(Configurable):
         self.min_flux = kwargs.pop("min_flux", None)
         self.max_flux = kwargs.pop("max_flux", None)
 
+        # Remove units
+        if self.min_wavelength is not None and hasattr(self.min_wavelength, "unit"): self.min_wavelength = self.min_wavelength.to(self.config.wavelength_unit).value
+        if self.max_wavelength is not None and hasattr(self.max_wavelength, "unit"): self.max_wavelength = self.max_wavelength.to(self.config.wavelength_unit).value
+        if self.min_flux is not None and hasattr(self.min_flux, "unit"): self.min_flux = self.min_flux.to(self.config.unit).value
+        if self.max_flux is not None and hasattr(self.max_flux, "unit"): self.max_flux = self.max_flux.to(self.config.unit).value
+
         # Set the output path
         self.out_path = kwargs.pop("output", None)
         if self.out_path is None and "output" in self.config and self.config.output is not None:
@@ -1401,6 +1407,10 @@ class SEDPlotter(Configurable):
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 log_model = np.log10(fluxes)
 
+                # Adjust extrema
+                if self.adjust_wavelength_minmax_models: self.adjust_wavelength_minmax_wavelengths(wavelengths)
+                if self.adjust_photometry_minmax_models: self.adjust_photometry_minmax_fluxes(fluxes)
+
                 # Plot
                 self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models[counter], color=line_colors_models[counter], label=model_label.replace("_", "\_"))
 
@@ -1451,6 +1461,10 @@ class SEDPlotter(Configurable):
                 fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
                 log_model = np.log10(fluxes)
                 wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+
+                # Adjust extrema
+                if self.adjust_wavelength_minmax_models: self.adjust_wavelength_minmax_wavelengths(wavelengths)
+                if self.adjust_photometry_minmax_models: self.adjust_photometry_minmax_fluxes(fluxes)
 
                 # Plot
                 self.main_plot.plot(wavelengths, log_model, linestyle=line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label.replace("_", "\_"))
@@ -1748,18 +1762,18 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey", adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, "-", linecolor="lightgrey", adjust_extrema=False, errors=errors)
 
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label.replace("_", "\_"), adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label.replace("_", "\_"), adjust_extrema=False, errors=errors)
                 counter += 1
 
             else:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label, adjust_extrema=False)
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label, adjust_extrema=False, errors=errors)
                 counter_no_residuals += 1
 
         # Extra legend: the different observations
@@ -2197,12 +2211,16 @@ class SEDPlotter(Configurable):
         self.figure.set_borders(self.config.plot)
 
         # Set flux axis limits
+        print(self.min_flux, self.max_flux)
         plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
+        print(plot_min, plot_max)
         self.main_plot.set_ylim((plot_min, plot_max))
 
         # Set wavelength axis limits
+        #from ..basics.plot import get_plot_wavelength_limits
         #plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self.min_wavelength, self.max_wavelength)
-        #self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
+        #self.main_plot.set_xlim(plot_min_wavelength, plot_max_wavelength)
+        self.main_plot.set_xlim(self.min_wavelength, self.max_wavelength)
 
         # Add the plots to the figure
         if self.config.library == bokeh:

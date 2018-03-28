@@ -2778,6 +2778,12 @@ class FittingStatistics(InteractiveConfigurable):
         definition.add_optional("minmax_wavelength_reference", "string", "reference for determining the minimum and maximum of the wavelength axis (default is both models and observations)", choices=residual_references)
         definition.add_optional("minmax_photometry_reference", "string", "reference for determining the minimum and maximum of the photometry axis (default is both models and observations)", choices=residual_references)
 
+        # Minima and maximuma
+        definition.add_optional("min_wavelength", "length_quantity", "minimum value of the wavelength axis")
+        definition.add_optional("max_wavelength", "length_quantity", "maximum value of the wavelength axis")
+        definition.add_optional("min_photometry", "photometric_quantity", "minimum value of the photometry axis")
+        definition.add_optional("max_photometry", "photometric_quantity", "maximum value of the photometry axis")
+
         # Return the definition
         return definition
 
@@ -2797,6 +2803,7 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Simulated or mock?
         simulated_or_mock = config.pop("simulated_or_mock")
+        config.pop("_path")
 
         # Simulated SEDs
         if simulated_or_mock == simulated_choice: self.plot_best_seds(generation_name, **config)
@@ -2811,7 +2818,8 @@ class FittingStatistics(InteractiveConfigurable):
 
     def plot_best_seds(self, generation_name, nsimulations=5, additional_error=None, path=None,
                        references=default_sed_references, residual_reference=default_residual_reference,
-                       minmax_wavelength_reference=None, minmax_photometry_reference=None):
+                       minmax_wavelength_reference=None, minmax_photometry_reference=None, min_wavelength=None,
+                       max_wavelength=None, min_photometry=None, max_photometry=None):
 
         """
         This function ...
@@ -2823,6 +2831,10 @@ class FittingStatistics(InteractiveConfigurable):
         :param residual_reference:
         :param minmax_wavelength_reference:
         :param minmax_photometry_reference:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param min_photometry:
+        :param max_photometry:
         :return:
         """
 
@@ -2842,6 +2854,14 @@ class FittingStatistics(InteractiveConfigurable):
         # Debugging
         log.debug("Adding the simulated SEDs ...")
 
+        # Set flags
+        if nsimulations == 1:
+            ghost = False
+            residuals = True
+        else:
+            ghost = True
+            residuals = False
+
         # Loop over the simulation names
         for index, simulation_name in enumerate(self.get_best_simulation_names(generation_name, nsimulations)):
 
@@ -2852,7 +2872,7 @@ class FittingStatistics(InteractiveConfigurable):
             sed = self.get_sed(generation_name, simulation_name)
 
             # Add the SED
-            plotter.add_sed(sed, simulation_name, ghost=True, residuals=False)
+            plotter.add_sed(sed, simulation_name, ghost=ghost, residuals=residuals)
 
         # Set residual reference
         plotter.config.residual_reference = residual_reference
@@ -2862,13 +2882,14 @@ class FittingStatistics(InteractiveConfigurable):
         plotter.config.minmax_photometry_reference = minmax_photometry_reference
 
         # Run the plotter
-        plotter.run(output=path)
+        plotter.run(output=path, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_photometry, max_flux=max_photometry)
 
     # -----------------------------------------------------------------
 
     def plot_best_fluxes(self, generation_name, nsimulations=1, additional_error=None, path=None,
                          references=default_sed_references, residual_reference=default_residual_reference,
-                         minmax_wavelength_reference=None, minmax_photometry_reference=None):
+                         minmax_wavelength_reference=None, minmax_photometry_reference=None, min_wavelength=None,
+                         max_wavelength=None, min_photometry=None, max_photometry=None):
 
         """
         This function ...
@@ -2880,6 +2901,10 @@ class FittingStatistics(InteractiveConfigurable):
         :param residual_reference:
         :param minmax_wavelength_reference:
         :param minmax_photometry_reference:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param min_photometry:
+        :param max_photometry:
         :return:
         """
 
@@ -2919,7 +2944,7 @@ class FittingStatistics(InteractiveConfigurable):
         plotter.config.minmax_photometry_reference = minmax_photometry_reference
 
         # Run the plotter
-        plotter.run(output=path)
+        plotter.run(output=path, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_photometry, max_flux=max_photometry)
 
     # -----------------------------------------------------------------
 
@@ -3227,6 +3252,7 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Simulated or mock?
         simulated_or_mock = config.pop("simulated_or_mock")
+        config.pop("_path")
 
         # Simulated
         if simulated_or_mock == simulated_choice: self.plot_sed(generation_name, simulation_name, **config)
@@ -3458,6 +3484,7 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Get the generation name
         generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_seds_definition, **kwargs)
+        config.pop("_path")
 
         # Plot
         self.plot_seds(generation_name, **config)
