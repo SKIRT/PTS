@@ -5,58 +5,73 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.launch Contains the AnalysisLauncher class.
+## \package pts.modeling.analysis.heating.launch Contains the DustHeatingContributionLauncher class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from abc import ABCMeta, abstractproperty
-
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools import filesystem as fs
+from ...core.launch.batchlauncher import BatchLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.basics.log import log
-from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
-from ...core.launch.options import LoggingOptions
-from ...core.advanced.runtimeestimator import RuntimeEstimator
-from ...core.tools.utils import lazyproperty
-from ...core.launch.launcher import SKIRTLauncher
-from .initialization import wavelengths_filename, dustgridtree_filename
+from ..misc.interface import ModelSimulationInterface, earth_name, faceon_name, edgeon_name
+from ...core.tools import formatting as fmt
+from ...core.tools.stringify import tostr
 from ...core.simulation.output import output_types as ot
-from ..misc.interface import earth_name
+from ...core.tools.utils import memoize_method, lazyproperty
 from ...core.remote.remote import Remote
-from ...core.prep.deploy import Deployer
-from ...core.remote.host import load_host
+from .initialization import wavelengths_filename, dustgridtree_filename
+from ...core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
-class AnalysisLauncherBase(AnalysisComponent):
+# Set contribution nmes
+total = "total"
+old = "old"
+young = "young"
+ionizing = "ionizing"
+unevolved = "unevolved"
+
+# All contributions
+contributions = [total, old, young, ionizing, unevolved]
+
+# -----------------------------------------------------------------
+
+# Set stellar components for different contribution simulations
+component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
+                    "young": "Young stars",
+                    "ionizing": "Ionizing stars",
+                    "unevolved": ["Young stars", "Ionizing stars"]}
+
+# -----------------------------------------------------------------
+
+class AnalysisLauncher(AnalysisComponent, ModelSimulationInterface):
 
     """
-    This class ...
+    This class...
     """
-
-    __metaclass__ = ABCMeta
-
-    # -----------------------------------------------------------------
 
     def __init__(self, *args, **kwargs):
 
         """
-        Thisn function ...
-        :param args:
+        The constructor ...
         :param kwargs:
+        :return:
         """
 
         # Call the constructor of the base class
-        super(AnalysisLauncherBase, self).__init__(*args, **kwargs)
+        AnalysisComponent.__init__(self, no_config=True)
+        #ModelSimulationInterface.__init__(self, no_config=True)
+        ModelSimulationInterface.__init__(self, *args, **kwargs)
 
-        # THE ANALYSIS RUN
+        # -- Attributes --
+
+        # The analysis run
         self.analysis_run = None
 
         # The ski file for the model
@@ -67,9 +82,65 @@ class AnalysisLauncherBase(AnalysisComponent):
         self.has_remote_input_files = False
         self.remote_input_path = None
 
+        # The SKIRT batch launcher
+        self.launcher = BatchLauncher()
+
+        # The ski files for the different contributions
+        self.ski_contributions = dict()
+
+        # The wavelength grid
+        self.wavelength_grid = None
+
+        # The instruments
+        self.instruments = dict()
+
+        # The parameter values
+        self.parameter_values = None
+
+        # The parallelization scheme (or the number of processes)
+        self.parallelization = None
+        self.nprocesses = None
+
     # -----------------------------------------------------------------
 
-    @abstractproperty
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 2. Get the model
+        self.get_model()
+
+        # 3. Load the ski file
+        self.load_ski()
+
+        # 4. Create the ski files for the different contributions
+        self.adjust_ski()
+
+        # 5. Set the simulation input paths
+        self.set_input_paths()
+
+        # 6. Set the parallelization scheme
+        self.set_parallelization()
+
+        # 7. Set analysis options
+        self.set_analysis_options()
+
+        # 8. Writing
+        self.write()
+
+        # 9. Launch the simulations
+        self.launch()
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating(self):
 
         """
@@ -77,23 +148,93 @@ class AnalysisLauncherBase(AnalysisComponent):
         :return:
         """
 
-        pass
+        return True
 
     # -----------------------------------------------------------------
 
-    @abstractproperty
-    def uses_remote(self):
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        #super(DustHeatingContributionLauncher, self).setup(**kwargs)
+        super(AnalysisLauncher, self).setup(**kwargs)
+
+        # Set options for the batch launcher
+        self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwavelengths(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        return len(self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
-    @abstractproperty
+    @lazyproperty
+    def dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.dust_grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This fnction ...
+        :return:
+        """
+
+        return self.analysis_run.dust_grid_tree
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndust_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.ncells is not None: return self.config.ncells
+        else: return self.analysis_run.ncells
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_remote: return None
+        else:
+            remote = Remote()
+            if not remote.setup(host_id=self.host_id): raise RuntimeError("Could not connect to the remote host '" + self.host_id + "'")
+            else: return remote
+
+    # -----------------------------------------------------------------
+
+    @property
     def local_input_paths(self):
 
         """
@@ -101,7 +242,512 @@ class AnalysisLauncherBase(AnalysisComponent):
         :return:
         """
 
-        pass
+        return self.analysis_run.input_paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def retrieve_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize list
+        types = []
+
+        # Add types
+        types.append(ot.logfiles)
+        types.append(ot.seds)
+        types.append(ot.total_images)
+        types.append(ot.count_images)
+        types.append(ot.cell_properties)
+        types.append(ot.stellar_density)
+        types.append(ot.absorption)
+
+        # Add temperature file retrieval
+        # if self.config.temperatures: self.launcher.config.retrieve_types.extend([ot.temperature, ot.cell_temperature])
+
+        # Return the types
+        return types
+
+    # -----------------------------------------------------------------
+
+    def set_launcher_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting options for the batch simulation launcher ...")
+
+        # Basic options
+        self.launcher.config.shared_input = True                    # The input directories for the different simulations are shared
+        self.launcher.config.group_simulations = self.config.group  # group simulations into larger jobs
+        self.launcher.config.group_walltime = self.config.group_walltime  # the preferred walltime for jobs of a group of simulations
+
+        # Set remote host
+        if self.config.remote is not None:
+            self.launcher.config.remotes = [self.config.remote]         # the remote host on which to run the simulations
+            if self.config.cluster_name is not None: self.launcher.set_cluster_for_host(self.config.remote, self.config.cluster_name)
+
+        # Logging options
+        self.launcher.config.logging.verbose = True           # verbose logging mode
+
+        ## No simulation analysis options ?
+
+        # SET THE MODELING PATH
+        self.launcher.config.analysis.modeling_path = self.config.path
+
+        # SET RETRIEVE TYPES (ONLY RELEVANT FOR REMOTE EXECUTION)
+        #self.launcher.config.retrieve_types = self.retrieve_types
+
+        # Don't retrieve and analyse after launching
+        self.launcher.config.retrieve = False
+        self.launcher.config.analyse = False
+
+        # Write the batch launcher output
+        self.launcher.config.write = True
+        self.launcher.config.path = self.heating_path
+
+        # Keep remote input and output
+        self.launcher.config.keep = self.config.keep
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.heating_path
+
+    # -----------------------------------------------------------------
+
+    def get_model(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the model ...")
+
+        # Load the model definition
+        self.definition = self.static_model_suite.get_model_definition(self.analysis_run.model_name)
+
+        # Get the parameter values
+        self.parameter_values = self.analysis_run.parameter_values
+
+        # Show the model name
+        print("")
+        print(fmt.yellow + fmt.underlined + "Model name" + fmt.reset + ": " + self.model_name)
+        if self.generation_name is not None: print(fmt.yellow + fmt.underlined + "Generation name" + fmt.reset + ": " + self.generation_name)
+        if self.simulation_name is not None: print(fmt.yellow + fmt.underlined + "Simulation name" + fmt.reset + ": " + self.simulation_name)
+        if self.chi_squared is not None: print(fmt.yellow + fmt.underlined + "Chi-squared" + fmt.reset + ": " + tostr(self.chi_squared))
+
+        # Show the parameter values
+        print("")
+        print("All model parameter values:")
+        print("")
+        for label in self.parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_values[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.generation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.chi_squared
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.fitting_run_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_fitting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.from_fitting
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_id(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        #return self.launcher.single_host_id
+        return self.config.remote
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_remote: return None
+        else: return self.launcher.single_host
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.uses_remote: return None
+        return self.launcher.get_clustername_for_host(self.host_id)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_remote(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.host_id is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_info(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.analysis_run.info
+
+    # -----------------------------------------------------------------
+
+    @property
+    def instrument_class(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return SimpleInstrument
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_instrument_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return dict()  # no specific properties
+
+    # -----------------------------------------------------------------
+
+    def load_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ski file ...")
+
+        # Load the ski file
+        self.ski = self.analysis_run.ski_file
+
+    # -----------------------------------------------------------------
+
+    def adjust_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the ski files for simulating the different contributions ...")
+
+        # 1. Set basic settings
+        self.set_basic()
+
+        # 3. Set writing options
+        self.set_writing_options()
+
+        # 4. Create the ski files for the different contributions
+        self.create_ski_contributions()
+
+        # Set the instruments
+        self.set_instruments()
+
+    # -----------------------------------------------------------------
+
+    def set_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
+
+        # Set the number of photon packages
+        self.ski.setpackages(self.config.npackages)
+
+        # Debugging
+        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
+
+        # Set dust self-absorption
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
+
+        # Debugging
+        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
+
+        # Set transient heating
+        if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
+        else: self.ski.set_grey_body_dust_emissivity()
+
+    # -----------------------------------------------------------------
+
+    def set_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the wavelength grid file ...")
+
+        # Set the name of the wavelength grid file
+        self.ski.set_file_wavelength_grid(fs.name(self.analysis_run.wavelength_grid))
+
+    # -----------------------------------------------------------------
+
+    def set_writing_options(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting writing options ...")
+
+        # Set dust system writing options
+        self.ski.set_write_convergence()
+        self.ski.set_write_density()
+        # self.ski.set_write_depth_map()
+        # self.ski.set_write_quality()
+        self.ski.set_write_cell_properties()
+        # self.ski.set_write_cells_crossed()
+
+        # EXTRA OUTPUT
+        if self.config.temperatures: self.ski.set_write_temperature()
+        if self.config.emissivities: self.ski.set_write_emissivity()
+        if self.config.isrf: self.ski.set_write_isrf()
+
+        # Write absorption
+        self.ski.set_write_absorption()
+
+        #self.ski.set_write_grid()
+
+    # -----------------------------------------------------------------
+
+    def create_ski_contributions(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adjusting stellar components for simulating the different contributions ...")
+
+        # Loop over the different contributions, create seperate ski file instance
+        for contribution in contributions:
+
+            # Debugging
+            log.debug("Adjusting ski file for the contribution of the " + contribution + " stellar population ...")
+
+            # Create a copy of the ski file instance
+            ski = self.ski.copy()
+
+            # Remove other stellar components, except for the contribution of the total stellar population
+            if contribution != total: ski.remove_stellar_components_except(component_names[contribution])
+
+            # For the simulation with only the ionizing stellar component, also write out the stellar density
+            if contribution == ionizing: ski.set_write_stellar_density()
+
+            # Add the ski file instance to the dictionary
+            self.ski_contributions[contribution] = ski
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simple_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simple_earth_instrument
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.full_earth_instrument
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simple_faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simple_faceon_instrument
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simple_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.simple_edgeon_instrument
+
+    # -----------------------------------------------------------------
+
+    def set_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding the instruments ...")
+
+        # Remove the existing instruments
+        #self.ski.remove_all_instruments()
+
+        # Add the instruments
+        #for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
+
+        # Loop over the contributions
+        for contribution in self.ski_contributions:
+
+            # Get the ski file
+            ski = self.ski_contributions[contribution]
+
+            # Remove the existing instruments
+            ski.remove_all_instruments()
+
+            # Total contribution
+            if contribution == total:
+
+                # Add instruments
+                ski.add_instrument(earth_name, self.full_earth_instrument)
+                ski.add_instrument(faceon_name, self.simple_faceon_instrument)
+                ski.add_instrument(edgeon_name, self.simple_edgeon_instrument)
+
+            # Other simulations: only simple earth instrument
+            else: ski.add_instrument(earth_name, self.simple_earth_instrument)
 
     # -----------------------------------------------------------------
 
@@ -128,10 +774,12 @@ class AnalysisLauncherBase(AnalysisComponent):
         log.info("Setting the simulation input paths ...")
 
         # No remote
-        if not self.uses_remote: self.set_input_paths_local()
+        if not self.uses_remote:
+            self.set_input_paths_local()
 
         # Remote execution
-        else: self.set_input_paths_remote()
+        else:
+            self.set_input_paths_remote()
 
     # -----------------------------------------------------------------
 
@@ -169,16 +817,20 @@ class AnalysisLauncherBase(AnalysisComponent):
         log.debug("Setting input paths for remote execution ...")
 
         # No remote files
-        if self.config.remote_input is None and self.config.remote_input_path is None: self.find_input_paths_remote()
+        if self.config.remote_input is None and self.config.remote_input_path is None:
+            self.find_input_paths_remote()
 
         # Remote files defined in a dictionary
-        elif self.config.remote_input is not None: self.set_input_paths_remote_from_dictionary()
+        elif self.config.remote_input is not None:
+            self.set_input_paths_remote_from_dictionary()
 
         # Remote input directory is specified
-        elif self.config.remote_input_path is not None: self.set_input_paths_remote_from_directory()
+        elif self.config.remote_input_path is not None:
+            self.set_input_paths_remote_from_directory()
 
         # We shouldn't get here
-        else: raise RuntimeError("We shouldn't get here")
+        else:
+            raise RuntimeError("We shouldn't get here")
 
     # -----------------------------------------------------------------
 
@@ -193,8 +845,10 @@ class AnalysisLauncherBase(AnalysisComponent):
         log.debug("Searching for input files that are already present on the remote host ...")
 
         # Find remote directory
-        if not self.heating: remote_input_path = self.find_remote_directory_with_all_input()
-        else: remote_input_path = None
+        if not self.heating:
+            remote_input_path = self.find_remote_directory_with_all_input()
+        else:
+            remote_input_path = None
 
         # Set the original paths
         self.input_paths = self.local_input_paths
@@ -217,7 +871,6 @@ class AnalysisLauncherBase(AnalysisComponent):
 
                 # Replace files that are on the remote
                 for filename in remote_input_paths:
-
                     # Replace by remote path
                     self.input_paths[filename] = remote_input_paths[filename]
 
@@ -238,7 +891,7 @@ class AnalysisLauncherBase(AnalysisComponent):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         # Get local paths
@@ -259,10 +912,10 @@ class AnalysisLauncherBase(AnalysisComponent):
 
                 # Check the wavelengths file
                 remote_wavelengths_path = fs.join(remote_input_path, wavelengths_filename)
-                #local_wavelengths_path = paths[wavelengths_filename]
+                # local_wavelengths_path = paths[wavelengths_filename]
                 remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
                 local_nwavelengths = self.nwavelengths
-                if remote_nwavelengths != local_nwavelengths: continue # the number of wavelengths is not equal
+                if remote_nwavelengths != local_nwavelengths: continue  # the number of wavelengths is not equal
 
                 # Check passed, return the directory path
                 return remote_input_path
@@ -281,10 +934,12 @@ class AnalysisLauncherBase(AnalysisComponent):
 
         # Find from this analysis run
         paths = self.find_remote_input_files_this_analysis_run()
-        if len(paths) != 0: return paths
+        if len(paths) != 0:
+            return paths
 
         # Find from other analysis runs
-        else: return self.find_remote_input_files_other_analysis_runs()
+        else:
+            return self.find_remote_input_files_other_analysis_runs()
 
     # -----------------------------------------------------------------
 
@@ -299,7 +954,7 @@ class AnalysisLauncherBase(AnalysisComponent):
         remote_paths = dict()
 
         # Get local paths
-        #paths = self.local_input_paths
+        # paths = self.local_input_paths
         filenames = self.input_filenames
 
         # Get SKIRT input paths from a previous script in this analysis run with the same host
@@ -322,7 +977,8 @@ class AnalysisLauncherBase(AnalysisComponent):
 
                     # If it is the wavelength file, check the number of wavelengths
                     if filename == wavelengths_filename:
-                        if self.heating: continue # Don't add remote wavelengths file for heating launcher
+                        if self.heating:
+                            continue  # Don't add remote wavelengths file for heating launcher
                         else:
                             remote_wavelengths_path = remote_filepath
                             remote_nwavelengths = int(self.remote.get_first_line(remote_wavelengths_path))
@@ -343,10 +999,12 @@ class AnalysisLauncherBase(AnalysisComponent):
 
         # Look in local analysis runs
         paths = self.find_remote_input_files_other_local_analysis_runs()
-        if len(paths) != 0: return paths
+        if len(paths) != 0:
+            return paths
 
         # Look in cached analysis runs
-        else: return self.find_remote_input_files_other_cached_analysis_runs()
+        else:
+            return self.find_remote_input_files_other_cached_analysis_runs()
 
     # -----------------------------------------------------------------
 
@@ -365,7 +1023,7 @@ class AnalysisLauncherBase(AnalysisComponent):
         for analysis_run_name in self.analysis_runs.names:
 
             # Only other analysis runs
-            #if analysis_run.name == self.analysis_run.name: continue
+            # if analysis_run.name == self.analysis_run.name: continue
             if analysis_run_name == self.analysis_run.name: continue
 
             # Load the analysis run
@@ -412,17 +1070,17 @@ class AnalysisLauncherBase(AnalysisComponent):
         filenames = self.input_filenames
 
         # Get the runs
-        #runs = self.cached_analysis_runs
+        # runs = self.cached_analysis_runs
 
         # Loop over the remote hosts
-        #for host_id in runs:
+        # for host_id in runs:
 
-            # Only for the host id used for simulations
-            #if host_id != self.host_id: continue
+        # Only for the host id used for simulations
+        # if host_id != self.host_id: continue
 
         # Check
-        #if self.host_id not in runs: return
-        #runs_host = runs[self.host_id]
+        # if self.host_id not in runs: return
+        # runs_host = runs[self.host_id]
 
         # None
         if not self.analysis_context.has_cached_for_host(self.host_id): return []
@@ -556,493 +1214,111 @@ class AnalysisLauncherBase(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def nwavelengths(self):
+    def set_parallelization(self):
 
         """
         This function ...
         :return:
         """
 
-        return len(self.wavelength_grid)
+        # Inform the user
+        log.info("Setting the parallelization scheme ...")
+
+        # Remote execution
+        if self.uses_remote: self.set_parallelization_remote()
+
+        # Local execution
+        else: self.set_parallelization_local()
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.dust_grid
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_grid_tree(self):
-
-        """
-        This fnction ...
-        :return:
-        """
-
-        return self.analysis_run.dust_grid_tree
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ndust_cells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.config.ncells is not None: return self.config.ncells
-        else: return self.analysis_run.ncells
-
-    # -----------------------------------------------------------------
-
-    @abstractproperty
-    def host_id(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.uses_remote: return None
-        else:
-            remote = Remote()
-            if not remote.setup(host_id=self.host_id): raise RuntimeError("Could not connect to the remote host '" + self.host_id + "'")
-            else: return remote
-
-# -----------------------------------------------------------------
-
-class AnalysisLauncher(AnalysisLauncherBase):
-    
-    """
-    This class...
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        The constructor ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(AnalysisLauncher, self).__init__(*args, **kwargs)
-
-        # -- Attributes --
-
-        # The remote SKIRT environment
-        self.launcher = SKIRTLauncher()
-
-        # The parallelization scheme (or the number of processes)
-        self.parallelization = None
-        self.nprocesses = None
-
-        # The scheduling options
-        self.scheduling_options = None
-
-        # The analysis options
-        self.analysis_options = None
-
-    # -----------------------------------------------------------------
-
-    def run(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
-
-        # 2. Load the ski file
-        self.load_ski()
-
-        # 3. Adjust the ski file
-        self.adjust_ski()
-
-        # 4. Set the input paths
-        self.set_input_paths()
-
-        # 5. Set the parallelization scheme
-        self.set_parallelization()
-
-        # 6. Estimate the runtime for the simulation
-        if self.uses_scheduler: self.estimate_runtime()
-
-        # 7. Set the analysis options
-        self.set_analysis_options()
-
-        # 8. Writing
-        self.write()
-
-        # 9. Launch the simulation
-        self.launch()
-
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(AnalysisLauncher, self).setup(**kwargs)
-
-        # NEW: GET THE RUN
-        self.analysis_run = self.get_run(self.config.run)
-
-        # Set remote (and cluster name)
-        self.launcher.config.remote = self.config.remote
-        self.launcher.config.cluster_name = self.config.cluster_name
-        self.launcher.config.attached = self.config.attached
-        self.launcher.config.keep = self.config.keep_remote_input_and_output
-        self.launcher.config.keep_input = self.config.keep_remote_input or self.config.keep_remote_input_and_output
-
-        # Clear remotes
-        if self.has_any_host_id and self.config.clear_remotes: self.clear_all_hosts()
-
-        # Deploy SKIRT and PTS
-        if self.has_any_host_id and self.config.deploy: self.deploy()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def heating(self):
+    def set_parallelization_remote(self):
 
         """
         Thins function ...
+        :param self:
         :return:
         """
 
-        return False
+        # Parallelization is defined
+        if self.config.parallelization_remote is not None:
 
-    # -----------------------------------------------------------------
+            self.parallelization = self.config.parallelization_remote
+            self.nprocesses = None
+            self.launcher.config.check_parallelization = False
 
-    @property
-    def local_input_paths(self):
+            # Set the parallelization
+            self.launcher.set_parallelization_for_host(self.host_id, self.parallelization)
 
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.input_paths
-
-    # -----------------------------------------------------------------
-
-    def clear_all_hosts(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Clearing the hosts ...")
-
-        # Setup the remote
-        if self.uses_remote:
-
-            remote = Remote()
-            if not remote.setup(self.host_id): raise RuntimeError("Could not connect to remote host '" + self.host_id + "'")
-            else:
-
-                # Debugging
-                log.debug("Claring the " + self.host_id + " remote ...")
-
-                # Clear temporary data and close sessions
-                remote.clear_temp_and_sessions()
-
-        # Setup the images remote
-        if self.uses_images_remote:
-
-            remote = Remote()
-            if not remote.setup(self.images_host_id): log.warning("Could not connect")
-            else:
-
-                # Debugging
-                log.debug("Clearing the " + self.images_host_id + " remote ...")
-
-                # Clear temporary data and close sessions
-                remote.clear_temp_and_sessions()
-
-    # -----------------------------------------------------------------
-
-    def deploy(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Deploying SKIRT and PTS where necessary ...")
-
-        # Create the deployer
-        deployer = Deployer()
-
-        # Don't do anything locally
-        deployer.config.local = False
-
-        # Set the host ids
-        deployer.config.hosts = self.all_hosts
-
-        # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
-        # that have a scheduling system to launch the pts run_queue command)
-        if self.uses_images_remote: deployer.config.pts_on = self.images_host_id #self.moderator.all_host_ids
-
-        # Check versions between local and remote
-        deployer.config.check = self.config.check_versions
-
-        # Update PTS dependencies
-        deployer.config.update_dependencies = self.config.update_dependencies
-
-        # Do clean install
-        deployer.config.clean = self.config.deploy_clean
-
-        # Pubkey pass
-        deployer.config.pubkey_password = self.config.pubkey_password
-
-        # Run the deployer
-        deployer.run()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def all_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        host_ids = []
-        if self.images_host_id is not None: host_ids.append(self.images_host_id)
-        if self.host_id is not None: host_ids.append(self.host_id)
-        return host_ids
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def all_hosts(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [load_host(host_id) for host_id in self.all_host_ids]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_any_host_id(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.images_host_id is not None or self.host_id is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def uses_any_remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_any_host_id
-
-    # -----------------------------------------------------------------
-
-    @property
-    def images_host_id(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.config.images_remote
-
-    # -----------------------------------------------------------------
-
-    @property
-    def host_id(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.launcher.host_id
-
-    # -----------------------------------------------------------------
-
-    @property
-    def host(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.launcher.host
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cluster_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.launcher.cluster_name
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.uses_remote: return None
+        # Parallelization is not defined
         else:
-            remote = Remote()
-            if not remote.setup(host_id=self.host_id): raise RuntimeError("Could not connect to the remote host '" + self.host_id + "'")
-            else: return remote
+
+            self.parallelization = None
+            self.nprocesses = self.config.nprocesses_remote
+            self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
+
+            # Set the number of processes
+            self.launcher.set_nprocesses_for_host(self.host_id, self.nprocesses)
 
     # -----------------------------------------------------------------
 
-    @property
-    def uses_remote(self):
+    def set_parallelization_local(self):
 
         """
-        Thisf unction ...
+        Thins function ...
+        :param self:
         :return:
         """
 
-        return self.host_id is not None
+        # Parallelization is defined
+        if self.config.parallelization_local is not None:
 
-    # -----------------------------------------------------------------
+            self.parallelization = self.config.parallelization_local
+            self.nprocesses = None
+            self.launcher.config.check_parallelization = False
 
-    @property
-    def uses_images_remote(self):
+        # Parallelization is not defined
+        else:
 
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.images_host_id is not None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def uses_scheduler(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.launcher.uses_scheduler
-
-    # -----------------------------------------------------------------
-
-    @property
-    def analysis_run_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def analysis_run_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def run_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.output_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def run_instruments_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.instruments_path
+            self.parallelization = None
+            self.nprocesses = self.config.nprocesses_local
+            self.launcher.config.data_parallel_local = self.config.data_parallel_local
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ski_file_path(self):
+    def analysis_options(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.analysis_run.ski_file_path
+        return AnalysisOptions()
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the analysis options ...")
+
+        # 1. Set extraction options
+        self.set_extraction_options()
+
+        # 2. Set plotting options
+        self.set_plotting_options()
+
+        # 3. Set miscellaneous options
+        self.set_misc_options()
+
+        # 4. Set other analysis options
+        self.set_other_options()
 
     # -----------------------------------------------------------------
 
@@ -1079,227 +1355,6 @@ class AnalysisLauncher(AnalysisLauncherBase):
         """
 
         return self.analysis_run.misc_path
-
-    # -----------------------------------------------------------------
-
-    def load_ski(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ski file template ...")
-
-        # Load the ski file template
-        self.ski = self.analysis_run.ski_file
-
-    # -----------------------------------------------------------------
-
-    def adjust_ski(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Adjusting the ski file parameters ...")
-
-        # Debugging
-        #log.debug("Disabling all writing settings ...")
-
-        # Disable all writing settings
-        #self.ski.disable_all_writing_options()
-
-        # Debugging
-        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
-
-        # Set the number of photon packages per wavelength
-        self.ski.setpackages(self.config.npackages)
-
-        # Debugging
-        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
-
-        # Set dust self-absorption
-        if self.config.selfabsorption: self.ski.enable_selfabsorption()
-        else: self.ski.disable_selfabsorption()
-
-        # Debugging
-        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
-
-        # Set transient heating
-        if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
-        else: self.ski.set_grey_body_dust_emissivity()
-
-        # Debugging
-        log.debug("Setting wavelength grid file ...")
-
-        # Set wavelength grid for ski file
-        self.ski.set_file_wavelength_grid(wavelengths_filename)
-
-        # Debugging
-        log.debug("Setting file tree dust grid ...")
-
-        # Set dust grid tree file
-        self.ski.set_filetree_dust_grid(dustgridtree_filename, write_grid=False)
-
-        # Debugging
-        log.debug("Enabling specific writing settings ...")
-
-        # Write temperature data
-        if self.config.temperatures: self.ski.set_write_temperature()
-
-    # -----------------------------------------------------------------
-
-    def set_parallelization(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the parallelization scheme ...")
-
-        # Set options for parallelization and number of processes
-        # Remote execution
-        if self.uses_remote:
-
-            # Parallelization is defined
-            if self.config.parallelization_remote is not None:
-
-                self.parallelization = self.config.parallelization_remote
-                self.nprocesses = None
-                self.launcher.config.check_parallelization = False
-
-            # Parallelization is not defined
-            else:
-
-                self.parallelization = None
-                self.nprocesses = self.config.nprocesses_remote
-                self.launcher.config.data_parallel_remote = self.config.data_parallel_remote
-
-        # Local execution
-        else:
-
-            # Parallelization is defined
-            if self.config.parallelization_local is not None:
-
-                self.parallelization = self.config.parallelization_local
-                self.nprocesses = None
-                self.launcher.config.check_parallelization = False
-
-            # Parallelization is not defined
-            else:
-
-                self.parallelization = None
-                self.nprocesses = self.config.nprocesses_local
-                self.launcher.config.data_parallel_local = self.config.data_parallel_local
-
-    # -----------------------------------------------------------------
-
-    # def set_parallelization(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Determining the parallelization scheme ...")
-    #
-    #     # If the host uses a scheduling system
-    #     if self.remote.scheduler:
-    #
-    #         # Debugging
-    #         log.debug("Remote host (" + self.remote.host_id + ") uses a scheduling system; determining parallelization scheme based on the requested number of nodes (" + str(self.config.nnodes) + ") ...")
-    #
-    #         # Create the parallelization scheme from the host configuration and the requested number of nodes
-    #         self.parallelization = Parallelization.for_host(self.remote.host, self.config.nnodes, self.config.data_parallel)
-    #
-    #     # If the remote host does not use a scheduling system
-    #     else:
-    #
-    #         # Debugging
-    #         log.debug("Remote host (" + self.remote.host_id + ") does not use a scheduling system; determining parallelization scheme based on the current load of the system and the requested number of cores per process (" + str(self.config.cores_per_process) + ") ...")
-    #
-    #         # Get the amount of (currently) free cores on the remote host
-    #         cores = int(self.remote.free_cores)
-    #
-    #         # Determine the number of thread to be used per core
-    #         threads_per_core = self.remote.threads_per_core if self.remote.use_hyperthreading else 1
-    #
-    #         # Create the parallelization object
-    #         self.parallelization = Parallelization.from_free_cores(cores, self.config.cores_per_process, threads_per_core, self.config.data_parallel)
-    #
-    #     # Debugging
-    #     log.debug("Parallelization scheme that will be used: " + str(self.parallelization))
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def wavelength_grid(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.analysis_run.wavelength_grid
-
-    # -----------------------------------------------------------------
-
-    def estimate_runtime(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Estimating the runtime for the simulation based on the timing of previous simulations ...")
-
-        # Create a RuntimeEstimator instance
-        estimator = RuntimeEstimator(self.timing_table)
-
-        # Estimate the runtime for the configured number of photon packages and the configured remote host
-        runtime = estimator.runtime_for(self.ski, self.parallelization, self.host_id, self.cluster_name, nwavelengths=self.nwavelengths, ncells=self.ndust_cells)
-
-        # Debugging
-        log.debug("The estimated runtime for the simulation is " + str(runtime) + " seconds")
-
-        # Create the scheduling options, set the walltime
-        self.scheduling_options = SchedulingOptions()
-        self.scheduling_options.walltime = runtime
-
-    # -----------------------------------------------------------------
-
-    def set_analysis_options(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the analysis options ...")
-
-        # Initialize the analysis options
-        self.analysis_options = AnalysisOptions()
-
-        # 1. Set extraction options
-        self.set_extraction_options()
-
-        # 2. Set plotting options
-        self.set_plotting_options()
-
-        # 3. Set miscellaneous options
-        self.set_misc_options()
-
-        # 4. Set other analysis options
-        self.set_other_options()
 
     # -----------------------------------------------------------------
 
@@ -1475,9 +1530,10 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.analysis_options.misc.images_unit = self.config.images_unit
 
         # Make images on remote host
-        self.analysis_options.misc.make_images_remote = self.images_host_id
-        self.analysis_options.misc.rebin_remote_threshold = self.config.rebin_remote_threshold
-        self.analysis_options.misc.convolve_remote_threshold = self.config.convolve_remote_threshold
+        # No, not necessary anymore
+        #self.analysis_options.misc.make_images_remote = self.images_host_id
+        #self.analysis_options.misc.rebin_remote_threshold = self.config.rebin_remote_threshold
+        #self.analysis_options.misc.convolve_remote_threshold = self.config.convolve_remote_threshold
 
         # CONVOLUTION
         # Convolution kernels
@@ -1495,8 +1551,9 @@ class AnalysisLauncher(AnalysisLauncherBase):
         self.analysis_options.misc.make_images_remote = self.config.images_remote
 
         # Nprocesses
-        self.analysis_options.misc.images_nprocesses_local = 2
-        self.analysis_options.misc.images_nprocesses_remote = 8
+        #self.analysis_options.misc.images_nprocesses_local = 2
+        #self.analysis_options.misc.images_nprocesses_remote = 8
+        self.analysis_options.misc.images_nprocesses_local = 1
 
     # -----------------------------------------------------------------
 
@@ -1532,8 +1589,8 @@ class AnalysisLauncher(AnalysisLauncherBase):
         # Write the config
         self.write_config()
 
-        # Write the ski file
-        self.write_ski()
+        # Write the ski files
+        self.write_ski_files()
 
     # -----------------------------------------------------------------
 
@@ -1545,14 +1602,14 @@ class AnalysisLauncher(AnalysisLauncherBase):
         """
 
         # Inform the user
-        log.info("Writing the configuration used to create this analysis run ...")
+        log.info("Writing the configuration ...")
 
         # Write
-        self.config.saveto(self.analysis_run.launch_config_path)
+        self.config.saveto(self.analysis_run.config_path)
 
     # -----------------------------------------------------------------
 
-    def write_ski(self):
+    def write_ski_files(self):
 
         """
         This function ...
@@ -1560,40 +1617,185 @@ class AnalysisLauncher(AnalysisLauncherBase):
         """
 
         # Inform the user
-        log.info("Writing the ski file to " + self.ski_file_path + "...")
+        log.info("Writing the ski files ...")
 
-        # Save the ski file
-        self.ski.saveto(self.ski_file_path)
+        # Loop over the contributions
+        for contribution in self.ski_contributions:
+
+            # Determine the path
+            path = self.analysis_run.heating_ski_path_for_contribution(contribution)
+
+            # Debugging
+            log.debug("Writing the ski file for the " + contribution + " stellar population to '" + path + "' ...")
+
+            # Save the ski file
+            self.ski_contributions[contribution].saveto(path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def retrieve_types(self):
+    @lazyproperty
+    def remote_host(self):
 
         """
         This function ...
         :return:
         """
 
-        # Initialize list
-        types = []
+        hosts = self.launcher.hosts
+        assert len(hosts) == 1
+        return hosts[0]
 
-        # Add the types
-        types.append(ot.logfiles)
-        types.append(ot.seds)
-        types.append(ot.total_images)
-        types.append(ot.count_images)
+    # -----------------------------------------------------------------
 
-        # Add more retrieve types
-        if self.config.retrieve_contributions:
-            types.extend([ot.direct_images, ot.transparent_images, ot.scattered_images, ot.dust_images, ot.dust_scattered_images])
+    @lazyproperty
+    def remote_host_id(self):
 
-        # Add temperature file retrieval
-        if self.config.temperatures:
-            types.extend([ot.temperature, ot.cell_temperature])
+        """
+        This function ...
+        :return:
+        """
 
-        # Return the types
-        return types
+        return self.remote_host.id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote_host.cluster_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def uses_scheduler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.uses_schedulers
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scheduling_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SchedulingOptions(**self.config.scheduling)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        path = self.analysis_run.heating_simulation_path_for_contribution(contribution)
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_output_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        path = self.analysis_run.heating_output_path_for_contribution(contribution)
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_ski_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return self.analysis_run.heating_ski_path_for_contribution(contribution)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_name_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return self.galaxy_name + "__analysis__" + self.analysis_run.name + "__" + contribution
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_definition_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        # Get the simulation path
+        # THE SIMULATION PATH IS CREATED BY CALLING THIS METHOD
+        simulation_path = self.get_simulation_path_for_contribution(contribution)
+
+        # Get the ski path for this simulation
+        ski_path = self.get_ski_path_for_contribution(contribution)
+
+        # Get the local output path for the simulation
+        output_path = self.get_output_path_for_contribution(contribution)
+
+        # Create the SKIRT simulation definition
+        definition = SingleSimulationDefinition(ski_path, output_path, self.input_paths, name=self.get_simulation_name_for_contribution(contribution))
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_scheduling_options_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        # Copy the general options
+        options = self.scheduling_options.copy()
+
+        # Set job script path
+        simulation_path = self.get_simulation_path_for_contribution(contribution)
+        options.local_jobscript_path = fs.join(simulation_path, "job.sh")
+
+        # Return the options
+        return options
 
     # -----------------------------------------------------------------
 
@@ -1605,52 +1807,52 @@ class AnalysisLauncher(AnalysisLauncherBase):
         """
 
         # Inform the user
-        log.info("Launching the simulation ...")
+        log.info("Launching the simulations ...")
 
-        # Set options
-        self.launcher.config.show_progress = True
-        self.launcher.config.debug_output = self.config.debug_output
+        # Set the path for storing the batch scripts for manual inspection
+        self.launcher.set_script_path(self.remote_host_id, self.analysis_path)
 
-        # Create the simulation definition
-        definition = SingleSimulationDefinition(self.ski_file_path, self.run_output_path, self.input_paths)
+        # Enable screen output for remotes without a scheduling system for jobs
+        if not self.uses_scheduler: self.launcher.enable_screen_output(self.remote_host_id)
 
-        # Create the logging options
-        logging = LoggingOptions(verbose=True, memory=True)
+        # Loop over the contributions
+        for contribution in contributions:
 
-        # Debugging: save the screen output in a text file (for remote execution)
-        if self.uses_remote:
-            # Determine path, relative to the remote SKIRT directory
-            #screen_output_path = fs.join("$SKIRT", "run-debug", self.analysis_run_name + ".txt") # specifying file path is (currently) not possible
-            screen_output_path = fs.join("$SKIRT", "run-debug", self.analysis_run_name)
-            # Debugging message
-            log.debug("Remote simulation output will be written to '" + screen_output_path + "'")
-        else: screen_output_path = None
+            # Get definition
+            definition = self.get_definition_for_contribution(contribution)
 
-        # Determine the path to the launching script file for manual inspection (for remote execution)
-        if self.uses_remote:
-            # Determine the path
-            local_script_path = fs.join(self.analysis_run_path, self.host_id + ".sh")
             # Debugging
-            log.debug("The launching script will be saved locally to '" + local_script_path + "'")
-        else: local_script_path = None
+            log.debug("Adding the simulation of the contribution of the " + contribution + " stellar population to the queue ...")
 
-        # Set retrieve types (only relevant for remote execution)
-        self.launcher.config.retrieve_types = self.retrieve_types
+            # Get the simulation name
+            simulation_name = self.get_simulation_name_for_contribution(contribution)
 
-        # Other settings
-        if log.is_debug(): self.launcher.config.show = True
+            # Get the analysis options for the total simulation
+            if contribution == total: analysis_options = self.analysis_options
+            else: analysis_options = None
 
-        # Show the number of dust cells
-        log.debug("The number of dust cells is " + str(self.ndust_cells) + "")
+            # Put the parameters in the queue and get the simulation object
+            self.launcher.add_to_queue(definition, simulation_name, analysis_options=analysis_options)
 
-        # Debugging
-        log.debug("Starting the SKIRT launcher ...")
+            # Set scheduling options for this simulation
+            if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.get_scheduling_options_for_contribution(contribution))
 
-        # Run the simulation
-        self.launcher.run(definition=definition, logging_options=logging, analysis_options=self.analysis_options,
-                          scheduling_options=self.scheduling_options, parallelization=self.parallelization,
-                          nprocesses=self.nprocesses, local_script_path=local_script_path,
-                          screen_output_path=screen_output_path, ncells=self.ndust_cells, remote=self.remote,  # pass remote because possibly already used here (don't connect again in the SKIRTLauncher)
-                          remote_input_path=self.remote_input_path, has_remote_input_files=self.has_remote_input_files)
+        # Set parallelization and nprocesses
+        if self.uses_remote:
+            parallelization_local = None
+            nprocesses_local = None
+        else:
+            parallelization_local = self.parallelization
+            nprocesses_local = self.nprocesses
+
+        # Memory usage
+        memory = None
+
+        # Set remote input path
+        if self.remote_input_path is not None: self.launcher.set_remote_input_path_for_host(self.host_id, self.remote_input_path)
+
+        # Run the launcher, schedules the simulations
+        self.launcher.run(memory=memory, ncells=self.ndust_cells, nwavelengths=self.nwavelengths,
+                          parallelization_local=parallelization_local, nprocesses_local=nprocesses_local)
 
 # -----------------------------------------------------------------

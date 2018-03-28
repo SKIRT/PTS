@@ -23,7 +23,7 @@ from ...core.tools.utils import lazyproperty
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder
-from ..basics.instruments import FullInstrument
+from ..basics.instruments import FullInstrument, SimpleInstrument
 from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, faceon_name
 from .run import info_filename
 from ...core.tools import formatting as fmt
@@ -31,8 +31,17 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
+# Input filenames
 wavelengths_filename = "wavelengths.txt"
 dustgridtree_filename = "tree.dat"
+
+# -----------------------------------------------------------------
+
+# Define instrument names
+full_earth_name = "earth_full"
+simple_earth_name = "earth_simple"
+simple_faceon_name = "faceon_simple"
+simple_edgeon_name = "edgeon_simple"
 
 # -----------------------------------------------------------------
 
@@ -362,42 +371,27 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
-    def get_instruments(self):
+    def create_instruments(self):
 
         """
         Thisf unction ...
         :return:
         """
 
-        # Load from representation
-        #if self.from_representation: self.load_instruments()
+        # Inform the user
+        log.info("Creating the instruments ...")
 
-        # Create new instruments
-        #else: self.create_instruments()
+        # Create full earth instrument
+        self.instruments[full_earth_name] = FullInstrument.from_projection(self.earth_projection, **self.earth_instrument_properties)
 
-        # Create from loaded projections
-        self.create_instruments()
+        # Create simple earth instrument
+        self.instruments[simple_earth_name] = SimpleInstrument.from_projection(self.earth_projection, **self.earth_instrument_properties)
 
-    # -----------------------------------------------------------------
+        # Create simple faceon instrument
+        self.instruments[simple_faceon_name] = SimpleInstrument.from_projection(self.faceon_projection)
 
-    # def load_instruments(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Loading the instruments ...")
-    #
-    #     # Set the instruments
-    #     self.instruments[earth_name] =
-    #
-    #     # Create a faceon instrument
-    #     self.instruments[faceon_name] =
-    #
-    #     # Create an edgeon instrument
-    #     self.instruments[edgeon_name] =
+        # Create simple edgeon instrument
+        self.instruments[simple_edgeon_name] = SimpleInstrument.from_projection(self.edgeon_projection)
 
     # -----------------------------------------------------------------
 
@@ -423,7 +417,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         properties = dict()
         properties["scattering_levels"] = 0 # no scattering levels
-        properties["counts"] = True # record photon counts (for Poisson noise)
+        #properties["counts"] = True # record photon counts (for Poisson noise) IS THIS WORKING?
         return properties
 
     # -----------------------------------------------------------------
@@ -769,13 +763,14 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Inform the user
         log.info("Writing the instruments ...")
 
-        # Write the SED instrument
-        self.instruments[earth_name].saveto(self.analysis_run.earth_instrument_path)
+        # Write the earth instruments
+        self.instruments[simple_earth_name].saveto(self.analysis_run.simple_earth_instrument_path)
+        self.instruments[full_earth_name].saveto(self.analysis_run.full_earth_instrument_path)
 
-        # Write the frame instrument
-        self.instruments[faceon_name].saveto(self.analysis_run.faceon_instrument_path)
+        # Write the faceon instrument
+        self.instruments[simple_faceon_name].saveto(self.analysis_run.simple_faceon_instrument_path)
 
-        # Write the simple instrument
-        self.instruments[edgeon_name].saveto(self.analysis_run.edgeon_instrument_path)
+        # Write the edgeon instrument
+        self.instruments[simple_edgeon_name].saveto(self.analysis_run.simple_edgeon_instrument_path)
 
 # -----------------------------------------------------------------

@@ -389,6 +389,10 @@ class DustGridBuilder(Configurable):
         #self.launcher.config.analysis.plotting.path = self.out_path
         #self.launcher.config.analysis.plotting.grids = True
 
+        # Don't analyse or retrieve
+        self.launcher.config.retrieve = False
+        self.launcher.config.analyse = False
+
         # Run
         self.launcher.run(definition=definition, parallelization=self.config.parallelization)
 

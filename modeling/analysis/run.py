@@ -28,7 +28,7 @@ from ...core.simulation.tree import DustGridTree
 from ...core.simulation.grids import FileTreeDustGrid, load_grid
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection, EdgeOnProjection, FaceOnProjection
-from ..basics.instruments import FullInstrument
+from ..basics.instruments import FullInstrument, SimpleInstrument
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.log import log
 from ...core.remote.remote import load_remote
@@ -91,6 +91,7 @@ class AnalysisRunInfo(SimplePropertyComposite):
 
 # -----------------------------------------------------------------
 
+# Various filenames
 dust_grid_filename = "dust_grid.dg"
 wavelength_grid_filename = "wavelength_grid.dat"
 dust_grid_build_name = "dust grid"
@@ -111,15 +112,16 @@ maps_name = "maps"
 heating_name = "heating"
 dust_grid_tree_filename = "tree.dat"
 
-# Projections
+# Projection filenames
 earth_projection_filename = "earth.proj"
 faceon_projection_filename = "faceon.proj"
 edgeon_projection_filename = "edgeon.proj"
 
-# Instruments
-earth_instrument_filename = "earth.instr"
-faceon_instrument_filename = "faceon.instr"
-edgeon_instrument_filename = "edgeon.instr"
+# Instrument filenames
+simple_earth_instrument_filename = "earth_simple.instr"
+full_earth_instrument_filename = "earth_full.instr"
+simple_faceon_instrument_filename = "faceon_simple.instr"
+simple_edgeon_instrument_filename = "edgeon_simple.instr"
 
 # -----------------------------------------------------------------
 
@@ -814,30 +816,6 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def heating_wavelength_grid_path(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
-        return fs.join(self.heating_path, wavelength_grid_filename)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def heating_instruments_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.heating_path, instruments_name)
-
-    # -----------------------------------------------------------------
-
     def heating_simulation_path_for_contribution(self, contribution):
 
         """
@@ -1335,9 +1313,6 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.dust_maps_path): fs.create_directory(self.dust_maps_path)
         if not fs.is_directory(self.young_maps_path): fs.create_directory(self.young_maps_path)
         if not fs.is_directory(self.ionizing_maps_path): fs.create_directory(self.ionizing_maps_path)
-
-        # Heating subdirectories
-        if not fs.is_directory(self.heating_instruments_path): fs.create_directory(self.heating_instruments_path)
 
     # -----------------------------------------------------------------
 
@@ -1934,18 +1909,6 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def wavelength_grid_heating(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return WavelengthGrid.from_skirt_input(self.heating_wavelength_grid_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def dust_grid(self):
 
         """
@@ -1990,20 +1953,6 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return load_dict(self.input_file_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def heating_input_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        paths = self.input_paths
-        paths[wavelengths_filename] = self.heating_wavelength_grid_path
-        return paths
 
     # -----------------------------------------------------------------
 
@@ -2158,74 +2107,98 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
-    def earth_instrument_path(self):
+    def simple_earth_instrument_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.instruments_path, earth_instrument_filename)
+        return fs.join(self.instruments_path, simple_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
-    def faceon_instrument_path(self):
+    def full_earth_instrument_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.instruments_path, faceon_instrument_filename)
+        return fs.join(self.instruments_path, full_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
-    def edgeon_instrument_path(self):
+    def simple_faceon_instrument_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.instruments_path, edgeon_instrument_filename)
+        return fs.join(self.instruments_path, simple_faceon_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simple_edgeon_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, simple_edgeon_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def earth_instrument(self):
+    def simple_earth_instrument(self):
 
         """
         This function ...
         :return:
         """
 
-        return FullInstrument.from_file(self.earth_instrument_path)
+        return SimpleInstrument.from_file(self.simple_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def faceon_instrument(self):
+    def full_earth_instrument(self):
 
         """
         This function ...
         :return:
         """
 
-        return FullInstrument.from_file(self.faceon_instrument_path)
+        return FullInstrument.from_file(self.full_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def edgeon_instrument(self):
+    def simple_faceon_instrument(self):
 
         """
         This function ...
         :return:
         """
 
-        return FullInstrument.from_file(self.edgeon_instrument_path)
+        return SimpleInstrument.from_file(self.simple_faceon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simple_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimpleInstrument.from_file(self.simple_edgeon_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -3493,18 +3466,6 @@ class CachedAnalysisRun(AnalysisRunBase):
         """
 
         return WavelengthGrid.from_skirt_input(self.wavelength_grid_path, remote=self.remote)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def wavelength_grid_heating(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
-        return WavelengthGrid.from_skirt_input(self.heating_wavelength_grid_path, remote=self.remote)
 
     # -----------------------------------------------------------------
 

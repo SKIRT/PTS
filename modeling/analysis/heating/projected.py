@@ -83,30 +83,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.heating_wavelength_grid
-
-    # -----------------------------------------------------------------
-
-    @property
-    def nwavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.heating_nwavelengths
-
-    # -----------------------------------------------------------------
-
     def setup(self, **kwargs):
 
         """

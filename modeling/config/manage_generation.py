@@ -22,6 +22,10 @@ all_host_ids = find_host_ids()
 
 # -----------------------------------------------------------------
 
+definition = definition.copy()
+
+# -----------------------------------------------------------------
+
 # The fitting run for which to explore the parameter space
 if runs.empty: raise RuntimeError("No fitting runs are present")
 elif runs.has_single: definition.add_fixed("run", "name of the fitting run", runs.single_name)

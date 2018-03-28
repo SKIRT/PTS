@@ -54,30 +54,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def heating_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.wavelength_grid_heating
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def heating_nwavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.heating_wavelength_grid)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def cell_heating_path(self):
 

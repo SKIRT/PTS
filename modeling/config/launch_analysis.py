@@ -8,41 +8,40 @@
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import find_host_ids
 from pts.modeling.core.environment import load_modeling_environment_cwd
+from pts.magic.tools import wavelengths
 from pts.modeling.config.component import definition
+from pts.core.launch.options import LoggingOptions, SchedulingOptions
 
 # -----------------------------------------------------------------
 
-# Load the modeling environment and analysis runs
+# Get the analysis runs
 environment = load_modeling_environment_cwd()
 runs = environment.analysis_runs
 
-# Determine remote hosts for simulations
-host_ids = find_host_ids()
-host_ids_suggestions = find_host_ids(schedulers=False) # suggest to not use schedulers: requires runtime to be estimated
+# -----------------------------------------------------------------
 
-# Determine the remote hosts for heavy computations (making the images)
-config = environment.modeling_configuration
-other_host_ids = config.host_ids
-if other_host_ids is None or len(other_host_ids) == 0: other_host_ids = find_host_ids(schedulers=False)
-default_other_host_id = other_host_ids[0]
+# Define the wavelength range
+# Only dust absorption and temperature are relevant?
+wavelength_range = wavelengths.wavelength_range_before_and_including("MIR")
 
 # -----------------------------------------------------------------
 
 definition = definition.copy()
 
-# Remote execution
-definition.add_optional("remote", "string", "remote host on which to launch the simulation", choices=host_ids)
-definition.add_optional("cluster_name", "string", "cluster of the remote host to use for the simulation")
-definition.add_optional("images_remote", "string", "remote host on which to make the observed images", default_other_host_id, choices=other_host_ids)
-definition.add_flag("attached", "launch remote executions in attached mode", True)
-definition.add_flag("debug_output", "show all simulation output when in debugging mode", False)
-definition.add_flag("keep_remote_input", "keep the remote input directory after the simulation is retrieved", True)  # KEEP REMOTE INPUT FOR NEW LAUNCHES AND FOR HEATING LAUNCHES
-definition.add_flag("keep_remote_input_and_output", "keep the remote input and output after the simulation is retrieved", False)
+# -----------------------------------------------------------------
 
-# ANALYSIS RUN
-if runs.empty: raise RuntimeError("No analysis runs are present (yet)")
+# THE ANALYSIS RUN
+if runs.empty: raise ValueError("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
-else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
+else: definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", runs.last_name, runs.names)
+
+# -----------------------------------------------------------------
+
+# Optional settings
+definition.add_positional_optional("remote", "string", "remote host on which to launch the simulations", choices=find_host_ids())
+definition.add_positional_optional("cluster_name", "string", "cluster of the remote host to use for the simulation")
+definition.add_flag("group", "group simulations in larger jobs")
+definition.add_optional("group_walltime", "real", "the preferred walltime per group job (for schedulers)")
 
 # -----------------------------------------------------------------
 
@@ -53,34 +52,34 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Tru
 
 # -----------------------------------------------------------------
 
-# ANALYSIS OPTIONS
+# Wavelength grid from fitting run
+definition.add_optional("wavelength_grid", "string", "wavelength grid from fitting run (only if origin is fitting run)")
 
-# Remote rebinning/convolution
-definition.add_optional("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
-definition.add_optional("convolve_remote_threshold", "data_quantity", "data size threshold for remote convolution", "1. GB", convert_default=True)
-
-# For creating observed images
-definition.add_optional("images_unit", "photometric_unit", "unit for the mock observed images", "Jy", convert_default=True)
-
-# Spectral convolution
-definition.add_flag("spectral_convolution_fluxes", "enable spectral convolution for creating observed fluxes", True)
-definition.add_flag("spectral_convolution_images", "enable spectral convolution for creating observed images", False)
+# Settings for the wavelength grid
+definition.add_section("wg", "options for the wavelength grid")
+definition.sections["wg"].add_optional("range", "quantity_range", "the wavelength range", wavelength_range)
+definition.sections["wg"].add_optional("npoints", "integer", "the number of wavelength points", 50)
+definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", True)
 
 # -----------------------------------------------------------------
 
-# Get temperature data
-definition.add_flag("temperatures", "get dust temperature data from the simulation", True)
+# Representation from model building
+definition.add_optional("representation", "string", "representation name")
 
-# Retrieval
-definition.add_flag("retrieve_contributions", "retrieve datacubes for the different contributions to the flux", True)
+# Projections/instruments
+definition.add_flag("use_grid_resolution", "use resolution of the grid for determining instrument resolution", None) # None means it is asked interactively
+definition.add_optional("resolution_reference", "string", "use the map with this name as the reference for the instrument resolution", None) # None means it is asked interactively
 
 # -----------------------------------------------------------------
 
 # The number of parallel processes for local execution
 definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")
+
+# Enable data-parallelization?
 definition.add_flag("data_parallel_local", "use data-parallelization", False)
-definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", None)
+# SET TO FALSE FOR NOW BECAUSE SOMETHING IS BROKEN: SKIRT CRASHES WHEN WRITING ABSORPTION DATA (ONLY IN DATA-PARALLEL MODE)
+definition.add_flag("data_parallel_remote", "use data-parallelization for remote execution", False)  # was None
 
 # Specify parallelization
 definition.add_optional("parallelization_local", "parallelization", "parallelization scheme for local execution")
@@ -88,21 +87,30 @@ definition.add_optional("parallelization_remote", "parallelization", "paralleliz
 
 # -----------------------------------------------------------------
 
-# DVANCED: Clear remotes
-definition.add_flag("clear_remotes", "clear temporary data and sessions on all remotes (use with care!)", False)
+definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
+definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
 
-# Deploy SKIRT and PTS
-definition.add_flag("deploy", "deploy SKIRT and PTS where necessary", False)
-definition.add_flag("check_versions", "check versions of SKIRT and PTS where necessary", True)
-definition.add_flag("update_dependencies", "update PTS dependencies", False)
-definition.add_flag("deploy_clean", "perform clean installs when deploying (use with care!)", False)
-definition.add_optional("pubkey_password", "string", "pubkey password for accessing the repo URL")
+# -----------------------------------------------------------------
+
+# Vertical extent of the total model
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
+
+# -----------------------------------------------------------------
+
+# EXTRA SIMULATION OUTPUT
+definition.add_flag("temperatures", "get dust temperature data from the simulation", False)
+definition.add_flag("emissivities", "get dust emissivity data from the simulation", False)
+definition.add_flag("isrf", "get ISRF data from the simulation", False)
+
+# -----------------------------------------------------------------
 
 # If previous launch failed, but input was already uploaded
 definition.add_optional("remote_input", "string_string_dictionary", "dictionary of input file paths, the filenames (keys) have to be those defined in the input.dat file of the analysis run")
 definition.add_optional("remote_input_path", "string", "remote directory where the uploaded input files can be found")
 
-# When the number of dust cells from the tree is known, so that tree doesn't need to be loaded
-definition.add_optional("ncells", "positive_integer", "number of dust cells")
+# -----------------------------------------------------------------
+
+# Keep?
+definition.add_flag("keep", "keep remote input and output", True) # for certainty
 
 # -----------------------------------------------------------------

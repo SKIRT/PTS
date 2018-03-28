@@ -70,8 +70,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.setup(**kwargs)
 
         # 2. Create the absorption table
-        if not self.has_absorptions: self.create_absorption_table()
-        else: self.load_absorption_table()
+        self.get_absorption_table()
 
         # 3. Calculate the heating fraction of the unevolved stellar population
         self.calculate_heating_unevolved()
@@ -111,6 +110,21 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return len(self.total_contribution_absorption_data)
+
+    # -----------------------------------------------------------------
+
+    def get_absorption_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        if not self.has_absorptions: self.create_absorption_table()
+
+        # Load the table
+        else: self.load_absorption_table()
 
     # -----------------------------------------------------------------
 
