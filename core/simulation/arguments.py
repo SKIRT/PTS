@@ -189,7 +189,9 @@ class SkirtArguments(object):
             # Get number of processes
             if "-np" in command: nprocesses = int(command.split("-np")[1].split()[0])
             elif "-n" in command: nprocesses = int(command.split("-n")[1].split()[0])
-            else: raise ValueError("Unknown MPI command")
+            else: #raise ValueError("Unknown MPI command")
+                log.warning("Unknown MPI command: '" + command.split(skirt_path)[0].strip() + "': cannot determine the number of processes")
+                nprocesses = None
 
             # Get cores per process
             if "--map-by socket" in command: cores_per_process = int(command.split("--map-by socket:pe=")[1].split()[0])

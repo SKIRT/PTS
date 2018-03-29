@@ -18,7 +18,7 @@ import os
 import warnings
 
 # Import the relevant PTS classes and modules
-from ..remote.jobscript import JobScript
+from ..remote.jobscript import JobScript, get_jobscript_properties
 from ..tools import filesystem as fs
 from ..tools import numbers
 
@@ -264,6 +264,49 @@ class SKIRTJobScript(JobScript):
 
         # Add modules to load
         for module in modules: self.import_module(module)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_lines(cls, lines, **kwargs):
+
+        """
+        This function ...
+        :param lines:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the properties
+        name, walltime, output_path, error_path, mail, nodes, ppn, header_lines, pbs_lines, modules, commands, extra_header_lines = get_jobscript_properties(lines)
+
+        # Get the SKIRT command
+        ncommands = len(commands)
+        if ncommands != 1: raise RuntimeError("Something went wrong reading the SKIRT command")
+        command = commands[0][0] # first is actual command, 1 is comment
+
+        from ..simulation.arguments import SkirtArguments
+
+        # Create arguments from SKIRT command
+        arguments = SkirtArguments.from_command(command)
+
+        # Get the remote properties
+        cluster = kwargs.pop("cluster", None)
+        remote = kwargs.pop("remote", None)
+        host_id = kwargs.pop("host_id")
+        if host_id is None:
+            if remote is None: raise ValueError("Host ID must be specified")
+            host_id = remote.id
+
+        # Bind to cores?
+        bind_to_cores = "--bind-to core" in command
+
+        # Create
+        jobscript = cls(name, arguments, host_id, cluster, arguments.skirt_path, arguments.mpirun_path, walltime, modules, mail=mail,
+                        bind_to_cores=bind_to_cores, extra_header_lines=extra_header_lines, remote=remote)
+
+        # Return
+        return jobscript
 
     # -----------------------------------------------------------------
 

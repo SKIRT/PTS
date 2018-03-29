@@ -2298,18 +2298,23 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        # Get host ID and cluster name
+        host_id = self.get_host_id_for_simulation(simulation_name)
+        #cluster_name = self.get_cluster_name_for_simulation(simulation_name)
+        cluster = self.get_cluster_for_simulation(simulation_name)
+        remote = self.get_remote(host_id)
+
         # Local job script is found
         if self.has_local_job_script(simulation_name):
 
             filepath = self.get_local_job_script_path(simulation_name)
-            return SKIRTJobScript.from_file(filepath)
+            return SKIRTJobScript.from_file(filepath, host_id=host_id, cluster=cluster, remote=remote)
 
         # Remote job script is found
         elif self.has_remote_job_script(simulation_name):
 
-            host_id = self.get_host_id_for_simulation(simulation_name)
             filepath = self.get_remote_job_script_path(simulation_name)
-            return SKIRTJobScript.from_remote_file(filepath, remote=self.get_remote(host_id))
+            return SKIRTJobScript.from_remote_file(filepath, remote, host_id=host_id, cluster=cluster)
 
         # No job script is found
         else: return None
@@ -3523,6 +3528,18 @@ class SimulationManager(InteractiveConfigurable):
 
         simulation = self.get_simulation(simulation_name)
         return load_host(simulation.host_id, simulation.cluster_name)
+
+    # -----------------------------------------------------------------
+
+    def get_cluster_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_host_for_simulation(simulation_name).cluster
 
     # -----------------------------------------------------------------
 
@@ -7981,6 +7998,9 @@ class SimulationManager(InteractiveConfigurable):
         # Loop over the simulation names
         for simulation_name in simulation_names:
 
+            # Check
+            if simulation_name in self.moved_simulation_names: raise ValueError("Simulation '" + simulation_name + "' is already moved in this session")
+
             # Check status
             if self.is_finished(simulation_name): raise ValueError("Simulation is already finished")
             if self.is_running(simulation_name): log.warning("Simulation is already running")
@@ -9791,6 +9811,9 @@ class SimulationManager(InteractiveConfigurable):
         # Get simulation name
         simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.relaunch_simulation_definition, **kwargs)
 
+        # Check
+        if simulation_name in self.relaunched_simulation_names: raise ValueError("Simulation '" + simulation_name + "' is already scheduled for relaunching")
+
         # Check simulation
         if not self.is_failed(simulation_name):
             if config.finished and self.is_finished(simulation_name):
@@ -9946,7 +9969,7 @@ class SimulationManager(InteractiveConfigurable):
         if parallelization is None: parallelization = self.get_parallelization_for_simulation(simulation_name)
 
         # Set the logging options
-        if logging_options is None: simulation_name = self.get_logging_options_for_simulation(simulation_name)
+        if logging_options is None: logging_options = self.get_logging_options_for_simulation(simulation_name)
 
         # Set the scheduling options
         if scheduling_options is None: scheduling_options = self.get_scheduling_options_for_simulation(simulation_name)
@@ -12196,7 +12219,8 @@ class SimulationManager(InteractiveConfigurable):
 
             # Show the header
             print_row(*column_names)
-            if self.has_info: print_row(*column_units)
+            #if self.has_info: print_row(*column_units)
+            if not sequences.all_none(column_units): print_row(*column_units)
 
             # Initialize columns
             if path is not None: columns = [[] for _ in column_names]

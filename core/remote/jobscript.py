@@ -160,11 +160,12 @@ class JobScript(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, **kwargs):
 
         """
         This function ...
         :param path:
+        :param kwargs:
         :return:
         """
 
@@ -174,7 +175,7 @@ class JobScript(object):
         lines = fs.get_lines(path)
 
         # Create from lines
-        script = cls.from_lines(lines)
+        script = cls.from_lines(lines, **kwargs)
         script.path = path
 
         # Return
@@ -183,12 +184,13 @@ class JobScript(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_remote_file(cls, path, remote):
+    def from_remote_file(cls, path, remote, **kwargs):
 
         """
         This function ...
         :param path:
         :param remote:
+        :param kwargs:
         :return:
         """
 
@@ -196,98 +198,41 @@ class JobScript(object):
         lines = remote.get_lines(path)
 
         # Create and return
-        return cls.from_lines(lines)
+        return cls.from_lines(lines, remote=remote, **kwargs)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_lines(cls, lines):
+    def from_lines(cls, lines, **kwargs):
 
         """
         This function ...
         :param lines:
+        :param kwargs:
         :return:
         """
 
-        name = None
-        walltime = None
-        output_path = None
-        error_path = None
-        mail = False
-        nodes = None
-        ppn = None
+        # Get the properties
+        name, walltime, output_path, error_path, mail, nodes, ppn, header_lines, pbs_lines, modules, commands, extra_header_lines = get_jobscript_properties(lines)
 
-        header_lines = []
-        pbs_lines = []
-        modules = []
-        commands = []
+        # Create
+        jobscript = cls(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
 
-        # Loop over the lines
-        body = False
-        last_comment = None
-        for line in lines:
-
-            # PBS options
-            if line.startswith("#PBS"):
-                pbs_lines.append(line.split("#PBS ")[1])
-                last_comment = None
-                body = True
-
-            # Comment or header
-            elif line.startswith("#"):
-
-                if body: last_comment = line[2:]
-                else:
-                    header_lines.append(line[2:])
-                    last_comment = None
-
-            # Module
-            elif line.startswith("module load"):
-                modules.append(line.split("module load ")[1])
-                last_comment = None
-
-            # Other not empty lines
-            elif line.strip():
-                commands.append((line, last_comment))
-                last_comment = None
-
-        #print(header_lines)
-        #print(pbs_lines)
-        #print(modules)
-        #print(commands)
-
-        extra_header_lines = []
-        for line in header_lines:
-            if line.startswith("/bin/sh"): continue
-            elif line.startswith("Batch script created with"): continue
-            else: extra_header_lines.append(line)
-
-        for line in pbs_lines:
-            if line.startswith("-m"): mail = True
-            elif line.startswith("-o"): output_path = line.split("-o ")[1]
-            elif line.startswith("-e"): error_path = line.split("-e ")[1]
-            elif line.startswith("-N"): name = line.split("-N ")[1]
-            elif line.startswith("-l"):
-                if "walltime=" in line:
-                    timeformat = line.split("walltime=")[1]
-                    hours, minutes, seconds = timeformat.split(":")
-                    walltime = float(hours) + float(minutes)/60 + float(seconds)/3600
-                elif "nodes=" in line and "ppn=" in line:
-                    nodes = int(line.split("nodes=")[1].split(":")[0])
-                    ppn = int(line.split("ppn=")[1])
-                else: raise ValueError("Unrecognized option: '" + line + "'")
-            else: raise ValueError("Unrecognized option: '" + line + "'")
+        # Set the commands and modules
+        jobscript.commands = commands
+        jobscript.modules = modules
 
         # Create the jobscript object
         # TODO: FIX API: CONSTRUCTOR ARGUMENTS OF BASE CLASS JOBSCRIPT IS DIFFERENT FROM THAT OF DERIVED CLASS SKIRTJOBSCRIPT:
         # SO THE LINE BELOW FAILS WHEN CREATING SKIRTJOBSCRIPT.FROM_FILE
         # ARGUMENTS FOR SKIRTJOBSCRIPT CONSTRUCTOR: name, arguments, host_id, cluster, skirt_path, mpi_command, walltime, modules, mail=False, bind_to_cores=False, extra_header_lines=None, remote=None
         #jobscript = cls(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
-        jobscript = JobScript(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
+        #jobscript = JobScript(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
+        # NOW THE FROM_LINES FUNCTION IS OVERRIDDEN IN THE DERIVED SKIRTJOBSCRIPT CLASS
 
         # Set the commands and modules
-        jobscript.commands = commands
-        jobscript.modules = modules
+        #jobscript.commands = commands
+        #jobscript.modules = modules
 
         # Return the object
         return jobscript
@@ -394,5 +339,96 @@ class JobScript(object):
 
         # Set the new path
         self.path = path
+
+# -----------------------------------------------------------------
+
+def get_jobscript_properties(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    name = None
+    walltime = None
+    output_path = None
+    error_path = None
+    mail = False
+    nodes = None
+    ppn = None
+
+    header_lines = []
+    pbs_lines = []
+    modules = []
+    commands = []
+
+    # Loop over the lines
+    body = False
+    last_comment = None
+    for line in lines:
+
+        # PBS options
+        if line.startswith("#PBS"):
+            pbs_lines.append(line.split("#PBS ")[1])
+            last_comment = None
+            body = True
+
+        # Comment or header
+        elif line.startswith("#"):
+
+            if body:
+                last_comment = line[2:]
+            else:
+                header_lines.append(line[2:])
+                last_comment = None
+
+        # Module
+        elif line.startswith("module load"):
+            modules.append(line.split("module load ")[1])
+            last_comment = None
+
+        # Other not empty lines
+        elif line.strip():
+            commands.append((line, last_comment))
+            last_comment = None
+
+    # print(header_lines)
+    # print(pbs_lines)
+    # print(modules)
+    # print(commands)
+
+    extra_header_lines = []
+    for line in header_lines:
+        if line.startswith("/bin/sh"):
+            continue
+        elif line.startswith("Batch script created with"):
+            continue
+        else:
+            extra_header_lines.append(line)
+
+    for line in pbs_lines:
+        if line.startswith("-m"):
+            mail = True
+        elif line.startswith("-o"):
+            output_path = line.split("-o ")[1]
+        elif line.startswith("-e"):
+            error_path = line.split("-e ")[1]
+        elif line.startswith("-N"):
+            name = line.split("-N ")[1]
+        elif line.startswith("-l"):
+            if "walltime=" in line:
+                timeformat = line.split("walltime=")[1]
+                hours, minutes, seconds = timeformat.split(":")
+                walltime = float(hours) + float(minutes) / 60 + float(seconds) / 3600
+            elif "nodes=" in line and "ppn=" in line:
+                nodes = int(line.split("nodes=")[1].split(":")[0])
+                ppn = int(line.split("ppn=")[1])
+            else:
+                raise ValueError("Unrecognized option: '" + line + "'")
+        else: raise ValueError("Unrecognized option: '" + line + "'")
+
+    # Return the properties
+    return name, walltime, output_path, error_path, mail, nodes, ppn, header_lines, pbs_lines, modules, commands, extra_header_lines
 
 # -----------------------------------------------------------------
