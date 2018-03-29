@@ -50,6 +50,7 @@ from ..core.environment import dust_name as dust_maps_name
 from ...core.data.sed import ObservedSED, SED
 from ...magic.core.datacube import DataCube
 from ...core.simulation.tree import get_nleaves
+from ..build.definition import ModelDefinition
 
 # -----------------------------------------------------------------
 
@@ -99,6 +100,7 @@ info_filename = "info.dat"
 config_filename = "config.cfg"
 launch_config_filename = "launch_config.cfg"
 input_filename = "input.dat"
+model_name = "model"
 instruments_name = "instruments"
 projections_name = "projections"
 extract_name = "extr"
@@ -284,18 +286,6 @@ class AnalysisRunBase(object):
         """
 
         return len(self.wavelength_grid)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def nwavelengths_heating(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.wavelength_grid_heating)
 
     # -----------------------------------------------------------------
 
@@ -1329,6 +1319,9 @@ class AnalysisRun(AnalysisRunBase):
 
         ## Create directories
 
+        # The directory for the model
+        if not fs.is_directory(self.model_path): fs.create_directory(self.model_path)
+
         # The directory for the projections and the instruments
         if not fs.is_directory(self.projections_path): fs.create_directory(self.projections_path)
         if not fs.is_directory(self.instruments_path): fs.create_directory(self.instruments_path)
@@ -2057,6 +2050,18 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def model_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def instruments_path(self):
 
         """
@@ -2285,6 +2290,154 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def model_definition_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_suite.get_model_path(self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_definition_stellar_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.model_definition_path, "stellar")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_definition_dust_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.model_definition_path, "dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_stellar_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.model_path, "stellar")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_dust_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.model_path, "dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_component_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the paths as a dictionary based on component name
+        return fs.directories_in_path(self.model_stellar_path, returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.stellar_component_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nstellar_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.stellar_component_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_component_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the paths as a dictionary based on component name
+        return fs.directories_in_path(self.model_dust_path, returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_component_paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.dust_component_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.nstellar_components > 0 and self.ndust_components > 0: return True
+        elif self.nstellar_components == 0 and self.ndust_components == 0: return False
+        else: raise RuntimeError("Inconsistent state of the model: there are stellar components but no dust components or vice versa")
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def model_definition(self):
 
@@ -2293,8 +2446,13 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        #from ..build.definition import ModelDefinition
-        return self.model_suite.get_model_definition(self.model_name)
+        from .initialization import create_model_definition_in_path
+
+        # Has the model definition been created yet?
+        if not self.has_model: return create_model_definition_in_path(self.model_name, self.model_path, self.model_definition_stellar_path, self.model_definition_dust_path, parameter_values=self.parameter_values)
+
+        # Create the model definition and return
+        else: return ModelDefinition(model_name, self.model_path, stellar_paths=self.stellar_component_paths, dust_paths=self.dust_component_paths)
 
     # -----------------------------------------------------------------
 
@@ -2437,6 +2595,18 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def free_parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_values.keys()
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def chi_squared(self):
 
@@ -2458,7 +2628,31 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         # Create the model and return it
-        return Model(simulation_name=self.simulation_name, chi_squared=self.chi_squared, parameter_values=self.parameter_values)
+        return Model(self.model_definition, simulation_name=self.simulation_name, chi_squared=self.chi_squared, free_parameter_labels=self.free_parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.mappings
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def normalized_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.normalized_mappings
 
     # -----------------------------------------------------------------
 

@@ -12,10 +12,27 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ..core.mappings import Mappings
 from ...core.filter.filter import parse_filter
 from ...core.tools.utils import lazyproperty
+from ...core.tools import sequences
+from ..config.parameters import distance_name, ionizing_scaleheight_name, sfr_compactness_name, fuv_young_name
+from ..config.parameters import old_scaleheight_name, position_angle_name, dust_mass_name, fuv_ionizing_name
+from ..config.parameters import metallicity_name, young_scaleheight_name, sfr_covering_name, dust_scaleheight_name
+from ..config.parameters import i1_old_name, sfr_pressure_name, inclination_name
+from ..config.parameters import modeling_parameter_labels
+from ...core.basics.containers import create_subdict
+
+# -----------------------------------------------------------------
+
+sfr_name = "SFR"
+sfr_stellar_lum_name = "SFR stellar luminosity"
+sfr_dust_lum_name = "SFR dust luminosity"
+sfr_dust_mass_name = "SFR dust mass"
 
 # -----------------------------------------------------------------
 
@@ -25,32 +42,24 @@ class Model(object):
     This class...
     """
 
-    def __init__(self, simulation_name=None, chi_squared=None, parameter_values=None):
+    def __init__(self, definition, simulation_name=None, chi_squared=None, free_parameter_labels=None):
 
         """
         The constructor ...
+        :param definition:
         :param simulation_name:
         :param chi_squared:
-        :param parameter_values:
+        :param free_parameter_labels:
         :return:
         """
 
         # The attributes
         self.simulation_name = simulation_name
         self.chi_squared = chi_squared
-        self.parameter_values = parameter_values
+        self.free_parameter_labels = free_parameter_labels if free_parameter_labels is not None else []
 
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def parameter_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.parameter_values.keys() if self.parameter_values is not None else None
+        # The model definition describing the components
+        self.definition = definition
 
     # -----------------------------------------------------------------
 
@@ -103,6 +112,81 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return modeling_parameter_labels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def other_parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.elements_not_in_other(self.parameter_labels, self.free_parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..fitting.configuration import get_definition_value
+
+        # Initialize dictionary
+        values = OrderedDict()
+
+        # Loop over all parameter labels
+        for label in self.parameter_labels:
+
+            # Get the value
+            value = get_definition_value(self.definition, label)
+
+            # Add the value
+            values[label] = value
+
+        # Return the dictionary of values
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def free_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return create_subdict(self.parameter_values, self.free_parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def other_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return create_subdict(self.parameter_values, self.other_parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @property
     def metallicity(self):
 
         """
@@ -110,7 +194,7 @@ class Model(object):
         :return:
         """
 
-        return self.parameter_values["metallicity"] if self.parameter_values is not None else None
+        return self.parameter_values[metallicity_name]
 
     # -----------------------------------------------------------------
 
@@ -122,7 +206,7 @@ class Model(object):
         :return:
         """
 
-        return self.parameter_values["sfr_compactness"] if self.parameter_values is not None else None
+        return self.parameter_values[sfr_compactness_name]
 
     # -----------------------------------------------------------------
 
@@ -134,7 +218,7 @@ class Model(object):
         :return:
         """
 
-        return self.parameter_values["sfr_pressure"] if self.parameter_values is not None else None
+        return self.parameter_values[sfr_pressure_name]
 
     # -----------------------------------------------------------------
 
@@ -146,7 +230,19 @@ class Model(object):
         :return:
         """
 
-        return self.parameter_values["sfr_covering"] if self.parameter_values is not None else None
+        return self.parameter_values[sfr_covering_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_fuv_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_values[fuv_ionizing_name]
 
     # -----------------------------------------------------------------
 
@@ -158,11 +254,8 @@ class Model(object):
         :return:
         """
 
-        # Get the FUV luminosity of the ionizing stellar component
-        fuv_luminosity = self.parameter_values["fuv_ionizing"]
-
         # Get the SFR
-        return Mappings.sfr_for_luminosity(self.metallicity, self.sfr_compactness, self.sfr_pressure, self.sfr_covering_factor, fuv_luminosity, self.fuv_wavelength)
+        return Mappings.sfr_for_luminosity(self.metallicity, self.sfr_compactness, self.sfr_pressure, self.sfr_covering_factor, self.sfr_fuv_luminosity, self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -193,6 +286,42 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def fuv_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_values[fuv_young_name]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_values[fuv_ionizing_name]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_values[dust_mass_name]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_dust_mass(self):
 
         """
@@ -205,6 +334,18 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_mass + self.sfr_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_stellar_mass(self):
 
         """
@@ -213,5 +354,26 @@ class Model(object):
         """
 
         return self.mappings.stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
+        values[sfr_name] = self.sfr
+        #values[sfr_stellar_lum_name] = self.sfr_stellar_luminosity
+        #values[sfr_dust_lum_name] = self.sfr_dust_luminosity
+        values[sfr_dust_mass_name] = self.sfr_dust_mass
+
+        # Return
+        return values
 
 # -----------------------------------------------------------------

@@ -303,14 +303,6 @@ def show_heating_info(run):
 
     print("")
 
-    # WAVELENGTH GRID
-    print("        - " + fmt.bold + "wavelength grid:" + fmt.reset)
-    print("           - " + fmt.bold + "range: " + fmt.reset + tostr(run.heating_config.wg.range))
-    print("           - " + fmt.bold + "number of points: " + fmt.reset + tostr(run.nwavelengths_heating))
-    print("           - " + fmt.bold + "emission lines: " + fmt.reset + tostr(run.heating_config.wg.add_emission_lines))
-
-    print("")
-
     # Loop over the contributions
     npackages = None
     selfabsorption = None
@@ -320,7 +312,7 @@ def show_heating_info(run):
         # Get the ski path
         #ski_path = run.heating_ski_path_for_contribution(contribution)
         #ski = SkiFile(ski_path)
-        ski = run.get_heating_ski_for_contribution(contribution)
+        ski = run.get_ski_for_contribution(contribution)
 
         if npackages is None: npackages = ski.packages()
         elif ski.packages() != npackages: raise RuntimeError("")
@@ -346,7 +338,7 @@ def show_heating_info(run):
 
     for contribution in contributions:
 
-        output_path = run.heating_output_path_for_contribution(contribution)
+        output_path = run.output_path_for_contribution(contribution)
         print("           - " + fmt.bold + contribution + ": " + fmt.reset + tostr(output_path))
 
 # -----------------------------------------------------------------

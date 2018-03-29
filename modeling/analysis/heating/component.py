@@ -86,7 +86,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_simulation_path_for_contribution(total)
+        #return self.analysis_run.heating_simulation_path_for_contribution(total)
+        return self.analysis_run.simulation_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
@@ -98,7 +99,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_ski_path_for_contribution(total)
+        #return self.analysis_run.heating_ski_path_for_contribution(total)
+        return self.analysis_run.ski_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
@@ -110,7 +112,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_output_path_for_contribution(total)
+        #return self.analysis_run.heating_output_path_for_contribution(total)
+        return self.analysis_run.output_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
@@ -266,7 +269,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_simulation_path_for_contribution(old)
+        #return self.analysis_run.heating_simulation_path_for_contribution(old)
+        return self.analysis_run.simulation_path_for_contribution(old)
 
     # -----------------------------------------------------------------
 
@@ -278,7 +282,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_ski_path_for_contribution(old)
+        #return self.analysis_run.heating_ski_path_for_contribution(old)
+        return self.analysis_run.ski_path_for_contribution(old)
 
     # -----------------------------------------------------------------
 
@@ -290,7 +295,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_output_path_for_contribution(old)
+        #return self.analysis_run.heating_output_path_for_contribution(old)
+        return self.analysis_run.output_path_for_contribution(old)
 
     # -----------------------------------------------------------------
 
@@ -422,7 +428,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_simulation_path_for_contribution(young)
+        #return self.analysis_run.heating_simulation_path_for_contribution(young)
+        return self.analysis_run.simulation_path_for_contribution(young)
 
     # -----------------------------------------------------------------
 
@@ -434,7 +441,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_ski_path_for_contribution(young)
+        #return self.analysis_run.heating_ski_path_for_contribution(young)
+        return self.analysis_run.ski_path_for_contribution(young)
 
     # -----------------------------------------------------------------
 
@@ -446,7 +454,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_output_path_for_contribution(young)
+        #return self.analysis_run.heating_output_path_for_contribution(young)
+        return self.analysis_run.output_path_for_contribution(young)
 
     # -----------------------------------------------------------------
 
@@ -578,7 +587,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_simulation_path_for_contribution(ionizing)
+        #return self.analysis_run.heating_simulation_path_for_contribution(ionizing)
+        return self.analysis_run.simulation_path_for_contribution(young)
 
     # -----------------------------------------------------------------
 
@@ -590,7 +600,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_ski_path_for_contribution(ionizing)
+        #return self.analysis_run.heating_ski_path_for_contribution(ionizing)
+        return self.analysis_run.ski_path_for_contribution(ionizing)
 
     # -----------------------------------------------------------------
 
@@ -602,7 +613,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_output_path_for_contribution(ionizing)
+        #return self.analysis_run.heating_output_path_for_contribution(ionizing)
+        return self.analysis_run.output_path_for_contribution(ionizing)
 
     # -----------------------------------------------------------------
 
@@ -734,7 +746,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_simulation_path_for_contribution(unevolved)
+        #return self.analysis_run.heating_simulation_path_for_contribution(unevolved)
+        return self.analysis_run.simulation_path_for_contribution(unevolved)
 
     # -----------------------------------------------------------------
 
@@ -746,7 +759,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_ski_path_for_contribution(unevolved)
+        #return self.analysis_run.heating_ski_path_for_contribution(unevolved)
+        return self.analysis_run.ski_path_for_contribution(unevolved)
 
     # -----------------------------------------------------------------
 
@@ -758,7 +772,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.analysis_run.heating_output_path_for_contribution(unevolved)
+        #return self.analysis_run.heating_output_path_for_contribution(unevolved)
+        return self.analysis_run.output_path_for_contribution(unevolved)
 
     # -----------------------------------------------------------------
 

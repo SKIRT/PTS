@@ -96,8 +96,9 @@ analyse_ionizing_maps | -- | analysis.maps.ionizing.IonizingMapsAnalyser | argum
 analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_heating_correlations | -- | analysis.heating.correlations.HeatingCorrelationsAnalyser | arguments | Analyse heating correlations
-
+analyse_temperature | -- | analysis.temperature.TemperatureAnalyser | arguments | Analyse the dust temperature
 cache_analysis_run | -- | analysis.cache.AnalysisRunCacher | arguments | Cache a certain analysis run to a remote host
+analysis | -- | analysis.analysis.Analysis | arguments | Run
 
 # OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)

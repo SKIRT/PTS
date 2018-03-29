@@ -259,3 +259,31 @@ class FittingContext(object):
         return tables.filtered(self.statistics, "Identifier", run_id)
 
 # -----------------------------------------------------------------
+
+def get_runs_table(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    fit_path = fs.join(modeling_path, "fit")
+    filepath = fs.join(fit_path, runs_filename)
+    return RunsTable.from_file(filepath)
+
+# -----------------------------------------------------------------
+
+def get_model_name_for_run(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    runs_table = get_runs_table(modeling_path)
+    return runs_table.model_for_run(name)
+
+# -----------------------------------------------------------------

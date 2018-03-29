@@ -31,6 +31,10 @@ from ...core.tools.stringify import tostr
 from ...evolve.solve.extremizer import genetic_definition
 from ...core.tools.utils import lazyproperty
 from ...core.basics.range import QuantityRange
+from ..config.parameters import distance_name, ionizing_scaleheight_name, sfr_compactness_name, fuv_young_name
+from ..config.parameters import old_scaleheight_name, position_angle_name, dust_mass_name, fuv_ionizing_name
+from ..config.parameters import metallicity_name, young_scaleheight_name, sfr_covering_name, dust_scaleheight_name
+from ..config.parameters import i1_old_name, sfr_pressure_name, inclination_name
 
 # -----------------------------------------------------------------
 
@@ -1895,7 +1899,50 @@ class FittingConfigurer(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def get_initial_value(model_definition, label):
+def set_definition_values(model_definition, values):
+
+    """
+    This function ...
+    :param model_definition:
+    :param values:
+    :return:
+    """
+
+    # Loop over the parameters
+    for label in values: set_definition_value(model_definition, label, values[label])
+
+# -----------------------------------------------------------------
+
+def set_definition_value(model_definition, label, value):
+
+    """
+    This function ...
+    :param model_definition:
+    :param label:
+    :param value:
+    :return:
+    """
+
+    if label == distance_name: model_definition.distance = value
+    elif label == ionizing_scaleheight_name: model_definition.ionizing_stars_scaleheight = value
+    elif label == sfr_compactness_name: model_definition.ionizing_stars_compactness = value
+    elif label == fuv_young_name: model_definition.young_stars_luminosity = value
+    elif label == old_scaleheight_name: model_definition.old_stars_scaleheight = value
+    elif label == position_angle_name: model_definition.position_angle = value
+    elif label == dust_mass_name: model_definition.dust_mass = value
+    elif label == fuv_ionizing_name: model_definition.ionizing_stars_luminosity = value
+    elif label == metallicity_name: model_definition.metallicity = value
+    elif label == young_scaleheight_name: model_definition.young_stars_scaleheight = value
+    elif label == sfr_covering_name: model_definition.ionizing_stars_covering_factor = value
+    elif label == dust_scaleheight_name: model_definition.dust_scaleheight = value
+    elif label == i1_old_name: model_definition.old_stars_luminosity = value
+    elif label == sfr_pressure_name: model_definition.ionizing_stars_pressure = value
+    elif label == inclination_name: model_definition.inclination = value
+    else: raise ValueError("Unrecognized parameter label")
+
+# -----------------------------------------------------------------
+
+def get_definition_value(model_definition, label):
 
     """
     This function ...
@@ -1904,21 +1951,21 @@ def get_initial_value(model_definition, label):
     :return:
     """
 
-    if label == "distance": return model_definition.distance #return initial_distance
-    elif label == "ionizing_scaleheight": return model_definition.ionizing_stars_scaleheight #return initial_ionizing_scaleheight
-    elif label == "sfr_compactness": return model_definition.ionizing_stars_compactness #return initial_sfr_compactness
-    elif label == "fuv_young": return model_definition.young_stars_luminosity #return initial_fuv_young
-    elif label == "old_scaleheight": return model_definition.old_stars_scaleheight #return initial_old_scaleheight
-    elif label == "position_angle": return model_definition.position_angle #return initial_position_angle
-    elif label == "dust_mass": return model_definition.dust_mass  #return initial_dust_mass
-    elif label == "fuv_ionizing": return model_definition.ionizing_stars_luminosity # return initial_fuv_ionizing
-    elif label == "metallicity": return model_definition.metallicity #return initial_metallicity
-    elif label == "young_scaleheight": return model_definition.young_stars_scaleheight #return initial_young_scaleheight
-    elif label == "sfr_covering": return model_definition.ionizing_stars_covering_factor #return initial_sfr_covering
-    elif label == "dust_scaleheight": return model_definition.dust_scaleheight #return initial_dust_scaleheight
-    elif label == "i1_old": return model_definition.old_stars_luminosity #return initial_i1_old
-    elif label == "sfr_pressure": return model_definition.ionizing_stars_pressure #return initial_sfr_pressure
-    elif label == "inclination": return model_definition.inclination #return initial_inclination
+    if label == distance_name: return model_definition.distance
+    elif label == ionizing_scaleheight_name: return model_definition.ionizing_stars_scaleheight
+    elif label == sfr_compactness_name: return model_definition.ionizing_stars_compactness
+    elif label == fuv_young_name: return model_definition.young_stars_luminosity
+    elif label == old_scaleheight_name: return model_definition.old_stars_scaleheight
+    elif label == position_angle_name: return model_definition.position_angle
+    elif label == dust_mass_name: return model_definition.dust_mass
+    elif label == fuv_ionizing_name: return model_definition.ionizing_stars_luminosity
+    elif label == metallicity_name: return model_definition.metallicity
+    elif label == young_scaleheight_name: return model_definition.young_stars_scaleheight
+    elif label == sfr_covering_name: return model_definition.ionizing_stars_covering_factor
+    elif label == dust_scaleheight_name: return model_definition.dust_scaleheight
+    elif label == i1_old_name: return model_definition.old_stars_luminosity
+    elif label == sfr_pressure_name: return model_definition.ionizing_stars_pressure
+    elif label == inclination_name: return model_definition.inclination
     else: raise ValueError("Unrecognized parameter label")
 
 # -----------------------------------------------------------------

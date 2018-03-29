@@ -21,7 +21,7 @@ from ...core.basics.containers import NamedFileList
 from .models.stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
 from .models.dust import basic_dust_map_name
 from .models.general import parameters_filename, deprojection_filename
-from ...core.basics.configuration import open_mapping
+from ...core.basics.configuration import open_mapping, save_mapping
 from ..basics.models import DeprojectionModel3D
 from ...core.tools.utils import lazyproperty
 from ..core.mappings import Mappings
@@ -29,6 +29,12 @@ from ...core.filter.filter import parse_filter
 from ...core.tools import numbers
 from ...core.units.unit import parse_unit as u
 from ..core.bruzualcharlot import create_bruzual_charlot_sed
+
+# -----------------------------------------------------------------
+
+stellar_name = "stellar"
+dust_name = "dust"
+input_name = "input"
 
 # -----------------------------------------------------------------
 
@@ -57,15 +63,40 @@ class ModelDefinition(object):
         self.dust_paths = dust_paths
 
         # Subdirectories
-        self.stellar_path = fs.create_directory_in(self.path, "stellar")
-        self.dust_path = fs.create_directory_in(self.path, "dust")
+        self.stellar_path = fs.create_directory_in(self.path, stellar_name)
+        self.dust_path = fs.create_directory_in(self.path, dust_name)
 
         # Other input
-        self.input_path = fs.create_directory_in(self.path, "input")
+        self.input_path = fs.create_directory_in(self.path, input_name)
 
     # -----------------------------------------------------------------
 
-    @property
+    @classmethod
+    def from_path(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get name
+        name = fs.name(path)
+
+        # Set paths
+        stellar_path = fs.join(path, stellar_name)
+        dust_path = fs.join(path, dust_name)
+
+        # Get stellar and dust component paths
+        stellar_paths = fs.directories_in_path(stellar_path, returns="dict")
+        dust_paths = fs.directories_in_path(dust_path, returns="dict")
+
+        # Return
+        return cls(name, path, stellar_paths=stellar_paths, dust_paths=dust_paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def own_stellar_component_names(self):
 
         """
@@ -77,7 +108,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def own_dust_component_names(self):
 
         """
@@ -89,7 +120,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def stellar_component_names(self):
 
         """
@@ -101,7 +132,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_component_names(self):
 
         """
@@ -197,7 +228,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def own_stellar_map_paths(self):
 
         """
@@ -209,7 +240,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def own_dust_map_paths(self):
 
         """
@@ -221,7 +252,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def stellar_map_paths(self):
 
         """
@@ -237,7 +268,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_map_paths(self):
 
         """
@@ -253,7 +284,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def paths_in_input(self):
 
         """
@@ -265,7 +296,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def input_paths(self):
 
         """
@@ -277,7 +308,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def models_path(self):
 
         """
@@ -289,7 +320,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def models_table_path(self):
 
         """
@@ -313,7 +344,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def maps_table_path(self):
 
         """
@@ -337,7 +368,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def original_old_map_name(self):
 
         """
@@ -348,7 +379,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def original_young_map_name(self):
 
         """
@@ -359,7 +390,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def original_ionizing_map_name(self):
 
         """
@@ -371,7 +402,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def original_dust_map_name(self):
 
         """
@@ -383,7 +414,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def description(self):
 
         """
@@ -407,7 +438,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_component_name(self):
 
         """
@@ -437,7 +468,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_map_path(self):
 
         """
@@ -462,7 +493,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_component_name(self):
 
         """
@@ -474,7 +505,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_map_path(self):
 
         """
@@ -499,7 +530,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_component_name(self):
 
         """
@@ -511,7 +542,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_map_path(self):
 
         """
@@ -536,7 +567,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_map_component_name(self):
 
         """
@@ -566,7 +597,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_map_path(self):
 
         """
@@ -579,7 +610,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_map_wcs(self):
 
         """
@@ -591,7 +622,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_map_wcs(self):
 
         """
@@ -603,7 +634,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_map_wcs(self):
 
         """
@@ -615,7 +646,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_map_wcs(self):
 
         """
@@ -627,7 +658,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_map_names(self):
 
         """
@@ -639,7 +670,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_component_names(self):
 
         """
@@ -651,7 +682,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_map_paths(self):
 
         """
@@ -663,7 +694,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_map_names(self):
 
         """
@@ -675,7 +706,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_component_names(self):
 
         """
@@ -687,7 +718,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_map_paths(self):
 
         """
@@ -699,7 +730,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_component_names_dict(self):
 
         """
@@ -713,7 +744,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_map_file_list(self):
 
         """
@@ -741,7 +772,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_map_wcs_list(self):
 
         """
@@ -769,7 +800,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_map_file_list(self):
 
         """
@@ -794,7 +825,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_dust_map_wcs(self):
 
         """
@@ -806,7 +837,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_map_wcs_list(self):
 
         """
@@ -831,7 +862,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_maps_minimum_average_pixelscale(self):
 
         """
@@ -844,7 +875,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_maps_maximum_average_pixelscale(self):
 
         """
@@ -857,7 +888,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_maps_minimum_average_pixelscale(self):
 
         """
@@ -870,7 +901,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_stellar_maps_maximum_average_pixelscale(self):
 
         """
@@ -883,7 +914,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def basic_dust_map_average_pixelscale(self):
 
         """
@@ -895,7 +926,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_component_path(self):
 
         """
@@ -908,7 +939,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_component_path(self):
 
         """
@@ -921,7 +952,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_component_path(self):
 
         """
@@ -934,7 +965,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_component_path(self):
 
         """
@@ -947,7 +978,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_component_path(self):
 
         """
@@ -960,7 +991,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_parameters_path(self):
 
         """
@@ -972,7 +1003,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_parameters_path(self):
 
         """
@@ -984,7 +1015,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_parameters_path(self):
 
         """
@@ -996,7 +1027,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_parameters_path(self):
 
         """
@@ -1008,7 +1039,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_parameters_path(self):
 
         """
@@ -1020,7 +1051,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_parameters(self):
 
         """
@@ -1032,7 +1063,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_parameters(self):
 
         """
@@ -1044,7 +1075,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_parameters(self):
 
         """
@@ -1056,7 +1087,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_parameters(self):
 
         """
@@ -1068,7 +1099,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_sed(self):
 
         """
@@ -1080,7 +1111,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_sed(self):
 
         """
@@ -1092,7 +1123,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_sfr(self):
 
         """
@@ -1126,6 +1157,23 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @ionizing_stars_pressure.setter
+    def ionizing_stars_pressure(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.ionizing_stars_parameters.pressure = value
+
+        # Save
+        save_mapping(self.ionizing_stars_parameters_path, self.ionizing_stars_parameters)
+
+    # -----------------------------------------------------------------
+
     @property
     def ionizing_stars_covering_factor(self):
 
@@ -1138,6 +1186,23 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @ionizing_stars_covering_factor.setter
+    def ionizing_stars_covering_factor(self, value):
+
+        """
+        Thisf unction ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.ionizing_stars_parameters.covering_factor = value
+
+        # Save
+        save_mapping(self.ionizing_stars_parameters_path, self.ionizing_stars_parameters)
+
+    # -----------------------------------------------------------------
+
     @property
     def ionizing_stars_compactness(self):
 
@@ -1147,6 +1212,23 @@ class ModelDefinition(object):
         """
 
         return self.ionizing_stars_parameters.compactness
+
+    # -----------------------------------------------------------------
+
+    @ionizing_stars_compactness.setter
+    def ionizing_stars_compactness(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.ionizing_stars_parameters.compactness = value
+
+        # Save
+        save_mapping(self.ionizing_stars_parameters_path, self.ionizing_stars_parameters)
 
     # -----------------------------------------------------------------
 
@@ -1198,7 +1280,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_parameters(self):
 
         """
@@ -1210,7 +1292,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_luminosity(self):
 
         """
@@ -1222,7 +1304,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_normalization_filter(self):
 
         """
@@ -1282,7 +1364,24 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @old_stars_luminosity.setter
+    def old_stars_luminosity(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.old_stars_parameters.luminosity = value
+
+        # Save
+        save_mapping(self.old_stars_parameters_path, self.old_stars_parameters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_stars_normalization_filter(self):
 
         """
@@ -1330,7 +1429,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_age(self):
 
         """
@@ -1354,7 +1453,24 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @young_stars_luminosity.setter
+    def young_stars_luminosity(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.young_stars_parameters.luminosity = value
+
+        # Save
+        save_mapping(self.young_stars_parameters_path, self.young_stars_parameters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def young_stars_normalization_filter(self):
 
         """
@@ -1402,7 +1518,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_age(self):
 
         """
@@ -1426,7 +1542,24 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @ionizing_stars_luminosity.setter
+    def ionizing_stars_luminosity(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.ionizing_stars_parameters.luminosity = value
+
+        # Save
+        save_mapping(self.ionizing_stars_parameters_path, self.ionizing_stars_parameters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ionizing_stars_normalization_filter(self):
 
         """
@@ -1454,7 +1587,7 @@ class ModelDefinition(object):
     def ionizing_stars_neutral_luminosity(self):
 
         """
-        This functino ...
+        This function ...
         :return:
         """
 
@@ -1486,6 +1619,23 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @dust_mass.setter
+    def dust_mass(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.dust_parameters.mass = value
+
+        # Save
+        save_mapping(self.dust_parameters_path, self.dust_parameters)
+
+    # -----------------------------------------------------------------
+
     @property
     def old_stars_scaleheight(self):
 
@@ -1495,6 +1645,23 @@ class ModelDefinition(object):
         """
 
         return self.old_stars_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    @old_stars_scaleheight.setter
+    def old_stars_scaleheight(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.old_stars_parameters.scale_height = value
+
+        # Save
+        save_mapping(self.old_stars_parameters_path, self.old_stars_parameters)
 
     # -----------------------------------------------------------------
 
@@ -1510,6 +1677,23 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @young_stars_scaleheight.setter
+    def young_stars_scaleheight(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.young_stars_parameters.scale_height = value
+
+        # Save
+        save_mapping(self.young_stars_parameters_path, self.young_stars_parameters)
+
+    # -----------------------------------------------------------------
+
     @property
     def ionizing_stars_scaleheight(self):
 
@@ -1519,6 +1703,23 @@ class ModelDefinition(object):
         """
 
         return self.ionizing_stars_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    @ionizing_stars_scaleheight.setter
+    def ionizing_stars_scaleheight(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the new scale height
+        self.ionizing_stars_parameters.scale_height = value
+
+        # Save
+        save_mapping(self.ionizing_stars_parameters_path, self.ionizing_stars_parameters)
 
     # -----------------------------------------------------------------
 
@@ -1534,7 +1735,24 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @dust_scaleheight.setter
+    def dust_scaleheight(self, value):
+
+        """
+        Thisf unction ...
+        :param value:
+        :return:
+        """
+
+        # Set the new value
+        self.dust_parameters.scale_height = value
+
+        # Save
+        save_mapping(self.dust_parameters_path, self.dust_parameters)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_stars_deprojection_path(self):
 
         """
@@ -1546,7 +1764,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_deprojection_path(self):
 
         """
@@ -1558,7 +1776,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_deprojection_path(self):
 
         """
@@ -1570,7 +1788,7 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_deprojection_path(self):
 
         """
@@ -1579,6 +1797,78 @@ class ModelDefinition(object):
         """
 
         return fs.join(self.dust_component_path, deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_deprojection_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        return fs.join(self.stellar_paths[component_name], deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojection_path(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        return fs.join(self.dust_paths[component_name], deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    def has_stellar_deprojection(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_stellar_deprojection_path(component_name))
+
+    # -----------------------------------------------------------------
+
+    def has_dust_deprojection(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        return fs.is_file(self.get_dust_deprojection_path(component_name))
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_deprojection(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        return DeprojectionModel3D.from_file(self.get_stellar_deprojection_path(component_name))
+
+    # -----------------------------------------------------------------
+
+    def get_dust_deprojection(self, component_name):
+
+        """
+        This function ...
+        :param component_name:
+        :return:
+        """
+
+        return DeprojectionModel3D.from_file(self.get_dust_deprojection_path(component_name))
 
     # -----------------------------------------------------------------
 
@@ -1594,6 +1884,41 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @distance.setter
+    def distance(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: REDO THE CONVERSION FROM FLUX TO LUMINOSITIES BASED ON THE NEW DISTANCE?
+
+        # Loop over the stellar components
+        for component_name in self.stellar_component_names:
+            if not self.has_stellar_deprojection(component_name): continue
+
+            # Load the deprojection
+            deprojection = self.get_stellar_deprojection(component_name)
+
+            # Set the new distance and save
+            deprojection.galaxy_distance = value
+            deprojection.save()
+
+        # Loop over the dust components
+        for component_name in self.dust_component_names:
+            if not self.has_dust_deprojection(component_name): continue
+
+            # Load the deprojection
+            deprojection = self.get_dust_deprojection(component_name)
+
+            # Set the new distance and save
+            deprojection.galaxy_distance = value
+            deprojection.save()
+
+    # -----------------------------------------------------------------
+
     @property
     def inclination(self):
 
@@ -1603,6 +1928,39 @@ class ModelDefinition(object):
         """
 
         return self.old_stars_deprojection.inclination
+
+    # -----------------------------------------------------------------
+
+    @inclination.setter
+    def inclination(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Loop over the stellar components
+        for component_name in self.stellar_component_names:
+            if not self.has_stellar_deprojection(component_name): continue
+
+            # Get the deprojection
+            deprojection = self.get_stellar_deprojection(component_name)
+
+            # Set the new value and save
+            deprojection.inclination = value
+            deprojection.save()
+
+        # Loop over the dust components
+        for component_name in self.dust_component_names:
+            if not self.has_dust_deprojection(component_name): continue
+
+            # Get the deprojection
+            deprojection = self.get_dust_deprojection(component_name)
+
+            # Set the new value and save
+            deprojection.inclination = value
+            deprojection.save()
 
     # -----------------------------------------------------------------
 
@@ -1618,6 +1976,39 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @position_angle.setter
+    def position_angle(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Loop over the stellar components
+        for component_name in self.stellar_component_names:
+            if not self.has_stellar_deprojection(component_name): continue
+
+            # Get the deprojection
+            deprojection = self.get_stellar_deprojection(component_name)
+
+            # Set the new value and save
+            deprojection.position_angle = value
+            deprojection.save()
+
+        # Loop over the dust components
+        for component_name in self.dust_component_names:
+            if not self.has_dust_deprojection(component_name): continue
+
+            # Get the deprojection
+            deprojection = self.get_dust_deprojection(component_name)
+
+            # Set the new value and save
+            deprojection.position_angle = value
+            deprojection.save()
+
+    # -----------------------------------------------------------------
+
     @property
     def metallicity(self):
 
@@ -1627,6 +2018,30 @@ class ModelDefinition(object):
         """
 
         return self.old_stars_parameters.metallicity
+
+    # -----------------------------------------------------------------
+
+    @metallicity.setter
+    def metallicity(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Loop over the stellar components
+        for component_name in self.stellar_component_names:
+
+            # Get the parameters path
+            path = self.get_stellar_component_parameters_path(component_name)
+
+            # Load the parameters
+            parameters = self.get_stellar_component_parameters(component_name)
+
+            # Set the new metallicity and save
+            parameters.metallicity = value
+            save_mapping(path, parameters)
 
     # -----------------------------------------------------------------
 

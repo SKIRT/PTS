@@ -2213,7 +2213,7 @@ class FittingRun(object):
         parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
         # Create a 'Model' object and return it
-        return Model(simulation_name=best_simulation_name, chi_squared=chi_squared, parameter_values=parameter_values)
+        return Model(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared, parameter_values=parameter_values)
 
     # -----------------------------------------------------------------
 
@@ -3636,11 +3636,19 @@ def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
-    :param modeling_path:
-    :param fitting_run:
-    :param generation_name:
+    :param modeling_path: the modeling path
+    :param fitting_run: the fitting run name
+    :param generation_name: the generation name
     :return:
     """
+
+    from .context import get_model_name_for_run
+
+    # Get the model name
+    model_name = get_model_name_for_run(modeling_path, fitting_run)
+
+    # Get the model definition
+    definition = get_model_definition(modeling_path, model_name)
 
     # Open the chi squared table
     chi_squared_table = get_chi_squared_table(modeling_path, fitting_run, generation_name)
@@ -3658,7 +3666,7 @@ def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
     parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
     # Create a 'Model' object and return it
-    return Model(simulation_name=best_simulation_name, chi_squared=chi_squared, parameter_values=parameter_values)
+    return Model(definition, simulation_name=best_simulation_name, chi_squared=chi_squared, parameter_values=parameter_values)
 
 # -----------------------------------------------------------------
 

@@ -28,6 +28,7 @@ from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, 
 from .run import info_filename
 from ...core.tools import formatting as fmt
 from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ..build.definition import ModelDefinition
 
 # -----------------------------------------------------------------
 
@@ -652,6 +653,9 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Write the instruments
         self.write_instruments()
 
+        # Write the model
+        self.write_model()
+
     # -----------------------------------------------------------------
 
     def write_config(self):
@@ -784,5 +788,84 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Write the edgeon instrument
         self.instruments[simple_edgeon_name].saveto(self.analysis_run.simple_edgeon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_definition_stellar_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.definition.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_definition_dust_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.definition.dust_path
+
+    # -----------------------------------------------------------------
+
+    def write_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model ...")
+
+        # Create
+        create_model_definition_in_path(self.model_name, self.analysis_run.model_path, self.model_definition_stellar_path,
+                                        self.model_definition_dust_path, parameter_values=self.parameter_values)
+
+# -----------------------------------------------------------------
+
+def create_model_definition_in_path(model_name, model_path, from_stellar_path, from_dust_path, parameter_values=None):
+
+    """
+    This function ...
+    :param model_name:
+    :param model_path:
+    :param from_stellar_path:
+    :param from_dust_path:
+    :param parameter_values:
+    :return:
+    """
+
+    from ..fitting.configuration import set_definition_values
+
+    # Set the model stellar and dust path
+    stellar_path = fs.create_directory_in(model_path, "stellar")
+    dust_path = fs.create_directory_in(model_path, "dust")
+
+    # Copy the stellar component directories
+    fs.copy_directories_from_directory(from_stellar_path, stellar_path)
+
+    # Copy the dust component directories
+    fs.copy_directories_from_directory(from_dust_path, dust_path)
+
+    # Get the paths
+    stellar_paths = fs.directories_in_path(stellar_path, returns="dict")
+    dust_paths = fs.directories_in_path(dust_path, returns="dict")
+
+    # Load the definition
+    definition = ModelDefinition(model_name, model_path, stellar_paths, dust_paths)
+
+    # Adjust parameters
+    if parameter_values is not None: set_definition_values(definition, parameter_values)
+
+    # Return the definition
+    return definition
 
 # -----------------------------------------------------------------

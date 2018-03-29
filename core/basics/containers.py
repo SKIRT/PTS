@@ -1258,7 +1258,7 @@ def create_subdict(dictionary, keys):
     :return:
     """
 
-    new = dict()
+    new = OrderedDict()
     for key in keys: new[key] = dictionary[key]
     return new
 

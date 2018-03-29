@@ -437,7 +437,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
 
         # Generate the distribution
-        self.distribution = Distribution.from_values("Heating fraction", self.valid_heating_fractions, nbins=20, weights=self.valid_cell_weights)
+        self.distribution = Distribution.from_values("Heating fraction", self.valid_heating_fractions, nbins=self.config.nbins, weights=self.valid_cell_weights)
 
     # -----------------------------------------------------------------
 
@@ -452,7 +452,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the radial distribution of heating fractions of the unevolved stellar population ...")
 
         # Generate the radial distribution
-        self.radial_distribution = Distribution2D.from_values(self.valid_radii, self.valid_heating_fractions, weights=self.valid_cell_weights, x_name="radius (pc)", y_name="Heating fraction of unevolved stars")
+        self.radial_distribution = Distribution2D.from_values(self.valid_radii, self.valid_heating_fractions,
+                                                              weights=self.valid_cell_weights, x_name="radius (pc)",
+                                                              y_name="Heating fraction of unevolved stars", nbins=self.config.nradial_bins)
 
     # -----------------------------------------------------------------
 
