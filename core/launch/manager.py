@@ -1707,16 +1707,16 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_logfiles(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
-        #return self.get_simulation(simulation_name).logfiles()
+    # @memoize_method
+    # def get_logfiles(self, simulation_name):
+    #
+    #     """
+    #     This function ...
+    #     :param simulation_name:
+    #     :return:
+    #     """
+    #
+    #     return self.get_simulation(simulation_name).logfiles()
 
     # -----------------------------------------------------------------
 
@@ -1728,7 +1728,10 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).total_runtime * u("s")
+        if self.has_logfile(simulation_name):
+            runtime = self.get_logfile(simulation_name).total_runtime
+            if runtime is None: return None
+            else: return runtime * u("s")
         else: return None
 
     # -----------------------------------------------------------------
@@ -1741,7 +1744,10 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).peak_memory * u("GB")
+        if self.has_logfile(simulation_name):
+            memory = self.get_logfile(simulation_name).peak_memory
+            if memory is None: return None
+            else: return memory * u("GB")
         else: return None
 
     # -----------------------------------------------------------------
@@ -6378,7 +6384,6 @@ class SimulationManager(InteractiveConfigurable):
         """
         This function ...
         :param command:
-        :param command_definition:
         :param name:
         :param index:
         :param required:
@@ -6394,7 +6399,7 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_host_and_parallelization_command_definition(self, command_definition=None, required_to_optional=True):
+    def get_host_parallelization_command_definition(self, command_definition=None, required_to_optional=True):
 
         """
         This function ...
@@ -6420,7 +6425,7 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def parse_host_and_parallelization_command(self, command, command_definition=None, name=None, index=1,
+    def parse_host_parallelization_command(self, command, command_definition=None, name=None, index=1,
                                                required_to_optional=True, interactive=False):
 
         """
@@ -6442,7 +6447,7 @@ class SimulationManager(InteractiveConfigurable):
         parse_command = splitted[index:]
 
         # Get the definition
-        definition = self.get_host_and_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
+        definition = self.get_host_parallelization_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get settings interactively
         if interactive: config = prompt_settings(name, definition, initialize=False, add_logging=False, add_cwd=False, add_config_path=False)
@@ -6471,7 +6476,7 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         # Parse
-        splitted, host, parallelization, config = self.parse_host_and_parallelization_command(command, name=name, index=index, interactive=interactive)
+        splitted, host, parallelization, config = self.parse_host_parallelization_command(command, name=name, index=index, interactive=interactive)
 
         # Return
         return host, parallelization
@@ -14030,6 +14035,19 @@ class SimulationManager(InteractiveConfigurable):
 
         # Plot the timeline
         plot_timeline(timeline, path=path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_scaling_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
 
     # -----------------------------------------------------------------
 

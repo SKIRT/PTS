@@ -948,6 +948,8 @@ class InteractiveConfigurable(Configurable):
         if main_command is None: name = key
         else: name = main_command + " " + key
 
+        #print(key, definition)
+
         # Get usage lines
         if subject is None: usage = self.get_usage_command(definition, name=name)
         else:
