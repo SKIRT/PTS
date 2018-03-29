@@ -252,9 +252,6 @@ class LogFile(object):
         :return:
         """
 
-        print(self.t_0)
-        print(self.t_last)
-
         seconds = (self.t_last - self.t_0).total_seconds()
         return seconds
 

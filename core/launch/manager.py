@@ -1678,18 +1678,6 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    # def get_log_path(self, simulation_name):
-    #
-    #     """
-    #     This function ...
-    #     :param simulation_name:
-    #     :return:
-    #     """
-    #
-    #     return self.get_simulation(simulation_name).log_file_path
-
-    # -----------------------------------------------------------------
-
     def has_logfile(self, simulation_name):
 
         """

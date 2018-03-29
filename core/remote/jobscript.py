@@ -279,7 +279,11 @@ class JobScript(object):
             else: raise ValueError("Unrecognized option: '" + line + "'")
 
         # Create the jobscript object
-        jobscript = cls(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
+        # TODO: FIX API: CONSTRUCTOR ARGUMENTS OF BASE CLASS JOBSCRIPT IS DIFFERENT FROM THAT OF DERIVED CLASS SKIRTJOBSCRIPT:
+        # SO THE LINE BELOW FAILS WHEN CREATING SKIRTJOBSCRIPT.FROM_FILE
+        # ARGUMENTS FOR SKIRTJOBSCRIPT CONSTRUCTOR: name, arguments, host_id, cluster, skirt_path, mpi_command, walltime, modules, mail=False, bind_to_cores=False, extra_header_lines=None, remote=None
+        #jobscript = cls(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
+        jobscript = JobScript(name, walltime, nodes, ppn, output_path=output_path, error_path=error_path, mail=mail, extra_header_lines=extra_header_lines)
 
         # Set the commands and modules
         jobscript.commands = commands
