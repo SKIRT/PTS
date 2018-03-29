@@ -1211,7 +1211,7 @@ def get_spectra_info(lines, start_index):
     progress = None
     extra = None
 
-    nprocesses = get_nprocesses(lines)
+    #nprocesses = get_nprocesses(lines)
     total_entries = None
     entries_per_process = None
 
@@ -1230,7 +1230,7 @@ def get_spectra_info(lines, start_index):
 
             # Get the total number of library entries in use and the number of entries per process
             total_entries = int(line.split("use: ")[1].split(" out of")[0])
-            entries_per_process = total_entries / nprocesses
+            #entries_per_process = total_entries / nprocesses
 
             # Initial value of progress
             progress = 0.

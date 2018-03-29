@@ -82,6 +82,7 @@ from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from ..simulation.definition import SingleSimulationDefinition
 from ..simulation.remote import get_simulation_for_host
 from ..tools import introspection
+from ..simulation.logfile import LogFile
 
 # -----------------------------------------------------------------
 
@@ -569,7 +570,7 @@ class NewSimulationsTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        self.set_value("ID", index, new_id)
+        self.set_value("ID", index, id)
 
 # -----------------------------------------------------------------
 
@@ -578,6 +579,7 @@ _job_extra_name = "job"
 _disk_extra_name = "disk"
 _runtime_extra_name = "runtime"
 _memory_extra_name = "memory"
+_elapsed_extra_name = "elapsed"
 
 # -----------------------------------------------------------------
 
@@ -588,6 +590,7 @@ extra_columns[_job_extra_name] = "job ID"
 extra_columns[_disk_extra_name] = "simulation output disk size"
 extra_columns[_runtime_extra_name] = "total simulation runtime"
 extra_columns[_memory_extra_name] = "peak simulation memory usage"
+extra_columns[_elapsed_extra_name] = "elapsed time since start of simulation"
 
 # Define extra column names
 extra_column_names = dict()
@@ -596,12 +599,14 @@ extra_column_names[_job_extra_name] = "Job ID"
 extra_column_names[_disk_extra_name] = "Disk size"
 extra_column_names[_runtime_extra_name] = "Runtime"
 extra_column_names[_memory_extra_name] = "Peak memory"
+extra_column_names[_elapsed_extra_name] = "Elapsed time"
 
 # Define extra column units
 extra_column_units = dict()
 extra_column_units[_disk_extra_name] = "GB"
 extra_column_units[_runtime_extra_name] = "h"
 extra_column_units[_memory_extra_name] = "GB"
+extra_column_units[_elapsed_extra_name] = "h"
 
 # -----------------------------------------------------------------
 
@@ -1673,15 +1678,15 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_log_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
-        return self.get_simulation(simulation_name).log_file_path
+    # def get_log_path(self, simulation_name):
+    #
+    #     """
+    #     This function ...
+    #     :param simulation_name:
+    #     :return:
+    #     """
+    #
+    #     return self.get_simulation(simulation_name).log_file_path
 
     # -----------------------------------------------------------------
 
@@ -1693,7 +1698,8 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        return self.get_simulation(simulation_name).has_logfile
+        #return self.get_simulation(simulation_name).has_logfile
+        return self.has_local_log(simulation_name) or self.has_remote_log(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -1706,7 +1712,10 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        return self.get_simulation(simulation_name).log_file
+        #return self.get_simulation(simulation_name).log_file
+
+        if self.has_local_log(simulation_name): return LogFile(self.get_local_log_path(simulation_name))
+        elif self.has_remote_log(simulation_name): return LogFile.from_remote_file(self.get_remote_log_path(simulation_name), self.get_remote_for_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -1719,7 +1728,7 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        return self.get_simulation(simulation_name).logfiles()
+        #return self.get_simulation(simulation_name).logfiles()
 
     # -----------------------------------------------------------------
 
@@ -1745,6 +1754,19 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).peak_memory * u("GB")
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_elapsed_time(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).elapsed_time * u("s")
         else: return None
 
     # -----------------------------------------------------------------
@@ -1822,6 +1844,95 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         return self.get_simulation(simulation_name).host_id
+
+    # -----------------------------------------------------------------
+
+    def get_local_log_path(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Determine the path to the simulation log file
+        local_log_file_path = simulation.log_file_path
+
+        # Return the filepath        
+        return local_log_file_path
+
+    # -----------------------------------------------------------------
+
+    def has_local_log(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        filepath = self.get_local_log_path(simulation_name)
+        return fs.is_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_remote_log_path(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return:
+        """
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Get the remote
+        remote = self.get_remote(simulation.host_id)
+
+        # The path to the simulation log file
+        remote_log_file_path = simulation.remote_log_file_path
+
+        # Return the filepath
+        return remote_log_file_path
+
+    # -----------------------------------------------------------------
+
+    def has_remote_log(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        filepath = self.get_remote_log_path(simulation_name)
+        return self.get_remote_for_simulation(simulation_name).is_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_log_lines(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        # Simulation is retrieved
+        if self.is_retrieved(simulation_name): lines = fs.read_lines(self.get_local_log_path(simulation_name))
+
+        # Not yet retrieved, has remote log output already?
+        elif self.has_remote_log(simulation_name): lines = self.get_remote_for_simulation(simulation_name).read_lines(self.get_remote_log_path(simulation_name))
+
+        # No output yet
+        else: lines = []
+
+        # Return the lines
+        return lines
 
     # -----------------------------------------------------------------
 
@@ -6790,32 +6901,8 @@ class SimulationManager(InteractiveConfigurable):
         # Debugging
         log.debug("Showing log output of simulation '" + simulation_name + "' ...")
 
-        # Get the simulation
-        simulation = self.get_simulation(simulation_name)
-
-        # Simulation is retrieved
-        if simulation.retrieved:
-
-            # Determine the path to the simulation log file
-            local_log_file_path = simulation.log_file_path
-
-            # Read the log file
-            lines = fs.read_lines(local_log_file_path)
-
-        # Not yet retrieved
-        else:
-
-            # Get the remote
-            remote = self.get_remote(simulation.host_id)
-
-            # The path to the simulation log file
-            remote_log_file_path = simulation.remote_log_file_path
-
-            # Check whether the log file exists
-            if not remote.is_file(remote_log_file_path): raise RuntimeError("The log file does not (yet) exist remotely")
-
-            # Read the log file
-            lines = remote.read_lines(remote_log_file_path)
+        # Get the log lines
+        lines = self.get_log_lines(simulation_name)
 
         # Show the lines
         self.show_simulation_output_lines(lines, summarize=summarize, short=short)
@@ -6840,6 +6927,10 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get the screen output lines for the simulation
         lines = self.get_screen_output(simulation_name)
+        nlines = len(lines)
+        if nlines == 0:
+            log.warning("No screen output for simulation '" + simulation_name + "'")
+            return
 
         # Show the lines
         self.show_simulation_output_lines(lines, summarize=summarize, short=short)
@@ -12173,13 +12264,7 @@ class SimulationManager(InteractiveConfigurable):
                 # Add extra columns
                 if extra is not None:
                     for col in extra:
-                        if col == _screen_extra_name: value = self.get_screen_name(simulation_name)
-                        elif col == _job_extra_name: value = self.get_job_id_string(simulation_name)
-                        elif col == _disk_extra_name: value = self.get_disk_size(simulation_name)
-                        elif col == _runtime_extra_name: value = self.get_runtime(simulation_name)
-                        elif col == _memory_extra_name: value = self.get_peak_memory(simulation_name)
-                        else: raise ValueError("Invalid extra column name: '" + col + "'")
-                        if col in extra_column_units and value is not None: value = value.to(extra_column_units[col]).value
+                        value = self.get_extra_info_for_simulation(simulation_name, col)
                         string = tostr(value) if value is not None else "--"
                         parts.append(string)
 
@@ -12201,6 +12286,32 @@ class SimulationManager(InteractiveConfigurable):
 
         # Save the table
         if table is not None and path is not None: table.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_extra_info_for_simulation(self, simulation_name, name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param name:
+        :return:
+        """
+
+        # Get the value
+        if name == _screen_extra_name: value = self.get_screen_name(simulation_name)
+        elif name == _job_extra_name: value = self.get_job_id_string(simulation_name)
+        elif name == _disk_extra_name: value = self.get_disk_size(simulation_name)
+        elif name == _runtime_extra_name: value = self.get_runtime(simulation_name)
+        elif name == _memory_extra_name: value = self.get_peak_memory(simulation_name)
+        elif name == _elapsed_extra_name: value = self.get_elapsed_time(simulation_name)
+        else: raise ValueError("Invalid extra column name: '" + name + "'")
+
+        # Add unit?
+        if name in extra_column_units and value is not None: value = value.to(extra_column_units[name]).value
+
+        # Return
+        return value
 
     # -----------------------------------------------------------------
 

@@ -52,6 +52,19 @@ invalid_name = "invalid"
 
 # -----------------------------------------------------------------
 
+# started means that we can expect log output: also crashed, aborted etc.
+def is_started(stat):
+
+    """
+    This function ...
+    :param stat:
+    :return:
+    """
+
+    return is_finished_status(stat) or is_running_status(stat) or is_aborted_status(stat) or is_crashed_status(stat)
+
+# -----------------------------------------------------------------
+
 def is_analysed_status(stat):
 
     """

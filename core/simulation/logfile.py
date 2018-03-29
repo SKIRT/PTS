@@ -244,6 +244,22 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def elapsed_time(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print(self.t_0)
+        print(self.t_last)
+
+        seconds = (self.t_last - self.t_0).total_seconds()
+        return seconds
+
+    # -----------------------------------------------------------------
+
     @property
     def has_memory(self):
 
@@ -1089,16 +1105,6 @@ def parse(path):
     :return:
     """
 
-    # Initialize lists for the columns
-    times = []
-    phases = []
-    messages = []
-    types = []
-    memories = []
-
-    verbose_logging = None
-    memory_logging = None
-
     # Open the log file
     with open(path, 'r') as fh: return parse_from_lines(fh)
 
@@ -1327,6 +1333,7 @@ def get_nprocesses(lines):
 
     # Get line of the log file which states that the simulation is starting
     start = get_start_line(lines)
+    if start is None: return None
 
     # Read number of processes from "Starting simulation ..." message
     if "with" in start:
