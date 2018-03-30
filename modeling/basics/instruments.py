@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractproperty
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
 from .projection import GalaxyProjection
@@ -176,6 +179,26 @@ class SEDInstrument(Instrument):
 
         # Set values
         self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties(cls, distance, inclination, position_angle, azimuth=None):
+
+        """
+        This function ...
+        :param distance:
+        :param inclination:
+        :param position_angle:
+        :param azimuth:
+        :return:
+        """
+
+        # Set azimuth
+        if azimuth is None: azimuth = Angle(0.0, "deg")
+
+        # Create and return the instrument
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle)
 
     # -----------------------------------------------------------------
 

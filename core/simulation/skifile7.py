@@ -1125,11 +1125,8 @@ class SkiFile7:
         # get the MonteCarloSimulation element
         elems = self.tree.xpath("//OligoMonteCarloSimulation | //PanMonteCarloSimulation")
         if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
-        # set the attribute value, using the appropriate name for SKIRT7 or SKIRT8
-        if "packages" in elems[0].keys():
-            elems[0].set("packages", str(int(number)))
-        else:
-            elems[0].set("numPackages", str(number))
+        # set the attribute value
+        elems[0].set("packages", str(int(number)))
 
     ## This function sets the number of wavelengths
     def setnwavelengths(self, number):
@@ -4288,7 +4285,6 @@ class SkiFile7:
         """
 
         tag = "PanStellarComp" if self.panchromatic() else "OligoStellarComp"
-        #element = self.create_element(tag, properties)
         element = self.create_element(tag, properties)
 
         # Add the component
@@ -4307,7 +4303,6 @@ class SkiFile7:
         """
 
         tag = "DustComp"
-        #element = self.create_element(tag, properties)
         element = self.create_element(tag, properties)
 
         # Add the component

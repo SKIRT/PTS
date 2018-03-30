@@ -286,6 +286,53 @@ class Curve(SmartTable):
                                         array_unit=self.column_unit(self.y_name), conversion_info=conversion_info,
                                         density=density, brightness=brightness)
 
+    # -----------------------------------------------------------------
+
+    def __add__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Create new curve
+
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    __rdiv__ = __div__
+
 # -----------------------------------------------------------------
 
 class WavelengthCurve(Curve):

@@ -2123,6 +2123,18 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def load_bulge_component(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .suite import load_component
+        return load_component(self.bulge_component_path)
+
+    # -----------------------------------------------------------------
+
     def load_old_stars_component(self, add_map=False):
 
         """

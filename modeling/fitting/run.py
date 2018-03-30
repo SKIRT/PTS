@@ -2213,7 +2213,7 @@ class FittingRun(object):
         parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
         # Create a 'Model' object and return it
-        return Model(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared, parameter_values=parameter_values)
+        return Model(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
 
     # -----------------------------------------------------------------
 
@@ -3666,7 +3666,7 @@ def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
     parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
     # Create a 'Model' object and return it
-    return Model(definition, simulation_name=best_simulation_name, chi_squared=chi_squared, parameter_values=parameter_values)
+    return Model(definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
 
 # -----------------------------------------------------------------
 

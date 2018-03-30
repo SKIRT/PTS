@@ -31,6 +31,35 @@ from ..tools import strings
 #  SkirtExec class
 # -----------------------------------------------------------------
 
+# Convenience function
+def run_simulation(definition, skirt_path=None, logging_options=None, parallelization=None, wait=True, silent=False,
+                   show_progress=False, debug_output=False):
+
+    """
+    This function ...
+    :param definition:
+    :param skirt_path:
+    :param logging_options:
+    :param parallelization:
+    :param wait:
+    :param silent:
+    :param show_progress:
+    :param debug_output:
+    :return:
+    """
+
+    # Create the SKIRT execution object
+    skirt = SkirtExec(path=skirt_path)
+
+    # Run the simulation
+    simulation = skirt.run(definition, logging_options=logging_options, parallelization=parallelization, wait=wait,
+                           silent=silent, show_progress=show_progress, debug_output=debug_output)
+
+    # Return the simulation
+    return simulation
+
+# -----------------------------------------------------------------
+
 ## An instance of the SkirtExec class represents a particular SKIRT executable, and allows invoking it with
 # given command line arguments. The current implementation only supports local execution; remote execution
 # on another host will be added in the future.

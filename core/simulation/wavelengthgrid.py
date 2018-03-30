@@ -21,6 +21,67 @@ from astropy.table import Table
 from ...core.tools import tables
 from ...core.tools import arrays
 from ...core.tools.stringify import stringify_list_fancy
+from ...core.tools import strings
+
+# -----------------------------------------------------------------
+
+def is_from_skirt_input(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import filesystem as fs
+
+    # Get the first two lines
+    first, second = fs.get_first_lines(path, 2)
+
+    # Check whether the first line is an integer
+    if not strings.is_integer(first): return False
+
+    # Check whether the value of the first line (= the number of wavelengths) is greater than the second value (= the actual first wavelength)
+    # OK yeah this is a bit of a hack ...
+    if float(second) > float(first): return False
+
+    # Checks passed for SKIRT
+    return True
+
+# -----------------------------------------------------------------
+
+def is_ecsv(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools import filesystem as fs
+    return "ECSV" in fs.get_first_line(path)
+
+# -----------------------------------------------------------------
+
+def load_wavelength_grid(path, **kwargs):
+
+    """
+    This function ...
+    :param path:
+    :param kwargs:
+    :return:
+    """
+
+    # From SKIRT?
+    if is_from_skirt_input(path): return WavelengthGrid.from_skirt_input(path, **kwargs)
+
+    # TODO: From SKIRT output?
+
+    # ECSV?
+    elif is_ecsv(path): return WavelengthGrid.from_file(path, **kwargs)
+
+    # Other?
+    else: return WavelengthGrid.from_text_file(path, kwargs.pop("unit"), **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -45,11 +106,12 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, format="ascii.ecsv"):
 
         """
         This function ...
         :param path:
+        :param format:
         :return:
         """
 
@@ -57,7 +119,7 @@ class WavelengthGrid(object):
         grid = cls()
 
         # Load the table
-        grid.table = tables.from_file(path, format="ascii.ecsv")
+        grid.table = tables.from_file(path, format=format)
 
         # Set the path
         grid.path = path
