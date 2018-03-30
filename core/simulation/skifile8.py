@@ -1071,14 +1071,14 @@ class SkiFile8:
             dust_system.tag = "OligoDustSystem"
 
             # Remove dust system settings
-            if "writeAbsorption" in dust_system.attrib: dust_system.attrib.pop("writeAbsorption")
+            if "writeISRF" in dust_system.attrib: dust_system.attrib.pop("writeISRF")
             dust_system.attrib.pop("writeISRF")
             dust_system.attrib.pop("writeTemperature")
             dust_system.attrib.pop("writeEmissivity")
             dust_system.attrib.pop("includeSelfAbsorption")
-            dust_system.attrib.pop("emissionBoost")
-            if "cycles" in dust_system.attrib: dust_system.attrib.pop("cycles")
-            if "emissionBias" in dust_system.attrib: dust_system.attrib.pop("emissionBias")
+            #dust_system.attrib.pop("emissionBoost")
+            #if "cycles" in dust_system.attrib: dust_system.attrib.pop("cycles")
+            #if "emissionBias" in dust_system.attrib: dust_system.attrib.pop("emissionBias")
 
             for child in dust_system.getchildren():
                 if child.tag == "dustEmissivity" or child.tag == "dustLib": dust_system.remove(child)
