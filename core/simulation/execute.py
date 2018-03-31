@@ -216,7 +216,10 @@ class SkirtExec:
         if isinstance(definition_or_arguments, SimulationDefinition):
 
             # The logging options cannot be None
-            if logging_options is None: raise ValueError("Logging options must be specified")
+            if logging_options is None: #raise ValueError("Logging options must be specified")
+                log.warning("Logging options are not given: using default options ...")
+                from ..launch.options import LoggingOptions
+                logging_options = LoggingOptions()
 
             # Create the arguments
             arguments = SkirtArguments.from_definition(definition_or_arguments, logging_options, parallelization, emulate=emulate)

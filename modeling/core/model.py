@@ -72,7 +72,7 @@ class Model(object):
     """
 
     def __init__(self, definition, wavelength_grid=None, simulation_name=None, chi_squared=None,
-                 free_parameter_labels=None, free_parameter_values=None):
+                 free_parameter_labels=None, free_parameter_values=None, ski_template=None):
 
         """
         The constructor ...
@@ -82,6 +82,7 @@ class Model(object):
         :param chi_squared:
         :param free_parameter_labels:
         :param free_parameter_values:
+        :param ski_template:
         :return:
         """
 
@@ -117,6 +118,21 @@ class Model(object):
 
         # No wavelength grid passed, load the wavelength grid if necessary, and if present
         elif self.has_wavelengths_directory and fs.is_file(self.wavelength_grid_path): self.wavelength_grid = WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
+
+        # Ski file template: TEMPORARY?
+        self.ski_template = ski_template
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ski_template(self):
+
+        """
+        Thisn functino ...
+        :return:
+        """
+
+        return self.ski_template is not None
 
     # -----------------------------------------------------------------
 
@@ -972,6 +988,7 @@ class Model(object):
         ski = get_panchromatic_template()
 
         # Add the old stellar bulge component
+        # print(self.old_bulge_component.parameters)
         add_new_stellar_component(ski, old_bulge_name, self.old_bulge_component)
 
         # Add the instrument
@@ -983,8 +1000,11 @@ class Model(object):
         # Set the number of photon packages
         ski.setpackages(default_npackages)
 
+        # Remove the dust system
+        ski.remove_dust_system()
+
         # Save the skifile
-        ski.saveto(self.old_bulge_ski_path)
+        ski.saveto(self.old_bulge_ski_path, fix=True)
 
         # Return the skifile
         return ski
@@ -1021,6 +1041,7 @@ class Model(object):
         ski = get_panchromatic_template()
 
         # Add the old stellar disk component
+        # print(self.old_disk_component.parameters)
         add_new_stellar_component(ski, old_disk_name, self.old_disk_component)
 
         # Add the instrument
@@ -1032,8 +1053,11 @@ class Model(object):
         # Set the number of photon packages
         ski.setpackages(default_npackages)
 
+        # Remove the dust system
+        ski.remove_dust_system()
+
         # Save the skifile
-        ski.saveto(self.old_disk_ski_path)
+        ski.saveto(self.old_disk_ski_path, fix=True)
 
         # Return the skifile
         return ski
@@ -1070,6 +1094,7 @@ class Model(object):
         ski = get_panchromatic_template()
 
         # Add the young stellar component
+        # print(self.young_component.parameters)
         add_new_stellar_component(ski, young_name, self.young_component)
 
         # Add the instrument
@@ -1081,8 +1106,11 @@ class Model(object):
         # Set the number of photon packages
         ski.setpackages(default_npackages)
 
+        # Remove the dust system
+        ski.remove_dust_system()
+
         # Save the skifile
-        ski.saveto(self.young_ski_path)
+        ski.saveto(self.young_ski_path, fix=True)
 
         # Return the skifile
         return ski
@@ -1116,9 +1144,12 @@ class Model(object):
         if not self.has_wavelength_grid: raise ValueError("Wavelength grid path must be set")
 
         # Create a ski template
+        #if self.has_ski_template: ski = self.ski_template.copy()
+        #else: ski = get_panchromatic_template()
         ski = get_panchromatic_template()
 
         # Add the sfr component
+        # print(self.sfr_component.parameters)
         add_new_stellar_component(ski, sfr_name, self.sfr_component)
 
         # Add the instrument
@@ -1130,8 +1161,11 @@ class Model(object):
         # Set the number of photon packages
         ski.setpackages(default_npackages)
 
+        # Remove the dust system
+        ski.remove_dust_system()
+
         # Save the skifile
-        ski.saveto(self.sfr_ski_path)
+        ski.saveto(self.sfr_ski_path, fix=True)
 
         # Return the skifile
         return ski
@@ -1289,6 +1323,7 @@ class Model(object):
         paths = OrderedDict()
         paths[wavelengths_filename] = self.wavelength_grid_path
         paths[map_filename] = self.sfr_map_path
+        return paths
 
     # -----------------------------------------------------------------
 
@@ -1404,6 +1439,18 @@ class Model(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_old_bulge_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.old_bulge_sed_out_path, extension="dat", endswith="_sed")
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def old_bulge_simulation(self):
 
@@ -1413,13 +1460,26 @@ class Model(object):
         """
 
         # Simulation already performed?
-        if self.has_old_bulge_output: return createsimulations(self.old_bulge_sed_out_path, single=True)
+        #if self.has_old_bulge_output: return createsimulations(self.old_bulge_sed_out_path, single=True)
+        if self.has_old_bulge_sed: return createsimulations(self.old_bulge_sed_out_path, single=True)
 
         # Show message
         log.info("Running SKIRT for the old stellar bulge component ...")
 
         # Run simulation
         return run_simulation(self.old_bulge_definition, show_progress=True, debug_output=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.old_disk_sed_out_path, extension="dat", endswith="_sed")
 
     # -----------------------------------------------------------------
 
@@ -1432,13 +1492,26 @@ class Model(object):
         """
 
         # Simulation already performed?
-        if self.has_old_disk_output: return createsimulations(self.old_disk_sed_out_path, single=True)
+        #if self.has_old_disk_output: return createsimulations(self.old_disk_sed_out_path, single=True)
+        if self.has_old_disk_sed: return createsimulations(self.old_disk_sed_out_path, single=True)
 
         # Show message
         log.info("Running SKIRT for the old stellar disk component ...")
 
         # Run
         return run_simulation(self.old_disk_definition, show_progress=True, debug_output=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.young_sed_out_path, extension="dat", endswith="_sed")
 
     # -----------------------------------------------------------------
 
@@ -1451,13 +1524,26 @@ class Model(object):
         """
 
         # Simulation already performed?
-        if self.has_young_output: return createsimulations(self.young_sed_out_path, single=True)
+        #if self.has_young_output: return createsimulations(self.young_sed_out_path, single=True)
+        if self.has_young_sed: return createsimulations(self.young_sed_out_path, single=True)
 
         # Show message
         log.info("Running SKIRT simulation for the young stellar component ...")
 
         # Run
         return run_simulation(self.young_definition, show_progress=True, debug_output=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.sfr_sed_out_path, extension="dat", endswith="_sed")
 
     # -----------------------------------------------------------------
 
@@ -1470,7 +1556,8 @@ class Model(object):
         """
 
         # Simulation already performed?
-        if self.has_sfr_output: return createsimulations(self.sfr_sed_out_path, single=True)
+        #if self.has_sfr_output: return createsimulations(self.sfr_sed_out_path, single=True)
+        if self.has_sfr_sed: return createsimulations(self.sfr_sed_out_path, single=True)
 
         # Show message
         log.info("Running SKIRT simulation for the SFR component ...")

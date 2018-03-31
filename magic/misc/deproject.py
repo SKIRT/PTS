@@ -431,7 +431,7 @@ class SKIRTDeprojector(Deprojector):
         log.debug("Creating the ski file template ...")
 
         # Create
-        ski =  self.smile.create_oligochromatic_template()
+        ski = self.smile.create_oligochromatic_template()
 
         # Remove the existing instruments
         ski.remove_all_instruments()

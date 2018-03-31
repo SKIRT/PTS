@@ -29,12 +29,15 @@ def get_unique_element(element, name):
     # Check if only one child element is present
     if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
     elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
-    parents = parents[0]
+    parent = parents[0]
+
+    # Get the children of the parent
+    children = parent.getchildren()
 
     # Check if only one child object is present
-    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
-    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
-    child = parents[0]
+    if len(children) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
+    elif len(children) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
+    child = children[0]
 
     # Return the child element
     return child
@@ -51,13 +54,14 @@ def get_unique_element_direct(element, name):
     """
 
     # Get child element of the given element
-    parents = element.xpath(name)
+    children = element.xpath(name)
 
     # Check if only one child element is present
-    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
-    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
+    if len(children) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
+    elif len(children) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
 
-    return parents[0]
+    # Return the unique child
+    return children[0]
 
 # -----------------------------------------------------------------
 

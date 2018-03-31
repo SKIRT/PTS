@@ -22,6 +22,8 @@ from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
+from ...core.basics.configuration import ConfigurationDefinition
+from ...core.plot.wavelengthgrid import plot_wavelength_grid
 
 # -----------------------------------------------------------------
 
@@ -32,6 +34,10 @@ _status_command_name = "status"
 
 # Other commands
 _model_command_name = "model"
+
+# Plot commands
+_wavelengths_command_name = "wavelengths"
+_dustgrid_command_name = "grid"
 
 # -----------------------------------------------------------------
 
@@ -45,6 +51,10 @@ commands[_status_command_name] = ("show_status_command", True, "show generation 
 
 # Show stuff
 commands[_model_command_name] = ("show_model", False, "show the model properties", None)
+
+# Plot stuff
+commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
+commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 
 # -----------------------------------------------------------------
 
@@ -296,6 +306,30 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.wavelength_grid
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.dust_grid
+
+    # -----------------------------------------------------------------
+
     def show_model(self, **kwargs):
 
         """
@@ -332,6 +366,75 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         print("")
         for label in self.derived_parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values[label]))
         print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_wavelengths_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelengths_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot the wavelength grid
+        plot_wavelength_grid(self.wavelength_grid, "wavelengths")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_grid_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_grid_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 

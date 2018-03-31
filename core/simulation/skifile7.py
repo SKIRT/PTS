@@ -1629,11 +1629,13 @@ class SkiFile7:
 
             # Create SED
             if sed_type is not None:
+                if sed_properties is None: sed_properties = {}
                 sed = self.create_element(sed_type, sed_properties)
                 sed_parent.append(sed)
 
             # Create normalization
             if normalization_type is not None:
+                if normalization_properties is None: normalization_properties = {}
                 normalization = self.create_element(normalization_type, normalization_properties)
                 normalization_parent.append(normalization)
 

@@ -117,6 +117,10 @@ def get_panchromatic_template():
     :return:
     """
 
+    # OTHER METHOD NOT WORKING??
+    from .templates import get_pan_template
+    return get_pan_template()
+
     # Create SMILE schema
     smile = SKIRTSmileSchema()
 
@@ -1014,6 +1018,7 @@ class SKIRTSmileSchema(object):
         # Create simulation
         simulation = ski.create_element("PanMonteCarloSimulation", parameters)
         ski.root.append(simulation)
+        #print(str(ski))
 
         # Return the ski template
         return ski

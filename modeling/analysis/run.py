@@ -2628,7 +2628,9 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         # Create the model and return it
-        return Model(self.model_definition, simulation_name=self.simulation_name, chi_squared=self.chi_squared, free_parameter_labels=self.free_parameter_labels)
+        return Model(self.model_definition, simulation_name=self.simulation_name, chi_squared=self.chi_squared,
+                     free_parameter_labels=self.free_parameter_labels, wavelength_grid=self.wavelength_grid,
+                     ski_template=self.ski_file)
 
     # -----------------------------------------------------------------
 

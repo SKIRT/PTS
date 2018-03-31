@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.log import log
 from ...core.filter.filter import parse_filter
 from pts.core.tools.introspection import skirt_main_version, has_skirt
+from ...core.tools.stringify import tostr
+from ...core.filter.filter import Filter
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -168,6 +171,13 @@ def add_new_stellar_component(ski, name, component, title=None):
     # Check whether title is defined
     if title is None: log.warning("Title for the component '" + name + "' is not defined")
 
+    # Set normalization type
+    if normalization_type is None:
+        if filter_or_wavelength is None: raise ValueError("Cannot determine normalization type")
+        if isinstance(filter_or_wavelength, Filter): normalization_type = "LuminosityStellarCompNormalization"
+        elif types.is_length_quantity(filter_or_wavelength): normalization_type = "SpectralLuminosityStellarCompNormalization"
+        else: normalization_type = "BolLuminosityStellarCompNormalization" #raise ValueError("Unrecognized filter of wavelength of type '" + str(type(filter_or_wavelength)))
+
     # Set stellar component properties
     properties = dict()
     properties["geometry"] = geometry
@@ -186,6 +196,17 @@ def add_new_stellar_component(ski, name, component, title=None):
     properties["covering_factor"] = covering_factor
     properties["luminosity"] = luminosity
     properties["filter_or_wavelength"] = filter_or_wavelength
+
+    # Show properties
+    log.debug("")
+    log.debug("Stellar component properties:")
+    log.debug("")
+    for label in properties:
+        if label == "geometry":
+            log.debug(" - geometry:")
+            for parameter in properties[label]: log.debug("    * " + parameter + ": " + tostr(properties[label][parameter]))
+        else: log.debug(" - " + label + ": " + tostr(properties[label]))
+    log.debug("")
 
     # Create new component
     ski.create_new_stellar_component(title, **properties)
@@ -539,6 +560,13 @@ def add_new_dust_component(ski, name, component, title=None):
     properties["graphite_populations"] = graphite_populations
     properties["silicate_populations"] = silicate_populations
     properties["pah_populations"] = pah_populations
+
+    # Show properties
+    log.debug("")
+    log.debug("Dust component properties:")
+    log.debug("")
+    for label in properties: log.debug(" - " + label + ": " + tostr(properties[label]))
+    log.debug("")
 
     # Add the new component
     ski.create_new_dust_component(title, **properties)

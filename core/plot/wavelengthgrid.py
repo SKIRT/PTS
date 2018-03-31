@@ -75,6 +75,47 @@ def get_sed_template(name, **kwargs):
 
 # -----------------------------------------------------------------
 
+def plot_wavelength_grid(wavelength_grid, label, **kwargs):
+
+    """
+    This function ...
+    :param wavelength_grid:
+    :param label:
+    :param kwargs:
+    :return:
+    """
+
+    # Create the wavelength plotter
+    plotter = WavelengthGridPlotter()
+
+    # Add the wavelength grid
+    plotter.add_wavelength_grid(wavelength_grid, label, **kwargs)
+
+    # Plot
+    plotter.run()
+
+# -----------------------------------------------------------------
+
+def plot_wavelength_grids(grids, **kwargs):
+
+    """
+    This function ...
+    :param grids:
+    :param kwargs:
+    :return:
+    """
+
+    # Create the wavelength grid plotter
+    plotter = WavelengthGridPlotter()
+
+    # Loop over the grids
+    for label in grids: plotter.add_wavelength_grid(grids[label], label, **kwargs)
+
+    # Plot
+    plotter.run()
+
+# -----------------------------------------------------------------
+
 class WavelengthGridPlotter(Configurable):
     
     """
