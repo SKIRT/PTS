@@ -30,18 +30,6 @@ from ...core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
-# Set contribution nmes
-total = "total"
-old = "old"
-young = "young"
-ionizing = "ionizing"
-unevolved = "unevolved"
-
-# All contributions
-contributions = [total, old, young, ionizing, unevolved]
-
-# -----------------------------------------------------------------
-
 # Set stellar components for different contribution simulations
 component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
                     "young": "Young stars",

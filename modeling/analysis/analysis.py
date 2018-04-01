@@ -24,6 +24,7 @@ from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.plot.wavelengthgrid import plot_wavelength_grid
+from .run import contributions
 
 # -----------------------------------------------------------------
 
@@ -38,6 +39,7 @@ _model_command_name = "model"
 # Plot commands
 _wavelengths_command_name = "wavelengths"
 _dustgrid_command_name = "grid"
+_sed_command_name = "sed"
 
 # -----------------------------------------------------------------
 
@@ -55,11 +57,60 @@ commands[_model_command_name] = ("show_model", False, "show the model properties
 # Plot stuff
 commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
 commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
+commands[_sed_command_name] = (None, None, "plot SEDs", None)
+
+# -----------------------------------------------------------------
+
+_total_name = "total"
+_old_bulge_name = "old_bulge"
+_old_disk_name = "old_disk"
+_old_name = "old"
+_young_name = "young"
+_sfr_name = "sfr"
+_unevolved_name = "unevolved"
+
+_sfr_stellar_name = "sfr_stellar"
+_sfr_dust_name = "sfr_dust"
+_dust_name = "dust"
+
+# -----------------------------------------------------------------
+
+# SED subcommands
+sed_commands = OrderedDict()
+sed_commands[_total_name] = ("plot_total_sed_command", True, "plot the SED of the total simulation", None)
+sed_commands[_old_bulge_name] = ("plot_old_bulge_sed_command", True, "plot the SED of the old stellar bulge", None)
+sed_commands[_old_disk_name] = ("plot_old_disk_sed_command", True, "plot the SED of the old stellar disk", None)
+sed_commands[_old_name] = ("plot_old_sed_command", True, "plot the SED of the old stars", None)
+sed_commands[_young_name] = ("plot_young_sed_command", True, "plot the SED of the young stars", None)
+sed_commands[_sfr_name] = ("plot_sfr_sed_command", True, "plot the SED of the star formation regions", None)
+sed_commands[_sfr_stellar_name] = ("plot_sfr_stellar_sed_command", True, "plot the stellar SED of the star formation regions", None)
+sed_commands[_sfr_dust_name] = ("plot_sfr_dust_sed_command", True, "plot the dust SED of the star formation regions", None)
+sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
+sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust emission SED", None)
 
 # -----------------------------------------------------------------
 
 # Set subcommands
 subcommands = OrderedDict()
+subcommands[_sed_command_name] = sed_commands
+
+# -----------------------------------------------------------------
+
+earth_name = "earth"
+faceon_name = "faceon"
+edgeon_name = "edgeon"
+orientations = (earth_name, faceon_name, edgeon_name)
+
+# -----------------------------------------------------------------
+
+observed_name = "observed"
+intrinsic_name = "intrinsic"
+default_observed_intrinsic = (observed_name, intrinsic_name)
+observed_intrinsic_choices = default_observed_intrinsic
+
+# -----------------------------------------------------------------
+
+default_contributions = ("total")
 
 # -----------------------------------------------------------------
 
@@ -435,6 +486,287 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         This function ...
         :return:
         """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_total_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("orientation", "string", "instrument orientation", earth_name, orientations)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_total_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_old_bulge_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_old_bulge_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_old_disk_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_old_disk_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_old_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_old_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_young_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_young_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_sfr_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_sfr_stellar_sed_definition(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_stellar_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_sfr_dust_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_dust_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_unevolved_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Parse the command
+        config = self.get_config_from_command(command, self.plot_unevolved_sed_definition, **kwargs)
+
+        # Plot
+        self.plot_unevolved_sed(**config)
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_sed(self, observed_intrinsic=observed_intrinsic_choices):
+
+        """
+        This function ...
+        :param observed_intrinsic:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_dust_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("contributions", "string_list", "stellar contributions", default_contributions, choices=contributions)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the configuration
+        config = self.get_config_from_command(command, **kwargs)
+        config.pop("_path")
+
+        # Plot
+        self.plot_dust_sed(**config)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_sed(self, contributions=default_contributions):
+
+        """
+        This function ...
+        :param contributions:
+        :return:
+        """
+
+
 
     # -----------------------------------------------------------------
 

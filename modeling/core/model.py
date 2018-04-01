@@ -38,6 +38,13 @@ from ...core.simulation.simulation import createsimulations
 from ...core.simulation.execute import run_simulation
 from ...core.basics.log import log
 from ...core.data.sed import SED
+from ...core.simulation.output import SimulationOutput
+from ...core.simulation.data import SimulationData
+from ...core.units.parsing import parse_unit as u
+
+# -----------------------------------------------------------------
+
+stellar_dust_sed_split_wavelength = 5. * u("micron")
 
 # -----------------------------------------------------------------
 
@@ -72,7 +79,9 @@ class Model(object):
     """
 
     def __init__(self, definition, wavelength_grid=None, simulation_name=None, chi_squared=None,
-                 free_parameter_labels=None, free_parameter_values=None, ski_template=None):
+                 free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
+                 observed_old_output_path=None, observed_young_output_path=None, observed_sfr_output_path=None,
+                 observed_unevolved_output_path=None):
 
         """
         The constructor ...
@@ -82,7 +91,11 @@ class Model(object):
         :param chi_squared:
         :param free_parameter_labels:
         :param free_parameter_values:
-        :param ski_template:
+        :param observed_total_output_path:
+        :param observed_old_output_path:
+        :param observed_young_output_path:
+        :param observed_sfr_output_path:
+        :param observed_unevolved_output_path:
         :return:
         """
 
@@ -119,20 +132,252 @@ class Model(object):
         # No wavelength grid passed, load the wavelength grid if necessary, and if present
         elif self.has_wavelengths_directory and fs.is_file(self.wavelength_grid_path): self.wavelength_grid = WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
 
-        # Ski file template: TEMPORARY?
-        self.ski_template = ski_template
+        # Simulation output paths
+        self.observed_total_output_path = observed_total_output_path
+        self.observed_old_output_path = observed_old_output_path
+        self.observed_young_output_path = observed_young_output_path
+        self.observed_sfr_output_path = observed_sfr_output_path
+        self.observed_unevolved_output_path = observed_unevolved_output_path
 
     # -----------------------------------------------------------------
 
     @property
-    def has_ski_template(self):
+    def has_observed_total_output(self):
 
         """
-        Thisn functino ...
+        This function ...
         :return:
         """
 
-        return self.ski_template is not None
+        return self.observed_total_output_path is not None and fs.is_directory(self.observed_total_output_path) and not fs.is_empty(self.observed_total_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_total_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_total_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_total_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_total_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_total_output and self.observed_total_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_output_path is not None and fs.is_directory(self.observed_old_output_path) and not fs.is_empty(self.observed_old_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_old_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_old_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_old_output and self.observed_old_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_output_path is not None and fs.is_directory(self.observed_young_output_path) and not fs.is_empty(self.observed_young_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_young_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_young_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_young_output and self.observed_young_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_output_path is not None and fs.is_directory(self.observed_sfr_output_path) and not fs.is_empty(self.observed_sfr_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_sfr_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_sfr_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_sfr_output and self.observed_sfr_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_output_path is not None and fs.is_directory(self.observed_unevolved_output_path) and not fs.is_empty(self.observed_unevolved_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_unevolved_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_unevolved_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_unevolved_output and self.observed_unevolved_data.has_seds
 
     # -----------------------------------------------------------------
 
@@ -1144,8 +1389,6 @@ class Model(object):
         if not self.has_wavelength_grid: raise ValueError("Wavelength grid path must be set")
 
         # Create a ski template
-        #if self.has_ski_template: ski = self.ski_template.copy()
-        #else: ski = get_panchromatic_template()
         ski = get_panchromatic_template()
 
         # Add the sfr component
@@ -1724,12 +1967,50 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def intrinsic_sed_sfr_stellar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_sed_sfr.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_sed_sfr_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_sed_sfr.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name]["total"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_sed_old_bulge(self):
 
         """
         This function ...
         :return:
         """
+
+        return None
 
     # -----------------------------------------------------------------
 
@@ -1741,6 +2022,8 @@ class Model(object):
         :return:
         """
 
+        return None
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1751,7 +2034,8 @@ class Model(object):
         :return:
         """
 
-        return self.observed_sed_old_bulge + self.observed_sed_old_disk
+        #return self.observed_sed_old_bulge + self.observed_sed_old_disk
+        return self.observed_old_data.seds[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
@@ -1763,6 +2047,8 @@ class Model(object):
         :return:
         """
 
+        return self.observed_young_data.seds[earth_name]["total"]
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1772,6 +2058,56 @@ class Model(object):
         This function ...
         :return:
         """
+
+        return self.observed_sfr_data.seds[earth_name]["total"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name]["total"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_total.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_total.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_stellar_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # based on self.observed_stellar_sed
 
     # -----------------------------------------------------------------
 
@@ -1783,27 +2119,79 @@ class Model(object):
         :return:
         """
 
+        # based on self.dust_sed
+
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def sfr_dust_luminosity(self):
+    def intrinsic_sfr_stellar_luminosity(self):
 
         """
         This function ...
         :return:
         """
 
+        # From intrinsic_sed_sfr_stellar
+
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def sfr_stellar_luminosity(self):
+    def intrinsic_sfr_dust_luminosity(self):
 
         """
         This function ...
         :return:
         """
 
+        # From intrinsic_sed_sfr_dust
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_sfr.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_sfr.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_stellar_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # From observed_sfr_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_dust_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        # From observed_sfr_dust_sed
 
     # -----------------------------------------------------------------
 
