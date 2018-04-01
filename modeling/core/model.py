@@ -2190,7 +2190,7 @@ class Model(object):
         This function ...
         :return:
         """
-        
+
         # From observed_sfr_dust_sed
 
     # -----------------------------------------------------------------

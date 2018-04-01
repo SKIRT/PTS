@@ -5414,6 +5414,18 @@ class Frame(NDDataArray):
         # Return vmin and vmax
         return vmin, vmax
 
+    # -----------------------------------------------------------------
+
+    def to_hdu(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create and return the HDU
+        return fits.ImageHDU(self.data, header=self.header)
+
 # -----------------------------------------------------------------
 
 def sum_frames(*args, **kwargs):

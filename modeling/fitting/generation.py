@@ -1661,6 +1661,30 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def has_images_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).has_images
+
+    # -----------------------------------------------------------------
+
+    def get_image_paths_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_misc_output(simulation_name).images
+
+    # -----------------------------------------------------------------
+
     @property
     def wavelength_grids_path(self):
 

@@ -858,6 +858,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    def has_photometry_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_photometry_image_path(name))
+
+    # -----------------------------------------------------------------
+
     def get_photometry_image_path_for_filter(self, fltr):
 
         """
@@ -867,6 +879,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.get_photometry_image_path(str(fltr))
+
+    # -----------------------------------------------------------------
+
+    def has_photometry_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_photometry_image_path_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
