@@ -4008,6 +4008,19 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def center_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_wcs: raise ValueError("Cannot determine the center as sky coordinate: coordinate system not defined")
+        else: return self.center.to_sky(self.wcs)
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixel_center(self):
 
         """

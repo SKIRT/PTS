@@ -697,7 +697,7 @@ def plot_frame(frame, **kwargs):
 
 def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, normalize_in=None, soft_min=False,
                   soft_max=False, soft_min_scaling=1., soft_max_scaling=1., symmetric_method="mean",
-                  check_around_zero=True, wcs=None):
+                  check_around_zero=True, wcs=None, zmin=None, zmax=None, soft_zmin=False, soft_zmax=False):
 
     """
     This function ...
@@ -712,6 +712,11 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
     :param soft_max_scaling:
     :param symmetric_method:
     :param check_around_zero:
+    :param wcs:
+    :param zmin:
+    :param zmax:
+    :param soft_zmin:
+    :param soft_zmax:
     :return:
     """
 
@@ -832,7 +837,7 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
 
         vmin, vmax = interval
 
-        if soft_min: vmin = max(vmin /soft_min_scaling, normalize_min)
+        if soft_min: vmin = max(vmin / soft_min_scaling, normalize_min)
         if soft_max: vmax = min(vmax * soft_max_scaling, normalize_max)
 
     # String -> parse
@@ -847,6 +852,14 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
 
     # Other
     else: raise ValueError("Invalid option for 'interval'")  # INVALID
+
+    # Adjust to user-defined vmin and vmax
+    if zmin is not None:
+        if soft_zmin: vmin = max(vmin, zmin)
+        else: vmin = zmin
+    if zmax is not None:
+        if soft_zmax: vmax = min(vmax, zmax)
+        else: vmax = zmax
 
     # Return the interval
     return vmin, vmax

@@ -1,145 +1,58 @@
-#!/usr/bin/env python
 # -*- coding: utf8 -*-
 # *****************************************************************
 # **       PTS -- Python Toolkit for working with SKIRT          **
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.config.plot import definition as plot_definition
-from pts.core.basics.plot import plotting_libraries, mpl, all_colormaps
+from pts.magic.config.plot_imagegrid import definition
+from pts.magic.plot.imagegrid import default_residual_cmap, default_absolute_residual_cmap, default_direction, directions, observation_name, observation_or_model
+from pts.core.basics.plot import diverging_colormaps, normal_colormaps
 
-# -----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-styles = ["dark", "light"]
-formats = ["pdf", "png"]
-default_colormap = "magma"
+definition = definition.copy()
 
-# -----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-scales = ["log", "sqrt"]
-default_scale = "log"
+# For residuals
+definition.add_optional("residual_cmap", "string", "colormap for residuals", default_residual_cmap, choices=diverging_colormaps)
+definition.add_optional("absolute_residual_cmap", "string", "colormap for absolute residuals", default_absolute_residual_cmap, choices=normal_colormaps)
+definition.add_optional("residual_amplitude", "percentage", "amplitude of the residual plots", 1.)
+definition.add_optional("residual_interval", "string", "interval for the residual plots", "pts")
 
-# -----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition()
+# Writing settings
+definition.add_flag("write_observations", "write observation frames", False)
+definition.add_flag("write_models", "write model frames", False)
+definition.add_flag("write_residuals", "write residual frames", False)
+definition.add_flag("write_models", "write model frames", False)
+definition.add_flag("write_distributions", "write distributions", False)
+definition.add_flag("write_settings", "write plotting settings", False)
 
-# -----------------------------------------------------------------
-
-definition.add_optional("contains", "string_list", "only load images containing this string in their name")
-definition.add_optional("not_contains", "string_list", "don't load images containing this string in their name")
-definition.add_optional("exact_name", "string_list", "only load images with this exact string as their name")
-definition.add_optional("exact_not_name", "string_list", "don't load images with this exact string as their name")
-definition.add_optional("startswith", "string_list", "only load images whose name starts with this string")
-definition.add_optional("endswith", "string_list", "only load images whose name starts with this string")
-
-# -----------------------------------------------------------------
-
-# Layout
-definition.add_optional("max_nrows", "positive_integer", "maximum number of rows (per grid)", 10)
-definition.add_optional("ngrids", "positive_integer", "number of grids", 1)
-
-# -----------------------------------------------------------------
-
-# Load from data
-definition.add_flag("from_data", "load from data written out by the residuals image grid plotter")
-
-# -----------------------------------------------------------------
-
-# Sort on filters
-definition.add_flag("sort_filters", "sort the frames on filter", True)
-
-# -----------------------------------------------------------------
-
-# Downsampling
-definition.add_flag("downsample", "perform downsampling")
-definition.add_optional("max_npixels", "positive_integer", "maximum number of pixels to enabled downsampling", 400)
-
-# -----------------------------------------------------------------
-
-# Output path
-definition.add_optional("output", "directory_path", "output path")
-
-# -----------------------------------------------------------------
-
-# Add plotting options
-definition.import_section("plot", "plotting options", plot_definition)
-
-# Change defaults: sizes per grid panel!
-definition.sections["plot"].optional["xsize"].default = 3
-definition.sections["plot"].optional["ysize"].default = 3
-
-# -----------------------------------------------------------------
-
-# The plotting library to use
-definition.add_optional("library", "string", "plotting library", mpl, plotting_libraries)
-definition.add_flag("aplpy", "use the APLpy package", False)
-
-# -----------------------------------------------------------------
-
-# Plotting options
-definition.add_optional("style", "string", "plotting style", "dark", choices=styles)
-definition.add_flag("transparent", "transparency", True)
-definition.add_optional("format", "string", "plotting format", "pdf", choices=formats)
-definition.add_optional("colormap", "string", "color map", default_colormap, choices=all_colormaps)
-definition.add_optional("residuals_colormap", "string", "color map for residual frames (none means equal to image colormap)", choices=all_colormaps)
-
-# -----------------------------------------------------------------
-
-definition.add_optional("scale", "string", "scaling", default_scale, scales)
-definition.add_optional("interval", "string", "interval", "pts")
-definition.add_optional("alpha", "positive_real", "alpha of the images", 1)
-definition.add_flag("background", "plot a background", True)
-definition.add_optional("residuals_interval", "string", "interval for residuals", "zscale") # other: minmax
-
-# -----------------------------------------------------------------
-
-definition.add_flag("weighed", "plot weighed residuals", None)
-definition.add_flag("distributions", "plot the residual distributions", False)
-definition.add_flag("relative", "show relative residuals", True)
-definition.add_flag("absolute", "show the residuals as absolute values", False)
-
-# -----------------------------------------------------------------
-
-# Extra flags
-definition.add_flag("normalize", "normalize the images")
-definition.add_flag("share_scale", "share the scales of the images")
-definition.add_flag("share_scale_residuals", "share the scales of the residual maps")
-definition.add_optional("scale_reference", "string", "name of the row to determine the scale for to use for the other rows' images")
-definition.add_optional("scale_residuals_reference", "string", "name of the row to determine the scale of the residual map for to use for the other rows' residual maps")
-#definition.add_flag("same_residuals_scale", "use the same scale for the residuals as for the observation and models")
-
-# -----------------------------------------------------------------
-
-definition.add_flag("write", "write out the processed frames, masks, regions, residual maps and distributions", False)
-definition.add_flag("show", "show the plot (default is automatic)", None)
-
-# -----------------------------------------------------------------
-
-# Add coordinates?
-definition.add_flag("coordinates", "show the coordinates (by default, is determined by whether the images have coordinate systems)", None)
-
-# -----------------------------------------------------------------
-
-# Adjust grid to images
-definition.add_flag("adjust_grid", "adjust the grid to the shape of the images", None)
-
-# Uniformize
-definition.add_flag("uniformize", "uniformize the rows", True)
-
-# -----------------------------------------------------------------
-
-definition.add_flag("regions_on_residuals", "plot regions on residual maps", False)
-
-# -----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # Sigma-clipping
 definition.add_flag("sigma_clip_distributions", "use sigma-clipping on the residual values before creating distributions", True)
 definition.add_optional("sigma_clip_level", "positive_real", "sigma level for sigma clipping", 3.)
 
-# -----------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# Direction
+definition.add_optional("direction", "string", "plotting direction", default_direction, choices=directions)
+
+# ------------------------------------------------------------------------------
+
+# Plot distributions
+definition.add_flag("distributions", "plot distributions", False)
+
+# ------------------------------------------------------------------------------
+
+# Method for residuals
+definition.add_flag("weighed", "use weighed residuals", False)
+definition.add_optional("weighing_reference", "string", "reference for weighed residuals", observation_name, choices=observation_or_model)
+definition.add_flag("relative", "use relative residuals", True)
+definition.add_flag("absolute", "use the absolute values of the residuals", False)
+
+# ------------------------------------------------------------------------------

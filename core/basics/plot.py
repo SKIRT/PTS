@@ -26,35 +26,32 @@ from matplotlib.ticker import LinearLocator, LogLocator, AutoMinorLocator, AutoL
 from matplotlib.ticker import ScalarFormatter, NullFormatter, LogFormatter, PercentFormatter, EngFormatter, LogFormatterMathtext, LogFormatterSciNotation
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib import cbook
-#from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
 
 # -----------------------------------------------------------------
 
-import Tkinter
-import threading
-import matplotlib.backends.backend_tkagg
-
-#root = Tkinter.Tk()
-
-# From https://stackoverflow.com/questions/7275646/creating-a-matplotlib-interactive-plotting-window-for-an-existing-figure
-class Plotter():
-    def __init__(self,fig):
-        t = threading.Thread(target=self.PlottingThread,args=(fig,))
-        t.start()
-
-    def PlottingThread(self,fig):
-        canvas = matplotlib.backends.backend_tkagg.FigureCanvasTkAgg(fig, master=root)
-        canvas.show()
-        canvas.get_tk_widget().pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
-
-        toolbar = matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg(canvas, root)
-        toolbar.update()
-        canvas._tkcanvas.pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
-
-        Tkinter.mainloop()
+#import Tkinter
+#import threading
+#import matplotlib.backends.backend_tkagg
+##root = Tkinter.Tk()
+# # From https://stackoverflow.com/questions/7275646/creating-a-matplotlib-interactive-plotting-window-for-an-existing-figure
+# class Plotter():
+#     def __init__(self,fig):
+#         t = threading.Thread(target=self.PlottingThread,args=(fig,))
+#         t.start()
+#
+#     def PlottingThread(self,fig):
+#         canvas = matplotlib.backends.backend_tkagg.FigureCanvasTkAgg(fig, master=root)
+#         canvas.show()
+#         canvas.get_tk_widget().pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
+#
+#         toolbar = matplotlib.backends.backend_tkagg.NavigationToolbar2TkAgg(canvas, root)
+#         toolbar.update()
+#         canvas._tkcanvas.pack(side=Tkinter.TOP, fill=Tkinter.BOTH, expand=1)
+#
+#         Tkinter.mainloop()
 
 # -----------------------------------------------------------------
 
@@ -76,6 +73,7 @@ qualitative_colormaps = ['Pastel1', 'Pastel2', 'Paired', 'Accent', 'Dark2', 'Set
 
 # -----------------------------------------------------------------
 
+normal_colormaps = sequential_colormaps + uniform_colormaps + misc_colormaps
 all_colormaps = uniform_colormaps + sequential_colormaps + misc_colormaps + diverging_colormaps + qualitative_colormaps
 
 # -----------------------------------------------------------------
@@ -2875,8 +2873,7 @@ class MPLFigure(Figure):
         elif first_column_not_shared_y is not None or last_column_not_shared_y is not None: raise ValueError("Cannot specify first_column_not_shared_y or last_column_not_shared_y")
 
         # Create grid spec
-        if subplotspec is not None: grid = GridSpecFromSubplotSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios, subplot_spec=subplotspec)
-        else: grid = GridSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios)
+        grid = self.create_gridspec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios, subplotspec=subplotspec)
 
         # Both axes are shared
         if sharex and sharey: plots = self._create_grid_shared(grid, nrows, ncols, projections=projections,
@@ -2895,6 +2892,33 @@ class MPLFigure(Figure):
 
         # Return the plots
         return plots
+
+    # -----------------------------------------------------------------
+
+    def create_gridspec(self, nrows, ncols, wspace=None, hspace=None, width_ratios=None, height_ratios=None, subplotspec=None):
+
+        """
+        This function ...
+        :param nrows:
+        :param ncols:
+        :param wspace:
+        :param hspace:
+        :param width_ratios:
+        :param height_ratios:
+        :param subplotspec:
+        :return:
+        """
+
+        # Set width and height ratios
+        if width_ratios is None: width_ratios = [1] * ncols
+        if height_ratios is None: height_ratios = [1] * nrows
+
+        # Create grid spec
+        if subplotspec is not None: grid = GridSpecFromSubplotSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios, subplot_spec=subplotspec)
+        else: grid = GridSpec(nrows, ncols, wspace=wspace, hspace=hspace, width_ratios=width_ratios, height_ratios=height_ratios)
+
+        # Return the grid
+        return grid
 
     # -----------------------------------------------------------------
 
@@ -3148,31 +3172,7 @@ class MPLFigure(Figure):
             #print("reference col plotted", row, col)
             plots[row][col] = plot
 
-        # Create the first plot
-        #plot = self._create_grid_plot_not_shared(grid, first_row, first_column, projections=projections)
-        #plots[first_row][first_column] = plot
-
-        # # Create the first row
-        # for col in range(1, ncols):
-        #
-        #     # Get sub plot specification
-        #     rect = grid[first_row, col]
-        #
-        #     # Shared?
-        #     #shared_x = rows_shared_x[first_row] and columns_shared_x[col]
-        #     shared_y = rows_shared_y[first_row] and columns_shared_y[col]
-        #
-        #     # Get the projection
-        #     if projections is not None: projection = projections[first_row][col]
-        #     else: projection = None
-        #
-        #     # Create the plot and add it
-        #     if shared_y: plot = self._create_plot_shared_y(rect, plots[first_row][first_column].axes, projection=projection)
-        #     else: plot = self._create_plot_not_shared(rect, projection=projection)
-        #     plots[first_row][col] = plot
-
         # Create the next rows
-        #for row in range(1, nrows):
         for row in range(nrows):
 
             # Loop over the columns
@@ -3614,6 +3614,17 @@ class MPLFigure(Figure):
         """
 
         self.ax.plot(curve.x_data, curve.y_data, label=label)
+
+    # -----------------------------------------------------------------
+
+    def draw(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.figure.canvas.draw()
 
     # -----------------------------------------------------------------
 
