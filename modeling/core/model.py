@@ -1062,8 +1062,8 @@ class RTModel(object):
         :return:
         """
 
-        # from self.observed_sed_old_bulge
-        return None
+        # don't interpolate, wavelength grid is expected to contain the I1 wavelength
+        return self.observed_sed_old_bulge.photometry_at(self.i1_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 
@@ -1087,7 +1087,9 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_i1_luminosity_old_bulge, self.intrinsic_i1_luminosity_old_bulge)
+        observed = self.observed_i1_luminosity_old_bulge.to("W/micron").value
+        intrinsic = self.intrinsic_i1_luminosity_old_bulge.to("W/micron").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
@@ -1099,7 +1101,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.observed_old_bulge_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1111,7 +1113,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.intrinsic_sed_old_bulge.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1123,7 +1125,57 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_bolometric_luminosity_old_bulge, self.intrinsic_bolometric_luminosity_old_bulge)
+        observed = self.observed_bolometric_luminosity_old_bulge.to("W").value
+        intrinsic = self.intrinsic_bolometric_luminosity_old_bulge.to("W").value
+        return extinction.attenuation(observed, intrinsic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_bulge_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old_bulge.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_bulge_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old_bulge.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_bulge_total_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old_bulge.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_bulge_dust_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1135,8 +1187,8 @@ class RTModel(object):
         :return:
         """
 
-        # from self.observed_sed_old_disk
-        return None
+        # don't interpolate, wavelength grid is expected to contain the I1 wavelength
+        return self.observed_sed_old_disk.photometry_at(self.i1_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 
@@ -1160,7 +1212,9 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_i1_luminosity_old_disk, self.intrinsic_i1_luminosity_old_disk)
+        observed = self.observed_i1_luminosity_old_disk.to("W/micron").value
+        intrinsic = self.intrinsic_i1_luminosity_old_disk.to("W/micron").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
@@ -1172,7 +1226,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.observed_old_disk_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1184,7 +1238,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.intrinsic_sed_old_disk.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1196,7 +1250,57 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_bolometric_luminosity_old_disk, self.intrinsic_bolometric_luminosity_old_disk)
+        observed = self.observed_bolometric_luminosity_old_disk.to("W").value
+        intrinsic = self.intrinsic_bolometric_luminosity_old_disk.to("W").value
+        return extinction.attenuation(observed, intrinsic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_disk_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old_disk.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_disk_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old_disk.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_disk_total_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old_disk.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_disk_dust_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1208,8 +1312,8 @@ class RTModel(object):
         :return:
         """
 
-        # from self.observed_sed_old
-        return None
+        # don't interpolate, wavelength grid is expected to contain the I1 wavelength
+        return self.observed_sed_old.photometry_at(self.i1_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 
@@ -1233,7 +1337,9 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_i1_luminosity_old, self.intrinsic_i1_luminosity_old)
+        observed = self.observed_i1_luminosity_old.to("W/micron").value
+        intrinsic = self.intrinsic_i1_luminosity_old.to("W/micron").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
@@ -1257,7 +1363,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.observed_old_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1269,7 +1375,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.intrinsic_sed_old.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1281,7 +1387,57 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_bolometric_luminosity_old, self.intrinsic_bolometric_luminosity_old)
+        observed = self.observed_bolometric_luminosity_old.to("W").value
+        intrinsic = self.intrinsic_bolometric_luminosity_old.to("W").value
+        return extinction.attenuation(observed, intrinsic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_total_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_old.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_dust_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1293,8 +1449,8 @@ class RTModel(object):
         :return:
         """
 
-        # from self.observed_sed_young
-        return None
+        # don't interpolate, wavelength grid is expected to contain the FUV wavelength
+        return self.observed_sed_young.photometry_at(self.fuv_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 
@@ -1318,7 +1474,9 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_fuv_luminosity_young, self.intrinsic_fuv_luminosity_young)
+        observed = self.observed_fuv_luminosity_young.to("W/micron").value
+        intrinsic = self.intrinsic_fuv_luminosity_young.to("W/micron").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
@@ -1330,6 +1488,8 @@ class RTModel(object):
         :return:
         """
 
+        return self.observed_young_stellar_sed.integrate()
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1339,6 +1499,8 @@ class RTModel(object):
         This function ...
         :return:
         """
+
+        return self.intrinsic_sed_young.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1350,7 +1512,57 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_bolometric_luminosity_young, self.intrinsic_bolometric_luminosity_young)
+        observed = self.observed_bolometric_luminosity_young.to("W").value
+        intrinsic = self.intrinsic_bolometric_luminosity_young.to("W").value
+        return extinction.attenuation(observed, intrinsic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_young.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_young.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_total_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_young.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_dust_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1362,8 +1574,8 @@ class RTModel(object):
         :return:
         """
 
-        # from self.observed_sed_sfr
-        return None
+        # don't interpolate, wavelength grid is expected to contain the FUV wavelength
+        return self.observed_sed_sfr.photometry_at(self.fuv_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 
@@ -1387,11 +1599,13 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_fuv_luminosity_sfr, self.intrinsic_fuv_luminosity_sfr)
+        observed = self.observed_fuv_luminosity_sfr.to("W/micron").value
+        intrinsic = self.intrinsic_fuv_luminosity_sfr.to("W/micron").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def observed_bolometric_luminosity_sfr(self):
 
         """
@@ -1399,11 +1613,11 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.observed_sfr_bolometric_luminosity
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def intrinsic_bolometric_luminosity_sfr(self):
 
         """
@@ -1411,7 +1625,7 @@ class RTModel(object):
         :return:
         """
 
-        return None
+        return self.intrinsic_sfr_bolometric_luminosity
 
     # -----------------------------------------------------------------
 
@@ -1423,7 +1637,9 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_bolometric_luminosity_sfr, self.intrinsic_bolometric_luminosity_sfr)
+        observed = self.observed_bolometric_luminosity_sfr.to("W").value
+        intrinsic = self.intrinsic_bolometric_luminosity_sfr.to("W").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
@@ -1472,6 +1688,131 @@ class RTModel(object):
         """
 
         return self.mappings.stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_fuv_luminosity_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # don't interpolate, wavelength grid is expected to contain the FUV wavelength
+        return self.observed_sed_unevolved.photometry_at(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_fuv_luminosity_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_fuv_luminosity_young + self.intrinsic_fuv_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_bolometric_luminosity_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_stellar_sed.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_bolometric_luminosity_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_sed_unevolved.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_attenuation_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        observed = self.observed_fuv_luminosity_unevolved.to("W/micron").value
+        intrinsic = self.intrinsic_fuv_luminosity_unevolved.to("W/micron").value
+        return extinction.attenuation(observed, intrinsic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        observed = self.observed_bolometric_luminosity_unevolved.to("W").value
+        intrinsic = self.intrinsic_bolometric_luminosity_unevolved.to("W").value
+        return extinction.attenuation(observed, intrinsic)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_unevolved.splice(x_max=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_unevolved.splice(x_min=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_total_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_unevolved.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_dust_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -2671,6 +3012,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def intrinsic_sed_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_sed_young + self.intrinsic_sed_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def intrinsic_sed_sfr_stellar(self):
 
         """
@@ -2826,7 +3179,9 @@ class RTModel(object):
         :return:
         """
 
-        return extinction.attenuation(self.observed_stellar_luminosity, self.intrinsic_stellar_luminosity)
+        observed = self.observed_stellar_luminosity.to("W").value
+        intrinsic = self.intrinsic_stellar_luminosity.to("W").value
+        return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
 
@@ -2940,6 +3295,18 @@ class RTModel(object):
 
         # From observed_sfr_dust_sed
         return self.observed_sfr_dust_sed.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_total_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_sfr.integrate()
 
     # -----------------------------------------------------------------
 
