@@ -1005,7 +1005,7 @@ class Image(object):
 
                 # Add this segmentation map to the data cube
                 datacube.append(self.segments[segments_name].data)
-                plane_names = segments_name + " [segments]"
+                plane_name = segments_name + " [segments]"
                 plane_names.append(plane_name)
 
                 # Add the name of the segmentation map to the header

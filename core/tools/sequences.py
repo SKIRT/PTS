@@ -388,6 +388,7 @@ def combine_unique(*args):
     # Add
     for seq in args: unique |= set(seq)
 
+    # Return as list
     return list(unique)
 
 # -----------------------------------------------------------------
@@ -1863,6 +1864,19 @@ def contains_all(lst, other):
     for item in other:
         if item not in lst: return False
     return True
+
+# -----------------------------------------------------------------
+
+def contains_more(lst, other):
+
+    """
+    This function returns whether 'lst' contains more items than those in 'other'
+    :param lst:
+    :param other:
+    :return:
+    """
+
+    return not contains_all(other, lst)
 
 # -----------------------------------------------------------------
 

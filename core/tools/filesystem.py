@@ -1048,6 +1048,19 @@ def ndirectories_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
+def has_directories_in_path(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    return ndirectories_in_path(*args, **kwargs) > 0
+
+# -----------------------------------------------------------------
+
 def nitems_in_path(*args, **kwargs):
 
     """
