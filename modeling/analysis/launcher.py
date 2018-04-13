@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
@@ -635,8 +636,10 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         if self.config.isrf: self.ski.set_write_isrf()
 
         # Write absorption
-        self.ski.set_write_absorption()
-
+        local_skirt_version = introspection.skirt_main_version()
+        if local_skirt_version == 7: self.ski.set_write_absorption()
+        elif local_skirt_version == 8: self.ski.set_write_isrf()
+        else: raise ValueError("Invalid version")
         #self.ski.set_write_grid()
 
     # -----------------------------------------------------------------
