@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractproperty
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
-from ..core.model import Model
+from ..core.model import RTModel
 from ...core.tools import sequences
 from ...core.basics.composite import SimplePropertyComposite
 from ..fitting.run import FittingRun
@@ -2676,10 +2676,10 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         # Create the model and return it
-        return Model(self.model_definition, simulation_name=self.simulation_name, chi_squared=self.chi_squared,
-                     free_parameter_labels=self.free_parameter_labels, wavelength_grid=self.wavelength_grid,
-                     observed_old_output_path=self.old_output_path, observed_young_output_path=self.young_output_path,
-                     observed_sfr_output_path=self.ionizing_output_path, observed_unevolved_output_path=self.unevolved_output_path)
+        return RTModel(self.model_definition, simulation_name=self.simulation_name, chi_squared=self.chi_squared,
+                      free_parameter_labels=self.free_parameter_labels, wavelength_grid=self.wavelength_grid,
+                      observed_old_output_path=self.old_output_path, observed_young_output_path=self.young_output_path,
+                      observed_sfr_output_path=self.ionizing_output_path, observed_unevolved_output_path=self.unevolved_output_path)
 
     # -----------------------------------------------------------------
 

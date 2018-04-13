@@ -39,6 +39,7 @@ from ...core.data.sed import ObservedSED, SED
 from ...core.simulation.logfile import LogFile
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...magic.core.datacube import DataCube
+from ...magic.core.frame import Frame
 from ...core.basics.log import log
 from ...core.simulation.remote import get_simulations_for_host
 from ...core.simulation.remote import finished_name
@@ -636,6 +637,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def has_simulation_datacube(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_simulation_datacube_path(name))
+
+    # -----------------------------------------------------------------
+
     def get_simulation_datacube(self, name):
 
         """
@@ -931,36 +944,6 @@ class Generation(object):
         """
 
         return ObservedSED.from_file(self.get_mock_sed_path(simulation_name))
-
-    # -----------------------------------------------------------------
-
-    # def get_simulation_mock_sed_plot_path(self, name):
-    #
-    #     """
-    #     This function ...
-    #     :param name:
-    #     :return:
-    #     """
-    #
-    #     # Define two paths
-    #     fluxes_plot_path = fs.join(self.get_simulation_misc_fluxes_path(name), "earth_fluxes.pdf")
-    #     image_fluxes_plot_path = fs.join(self.get_simulation_misc_image_fluxes_path(name), "earth_fluxes.pdf")
-    #
-    #     # Return the correct path
-    #     if self.use_images: return image_fluxes_plot_path
-    #     else: return fluxes_plot_path
-    #
-    # # -----------------------------------------------------------------
-    #
-    # def has_mock_sed_plot(self, name):
-    #
-    #     """
-    #     This function ...
-    #     :param name:
-    #     :return:
-    #     """
-    #
-    #     return fs.is_file(self.get_simulation_mock_sed_plot_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1669,7 +1652,7 @@ class Generation(object):
         :return:
         """
 
-        return self.get_misc_output(simulation_name).has_images
+        return self.get_misc_output(simulation_name).has_images_for_fluxes
 
     # -----------------------------------------------------------------
 
@@ -1681,7 +1664,33 @@ class Generation(object):
         :return:
         """
 
-        return self.get_misc_output(simulation_name).images
+        return self.get_misc_output(simulation_name).images_for_fluxes
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_simulation(self, simulation_name):
+
+        """
+        This function ....
+        :param simulation_name:
+        :return:
+        """
+
+        # Initialize a dictionary for the images
+        images = OrderedDict()
+
+        # Loop over the image paths
+        filepaths = self.get_image_paths_for_simulation(simulation_name)
+        for filepath in filepaths:
+
+            # Get image name
+            name = fs.strip_extension(fs.name(filepath))
+
+            # Add to the dictionary
+            images[name] = Frame.from_file(filepath)
+
+        # Return the images
+        return images
 
     # -----------------------------------------------------------------
 

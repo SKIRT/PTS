@@ -129,6 +129,45 @@ def load_sed(path, wavelength_unit=None, photometry_unit=None):
 
 # -----------------------------------------------------------------
 
+def contains_multiple_seds(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # SKIRT format
+    if is_from_skirt(path):
+
+        ncols = get_ncolumns(path)
+        return ncols > 2
+
+    # PTS data format
+    elif is_pts_data_format(path): return False
+
+    # Other formats
+    else:
+
+        # Try loading the table as ECSV format
+        try:
+            table = tables.from_file(path)
+            return False
+
+        # Not readable as ECSV table, try reading as data file (wavelength and photometry columns)
+        except InconsistentTableError:
+
+            try:
+
+                ncols = get_ncolumns(path)
+                nphotometry_cols = ncols - 1
+                return nphotometry_cols > 1
+
+            # There is a string column, assume not multiple SEDs
+            except NotRealColumn: return False
+
+# -----------------------------------------------------------------
+
 def load_multiple_seds(path, wavelength_unit=None, photometry_unit=None, as_dict=False):
 
     """
@@ -604,12 +643,17 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, wavelength_unit=None, photometry_unit=None):
+    def convert_to(self, wavelength_unit=None, photometry_unit=None, density=False, density_strict=False,
+                   brightness=False, brightness_strict=False):
 
         """
         This function ...
         :param wavelength_unit:
         :param photometry_unit:
+        :param density:
+        :param density_strict:
+        :param brightness:
+        :param brightness_strict:
         :return:
         """
 
@@ -623,7 +667,7 @@ class SED(WavelengthCurve):
         # If photometry unit has to be converted
         if photometry_unit is not None:
 
-            photometry_unit = PhotometricUnit(photometry_unit)
+            photometry_unit = PhotometricUnit(photometry_unit, density=density, density_strict=density_strict, brightness=brightness, brightness_strict=brightness_strict)
             self["Photometry"] = self.photometry(asarray=True, unit=photometry_unit)
             self["Photometry"].unit = photometry_unit
 
@@ -631,6 +675,278 @@ class SED(WavelengthCurve):
             if photometry_unit.density:
                 if "density" not in self.meta: self.meta["density"] = []
                 self.meta["density"].append("Photometry")
+
+    # -----------------------------------------------------------------
+
+    def converted_to(self, wavelength_unit=None, photometry_unit=None, density=False, density_strict=False,
+                     brightness=False, brightness_strict=False):
+
+        """
+        This function ...
+        :param wavelength_unit:
+        :param photometry_unit:
+        :param density:
+        :param density_strict:
+        :param brightness:
+        :param brightness_strict:
+        :return:
+        """
+
+        new = self.copy()
+        new.convert_to(wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.physical_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_base_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.physical_base_type
+
+    # -----------------------------------------------------------------
+
+    # BOLOMETRIC IS IMPOSSIBLE FOR SED!
+    # @property
+    # def is_bolometric(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.unit.is_bolometric
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @property
+    # def corresponding_bolometric_unit(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.unit.corresponding_bolometric_unit
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def convert_to_corresponding_bolometric_unit(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Convert, return the factor
+    #     return self.convert_to(self.corresponding_bolometric_unit)
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def converted_to_corresponding_bolometric_unit(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.converted_to(self.corresponding_bolometric_unit)
+
+    # -----------------------------------------------------------------
+
+    # SHOULD ALWAYS BE THE CASE FOR AN SED!
+    @property
+    def is_spectral_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_spectral_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_wavelength_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_wavelength_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_frequency_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_frequency_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_neutral_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.is_neutral_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_wavelength_density_unit(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.unit.corresponding_wavelength_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_wavelength_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_wavelength_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_wavelength_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_frequency_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_frequency_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_frequency_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_frequency_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.corresponding_neutral_density_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert, return the factor
+        return self.convert_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_neutral_density_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.converted_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    def integrate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the unit for the spectral photometry
+        unit = self.corresponding_wavelength_density_unit
+        wavelength_unit = unit.wavelength_unit
+        bolometric_unit = unit.corresponding_bolometric_unit
+
+        # Get the wavelength deltas
+        deltas = self.wavelength_deltas(unit=wavelength_unit, asarray=True)
+
+        # Get the photometry
+        photometry = self.photometry(unit=unit, asarray=True)
+
+        # Calculate the integral
+        result = sum(deltas * photometry)
+
+        # Return
+        return result * bolometric_unit
 
 # -----------------------------------------------------------------
 

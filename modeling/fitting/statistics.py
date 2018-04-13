@@ -17,6 +17,7 @@ import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
+from .component import FittingComponent
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.basics.log import log
@@ -39,6 +40,12 @@ from ...core.tools import filesystem as fs
 from ...core.plot.transmission import plot_filters
 from ...core.tools import types
 from ...core.config.plot_seds import default_residual_reference, residual_references
+from ...magic.config.plot_images import definition as plot_images_definition
+from ...magic.config.plot_residuals import definition as plot_residuals_definition
+from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
+from ...core.filter.filter import parse_filter
+from ...magic.core.frame import Frame
+from ...magic.tools.headers import get_header, get_filter
 
 # -----------------------------------------------------------------
 
@@ -68,6 +75,11 @@ _prob_command_name = "prob"
 _seds_command_name = "seds"
 _sed_command_name = "sed"
 _filters_command_name = "filters"
+_best_seds_command_name = "best_seds"
+_best_images_command_name = "best_images"
+_images_command_name = "images"
+_best_residuals_command_name = "best_residuals"
+_residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
 
@@ -109,15 +121,31 @@ closest_commands[_fluxes_command_name] = ("plot_closest_fluxes_command", True, "
 
 # Plot commands
 plot_commands = OrderedDict()
+
+# Probabilities etc.
 plot_commands[_terms_command_name] = ("plot_terms_command", True, "plot the chi squared terms", "generation_simulation")
 plot_commands[_ranks_command_name] = ("plot_ranks_command", True, "plot the chi squared as a function of rank", "generation")
 plot_commands[_chisquared_command_name] = ("plot_chi_squared_command", True, "plot the distribution of chi squared values", "generation")
 plot_commands[_prob_command_name] = ("plot_probabilities_command", True, "plot the distribution of probabilities", "generation")
+
+# Plotting SEDs
 plot_commands[_seds_command_name] = ("plot_seds_command", True, "plot the simulation SEDs of a generation", "generation")
-plot_commands[_best_command_name] = ("plot_best_command", True, "plot the SEDs (simulated or mock) of the best simulation(s) of a generation", "generation")
+plot_commands[_best_seds_command_name] = ("plot_best_seds_command", True, "plot the SEDs (simulated or mock) of the best simulation(s) of a generation", "generation")
 plot_commands[_sed_command_name] = ("plot_sed_command", True, "plot the SED (simulated or mock) of a particular simulation", "generation_simulation")
+
+# Plotting mock images
+plot_commands[_best_images_command_name] = ("plot_best_images_command", True, "plot the mock images of the best simulation of a generation", "generation")
+plot_commands[_images_command_name] = ("plot_images_command", True, "plot the mock images of a particular simulation", "generation_simulation")
+
+# Plotting residuals
+plot_commands[_best_residuals_command_name] = ("plot_best_residuals_command", True, "plot the residuals between mock and observed images of the best simulation of a generation", "generation")
+plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the residuals between mock and observed images of a particular simulation", "generation_simulation")
+
+# Other
 plot_commands[_counts_command_name] = ("plot_counts_command", True, "plot the best parameter counts", "generation")
 plot_commands[_filters_command_name] = ("plot_filters", False, "plot the fitting filters", None)
+
+# -----------------------------------------------------------------
 
 # Set subcommands
 subcommands = OrderedDict()
@@ -149,7 +177,7 @@ sed_reference_descriptions[asymptotic_sed] = "Observed asymptotic fluxes"
 
 # -----------------------------------------------------------------
 
-class FittingStatistics(InteractiveConfigurable):
+class FittingStatistics(InteractiveConfigurable, FittingComponent):
     
     """
     This class...
@@ -170,7 +198,9 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         # Call the constructor of the base class
-        super(FittingStatistics, self).__init__(*args, **kwargs)
+        #super(FittingStatistics, self).__init__(*args, **kwargs)
+        InteractiveConfigurable.__init__(self, no_config=True)
+        FittingComponent.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -232,7 +262,9 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         # Call the setup function of the base class
-        super(FittingStatistics, self).setup(**kwargs)
+        #super(FittingStatistics, self).setup(**kwargs)
+        InteractiveConfigurable.setup(self, **kwargs)
+        FittingComponent.setup(self, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1349,6 +1381,112 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         return self.get_generation(generation_name).get_mock_sed_plot_path(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_datacube(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).has_simulation_datacube(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_datacube_path(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_simulation_datacube_path(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_datacube(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_simulation_datacube(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_images(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).has_images_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_image_paths(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_image_paths_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_images(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_generation(generation_name).get_images_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_images_plot(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_images_plot_path(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -2756,7 +2894,7 @@ class FittingStatistics(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def plot_best_definition(self):
+    def plot_best_seds_definition(self):
 
         """
         This function ...
@@ -2789,7 +2927,7 @@ class FittingStatistics(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_best_command(self, command, **kwargs):
+    def plot_best_seds_command(self, command, **kwargs):
 
         """
         This function ...
@@ -2799,7 +2937,7 @@ class FittingStatistics(InteractiveConfigurable):
         """
 
         # Get generation name
-        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_definition, **kwargs)
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_seds_definition, **kwargs)
 
         # Simulated or mock?
         simulated_or_mock = config.pop("simulated_or_mock")
@@ -3574,6 +3712,293 @@ class FittingStatistics(InteractiveConfigurable):
 
         # Return the definition
         return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_images_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        #definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return plot_images_definition
+
+    # -----------------------------------------------------------------
+
+    def plot_images_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation and simulation name
+        generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_images_definition, **kwargs)
+
+        # Simulated or mock?
+        config.pop("_path")
+
+        # Plot
+        self.plot_images(generation_name, simulation_name, **config)
+
+    # -----------------------------------------------------------------
+
+    def plot_images(self, generation_name, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the mock images for simulation '" + simulation_name + "' of generation '" + generation_name + "' ...")
+
+        # Create the plotter
+        plotter = StandardImageGridPlotter(**kwargs)
+
+        # Get the mock images
+        image_paths = self.get_image_paths(generation_name, simulation_name)
+
+        # Loop over the image paths
+        for filepath in image_paths:
+
+            # Get image name
+            name = fs.strip_extension(fs.name(filepath))
+
+            # Get header
+            header = get_header(filepath)
+
+            # Get the filter
+            fltr = get_filter(name, header=header)
+            filter_name = str(fltr)
+
+            # Load the image
+            frame = Frame.from_file(filepath)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the mock image to the plotter
+            plotter.add_image(filter_name, frame)
+
+        # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_best_images_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return plot_images_definition
+
+    # -----------------------------------------------------------------
+
+    def plot_best_images_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_images_definition, **kwargs)
+        config.pop("_path")
+
+        # Plot
+        self.plot_best_images(generation_name, **config)
+
+    # -----------------------------------------------------------------
+
+    def plot_best_images(self, generation_name, **kwargs):
+
+        """
+        This function ...
+        :param generation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the mock images for the best simulation of generation '" + generation_name + "' ...")
+
+        # Get best simulation name
+        simulation_name = self.get_best_simulation_name(generation_name)
+
+        # Plot
+        self.plot_images(generation_name, simulation_name, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_residuals_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return plot_residuals_definition
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation and simulation name
+        generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_residuals_definition, **kwargs)
+
+        # Simulated or mock?
+        config.pop("_path")
+
+        # Plot
+        self.plot_residuals(generation_name, simulation_name, **config)
+
+    # -----------------------------------------------------------------
+
+    def plot_residuals(self, generation_name, simulation_name, **kwargs):
+
+        """
+        This function ...
+        :param generation_name:
+        :param simulation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the residual images for simulation '" + simulation_name + "' of generation '" + generation_name + "' ...")
+
+        # Create the plotter
+        plotter = ResidualImageGridPlotter(**kwargs)
+
+        # Keep track of the observed filters
+        filters = []
+
+        # Loop over the observed image paths
+        for filepath in self.environment.photometry_image_paths:
+
+            # Get the filter
+            name = fs.strip_extension(fs.name(filepath))
+            fltr = parse_filter(name)
+            filters.append(fltr)
+            filter_name = str(fltr)
+
+            # Load the image
+            frame = Frame.from_file(filepath)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the frame to the plotter
+            plotter.add_observation(filter_name, frame)
+
+        # Get the mock images
+        image_paths = self.get_image_paths(generation_name, simulation_name)
+
+        # Loop over the image paths
+        for filepath in image_paths:
+
+            # Get image name
+            name = fs.strip_extension(fs.name(filepath))
+
+            # Get header
+            header = get_header(filepath)
+
+            # Get the filter
+            fltr = get_filter(name, header=header)
+            filter_name = str(fltr)
+
+            # Check whether the filter is in the list of filters to be plotted
+            if fltr not in filters: continue
+
+            # Load the image
+            frame = Frame.from_file(filepath)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the mock image to the plotter
+            plotter.add_model(filter_name, frame)
+
+        # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_best_residuals_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return plot_residuals_definition
+
+    # -----------------------------------------------------------------
+
+    def plot_best_residuals_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_residuals_definition, **kwargs)
+        config.pop("_path")
+
+        # Plot
+        self.plot_best_residuals(generation_name, **config)
+
+    # -----------------------------------------------------------------
+
+    def plot_best_residuals(self, generation_name, **kwargs):
+
+        """
+        This function ...
+        :param generation_name:
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the residual images for the best simulation of generation '" + generation_name + "' ...")
+
+        # Get best simulation name
+        simulation_name = self.get_best_simulation_name(generation_name)
+
+        # Plot
+        self.plot_residuals(generation_name, simulation_name, **kwargs)
 
     # -----------------------------------------------------------------
 

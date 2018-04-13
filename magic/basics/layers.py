@@ -63,17 +63,18 @@ class Layers(OrderedDict):
 
     # -----------------------------------------------------------------
 
-    def as_list(self):
+    def as_list(self, copy=False):
 
         """
         This function ...
+        :param copy:
         :return:
         """
 
         layer_list = []
-
-        for name in self: layer_list.append(self[name])
-
+        for name in self:
+            if copy: layer_list.append(self[name].copy())
+            else: layer_list.append(self[name])
         return layer_list
 
     # -----------------------------------------------------------------

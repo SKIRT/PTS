@@ -374,6 +374,31 @@ class SimulationData(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sed_paths_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        paths_instruments = dict()
+
+        # Loop over the paths
+        for path in self.sed_paths:
+
+            # Get the instrument name
+            instrument_name = get_sed_instrument_name(path, self.simulation_prefix)
+
+            # Set the SED path for this instrument
+            paths_instruments[instrument_name] = path
+
+        # Return the dictionary
+        return paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def seds(self):
 
         """

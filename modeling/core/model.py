@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.model Contains the Model class.
+## \package pts.modeling.core.model Contains the RTModel class.
 
 # -----------------------------------------------------------------
 
@@ -48,10 +48,84 @@ stellar_dust_sed_split_wavelength = 5. * u("micron")
 
 # -----------------------------------------------------------------
 
-sfr_name = "SFR"
-sfr_stellar_lum_name = "SFR stellar luminosity"
-sfr_dust_lum_name = "SFR dust luminosity"
-sfr_dust_mass_name = "SFR dust mass"
+# Names of derived model properties
+
+## Total
+obs_total_bol_lum_name = "Observed total bolometric luminosity" # 1
+intr_total_bol_lum_name = "Intrinsic total bolometric luminosity" # 2 ; should be same as 1
+obs_total_stellar_bol_lum_name = "Observed total stellar bolometric luminosity" # 3
+intr_total_stellar_bol_lum_name = "Intrinsic total stellar bolometric luminosity" # 4 ; should be same as 2
+bol_attenuation_name = "Total bolometric attenuation" # 5
+total_dust_mass_name = "Total dust mass" # 6 with SFR dust mass
+
+## Old bulge
+obs_bulge_spec_lum_name = "Observed old stellar bulge specific luminosity" # 7
+intr_bulge_spec_lum_name = "Intrinsic old stellar bulge specific luminosity" # 8 part of parameter set
+obs_bulge_bol_lum_name = "Observed old stellar bulge bolometric luminosity" # 9
+intr_bulge_bol_lum_name = "Intrinsic old stellar bulge bolometric luminosity" # 10
+bulge_spec_attenuation_name = "Old stellar bulge specific attenuation" # 11
+bulge_bol_attenuation_name = "Old stellar bulge bolometric attenuation" # 12
+obs_bulge_total_lum_name = "Old stellar bulge bolometric total luminosity" # 13 stellar + dust ; should be the same as 10 (intrinsic lum)
+obs_bulge_dust_lum_name = "Old stellar bulge bolometric dust luminosity" # 14
+
+## Old disk
+obs_disk_spec_lum_name = "Observed old stellar disk specific luminosity" #
+intr_disk_spec_lum_name = "Intrinsic old stellar disk specific luminosity" # part of parameter set
+obs_disk_bol_lum_name = "Observed old stellar disk bolometric luminosity" #
+intr_disk_bol_lum_name = "Intrinsic old stellar disk bolometric luminosity" #
+disk_spec_attenuation_name = "Old stellar disk specific attenuation" #
+disk_bol_attenuation_name = "Old stellar disk bolometric attenuation" #
+obs_disk_total_lum_name = "Old stellar disk bolometric total luminosity" # stellar + dust ; should be the same as x (intrinsic lum)
+obs_disk_dust_lum_name = "Old stellar disk bolometric dust luminosity" #
+
+## Old (evolved)
+obs_old_spec_lum_name = "Observed old stellar specific luminosity" #
+intr_old_spec_lum_name = "Intrinsic old stellar specific luminosity" #
+obs_old_bol_lum_name = "Observed old stellar bolometric luminosity" #
+intr_old_bol_lum_name = "Intrinsic old stellar bolometric luminosity" #
+old_spec_attenuation_name = "Old stellar specific attenuation" #
+old_bol_attenuation_name = "Old stellar bolometric attenuation" #
+obs_old_total_lum_name = "Old stellar bolometric total luminosity" # stellar + dust ; should be the same as x (intrinsic lum)
+obs_old_dust_lum_name = "Old stellar bolometric dust luminosity" #
+
+## Young stars
+obs_young_spec_lum_name = "Observed young stellar specific luminosity" #
+intr_young_spec_lum_name = "Intrinsic young stellar specific luminosity" # part of (free) parameter set
+obs_young_bol_lum_name = "Observed young stellar bolometric luminosity" #
+intr_young_bol_lum_name = "Intrinsic young stellar bolometric luminosity" #
+young_spec_attenuation_name = "Young stellar specific attenuation" #
+young_bol_attenuation_name = "Young stellar bolometric attenuation" #
+obs_young_total_lum_name = "Young stellar bolometric total luminosity" # stellar + dust ; should be the same as x (intrinsic lum)
+obs_young_dust_lum_name = "Young stellar bolometric dust luminosity" #
+
+## Ionizing stars (SFR)
+sfr_name = "Star formation rate"
+obs_sfr_spec_lum_name = "Observed SFR specific luminosity" #
+intr_sfr_spec_lum_name = "Intrinsic SFR specific luminosity" #
+obs_sfr_bol_lum_name = "Observed SFR bolometric luminosity" #
+intr_sfr_bol_lum_name = "Intrinsic SFR bolometric luminosity" #
+sfr_spec_attenuation_name = "SFR specific attenuation" #
+sfr_bol_attenuation_name = "SFR bolometric attenuation" #
+obs_sfr_stellar_bol_lum_name = "Observed SFR stellar bolometric luminosity" #
+intr_sfr_stellar_bol_lum_name = "Intrinsic SFR stellar bolometric luminosity" #
+sfr_stellar_mass_name = "SFR stellar mass" # internal stars
+sfr_dust_mass_name = "SFR internal dust mass" # INTERNAL SO ONLY THE DUST IN MAPPINGS
+sfr_dust_lum_name = "SFR internal bolometric dust luminosity" # INTERNAL SO ONLY THE DUST IN MAPPINGS
+obs_sfr_total_lum_name = "SFR bolometric total luminosity" # stellar(SFR with MAPPINGS) + dust ; should be the same as x (intrinsic lum)
+obs_sfr_dust_lum_name = "SFR bolometric dust luminosity" # INTERNAL DUST + DUST DISK
+
+## Young + ionizing (unevolved)
+obs_unevolved_spec_lum_name = "Observed unevolved stellar specific luminosity" #
+intr_unevolved_spec_lum_name = "Intrinsic unevolved stellar specific luminosity" #
+obs_unevolved_bol_lum_name = "Observed unevolved stellar bolometric luminosity" #
+intr_unevolved_bol_lum_name = "Intrinsic unevolved stellar bolometric luminosity" #
+unevolved_spec_attenuation_name = "Unevolved stellar specific attenuation" #
+unevolved_bol_attenuation_name = "Unevolved stellar bolometric attenuation" #
+obs_unevolved_total_lum_name = "Unevolved stellar bolometric total luminosity" # stellar + dust ; should be the same as x (intrinsic lum)
+obs_unevolved_dust_lum_name = "Unevolved stellar bolometric dust luminosity" #
+
+## Dust
+dust_lum_name = "Bolometric dust luminosity" #self.dust_luminosity
 
 # -----------------------------------------------------------------
 
@@ -68,34 +142,53 @@ young_name = "young"
 default_npackages = 1e5
 wavelengths_filename = "wavelengths.txt"
 map_filename = "map.fits"
+
+# Instruments/orientations
 earth_name = "earth"
+faceon_name = "faceon"
+edgeon_name = "edgeon"
 
 # -----------------------------------------------------------------
 
-class Model(object):
+# Contributions
+total_contribution = "total"
+direct_contribution = "direct"
+scattered_contribution = "scattered"
+dust_contribution = "dust"
+dust_scattered_contribution = "dustscattered"
+transparent_contribution = "transparent"
+contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, dust_scattered_contribution, transparent_contribution]
+
+# -----------------------------------------------------------------
+
+class RTModel(object):
     
     """
-    This class...
+    Objects of this class describe a full radiative transfer model.
     """
 
     def __init__(self, definition, wavelength_grid=None, simulation_name=None, chi_squared=None,
                  free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
-                 observed_old_output_path=None, observed_young_output_path=None, observed_sfr_output_path=None,
-                 observed_unevolved_output_path=None):
+                 observed_bulge_output_path=None, observed_disk_output_path=None, observed_old_output_path=None,
+                 observed_young_output_path=None, observed_sfr_output_path=None, observed_unevolved_output_path=None,
+                 parameters=None):
 
         """
         The constructor ...
-        :param definition:
-        :param wavelength_grid:
-        :param simulation_name:
-        :param chi_squared:
-        :param free_parameter_labels:
-        :param free_parameter_values:
-        :param observed_total_output_path:
-        :param observed_old_output_path:
-        :param observed_young_output_path:
-        :param observed_sfr_output_path:
-        :param observed_unevolved_output_path:
+        :param definition: model definition
+        :param wavelength_grid: wavelength grid of the simulation
+        :param simulation_name: name for the simulation
+        :param chi_squared: reduced chi squared value
+        :param free_parameter_labels: labels of free parameters
+        :param free_parameter_values: values of free parameters (as dict)
+        :param observed_total_output_path: output path of simulation with total stellar contribution + dust
+        :param observed_bulge_output_path: output path of simulation with old stellar bulge contribution + dust
+        :param observed_disk_output_path: output path of simulation with old stellar disk contribution + dust
+        :param observed_old_output_path: output path of simulation with old stellar contribution + dust
+        :param observed_young_output_path: output path of simulation with young stellar contribution + dust
+        :param observed_sfr_output_path: output path of simulation with SFR contribution + dust
+        :param observed_unevolved_output_path: output path of simulation with young stellar and SFR contribution + dust
+        :param parameters:
         :return:
         """
 
@@ -134,10 +227,32 @@ class Model(object):
 
         # Simulation output paths
         self.observed_total_output_path = observed_total_output_path
+        self.observed_bulge_output_path = observed_bulge_output_path
+        self.observed_disk_output_path = observed_disk_output_path
         self.observed_old_output_path = observed_old_output_path
         self.observed_young_output_path = observed_young_output_path
         self.observed_sfr_output_path = observed_sfr_output_path
         self.observed_unevolved_output_path = observed_unevolved_output_path
+
+        # Set parameters
+        if parameters is not None: self.set_parameters(**parameters)
+
+    # -----------------------------------------------------------------
+
+    def set_parameters(self, **values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        # Loop over the values
+        for name in values:
+
+            # Set
+            value = values[name]
+            setattr(self, name, value)
 
     # -----------------------------------------------------------------
 
@@ -186,6 +301,354 @@ class Model(object):
         """
 
         return self.has_observed_total_output and self.observed_total_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.sed_paths_instruments[earth_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_total_sed_orientations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_total_data.sed_paths_instruments) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_observed_total_sed_orientation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return faceon_name in self.observed_total_data.sed_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_total_sed_orientation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return edgeon_name in self.observed_total_data.sed_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_observed_total_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.sed_paths_instruments[faceon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_total_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.sed_paths_instruments[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sed_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_observed_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[faceon_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[edgeon_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_total_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_total_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.seds[earth_name][transparent_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_sed_transparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_intrinsic_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise RuntimeError("Contributions are not simulated for faceon instrument (no full instrument)?")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_intrinsic_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise RuntimeError("Contributions are not simulated for edgeon instrument (no full instrument)?")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_total_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_sed.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_total_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_total_sed.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_bulge_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_bulge_output_path is not None and fs.is_directory(self.observed_bulge_output_path) and not fs.is_empty(self.observed_bulge_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_bulge_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_old_bulge_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_bulge_data(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_observed_old_bulge_output and self.observed_old_bulge_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_disk_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_disk_output_path is not None and fs.is_directory(self.observed_disk_output_path) and not fs.is_empty(self.observed_disk_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationOutput.from_directory(self.observed_disk_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimulationData.from_output(self.observed_old_disk_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_disk_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_old_disk_output and self.observed_old_disk_data.has_seds
 
     # -----------------------------------------------------------------
 
@@ -599,6 +1062,7 @@ class Model(object):
         :return:
         """
 
+        # from self.observed_sed_old_bulge
         return None
 
     # -----------------------------------------------------------------
@@ -616,7 +1080,7 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def i1_attenuation_old_bugle(self):
+    def i1_attenuation_old_bulge(self):
 
         """
         This function ...
@@ -628,6 +1092,42 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_bolometric_luminosity_old_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_bolometric_luminosity_old_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation_old_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return extinction.attenuation(self.observed_bolometric_luminosity_old_bulge, self.intrinsic_bolometric_luminosity_old_bulge)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_i1_luminosity_old_disk(self):
 
         """
@@ -635,6 +1135,7 @@ class Model(object):
         :return:
         """
 
+        # from self.observed_sed_old_disk
         return None
 
     # -----------------------------------------------------------------
@@ -664,6 +1165,42 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_bolometric_luminosity_old_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_bolometric_luminosity_old_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation_old_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return extinction.attenuation(self.observed_bolometric_luminosity_old_disk, self.intrinsic_bolometric_luminosity_old_disk)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_i1_luminosity_old(self):
 
         """
@@ -671,6 +1208,7 @@ class Model(object):
         :return:
         """
 
+        # from self.observed_sed_old
         return None
 
     # -----------------------------------------------------------------
@@ -688,7 +1226,7 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def attenuation_i1_old(self):
+    def i1_attenuation_old(self):
 
         """
         This function ...
@@ -696,6 +1234,54 @@ class Model(object):
         """
 
         return extinction.attenuation(self.observed_i1_luminosity_old, self.intrinsic_i1_luminosity_old)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_i1_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.i1_attenuation_old
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_bolometric_luminosity_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_bolometric_luminosity_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return extinction.attenuation(self.observed_bolometric_luminosity_old, self.intrinsic_bolometric_luminosity_old)
 
     # -----------------------------------------------------------------
 
@@ -707,6 +1293,7 @@ class Model(object):
         :return:
         """
 
+        # from self.observed_sed_young
         return None
 
     # -----------------------------------------------------------------
@@ -736,6 +1323,38 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_bolometric_luminosity_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_bolometric_luminosity_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return extinction.attenuation(self.observed_bolometric_luminosity_young, self.intrinsic_bolometric_luminosity_young)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_fuv_luminosity_sfr(self):
 
         """
@@ -743,6 +1362,7 @@ class Model(object):
         :return:
         """
 
+        # from self.observed_sed_sfr
         return None
 
     # -----------------------------------------------------------------
@@ -768,6 +1388,42 @@ class Model(object):
         """
 
         return extinction.attenuation(self.observed_fuv_luminosity_sfr, self.intrinsic_fuv_luminosity_sfr)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_bolometric_luminosity_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_bolometric_luminosity_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return extinction.attenuation(self.observed_bolometric_luminosity_sfr, self.intrinsic_bolometric_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
@@ -1164,6 +1820,54 @@ class Model(object):
         """
 
         return self.wavelength_grid is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths_micron(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid.wavelengths(unit="micron", asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_deltas(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid.deltas(unit="micron", add_unit=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_deltas_micron(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid.deltas(unit="micron", asarray=True)
 
     # -----------------------------------------------------------------
 
@@ -1991,18 +2695,6 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def observed_sed_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name]["total"]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def observed_sed_old_bulge(self):
 
         """
@@ -2010,6 +2702,7 @@ class Model(object):
         :return:
         """
 
+        # WE NEED A SEPARATE SIMULATION FOR JUST THE OLD BULGE FOR THIS
         return None
 
     # -----------------------------------------------------------------
@@ -2022,6 +2715,7 @@ class Model(object):
         :return:
         """
 
+        # WE NEED A SEPARATE SIMULATION FOR JUST THE OLD DISK FOR THIS
         return None
 
     # -----------------------------------------------------------------
@@ -2035,7 +2729,7 @@ class Model(object):
         """
 
         #return self.observed_sed_old_bulge + self.observed_sed_old_disk
-        return self.observed_old_data.seds[earth_name]["total"]
+        return self.observed_old_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -2047,7 +2741,7 @@ class Model(object):
         :return:
         """
 
-        return self.observed_young_data.seds[earth_name]["total"]
+        return self.observed_young_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -2059,7 +2753,7 @@ class Model(object):
         :return:
         """
 
-        return self.observed_sfr_data.seds[earth_name]["total"]
+        return self.observed_sfr_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -2071,7 +2765,7 @@ class Model(object):
         :return:
         """
 
-        return self.observed_unevolved_data.seds[earth_name]["total"]
+        return self.observed_unevolved_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -2108,6 +2802,31 @@ class Model(object):
         """
 
         # based on self.observed_stellar_sed
+        return self.observed_stellar_sed.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_stellar_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_bolometric_luminosity_old + self.intrinsic_bolometric_luminosity_young + self.intrinsic_bolometric_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return extinction.attenuation(self.observed_stellar_luminosity, self.intrinsic_stellar_luminosity)
 
     # -----------------------------------------------------------------
 
@@ -2120,6 +2839,19 @@ class Model(object):
         """
 
         # based on self.dust_sed
+        return self.dust_sed.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_sfr_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_sed_sfr.integrate()
 
     # -----------------------------------------------------------------
 
@@ -2132,6 +2864,7 @@ class Model(object):
         """
 
         # From intrinsic_sed_sfr_stellar
+        return self.intrinsic_sed_sfr_stellar.integrate()
 
     # -----------------------------------------------------------------
 
@@ -2144,6 +2877,7 @@ class Model(object):
         """
 
         # From intrinsic_sed_sfr_dust
+        return self.intrinsic_sed_sfr_dust.integrate()
 
     # -----------------------------------------------------------------
 
@@ -2172,6 +2906,18 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_sfr_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed_sfr.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_sfr_stellar_luminosity(self):
 
         """
@@ -2180,6 +2926,7 @@ class Model(object):
         """
 
         # From observed_sfr_stellar_sed
+        return self.observed_sfr_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -2192,6 +2939,7 @@ class Model(object):
         """
 
         # From observed_sfr_dust_sed
+        return self.observed_sfr_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
@@ -2206,10 +2954,90 @@ class Model(object):
         # Initialize
         values = OrderedDict()
 
+        # Total
+        values[obs_total_bol_lum_name] = self.observed_total_bolometric_luminosity
+        values[intr_total_bol_lum_name] = self.intrinsic_total_bolometric_luminosity
+        values[obs_total_stellar_bol_lum_name] = self.observed_stellar_luminosity
+        values[intr_total_stellar_bol_lum_name] = self.intrinsic_stellar_luminosity
+        values[bol_attenuation_name] = self.bolometric_attenuation
+        values[total_dust_mass_name] = self.total_dust_mass # with SFR dust mass
+        # NO, DOESN'T MAKE SENSE: SFR dust lum is already in the observed total SED
+        #values[total_dust_lum_name] = self.total_dust_luminosity # with SFR dust luminosity
+
+        # Old bulge
+        values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
+        values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge # part of parameter set
+        values[obs_bulge_bol_lum_name] = self.observed_bolometric_luminosity_old_bulge
+        values[intr_bulge_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_bulge
+        values[bulge_spec_attenuation_name] = self.i1_attenuation_old_bulge
+        values[bulge_bol_attenuation_name] = self.bolometric_attenuation_old_bulge
+
+        values[obs_bulge_total_lum_name] = self.observed_old_bulge_total_luminosity
+        values[obs_bulge_dust_lum_name] = self.observed_old_bulge_dust_luminosity
+
+        # Old disk
+        values[obs_disk_spec_lum_name] = self.observed_i1_luminosity_old_disk
+        values[intr_disk_spec_lum_name] = self.intrinsic_i1_luminosity_old_disk # part of parameter set
+        values[obs_disk_bol_lum_name] = self.observed_bolometric_luminosity_old_disk
+        values[intr_disk_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_disk
+        values[disk_spec_attenuation_name] = self.i1_attenuation_old_disk
+        values[disk_bol_attenuation_name] = self.bolometric_attenuation_old_disk
+
+        values[obs_disk_total_lum_name] = self.observed_old_disk_total_luminosity
+        values[obs_disk_dust_lum_name] = self.observed_old_disk_dust_luminosity
+
+        # Old (evolved)
+        values[obs_old_spec_lum_name] = self.observed_i1_luminosity_old
+        values[intr_old_spec_lum_name] = self.intrinsic_i1_luminosity_old
+        values[obs_old_bol_lum_name] = self.observed_bolometric_luminosity_old
+        values[intr_old_bol_lum_name] = self.intrinsic_bolometric_luminosity_old
+        values[old_spec_attenuation_name] = self.i1_attenuation_old
+        values[old_bol_attenuation_name] = self.bolometric_attenuation_old
+
+        values[obs_old_total_lum_name] = self.observed_old_total_luminosity
+        values[obs_old_dust_lum_name] = self.observed_old_dust_luminosity
+
+        # Young stars
+        values[obs_young_spec_lum_name] = self.observed_fuv_luminosity_young
+        values[intr_young_spec_lum_name] = self.intrinsic_fuv_luminosity_young # part of (free) parameter set
+        values[obs_young_bol_lum_name] = self.observed_bolometric_luminosity_young
+        values[intr_young_bol_lum_name] = self.intrinsic_bolometric_luminosity_young
+        values[young_spec_attenuation_name] = self.fuv_attenuation_young
+        values[young_bol_attenuation_name] = self.bolometric_attenuation_young
+
+        values[obs_young_total_lum_name] = self.observed_young_total_luminosity
+        values[obs_young_dust_lum_name] = self.observed_young_dust_luminosity
+
+        # Ionizing stars (SFR)
         values[sfr_name] = self.sfr
-        #values[sfr_stellar_lum_name] = self.sfr_stellar_luminosity
-        #values[sfr_dust_lum_name] = self.sfr_dust_luminosity
+        values[obs_sfr_spec_lum_name] = self.observed_fuv_luminosity_sfr
+        values[intr_sfr_spec_lum_name] = self.intrinsic_fuv_luminosity_sfr # part of the (free) parameter set
+        values[obs_sfr_bol_lum_name] = self.observed_bolometric_luminosity_sfr # SEE: observed_sfr_bolometric_luminosity
+        values[intr_sfr_bol_lum_name] = self.intrinsic_bolometric_luminosity_sfr # SEE: intrinsic_sfr_bolometric_luminosity
+        values[sfr_spec_attenuation_name] = self.fuv_attenuation_sfr
+        values[sfr_bol_attenuation_name] = self.bolometric_attenuation_sfr
+        values[sfr_stellar_mass_name] = self.sfr_stellar_mass
+        values[obs_sfr_stellar_bol_lum_name] = self.observed_sfr_stellar_luminosity
+        values[intr_sfr_stellar_bol_lum_name] = self.intrinsic_sfr_stellar_luminosity
         values[sfr_dust_mass_name] = self.sfr_dust_mass
+        values[sfr_dust_lum_name] = self.intrinsic_sfr_dust_luminosity # intrinsic so only the dust IN MAPPINGS
+
+        values[obs_sfr_total_lum_name] = self.observed_sfr_total_luminosity
+        values[obs_sfr_dust_lum_name] = self.observed_sfr_dust_luminosity
+
+        # Young + ionizing (unevolved)
+        values[obs_unevolved_spec_lum_name] = self.observed_fuv_luminosity_unevolved
+        values[intr_unevolved_spec_lum_name] = self.intrinsic_fuv_luminosity_unevolved
+        values[obs_unevolved_bol_lum_name] = self.observed_bolometric_luminosity_unevolved
+        values[intr_unevolved_bol_lum_name] = self.intrinsic_bolometric_luminosity_unevolved
+        values[unevolved_spec_attenuation_name] = self.fuv_attenuation_unevolved
+        values[unevolved_bol_attenuation_name] = self.bolometric_attenuation_unevolved
+
+        values[obs_unevolved_total_lum_name] = self.observed_unevolved_total_luminosity
+        values[obs_unevolved_dust_lum_name] = self.observed_unevolved_dust_luminosity
+
+        # Dust
+        values[dust_lum_name] = self.dust_luminosity
 
         # Return
         return values

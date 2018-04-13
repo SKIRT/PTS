@@ -391,10 +391,27 @@ class DataCube(Image):
 
         """
         This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
         :return:
         """
 
-        return self.wavelength_grid.wavelengths(unit, asarray, add_unit)
+        return self.wavelength_grid.wavelengths(unit=unit, asarray=asarray, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def wavelength_deltas(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        return self.wavelength_grid.deltas(unit=unit, asarray=asarray, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -411,21 +428,93 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def asarray(self, axis=3):
+    def integrate(self):
 
         """
         This function ...
         :return:
         """
 
-        # Get a list that contains the frames
-        frame_list = self.frames.as_list()
+        # Get the unit for the spectral photometry
+        unit = self.corresponding_wavelength_density_unit
+        wavelength_unit = unit.wavelength_unit
+        bolometric_unit = unit.corresponding_bolometric_unit
+
+        # Get the wavelength deltas
+        deltas = self.wavelength_deltas(unit=wavelength_unit, asarray=True)
+
+        # Get a list of the frame data in the correct units
+        data_list = self.get_data(unit=unit)
+
+        # Get arrays
+        arrays = [delta*data for delta, data in zip(deltas, data_list)]
+
+        # Calculate the integral
+        frame = Frame(np.sum(arrays, axis=0), wcs=self.wcs, distance=self.distance, unit=bolometric_unit)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_frames(self, copy=False, unit=None):
+
+        """
+        This function ...
+        :param copy:
+        :param unit:
+        :return:
+        """
+
+        #return self.frames.as_list(copy=copy)
+
+        frames = []
+
+        # Loop over the frames
+        for name in self.frames:
+
+            # Get the frame in the desired unit
+            if unit is not None: frame = self.frames[name].converted_to(unit, distance=self.distance)
+            elif copy: frame = self.frames[name].copy()
+            else: frame = self.frames[name]
+
+            # Add the frame
+            frames.append(frame)
+
+        # Return the list of frames
+        return frames
+
+    # -----------------------------------------------------------------
+
+    def get_data(self, copy=False, unit=None):
+
+        """
+        This function ...
+        :param copy:
+        :param unit:
+        :return:
+        """
+
+        return [frame.data for frame in self.get_frames(copy=copy, unit=unit)]
+
+    # -----------------------------------------------------------------
+
+    def asarray(self, axis=3):
+
+        """
+        This function ...
+        :param axis:
+        :return:
+        """
+
+        # Get a list that contains the data frames
+        data_list = self.get_data()
 
         # Stack the frames into a 3D numpy array
-        if axis == 3: return np.dstack(frame_list)
-        elif axis == 2: return np.hstack(frame_list)
-        elif axis == 1: return np.vstack(frame_list)
-        elif axis == 0: return np.stack(frame_list)
+        if axis == 3: return np.dstack(data_list)
+        elif axis == 2: return np.hstack(data_list)
+        elif axis == 1: return np.vstack(data_list)
+        elif axis == 0: return np.stack(data_list)
         else: raise ValueError("'axis' parameter should be integer 0-3")
 
     # -----------------------------------------------------------------

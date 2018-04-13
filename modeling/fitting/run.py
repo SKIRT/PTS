@@ -18,7 +18,7 @@ from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
 from ...core.basics.distribution import Distribution
-from ..core.model import Model
+from ..core.model import RTModel
 from ...core.simulation.skifile import SkiFile
 from ...core.simulation.skifile import SkiFile
 from ...core.simulation.simulation import SkirtSimulation
@@ -2212,8 +2212,8 @@ class FittingRun(object):
         # Get the parameter values
         parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
-        # Create a 'Model' object and return it
-        return Model(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
+        # Create a RTModel object and return it
+        return RTModel(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
 
     # -----------------------------------------------------------------
 
@@ -3665,8 +3665,8 @@ def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
     # Get the parameter values
     parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
-    # Create a 'Model' object and return it
-    return Model(definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
+    # Create a RTModel object and return it
+    return RTModel(definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
 
 # -----------------------------------------------------------------
 

@@ -417,6 +417,52 @@ class Curve(SmartTable):
         :return:
         """
 
+        # Check whether x name is the same
+        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        x_name = self.x_name
+
+        # Initialize a list for the x values and y values
+        x_values = []
+        y_values = []
+
+        # Loop over the values of this curve and the other curve simultaneously
+        i = 0
+        j = 0
+        while True:
+
+            # Get the values
+            x_a = self.get_value(self.x_name, i)
+            x_b = other.get_value(other.x_name, j)
+
+            # Value is the same: add
+            if x_a == x_b:
+
+                result = self.get_value(self.y_name, i) - other.get_value(other.y_name, j)
+
+                x_values.append(x_a)
+                y_values.append(result)
+
+                # Increment
+                i += 1
+                j += 1
+
+            # x of a is greater than x of b
+            elif x_a > x_b: j += 1
+
+            # x of b is greater than x of a
+            else: i += 1
+
+            # Check for termination
+            if x_a >= self.npoints: break
+            if x_b >= other.npoints: break
+
+        # Set the new y name
+        if self.y_name == other.y_name: y_name = self.y_name
+        else: y_name = self.y_name + " - " + other.y_name
+
+        # Create new curve
+        return Curve.from_columns(x_values, y_values, names=[x_name, y_name])
+
     # -----------------------------------------------------------------
 
     def __mul__(self, other):
@@ -427,6 +473,52 @@ class Curve(SmartTable):
         :return:
         """
 
+        # Check whether x name is the same
+        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        x_name = self.x_name
+
+        # Initialize a list for the x values and y values
+        x_values = []
+        y_values = []
+
+        # Loop over the values of this curve and the other curve simultaneously
+        i = 0
+        j = 0
+        while True:
+
+            # Get the values
+            x_a = self.get_value(self.x_name, i)
+            x_b = other.get_value(other.x_name, j)
+
+            # Value is the same: add
+            if x_a == x_b:
+
+                result = self.get_value(self.y_name, i) * other.get_value(other.y_name, j)
+
+                x_values.append(x_a)
+                y_values.append(result)
+
+                # Increment
+                i += 1
+                j += 1
+
+            # x of a is greater than x of b
+            elif x_a > x_b: j += 1
+
+            # x of b is greater than x of a
+            else: i += 1
+
+            # Check for termination
+            if x_a >= self.npoints: break
+            if x_b >= other.npoints: break
+
+        # Set the new y name
+        if self.y_name == other.y_name: y_name = self.y_name + "1" + " * " + other.y_name + "2"
+        else: y_name = self.y_name + " * " + other.y_name
+
+        # Create new curve
+        return Curve.from_columns(x_values, y_values, names=[x_name, y_name])
+
     # -----------------------------------------------------------------
 
     def __div__(self, other):
@@ -436,6 +528,52 @@ class Curve(SmartTable):
         :param other:
         :return:
         """
+
+        # Check whether x name is the same
+        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        x_name = self.x_name
+
+        # Initialize a list for the x values and y values
+        x_values = []
+        y_values = []
+
+        # Loop over the values of this curve and the other curve simultaneously
+        i = 0
+        j = 0
+        while True:
+
+            # Get the values
+            x_a = self.get_value(self.x_name, i)
+            x_b = other.get_value(other.x_name, j)
+
+            # Value is the same: add
+            if x_a == x_b:
+
+                result = self.get_value(self.y_name, i) / other.get_value(other.y_name, j)
+
+                x_values.append(x_a)
+                y_values.append(result)
+
+                # Increment
+                i += 1
+                j += 1
+
+            # x of a is greater than x of b
+            elif x_a > x_b: j += 1
+
+            # x of b is greater than x of a
+            else: i += 1
+
+            # Check for termination
+            if x_a >= self.npoints: break
+            if x_b >= other.npoints: break
+
+        # Set the new y name
+        if self.y_name == other.y_name: y_name = self.y_name + "1" + " / " + other.y_name + "2"
+        else: y_name = self.y_name + " / " + other.y_name
+
+        # Create new curve
+        return Curve.from_columns(x_values, y_values, names=[x_name, y_name])
 
     # -----------------------------------------------------------------
 
