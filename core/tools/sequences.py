@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import operator
 import itertools
 from functools import partial
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 # -----------------------------------------------------------------
 
@@ -2122,5 +2122,96 @@ def all_strings(sequence, ignore=None, ignore_none=False, ignore_instance=None):
         if ignore_instance is not None and isinstance(item, ignore_instance): continue
         if not is_string_type(item): return False
     return True
+
+# -----------------------------------------------------------------
+
+def count_values(values):
+
+    """
+    This function ...
+    :param values:
+    :return:
+    """
+
+    return Counter(values)
+
+# -----------------------------------------------------------------
+
+def most_present_values(values):
+
+    """
+    This function ...
+    :param values:
+    :return:
+    """
+
+    import numpy as np
+
+    counts = count_values(values)
+    max_count = max(counts.values())
+
+    # Get the indices of the entries with the most counts
+    #indices = np.argwhere(np.array(counts.values()) == max_count)
+    indices = find_indices(counts.values(), max_count)
+
+    # Return the values
+    return [counts.keys()[index] for index in indices]
+
+# -----------------------------------------------------------------
+
+def most_present_value(values):
+
+    """
+    This function ...
+    :param values:
+    :return:
+    """
+
+    values = most_present_values(values)
+    nvalues = len(values)
+
+    if nvalues == 0: raise ValueError("No values")
+    elif nvalues == 1: return values[0]
+    else: raise ValueError("Not one most present value")
+
+# -----------------------------------------------------------------
+
+def least_present_values(values):
+
+    """
+    This function ...
+    :param values:
+    :return:
+    """
+
+    import numpy as np
+
+    counts = count_values(values)
+    min_count = min(counts.values())
+
+    # Get the indices of the entries with the least counts
+    #indices = np.argwhere(np.array(counts.values()) == min_count)
+    #print(indices)
+    indices = find_indices(counts.values(), min_count)
+
+    # Return the values
+    return [counts.keys()[index] for index in indices]
+
+# -----------------------------------------------------------------
+
+def least_present_value(values):
+
+    """
+    This function ...
+    :param values:
+    :return:
+    """
+
+    values = least_present_values(values)
+    nvalues = len(values)
+
+    if nvalues == 0: raise ValueError("No values")
+    elif nvalues == 1: return values[0]
+    else: raise ValueError("Not one least present value")
 
 # -----------------------------------------------------------------

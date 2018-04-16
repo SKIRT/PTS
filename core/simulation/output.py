@@ -457,7 +457,8 @@ class Output(object):
 
         # Get flag
         get_prefix = kwargs.pop("get_prefix", False)
-        prefix = None
+        #prefix = None
+        prefixes = []
 
         # Path of cached directory
         cached_path = None
@@ -473,10 +474,12 @@ class Output(object):
             # Get prefix
             if get_prefix:
                 file_prefix = filename.split("_")[0]
+                #print(prefix, file_prefix)
 
                 # Set and check prefix
-                if prefix is None: prefix = file_prefix
-                elif prefix != file_prefix: raise ValueError("Cannot add files with different simulation prefixes")
+                #if prefix is None: prefix = file_prefix
+                #elif prefix != file_prefix: raise ValueError("Cannot add files with different simulation prefixes")
+                prefixes.append(file_prefix)
 
             # Get the output type
             output_type = self.get_type(filename, directory=directory)
@@ -495,6 +498,10 @@ class Output(object):
 
         #print(prefix)
         #print(cached_path)
+
+        # Get the prefix
+        if get_prefix: prefix = sequences.most_present_value(prefixes)
+        else: prefix = None
 
         # Load cached files and directories
         if cached_path is not None:

@@ -49,7 +49,7 @@ commands = OrderedDict()
 # Standard commands
 commands[_help_command_name] = ("show_help", False, "show help", None)
 commands[_history_command_name] = ("show_history_command", True, "show history of executed commands", None)
-commands[_status_command_name] = ("show_status_command", True, "show generation status", None)
+commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
 
 # Show stuff
 commands[_model_command_name] = ("show_model", False, "show the model properties", None)
@@ -110,7 +110,7 @@ observed_intrinsic_choices = default_observed_intrinsic
 
 # -----------------------------------------------------------------
 
-default_contributions = ("total")
+default_contributions = ("total",)
 
 # -----------------------------------------------------------------
 
@@ -378,6 +378,51 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         return self.analysis_run.dust_grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_status_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_status_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the config
+        config = self.get_config_from_command(command, self.show_status_definition, **kwargs)
+
+        # Show
+        self.show_status()
+
+    # -----------------------------------------------------------------
+
+    def show_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing status ...")
 
     # -----------------------------------------------------------------
 

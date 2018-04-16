@@ -277,6 +277,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_total_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_total_output_path)
 
     # -----------------------------------------------------------------
@@ -601,6 +602,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_old_bulge_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_bulge_output_path)
 
     # -----------------------------------------------------------------
@@ -649,6 +651,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_old_disk_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_disk_output_path)
 
     # -----------------------------------------------------------------
@@ -697,6 +700,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_old_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_old_output_path)
 
     # -----------------------------------------------------------------
@@ -745,6 +749,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_young_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_young_output_path)
 
     # -----------------------------------------------------------------
@@ -793,6 +798,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_sfr_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_sfr_output_path)
 
     # -----------------------------------------------------------------
@@ -841,6 +847,7 @@ class RTModel(object):
         :return:
         """
 
+        if not self.has_observed_unevolved_output: raise ValueError("No output")
         return SimulationOutput.from_directory(self.observed_unevolved_output_path)
 
     # -----------------------------------------------------------------

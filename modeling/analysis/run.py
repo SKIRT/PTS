@@ -61,13 +61,15 @@ dustgridtree_filename = "tree.dat"
 
 # Set contribution nmes
 total = "total"
+bulge = "bulge"
+disk = "disk"
 old = "old"
 young = "young"
 ionizing = "ionizing"
 unevolved = "unevolved"
 
 # All contributions
-contributions = [total, old, young, ionizing, unevolved]
+contributions = [total, bulge, disk, old, young, ionizing, unevolved]
 
 # -----------------------------------------------------------------
 
@@ -372,6 +374,30 @@ class AnalysisRunBase(object):
         """
 
         return self.output_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_for_contribution(bulge)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.output_path_for_contribution(disk)
 
     # -----------------------------------------------------------------
 
@@ -2678,8 +2704,10 @@ class AnalysisRun(AnalysisRunBase):
         # Create the model and return it
         return RTModel(self.model_definition, simulation_name=self.simulation_name, chi_squared=self.chi_squared,
                       free_parameter_labels=self.free_parameter_labels, wavelength_grid=self.wavelength_grid,
-                      observed_old_output_path=self.old_output_path, observed_young_output_path=self.young_output_path,
-                      observed_sfr_output_path=self.ionizing_output_path, observed_unevolved_output_path=self.unevolved_output_path)
+                       observed_total_output_path=self.total_output_path, observed_bulge_output_path=self.bulge_output_path,
+                       observed_disk_output_path=self.disk_output_path, observed_old_output_path=self.old_output_path,
+                       observed_young_output_path=self.young_output_path, observed_sfr_output_path=self.ionizing_output_path,
+                       observed_unevolved_output_path=self.unevolved_output_path)
 
     # -----------------------------------------------------------------
 
