@@ -359,6 +359,12 @@ class SEDPlotter(Configurable):
         self.min_flux = kwargs.pop("min_flux", None)
         self.max_flux = kwargs.pop("max_flux", None)
 
+        # Set from config
+        if self.min_wavelength is None: self.min_wavelength = self.config.min_wavelength
+        if self.max_wavelength is None: self.max_wavelength = self.config.max_wavelength
+        if self.min_flux is None: self.min_flux = self.config.min_flux
+        if self.max_flux is None: self.max_flux = self.config.max_flux
+
         # Remove units
         if self.min_wavelength is not None and hasattr(self.min_wavelength, "unit"): self.min_wavelength = self.min_wavelength.to(self.config.wavelength_unit).value
         if self.max_wavelength is not None and hasattr(self.max_wavelength, "unit"): self.max_wavelength = self.max_wavelength.to(self.config.wavelength_unit).value
@@ -1033,8 +1039,14 @@ class SEDPlotter(Configurable):
         model_styles = dict()
 
         #line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
-        line_colors_models = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        #line_colors_models = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
         #line_styles_models_no_residuals = ["-"] * len(self.models)
+        line_colors_models = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        for color in dark_pretty_colors:
+            if color not in line_colors_models: line_colors_models.append(color)
+        #line_colors_models = dark_pretty_colors
+
+        line_styles_models = line_styles if self.nmodels_not_ghost <= len(line_styles) else ["-"] * len(line_colors_models)
 
         # Loop over the model SEDs
         for model_label in self.models:
@@ -1063,9 +1075,9 @@ class SEDPlotter(Configurable):
                 errors = sed.errors(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles[counter], model_label.replace("_", "\_"), errors=errors, linecolor=line_colors_models[counter])
+                self.draw_model(self.main_plot, wavelengths, fluxes, line_styles_models[counter], model_label.replace("_", "\_"), errors=errors, linecolor=line_colors_models[counter])
                 model_colors[model_label] = line_colors_models[counter]
-                model_styles[model_label] = line_styles[counter]
+                model_styles[model_label] = line_styles_models[counter]
 
                 counter += 1
 
@@ -1174,6 +1186,24 @@ class SEDPlotter(Configurable):
         for model_label in self.models:
             sed, plot_residuals, ghost = self.models[model_label]
             if plot_residuals: count += 1
+        return count
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmodels_not_ghost(self):
+
+        """
+        This fnuction ...
+        :return:
+        """
+
+        count = 0
+
+        # Loop over the models
+        for model_label in self.models:
+            sed, plot_residuals, ghost = self.models[model_label]
+            if not ghost: count += 1
         return count
 
     # -----------------------------------------------------------------
@@ -1337,6 +1367,9 @@ class SEDPlotter(Configurable):
         line_colors_models = ['black'] * len(self.models)
 
         line_colors_models_no_residuals = ["r", "lawngreen", "blueviolet", "deepskyblue", "orange"]
+        for color in dark_pretty_colors:
+            if color not in line_colors_models_no_residuals: line_colors_models_no_residuals.append(color)
+
         line_styles_models_no_residuals = ["-"] * len(self.models)
 
         counter = 0

@@ -112,3 +112,11 @@ definition.add_optional("additional_for", "string_list", "observed SED labels on
 definition.add_optional("additional_not_for", "string_list", "observed SED labels on which to not apply the additional error")
 
 # -----------------------------------------------------------------
+
+# Min and max
+definition.add_optional("min_wavelength", "length_quantity", "minimum wavelength")
+definition.add_optional("max_wavelength", "length_quantity", "maximum wavelength")
+definition.add_optional("min_flux", "photometric_quantity", "minimum flux")
+definition.add_optional("max_flux", "photometric_quantity", "maximum flux")
+
+# -----------------------------------------------------------------

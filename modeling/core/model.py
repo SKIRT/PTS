@@ -474,6 +474,18 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_total_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_sed_dust - self.observed_total_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
     @property
     def observed_total_sed_dust_scattered(self):
 
@@ -632,6 +644,90 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_other_observed_old_bulge_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_old_bulge_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_bulge_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_sed_dust - self.observed_old_bulge_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_bulge_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.seds[earth_name][transparent_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_observed_old_disk_output(self):
 
         """
@@ -677,6 +773,90 @@ class RTModel(object):
         """
 
         return self.has_observed_old_disk_output and self.observed_old_disk_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_old_disk_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_old_disk_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_disk_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_sed_dust - self.observed_old_disk_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
@@ -730,6 +910,90 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_other_observed_old_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_old_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_sed_dust - self.observed_old_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_data.seds[earth_name][transparent_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_observed_young_output(self):
 
         """
@@ -775,6 +1039,90 @@ class RTModel(object):
         """
 
         return self.has_observed_young_output and self.observed_young_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_young_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_young_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_sed_dust - self.observed_young_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
@@ -828,6 +1176,90 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_other_observed_sfr_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_sfr_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_sed_dust - self.observed_sfr_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.seds[earth_name][transparent_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_observed_unevolved_output(self):
 
         """
@@ -861,6 +1293,90 @@ class RTModel(object):
         """
 
         return SimulationData.from_output(self.observed_unevolved_output)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_unevolved_sed_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observed_unevolved_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_sed_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_sed_dust - self.observed_unevolved_sed_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
@@ -3917,7 +4433,9 @@ class RTModel(object):
         """
 
         # WE NEED A SEPARATE SIMULATION FOR JUST THE OLD BULGE FOR THIS
-        return None
+        #return None
+
+        return self.observed_old_bulge_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -3929,7 +4447,9 @@ class RTModel(object):
         :return:
         """
 
-        return False
+        #return False
+
+        return self.has_observed_old_bulge_output and self.observed_old_bulge_data.has_seds
 
     # -----------------------------------------------------------------
 
@@ -3942,7 +4462,9 @@ class RTModel(object):
         """
 
         # WE NEED A SEPARATE SIMULATION FOR JUST THE OLD DISK FOR THIS
-        return None
+        #return None
+
+        return self.observed_old_disk_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -3954,7 +4476,9 @@ class RTModel(object):
         :return:
         """
 
-        return False
+        #return False
+
+        return self.has_observed_old_disk_output and self.observed_old_disk_data.has_seds
 
     # -----------------------------------------------------------------
 
