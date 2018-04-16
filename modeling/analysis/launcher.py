@@ -775,6 +775,9 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
                 ski.add_instrument(faceon_name, self.simple_faceon_instrument)
                 ski.add_instrument(edgeon_name, self.simple_edgeon_instrument)
 
+            # Ionizing contribution: full instrument for earth orientation
+            elif contribution == ionizing: ski.add_instrument(earth_name, self.full_earth_instrument)
+
             # Bulge and disk: SED instrument
             elif (contribution == bulge) or (contribution == disk): ski.add_instrument(earth_name, self.sed_earth_instrument)
 

@@ -33,7 +33,7 @@ definition = ConfigurationDefinition()
 
 # SEDs from file
 definition.add_positional_optional("seds", "filepath_list", "SED files to be plotted")
-definition.add_flag("multi", "look for multiple SEDs per file")
+definition.add_flag("multi", "look for multiple SEDs per file", False)
 definition.add_optional("wavelength_unit_file", "length_unit", "wavelength unit in SED file")
 definition.add_optional("unit_file", "photometric_unit", "photometric unit in SED file")
 definition.add_optional("distance", "length_quantity", "object distance (for flux <> luminosity unit conversion")

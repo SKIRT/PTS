@@ -66,16 +66,74 @@ def is_from_skirt(path):
     from ..tools import filesystem as fs
 
     # Read the two first lines
-    first, second = fs.get_first_lines(path, nlines=2)
+    first, second, third = fs.get_first_lines(path, nlines=3)
+    if "column 1" not in first: # first contains a title
+        first = second
+        second = third
 
     # Check first
-    if not first.startswith("# column 1: lambda"): return False
+    if not first.startswith("# column 1:"): return False
 
     # Check second
     if not second.startswith("# column 2:"): return False
 
     # Checks passed for SKIRT
     return True
+
+# -----------------------------------------------------------------
+
+def is_column_based_text_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Load as table TO CHECK WHETHER IT IS A COLUMN-BASED TEXT FILE
+    try:
+        table = tables.from_file(path, format="ascii")
+        return True  # if it worked
+    except InconsistentTableError: return False
+
+# -----------------------------------------------------------------
+
+def is_sed(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # From SKIRT?
+    if is_from_skirt(path): return "_sed" in path
+
+    # PTS data format
+    elif is_pts_data_format(path):
+
+        from ..tools import filesystem as fs
+
+        column_names = fs.get_last_header_line(path)
+        if "Wavelength" not in column_names: return False
+        if "Photometry" not in column_names: return False
+        return True
+
+    # Other formats
+    else:
+
+        # Try PTS (or at least ECSV) format
+        try:
+
+            # Try loading
+            table = tables.from_file(path)
+
+            if "Wavelength" not in table.colnames: return False
+            if "Photometry" not in table.colnames: return False
+            return True
+
+        # Not readable as ECSV table
+        except InconsistentTableError: return is_column_based_text_file(path)
 
 # -----------------------------------------------------------------
 
@@ -88,7 +146,6 @@ def load_sed(path, wavelength_unit=None, photometry_unit=None):
     :param photometry_unit:
     :return:
     """
-
 
     # SKIRT format
     if is_from_skirt(path): return SED.from_skirt(path)

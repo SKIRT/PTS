@@ -27,7 +27,7 @@ from matplotlib import lines
 from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
-from ..data.sed import ObservedSED, SED, load_sed, load_multiple_seds
+from ..data.sed import ObservedSED, SED, load_sed, load_multiple_seds, is_sed
 from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh, dark_pretty_colors, pretty_colors, filled_markers
 from ..tools import types
 from ..filter.broad import BroadBandFilter
@@ -533,7 +533,7 @@ class SEDPlotter(Configurable):
             if self.config.multi:
 
                 seds = load_multiple_seds(path, as_dict=True, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
-                for label in seds: self.add_sed(seds[label], label=label)
+                for label in seds: self.add_sed(seds[label], label=name + " " + label)
 
             # One SED per file
             else:
@@ -565,11 +565,17 @@ class SEDPlotter(Configurable):
             # Skip emission lines
             if "Lines" in name: continue
 
+            # Check whether this is an SED file
+            if not is_sed(path):
+                log.warning("Ignoring file '" + path + "' because it is probably not an SED file ...")
+                continue
+            #print(path)
+
             # Try getting multiple SEDs
             if self.config.multi:
 
                 seds = load_multiple_seds(path, as_dict=True, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
-                for label in seds: self.add_sed(seds[label], label=label)
+                for label in seds: self.add_sed(seds[label], label=name + " " + label)
 
             # One SED per file
             else:
