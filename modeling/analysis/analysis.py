@@ -286,6 +286,90 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def derived_parameter_values_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def derived_parameter_values_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_bulge
+
+    # -----------------------------------------------------------------
+
+    @property
+    def derived_parameter_values_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_disk
+
+    # -----------------------------------------------------------------
+
+    @property
+    def derived_parameter_values_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_old
+
+    # -----------------------------------------------------------------
+
+    @property
+    def derived_parameter_values_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_young
+
+    # -----------------------------------------------------------------
+
+    @property
+    def derived_parameter_values_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_sfr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def derived_parameter_values_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_dust
+
+    # -----------------------------------------------------------------
+
+    @property
     def generation_name(self):
 
         """
@@ -457,10 +541,46 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         for label in self.other_parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.other_parameter_values[label]))
         print("")
 
-        # Derived parameter values
-        print(fmt.cyan + fmt.underlined + "Derived parameter values:" + fmt.reset)
+        # Derived parameter values of total model
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of total model:" + fmt.reset)
         print("")
-        for label in self.derived_parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values[label]))
+        for label in self.derived_parameter_values_total: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_total[label]))
+        print("")
+
+        # Derived parameter values of bulge
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of bulge:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_bulge: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_bulge[label]))
+        print("")
+
+        # Derived parameter values of disk
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of disk:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_disk: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_disk[label]))
+        print("")
+
+        # Derived parameter values of old component
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of old stellar component:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_old: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_old[label]))
+        print("")
+
+        # Derived parameter values of young component
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of young stellar component:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_young: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_young[label]))
+        print("")
+
+        # Derived parameter values of SF component
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of SFR component:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_sfr: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_sfr[label]))
+        print("")
+
+        # Derived parameter values of dust component
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of dust component:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_dust: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_dust[label]))
         print("")
 
     # -----------------------------------------------------------------

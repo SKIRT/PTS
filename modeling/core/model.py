@@ -2331,7 +2331,8 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_mappings
+        #return self.has_mappings
+        return False # returns NotImplementedError in Mappings: we don't know the conversion yet between Mappings parameters and stellar mass!
 
     # -----------------------------------------------------------------
 
@@ -4435,7 +4436,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def derived_parameter_values(self):
+    def derived_parameter_values_total(self):
 
         """
         This function ...
@@ -4452,6 +4453,22 @@ class RTModel(object):
         if self.has_intrinsic_stellar_luminosity: values[intr_total_stellar_bol_lum_name] = self.intrinsic_stellar_luminosity
         if self.has_bolometric_attenuation: values[bol_attenuation_name] = self.bolometric_attenuation
 
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
         # Old bulge
         if self.has_observed_i1_luminosity_old_bulge: values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
         if self.has_intrinsic_i1_luminosity_old_bulge: values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge # part of parameter set
@@ -4462,6 +4479,22 @@ class RTModel(object):
 
         if self.has_observed_old_bulge_total_luminosity: values[obs_bulge_total_lum_name] = self.observed_old_bulge_total_luminosity
         if self.has_observed_old_bulge_dust_luminosity: values[obs_bulge_dust_lum_name] = self.observed_old_bulge_dust_luminosity
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
 
         # Old disk
         if self.has_observed_i1_luminosity_old_disk: values[obs_disk_spec_lum_name] = self.observed_i1_luminosity_old_disk
@@ -4474,6 +4507,22 @@ class RTModel(object):
         if self.has_observed_old_disk_total_luminosity: values[obs_disk_total_lum_name] = self.observed_old_disk_total_luminosity
         if self.has_observed_old_disk_dust_luminosity: values[obs_disk_dust_lum_name] = self.observed_old_disk_dust_luminosity
 
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
         # Old (evolved)
         if self.has_observed_i1_luminosity_old: values[obs_old_spec_lum_name] = self.observed_i1_luminosity_old
         if self.has_intrinsic_i1_luminosity_old: values[intr_old_spec_lum_name] = self.intrinsic_i1_luminosity_old
@@ -4485,6 +4534,22 @@ class RTModel(object):
         if self.has_observed_old_total_luminosity: values[obs_old_total_lum_name] = self.observed_old_total_luminosity
         if self.has_observed_old_dust_luminosity: values[obs_old_dust_lum_name] = self.observed_old_dust_luminosity
 
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
         # Young stars
         if self.has_observed_fuv_luminosity_young: values[obs_young_spec_lum_name] = self.observed_fuv_luminosity_young
         if self.has_intrinsic_fuv_luminosity_young: values[intr_young_spec_lum_name] = self.intrinsic_fuv_luminosity_young # part of (free) parameter set
@@ -4495,6 +4560,22 @@ class RTModel(object):
 
         if self.has_observed_young_total_luminosity: values[obs_young_total_lum_name] = self.observed_young_total_luminosity
         if self.has_observed_young_dust_luminosity: values[obs_young_dust_lum_name] = self.observed_young_dust_luminosity
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
 
         # Ionizing stars (SFR)
         if self.has_sfr: values[sfr_name] = self.sfr
@@ -4513,6 +4594,22 @@ class RTModel(object):
         if self.has_observed_sfr_total_luminosity: values[obs_sfr_total_lum_name] = self.observed_sfr_total_luminosity
         if self.has_observed_sfr_dust_luminosity: values[obs_sfr_dust_lum_name] = self.observed_sfr_dust_luminosity
 
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
         # Young + ionizing (unevolved)
         if self.has_observed_fuv_luminosity_unevolved: values[obs_unevolved_spec_lum_name] = self.observed_fuv_luminosity_unevolved
         if self.has_intrinsic_fuv_luminosity_unevolved: values[intr_unevolved_spec_lum_name] = self.intrinsic_fuv_luminosity_unevolved
@@ -4524,10 +4621,51 @@ class RTModel(object):
         if self.has_observed_unevolved_total_luminosity: values[obs_unevolved_total_lum_name] = self.observed_unevolved_total_luminosity
         if self.has_observed_unevolved_dust_luminosity: values[obs_unevolved_dust_lum_name] = self.observed_unevolved_dust_luminosity
 
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
         # Dust
         if self.has_dust_luminosity: values[dust_lum_name] = self.dust_luminosity
         if self.has_diffuse_dust_luminosity: values[diffuse_dust_lum_name] = self.diffuse_dust_luminosity
         if self.has_total_dust_mass: values[total_dust_mass_name] = self.total_dust_mass # with SFR dust mass
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def derived_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
+        # Add values
+        values.update(self.derived_parameter_values_total)
+        values.update(self.derived_parameter_values_bulge)
+        values.update(self.derived_parameter_values_disk)
+        values.update(self.derived_parameter_values_old)
+        values.update(self.derived_parameter_values_young)
+        values.update(self.derived_parameter_values_sfr)
+        values.update(self.derived_parameter_values_unevolved)
 
         # Return
         return values
