@@ -23,7 +23,7 @@ from ...core.tools.utils import lazyproperty
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder
-from ..basics.instruments import FullInstrument, SimpleInstrument
+from ..basics.instruments import FullInstrument, SimpleInstrument, SEDInstrument
 from ..misc.interface import ModelSimulationInterface, earth_name, edgeon_name, faceon_name
 from .run import info_filename
 from ...core.tools import formatting as fmt
@@ -41,6 +41,7 @@ dustgridtree_filename = "tree.dat"
 # Define instrument names
 full_earth_name = "earth_full"
 simple_earth_name = "earth_simple"
+sed_earth_name = "earth_sed"
 simple_faceon_name = "faceon_simple"
 simple_edgeon_name = "edgeon_simple"
 
@@ -387,6 +388,9 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
 
         # Create simple earth instrument
         self.instruments[simple_earth_name] = SimpleInstrument.from_projection(self.earth_projection)
+
+        # Create SED earth instrument
+        self.instruments[sed_earth_name] = SEDInstrument.from_projection(self.earth_projection)
 
         # Create simple faceon instrument
         self.instruments[simple_faceon_name] = SimpleInstrument.from_projection(self.faceon_projection)

@@ -46,7 +46,8 @@ definition.add_optional("group_walltime", "real", "the preferred walltime per gr
 # -----------------------------------------------------------------
 
 # Simulation options
-definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e7)
+definition.add_optional("npackages", "real", "number of photon packages per wavelength", 1e7)
+definition.add_optional("npackages_seds", "real", "number of photon packages per wavelength for simulations that produce only SEDs", 1e6)
 definition.add_flag("selfabsorption", "dust self-absorption", True)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", True)
 

@@ -72,6 +72,28 @@ class Curve(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_columns(cls, *columns, **kwargs):
+
+        """
+        This function ...
+        :param columns:
+        :param kwargs:
+        :return:
+        """
+
+        # USe the base class implementation
+        curve = super(Curve, cls).from_columns(*columns, **kwargs)
+
+        # Set x name and y name
+        curve.x_name = curve.column_names[0]
+        curve.y_name = curve.column_names[1]
+
+        # Return the curve
+        return curve
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path):
 
         """
@@ -349,7 +371,7 @@ class Curve(SmartTable):
         y_values = [self.get_value(self.y_name, index) for index in indices]
 
         # Create new curve
-        return Curve.from_columns(x_values, y_values, names=[self.x_name, self.y_name])
+        return self.__class__.from_columns(x_values, y_values, names=[self.x_name, self.y_name])
 
     # -----------------------------------------------------------------
 
@@ -397,15 +419,15 @@ class Curve(SmartTable):
             else: i += 1
 
             # Check for termination
-            if x_a >= self.npoints: break
-            if x_b >= other.npoints: break
+            if i >= self.npoints: break
+            if j >= other.npoints: break
 
         # Set the new y name
         if self.y_name == other.y_name: y_name = self.y_name
         else: y_name = self.y_name + " + " + other.y_name
 
         # Create new curve
-        return Curve.from_columns(x_values, y_values, names=[x_name, y_name])
+        return self.__class__.from_columns(x_values, y_values, names=[x_name, y_name])
 
     # -----------------------------------------------------------------
 
@@ -453,15 +475,15 @@ class Curve(SmartTable):
             else: i += 1
 
             # Check for termination
-            if x_a >= self.npoints: break
-            if x_b >= other.npoints: break
+            if i >= self.npoints: break
+            if j >= other.npoints: break
 
         # Set the new y name
         if self.y_name == other.y_name: y_name = self.y_name
         else: y_name = self.y_name + " - " + other.y_name
 
         # Create new curve
-        return Curve.from_columns(x_values, y_values, names=[x_name, y_name])
+        return self.__class__.from_columns(x_values, y_values, names=[x_name, y_name])
 
     # -----------------------------------------------------------------
 
@@ -509,8 +531,8 @@ class Curve(SmartTable):
             else: i += 1
 
             # Check for termination
-            if x_a >= self.npoints: break
-            if x_b >= other.npoints: break
+            if i >= self.npoints: break
+            if j >= other.npoints: break
 
         # Set the new y name
         if self.y_name == other.y_name: y_name = self.y_name + "1" + " * " + other.y_name + "2"
@@ -565,8 +587,8 @@ class Curve(SmartTable):
             else: i += 1
 
             # Check for termination
-            if x_a >= self.npoints: break
-            if x_b >= other.npoints: break
+            if i >= self.npoints: break
+            if j >= other.npoints: break
 
         # Set the new y name
         if self.y_name == other.y_name: y_name = self.y_name + "1" + " / " + other.y_name + "2"

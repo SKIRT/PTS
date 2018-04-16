@@ -446,19 +446,19 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         print("")
 
         # Show the free parameter values
-        print("Free parameter values:")
+        print(fmt.cyan + fmt.underlined + "Free parameter values:" + fmt.reset)
         print("")
         for label in self.free_parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.free_parameter_values[label]))
         print("")
 
         # Show the other parameter values
-        print("Other parameter values:")
+        print(fmt.cyan + fmt.underlined + "Other parameter values:" + fmt.reset)
         print("")
         for label in self.other_parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.other_parameter_values[label]))
         print("")
 
         # Derived parameter values
-        print("Derived parameter values:")
+        print(fmt.cyan + fmt.underlined + "Derived parameter values:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values[label]))
         print("")

@@ -28,14 +28,24 @@ from ...core.tools.utils import memoize_method, lazyproperty
 from ...core.remote.remote import Remote
 from .initialization import wavelengths_filename, dustgridtree_filename
 from ...core.launch.options import AnalysisOptions
+from .run import old, young, ionizing, unevolved, total, bulge, disk, contributions
+
+# -----------------------------------------------------------------
+
+bulge_component_label = "Evolved stellar bulge"
+disk_component_label = "Evolved stellar disk"
+young_component_label = "Young stars"
+ionizing_component_label = "Ionizing stars"
 
 # -----------------------------------------------------------------
 
 # Set stellar components for different contribution simulations
-component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                    "young": "Young stars",
-                    "ionizing": "Ionizing stars",
-                    "unevolved": ["Young stars", "Ionizing stars"]}
+component_names = {bulge: bulge_component_label,
+                   disk: disk_component_label,
+                   old: [bulge_component_label, disk_component_label],
+                   young: young_component_label,
+                   ionizing: ionizing_component_label,
+                   unevolved: [young_component_label, ionizing_component_label]}
 
 # -----------------------------------------------------------------
 
@@ -669,8 +679,24 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             # For the simulation with only the ionizing stellar component, also write out the stellar density
             if contribution == ionizing: ski.set_write_stellar_density()
 
+            # For the bulge and disk simulations, use less photon packages (only SED instruments)
+            if contribution == bulge: ski.setpackages(self.config.npackages_seds)
+            if contribution == disk: ski.setpackages(self.config.npackages_seds)
+
             # Add the ski file instance to the dictionary
             self.ski_contributions[contribution] = ski
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.sed_earth_instrument
 
     # -----------------------------------------------------------------
 
@@ -748,6 +774,9 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
                 ski.add_instrument(earth_name, self.full_earth_instrument)
                 ski.add_instrument(faceon_name, self.simple_faceon_instrument)
                 ski.add_instrument(edgeon_name, self.simple_edgeon_instrument)
+
+            # Bulge and disk: SED instrument
+            elif (contribution == bulge) or (contribution == disk): ski.add_instrument(earth_name, self.sed_earth_instrument)
 
             # Other simulations: only simple earth instrument
             else: ski.add_instrument(earth_name, self.simple_earth_instrument)

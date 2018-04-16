@@ -1167,8 +1167,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_i1_luminosity_old_bulge.to("W/micron").value
-        intrinsic = self.intrinsic_i1_luminosity_old_bulge.to("W/micron").value
+        observed = self.observed_i1_luminosity_old_bulge.to("W/micron", wavelength=self.i1_wavelength, distance=self.distance).value
+        intrinsic = self.intrinsic_i1_luminosity_old_bulge.to("W/micron", wavelength=self.i1_wavelength, distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1241,8 +1241,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_bolometric_luminosity_old_bulge.to("W").value
-        intrinsic = self.intrinsic_bolometric_luminosity_old_bulge.to("W").value
+        observed = self.observed_bolometric_luminosity_old_bulge.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_bolometric_luminosity_old_bulge.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1412,8 +1412,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_i1_luminosity_old_disk.to("W/micron").value
-        intrinsic = self.intrinsic_i1_luminosity_old_disk.to("W/micron").value
+        observed = self.observed_i1_luminosity_old_disk.to("W/micron", wavelength=self.i1_wavelength, distance=self.distance).value
+        intrinsic = self.intrinsic_i1_luminosity_old_disk.to("W/micron", wavelength=self.i1_wavelength, distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1486,8 +1486,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_bolometric_luminosity_old_disk.to("W").value
-        intrinsic = self.intrinsic_bolometric_luminosity_old_disk.to("W").value
+        observed = self.observed_bolometric_luminosity_old_disk.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_bolometric_luminosity_old_disk.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1657,8 +1657,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_i1_luminosity_old.to("W/micron").value
-        intrinsic = self.intrinsic_i1_luminosity_old.to("W/micron").value
+        observed = self.observed_i1_luminosity_old.to("W/micron", wavelength=self.i1_wavelength, distance=self.distance).value
+        intrinsic = self.intrinsic_i1_luminosity_old.to("W/micron", wavelength=self.i1_wavelength, distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1743,8 +1743,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_bolometric_luminosity_old.to("W").value
-        intrinsic = self.intrinsic_bolometric_luminosity_old.to("W").value
+        observed = self.observed_bolometric_luminosity_old.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_bolometric_luminosity_old.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1914,8 +1914,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_fuv_luminosity_young.to("W/micron").value
-        intrinsic = self.intrinsic_fuv_luminosity_young.to("W/micron").value
+        observed = self.observed_fuv_luminosity_young.to("W/micron", wavelength=self.fuv_wavelength, distance=self.distance).value
+        intrinsic = self.intrinsic_fuv_luminosity_young.to("W/micron", wavelength=self.fuv_wavelength, distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -1988,8 +1988,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_bolometric_luminosity_young.to("W").value
-        intrinsic = self.intrinsic_bolometric_luminosity_young.to("W").value
+        observed = self.observed_bolometric_luminosity_young.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_bolometric_luminosity_young.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -2159,8 +2159,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_fuv_luminosity_sfr.to("W/micron").value
-        intrinsic = self.intrinsic_fuv_luminosity_sfr.to("W/micron").value
+        observed = self.observed_fuv_luminosity_sfr.to("W/micron", wavelength=self.fuv_wavelength, distance=self.distance).value
+        intrinsic = self.intrinsic_fuv_luminosity_sfr.to("W/micron", wavelength=self.fuv_wavelength, distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -2233,8 +2233,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_bolometric_luminosity_sfr.to("W").value
-        intrinsic = self.intrinsic_bolometric_luminosity_sfr.to("W").value
+        observed = self.observed_bolometric_luminosity_sfr.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_bolometric_luminosity_sfr.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -2440,8 +2440,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_fuv_luminosity_unevolved.to("W/micron").value
-        intrinsic = self.intrinsic_fuv_luminosity_unevolved.to("W/micron").value
+        observed = self.observed_fuv_luminosity_unevolved.to("W/micron", wavelength=self.fuv_wavelength, distance=self.distance).value
+        intrinsic = self.intrinsic_fuv_luminosity_unevolved.to("W/micron", wavelength=self.fuv_wavelength, distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -2466,8 +2466,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_bolometric_luminosity_unevolved.to("W").value
-        intrinsic = self.intrinsic_bolometric_luminosity_unevolved.to("W").value
+        observed = self.observed_bolometric_luminosity_unevolved.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_bolometric_luminosity_unevolved.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------
@@ -4147,8 +4147,8 @@ class RTModel(object):
         :return:
         """
 
-        observed = self.observed_stellar_luminosity.to("W").value
-        intrinsic = self.intrinsic_stellar_luminosity.to("W").value
+        observed = self.observed_stellar_luminosity.to("W", distance=self.distance).value
+        intrinsic = self.intrinsic_stellar_luminosity.to("W", distance=self.distance).value
         return extinction.attenuation(observed, intrinsic)
 
     # -----------------------------------------------------------------

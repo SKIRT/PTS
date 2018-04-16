@@ -28,7 +28,7 @@ from ...core.simulation.tree import DustGridTree
 from ...core.simulation.grids import FileTreeDustGrid, load_grid
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection, EdgeOnProjection, FaceOnProjection
-from ..basics.instruments import FullInstrument, SimpleInstrument
+from ..basics.instruments import FullInstrument, SimpleInstrument, SEDInstrument
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.log import log
 from ...core.remote.remote import load_remote
@@ -135,6 +135,7 @@ faceon_projection_filename = "faceon.proj"
 edgeon_projection_filename = "edgeon.proj"
 
 # Instrument filenames
+sed_earth_instrument_filename = "earth_sed.instr"
 simple_earth_instrument_filename = "earth_simple.instr"
 full_earth_instrument_filename = "earth_full.instr"
 simple_faceon_instrument_filename = "faceon_simple.instr"
@@ -2232,6 +2233,18 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def sed_earth_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, sed_earth_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
     def simple_earth_instrument_path(self):
 
         """
@@ -2276,6 +2289,18 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return fs.join(self.instruments_path, simple_edgeon_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SEDInstrument.from_file(self.sed_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
