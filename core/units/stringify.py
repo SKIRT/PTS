@@ -91,7 +91,7 @@ def stringify_quantity(quantity, **kwargs):
 
     # Get options
     scientific = kwargs.pop("scientific", False)
-    decimal_places = kwargs.pop("decimal_places", 2)
+    decimal_places = kwargs.pop("decimal_places", None)
     fancy = kwargs.pop("fancy", False)
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
