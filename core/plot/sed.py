@@ -116,14 +116,14 @@ def plot_seds(seds, **kwargs):
     path = kwargs.pop("path", None)
     show_file = kwargs.pop("show_file", None)
     format = kwargs.pop("format", "pdf")
+    residuals = kwargs.pop("residuals", True)
+    ghost = kwargs.pop("ghost", False)
 
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
 
     # Add SEDs
-    for name in seds:
-        sed = seds[name]
-        plotter.add_sed(sed, label=name)
+    plotter.add_seds(seds, residuals=residuals, ghost=ghost)
 
     # Set filepath, if plot is to be shown as file
     if path is None and show_file: path = fs.join(introspection.pts_temp_dir, "seds." + format)

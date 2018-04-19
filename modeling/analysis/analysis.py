@@ -24,12 +24,11 @@ from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.plot.wavelengthgrid import plot_wavelength_grid
-#from .run import contributions
 from ...core.plot.grids import make_grid_plot
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ..core.environment import load_modeling_environment
-from ...core.plot.sed import plot_seds, SEDPlotter
+from ...core.plot.sed import plot_seds, SEDPlotter, plot_sed
 
 # -----------------------------------------------------------------
 
@@ -45,6 +44,7 @@ _model_command_name = "model"
 _wavelengths_command_name = "wavelengths"
 _dustgrid_command_name = "grid"
 _sed_command_name = "sed"
+_attenuation_command_name = "attenuation"
 
 # -----------------------------------------------------------------
 
@@ -63,6 +63,7 @@ commands[_model_command_name] = ("show_model", False, "show the model properties
 commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
 commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 commands[_sed_command_name] = (None, None, "plot SEDs", None)
+commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
 
 # -----------------------------------------------------------------
 
@@ -111,14 +112,17 @@ sed_commands[_young_name] = ("plot_young_sed_command", True, "plot the SED of th
 
 ## SFR
 sed_commands[_sfr_name] = ("plot_sfr_sed_command", True, "plot the SED of the star formation regions", None)
-#sed_commands[_sfr_stellar_name] = ("plot_sfr_stellar_sed_command", True, "plot the stellar SED of the star formation regions", None)
-#sed_commands[_sfr_dust_name] = ("plot_sfr_dust_sed_command", True, "plot the dust SED of the star formation regions", None)
+
+#sed_commands[_sfr_stellar_name] = ("plot_sfr_stellar_sed_command", True, "plot the intrinsic/observed stellar SED of the star formation regions", None)
+#sed_commands[_sfr_dust_name] = ("plot_sfr_dust_sed_command", True, "plot the intrinsic/observed dust SED of the star formation regions", None)
 
 ## UNEVOLVED
 sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
 
+# -----------------------------------------------------------------
 
-sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust emission SED", None)
+# Attenuation subcommands
+attenuation_commands = OrderedDict()
 
 # -----------------------------------------------------------------
 
@@ -959,6 +963,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("observed_intrinsic", "string_tuple", "plot observed stellar SED, intrinsic stellar SED, or both", choices=observed_intrinsic_choices)
+        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
         return definition
 
     # -----------------------------------------------------------------
@@ -972,6 +978,169 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get config
+        config = self.get_config_from_command(command, self.plot_stellar_sed_definition)
+
+        # Plot
+        self.plot_stellar_sed(config.observed_intrinsic, components=config.components)
+
+    # -----------------------------------------------------------------
+
+    def plot_stellar_sed(self, observed_intrinsic, components, path=None, title=None, show_file=False, format=None):
+
+        """
+        This function ...
+        :param observed_intrinsic:
+        :param components:
+        :param path:
+        :param title:
+        :param show_file:
+        :param format:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting stellar SED(s) ...")
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Add references?
+        # if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
+
+        # Either observed of intrinsic
+        if len(observed_intrinsic) == 1:
+
+            oi = observed_intrinsic[0]
+
+            # Loop over the components
+            for component in components:
+
+                # Total simulation
+                if component == total:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_stellar_sed, total)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_total_sed, total, residuals=False)
+                    else: raise ValueError("")
+
+                # Old bulge simulation
+                elif component == bulge:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_old_bulge_stellar_sed, bulge, residuals=False)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_bulge, bulge, residuals=False)
+                    else: raise ValueError("")
+
+                # Old disk simulation
+                elif component == disk:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_old_disk_stellar_sed, disk, residuals=False)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_disk, disk, residuals=False)
+                    else: raise ValueError("")
+
+                # Old simulation
+                elif component == old:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_old_stellar_sed, old, residuals=False)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old, old, residuals=False)
+                    else: raise ValueError("")
+
+                # Young simulation
+                elif component == young:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_young_stellar_sed, young, residuals=False)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_young, young, residuals=False)
+                    else: raise ValueError("")
+
+                # SFR simulation
+                elif component == sfr:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_sfr_stellar_sed, sfr, residuals=False)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_sfr, sfr, residuals=False)
+                    else: raise ValueError("")
+
+                # Unevolved simulation
+                elif component == unevolved:
+
+                    if oi == observed_name: plotter.add_sed(self.model.observed_unevolved_stellar_sed, unevolved, residuals=False)
+                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_unevolved, unevolved, residuals=False)
+                    else: raise ValueError("")
+
+                # Invalid
+                else: raise ValueError("")
+
+        else:
+
+            # ALLOW this for multiple components?
+
+            # Loop over the components
+            for component in components:
+
+                # Total simulation
+                if component == total:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_stellar_sed, total + " " + observed_name)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_total_sed, total + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                # Old bulge simulation
+                elif component == bulge:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_old_bulge_stellar_sed, bulge + " " + observed_name, residuals=False)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_bulge, bulge + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                # Old disk simulation
+                elif component == disk:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_old_disk_stellar_sed, disk + " " + observed_name, residuals=False)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_disk, disk + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                # Old simulation
+                elif component == old:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_old_stellar_sed, old + " " + observed_name, residuals=False)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old, old + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                elif component == young:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_young_stellar_sed, young + " " + observed_name, residuals=False)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_young, young + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                elif component == sfr:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_sfr_stellar_sed, sfr + " " + observed_name, residuals=False)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_sfr, sfr + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                elif component == unevolved:
+
+                    for oi in observed_intrinsic:
+                        if oi == observed_name: plotter.add_sed(self.model.observed_unevolved_stellar_sed, unevolved + " " + observed_name, residuals=False)
+                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_unevolved, unevolved + " " + intrinsic_name, residuals=False)
+                        else: raise ValueError("")
+
+                else: raise ValueError("Invalid component: '" + component + "'")
+
+        # Set filepath, if plot is to be shown as file
+        if path is None and show_file:
+            if format is None: raise ValueError("Format has to be specified")
+            path = fs.join(introspection.pts_temp_dir, "dust_seds." + format)
+
+        # Run the plotter
+        plotter.run(title=title, output=path)
+
+        # Show file
+        if show_file: fs.open_file(path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -983,6 +1152,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
         return definition
 
     # -----------------------------------------------------------------
@@ -995,6 +1165,60 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_dust_sed_definition, **kwargs)
+
+        # Plot
+        self.plot_dust_sed(config.components)
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_sed(self, components, title=None, path=None, show_file=False, format=None):
+
+        """
+        This function ...
+        :param components:
+        :param title:
+        :param path:
+        :param show_file:
+        :param format:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting dust SED(s) ...")
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Add references?
+        # if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
+
+        # Loop over the components
+        for component in components:
+
+            if component == total: plotter.add_sed(self.model.dust_sed, total)
+            elif component == bulge: plotter.add_sed(self.model.observed_old_bulge_dust_sed, bulge, residuals=False)
+            elif component == disk: plotter.add_sed(self.model.observed_old_disk_dust_sed, disk, residuals=False)
+            elif component == old: plotter.add_sed(self.model.observed_old_dust_sed, old, residuals=False)
+            elif component == young: plotter.add_sed(self.model.observed_young_dust_sed, young, residuals=False)
+            elif component == sfr: plotter.add_sed(self.model.observed_sfr_dust_sed, sfr, residuals=False)
+            elif component == unevolved: plotter.add_sed(self.model.observed_unevolved_dust_sed, unevolved, residuals=False)
+            else: raise ValueError("Invalid component: '" + component + "'")
+
+            # THERE IS ALSO model.diffuse_dust_sed !
+
+        # Set filepath, if plot is to be shown as file
+        if path is None and show_file:
+            if format is None: raise ValueError("Format has to be specified")
+            path = fs.join(introspection.pts_temp_dir, "dust_seds." + format)
+
+        # Run the plotter
+        plotter.run(title=title, output=path)
+
+        # Show file
+        if show_file: fs.open_file(path)
 
     # -----------------------------------------------------------------
 
@@ -1162,6 +1386,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1175,6 +1400,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get config
+        config = self.get_config_from_command(command, self.plot_old_bulge_sed_definition, **kwargs)
+
+        # Either observed or intrinsic
+        if config.observed_intrinsic == 1:
+
+            oi = config.observed_intrinsic[0]
+
+            if oi == observed_name: plot_sed(self.model.observed_old_bulge_sed)
+            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_old_bulge)
+            else: raise ValueError("")
+
+        # Both
+        else:
+
+            seds = OrderedDict()
+            for oi in config.observed_intrinsic:
+                if oi == observed_name: seds[observed_name] = self.model.observed_old_bulge_sed
+                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_old_bulge
+                else: raise ValueError("")
+            plot_seds(seds, residuals=False)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1186,6 +1433,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1199,6 +1447,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get config
+        config = self.get_config_from_command(command, self.plot_old_disk_sed_definition, **kwargs)
+
+        # Either observed or intrinsic
+        if len(config.observed_intrinsic) == 1:
+
+            oi = config.observed_intrinsic[0]
+
+            if oi == observed_name: plot_sed(self.model.observed_old_disk_sed)
+            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_old_disk)
+            else: raise ValueError("")
+
+        # Both
+        else:
+
+            seds = OrderedDict()
+            for oi in config.observed_intrinsic:
+                if oi == observed_name: seds[observed_name] = self.model.observed_old_disk_sed
+                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_old_disk
+                else: raise ValueError("")
+            plot_seds(seds, residuals=False)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1210,7 +1480,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1224,6 +1494,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get config
+        config = self.get_config_from_command(command, self.plot_old_sed_definition, **kwargs)
+
+        # Either observed or intrinsic
+        if len(config.observed_intrinsic) == 1:
+
+            oi = config.observed_intrinsic[0]
+
+            if oi == observed_name: plot_sed(self.model.observed_old_sed)
+            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_old)
+            else: raise ValueError("")
+
+        # Both
+        else:
+
+            seds = OrderedDict()
+            for oi in config.observed_intrinsic:
+                if oi == observed_name: seds[observed_name] = self.model.observed_old_sed
+                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_old
+                else: raise ValueError("")
+            plot_seds(seds, residuals=False)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1235,7 +1527,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1249,6 +1541,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_young_sed_definition, **kwargs)
+
+        # Either observed or intrinsic
+        if len(config.observed_intrinsic) == 1:
+
+            oi = config.observed_intrinsic[0]
+
+            if oi == observed_name: plot_sed(self.model.observed_young_sed)
+            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_young)
+            else: raise ValueError("")
+
+        # Both
+        else:
+
+            seds = OrderedDict()
+            for oi in config.observed_intrinsic:
+                if oi == observed_name: seds[observed_name] = self.model.observed_young_sed
+                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_young
+                else: raise ValueError("")
+            plot_seds(seds, residuals=False)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1260,7 +1574,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1272,55 +1586,26 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
-    # -----------------------------------------------------------------
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_sfr_sed_definition, **kwargs)
 
-    @lazyproperty
-    def plot_sfr_stellar_sed_definition(self):
+        # Either observed or intrinsic
+        if len(config.observed_intrinsic) == 1:
 
-        """
-        Thisf unction ...
-        :return:
-        """
+            oi = config.observed_intrinsic[0]
+            if oi == observed_name: plot_sed(self.model.observed_sfr_sed)
+            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_sfr)
+            else: raise ValueError("")
 
-        definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
-        return definition
+        # Both
+        else:
 
-    # -----------------------------------------------------------------
-
-    def plot_sfr_stellar_sed_command(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def plot_sfr_dust_sed_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
-        return definition
-
-    # -----------------------------------------------------------------
-
-    def plot_sfr_dust_sed_command(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
+            seds = OrderedDict()
+            for oi in config.observed_intrinsic:
+                if oi == observed_name: seds[observed_name] = self.model.observed_sfr_sed
+                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_sfr
+                else: raise ValueError("")
+            plot_seds(seds, residuals=False)
 
     # -----------------------------------------------------------------
 
@@ -1333,7 +1618,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED, or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1347,65 +1632,26 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
-        # Parse the command
+        # Get the config
         config = self.get_config_from_command(command, self.plot_unevolved_sed_definition, **kwargs)
 
-        # Plot
-        self.plot_unevolved_sed(**config)
+        # Either observed or intrinsic
+        if len(config.observed_intrinsic) == 1:
 
-    # -----------------------------------------------------------------
+            oi = config.observed_intrinsic[0]
+            if oi == observed_name: plot_sed(self.model.observed_unevolved_sed)
+            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_unevolved)
+            else: raise ValueError("")
 
-    def plot_unevolved_sed(self, observed_intrinsic=observed_intrinsic_choices):
+        # Both
+        else:
 
-        """
-        This function ...
-        :param observed_intrinsic:
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def plot_dust_sed_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
-        return definition
-
-    # -----------------------------------------------------------------
-
-    def plot_dust_sed_command(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
-
-        # Get the configuration
-        config = self.get_config_from_command(command, **kwargs)
-        config.pop("_path")
-
-        # Plot
-        self.plot_dust_sed(**config)
-
-    # -----------------------------------------------------------------
-
-    def plot_dust_sed(self, components=default_components):
-
-        """
-        This function ...
-        :param components:
-        :return:
-        """
-
-
+            seds = OrderedDict()
+            for oi in config.observed_intrinsic:
+                if oi == observed_name: seds[observed_name] = self.model.observed_unevolved_sed
+                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_unevolved
+                else: raise ValueError("")
+            plot_seds(seds, residuals=False)
 
     # -----------------------------------------------------------------
 
