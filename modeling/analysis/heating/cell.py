@@ -158,6 +158,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Create the table
         self.absorptions = AbsorptionTable.from_columns(x, y, z, total_absorptions, old_absorptions, young_absorptions, ionizing_absorptions)
 
+        # TEMP? SAVE
+        self.absorptions.saveto(self.absorption_table_path)
+
     # -----------------------------------------------------------------
 
     def load_absorption_table(self):

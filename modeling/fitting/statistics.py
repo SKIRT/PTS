@@ -2592,10 +2592,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         """
 
         # Get
-        generation_simulation_name_a, generation_simulation_name_b = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_seds_definition, **kwargs)
+        generation_simulation_name_a, generation_simulation_name_b, config = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_seds_definition, **kwargs)
+        config.pop("_path")
 
         # Compare
-        self.compare_seds(generation_simulation_name_a, generation_simulation_name_b)
+        self.compare_seds(generation_simulation_name_a, generation_simulation_name_b, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2658,10 +2659,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         """
 
         # Get
-        generation_simulation_name_a, generation_simulation_name_b = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_fluxes_definition, **kwargs)
+        generation_simulation_name_a, generation_simulation_name_b, config = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_fluxes_definition, **kwargs)
+        config.pop("_path")
 
         # Compare
-        self.compare_fluxes(generation_simulation_name_a, generation_simulation_name_b)
+        self.compare_fluxes(generation_simulation_name_a, generation_simulation_name_b, **config)
 
     # -----------------------------------------------------------------
 

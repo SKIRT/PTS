@@ -156,9 +156,10 @@ total_contribution = "total"
 direct_contribution = "direct"
 scattered_contribution = "scattered"
 dust_contribution = "dust"
-dust_scattered_contribution = "dustscattered"
+dust_direct_contribution = "dust_direct"
+dust_scattered_contribution = "dust_scattered"
 transparent_contribution = "transparent"
-contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, dust_scattered_contribution, transparent_contribution]
+contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, dust_direct_contribution, dust_scattered_contribution, transparent_contribution]
 
 # -----------------------------------------------------------------
 
@@ -656,6 +657,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def observed_old_bulge_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.seds[earth_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_old_bulge_sed_direct(self):
 
         """
@@ -785,6 +798,18 @@ class RTModel(object):
         """
 
         return len(self.observed_old_disk_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -922,6 +947,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def observed_old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_data.seds[earth_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_old_sed_direct(self):
 
         """
@@ -1051,6 +1088,18 @@ class RTModel(object):
         """
 
         return len(self.observed_young_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -1188,6 +1237,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def observed_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.seds[earth_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_sfr_sed_direct(self):
 
         """
@@ -1305,6 +1366,18 @@ class RTModel(object):
         """
 
         return len(self.observed_unevolved_data.seds[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_unevolved_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -5403,5 +5476,65 @@ class RTModel(object):
         """
 
         return self.cell_properties["Optical depth"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_filepaths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_output.grid
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_xy_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.pick_contains(self.grid_filepaths, "gridxy.")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_xz_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.pick_contains(self.grid_filepaths, "gridxz.")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_yz_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.pick_contains(self.grid_filepaths, "gridyz.")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_xyz_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.pick_contains(self.grid_filepaths, "gridxyz.")
 
 # -----------------------------------------------------------------

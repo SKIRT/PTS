@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, memoize_method
 from .component import AnalysisComponent
 from ...core.basics.configurable import InteractiveConfigurable
 from ...core.basics.log import log
@@ -24,7 +24,12 @@ from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.plot.wavelengthgrid import plot_wavelength_grid
-from .run import contributions
+#from .run import contributions
+from ...core.plot.grids import make_grid_plot
+from ...core.tools import filesystem as fs
+from ...core.tools import introspection
+from ..core.environment import load_modeling_environment
+from ...core.plot.sed import plot_seds, SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -69,23 +74,50 @@ _young_name = "young"
 _sfr_name = "sfr"
 _unevolved_name = "unevolved"
 
-_sfr_stellar_name = "sfr_stellar"
-_sfr_dust_name = "sfr_dust"
+#_sfr_stellar_name = "sfr_stellar"
+#_sfr_dust_name = "sfr_dust"
+
+_stellar_name = "stellar"
 _dust_name = "dust"
+
+_contributions_name = "contributions"
+_components_name = "components"
 
 # -----------------------------------------------------------------
 
 # SED subcommands
 sed_commands = OrderedDict()
+
+## TOTAL
 sed_commands[_total_name] = ("plot_total_sed_command", True, "plot the SED of the total simulation", None)
+sed_commands[_stellar_name] = ("plot_stellar_sed_command", True, "plot the stellar SED(s)", None)
+sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust SED(s)", None)
+
+## CONTRIBUTIONS
+sed_commands[_contributions_name] = ("plot_contribution_seds_command", True, "plot the contributions to the total SED(s)")
+sed_commands[_components_name] = ("plot_component_seds_command", True, "plot the SED(s) for different components")
+
+## OLD BULGE
 sed_commands[_old_bulge_name] = ("plot_old_bulge_sed_command", True, "plot the SED of the old stellar bulge", None)
+
+## OLD DISK
 sed_commands[_old_disk_name] = ("plot_old_disk_sed_command", True, "plot the SED of the old stellar disk", None)
+
+## OLD
 sed_commands[_old_name] = ("plot_old_sed_command", True, "plot the SED of the old stars", None)
+
+## YOUNG
 sed_commands[_young_name] = ("plot_young_sed_command", True, "plot the SED of the young stars", None)
+
+## SFR
 sed_commands[_sfr_name] = ("plot_sfr_sed_command", True, "plot the SED of the star formation regions", None)
-sed_commands[_sfr_stellar_name] = ("plot_sfr_stellar_sed_command", True, "plot the stellar SED of the star formation regions", None)
-sed_commands[_sfr_dust_name] = ("plot_sfr_dust_sed_command", True, "plot the dust SED of the star formation regions", None)
+#sed_commands[_sfr_stellar_name] = ("plot_sfr_stellar_sed_command", True, "plot the stellar SED of the star formation regions", None)
+#sed_commands[_sfr_dust_name] = ("plot_sfr_dust_sed_command", True, "plot the dust SED of the star formation regions", None)
+
+## UNEVOLVED
 sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
+
+
 sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust emission SED", None)
 
 # -----------------------------------------------------------------
@@ -100,6 +132,7 @@ earth_name = "earth"
 faceon_name = "faceon"
 edgeon_name = "edgeon"
 orientations = (earth_name, faceon_name, edgeon_name)
+default_orientations = (earth_name,)
 
 # -----------------------------------------------------------------
 
@@ -110,7 +143,44 @@ observed_intrinsic_choices = default_observed_intrinsic
 
 # -----------------------------------------------------------------
 
-default_contributions = ("total",)
+#default_contributions = ("total",)
+
+# -----------------------------------------------------------------
+
+grid_orientations = ["xy", "xz", "yz", "xyz"]
+
+# -----------------------------------------------------------------
+
+clipped_name = "clipped"
+truncated_name = "truncated"
+asymptotic_sed = "asymptotic"
+
+default_sed_references = (clipped_name, truncated_name)
+sed_reference_descriptions = dict()
+sed_reference_descriptions[clipped_name] = "Observed clipped fluxes"
+sed_reference_descriptions[truncated_name] = "Observed truncated fluxes"
+sed_reference_descriptions[asymptotic_sed] = "Observed asymptotic fluxes"
+
+# -----------------------------------------------------------------
+
+bulge = "bulge"
+disk = "disk"
+old = "old"
+young = "young"
+sfr = "sfr"
+unevolved = "unevolved"
+total = "total"
+
+# Make lists
+components = [bulge, disk, old, young, sfr, unevolved, total]
+default_components = [total, old, young, sfr]
+
+# -----------------------------------------------------------------
+
+from ..core.model import contributions, total_contribution, direct_contribution, scattered_contribution, dust_contribution, transparent_contribution
+from ..core.model import dust_direct_contribution, dust_scattered_contribution
+#contributions = []
+default_contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, transparent_contribution]
 
 # -----------------------------------------------------------------
 
@@ -607,17 +677,24 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_wavelengths_definition)
+
+        # Plot the wavelengths
+        self.plot_wavelengths(**config)
+
     # -----------------------------------------------------------------
 
-    def plot_wavelengths(self):
+    def plot_wavelengths(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Plot the wavelength grid
-        plot_wavelength_grid(self.wavelength_grid, "wavelengths")
+        plot_wavelength_grid(self.wavelength_grid, "wavelengths", **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -630,6 +707,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("orientation", "string", "plotting viewpoint", choices=grid_orientations)
+        definition.add_optional("path", "string", "path for the plot file")
         return definition
 
     # -----------------------------------------------------------------
@@ -643,14 +722,135 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_grid_definition)
+
+        # Get the path
+        orientation = config.pop("orientation")
+        path = config.pop("path")
+
+        # Plot
+        self.plot_grid(orientation, path=path)
+
     # -----------------------------------------------------------------
 
-    def plot_grid(self):
+    def plot_grid(self, orientation, path=None, show=None):
+
+        """
+        This function ...
+        :param orientation:
+        :param path:
+        :param show:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the dust grid from orientation '" + orientation + "' ...")
+
+        # Determine filepath
+        if path is None:
+            show = True
+            path = fs.join(introspection.pts_temp_dir, "grid_" + orientation + ".pdf")
+
+        # Determine grid filepath
+        if orientation == "xy": grid_path = self.model.grid_xy_filepath
+        elif orientation == "xz": grid_path = self.model.grid_xz_filepath
+        elif orientation == "yz": grid_path = self.model.grid_yz_filepath
+        elif orientation == "xyz": grid_path = self.model.grid_xyz_filepath
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Plot
+        make_grid_plot(grid_path, path)
+
+        # Open the plot?
+        if show: fs.open_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def modeling_environment(self):
 
         """
         This function ...
         :return:
         """
+
+        return load_modeling_environment(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def clipped_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_environment.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def truncated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_environment.truncated_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def asymptotic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_environment.asymptotic_sed
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_reference_seds(self, additional_error=None, references=default_sed_references):
+
+        """
+        This function ...
+        :param additional_error:
+        :param references:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Loading the observed SEDs ...")
+
+        # Create dictionary
+        seds = OrderedDict()
+
+        # Add observed SEDs
+        for label in references:
+
+            # Get sed
+            if label == clipped_name: sed = self.clipped_sed
+            elif label == truncated_name: sed = self.truncated_sed
+            elif label == asymptotic_sed: sed = self.asymptotic_sed
+            else: raise ValueError("Invalid reference SED name")
+
+            # Add relative error?
+            if additional_error is not None:
+                sed = sed.copy()
+                sed.add_or_set_relative_error(additional_error)
+
+            # Add
+            description = sed_reference_descriptions[label]
+            seds[description] = sed
+
+        # Return the seds
+        return seds
 
     # -----------------------------------------------------------------
 
@@ -663,7 +863,9 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("orientation", "string", "instrument orientation", earth_name, orientations)
+        definition.add_positional_optional("orientations", "string_list", "instrument orientation", default_orientations, choices=orientations)
+        definition.add_flag("add_references", "add reference SEDs", False)
+        definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
         return definition
 
     # -----------------------------------------------------------------
@@ -676,6 +878,278 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_total_sed_definition, **kwargs)
+
+        # Plot
+        self.plot_total_sed(orientations=config.orientations, add_references=config.add_references, additional_error=config.additional_error)
+
+    # -----------------------------------------------------------------
+
+    def plot_total_sed(self, orientations=default_orientations, add_references=False, additional_error=None, path=None,
+                       show_file=False, title=None, format=None):
+
+        """
+        This function ...
+        :param orientations:
+        :param add_references:
+        :param additional_error:
+        :param path:
+        :param show_file:
+        :param title:
+        :param format:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting total SED(s) ...")
+
+        # Add SEDs
+        #seds = OrderedDict()
+        #if add_references: seds.update(self.get_reference_seds(additional_error=additional_error))
+        #for orientation in orientations:
+        #    if orientation == earth_name: seds[orientation] = self.model.observed_total_sed
+        #    elif orientation == faceon_name: seds[orientation] = self.model.faceon_observed_total_sed
+        #    elif orientation == edgeon_name: seds[orientation] = self.model.edgeon_observed_total_sed
+        #    else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Plot
+        #plot_seds(seds, models_residuals=True)
+
+        # Create SED plotter
+        #plotter = SEDPlotter(kwargs)
+        plotter = SEDPlotter()
+
+        # Add SEDs
+        #for name in seds:
+        #    sed = seds[name]
+        #    plotter.add_sed(sed, label=name)
+
+        # Add references?
+        if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
+
+        # Add orientations
+        for orientation in orientations:
+
+            if orientation == earth_name: plotter.add_sed(self.model.observed_total_sed, earth_name)
+            elif orientation == faceon_name: plotter.add_sed(self.model.faceon_observed_total_sed, faceon_name, residuals=False)
+            elif orientation == edgeon_name: plotter.add_sed(self.model.edgeon_observed_total_sed, edgeon_name, residuals=False)
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Set filepath, if plot is to be shown as file
+        if path is None and show_file:
+            if format is None: raise ValueError("Format has to be specified")
+            path = fs.join(introspection.pts_temp_dir, "total_seds." + format)
+
+        # Run the plotter
+        plotter.run(title=title, output=path)
+
+        # Show file
+        if show_file: fs.open_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_stellar_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_stellar_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_dust_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_contribution_seds_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("contributions", "string_list", "contributions", default_contributions, choices=contributions)
+        definition.add_optional("component", "string", "component", total, choices=components)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_contribution_seds_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_contribution_seds_definition, **kwargs)
+
+        # TODO: use 'component' option to do this for different components?
+
+        # Plot
+        self.plot_contribution_seds(config.contributions)
+
+    # -----------------------------------------------------------------
+
+    def plot_contribution_seds(self, contributions, path=None, title=None, show_file=False, format=None):
+
+        """
+        This function ...
+        :param contributions:
+        :param path:
+        :param title:
+        :param show_file:
+        :param format:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting contribution SEDs ...")
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Loop over the contributions
+        for contribution in contributions:
+
+            # TODO: different components (simulations)?
+            if contribution == total_contribution: plotter.add_sed(self.model.observed_total_sed, contribution)
+            elif contribution == direct_contribution: plotter.add_sed(self.model.observed_total_sed_direct, contribution, residuals=False)
+            elif contribution == scattered_contribution: plotter.add_sed(self.model.observed_total_sed_scattered, contribution, residuals=False)
+            elif contribution == dust_contribution: plotter.add_sed(self.model.observed_total_sed_dust, contribution, residuals=False)
+            elif contribution == dust_direct_contribution: plotter.add_sed(self.model.observed_total_sed_dust_direct, contribution, residuals=False)
+            elif contribution == dust_scattered_contribution: plotter.add_sed(self.model.observed_total_sed_dust_scattered, contribution, residuals=False)
+            elif contribution == transparent_contribution: plotter.add_sed(self.model.observed_total_sed_transparent, contribution, residuals=False)
+            else: raise ValueError("Invalid contribution: '" + contribution + "'")
+
+        # Set filepath, if plot is to be shown as file
+        if path is None and show_file:
+            if format is None: raise ValueError("Format has to be specified")
+            path = fs.join(introspection.pts_temp_dir, "contribution_seds." + format)
+
+        # Run the plotter
+        plotter.run(title=title, output=path)
+
+        # Show file
+        if show_file: fs.open_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_component_seds_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_component_seds_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_component_seds_definition, **kwargs)
+
+        # Plot
+        self.plot_component_seds(config.components)
+
+    # -----------------------------------------------------------------
+
+    def plot_component_seds(self, components, path=None, title=None, show_file=False, format=None):
+
+        """
+        This function ...
+        :param components:
+        :param path:
+        :param title:
+        :param show_file:
+        :param format:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting component SEDs ...")
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Add references?
+        #if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
+
+        # Loop over the components
+        for component in components:
+
+            if component == total: plotter.add_sed(self.model.observed_total_sed, total)
+            elif component == bulge: plotter.add_sed(self.model.observed_old_bulge_sed, bulge, residuals=False)
+            elif component == disk: plotter.add_sed(self.model.observed_old_disk_sed, disk, residuals=False)
+            elif component == old: plotter.add_sed(self.model.observed_old_sed, old, residuals=False)
+            elif component == young: plotter.add_sed(self.model.observed_young_sed, young, residuals=False)
+            elif component == sfr: plotter.add_sed(self.model.observed_sfr_sed, sfr, residuals=False)
+            elif component == unevolved: plotter.add_sed(self.model.observed_unevolved_sed, unevolved, residuals=False)
+            else: raise ValueError("Invalid component: '" + component + "'")
+
+        # Set filepath, if plot is to be shown as file
+        if path is None and show_file:
+            if format is None: raise ValueError("Format has to be specified")
+            path = fs.join(introspection.pts_temp_dir, "component_seds." + format)
+
+        # Run the plotter
+        plotter.run(title=title, output=path)
+
+        # Show file
+        if show_file: fs.open_file(path)
 
     # -----------------------------------------------------------------
 
@@ -900,7 +1374,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("contributions", "string_list", "stellar contributions", default_contributions, choices=contributions)
+        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
         return definition
 
     # -----------------------------------------------------------------
@@ -923,11 +1397,11 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_dust_sed(self, contributions=default_contributions):
+    def plot_dust_sed(self, components=default_components):
 
         """
         This function ...
-        :param contributions:
+        :param components:
         :return:
         """
 

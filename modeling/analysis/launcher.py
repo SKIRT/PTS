@@ -673,6 +673,9 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             # Create a copy of the ski file instance
             ski = self.ski.copy()
 
+            # WRITE THE GRID FOR THE TOTAL CONTRIBUTION
+            if contribution == total: ski.set_write_grid()
+
             # Remove other stellar components, except for the contribution of the total stellar population
             if contribution != total: ski.remove_stellar_components_except(component_names[contribution])
 

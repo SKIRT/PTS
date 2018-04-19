@@ -323,6 +323,27 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def add_seds(self, seds, residuals=True, ghost=False):
+
+        """
+        This function ...
+        :param seds:
+        :param residuals:
+        :param ghost:
+        :return:
+        """
+
+        # Loop over the SEDs
+        for label in seds:
+
+            # Get the SED
+            sed = seds[label]
+
+            # ADd
+            self.add_sed(sed, label, residuals=residuals, ghost=ghost)
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
