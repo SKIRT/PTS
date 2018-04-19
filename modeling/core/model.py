@@ -4963,18 +4963,22 @@ class RTModel(object):
     def derived_parameter_values_total(self):
 
         """
-        This function ...
+        Total
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Total
+        # Bolometric luminosity
         if self.has_observed_total_bolometric_luminosity: values[obs_total_bol_lum_name] = self.observed_total_bolometric_luminosity
         if self.has_intrinsic_total_bolometric_luminosity: values[intr_total_bol_lum_name] = self.intrinsic_total_bolometric_luminosity
+
+        # Stellar luminosity
         if self.has_observed_stellar_luminosity: values[obs_total_stellar_bol_lum_name] = self.observed_stellar_luminosity
         if self.has_intrinsic_stellar_luminosity: values[intr_total_stellar_bol_lum_name] = self.intrinsic_stellar_luminosity
+
+        # Total luminosity
         if self.has_bolometric_attenuation: values[bol_attenuation_name] = self.bolometric_attenuation
 
         # Return
@@ -4986,21 +4990,26 @@ class RTModel(object):
     def derived_parameter_values_bulge(self):
 
         """
-        This function ...
+        Old bulge
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Old bulge
+        # I1 specific luminosity
         if self.has_observed_i1_luminosity_old_bulge: values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
         if self.has_intrinsic_i1_luminosity_old_bulge: values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge # part of parameter set
+
+        # Bolometric luminosity
         if self.has_observed_bolometric_luminosity_old_bulge: values[obs_bulge_bol_lum_name] = self.observed_bolometric_luminosity_old_bulge
         if self.has_intrinsic_bolometric_luminosity_old_bulge: values[intr_bulge_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_bulge
+
+        # Attenuation
         if self.has_i1_attenuation_old_bulge: values[bulge_spec_attenuation_name] = self.i1_attenuation_old_bulge
         if self.has_bolometric_attenuation_old_bulge: values[bulge_bol_attenuation_name] = self.bolometric_attenuation_old_bulge
 
+        # Total and dust luminosity
         if self.has_observed_old_bulge_total_luminosity: values[obs_bulge_total_lum_name] = self.observed_old_bulge_total_luminosity
         if self.has_observed_old_bulge_dust_luminosity: values[obs_bulge_dust_lum_name] = self.observed_old_bulge_dust_luminosity
 
@@ -5013,21 +5022,26 @@ class RTModel(object):
     def derived_parameter_values_disk(self):
 
         """
-        This function ...
+        Old disk
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Old disk
+        # I1 specific luminosity
         if self.has_observed_i1_luminosity_old_disk: values[obs_disk_spec_lum_name] = self.observed_i1_luminosity_old_disk
         if self.has_intrinsic_i1_luminosity_old_disk: values[intr_disk_spec_lum_name] = self.intrinsic_i1_luminosity_old_disk # part of parameter set
+
+        # Bolometric luminosity
         if self.has_observed_bolometric_luminosity_old_disk: values[obs_disk_bol_lum_name] = self.observed_bolometric_luminosity_old_disk
         if self.has_intrinsic_bolometric_luminosity_old_disk: values[intr_disk_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_disk
+
+        # Attenuation
         if self.has_i1_attenuation_old_disk: values[disk_spec_attenuation_name] = self.i1_attenuation_old_disk
         if self.has_bolometric_attenuation_old_disk: values[disk_bol_attenuation_name] = self.bolometric_attenuation_old_disk
 
+        # Total and dust luminosity
         if self.has_observed_old_disk_total_luminosity: values[obs_disk_total_lum_name] = self.observed_old_disk_total_luminosity
         if self.has_observed_old_disk_dust_luminosity: values[obs_disk_dust_lum_name] = self.observed_old_disk_dust_luminosity
 
@@ -5040,21 +5054,26 @@ class RTModel(object):
     def derived_parameter_values_old(self):
 
         """
-        This function ...
+        Old (evolved)
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Old (evolved)
+        # I1 specific luminosity
         if self.has_observed_i1_luminosity_old: values[obs_old_spec_lum_name] = self.observed_i1_luminosity_old
         if self.has_intrinsic_i1_luminosity_old: values[intr_old_spec_lum_name] = self.intrinsic_i1_luminosity_old
+
+        # Bolometric luminosity
         if self.has_observed_bolometric_luminosity_old: values[obs_old_bol_lum_name] = self.observed_bolometric_luminosity_old
         if self.has_intrinsic_bolometric_luminosity_old: values[intr_old_bol_lum_name] = self.intrinsic_bolometric_luminosity_old
+
+        # Attenuation
         if self.has_i1_attenuation_old: values[old_spec_attenuation_name] = self.i1_attenuation_old
         if self.has_bolometric_attenuation_old: values[old_bol_attenuation_name] = self.bolometric_attenuation_old
 
+        # Total and dust luminosity
         if self.has_observed_old_total_luminosity: values[obs_old_total_lum_name] = self.observed_old_total_luminosity
         if self.has_observed_old_dust_luminosity: values[obs_old_dust_lum_name] = self.observed_old_dust_luminosity
 
@@ -5067,21 +5086,26 @@ class RTModel(object):
     def derived_parameter_values_young(self):
 
         """
-        This function ...
+        Young stars
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Young stars
+        # FUV specific luminosity
         if self.has_observed_fuv_luminosity_young: values[obs_young_spec_lum_name] = self.observed_fuv_luminosity_young
         if self.has_intrinsic_fuv_luminosity_young: values[intr_young_spec_lum_name] = self.intrinsic_fuv_luminosity_young # part of (free) parameter set
+        
+        # Bolometric luminosity
         if self.has_observed_bolometric_luminosity_young: values[obs_young_bol_lum_name] = self.observed_bolometric_luminosity_young
         if self.has_intrinsic_bolometric_luminosity_young: values[intr_young_bol_lum_name] = self.intrinsic_bolometric_luminosity_young
+
+        # Attenuation
         if self.has_fuv_attenuation_young: values[young_spec_attenuation_name] = self.fuv_attenuation_young
         if self.has_bolometric_attenuation_young: values[young_bol_attenuation_name] = self.bolometric_attenuation_young
 
+        # Total and dust luminosity
         if self.has_observed_young_total_luminosity: values[obs_young_total_lum_name] = self.observed_young_total_luminosity
         if self.has_observed_young_dust_luminosity: values[obs_young_dust_lum_name] = self.observed_young_dust_luminosity
 
@@ -5094,27 +5118,38 @@ class RTModel(object):
     def derived_parameter_values_sfr(self):
 
         """
-        This function ...
+        Ionizing stars (SFR)
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Ionizing stars (SFR)
+        # SFR
         if self.has_sfr: values[sfr_name] = self.sfr
+        
+        # FUV specific luminosity
         if self.has_observed_fuv_luminosity_sfr: values[obs_sfr_spec_lum_name] = self.observed_fuv_luminosity_sfr
         if self.has_intrinsic_fuv_luminosity_sfr: values[intr_sfr_spec_lum_name] = self.intrinsic_fuv_luminosity_sfr # part of the (free) parameter set
+        
+        # Bolometric luminosity
         if self.has_observed_bolometric_luminosity_sfr: values[obs_sfr_bol_lum_name] = self.observed_bolometric_luminosity_sfr # SEE: observed_sfr_bolometric_luminosity
         if self.has_intrinsic_bolometric_luminosity_sfr: values[intr_sfr_bol_lum_name] = self.intrinsic_bolometric_luminosity_sfr # SEE: intrinsic_sfr_bolometric_luminosity
+
+        # Attenuation
         if self.has_fuv_attenuation_sfr: values[sfr_spec_attenuation_name] = self.fuv_attenuation_sfr
         if self.has_bolometric_attenuation_sfr: values[sfr_bol_attenuation_name] = self.bolometric_attenuation_sfr
+
+        # Stellar
         if self.has_sfr_stellar_mass: values[sfr_stellar_mass_name] = self.sfr_stellar_mass
         if self.has_observed_sfr_stellar_luminosity: values[obs_sfr_stellar_bol_lum_name] = self.observed_sfr_stellar_luminosity
         if self.has_intrinsic_sfr_stellar_luminosity: values[intr_sfr_stellar_bol_lum_name] = self.intrinsic_sfr_stellar_luminosity
+
+        # Dust
         if self.has_sfr_dust_mass: values[sfr_dust_mass_name] = self.sfr_dust_mass
         if self.has_intrinsic_sfr_dust_luminosity: values[sfr_dust_lum_name] = self.intrinsic_sfr_dust_luminosity # intrinsic so only the dust IN MAPPINGS
 
+        # Total and dust luminosity
         if self.has_observed_sfr_total_luminosity: values[obs_sfr_total_lum_name] = self.observed_sfr_total_luminosity
         if self.has_observed_sfr_dust_luminosity: values[obs_sfr_dust_lum_name] = self.observed_sfr_dust_luminosity
 
@@ -5127,21 +5162,26 @@ class RTModel(object):
     def derived_parameter_values_unevolved(self):
 
         """
-        This function ...
+        Young + ionizing (unevolved)
         :return:
         """
 
         # Initialize
         values = OrderedDict()
 
-        # Young + ionizing (unevolved)
+        # FUV specific luminosity
         if self.has_observed_fuv_luminosity_unevolved: values[obs_unevolved_spec_lum_name] = self.observed_fuv_luminosity_unevolved
         if self.has_intrinsic_fuv_luminosity_unevolved: values[intr_unevolved_spec_lum_name] = self.intrinsic_fuv_luminosity_unevolved
+
+        # Bolometric luminosity
         if self.has_observed_bolometric_luminosity_unevolved: values[obs_unevolved_bol_lum_name] = self.observed_bolometric_luminosity_unevolved
         if self.has_intrinsic_bolometric_luminosity_unevolved: values[intr_unevolved_bol_lum_name] = self.intrinsic_bolometric_luminosity_unevolved
+
+        # Attenuation
         if self.has_fuv_attenuation_unevolved: values[unevolved_spec_attenuation_name] = self.fuv_attenuation_unevolved
         if self.has_bolometric_attenuation_unevolved: values[unevolved_bol_attenuation_name] = self.bolometric_attenuation_unevolved
 
+        # Total and dust luminosity
         if self.has_observed_unevolved_total_luminosity: values[obs_unevolved_total_lum_name] = self.observed_unevolved_total_luminosity
         if self.has_observed_unevolved_dust_luminosity: values[obs_unevolved_dust_lum_name] = self.observed_unevolved_dust_luminosity
 
@@ -5161,9 +5201,11 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # Dust
+        # Luminosity
         if self.has_dust_luminosity: values[dust_lum_name] = self.dust_luminosity
         if self.has_diffuse_dust_luminosity: values[diffuse_dust_lum_name] = self.diffuse_dust_luminosity
+
+        # Mass
         if self.has_total_dust_mass: values[total_dust_mass_name] = self.total_dust_mass # with SFR dust mass
 
         # Return
@@ -5193,5 +5235,173 @@ class RTModel(object):
 
         # Return
         return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.has_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_bulge_data.stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.has_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_old_disk_data.stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.has_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_young_data.stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.has_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_cell_stellar_density(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sfr_data.stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.has_cell_properties
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_total_data.cell_properties
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_volumes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_properties["Volume"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_densities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_properties["Density"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mass_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_properties["Mass fraction"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_optical_depths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_properties["Optical depth"]
 
 # -----------------------------------------------------------------

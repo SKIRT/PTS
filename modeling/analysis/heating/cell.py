@@ -220,6 +220,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         #energy_new = volume * density_new * Lnew
         #F_abs_yng = (yng + new + energy_new) / (old + yng + new + energy_new)
 
+        #cell_properties = self.model.cell_properties
+        #volumes = cell_properties["Volume"]
+        volumes = self.model.cell_volumes
+        absorbed_energy = self.model.intrinsic_sfr_dust_luminosity
+        density = self.model.sfr_cell_stellar_density
+
         #absorptions_unevolved_diffuse = self.absorptions["Absorbed bolometric luminosity of the young stellar population"] + self.absorptions["Absorbed bolometric luminosity of the ionizing stellar population"]
         #absorptions_unevolved_diffuse = self.absorptions["young"] + self.absorptions["ionizing"]
         absorptions_unevolved_diffuse = self.absorptions.unevolved(unit="W", asarray=True)

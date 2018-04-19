@@ -925,4 +925,16 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         # Get the run
         self.analysis_run = self.get_run(self.config.run)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.model
+
 # -----------------------------------------------------------------
