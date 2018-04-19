@@ -937,4 +937,16 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
         return self.analysis_run.model
 
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.wavelength_grid
+
 # -----------------------------------------------------------------
