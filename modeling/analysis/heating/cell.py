@@ -203,20 +203,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         ## Derived from ../../SKIRTrun/models/testHeating/MappingsHeating/plotSEDs.py
         #Lnew = 176495776.676  # in Lsun
 
-        #print ''reading data... '
-        #input = np.loadtxt(path + totISRFfile, skiprows=1)
-        #ID = input[:, 0]
-        #volume = input[:, 1]
-        #density = input[:, 2]
-        #massFrac = input[:, 3]
-        #density_new = input[:, 5]
-        #x = input[:, 6]
-        #y = input[:, 7]
-        #tot = input[:, 9] / Lsun
-        #old = input[:, 10] / Lsun
-        #yng = input[:, 11] / Lsun
-        #new = input[:, 12] / Lsun
-
         #energy_new = volume * density_new * Lnew
         #F_abs_yng = (yng + new + energy_new) / (old + yng + new + energy_new)
 
@@ -229,16 +215,24 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         #absorptions_unevolved_diffuse = self.absorptions["Absorbed bolometric luminosity of the young stellar population"] + self.absorptions["Absorbed bolometric luminosity of the ionizing stellar population"]
         #absorptions_unevolved_diffuse = self.absorptions["young"] + self.absorptions["ionizing"]
         absorptions_unevolved_diffuse = self.absorptions.unevolved(unit="W", asarray=True)
+        absorptions_ionizing_internal = volumes * density * absorbed_energy
 
-        #absorptions_ionizing_internal = None # TODO !!
+        absorptions_unevolved = absorptions_unevolved_diffuse + absorptions_ionizing_internal
 
         #absorptions_total = self.absorptions["Absorbed bolometric luminosity of the total stellar population"]
         #absorptions_total = self.absorptions["total"]
         absorptions_total = self.absorptions.total(unit="W", asarray=True)
         #absorptions_total = absorptions_unevolved_diffuse + absorptions_ionizing_internal + absorptions_evolved # TODO !!
 
+        # Evolved: old
+        absorptions_evolved = self.absorptions.old(unit="W", asarray=True)
+
+        # Total absorptions
+        absorptions_total = absorptions_unevolved + absorptions_evolved
+
         # Calculate the heating fraction of the unevolved stellar population in each dust cell
-        self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
+        #self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
+        self.heating_fractions = absorptions_unevolved / absorptions_total
 
     # -----------------------------------------------------------------
 
