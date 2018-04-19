@@ -29,6 +29,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ..core.environment import load_modeling_environment
 from ...core.plot.sed import plot_seds, SEDPlotter, plot_sed
+from ...core.config.plot_seds import definition as plot_seds_definition
 
 # -----------------------------------------------------------------
 
@@ -95,8 +96,8 @@ sed_commands[_stellar_name] = ("plot_stellar_sed_command", True, "plot the stell
 sed_commands[_dust_name] = ("plot_dust_sed_command", True, "plot the dust SED(s)", None)
 
 ## CONTRIBUTIONS
-sed_commands[_contributions_name] = ("plot_contribution_seds_command", True, "plot the contributions to the total SED(s)")
-sed_commands[_components_name] = ("plot_component_seds_command", True, "plot the SED(s) for different components")
+sed_commands[_contributions_name] = ("plot_contribution_seds_command", True, "plot the contributions to the total SED(s)", None)
+sed_commands[_components_name] = ("plot_component_seds_command", True, "plot the SED(s) for different components", None)
 
 ## OLD BULGE
 sed_commands[_old_bulge_name] = ("plot_old_bulge_sed_command", True, "plot the SED of the old stellar bulge", None)
@@ -129,6 +130,7 @@ attenuation_commands = OrderedDict()
 # Set subcommands
 subcommands = OrderedDict()
 subcommands[_sed_command_name] = sed_commands
+subcommands[_attenuation_command_name] = attenuation_commands
 
 # -----------------------------------------------------------------
 
@@ -683,6 +685,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Get the config
         config = self.get_config_from_command(command, self.plot_wavelengths_definition)
+        config.pop("_path")
 
         # Plot the wavelengths
         self.plot_wavelengths(**config)
@@ -964,7 +967,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         definition = ConfigurationDefinition(write_config=False)
         definition.add_required("observed_intrinsic", "string_tuple", "plot observed stellar SED, intrinsic stellar SED, or both", choices=observed_intrinsic_choices)
-        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
+        definition.add_positional_optional("components", "string_list", "components", [total], choices=components)
         return definition
 
     # -----------------------------------------------------------------
@@ -979,7 +982,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         # Get config
-        config = self.get_config_from_command(command, self.plot_stellar_sed_definition)
+        config = self.get_config_from_command(command, self.plot_stellar_sed_definition, **kwargs)
 
         # Plot
         self.plot_stellar_sed(config.observed_intrinsic, components=config.components)
@@ -1233,6 +1236,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("contributions", "string_list", "contributions", default_contributions, choices=contributions)
         definition.add_optional("component", "string", "component", total, choices=components)
+        definition.import_settings(plot_seds_definition)
         return definition
 
     # -----------------------------------------------------------------
@@ -1251,12 +1255,15 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # TODO: use 'component' option to do this for different components?
 
+        contributions = config.pop("contributions")
+        config.pop("_path")
+
         # Plot
-        self.plot_contribution_seds(config.contributions)
+        self.plot_contribution_seds(contributions, **config)
 
     # -----------------------------------------------------------------
 
-    def plot_contribution_seds(self, contributions, path=None, title=None, show_file=False, format=None):
+    def plot_contribution_seds(self, contributions, path=None, title=None, show_file=False, format=None, **kwargs):
 
         """
         This function ...
@@ -1272,7 +1279,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         log.debug("Plotting contribution SEDs ...")
 
         # Create SED plotter
-        plotter = SEDPlotter()
+        plotter = SEDPlotter(kwargs) # **kwargs DOESN'T WORK? (e.g. with min_flux)
 
         # Loop over the contributions
         for contribution in contributions:
@@ -1310,6 +1317,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
+        definition.import_settings(plot_seds_definition)
         return definition
 
     # -----------------------------------------------------------------
@@ -1326,12 +1334,16 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_component_seds_definition, **kwargs)
 
+        # Get
+        components = config.pop("components")
+        config.pop("_path")
+
         # Plot
-        self.plot_component_seds(config.components)
+        self.plot_component_seds(config.components, **config)
 
     # -----------------------------------------------------------------
 
-    def plot_component_seds(self, components, path=None, title=None, show_file=False, format=None):
+    def plot_component_seds(self, components, path=None, title=None, show_file=False, format=None, **kwargs):
 
         """
         This function ...
@@ -1347,7 +1359,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         log.debug("Plotting component SEDs ...")
 
         # Create SED plotter
-        plotter = SEDPlotter()
+        plotter = SEDPlotter(kwargs)
 
         # Add references?
         #if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
