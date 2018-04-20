@@ -179,10 +179,12 @@ def select_from_fitting_context(fitting_context):
 
     # Load the ski file
     if simulation_name is not None: ski = get_ski_file_for_simulation(modeling_path, run_id, generation_name, simulation_name)
-    else: ski = fitting_run.ski_template
+    else:
 
-    # Set parameter values (ALTHOUGH PROBABLY UNNECESSARY)
-    ski.set_labeled_values(parameter_values)
+        ski = fitting_run.ski_template
+
+        # Set parameter values (ALTHOUGH PROBABLY UNNECESSARY)
+        ski.set_labeled_values(parameter_values)
 
     # Load the input paths
     input_map_paths = fitting_run.input_map_paths

@@ -1903,7 +1903,7 @@ class ModelDefinition(object):
             deprojection = self.get_stellar_deprojection(component_name)
 
             # Set the new distance and save
-            deprojection.galaxy_distance = value
+            deprojection.distance = value
             deprojection.save()
 
         # Loop over the dust components
@@ -1914,7 +1914,7 @@ class ModelDefinition(object):
             deprojection = self.get_dust_deprojection(component_name)
 
             # Set the new distance and save
-            deprojection.galaxy_distance = value
+            deprojection.distance = value
             deprojection.save()
 
     # -----------------------------------------------------------------

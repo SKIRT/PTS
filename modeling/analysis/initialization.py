@@ -85,7 +85,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return not self.from_representation
+        return not self.from_representation or not self.representation.has_dust_grid_tree
 
     # -----------------------------------------------------------------
 
@@ -786,6 +786,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Write the earth instruments
         self.instruments[simple_earth_name].saveto(self.analysis_run.simple_earth_instrument_path)
         self.instruments[full_earth_name].saveto(self.analysis_run.full_earth_instrument_path)
+        self.instruments[sed_earth_name].saveto(self.analysis_run.sed_earth_instrument_path)
 
         # Write the faceon instrument
         self.instruments[simple_faceon_name].saveto(self.analysis_run.simple_faceon_instrument_path)
@@ -803,7 +804,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return self.definition.path
+        return self.definition.stellar_path
 
     # -----------------------------------------------------------------
 
