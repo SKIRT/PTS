@@ -22,6 +22,45 @@ from ...magic.tools.plotting import pretty_colours, line_styles, filled_markers
 
 # -----------------------------------------------------------------
 
+def plot_attenuation_curve(curve, label):
+
+    """
+    This function ...
+    :param curve:
+    :param label:
+    :return:
+    """
+
+    # Create the plotter
+    plotter = AttenuationPlotter()
+
+    # Add
+    plotter.add_attenuation_curve(curve, label)
+
+    # Run
+    plotter.run()
+
+# -----------------------------------------------------------------
+
+def plot_attenuation_curves(curves):
+
+    """
+    This function ...
+    :param curves:
+    :return:
+    """
+
+    # Create the plotter
+    plotter = AttenuationPlotter()
+
+    # Add
+    plotter.add_attenuation_curves(curves)
+
+    # Run
+    plotter.run()
+
+# -----------------------------------------------------------------
+
 class AttenuationPlotter(object):
     
     """
@@ -74,6 +113,18 @@ class AttenuationPlotter(object):
         """
 
         self.curves[label] = attenuation_curve
+
+    # -----------------------------------------------------------------
+
+    def add_attenuation_curves(self, curves):
+
+        """
+        This function ...
+        :param curves:
+        :return:
+        """
+
+        for label in curves: self.add_attenuation_curve(curves[label], label)
 
     # -----------------------------------------------------------------
 

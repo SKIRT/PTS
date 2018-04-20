@@ -81,8 +81,8 @@ class AttenuationCurve(Curve):
 
         """
         This function ...
-        :param total:
-        :param transparent:
+        :param total: OBSERVED
+        :param transparent: INTRINSIC
         :return:
         """
 

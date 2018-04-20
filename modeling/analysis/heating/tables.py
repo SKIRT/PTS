@@ -53,19 +53,6 @@ class AbsorptionTable(SmartTable):
         # Call the constructor of the base class
         super(AbsorptionTable, self).__init__(*args, **kwargs)
 
-        # Add columns
-        #self.add_column_info("Run name", str, None, "Name of the analysis run")
-        #self.add_column_info("Host id", str, None, "Cache remote host ID")
-
-        # X coordinate of cell center
-        # Y coordinate of cell center
-        # Z coordinate of cell center
-
-        # Absorbed bolometric luminosity of the total stellar population
-        # Absorbed bolometric luminosity of the old stellar population
-        # Absorbed bolometric luminosity of the young stellar population
-        # Absorbed bolometric luminosity of the ionizing stellar population
-
         # Add column info
         self.add_all_column_info(self._column_info)
 

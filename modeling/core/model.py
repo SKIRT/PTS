@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -41,6 +42,7 @@ from ...core.data.sed import SED
 from ...core.simulation.output import SimulationOutput
 from ...core.simulation.data import SimulationData
 from ...core.units.parsing import parse_unit as u
+from ...core.data.attenuation import AttenuationCurve
 
 # -----------------------------------------------------------------
 
@@ -1749,6 +1751,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def attenuation_curve_old_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_sed_old_bulge, self.intrinsic_sed_old_bulge)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def i1_attenuation_old_bulge(self):
 
         """
@@ -1994,6 +2008,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def attenuation_curve_old_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_sed_old_disk, self.intrinsic_sed_old_disk)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def i1_attenuation_old_disk(self):
 
         """
@@ -2235,6 +2261,18 @@ class RTModel(object):
         """
 
         return self.has_intrinsic_i1_luminosity_old_bulge and self.has_intrinsic_i1_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def attenuation_curve_old(self):
+
+        """
+        This fuction ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_sed_old, self.intrinsic_sed_old)
 
     # -----------------------------------------------------------------
 
@@ -2496,6 +2534,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def attenuation_curve_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_sed_young, self.intrinsic_sed_young)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def fuv_attenuation_young(self):
 
         """
@@ -2737,6 +2787,18 @@ class RTModel(object):
         """
 
         return True # free parameter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def attenuation_curve_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_sed_sfr, self.intrinsic_sed_sfr)
 
     # -----------------------------------------------------------------
 
@@ -3019,6 +3081,18 @@ class RTModel(object):
         """
 
         return self.has_intrinsic_sed_unevolved
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def attenuation_curve_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_sed_unevolved, self.intrinsic_sed_unevolved)
 
     # -----------------------------------------------------------------
 
@@ -4738,6 +4812,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def attenuation_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AttenuationCurve.from_seds(self.observed_total_sed, self.intrinsic_total_sed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def bolometric_attenuation(self):
 
         """
@@ -5403,7 +5489,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_sfr_data.stellar_density
+        return np.asarray(self.observed_sfr_data.stellar_density["Stellar density"])
 
     # -----------------------------------------------------------------
 
@@ -5439,7 +5525,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.cell_properties["Volume"]
+        return np.asarray(self.cell_properties["Volume"])
 
     # -----------------------------------------------------------------
 
@@ -5451,7 +5537,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.cell_properties["Density"]
+        return np.asarray(self.cell_properties["Density"])
 
     # -----------------------------------------------------------------
 
@@ -5463,7 +5549,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.cell_properties["Mass fraction"]
+        return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
 
@@ -5475,7 +5561,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.cell_properties["Optical depth"]
+        return np.asarray(self.cell_properties["Optical depth"])
 
     # -----------------------------------------------------------------
 

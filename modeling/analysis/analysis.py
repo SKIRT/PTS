@@ -30,6 +30,7 @@ from ...core.tools import introspection
 from ..core.environment import load_modeling_environment
 from ...core.plot.sed import plot_seds, SEDPlotter, plot_sed
 from ...core.config.plot_seds import definition as plot_seds_definition
+from ...core.plot.attenuation import plot_attenuation_curve, plot_attenuation_curves
 
 # -----------------------------------------------------------------
 
@@ -124,6 +125,31 @@ sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the S
 
 # Attenuation subcommands
 attenuation_commands = OrderedDict()
+
+## TOTAL
+attenuation_commands[_total_name] = ("plot_total_attenuation_command", True, "plot the attenuation curve of the model", None)
+
+## CONTRIBUTIONS
+attenuation_commands[_components_name] = ("plot_component_attenuation_command", True, "plot the attenuation curves of the different components", None)
+
+## OLD BULGE
+attenuation_commands[_old_bulge_name] = ("plot_old_bulge_attenuation_command", True, "plot the attenuation curve of the old stellar bulge", None)
+
+## OLD DISK
+attenuation_commands[_old_disk_name] = ("plot_old_disk_attenuation_command", True, "plot the attenuation curve of the old stellar disk", None)
+
+## OLD
+attenuation_commands[_old_name] = ("plot_old_attenuation_command", True, "plot the attenuation curve of the old stars", None)
+
+## YOUNG
+attenuation_commands[_young_name] = ("plot_young_attenuation_command", True, "plot the attenuation curve of the young stars", None)
+
+## SFR
+attenuation_commands[_sfr_name] = ("plot_sfr_attenuation_command", True, "plot the attenuation curve of the star formation regions", None)
+# BUT WHAT IS THE *INTRINSIC* SFR ATTENUATION CURVE? (by INTERNAL DUST)
+
+## UNEVOLVED
+attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", True, "plot the attenuation curve of the unevolved stellar population (young + sfr)", None)
 
 # -----------------------------------------------------------------
 
@@ -1664,6 +1690,231 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
                 elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_unevolved
                 else: raise ValueError("")
             plot_seds(seds, residuals=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_total_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_total_attenuation_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_total_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve, total)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_component_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_component_attenuation_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_component_attenuation_definition, **kwargs)
+
+        # Get
+        components = config.pop("components")
+        config.pop("_path")
+
+        # Plot
+        self.plot_component_attenuation(components)
+
+    # -----------------------------------------------------------------
+
+    def plot_component_attenuation(self, components):
+
+        """
+        This function ...
+        :param components:
+        :return:
+        """
+
+        # Initialize
+        curves = OrderedDict()
+
+        # Add components
+        for component in components:
+
+            if component == total: curves[total] = self.model.attenuation_curve
+            elif component == bulge: curves[bulge] = self.model.attenuation_curve_old_bulge
+            elif component == disk: curves[disk] = self.model.attenuation_curve_old_disk
+            elif component == old: curves[old] = self.model.attenuation_curve_old
+            elif component == young: curves[young] = self.model.attenuation_curve_young
+            elif component == sfr: curves[sfr] = self.model.attenuation_curve_sfr
+            elif component == unevolved: curves[unevolved] = self.model.attenuation_curve_unevolved
+            else: raise ValueError("Invalid component: '" + component + "'")
+
+        # Plot
+        plot_attenuation_curves(curves)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_old_bulge_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_old_bulge_attenuation_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_old_disk_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_old_disk_attenuation_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_old_attenuation_definition(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_old_attenuation_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_young_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_young_attenuation_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_sfr_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_attenuation_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_unevolved_attenuation_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_attenuation_command(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
