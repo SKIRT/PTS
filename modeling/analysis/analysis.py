@@ -1749,7 +1749,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_component_attenuation_definition, **kwargs)
 
-        # Get
+        # GetAbsorbed bolometric luminosity
         components = config.pop("components")
         config.pop("_path")
 

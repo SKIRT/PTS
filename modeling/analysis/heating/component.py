@@ -185,7 +185,9 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.total_contribution_data.absorption
+        if self.total_contribution_data.has_absorption: return self.total_contribution_data.absorption
+        elif self.total_contribution_data.has_isrf: return self.total_contribution_data.isrf
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
