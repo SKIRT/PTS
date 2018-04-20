@@ -1379,7 +1379,7 @@ class SimulationOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -1389,8 +1389,11 @@ class SimulationOutput(Output):
         # Call the constructor of the base class
         super(SimulationOutput, self).__init__()
 
+        if kwargs.get("prefix",None) is not None:
+            self.prefix = kwargs.pop("prefix")
+            self.load_files(*args, get_prefix=False)
         # Load the file paths, set the simulation prefix
-        self.prefix = self.load_files(*args, get_prefix=True)
+        else: self.prefix = self.load_files(*args, get_prefix=True)
 
     # -----------------------------------------------------------------
 
@@ -1435,7 +1438,7 @@ class SimulationOutput(Output):
 
         filepaths = fs.files_in_path(path, startswith=prefix, not_extension=cls._without_extensions)
         if ignore is not None: filepaths = sequences.removed(filepaths, ignore)
-        return cls(*filepaths)
+        return cls(*filepaths, prefix=prefix)
 
     # -----------------------------------------------------------------
 
@@ -1451,7 +1454,7 @@ class SimulationOutput(Output):
         """
 
         filepaths = remote.files_in_path(path, startswith=prefix, not_extension=cls._without_extensions)
-        return cls(*filepaths)
+        return cls(*filepaths, prefix=prefix)
 
     # -----------------------------------------------------------------
 
