@@ -8654,7 +8654,7 @@ class SimulationManager(InteractiveConfigurable):
         log.debug("Unretrieving simulation '" + simulation_name + "' ...")
 
         # Clear local output
-        self.clear_simulation_output_local(simulation_name)
+        if self.has_output(simulation_name): self.clear_simulation_output_local(simulation_name)
 
         # Get the simulation
         simulation = self.get_simulation(simulation_name)
