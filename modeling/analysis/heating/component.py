@@ -346,7 +346,11 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.old_contribution_data.absorption
+
+
+        if self.old_contribution_data.has_absorption: return self.old_contribution_data.absorption
+        elif self.old_contribution_data.has_isrf: return self.old_contribution_data.isrf
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
@@ -505,7 +509,9 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.young_contribution_data.absorption
+        if self.young_contribution_data.has_absorption: return self.young_contribution_data.absorption
+        elif self.young_contribution_data.has_isrf: return self.young_contribution_data.isrf
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
@@ -664,7 +670,9 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.ionizing_contribution_data.absorption
+        if self.ionizing_contribution_data.has_absorption: return self.ionizing_contribution_data.absorption
+        elif self.ionizing_contribution_data.has_isrf: return self.ionizing_contribution_data.isrf
+        else: raise IOError("No absorption data")
 
     # -----------------------------------------------------------------
 
