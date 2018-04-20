@@ -92,10 +92,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.get_heating_fractions()
 
         # 4. Calculate the distribution of the heating fraction of the unevolved stellar population
-        self.calculate_distribution()
-
-        # 5. Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
-        self.calculate_radial_distribution()
+        self.calculate_distributions()
 
         # 6. Writing
         self.write()
@@ -154,25 +151,41 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Creating the absorption table ...")
 
-        # Get the coordinates
-        x = self.total_contribution_absorption_data["X coordinate of cell center"]
-        y = self.total_contribution_absorption_data["Y coordinate of cell center"]
-        z = self.total_contribution_absorption_data["Z coordinate of cell center"]
+        # Get the coordinates (should be in pc)
+        x = self.cell_x_coordinates
+        y = self.cell_y_coordinates
+        z = self.cell_z_coordinates
 
         # Get luminosity for total stellar population
-        total_absorptions = self.total_contribution_absorption_data["Absorbed bolometric luminosity"]
+        #total_absorptions = self.total_contribution_absorption_data["Absorbed bolometric luminosity"]
+        total_absorptions = self.total_contribution_absorption_luminosities
+        total_unit = self.total_contribution_absorption_unit
+        total_conversion = total_unit.conversion_factor("W")
+        total_absorptions_watt = total_absorptions * total_conversion
 
         # Get luminosity for old stellar population
-        old_absorptions = self.old_contribution_absorption_data["Absorbed bolometric luminosity"]
+        #old_absorptions = self.old_contribution_absorption_data["Absorbed bolometric luminosity"]
+        old_absorptions = self.old_contribution_absorption_luminosities
+        old_unit = self.old_contribution_absorption_unit
+        old_conversion = old_unit.conversion_factor("W")
+        old_absorptions_watt = old_absorptions * old_conversion
 
         # Get luminosity for young stellar population
-        young_absorptions = self.young_contribution_absorption_data["Absorbed bolometric luminosity"]
+        #young_absorptions = self.young_contribution_absorption_data["Absorbed bolometric luminosity"]
+        young_absorptions = self.young_contribution_absorption_luminosities
+        young_unit = self.young_contribution_absorption_unit
+        young_conversion = young_unit.conversion_factor("W")
+        young_absorptions_watt = young_absorptions * young_conversion
 
         # Get luminosity for ionizing stellar population
-        ionizing_absorptions = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"]
+        #ionizing_absorptions = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"]
+        ionizing_absorptions = self.ionizing_contribution_absorption_luminosities
+        ionizing_unit = self.ionizing_contribution_absorption_unit
+        ionizing_conversion = ionizing_unit.conversion_factor("W")
+        ionizing_absorptions_watt = ionizing_absorptions * ionizing_conversion
 
         # Create the table
-        self.absorptions = AbsorptionTable.from_columns(x, y, z, total_absorptions, old_absorptions, young_absorptions, ionizing_absorptions)
+        self.absorptions = AbsorptionTable.from_columns(x, y, z, total_absorptions_watt, old_absorptions_watt, young_absorptions_watt, ionizing_absorptions_watt)
 
         # TEMP? SAVE
         #self.absorptions.saveto(self.absorption_table_path)
@@ -604,6 +617,27 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def calculate_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distributions of heating fractions ...")
+
+        # Distribution
+        self.calculate_distribution()
+
+        # Diffuse
+        self.calculate_distribution_diffuse()
+
+        # Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
+        self.calculate_radial_distribution()
+
+    # -----------------------------------------------------------------
+
     def calculate_distribution(self):
 
         """
@@ -616,8 +650,25 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Generate the distribution
         # Weights are dust mass fraction
-        self.distribution = Distribution.from_values("Heating fraction", self.valid_heating_fractions, nbins=self.config.nbins, weights=self.valid_cell_weights)
-        self.distribution_diffuse = Distribution.from_values("Heating fraction", self.valid_heating_fractions_diffuse, nbins=self.config.nbins, weights=self.valid_cell_weights_diffuse)
+        self.distribution = Distribution.from_values("Heating fraction", self.valid_heating_fractions,
+                                                     nbins=self.config.nbins, weights=self.valid_cell_weights)
+
+    # -----------------------------------------------------------------
+
+    def calculate_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distribution of heating fractions of the unevolved stellar population (diffuse) ...")
+
+        # Generate the distribution
+        # Weights are dust mass fraction
+        self.distribution_diffuse = Distribution.from_values("Heating fraction", self.valid_heating_fractions_diffuse,
+                                                             nbins=self.config.nbins, weights=self.valid_cell_weights_diffuse)
 
     # -----------------------------------------------------------------
 
@@ -638,6 +689,66 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_absorptions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_heating_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_heating_fractions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_distribution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_distribution_diffuse
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_radial_distribution
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -649,16 +760,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Writing ...")
 
         # Write the absorption table
-        if not self.has_absorptions: self.write_absorptions()
+        if self.do_write_absorptions: self.write_absorptions()
 
         # Write the heating fraction
-        if not self.has_heating_fractions: self.write_heating_fractions()
+        if self.do_write_heating_fractions: self.write_heating_fractions()
 
         # Write the distribution of heating fractions
-        if not self.has_distribution: self.write_distribution()
+        if self.do_write_distribution: self.write_distribution()
+
+        # Write diffuse distribution
+        if self.do_write_distribution_diffuse: self.write_distribution_diffuse()
 
         # Write the radial distribution of heating fractions
-        if not self.has_radial_distribution: self.write_radial_distribution()
+        if self.do_write_radial_distribution: self.write_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -781,6 +895,45 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def distribution_diffuse_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.cell_heating_path, "distribution_diffuse.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.distribution_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the distribution of heating fractions (diffuse) ...")
+
+        # Save
+        self.distribution_diffuse.saveto(self.distribution_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def radial_distribution_path(self):
 
         """
@@ -820,6 +973,42 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot_distribution and not self.has_distribution_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot_radial_distribution and not self.has_radial_distribution_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot_map and not self.has_heating_map_plot
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -831,13 +1020,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting ...")
 
         # Plot the distribution of heating fractions
-        if not self.has_distribution_plot: self.plot_distribution()
+        if self.do_plot_distribution: self.plot_distribution()
 
         # Plot the radial distribution of heating fractions
-        if not self.has_radial_distribution_plot: self.plot_radial_distribution()
+        if self.do_plot_radial_distribution: self.plot_radial_distribution()
 
         # Plot a map of the heating fraction for a face-on view of the galaxy
-        #if not self.has_heating_map_plot: self.plot_map()
+        if self.do_plot_map: self.plot_map()
 
     # -----------------------------------------------------------------
 

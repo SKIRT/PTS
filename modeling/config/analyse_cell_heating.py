@@ -31,3 +31,21 @@ definition.add_optional("nbins", "positive_integer", "number of bins", 20)
 definition.add_optional("nradial_bins", "positive_integer", "number of radial bins", 200)
 
 # -----------------------------------------------------------------
+
+# Plot
+definition.add_flag("plot", "do plotting", True)
+definition.add_flag("plot_distribution", "plot distribution", True)
+definition.add_flag("plot_radial_distribution", "plot radial distribution", True)
+definition.add_flag("plot_map", "plot map", True)
+
+# -----------------------------------------------------------------
+
+# Recreate
+definition.add_flag("recreate_table", "recreate the absorption table")
+definition.add_flag("recalculate_fractions", "recalculate the heating fractions")
+definition.add_flag("recreate_distributions", "recreate the heating distributions")
+definition.add_flag("replot_distribution", "replot the distribution")
+definition.add_flag("replot_radial_distribution", "replot the radial distribution")
+definition.add_flag("replot_map", "replot the map")
+
+# -----------------------------------------------------------------

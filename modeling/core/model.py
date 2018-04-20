@@ -5565,6 +5565,42 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def cell_x_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.cell_properties["X coordinate of cell center"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_y_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.cell_properties["Y coordinate of cell center"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_z_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.cell_properties["Z coordinate of cell center"])
+
+    # -----------------------------------------------------------------
+
     @property
     def grid_filepaths(self):
 

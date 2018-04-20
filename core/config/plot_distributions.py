@@ -44,6 +44,9 @@ definition.add_flag("frequencies", "show frequencies")
 definition.add_optional("output", "string", "output directory")
 definition.add_optional("format", "string", "plotting format", default=default_format, choices=formats)
 
+# Alpha
+definition.add_optional("alpha", "real", "alpha")
+
 # -----------------------------------------------------------------
 
 # The plotting library to use

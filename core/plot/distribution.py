@@ -39,7 +39,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
                       xsize=5, ysize=5, return_image=False, colors=None, statistics=True, soft_xmin=False,
                       soft_xmax=False, soft_ymin=False, soft_ymax=False, mean=None, median=None, most_frequent=None,
                       stddev=None, fwhm=None, show_mean=None, show_median=None, show_most_frequent=None,
-                      show_stddev=False, show_fwhm=False):
+                      show_stddev=False, show_fwhm=False, alpha=None):
 
     """
     This function ...
@@ -74,6 +74,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :param show_most_frequent:
     :param show_stddev:
     :param show_fwhm:
+    :param alpha:
     :return:
     """
 
@@ -89,7 +90,6 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         rect.set_facecolor('white')
     else: only_axes = True
 
-    alpha = None
     edgecolor = "black"
     linewidth = 1
 
@@ -248,7 +248,7 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 # -----------------------------------------------------------------
 
 def plot_distributions(distributions, panels=False, smooth=False, statistics=False, extrema=False, edges=False,
-                       frequencies=False, path=None, logscale=False, logfrequency=False):
+                       frequencies=False, path=None, logscale=False, logfrequency=False, alpha=None):
 
     """
     This function ...
@@ -262,6 +262,7 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     :param path:
     :param logscale:
     :param logfrequency:
+    :param alpha:
     :return:
     """
 
@@ -278,6 +279,7 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     plotter.config.extrema = extrema
     plotter.config.edges = edges
     plotter.config.frequencies = frequencies
+    plotter.config.alpha = alpha
 
     # Logscales
     plotter.config.logscale = logscale
@@ -1245,7 +1247,6 @@ class DistributionPlotter(Configurable):
                 distribution = self.distributions[panel][label]
 
                 # Plot the distribution as a histogram
-                alpha = None
                 edgecolor = "black"
                 linewidth = 1
 
@@ -1258,10 +1259,10 @@ class DistributionPlotter(Configurable):
                 # Plot
                 if self.logscale:
                     plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
-                            linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list)
                 else:
                     plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
-                            linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list)
 
                 # Add frequencies
                 if self.config.frequencies:

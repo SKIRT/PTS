@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
@@ -20,6 +23,7 @@ from ....core.tools.utils import lazyproperty
 from ....core.simulation.output import SimulationOutput
 from ....core.simulation.logfile import LogFile
 from ....core.simulation.data import SimulationData
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -191,6 +195,43 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_contribution_absorption_column_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_contribution_absorption_data.column_unit(self.total_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_luminosities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
+
+    # -----------------------------------------------------------------
+
     @property
     def total_contribution_logfile_path(self):
 
@@ -346,7 +387,46 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.old_contribution_data.absorption
+        if self.old_contribution_data.has_absorption: return self.old_contribution_data.absorption
+        elif self.old_contribution_data.has_isrf: return self.old_contribution_data.isrf
+        else: raise IOError("No absorption data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_absorption_column_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_data.column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_absorption_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_contribution_absorption_data.column_unit(self.old_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_contribution_absorption_luminosities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.old_contribution_absorption_data[self.old_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
@@ -505,7 +585,46 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.young_contribution_data.absorption
+        if self.young_contribution_data.has_absorption: return self.young_contribution_data.absorption
+        elif self.young_contribution_data.has_isrf: return self.young_contribution_data.isrf
+        else: raise IOError("No absorption data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_absorption_column_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_data.column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_absorption_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_contribution_absorption_data.column_unit(self.young_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_contribution_absorption_luminosities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.young_contribution_absorption_data[self.young_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
@@ -664,7 +783,46 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.ionizing_contribution_data.absorption
+        if self.ionizing_contribution_data.has_absorption: return self.ionizing_contribution_data.absorption
+        elif self.ionizing_contribution_data.has_isrf: return self.ionizing_contribution_data.isrf
+        else: raise IOError("No absorption data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_absorption_column_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_data.column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_absorption_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_contribution_absorption_data.column_unit(self.ionizing_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_contribution_absorption_luminosities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.ionizing_contribution_absorption_data[self.ionizing_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
@@ -823,7 +981,46 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         :return:
         """
 
-        return self.unevolved_contribution_data.absorption
+        if self.unevolved_contribution_data.has_absorption: return self.unevolved_contribution_data.absorption
+        elif self.unevolved_contribution_data.has_isrf: return self.unevolved_contribution_data.isrf
+        else: raise IOError("No absorption data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_absorption_column_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_data.column_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_absorption_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_contribution_absorption_data.column_unit(self.unevolved_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_contribution_absorption_luminosities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.unevolved_contribution_absorption_data[self.unevolved_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
@@ -950,5 +1147,53 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         return self.analysis_run.wavelength_grid
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_x_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # SKIRT7
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data["X coordinate of cell center"])
+
+        # SKIRT8
+        else: return self.model.cell_x_coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_y_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # SKIRT7
+        if self.total_contribution_data.has_absorption : return np.asarray(self.total_contribution_absorption_data["Y coordinate of cell center"])
+
+        # SKIRT8
+        else: return self.model.cell_y_coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_z_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # SKIRT7
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data["Z coordinate of cell center"])
+
+        # SKIRT8
+        else: return self.model.cell_z_coordinates
 
 # -----------------------------------------------------------------

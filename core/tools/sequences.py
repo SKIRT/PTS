@@ -1199,6 +1199,24 @@ def find_unique(sequence, element):
 
 # -----------------------------------------------------------------
 
+def find_single_in_both(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    items = []
+    for item in sequence_a:
+        if item in sequence_b: items.append(item)
+    if len(items) == 0: raise ValueError("No items in both")
+    elif len(items) > 1: raise ValueError("Multiple items in both")
+    else: return items[0]
+
+# -----------------------------------------------------------------
+
 def find_unique_indices(sequence, elements):
 
     """
