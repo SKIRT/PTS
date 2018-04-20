@@ -1799,12 +1799,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_old_bulge_attenuation_command(self):
+    def plot_old_bulge_attenuation_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_old_bulge_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve_old_bulge, bulge)
 
     # -----------------------------------------------------------------
 
@@ -1821,12 +1829,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_old_disk_attenuation_command(self):
+    def plot_old_disk_attenuation_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_old_disk_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve_old_disk, disk)
 
     # -----------------------------------------------------------------
 
@@ -1843,12 +1859,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_old_attenuation_command(self):
+    def plot_old_attenuation_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_old_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve_old, old)
 
     # -----------------------------------------------------------------
 
@@ -1865,12 +1889,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_young_attenuation_command(self):
+    def plot_young_attenuation_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_young_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve_young, young)
 
     # -----------------------------------------------------------------
 
@@ -1887,12 +1919,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_sfr_attenuation_command(self):
+    def plot_sfr_attenuation_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_sfr_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve_sfr, sfr)
 
     # -----------------------------------------------------------------
 
@@ -1909,12 +1949,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_unevolved_attenuation_command(self):
+    def plot_unevolved_attenuation_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_unevolved_attenuation_definition, **kwargs)
+
+        # Plot
+        plot_attenuation_curve(self.model.attenuation_curve_unevolved, unevolved)
 
     # -----------------------------------------------------------------
 

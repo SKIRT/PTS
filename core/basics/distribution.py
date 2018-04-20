@@ -1884,15 +1884,14 @@ class Distribution2D(object):
 
         ax.set_ylim(0.0, 1.0)
 
-        if title is not None: ax.set_title(title, color='red')
+        if title is not None: ax.set_title(title)
 
         # Labels
-        if self.x_name is not None: ax.set_xlabel(self.x_name, color='red')
-        if self.y_name is not None: ax.set_ylabel(self.y_name, color='red')
+        if self.x_name is not None: ax.set_xlabel(self.x_name)
+        if self.y_name is not None: ax.set_ylabel(self.y_name)
 
         # Save the figure
         plt.savefig(path)
-
         plt.close()
 
 # -----------------------------------------------------------------
