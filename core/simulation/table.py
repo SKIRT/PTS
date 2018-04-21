@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..tools import tables
 from ..basics.table import SmartTable
 from ..units.unit import parse_unit
 
@@ -104,15 +103,12 @@ def is_valid(path):
 
 # -----------------------------------------------------------------
 
-# TODO: make this class inherit from SmartTable?
-#class SkirtTable(object):
 class SkirtTable(SmartTable):
 
     """
     This class ...
     """
 
-    #def __init__(self): #*args, **kwargs):
     def __init__(self, *args, **kwargs):
 
         """
@@ -178,6 +174,7 @@ class SkirtTable(SmartTable):
                 if "(" in name_and_unit and ")" in name_and_unit:
                     name = name_and_unit.split(" (")[0].capitalize() + name_and_unit.split(" (")[1].split(")")[1]
                     unit = name_and_unit.split(" (")[1].split(")")[0]
+                    if "dimensionless" in unit: unit = None
                 else:
                     name = name_and_unit.capitalize()
                     unit = None
@@ -195,7 +192,6 @@ class SkirtTable(SmartTable):
         # All other
         #table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
 
-        # TODO: make this so we can inherit from SmartTable
         # Create a new table from the data
         table = cls(data=data, names=names, masked=True)
 

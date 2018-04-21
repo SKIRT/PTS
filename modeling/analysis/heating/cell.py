@@ -1547,7 +1547,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         print("unique x", nunique_x)
         print("unique y", nunique_y)
 
-        yy, xx = np.meshgrid(unique_y, unique_x)
+        xx, yy = np.meshgrid(unique_x, unique_y)
 
         nx = xx.shape[1]
         ny = yy.shape[0]
