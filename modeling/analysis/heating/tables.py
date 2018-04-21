@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import OrderedDict
 
+# Import astronomical modules
+from astropy.table import Column
+
 # Import the relevant PTS classes and modules
 from ....core.basics.table import SmartTable
 from ....core.tools import arrays
@@ -78,35 +81,43 @@ class AbsorptionTable(SmartTable):
 
         new.remove_columns(["x", "y", "z", "total", "old", "young", "ionizing"])
 
-        new.add_columns([x, y, z], copy=False)
+        if not isinstance(x, Column): x = Column(data=x)
+        if not isinstance(y, Column): y = Column(data=y)
+        if not isinstance(z, Column): z = Column(data=z)
+        if not isinstance(total, Column): total = Column(data=total)
+        if not isinstance(old, Column): old = Column(data=old)
+        if not isinstance(young, Column): young = Column(data=young)
+        if not isinstance(ionizing, Column): ionizing = Column(data=ionizing)
+
+        new.add_columns([x, y, z], copy=False, names=["x", "y", "z"])
         #new.rename_column("X coordinate of cell center", "x")
         #new.rename_column("Y coordinate of cell center", "y")
         #new.rename_column("Z coordinate of cell center", "z")
-        new.rename_column(x.name, "x")
-        new.rename_column(y.name, "y")
-        new.rename_column(z.name, "z")
+        #new.rename_column(x.name, "x")
+        #new.rename_column(y.name, "y")
+        #new.rename_column(z.name, "z")
         new["x"].unit = "pc"
         new["y"].unit = "pc"
         new["z"].unit = "pc"
 
-        new.add_column(total)
+        new.add_column(total, name="total")
         #new.rename_column("Absorbed bolometric luminosity", "total")
-        new.rename_column(total.name, "total")
+        #new.rename_column(total.name, "total")
         new["total"].unit = "W"
 
-        new.add_column(old)
+        new.add_column(old, name="old")
         #new.rename_column("Absorbed bolometric luminosity", "old")
-        new.rename_column(old.name, "old")
+        #new.rename_column(old.name, "old")
         new["old"].unit = "W"
 
-        new.add_column(young)
+        new.add_column(young, name="young")
         #new.rename_column("Absorbed bolometric luminosity", "young")
-        new.rename_column(young.name, "young")
+        #new.rename_column(young.name, "young")
         new["young"].unit = "W"
 
-        new.add_column(ionizing)
+        new.add_column(ionizing, name="ionizing")
         #new.rename_column("Absorbed bolometric luminosity", "ionizing")
-        new.rename_column(ionizing.name, "ionizing")
+        #new.rename_column(ionizing.name, "ionizing")
         new["ionizing"].unit = "W"
 
         # Return the new table

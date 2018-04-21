@@ -838,7 +838,7 @@ class DistributionPlotter(Configurable):
 
         # Get ...
         self.format = kwargs.pop("format", None)
-        self.legend = kwargs.pop("legend", False)
+        if "legend" in kwargs: self.legend = kwargs.pop("legend")
 
         # Logscale
         self.logscale = kwargs.pop("logscale", self.config.logscale)
@@ -1024,7 +1024,7 @@ class DistributionPlotter(Configurable):
             distribution = self.distributions[self.single_panel][label]
 
             # Plot the distribution as a histogram
-            alpha = None
+            #alpha = None
             edgecolor = "black"
             linewidth = 1
 
@@ -1040,10 +1040,10 @@ class DistributionPlotter(Configurable):
 
             if self.logscale:
                 self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
-                        linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+                        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
             else:
                 self.main_plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
-                        linewidth=linewidth_list, alpha=alpha, align="edge", color=color, edgecolor=edgecolor_list)
+                        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
 
             # Add frequencies
             if self.config.frequencies:
@@ -1256,13 +1256,15 @@ class DistributionPlotter(Configurable):
                 # Pick color
                 color = next(colors)
 
+                #print("Alpha", self.config.alpha)
+
                 # Plot
                 if self.logscale:
                     plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
-                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list)
+                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
                 else:
                     plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
-                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list)
+                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
 
                 # Add frequencies
                 if self.config.frequencies:

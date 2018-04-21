@@ -1461,7 +1461,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Determine the path to the plot file
-        return fs.join(self.cell_heating_path, "map.pdf")
+        #return fs.join(self.cell_heating_path, "map.pdf")
+        return fs.join(self.cell_heating_path, "map.png")
 
     # -----------------------------------------------------------------
 
@@ -1518,9 +1519,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         #print(y, y.shape)
         #print(z, z.shape)
 
-        projected_x = []
-        projected_y = []
-        projected_fractions = []
+        #projected_x = []
+        #projected_y = []
+        #projected_fractions = []
 
         # for x,y in z_indices:
         #
@@ -1544,16 +1545,16 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         nunique_x = len(unique_x)
         nunique_y = len(unique_y)
-        print("unique x", nunique_x)
-        print("unique y", nunique_y)
+        #print("unique x", nunique_x)
+        #print("unique y", nunique_y)
 
         xx, yy = np.meshgrid(unique_x, unique_y)
 
         nx = xx.shape[1]
         ny = yy.shape[0]
 
-        print("xx shape", xx.shape)
-        print("yy shape", yy.shape)
+        #print("xx shape", xx.shape)
+        #print("yy shape", yy.shape)
 
         zz = np.zeros_like(xx)
 
@@ -1569,10 +1570,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
                 fractions_column = fractions[indices]
                 weights_column = weights[indices]
 
-                normalization = np.sum(fractions_column)
+                normalization = np.sum(weights_column)
                 if normalization == 0: continue
 
                 fraction = np.sum(fractions_column * weights_column) / normalization
+                #print(fraction)
                 zz[j,i] = fraction
 
         #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
