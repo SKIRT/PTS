@@ -164,16 +164,17 @@ class SkirtTable(object):
                     else:
 
                         # Determine offset
-                        while "column" not in line:
-                            line = table_file.next()
+                        while "column" not in line: line = table_file.next()
 
                 name_and_unit = line.split(": ")[1].split("\n")[0]
                 if "(" in name_and_unit and ")" in name_and_unit:
-                    name = name_and_unit.split(" (")[0].capitalize()
+                    name = name_and_unit.split(" (")[0].capitalize() + name_and_unit.split(" (")[1].split(")")[1]
                     unit = name_and_unit.split(" (")[1].split(")")[0]
                 else:
                     name = name_and_unit.capitalize()
                     unit = None
+
+                #print(name)
 
                 data.append(columns[i])
                 names.append(name)

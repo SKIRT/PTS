@@ -25,6 +25,7 @@ from ....core.basics.distribution import Distribution, Distribution2D
 from .tables import AbsorptionTable
 from ....core.tools.utils import lazyproperty
 from ....core.plot.distribution import plot_distribution, plot_distributions
+from ....core.basics.containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
 
@@ -71,7 +72,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return (not self.has_heating_fractions) or (not self.has_heating_fractions_diffuse)
+        #return (not self.has_heating_fractions) or (not self.has_heating_fractions_diffuse)
+        return True # x and y coordinates are required to create radial distribution
 
     # -----------------------------------------------------------------
 
@@ -704,6 +706,42 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_plot_distribution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_plot_distribution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_plot_radial_distribution
+
+    # -----------------------------------------------------------------
+
     def get_distributions(self):
 
         """
@@ -712,13 +750,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Distribution
-        self.get_distribution()
+        if self.needs_distribution: self.get_distribution()
 
         # Distribution diffuse
-        self.get_distribution_diffuse()
+        if self.needs_distribution_diffuse: self.get_distribution_diffuse()
 
         # Radial distribution
-        self.get_radial_distribution()
+        if self.needs_radial_distribution: self.get_radial_distribution()
 
     # -----------------------------------------------------------------
 
@@ -778,6 +816,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         #if self.has_radial_distribution: self.load_radial_distribution()
         #else: self.calculate_radial_distribution()
 
+        # Cannot save the radial distribution for the moment
         self.calculate_radial_distribution()
 
     # -----------------------------------------------------------------
@@ -1462,11 +1501,52 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Create figure
         plt.figure()
 
-        x = self.valid_x_coordinates
-        y = self.valid_y_coordinates
-        z = self.valid_heating_fractions
+        x_coordinates = self.valid_x_coordinates
+        y_coordinates = self.valid_y_coordinates
+        fractions = self.valid_heating_fractions
+        weights = self.valid_cell_weights
 
-        plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
+        z_indices = DefaultOrderedDict(list)
+
+        ncoordinates = len(x_coordinates)
+        for i in range(ncoordinates):
+            x = x_coordinates[i]
+            y = y_coordinates[i]
+            z_indices[(x,y)].append(i)
+
+        #print(x, x.shape)
+        #print(y, y.shape)
+        #print(z, z.shape)
+
+        projected_x = []
+        projected_y = []
+        projected_fractions = []
+
+        for x,y in z_indices:
+
+            indices = z_indices[(x,y)]
+
+            z_values = self.valid_z_coordinates[indices]
+
+            fractions_column = fractions[indices]
+            weights_column = weights[indices]
+
+            normalization = np.sum(fractions_column)
+            if normalization == 0: continue
+
+            fraction = np.sum(fractions_column * weights_column) / normalization
+
+            projected_x.append(x)
+            projected_y.append(y)
+            projected_fractions.append(fraction)
+
+        #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
+
+        ax = plt.gca()
+        #ax.pcolormesh(x, y, fractions)
+
+        ax.pcolormesh(projected_x, projected_y, projected_fractions)
+
         # Plot
         plt.savefig(self.heating_map_plot_path)
         plt.close()
