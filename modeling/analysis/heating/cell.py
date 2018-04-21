@@ -1525,7 +1525,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for x,y in z_indices:
 
             indices = z_indices[(x,y)]
-
             z_values = self.valid_z_coordinates[indices]
 
             fractions_column = fractions[indices]

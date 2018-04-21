@@ -204,7 +204,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.column_names)
+        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.colnames)
 
     # -----------------------------------------------------------------
 
@@ -402,7 +402,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_data.column_names)
+        return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_data.colnames)
 
     # -----------------------------------------------------------------
 
@@ -600,7 +600,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_data.column_names)
+        return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_data.colnames)
 
     # -----------------------------------------------------------------
 
@@ -798,7 +798,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_data.column_names)
+        return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_data.colnames)
 
     # -----------------------------------------------------------------
 
@@ -996,7 +996,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_data.column_names)
+        return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_data.colnames)
 
     # -----------------------------------------------------------------
 

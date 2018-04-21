@@ -102,18 +102,23 @@ def is_valid(path):
 
 # -----------------------------------------------------------------
 
+# TODO: make this class inherit from SmartTable?
 class SkirtTable(object):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self): #*args, **kwargs):
 
         """
         This function ...
+        :param args:
+        :param kwargs:
         """
 
+        # Call the constructor of the base class
+        #super(SkirtTable, self).__init__()
         pass
 
     # -----------------------------------------------------------------
@@ -183,6 +188,18 @@ class SkirtTable(object):
 
         # Construct the table
         table = tables.new(data, names)
+
+        # All other
+        #table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
+
+        # TODO: make this so we can inherit from SmartTable
+        # Create a new table from the data
+        #table = cls(data=data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
+
+        # SET THE DATA
+        # Set mask for each column from None values
+        #for column_index in range(len(names)):
+        #    table[names[column_index]].mask = [value is None for value in data[column_index]]
 
         # Set the column units
         for column_name in units:
