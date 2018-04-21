@@ -17,6 +17,8 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..tools import tables
+from ..basics.table import SmartTable
+from ..units.unit import parse_unit
 
 # -----------------------------------------------------------------
 
@@ -103,13 +105,15 @@ def is_valid(path):
 # -----------------------------------------------------------------
 
 # TODO: make this class inherit from SmartTable?
-class SkirtTable(object):
+#class SkirtTable(object):
+class SkirtTable(SmartTable):
 
     """
     This class ...
     """
 
-    def __init__(self): #*args, **kwargs):
+    #def __init__(self): #*args, **kwargs):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -118,8 +122,7 @@ class SkirtTable(object):
         """
 
         # Call the constructor of the base class
-        #super(SkirtTable, self).__init__()
-        pass
+        super(SkirtTable, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -187,23 +190,23 @@ class SkirtTable(object):
                 if unit is not None: units[name] = unit
 
         # Construct the table
-        table = tables.new(data, names)
+        #table = tables.new(data, names)
 
         # All other
         #table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
 
         # TODO: make this so we can inherit from SmartTable
         # Create a new table from the data
-        #table = cls(data=data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
+        table = cls(data=data, names=names, masked=True)
 
         # SET THE DATA
         # Set mask for each column from None values
-        #for column_index in range(len(names)):
-        #    table[names[column_index]].mask = [value is None for value in data[column_index]]
+        for column_index in range(len(names)):
+            table[names[column_index]].mask = [value is None for value in data[column_index]]
 
         # Set the column units
         for column_name in units:
-            table[column_name].unit = units[column_name]
+            table[column_name].unit = parse_unit(units[column_name])
 
         # Return the table
         return table

@@ -880,7 +880,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_absorptions
+        return not self.has_absorptions and self.absorptions is not None
 
     # -----------------------------------------------------------------
 
@@ -892,7 +892,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_heating_fractions
+        return not self.has_heating_fractions and self.heating_fractions is not None
 
     # -----------------------------------------------------------------
 
@@ -904,7 +904,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_heating_fractions_diffuse
+        return not self.has_heating_fractions_diffuse and self.diffuse_heating_fractions is not None
 
     # -----------------------------------------------------------------
 
@@ -916,7 +916,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_distribution
+        return not self.has_distribution and self.distribution is not None
 
     # -----------------------------------------------------------------
 
@@ -928,7 +928,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_distribution_diffuse
+        return not self.has_distribution_diffuse and self.distribution_diffuse is not None
 
     # -----------------------------------------------------------------
 
@@ -940,7 +940,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_radial_distribution
+        return not self.has_radial_distribution and self.radial_distribution is not None
 
     # -----------------------------------------------------------------
 
@@ -1522,29 +1522,65 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         projected_y = []
         projected_fractions = []
 
-        for x,y in z_indices:
+        # for x,y in z_indices:
+        #
+        #     indices = z_indices[(x,y)]
+        #     z_values = self.valid_z_coordinates[indices]
+        #
+        #     fractions_column = fractions[indices]
+        #     weights_column = weights[indices]
+        #
+        #     normalization = np.sum(fractions_column)
+        #     if normalization == 0: continue
+        #
+        #     fraction = np.sum(fractions_column * weights_column) / normalization
+        #
+        #     projected_x.append(x)
+        #     projected_y.append(y)
+        #     projected_fractions.append(fraction)
 
-            indices = z_indices[(x,y)]
-            z_values = self.valid_z_coordinates[indices]
+        unique_x = np.array(sorted(set(x_coordinates)))
+        unique_y = np.array(sorted(set(y_coordinates)))
 
-            fractions_column = fractions[indices]
-            weights_column = weights[indices]
+        nunique_x = len(unique_x)
+        nunique_y = len(unique_y)
+        print("unique x", nunique_x)
+        print("unique y", nunique_y)
 
-            normalization = np.sum(fractions_column)
-            if normalization == 0: continue
+        yy, xx = np.meshgrid(unique_y, unique_x)
 
-            fraction = np.sum(fractions_column * weights_column) / normalization
+        nx = xx.shape[1]
+        ny = yy.shape[0]
 
-            projected_x.append(x)
-            projected_y.append(y)
-            projected_fractions.append(fraction)
+        print("xx shape", xx.shape)
+        print("yy shape", yy.shape)
+
+        zz = np.zeros_like(xx)
+
+        for i in range(nx):
+            for j in range(ny):
+                x = unique_x[i]
+                y = unique_y[j]
+
+                if (x,y) not in z_indices: continue
+
+                indices = z_indices[(x,y)]
+
+                fractions_column = fractions[indices]
+                weights_column = weights[indices]
+
+                normalization = np.sum(fractions_column)
+                if normalization == 0: continue
+
+                fraction = np.sum(fractions_column * weights_column) / normalization
+                zz[j,i] = fraction
 
         #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
-
         ax = plt.gca()
         #ax.pcolormesh(x, y, fractions)
 
-        ax.pcolormesh(projected_x, projected_y, projected_fractions)
+        #ax.pcolormesh(projected_x, projected_y, projected_fractions)
+        ax.pcolormesh(xx, yy, zz)
 
         # Plot
         plt.savefig(self.heating_map_plot_path)
