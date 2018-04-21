@@ -626,6 +626,18 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def load_component_map_wcs(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return load_component_map_wcs(path)
+
+    # -----------------------------------------------------------------
+
     def get_stellar_component_path(self, model_name, component_name):
 
         """
@@ -808,6 +820,23 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def load_stellar_component_wcs(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_stellar_component_path(model_name, component_name)
+
+        # Load the coordinate system
+        return self.load_component_map_wcs(path)
+
+    # -----------------------------------------------------------------
+
     def load_dust_component(self, model_name, component_name, add_map=False):
 
         """
@@ -952,6 +981,23 @@ class ModelSuite(object):
 
         # Load the map
         return self.load_component_map(path)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component_wcs(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_dust_component_path(model_name, component_name)
+
+        # Load the WCS
+        return self.load_component_map_wcs(path)
 
     # -----------------------------------------------------------------
 
@@ -1261,6 +1307,22 @@ def load_component_map(path):
 
     # Load the map and return
     return Frame.from_file(map_path)
+
+# -----------------------------------------------------------------
+
+def load_component_map_wcs(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Get the path
+    map_path = get_component_map_path(path)
+
+    # Load the map and return
+    return CoordinateSystem.from_file(map_path)
 
 # -----------------------------------------------------------------
 

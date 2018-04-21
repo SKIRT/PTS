@@ -1789,11 +1789,13 @@ class Distribution2D(object):
         :return:
         """
 
+        binstep = max(x) / float(nbins)
         #rBins_F, FBins_r = getRadBins(x, y, 1, weights)
+        rBins_F, FBins_r = getRadBins(x, y, binstep, weights)
         #rBins_F[rBins_F > 25] = np.nan
 
-        rBins_F = None
-        FBins_r = None
+        #rBins_F = None
+        #FBins_r = None
 
         #print("rBins_F", rBins_F)
         #print("FBins_r", FBins_r)
@@ -1842,12 +1844,13 @@ class Distribution2D(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None):
+    def plot(self, title=None, path=None, radii=None):
 
         """
         This function ...
         :param title:
         :param path:
+        :param radii:
         :return:
         """
 
@@ -1872,8 +1875,9 @@ class Distribution2D(object):
 
         ax.pcolormesh(self.x_edges, self.y_edges, self.counts)
 
-        #ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
-        #ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
+        if self.rBins_F is not None and self.FBins_r is not None:
+            #ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
+            ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
 
         #ax.errorbar(1.7, 0.88, xerr=1.4, color='k')
         #ax.text(1.8, 0.90, 'Bulge', ha='center')
@@ -1881,6 +1885,11 @@ class Distribution2D(object):
         #ax.text(11., 0.90, 'main SF ring', ha='center')
         #ax.errorbar(16., 0.88, xerr=1, color='k')
         #ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
+
+        # Plot radii
+        if radii is not None:
+            for radius in radii:
+                plt.axvline(x=radius)
 
         ax.set_ylim(0.0, 1.0)
 
@@ -1920,6 +1929,7 @@ def getRadBins(xarr, yarr, binstep, weights):
         avx = np.append(avx,i*binstep+0.5)
         avy = np.append(avy,sumy/sumweight)
         i += 1
+
     return avx, avy
 
 # -----------------------------------------------------------------

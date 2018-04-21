@@ -92,7 +92,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.get_heating_fractions()
 
         # 4. Calculate the distribution of the heating fraction of the unevolved stellar population
-        self.calculate_distributions()
+        self.get_distributions()
 
         # 6. Writing
         self.write()
@@ -111,6 +111,35 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Call the setup function of the base class
         super(CellDustHeatingAnalyser, self).setup(**kwargs)
+
+        if self.config.recreate_table: self.config.recalculate_fractions = True
+        if self.config.recalculate_fractions: self.config.recalculate_distributions = True
+
+        # Set flags
+        if self.config.recalculate_distributions:
+            self.config.recalculate_distribution = True
+            self.config.recalculate_distribution_diffuse = True
+            self.config.recalculate_radial_distribution = True
+
+        # Set replot flags
+        if self.config.replot:
+            self.config.replot_distribution = True
+            self.config.replot_radial_distribution = True
+            self.config.replot_map = True
+
+        if self.config.recalculate_distribution or self.config.recalculate_distribution_diffuse: self.config.replot_distribution = True
+        if self.config.recalculate_radial_distribution: self.config.replot_radial_distribution = True
+        if self.config.recalculate_fractions: self.config.replot_map = True
+
+        # Remove
+        if self.config.recreate_table and self.has_absorptions: self.remove_absorptions()
+        if self.config.recalculate_fractions and self.has_heating_fractions: self.remove_heating_fractions()
+        if self.config.recalculate_distribution and self.has_distribution: self.remove_distribution()
+        if self.config.recalculate_distribution_diffuse and self.has_distribution_diffuse: self.remove_distribution_diffuse()
+        if self.config.recalculate_radial_distribution and self.has_radial_distribution: self.remove_radial_distribution()
+        if self.config.replot_distribution and self.has_distribution_plot: self.remove_distribution_plot()
+        if self.config.replot_radial_distribution and self.has_radial_distribution_plot: self.remove_radial_distribution_plot()
+        if self.config.replot_map and self.has_heating_map_plot: self.remove_heating_map_plot()
 
     # -----------------------------------------------------------------
 
@@ -491,7 +520,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.cell_properties["Mass fraction"]
+        return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
 
@@ -527,9 +556,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        x_coords = self.absorptions["x"]
-        y_coords = self.absorptions["y"]
-        return np.sqrt(x_coords**2 + y_coords**2)
+        return np.sqrt(self.x_coordinates**2 + self.y_coordinates**2)
 
     # -----------------------------------------------------------------
 
@@ -553,7 +580,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.absorptions["x"]
+        return np.asarray(self.absorptions["x"])
 
     # -----------------------------------------------------------------
 
@@ -565,7 +592,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return np.ma.MaskedArray(self.absorptions["x"], mask=self.heating_fractions_mask).compressed()
+        return np.ma.MaskedArray(self.x_coordinates, mask=self.heating_fractions_mask).compressed()
 
     # -----------------------------------------------------------------
 
@@ -577,7 +604,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.absorptions["y"]
+        return np.asarray(self.absorptions["y"])
 
     # -----------------------------------------------------------------
 
@@ -589,7 +616,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return np.ma.MaskedArray(self.absorptions["y"], mask=self.heating_fractions_mask).compressed()
+        return np.ma.MaskedArray(self.y_coordinates, mask=self.heating_fractions_mask).compressed()
 
     # -----------------------------------------------------------------
 
@@ -601,7 +628,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.absorptions["z"]
+        return np.asarray(self.absorptions["z"])
 
     # -----------------------------------------------------------------
 
@@ -613,27 +640,84 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return np.ma.MaskedArray(self.absorptions["z"], mask=self.heating_fractions_mask).compressed()
+        return np.ma.MaskedArray(self.z_coordinates, mask=self.heating_fractions_mask).compressed()
 
     # -----------------------------------------------------------------
 
-    def calculate_distributions(self):
+    def get_distributions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the distributions of heating fractions ...")
-
         # Distribution
-        self.calculate_distribution()
+        self.get_distribution()
 
-        # Diffuse
-        self.calculate_distribution_diffuse()
+        # Distribution diffuse
+        self.get_distribution_diffuse()
 
-        # Calculate the distribution of the heating fraction of the unevolved stellar population as a function of radius
+        # Radial distribution
+        self.get_radial_distribution()
+
+    # -----------------------------------------------------------------
+
+    def get_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_distribution: self.load_distribution()
+        else: self.calculate_distribution()
+
+    # -----------------------------------------------------------------
+
+    def load_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.distribution = Distribution.from_file(self.distribution_path)
+
+    # -----------------------------------------------------------------
+
+    def get_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_distribution_diffuse: self.load_distribution_diffuse()
+        else: self.calculate_distribution_diffuse()
+
+    # -----------------------------------------------------------------
+
+    def load_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.distribution_diffuse = Distribution.from_file(self.distribution_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    def get_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #if self.has_radial_distribution: self.load_radial_distribution()
+        #else: self.calculate_radial_distribution()
+
         self.calculate_radial_distribution()
 
     # -----------------------------------------------------------------
@@ -800,6 +884,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def remove_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.absorption_table_path)
+
+    # -----------------------------------------------------------------
+
     def write_absorptions(self):
 
         """
@@ -836,6 +931,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return fs.is_file(self.heating_fractions_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_heating_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.heating_fractions_path)
 
     # -----------------------------------------------------------------
 
@@ -879,6 +985,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def remove_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.distribution_path)
+
+    # -----------------------------------------------------------------
+
     def write_distribution(self):
 
         """
@@ -915,6 +1032,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return fs.is_file(self.distribution_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.distribution_diffuse_path)
 
     # -----------------------------------------------------------------
 
@@ -955,6 +1083,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return fs.is_file(self.radial_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.radial_distribution_path)
 
     # -----------------------------------------------------------------
 
@@ -1055,6 +1194,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def remove_distribution_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.distribution_plot_path)
+
+    # -----------------------------------------------------------------
+
     def plot_distribution(self):
 
         """
@@ -1103,6 +1253,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def remove_radial_distribution_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.radial_distribution_plot_path)
+
+    # -----------------------------------------------------------------
+
     def plot_radial_distribution(self):
 
         """
@@ -1113,8 +1274,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting a 2D histogram of the radial distribution of the heating fractions of the unevolved stellar population ...")
 
+        # Radii
+        # FOR M81
+        #radii = [2.22953938405 * u("kpc"), 3.34430907608 * u("kpc"), 5.90827936773 * u("kpc"), 8.9181575362 * u("kpc")]
+        radii = [2.22953938405, 3.34430907608, 5.90827936773, 8.9181575362]  # kpc
+        radii_pc = [radius*1000 for radius in radii]
+
+        # Set title
+        title = "Radial distribution of the heating fraction of the unevolved stellar population"
+
         # Create the plot file
-        self.radial_distribution.plot(title="Radial distribution of the heating fraction of the unevolved stellar population", path=self.radial_distribution_plot_path)
+        self.radial_distribution.plot(radii=radii_pc, title=title, path=self.radial_distribution_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -1140,6 +1310,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return fs.is_file(self.heating_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_heating_map_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        fs.remove_file(self.heating_map_plot_path)
 
     # -----------------------------------------------------------------
 
