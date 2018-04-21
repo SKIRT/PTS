@@ -5518,6 +5518,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def cell_properties_columns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_properties.colnames
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_volumes(self):
 
         """
@@ -5525,7 +5537,9 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Volume"])
+        if "Volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Volume"]) # SKIRT 7
+        elif "Cell volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Cell volume"]) # SKIRT 8
+        else: raise IOError("")
 
     # -----------------------------------------------------------------
 
@@ -5537,7 +5551,9 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Density"])
+        if "Density" in self.cell_properties_columns: return np.asarray(self.cell_properties["Density"]) # SKIRT 7
+        elif "Average dust density in cell" in self.cell_properties_columns: return np.asarray(self.cell_properties["Average dust density in cell"]) # SKIRT 8
+        else: raise IOError("")
 
     # -----------------------------------------------------------------
 

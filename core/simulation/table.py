@@ -179,6 +179,8 @@ class SkirtTable(SmartTable):
                     name = name_and_unit.capitalize()
                     unit = None
 
+                if ", i.e." in name: name = name.split(", i.e.")[0]
+
                 #print(name)
 
                 data.append(columns[i])
