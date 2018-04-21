@@ -71,7 +71,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_heating_fractions
+        return (not self.has_heating_fractions) or (not self.has_heating_fractions_diffuse)
 
     # -----------------------------------------------------------------
 
@@ -89,7 +89,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         if self.needs_absorption_table: self.get_absorption_table()
 
         # 3. Calculate the heating fraction of the unevolved stellar population
-        self.get_heating_fractions()
+        self.get_fractions()
 
         # 4. Calculate the distribution of the heating fraction of the unevolved stellar population
         self.get_distributions()
@@ -134,6 +134,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Remove
         if self.config.recreate_table and self.has_absorptions: self.remove_absorptions()
         if self.config.recalculate_fractions and self.has_heating_fractions: self.remove_heating_fractions()
+        if self.config.recalculate_fractions and self.has_heating_fractions_diffuse: self.remove_heating_fractions_diffuse()
         if self.config.recalculate_distribution and self.has_distribution: self.remove_distribution()
         if self.config.recalculate_distribution_diffuse and self.has_distribution_diffuse: self.remove_distribution_diffuse()
         if self.config.recalculate_radial_distribution and self.has_radial_distribution: self.remove_radial_distribution()
@@ -245,6 +246,14 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return self.absorptions.zero_absorption_mask
+
+    # -----------------------------------------------------------------
+
+    def get_fractions(self):
+
+        self.get_heating_fractions()
+
+        self.get_heating_fractions_diffuse()
 
     # -----------------------------------------------------------------
 
@@ -364,6 +373,57 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         #self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
         #self.heating_fractions = absorptions_unevolved / absorptions_total
         self.heating_fractions = absorptions_unevolved_watt / absorptions_total_watt
+
+    # -----------------------------------------------------------------
+
+    def get_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_heating_fractions_diffuse: self.load_heating_fractions_diffuse()
+        else: self.calculate_heating_fractions_diffuse()
+
+    # -----------------------------------------------------------------
+
+    def load_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the diffuse heating fractions ...")
+
+        # Load
+        self.diffuse_heating_fractions = np.loadtxt(self.heating_fractions_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        young_unit = self.absorptions.column_unit("young")
+        ionizing_unit = self.absorptions.column_unit("ionizing")
+        young_conversion = young_unit.conversion_factor("W")
+        ionizing_conversion = ionizing_unit.conversion_factor("W")
+        print("young conversion", young_conversion)
+        print("ionizing conversion", ionizing_conversion)
+
+        # Unevolved,  diffuse dust
+        absorptions_young = np.asarray(self.absorptions["young"])
+        absorptions_ionizing = np.asarray(self.absorptions["ionizing"])
+        absorptions_young_watt = absorptions_young * young_conversion
+        absorptions_ionizing_watt = absorptions_ionizing * ionizing_conversion
+        # absorptions_unevolved_diffuse = self.absorptions[""]
+        absorptions_unevolved_diffuse_watt = absorptions_young_watt + absorptions_ionizing_watt
 
         total_unit = self.absorptions.column_unit("total")
         total_conversion = total_unit.conversion_factor("W")
@@ -798,6 +858,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_heating_fractions_diffuse
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_distribution(self):
 
         """
@@ -846,8 +918,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Write the absorption table
         if self.do_write_absorptions: self.write_absorptions()
 
-        # Write the heating fraction
+        # Write the heating fractions
         if self.do_write_heating_fractions: self.write_heating_fractions()
+
+        # Write the diffuse heating fractions
+        if self.do_write_heating_fractions_diffuse: self.write_heating_fractions_diffuse()
 
         # Write the distribution of heating fractions
         if self.do_write_distribution: self.write_distribution()
@@ -957,6 +1032,56 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Write
         np.savetxt(self.heating_fractions_path, self.heating_fractions)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_fractions_diffuse_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.cell_heating_path, "heating_fractions_diffuse.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.heating_fractions_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.heating_fractions_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    def write_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the diffuse heating fractions ...")
+
+        # Write
+        np.savetxt(self.heating_fractions_diffuse_path, self.diffuse_heating_fractions)
 
     # -----------------------------------------------------------------
 
@@ -1224,7 +1349,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         distributions["unevolved (diffuse)"] = self.distribution_diffuse
 
         # Plot
-        plot_distributions(distributions, path=self.distribution_plot_path)
+        plot_distributions(distributions, path=self.distribution_plot_path, alpha=0.5)
 
     # -----------------------------------------------------------------
 
@@ -1319,7 +1444,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
-        
+
         fs.remove_file(self.heating_map_plot_path)
 
     # -----------------------------------------------------------------

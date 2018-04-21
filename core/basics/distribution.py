@@ -1907,29 +1907,55 @@ class Distribution2D(object):
 
 def getRadBins(xarr, yarr, binstep, weights):
 
+    """
+    This function ...
+    :param xarr:
+    :param yarr:
+    :param binstep:
+    :param weights:
+    :return:
+    """
+
     idx = np.argsort(xarr)
+
     sortx = xarr[idx]
     sorty = yarr[idx]
     sortweights = weights[idx]
 
-    avx = np.array([])
-    avy = np.array([])
+    #avx = np.array([])
+    #avy = np.array([])
+    avx = []
+    avy = []
 
     i = 0
     counter = 0
+
     while i*binstep < sortx[-1]:
+
         n=0
         sumy = 0
         sumweight = 0
+
         while sortx[counter] < (i+1)*binstep and counter < len(sortx)-1:
+
             sumy += sorty[counter]*sortweights[counter]
             sumweight += sortweights[counter]
             n += 1
             counter += 1
-        avx = np.append(avx,i*binstep+0.5)
-        avy = np.append(avy,sumy/sumweight)
+
+        if sumweight != 0:
+
+            #avx = np.append(avx,i*binstep+0.5)
+            #avy = np.append(avy,sumy / sumweight)
+
+            avx.append(i*binstep+0.5)
+            avy.append(sumy / sumweight)
+
         i += 1
 
+    #return avx, avy
+    avx = np.array(avx)
+    avy = np.array(avy)
     return avx, avy
 
 # -----------------------------------------------------------------

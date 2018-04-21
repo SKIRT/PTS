@@ -46,7 +46,7 @@ definition.add_flag("recalculate_fractions", "recalculate the heating fractions"
 definition.add_flag("recalculate_distributions", "recreate the heating distributions")
 definition.add_flag("recalculate_distribution", "recalculate")
 definition.add_flag("recalculate_distribution_diffuse", "recalculate")
-definition.add_flag("recalculate_radial_distribution")
+definition.add_flag("recalculate_radial_distribution", "recalculate")
 definition.add_flag("replot", "replot")
 definition.add_flag("replot_distribution", "replot the distribution")
 definition.add_flag("replot_radial_distribution", "replot the radial distribution")
