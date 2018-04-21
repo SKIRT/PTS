@@ -34,6 +34,11 @@ from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
+#patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.')
+patterns = ("/", "\\", '-', '+', 'x', "//", '*', 'o', 'O', '.')
+
+# -----------------------------------------------------------------
+
 def plot_distribution(distribution, path=None, logscale=False, logfrequency=False, title=None, x_limits=None,
                       y_limits=None, color="xkcd:sky blue", x_label=None, y_label=None, format="pdf", axes=None,
                       xsize=5, ysize=5, return_image=False, colors=None, statistics=True, soft_xmin=False,
@@ -1017,6 +1022,8 @@ class DistributionPlotter(Configurable):
 
         colors = iter(pretty_colours)
 
+        all_bars = []
+
         # Plot the distributions
         for label in self.distributions[self.single_panel]:
 
@@ -1039,11 +1046,12 @@ class DistributionPlotter(Configurable):
             #print(distribution.bin_widths_log)
 
             if self.logscale:
-                self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
+                bars = self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
                         linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
             else:
-                self.main_plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
+                bars = self.main_plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
                         linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+            all_bars.append(bars)
 
             # Add frequencies
             if self.config.frequencies:
@@ -1096,6 +1104,10 @@ class DistributionPlotter(Configurable):
                 else: mean_line = plt.axvline(distribution.mean, color="green", linestyle="dashed", label="Mean")
                 median_line = plt.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
                 max_line = plt.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
+
+        # Set hatches
+        for bars, pattern in zip(all_bars, patterns):
+            for bar in bars: bar.set_hatch(pattern)
 
         # Finish plot
         self.finish_main_plot()
@@ -1237,6 +1249,8 @@ class DistributionPlotter(Configurable):
         # Loop over the panels
         for panel in self.panels:
 
+            all_bars = []
+
             # Get the plot
             plot = self.panel_plots[panel]
 
@@ -1260,11 +1274,12 @@ class DistributionPlotter(Configurable):
 
                 # Plot
                 if self.logscale:
-                    plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
+                    bars = plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
                             linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
                 else:
-                    plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
+                    bars = plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
                             linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                all_bars.append(bars)
 
                 # Add frequencies
                 if self.config.frequencies:
@@ -1318,6 +1333,10 @@ class DistributionPlotter(Configurable):
                     median_line = plot.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
                     max_line = plot.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
 
+            # Set hatches
+            for bars, pattern in zip(all_bars, patterns):
+                for bar in bars: bar.set_hatch(pattern)
+
         # Finish plot
         self.finish_panels()
 
@@ -1344,7 +1363,12 @@ class DistributionPlotter(Configurable):
         self.main_plot.set_ylim((self.min_frequency, self.max_frequency))
 
         # Add legend
-        if len(self.distributions) > 1 and self.legend: plt.legend()
+        #print(self.legend)
+        #print(len(self.distributions))
+        #if len(self.distributions) > 1 and self.legend:
+        if self.ndistributions > 1 and self.legend:
+            log.debug("Adding legend ...")
+            plt.legend()
 
         # Set log scales
         if self.logscale: self.main_plot.set_xscale("log")
