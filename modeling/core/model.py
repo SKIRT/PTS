@@ -31,11 +31,10 @@ from ...magic.tools import extinction
 from ..basics.instruments import SEDInstrument
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
-from ...core.prep.smile import get_oligochromatic_template, get_panchromatic_template
+from ...core.prep.smile import get_panchromatic_template
 from ..build.construct import add_new_stellar_component
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.simulation.simulation import createsimulations
 from ...core.simulation.execute import run_simulation
 from ...core.basics.log import log
 from ...core.data.sed import SED
@@ -43,6 +42,7 @@ from ...core.simulation.output import SimulationOutput
 from ...core.simulation.data import SimulationData
 from ...core.units.parsing import parse_unit as u
 from ...core.data.attenuation import AttenuationCurve
+from .simulation import SingleComponentSimulations, MultiComponentSimulations
 
 # -----------------------------------------------------------------
 
@@ -136,9 +136,18 @@ sed_dirname = "sed"
 
 # -----------------------------------------------------------------
 
-old_bulge_name = "old_bulge"
-old_disk_name = "old_disk"
-young_name = "young"
+total_simulation_name = "total"
+bulge_simulation_name = "bulge"
+disk_simulation_name = "disk"
+old_simulation_name = "old"
+young_simulation_name = "young"
+sfr_simulation_name = "sfr"
+unevolved_simulation_name = "unevolved"
+
+bulge_component_name = "Evolved stellar bulge"
+disk_component_name = "Evolved stellar disk"
+young_component_name = "Young stars"
+ionizing_component_name = "Ionizing stars"
 
 # -----------------------------------------------------------------
 
@@ -260,6 +269,171 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_simulation_component_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the intrinsic SEDs
+        seds = OrderedDict()
+
+        # Add
+        seds[bulge_component_name] = self.intrinsic_sed_old_bulge
+        seds[disk_component_name] = self.intrinsic_sed_old_disk
+        seds[young_component_name] = self.intrinsic_sed_young
+        seds[ionizing_component_name] = self.intrinsic_sed_sfr
+
+        # Return the seds
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load and return
+        return MultiComponentSimulations.from_output_path(total_simulation_name, self.observed_total_output_path, intrinsic_sed_paths=self.total_simulation_component_sed_paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run simulation?
+        if not self.has_old_bulge_simulation: self.run_old_bulge_simulation()
+
+        # Load and return
+        return SingleComponentSimulations.from_output_paths(bulge_simulation_name, observed=self.observed_bulge_output_path, intrinsic=self.old_bulge_sed_out_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run simulation?
+        if not self.has_old_disk_simulation: self.run_old_disk_simulation()
+
+        # Load and return
+        return SingleComponentSimulations.from_output_paths(disk_simulation_name, observed=self.observed_disk_output_path, intrinsic=self.old_disk_sed_out_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the intrinsic SEDs
+        seds = OrderedDict()
+
+        # Add
+        seds[bulge_component_name] = self.intrinsic_sed_old_bulge
+        seds[disk_component_name] = self.intrinsic_sed_old_disk
+
+        # Return
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load and return
+        return MultiComponentSimulations.from_output_path(old_simulation_name, self.observed_old_output_path, intrinsic_sed_paths=self.old_simulation_component_sed_paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run simulation?
+        if not self.has_young_simulation: self.run_young_simulation()
+
+        # Load and return
+        return SingleComponentSimulations.from_output_paths(young_simulation_name, observed=self.observed_young_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run simulation?
+        if not self.has_sfr_simulation: self.run_sfr_simulation()
+
+        # Load and return
+        return SingleComponentSimulations.from_output_paths(sfr_simulation_name, observed=self.observed_sfr_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the intrinsic SEDs
+        seds = OrderedDict()
+
+        # Add
+        seds[young_component_name] = self.intrinsic_sed_young
+        seds[ionizing_component_name] = self.intrinsic_sed_sfr
+
+        # Return
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load and return
+        return MultiComponentSimulations.from_output_path(unevolved_simulation_name, self.observed_unevolved_output_path, intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_observed_total_output(self):
 
@@ -269,331 +443,6 @@ class RTModel(object):
         """
 
         return self.observed_total_output_path is not None and fs.is_directory(self.observed_total_output_path) and not fs.is_empty(self.observed_total_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_total_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_total_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_total_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_total_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_total_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_total_output and self.observed_total_data.has_seds
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.sed_paths_instruments[earth_name]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_total_sed_orientations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_total_data.sed_paths_instruments) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_faceon_observed_total_sed_orientation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return faceon_name in self.observed_total_data.sed_paths_instruments
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_edgeon_observed_total_sed_orientation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return edgeon_name in self.observed_total_data.sed_paths_instruments
-
-    # -----------------------------------------------------------------
-
-    @property
-    def faceon_observed_total_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.sed_paths_instruments[faceon_name]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def edgeon_observed_total_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.sed_paths_instruments[edgeon_name]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sed_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_sed
-
-    # -----------------------------------------------------------------
-
-    @property
-    def faceon_observed_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[faceon_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def edgeon_observed_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[edgeon_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_total_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_total_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_total_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_sed_dust - self.observed_total_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_total_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.seds[earth_name][transparent_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def intrinsic_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_sed_transparent
-
-    # -----------------------------------------------------------------
-
-    @property
-    def faceon_intrinsic_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        raise RuntimeError("Contributions are not simulated for faceon instrument (no full instrument)?")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def edgeon_intrinsic_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        raise RuntimeError("Contributions are not simulated for edgeon instrument (no full instrument)?")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_total_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_sed.integrate()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_total_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_total_sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def intrinsic_total_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic_total_sed.integrate()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_total_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_other_observed_total_sed_contributions
 
     # -----------------------------------------------------------------
 
@@ -610,139 +459,6 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def observed_old_bulge_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_old_bulge_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_bulge_output_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_old_bulge_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_old_bulge_data(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.has_observed_old_bulge_output and self.observed_old_bulge_data.has_seds
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_old_bulge_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_old_bulge_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_old_bulge_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_sed_dust - self.observed_old_bulge_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_bulge_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_bulge_data.seds[earth_name][transparent_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
     def has_observed_old_disk_output(self):
 
         """
@@ -751,139 +467,6 @@ class RTModel(object):
         """
 
         return self.observed_disk_output_path is not None and fs.is_directory(self.observed_disk_output_path) and not fs.is_empty(self.observed_disk_output_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_old_disk_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_disk_output_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_old_disk_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_old_disk_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_old_disk_output and self.observed_old_disk_data.has_seds
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_old_disk_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_old_disk_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_old_disk_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_sed_dust - self.observed_old_disk_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_disk_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_disk_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
@@ -899,139 +482,6 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def observed_old_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_old_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_old_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_old_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_old_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_old_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_old_output and self.observed_old_data.has_seds
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_old_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_old_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_old_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_sed_dust - self.observed_old_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_old_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_old_data.seds[earth_name][transparent_contribution]
-
-    # -----------------------------------------------------------------
-
     @property
     def has_observed_young_output(self):
 
@@ -1041,139 +491,6 @@ class RTModel(object):
         """
 
         return self.observed_young_output_path is not None and fs.is_directory(self.observed_young_output_path) and not fs.is_empty(self.observed_young_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_young_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_young_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_young_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_young_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_young_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_young_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_young_output and self.observed_young_data.has_seds
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_young_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_young_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_young_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_young_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_young_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_young_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_young_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_sed_dust - self.observed_young_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_young_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_young_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_young_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
@@ -1189,139 +506,6 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def observed_sfr_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_sfr_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_sfr_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_sfr_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_sfr_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_sfr_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_sfr_output and self.observed_sfr_data.has_seds
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_sfr_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_sfr_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sfr_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sfr_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sfr_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sfr_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_sfr_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_sed_dust - self.observed_sfr_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sfr_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_sfr_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sfr_data.seds[earth_name][transparent_contribution]
-
-    # -----------------------------------------------------------------
-
     @property
     def has_observed_unevolved_output(self):
 
@@ -1331,139 +515,6 @@ class RTModel(object):
         """
 
         return self.observed_unevolved_output_path is not None and fs.is_directory(self.observed_unevolved_output_path) and not fs.is_empty(self.observed_unevolved_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_unevolved_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.has_observed_unevolved_output: raise ValueError("No output")
-        return SimulationOutput.from_directory(self.observed_unevolved_output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_unevolved_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.observed_unevolved_output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_other_observed_unevolved_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.observed_unevolved_data.seds[earth_name]) > 1
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_unevolved_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_data.seds[earth_name][total_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_unevolved_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_data.seds[earth_name][direct_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_unevolved_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_data.seds[earth_name][scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_unevolved_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_data.seds[earth_name][dust_contribution]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_unevolved_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_sed_dust - self.observed_unevolved_sed_dust_scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_unevolved_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_data.seds[earth_name][dust_scattered_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observed_unevolved_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_unevolved_data.seds[earth_name][transparent_contribution]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_observed_unevolved_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_observed_unevolved_output and self.observed_unevolved_data.has_seds
 
     # -----------------------------------------------------------------
 
@@ -3432,7 +2483,7 @@ class RTModel(object):
         :return:
         """
 
-        return fs.join(self.old_bulge_sed_path, old_bulge_name + ".ski")
+        return fs.join(self.old_bulge_sed_path, bulge_simulation_name + ".ski")
 
     # -----------------------------------------------------------------
 
@@ -3444,7 +2495,7 @@ class RTModel(object):
         :return:
         """
 
-        return fs.join(self.old_disk_sed_path, old_disk_name + ".ski")
+        return fs.join(self.old_disk_sed_path, disk_simulation_name + ".ski")
 
     # -----------------------------------------------------------------
 
@@ -3456,7 +2507,7 @@ class RTModel(object):
         :return:
         """
 
-        return fs.join(self.young_sed_path, young_name + ".ski")
+        return fs.join(self.young_sed_path, young_simulation_name + ".ski")
 
     # -----------------------------------------------------------------
 
@@ -3706,8 +2757,7 @@ class RTModel(object):
         ski = get_panchromatic_template()
 
         # Add the old stellar bulge component
-        # print(self.old_bulge_component.parameters)
-        add_new_stellar_component(ski, old_bulge_name, self.old_bulge_component)
+        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
 
         # Add the instrument
         ski.add_instrument(earth_name, self.sed_instrument)
@@ -3760,7 +2810,7 @@ class RTModel(object):
 
         # Add the old stellar disk component
         # print(self.old_disk_component.parameters)
-        add_new_stellar_component(ski, old_disk_name, self.old_disk_component)
+        add_new_stellar_component(ski, disk_component_name, self.old_disk_component)
 
         # Add the instrument
         ski.add_instrument(earth_name, self.sed_instrument)
@@ -3813,7 +2863,7 @@ class RTModel(object):
 
         # Add the young stellar component
         # print(self.young_component.parameters)
-        add_new_stellar_component(ski, young_name, self.young_component)
+        add_new_stellar_component(ski, young_component_name, self.young_component)
 
         # Add the instrument
         ski.add_instrument(earth_name, self.sed_instrument)
@@ -4055,7 +3105,7 @@ class RTModel(object):
         if not self.has_old_bulge_skifile: self.create_old_bulge_skifile()
 
         # Create the definition and return
-        return SingleSimulationDefinition(self.old_bulge_ski_path, self.old_bulge_sed_out_path, input_path=self.old_bulge_input_filepaths, name=old_bulge_name)
+        return SingleSimulationDefinition(self.old_bulge_ski_path, self.old_bulge_sed_out_path, input_path=self.old_bulge_input_filepaths, name=bulge_simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -4071,7 +3121,7 @@ class RTModel(object):
         if not self.has_old_disk_skifile: self.create_old_disk_skifile()
 
         # Create the definition and return
-        return SingleSimulationDefinition(self.old_disk_ski_path, self.old_disk_sed_out_path, input_path=self.old_disk_input_filepaths, name=old_disk_name)
+        return SingleSimulationDefinition(self.old_disk_ski_path, self.old_disk_sed_out_path, input_path=self.old_disk_input_filepaths, name=disk_simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -4087,7 +3137,7 @@ class RTModel(object):
         if not self.has_young_skifile: self.create_young_skifile()
 
         # Create the definition and return
-        return SingleSimulationDefinition(self.young_ski_path, self.young_sed_out_path, input_path=self.young_input_filepaths, name=young_name)
+        return SingleSimulationDefinition(self.young_ski_path, self.young_sed_out_path, input_path=self.young_input_filepaths, name=young_simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -4103,7 +3153,7 @@ class RTModel(object):
         if not self.has_sfr_skifile: self.create_sfr_skifile()
 
         # Create the definition and return
-        return SingleSimulationDefinition(self.sfr_ski_path, self.sfr_sed_out_path, input_path=self.sfr_input_filepaths, name=sfr_name)
+        return SingleSimulationDefinition(self.sfr_ski_path, self.sfr_sed_out_path, input_path=self.sfr_input_filepaths, name=sfr_simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -4167,17 +3217,40 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def old_bulge_simulation(self):
+    @property
+    def has_old_bulge_simulation(self):
 
         """
         This function ...
         :return:
         """
 
-        # Simulation already performed?
-        #if self.has_old_bulge_output: return createsimulations(self.old_bulge_sed_out_path, single=True)
-        if self.has_old_bulge_sed: return createsimulations(self.old_bulge_sed_out_path, single=True)
+        return self.has_old_bulge_sed
+
+    # -----------------------------------------------------------------
+
+    # @lazyproperty
+    # def old_bulge_simulation(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Simulation already performed?
+    #     if self.has_old_bulge_simulation: return createsimulations(self.old_bulge_sed_out_path, single=True)
+    #
+    #     # Run the simulation
+    #     return self.run_old_bulge_simulation()
+
+    # -----------------------------------------------------------------
+
+    def run_old_bulge_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Show message
         log.info("Running SKIRT for the old stellar bulge component ...")
@@ -4199,17 +3272,40 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def old_disk_simulation(self):
+    @property
+    def has_old_disk_simulation(self):
 
         """
         This function ...
         :return:
         """
 
-        # Simulation already performed?
-        #if self.has_old_disk_output: return createsimulations(self.old_disk_sed_out_path, single=True)
-        if self.has_old_disk_sed: return createsimulations(self.old_disk_sed_out_path, single=True)
+        return self.has_old_disk_sed
+
+    # -----------------------------------------------------------------
+
+    # @lazyproperty
+    # def old_disk_simulation(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Simulation already performed?
+    #     if self.has_old_disk_simulation: return createsimulations(self.old_disk_sed_out_path, single=True)
+    #
+    #     # Run the simulation
+    #     return self.run_old_disk_simulation()
+
+    # -----------------------------------------------------------------
+
+    def run_old_disk_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Show message
         log.info("Running SKIRT for the old stellar disk component ...")
@@ -4231,17 +3327,40 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def young_simulation(self):
+    @property
+    def has_young_simulation(self):
 
         """
         This function ...
         :return:
         """
 
-        # Simulation already performed?
-        #if self.has_young_output: return createsimulations(self.young_sed_out_path, single=True)
-        if self.has_young_sed: return createsimulations(self.young_sed_out_path, single=True)
+        return self.has_young_sed
+
+    # -----------------------------------------------------------------
+
+    # @lazyproperty
+    # def young_simulation(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Simulation already performed?
+    #     if self.has_young_simulation: return createsimulations(self.young_sed_out_path, single=True)
+    #
+    #     # Run the simulation
+    #     return self.run_young_simulation()
+
+    # -----------------------------------------------------------------
+
+    def run_young_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Show message
         log.info("Running SKIRT simulation for the young stellar component ...")
@@ -4263,17 +3382,40 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def sfr_simulation(self):
+    @property
+    def has_sfr_simulation(self):
 
         """
         This function ...
         :return:
         """
 
-        # Simulation already performed?
-        #if self.has_sfr_output: return createsimulations(self.sfr_sed_out_path, single=True)
-        if self.has_sfr_sed: return createsimulations(self.sfr_sed_out_path, single=True)
+        return self.has_sfr_sed
+
+    # -----------------------------------------------------------------
+
+    # @lazyproperty
+    # def sfr_simulation(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Simulation already performed?
+    #     if self.has_sfr_simulation: return createsimulations(self.sfr_sed_out_path, single=True)
+    #
+    #     # Run the simulation
+    #     return self.run_sfr_simulation()
+
+    # -----------------------------------------------------------------
+
+    def run_sfr_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Show message
         log.info("Running SKIRT simulation for the SFR component ...")
@@ -5405,7 +4547,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_old_bulge_data.has_stellar_density
+        return self.bulge_simulations.has_cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5417,7 +4559,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_old_bulge_data.stellar_density
+        return self.bulge_simulations.cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5429,7 +4571,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_sfr_data.has_stellar_density
+        return self.disk_simulations.has_cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5441,7 +4583,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_old_disk_data.stellar_density
+        return self.disk_simulations.cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5453,7 +4595,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_young_data.has_stellar_density
+        return self.young_simulations.has_cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5465,7 +4607,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_young_data.stellar_density
+        return self.young_simulations.cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5477,7 +4619,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_sfr_data.has_stellar_density
+        return self.sfr_simulations.has_cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5489,7 +4631,7 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.observed_sfr_data.stellar_density["Stellar density"])
+        return self.sfr_simulations.cell_stellar_density
 
     # -----------------------------------------------------------------
 
@@ -5501,31 +4643,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_total_data.has_cell_properties
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_total_data.cell_properties
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_properties_columns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.cell_properties.colnames
+        return self.total_simulations.has_cell_properties
 
     # -----------------------------------------------------------------
 
@@ -5537,9 +4655,7 @@ class RTModel(object):
         :return:
         """
 
-        if "Volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Volume"]) # SKIRT 7
-        elif "Cell volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Cell volume"]) # SKIRT 8
-        else: raise IOError("")
+        return self.total_simulations.cell_volumes
 
     # -----------------------------------------------------------------
 
@@ -5551,9 +4667,7 @@ class RTModel(object):
         :return:
         """
 
-        if "Density" in self.cell_properties_columns: return np.asarray(self.cell_properties["Density"]) # SKIRT 7
-        elif "Average dust density in cell" in self.cell_properties_columns: return np.asarray(self.cell_properties["Average dust density in cell"]) # SKIRT 8
-        else: raise IOError("")
+        return self.total_simulations.cell_dust_densities
 
     # -----------------------------------------------------------------
 
@@ -5565,7 +4679,7 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Mass fraction"])
+        return self.total_simulations.cell_mass_fractions
 
     # -----------------------------------------------------------------
 
@@ -5577,7 +4691,7 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Optical depth"])
+        return self.total_simulations.cell_optical_depths
 
     # -----------------------------------------------------------------
 
@@ -5589,7 +4703,7 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["X coordinate of cell center"])
+        return self.total_simulations.cell_x_coordinates
 
     # -----------------------------------------------------------------
 
@@ -5601,7 +4715,7 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Y coordinate of cell center"])
+        return self.total_simulations.cell_y_coordinates
 
     # -----------------------------------------------------------------
 
@@ -5613,7 +4727,19 @@ class RTModel(object):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Z coordinate of cell center"])
+        return self.total_simulations.cell_z_coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_grid_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_grid_files
 
     # -----------------------------------------------------------------
 
@@ -5625,7 +4751,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.observed_total_output.grid
+        return self.total_simulations.grid_filepaths
 
     # -----------------------------------------------------------------
 
@@ -5637,7 +4763,7 @@ class RTModel(object):
         :return:
         """
 
-        return sequences.pick_contains(self.grid_filepaths, "gridxy.")
+        return self.total_simulations.grid_xy_filepath
 
     # -----------------------------------------------------------------
 
@@ -5649,7 +4775,7 @@ class RTModel(object):
         :return:
         """
 
-        return sequences.pick_contains(self.grid_filepaths, "gridxz.")
+        return self.total_simulations.grid_xz_filepath
 
     # -----------------------------------------------------------------
 
@@ -5661,7 +4787,7 @@ class RTModel(object):
         :return:
         """
 
-        return sequences.pick_contains(self.grid_filepaths, "gridyz.")
+        return self.total_simulations.grid_yz_filepath
 
     # -----------------------------------------------------------------
 
@@ -5673,6 +4799,6 @@ class RTModel(object):
         :return:
         """
 
-        return sequences.pick_contains(self.grid_filepaths, "gridxyz.")
+        return self.total_simulations.grid_xyz_filepath
 
 # -----------------------------------------------------------------

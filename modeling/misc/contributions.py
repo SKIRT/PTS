@@ -29,13 +29,14 @@ from ...core.tools.stringify import tostr
 from ...core.prep.smile import SKIRTSmileSchema
 from ..config.launch_contributions import make_images, make_seds
 from ..basics.instruments import FrameInstrument, SimpleInstrument, FullInstrument, SEDInstrument
+from ..core.model import bulge_component_name, disk_component_name, young_component_name, ionizing_component_name
 
 # -----------------------------------------------------------------
 
 contributions = ["total", "old", "young", "ionizing"]
-component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                   "young": ["Young stars"],
-                   "ionizing": ["Ionizing stars"]}
+component_names = {"old": [bulge_component_name, disk_component_name],
+                   "young": [young_component_name],
+                   "ionizing": [ionizing_component_name]}
 
 # -----------------------------------------------------------------
 

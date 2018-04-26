@@ -44,37 +44,65 @@ from ..tools.stringify import tostr
 # - simulation object: the simulation represented by the specified object
 # - list of strings and/or simulation objects: all simulations in the listed objects, as defined above
 #
-def createsimulations(source="", single=False):
+def createsimulations(source="", single=False, name=None, cls=None):
+
+    # Initialize list for simulations
     simulations = []
     sourcelist = source if isinstance(source, (systypes.TupleType,systypes.ListType)) else [ source ]
+
+    # Set class
+    if cls is None: cls = SkirtSimulation
+    elif not issubclass(cls, SkirtSimulation): raise ValueError("Passed class must be subclass of SkirtSimulation")
+
+    # Loop over the sources
     for source in sourcelist:
+
         if isinstance(source, systypes.StringTypes):
             if source == "" or "/" in source:
                 dirpath = os.path.realpath(os.path.expanduser(source))
                 logfiles = arch.listdir(dirpath, "_log.txt")
+
                 for logfile in logfiles:
+
                     prefix = logfile[:-8]
                     ski_path = fs.join(dirpath, prefix + ".ski")
                     ski_path = ski_path if fs.is_file(ski_path) else None
-                    simulations.append(SkirtSimulation(prefix=logfile[:-8], outpath=dirpath, ski_path=ski_path))
+
+                    # Create the simulation object
+                    sim = cls(prefix=logfile[:-8], outpath=dirpath, ski_path=ski_path)
+
+                    # Add the simulation
+                    simulations.append(sim)
+
             else:
+
                 if os.path.exists(source + "_log.txt"):
+
                     ski_path = source + ".ski"
                     ski_path = ski_path if fs.is_file(ski_path) else None
-                    simulations.append(SkirtSimulation(prefix=source, ski_path=ski_path))
-        elif isinstance(source, SkirtSimulation):
-            simulations.append(source)
-        else:
-            raise ValueError("Unsupported source type for simulation")
+
+                    # Create the simulation object
+                    sim = cls(prefix=source, ski_path=ski_path)
+
+                    # Add the simulation
+                    simulations.append(sim)
+
+        elif isinstance(source, SkirtSimulation): simulations.append(source)
+        else: raise ValueError("Unsupported source type for simulation")
 
     # If a single simulation is expected
     if single:
 
         if len(simulations) == 0: raise ValueError("No simulations were found matching the source '" + str(source) + "'")
         elif len(simulations) > 1: raise ValueError("Multiple simulations were found for source '" + str(source) + "': " + ", ".join([simulation.prefix + " in " + simulation.output_path for simulation in simulations]))
-        else: return simulations[0]
+        else:
+
+            simulation = simulations[0]
+            if name is not None: simulation.name = name
+            return simulation
 
     # If multiple simulations are expected
+    elif name is not None: raise ValueError("Cannot specify name if single is False")
     else: return simulations
 
 # -----------------------------------------------------------------
