@@ -1201,6 +1201,61 @@ class ChiSquaredTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def worst_simulation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.argmax(self["Chi squared"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def worst_simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self["Simulation name"][self.worst_simulation_index]
+
+    # -----------------------------------------------------------------
+
+    def get_worst_simulation_names(self, nsimulations):
+
+        """
+        This function ...
+        :param nsimulations:
+        :return:
+        """
+
+        indices = np.argsort(self["Chi squared"])
+        indices_reversed = indices[::-1]
+        names = []
+        for j in range(nsimulations):
+            index = indices_reversed[j]
+            name = self["Simulation name"][index]
+            names.append(name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def worst_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self["Chi squared"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def best_simulation_index(self):
 
         """
@@ -1251,18 +1306,6 @@ class ChiSquaredTable(SmartTable):
         """
 
         return np.min(self["Chi squared"])
-
-    # -----------------------------------------------------------------
-
-    @property
-    def worst_chi_squared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.max(self["Chi squared"])
 
     # -----------------------------------------------------------------
 

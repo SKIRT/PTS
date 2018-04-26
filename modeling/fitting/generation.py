@@ -2311,6 +2311,30 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def best_simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.chi_squared_table.best_simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def worst_simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.chi_squared_table.worst_simulation_name
+
+    # -----------------------------------------------------------------
+
     def get_chi_squared(self, simulation_name):
 
         """

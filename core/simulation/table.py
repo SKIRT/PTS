@@ -18,6 +18,8 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ..basics.table import SmartTable
 from ..units.unit import parse_unit
+from ..tools.utils import memoize_method
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -208,6 +210,91 @@ class SkirtTable(SmartTable):
 
         # Return the table
         return table
+
+    # -----------------------------------------------------------------
+
+    def get_array(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        return np.asarray(self[column_name])
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_mean(self, column_name, weights=None, weights_column_name=None):
+
+        """
+        This function ...
+        :param column_name:
+        :param weights:
+        :param weights_column_name:
+        :return:
+        """
+
+        # Check
+        if weights is not None and weights_column_name is not None: raise ValueError("Cannot specify both weights as weights_column_name")
+
+        # Weights from column
+        if weights_column_name is not None: weights = self.get_array(weights_column_name)
+
+        # Get the values
+        values = self.get_array(column_name)
+
+        # Weighed?
+        if weights is not None: return numbers.weighed_arithmetic_mean(values, weights)
+
+        # Not weighed
+        else: return np.mean(values)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_median(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        # Get the values
+        values = self.get_array(column_name)
+
+        # Return the median
+        return np.nanmedian(values)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_stddev(self, column_name, weights=None, weights_column_name=None):
+
+        """
+        This function ...
+        :param column_name:
+        :param weights:
+        :param weights_column_name:
+        :return:
+        """
+
+        # Check
+        if weights is not None and weights_column_name is not None: raise ValueError("Cannot specify both weights as weights_column_name")
+
+        # Weights from column
+        if weights_column_name is not None: weights = self.get_array(weights_column_name)
+
+        # Get the values
+        values = self.get_array(column_name)
+
+        # Weighted?
+        if weights is not None: return numbers.weighed_standard_deviation(values, weights)
+
+        # Not weighed
+        else: return np.nanstd(values)
 
 # -----------------------------------------------------------------
 

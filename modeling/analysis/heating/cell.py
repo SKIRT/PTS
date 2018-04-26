@@ -1507,6 +1507,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         fractions = self.valid_heating_fractions
         weights = self.valid_cell_weights
 
+        normalization = np.sum(weights)
+
         z_indices = DefaultOrderedDict(list)
 
         ncoordinates = len(x_coordinates)
@@ -1558,31 +1560,46 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         zz = np.zeros_like(xx)
 
+        from ....magic.core.mask import Mask
+
+        no_info = Mask.empty(zz.shape[1], zz.shape[0])
+
         for i in range(nx):
             for j in range(ny):
                 x = unique_x[i]
                 y = unique_y[j]
+                #print("xy", x, y)
 
-                if (x,y) not in z_indices: continue
+                if (x,y) not in z_indices:
+                    no_info[j,i] = True
+                    continue
 
                 indices = z_indices[(x,y)]
+                nindices = len(indices)
+                #print("nindices", nindices)
 
                 fractions_column = fractions[indices]
                 weights_column = weights[indices]
 
-                normalization = np.sum(weights_column)
-                if normalization == 0: continue
+                #print("nfractions", len(fractions_column))
+
+                #normalization = np.sum(weights_column)
+                #if normalization == 0: continue
 
                 fraction = np.sum(fractions_column * weights_column) / normalization
                 #print(fraction)
                 zz[j,i] = fraction
+
+        from ....magic.tools import plotting
+        plotting.plot_mask(no_info)
 
         #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
         ax = plt.gca()
         #ax.pcolormesh(x, y, fractions)
 
         #ax.pcolormesh(projected_x, projected_y, projected_fractions)
-        ax.pcolormesh(xx, yy, zz)
+        #ax.pcolormesh(xx, yy, zz, vmin=0.0, vmax=1.0)
+        ax.pcolormesh(xx, yy, zz, vmin=0.0)
 
         # Plot
         plt.savefig(self.heating_map_plot_path)

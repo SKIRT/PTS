@@ -83,6 +83,8 @@ class ResidualAnalyser(AnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # TODO: check whether the total simulation is analysed, so that the mock images are produced
+
         # 2. Load the observed and simulated images
         self.load_images()
 

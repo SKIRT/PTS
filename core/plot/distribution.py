@@ -83,6 +83,9 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
     :return:
     """
 
+    # Get format from path
+    if path is not None: format = fs.get_extension(path)
+
     # Set color (or sequences of colors)
     if colors is not None: color = colors
 

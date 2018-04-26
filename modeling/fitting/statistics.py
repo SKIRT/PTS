@@ -76,9 +76,9 @@ _seds_command_name = "seds"
 _sed_command_name = "sed"
 _filters_command_name = "filters"
 _best_seds_command_name = "best_seds"
-_best_images_command_name = "best_images"
+#_best_images_command_name = "best_images"
 _images_command_name = "images"
-_best_residuals_command_name = "best_residuals"
+#_best_residuals_command_name = "best_residuals"
 _residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
@@ -130,16 +130,18 @@ plot_commands[_prob_command_name] = ("plot_probabilities_command", True, "plot t
 
 # Plotting SEDs
 plot_commands[_seds_command_name] = ("plot_seds_command", True, "plot the simulation SEDs of a generation", "generation")
-plot_commands[_best_seds_command_name] = ("plot_best_seds_command", True, "plot the SEDs (simulated or mock) of the best simulation(s) of a generation", "generation")
+plot_commands[_best_seds_command_name] = ("plot_best_seds_command", True, "plot the SED(s) (simulated or mock) of the best simulation(s) of a generation", "generation")
 plot_commands[_sed_command_name] = ("plot_sed_command", True, "plot the SED (simulated or mock) of a particular simulation", "generation_simulation")
 
 # Plotting mock images
-plot_commands[_best_images_command_name] = ("plot_best_images_command", True, "plot the mock images of the best simulation of a generation", "generation")
+#plot_commands[_best_images_command_name] = ("plot_best_images_command", True, "plot the mock images of the best simulation of a generation", "generation")
 plot_commands[_images_command_name] = ("plot_images_command", True, "plot the mock images of a particular simulation", "generation_simulation")
 
 # Plotting residuals
-plot_commands[_best_residuals_command_name] = ("plot_best_residuals_command", True, "plot the residuals between mock and observed images of the best simulation of a generation", "generation")
+#plot_commands[_best_residuals_command_name] = ("plot_best_residuals_command", True, "plot the residuals between mock and observed images of the best simulation of a generation", "generation")
 plot_commands[_residuals_command_name] = ("plot_residuals_command", True, "plot the residuals between mock and observed images of a particular simulation", "generation_simulation")
+
+# Plotting residual distributions?
 
 # Other
 plot_commands[_counts_command_name] = ("plot_counts_command", True, "plot the best parameter counts", "generation")
@@ -174,6 +176,12 @@ sed_reference_descriptions = dict()
 sed_reference_descriptions[clipped_name] = "Observed clipped fluxes"
 sed_reference_descriptions[truncated_name] = "Observed truncated fluxes"
 sed_reference_descriptions[asymptotic_sed] = "Observed asymptotic fluxes"
+
+# -----------------------------------------------------------------
+
+best_name = "best"
+worst_name = "worst"
+center_name = "center"
 
 # -----------------------------------------------------------------
 
@@ -420,7 +428,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         if types.is_integer_type(config.generation): generation_name = self.generation_names[config.pop("generation")]
         else: generation_name = config.pop("generation")
         if types.is_integer_type(config.simulation): simulation_name = self.get_simulation_names(generation_name)[config.pop("simulation")]
-        else: simulation_name = config.pop("simulation")
+        else:
+            simulation_name = config.pop("simulation")
+            if simulation_name == best_name: simulation_name = self.get_best_simulation_name(generation_name)
+            elif simulation_name == worst_name: simulation_name = self.get_worst_simulation_name(generation_name)
+            elif simulation_name == center_name: simulation_name = self.get_center_simulation_name(generation_name)
 
         # Return
         return splitted, generation_name, simulation_name, config
@@ -1046,6 +1058,22 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_center_simulation_name(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
+
+        # Get unique parameter values for generation
+        #unique_values = self.get_unique_parameter_values_scalar(generation_name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_simulation_index(self, generation_name, simulation_name):
 
         """
@@ -1121,6 +1149,32 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         """
 
         return self.get_parameter_values(generation_name, self.get_best_simulation_name(generation_name))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_worst_simulation_index(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_chi_squared_table(generation_name).worst_simulation_index
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_worst_simulation_name(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_chi_squared_table(generation_name).worst_simulation_name
 
     # -----------------------------------------------------------------
 
@@ -3812,44 +3866,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_best_images_command(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
-
-        # Get generation name
-        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_images_definition, **kwargs)
-        config.pop("_path")
-
-        # Plot
-        self.plot_best_images(generation_name, **config)
-
-    # -----------------------------------------------------------------
-
-    def plot_best_images(self, generation_name, **kwargs):
-
-        """
-        This function ...
-        :param generation_name:
-        :param kwargs:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Plotting the mock images for the best simulation of generation '" + generation_name + "' ...")
-
-        # Get best simulation name
-        simulation_name = self.get_best_simulation_name(generation_name)
-
-        # Plot
-        self.plot_images(generation_name, simulation_name, **kwargs)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def plot_residuals_definition(self):
 
@@ -3951,56 +3967,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Run the plotter
         plotter.run()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def plot_best_residuals_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return plot_residuals_definition
-
-    # -----------------------------------------------------------------
-
-    def plot_best_residuals_command(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
-
-        # Get generation name
-        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_best_residuals_definition, **kwargs)
-        config.pop("_path")
-
-        # Plot
-        self.plot_best_residuals(generation_name, **config)
-
-    # -----------------------------------------------------------------
-
-    def plot_best_residuals(self, generation_name, **kwargs):
-
-        """
-        This function ...
-        :param generation_name:
-        :param kwargs:
-        :return:
-        """
-
-        # Debugging
-        log.debug("Plotting the residual images for the best simulation of generation '" + generation_name + "' ...")
-
-        # Get best simulation name
-        simulation_name = self.get_best_simulation_name(generation_name)
-
-        # Plot
-        self.plot_residuals(generation_name, simulation_name, **kwargs)
 
     # -----------------------------------------------------------------
 
