@@ -752,6 +752,54 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_observed_total_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_observed_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.observed_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_total_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_intrinsic_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_total_bolometric_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.intrinsic_bolometric_luminosity
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def observed_i1_luminosity_old_bulge(self):
 

@@ -3660,7 +3660,7 @@ class SkiFile8:
     ## This function adds an instrument
     def add_instrument(self, name, instrument):
 
-        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument, MultiFrameInstrument
+        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument, FullSEDInstrument, MultiFrameInstrument
 
         distance = instrument.distance
         inclination = instrument.inclination
@@ -3715,6 +3715,26 @@ class SkiFile8:
             self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x,
                                      pixels_y, center_x, center_y, scattering_levels, counts)
 
+        # Full SED instrument
+        elif isinstance(instrument, FullSEDInstrument):
+
+            # Get the number of scattering levels
+            scattering_levels = instrument.scattering_levels
+
+            from ..units.parsing import parse_quantity
+
+            # Set properties
+            pixels_x = 1
+            pixels_y = 1
+            field_x = parse_quantity("100 kpc")
+            field_y = parse_quantity("100 kpc")
+            center_x = parse_quantity("0 pc")
+            center_y = parse_quantity("0 pc")
+
+            # Add the full instrument to the ski file
+            self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x,
+                                     pixels_y, center_x, center_y, scattering_levels)
+
         # Multi frame instrument
         elif isinstance(instrument, MultiFrameInstrument):
 
@@ -3755,7 +3775,7 @@ class SkiFile8:
             instruments.append(instr)
 
         # Unrecognized instrument
-        else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument, FullInstrument, and MultiFrameInstrument are not yet supported")
+        else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument, FullInstrument, FullSEDInstrument, and MultiFrameInstrument are not yet supported")
 
     ## This function adds a FrameInstrument to the instrument system
     def add_frame_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
@@ -3829,7 +3849,7 @@ class SkiFile8:
         """
 
         # Import the instrument classes
-        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument, MultiFrameInstrument
+        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument, FullSEDInstrument, MultiFrameInstrument
 
         # Get the instrument
         instrument = self.get_instrument(name)
@@ -3838,7 +3858,6 @@ class SkiFile8:
         if instrument.tag == "FrameInstrument":
 
             # Get the instrument properties
-            #name = instrument.get("instrumentName")
             distance = self.get_quantity(instrument, "distance")
             inclination = self.get_angle(instrument, "inclination")
             azimuth = self.get_angle(instrument, "azimuth")
@@ -3871,7 +3890,6 @@ class SkiFile8:
         elif instrument.tag == "SimpleInstrument":
 
             # Get the instrument properties
-            # name = instrument.get("instrumentName")
             distance = self.get_quantity(instrument, "distance")
             inclination = self.get_angle(instrument, "inclination")
             azimuth = self.get_angle(instrument, "azimuth")
@@ -3892,7 +3910,6 @@ class SkiFile8:
         elif instrument.tag == "FullInstrument":
 
             # Get the instrument properties
-            # name = instrument.get("instrumentName")
             distance = self.get_quantity(instrument, "distance")
             inclination = self.get_angle(instrument, "inclination")
             azimuth = self.get_angle(instrument, "azimuth")
@@ -3905,10 +3922,15 @@ class SkiFile8:
             centery = self.get_quantity(instrument, "centerY")
             scattlevels = int(instrument.get("numScatteringLevels"))
 
-            # Creaet and return the instrument
-            return FullInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
-                                  center_y=centery, distance=distance, inclination=inclination, azimuth=azimuth,
-                                  position_angle=pa, scattering_levels=scattlevels)
+            # Is a full SED instrument?
+            if pixelsx == 1 and pixelsy == 1:
+                return FullSEDInstrument(distance=distance, inclination=inclination, azimuth=azimuth,
+                                         position_angle=pa, scattering_levels=scattlevels)
+
+            # Create and return the instrument
+            else: return FullInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
+                                        center_y=centery, distance=distance, inclination=inclination, azimuth=azimuth,
+                                        position_angle=pa, scattering_levels=scattlevels)
 
         # MultiFrameInstrument
         elif instrument.tag == "MultiFrameInstrument":

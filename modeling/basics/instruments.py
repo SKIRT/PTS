@@ -404,6 +404,80 @@ class FullInstrument(Instrument):
 
 # -----------------------------------------------------------------
 
+class FullSEDInstrument(Instrument):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(FullSEDInstrument, self).__init__()
+
+        # The number of scattering levels
+        self.add_property("scattering_levels", "integer", "number of scattering levels", 0)
+
+        # Set values
+        self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties(cls, distance, inclination, position_angle, azimuth=None, scattering_levels=0):
+
+        """
+        This function ...
+        :param distance:
+        :param inclination:
+        :param position_angle:
+        :param azimuth:
+        :param scattering_levels:
+        :return:
+        """
+
+        # Set azimuth
+        if azimuth is None: azimuth = Angle(0.0, "deg")
+
+        # Create and return the instrument
+        return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,
+                   scattering_levels=scattering_levels)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection, scattering_levels=0):
+
+        """
+        This function ...
+        :param projection:
+        :param scattering_levels:
+        :return:
+        """
+
+        return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth,
+                   position_angle=projection.position_angle, scattering_levels=scattering_levels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1
+
+# -----------------------------------------------------------------
+
 class MultiFrameInstrument(Instrument):
 
     """
