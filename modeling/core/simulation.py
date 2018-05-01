@@ -1189,7 +1189,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed_sed.splice(x_max=stellar_dust_sed_split_wavelength)
+        return self.observed_sed.splice(max_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1201,7 +1201,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed_cube.splice(xmax=stellar_dust_sed_split_wavelength)
+        return self.observed_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1309,7 +1309,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_sed.splice(x_max=stellar_dust_sed_split_wavelength)
+        return self.intrinsic_sed.splice(max_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1321,7 +1321,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_cube.splice(x_max=stellar_dust_sed_split_wavelength)
+        return self.intrinsic_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1361,6 +1361,18 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_bolometric_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube.integrate()
+
+    # -----------------------------------------------------------------
+
     @property
     def has_observed_bolometric_luminosity(self):
 
@@ -1370,6 +1382,18 @@ class ComponentSimulations(object):
         """
 
         return self.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_bolometric_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_cube
 
     # -----------------------------------------------------------------
 
@@ -1385,6 +1409,18 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def intrinsic_bolometric_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_cube.integrate()
+
+    # -----------------------------------------------------------------
+
     @property
     def has_intrinsic_bolometric_luminosity(self):
 
@@ -1394,6 +1430,18 @@ class ComponentSimulations(object):
         """
 
         return self.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_bolometric_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
 
@@ -1501,7 +1549,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed_sed.splice(x_min=stellar_dust_sed_split_wavelength)
+        return self.observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1513,7 +1561,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed_cube.splice(x_min=stellar_dust_sed_split_wavelength)
+        return self.observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1549,7 +1597,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_sed.splice(x_min=stellar_dust_sed_split_wavelength)
+        return self.intrinsic_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1561,7 +1609,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_cube.splice(x_min=stellar_dust_sed_split_wavelength)
+        return self.intrinsic_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1699,6 +1747,21 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def observed_frame_at(self, wavelength, interpolate=False):
+
+        """
+        This function ...
+        :param wavelength:
+        :param interpolate:
+        :return:
+        """
+
+        if interpolate: raise NotImplementedError("Interpolating is not supported")
+        return self.observed_cube.get_frame_for_wavelength(wavelength)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_observed_photometry(self):
 
@@ -1708,6 +1771,18 @@ class ComponentSimulations(object):
         """
 
         return self.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_cube
 
     # -----------------------------------------------------------------
 
@@ -1725,6 +1800,21 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def intrinsic_frame_at(self, wavelength, interpolate=False):
+
+        """
+        This function ...
+        :param wavelength:
+        :param interpolate:
+        :return:
+        """
+
+        if interpolate: raise NotImplementedError("Interpolating is not supported")
+        return self.intrinsic_cube.get_frame_for_wavelength(wavelength)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_intrinsic_photometry(self):
 
@@ -1734,6 +1824,18 @@ class ComponentSimulations(object):
         """
 
         return self.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
 
