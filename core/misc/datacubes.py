@@ -33,7 +33,7 @@ all_contributions = ["total", "direct", "scattered", "dust", "dustscattered", "t
 
 # -----------------------------------------------------------------
 
-def find_datacubes_in_cwd(return_prefix=False, contributions=("total")):
+def find_datacubes_in_cwd(return_prefix=False, contributions=("total",)):
 
     """
     This function ...
@@ -46,7 +46,7 @@ def find_datacubes_in_cwd(return_prefix=False, contributions=("total")):
 
 # -----------------------------------------------------------------
 
-def find_datacubes(output_path, return_prefix=False, contributions=("total")):
+def find_datacubes(output_path, return_prefix=False, contributions=("total",)):
 
     """
     This function ...
@@ -115,6 +115,121 @@ def find_seds(output_path, return_prefix=False):
     # Return the paths
     if return_prefix: return paths, output.prefix
     else: return paths
+
+# -----------------------------------------------------------------
+
+def load_parameters_in_cwd(prefix=None):
+
+    """
+    This function ...
+    :param prefix:
+    :return:
+    """
+
+    return load_parameters(fs.cwd(), prefix=prefix)
+
+# -----------------------------------------------------------------
+
+def load_parameters(output_path, prefix=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param prefix:
+    :return:
+    """
+
+    parameters_path = find_parameters_path(output_path, prefix=prefix)
+    return SkiFile(parameters_path)
+
+# -----------------------------------------------------------------
+
+def load_instruments(output_path, prefix=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param prefix:
+    :return:
+    """
+
+    # Load the parameters
+    ski = load_parameters(output_path, prefix=prefix)
+
+    # Load the instruments
+    instruments = OrderedDict()
+    for name in ski.instrumentnames(): instruments[name] = ski.get_instrument_object(name)
+
+    # Return
+    return instruments
+
+# -----------------------------------------------------------------
+
+def load_instrument_distances(output_path, prefix=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param prefix:
+    :return:
+    """
+
+    # Load the parameters
+    ski = load_parameters(output_path, prefix=prefix)
+
+    # Load the distances
+    distances = OrderedDict()
+    for name in ski.instrumentnames(): distances[name] = ski.get_instrument_object(name).distance
+
+    # Return
+    return distances
+
+# -----------------------------------------------------------------
+
+def find_parameters_path(output_path, prefix=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param prefix:
+    :return:
+    """
+
+    # Look for single ski file
+    filepaths = fs.files_in_path(output_path, extension="ski")
+    nfiles = len(filepaths)
+    if nfiles == 1: return filepaths[0]
+    elif prefix is not None:
+        # Find ski file path with prefix
+        for filepath in filepaths:
+            name = fs.strip_extension(fs.name(filepath))
+            if name == prefix: return filepath
+
+    # Create simulation output
+    output = SimulationOutput.from_directory(output_path, prefix=prefix)
+
+    # Look for single ski file that corresponds to the output prefix
+    if prefix is None: prefix = output.prefix
+    for filepath in filepaths:
+        name = fs.strip_extension(fs.name(filepath))
+        if name == prefix: return filepath
+
+    # Has parameters file
+    if output.has_single_parameters: return output.single_parameters
+
+    # No parameter file, look for ski file in directory up
+    else:
+
+        simulation_path = fs.directory_of(output_path)
+        filepaths = fs.files_in_path(simulation_path, extension="ski")
+        #nfiles = len(filepaths)
+        #if nfiles == 1 and fs.strip_extension(fs.name(filepaths[0])) == prefix: return filepaths[0]
+        for filepath in filepaths:
+            name = fs.strip_extension(fs.name(filepath))
+            if name == prefix: return filepath
+
+    # Nothing found
+    return None
 
 # -----------------------------------------------------------------
 
@@ -197,21 +312,22 @@ def load_wavelengths(output_path, unit="micron", input_path=None):
 
 # -----------------------------------------------------------------
 
-def load_seds_in_cwd(contributions=("total"), wavelength_unit=None, photometry_unit=None):
+def load_seds_in_cwd(contributions=("total",), wavelength_unit=None, photometry_unit=None, instrument_names=None):
 
     """
     This function ...
     :param contributions:
     :param wavelength_unit:
     :param photometry_unit:
+    :param instrument_names:
     :return:
     """
 
-    return load_seds(fs.cwd(), contributions=contributions, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
+    return load_seds(fs.cwd(), contributions=contributions, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, instrument_names=instrument_names)
 
 # -----------------------------------------------------------------
 
-def load_seds(output_path, contributions=("total"), wavelength_unit=None, photometry_unit=None):
+def load_seds(output_path, contributions=("total",), wavelength_unit=None, photometry_unit=None, instrument_names=None):
 
     """
     This function ...
@@ -219,6 +335,7 @@ def load_seds(output_path, contributions=("total"), wavelength_unit=None, photom
     :param contributions:
     :param wavelength_unit:
     :param photometry_unit:
+    :param instrument_names:
     :return:
     """
 
@@ -228,6 +345,9 @@ def load_seds(output_path, contributions=("total"), wavelength_unit=None, photom
     # Find paths
     paths, prefix = find_seds(output_path, return_prefix=True)
 
+    # Find instrument distances
+    distances = load_instrument_distances(output_path, prefix=prefix)
+
     # Create dictionary for the SEDs
     seds = DefaultOrderedDict(OrderedDict)
 
@@ -236,6 +356,7 @@ def load_seds(output_path, contributions=("total"), wavelength_unit=None, photom
 
         # Get instrument name
         instr_name = get_sed_instrument_name(path, prefix=prefix)
+        if instrument_names is not None and instr_name not in instrument_names: continue
 
         # Load SEDs in this file
         seds_instrument = load_multiple_seds(path, as_dict=True, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit)
@@ -243,33 +364,67 @@ def load_seds(output_path, contributions=("total"), wavelength_unit=None, photom
         # Loop over the SEDs
         for contribution in seds_instrument:
             if contribution not in contributions: continue
-            seds[instr_name][contribution] = seds_instrument[contribution]
+            sed = seds_instrument[contribution]
+            sed.distance = distances[instr_name]
+            seds[instr_name][contribution] = sed
 
     # Return the SEDs
     return seds
 
 # -----------------------------------------------------------------
 
-def load_datacubes_in_cwd(contributions=("total"), input_path=None):
+def load_datacube_in_cwd(instrument_name, contribution="total", input_path=None):
+
+    """
+    This function ...
+    :param instrument_name:
+    :param contribution:
+    :param input_path:
+    :return:
+    """
+
+    return load_datacube(fs.cwd(), instrument_name, contribution=contribution, input_path=input_path)
+
+# -----------------------------------------------------------------
+
+def load_datacube(output_path, instrument_name, contribution="total", input_path=None):
+
+    """
+    This function ...
+    :param output_path:
+    :param instrument_name:
+    :param contribution:
+    :param input_path:
+    :return:
+    """
+
+    datacubes = load_datacubes(output_path, contributions=(contribution,), instrument_names=(instrument_name,), input_path=input_path)
+    return datacubes[instrument_name][contribution]
+
+# -----------------------------------------------------------------
+
+def load_datacubes_in_cwd(contributions=("total",), input_path=None, instrument_names=None):
 
     """
     Thisn function ...
     :param contributions:
     :param input_path:
+    :param instrument_names:
     :return:
     """
 
-    return load_datacubes(fs.cwd(), contributions=contributions, input_path=input_path)
+    return load_datacubes(fs.cwd(), contributions=contributions, input_path=input_path, instrument_names=instrument_names)
 
 # -----------------------------------------------------------------
 
-def load_datacubes(output_path, contributions=("total"), input_path=None):
+def load_datacubes(output_path, contributions=("total",), input_path=None, instrument_names=None):
 
     """
     This function ...
     :param output_path:
     :param contributions:
     :param input_path:
+    :param instrument_names:
     :return:
     """
 
@@ -282,6 +437,10 @@ def load_datacubes(output_path, contributions=("total"), input_path=None):
     # Find wavelength grid
     wavelength_grid = load_wavelength_grid(output_path, input_path=input_path)
 
+    # Find instrument distances
+    distances = load_instrument_distances(output_path, prefix=prefix)
+    #print(distances)
+
     # Create dictionary to contain the datacubes
     datacubes = DefaultOrderedDict(OrderedDict)
 
@@ -290,12 +449,16 @@ def load_datacubes(output_path, contributions=("total"), input_path=None):
 
         # Get instrument name
         instr_name = get_datacube_instrument_name(path, prefix)
+        if instrument_names is not None and instr_name not in instrument_names: continue
 
         # Get the contribution
         contribution = get_datacube_contribution(path)
 
         # Load the datacube
         datacube = DataCube.from_file(path, wavelength_grid)
+
+        # Set the distance
+        datacube.distance = distances[instr_name]
 
         # Add the datacube
         datacubes[instr_name][contribution] = datacube

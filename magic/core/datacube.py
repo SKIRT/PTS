@@ -205,6 +205,45 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_array(cls, array, wavelength_grid, axis=0, wcs=None, unit=None):
+
+        """
+        This function ...
+        :param array:
+        :param wavelength_grid:
+        :param axis:
+        :param wcs:
+        :param unit:
+        :return:
+        """
+
+        # Get the number of frames
+        nframes = array.shape[axis]
+
+        # Initialize list of frames
+        frames = []
+
+        # Loop over the frames
+        for index in range(nframes):
+
+            # Get frame data
+            if axis == 0: data = array[index, :, :]
+            elif axis == 1: data = array[:, index, :]
+            elif axis == 2: data = array[:, : index]
+            else: raise ValueError("'axis' parameter should be integer 0-2")
+
+            # Create the frame
+            frame = Frame(data, wcs=wcs, unit=unit)
+
+            # Add the frame
+            frames.append(frame)
+
+        # Create and return
+        return cls.from_frames(frames, wavelength_grid=wavelength_grid)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_skirt_output(cls, instrument_name, output_path=None, contribution="total", wavelength_range=None):
 
         """
@@ -348,11 +387,12 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_frames(cls, frames):
+    def from_frames(cls, frames, wavelength_grid=None):
 
         """
         This function ...
         :param frames:
+        :param wavelength_grid:
         :return:
         """
 
@@ -374,13 +414,16 @@ class DataCube(Image):
             datacube.add_frame(frames[index], frame_name)
 
             # Add the wavelength
-            wavelengths.append(frames[index].filter.pivotwavelength())
+            if wavelength_grid is None: wavelengths.append(frames[index].filter.pivotwavelength())
 
             # Increment the number of frames
             nframes += 1
 
         # Create the wavelength grid
-        datacube.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
+        if wavelength_grid is None: wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
+
+        # Set the wavelength grid
+        datacube.wavelength_grid = wavelength_grid
 
         # Return the datacube
         return datacube
@@ -415,7 +458,22 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def wavelength_indices(self, min_wavelength=None, max_wavelength=None):
+    def wavelength_indices(self, min_wavelength=None, max_wavelength=None, include_min=True, include_max=True):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param include_min:
+        :param include_max:
+        :return:
+        """
+
+        return self.wavelength_grid.wavelength_indices(min_wavelength, max_wavelength, include_min=include_min, include_max=include_max)
+
+    # -----------------------------------------------------------------
+
+    def get_indices(self, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
@@ -424,7 +482,32 @@ class DataCube(Image):
         :return:
         """
 
-        return self.wavelength_grid.wavelength_indices(min_wavelength, max_wavelength)
+        return self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def splice(self, min_wavelength=None, max_wavelength=None, copy=False):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param copy: copy the frames
+        :return:
+        """
+
+        # Get the indices
+        #indices = self.get_indices(x_min=x_min, x_max=x_max)
+        wavelength_grid, indices = self.wavelength_grid.get_subgrid(min_wavelength=min_wavelength,
+                                                                    max_wavelength=max_wavelength, return_indices=True,
+                                                                    include_min=True, include_max=True)
+
+        # Get the frames
+        if copy: frames = [self.frames[index].copy() for index in indices]
+        else: frames = [self.frames[index] for index in indices]
+
+        # Create new datacube
+        return self.__class__.from_frames(frames, wavelength_grid=wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -634,8 +717,15 @@ class DataCube(Image):
         :return:
         """
 
+        # Determine the unit for the SED
+        unit = self.corresponding_non_angular_or_intrinsic_area_unit
+
+        # Determine the conversion factor
+        conversion_factor = self.unit.conversion_factor(unit, distance=self.distance, pixelscale=self.pixelscale)
+        error_conversion_factor = errorcube.unit.conversion_factor(unit, distance=self.distance, pixelscale=self.pixelscale) if errorcube is not None else None
+
         # Initialize the SED
-        sed = ObservedSED(photometry_unit=self.unit)
+        sed = ObservedSED(photometry_unit=unit)
 
         # Create a mask from the region (or shape)
         mask = region.to_mask(self.xsize, self.ysize)
@@ -647,13 +737,13 @@ class DataCube(Image):
             frame_name = "frame" + str(index)
 
             # Get the flux in the pixels that belong to the region
-            flux = np.sum(self.frames[frame_name][mask]) * self.unit
+            flux = np.sum(self.frames[frame_name][mask]) * conversion_factor * unit
 
             # Get error
             if errorcube is not None:
 
-                # Get the error in the pixel
-                error = errorcube.frames[frame_name][mask] * self.unit
+                # Get the error in the region (quadratic sum)
+                error = np.sqrt(np.sum(errorcube.frames[frame_name][mask]**2)) * error_conversion_factor * unit
                 errorbar = ErrorBar(error)
 
                 # Add an entry to the SED
@@ -682,8 +772,15 @@ class DataCube(Image):
         :return:
         """
 
+        # Determine the unit for the SED
+        unit = self.corresponding_non_angular_or_intrinsic_area_unit
+
+        # Determine the conversion factor
+        conversion_factor = self.unit.conversion_factor(unit, distance=self.distance, pixelscale=self.pixelscale)
+        error_conversion_factor = errorcube.unit.conversion_factor(unit, distance=self.distance, pixelscale=self.pixelscale) if errorcube is not None else None
+
         # Initialize the SED
-        sed = ObservedSED(photometry_unit=self.unit)
+        sed = ObservedSED(photometry_unit=unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -692,13 +789,13 @@ class DataCube(Image):
             frame_name = "frame" + str(index)
 
             # Get the flux in the pixel
-            flux = self.frames[frame_name][y, x] * self.unit
+            flux = self.frames[frame_name][y, x] * conversion_factor * unit
 
             # Get error
             if errorcube is not None:
 
                 # Get the error in the pixel
-                error = errorcube.frames[frame_name][y, x] * self.unit
+                error = errorcube.frames[frame_name][y, x] * error_conversion_factor * unit
                 errorbar = ErrorBar(error)
 
                 # Add an entry to the SED
@@ -726,13 +823,21 @@ class DataCube(Image):
         """
 
         # Determine the mask
-        if isinstance(mask, basestring): inverse_mask = self.masks[mask].inverse()
+        if types.is_string_type(mask): inverse_mask = self.masks[mask].inverse()
         elif isinstance(mask, Mask): inverse_mask = mask.inverse()
         elif mask is None: inverse_mask = None
         else: raise ValueError("Mask must be string or Mask (or None) instead of " + str(type(mask)))
 
+        # Determine the unit for the SED
+        unit = self.corresponding_non_angular_or_intrinsic_area_unit
+
+        # Determine the conversion factor
+        #print(self.distance)
+        #print(self.pixelscale)
+        conversion_factor = self.unit.conversion_factor(unit, distance=self.distance, pixelscale=self.pixelscale)
+
         # Initialize the SED
-        sed = SED(photometry_unit=self.unit)
+        sed = SED(photometry_unit=unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -743,9 +848,12 @@ class DataCube(Image):
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
 
+            # Get the frame in the correct unit
+            #frame = self.frames[frame_name].converted_to(unit)
+
             # Calculate the total flux
-            if mask is not None: total_flux = self.frames[frame_name].sum() * self.unit
-            else: total_flux = np.sum(self.frames[frame_name][inverse_mask]) * self.unit
+            if inverse_mask is not None: total_flux = np.sum(self.frames[frame_name][inverse_mask]) * conversion_factor * unit
+            else: total_flux = self.frames[frame_name].sum() * conversion_factor * unit
 
             # Add an entry to the SED
             sed.add_point(wavelength, total_flux)

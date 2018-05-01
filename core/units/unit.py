@@ -1931,7 +1931,9 @@ class PhotometricUnit(CompositeUnit):
             #pixelscale = Pixelscale.from_physical(pixelscale, distance=distance)
             physical_pixelscale = pixelscale
             if distance is not None: pixelscale = Pixelscale.from_physical(physical_pixelscale, distance=distance)
-            else: pixelscale = None
+            else:
+                log.warning("Pixelscale is given in physical length unit, but cannot convert to angular pixelscale without the distance being specified")
+                pixelscale = None
         else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
 
         # If solid angle is None, convert pixelscale to solid angle (of one pixel)

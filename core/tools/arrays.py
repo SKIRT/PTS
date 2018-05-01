@@ -59,13 +59,14 @@ def find_closest_index(array, value, array_unit=None):
 
 # -----------------------------------------------------------------
 
-def find_closest_above_index(array, value, array_unit=None):
+def find_closest_above_index(array, value, array_unit=None, inclusive=False):
 
     """
     This function ...
     :param array:
     :param value:
     :param array_unit:
+    :param inclusive:
     :return:
     """
 
@@ -82,20 +83,25 @@ def find_closest_above_index(array, value, array_unit=None):
     for i in range(len(array)):
 
         table_value = array[i]
-        if table_value > value: return i
+
+        if inclusive:
+            if table_value >= value: return i
+        else:
+            if table_value > value: return i
 
     # Return None
     return None
 
 # -----------------------------------------------------------------
 
-def find_closest_below_index(array, value, array_unit=None):
+def find_closest_below_index(array, value, array_unit=None, inclusive=False):
 
     """
     This function ...
     :param array:
     :param value:
     :param array_unit:
+    :param inclusive:
     :return:
     """
 
@@ -112,7 +118,11 @@ def find_closest_below_index(array, value, array_unit=None):
     for i in reversed(range(len(array))):
 
         table_value = array[i]
-        if table_value < value: return i
+
+        if inclusive:
+            if table_value <= value: return i
+        else:
+            if table_value < value: return i
 
     # Return None
     return None

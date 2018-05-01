@@ -136,6 +136,7 @@ edgeon_projection_filename = "edgeon.proj"
 
 # Instrument filenames
 sed_earth_instrument_filename = "earth_sed.instr"
+full_sed_earth_instrument_filename = "earth_full_sed.instr"
 simple_earth_instrument_filename = "earth_simple.instr"
 full_earth_instrument_filename = "earth_full.instr"
 simple_faceon_instrument_filename = "faceon_simple.instr"
@@ -2241,6 +2242,18 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return fs.join(self.instruments_path, sed_earth_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_sed_earth_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, full_sed_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 

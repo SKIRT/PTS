@@ -672,6 +672,27 @@ def get_all_equal_value(sequence, ignore_none=False, ignore=None, return_none=Fa
 
 # -----------------------------------------------------------------
 
+def get_all_close_value(sequence, ignore_none=False, ignore=None, return_none=False):
+
+    """
+    This function ...
+    :param sequence:
+    :param ignore_none:
+    :param ignore:
+    :param return_none:
+    :return:
+    """
+
+    if not all_close(sequence, ignore_none=ignore_none, ignore=ignore):
+        if return_none: return None
+        else: raise ValueError("Not all close: " + str(sequence))
+    else:
+        if ignore_none: return find_first_not_none(sequence, ignore=ignore)
+        elif ignore is not None: return find_first(sequence, ignore=ignore)
+        else: return sequence[0] # take average of close values?
+
+# -----------------------------------------------------------------
+
 def get_first_not_none_value(sequence):
 
     """
@@ -686,7 +707,7 @@ def get_first_not_none_value(sequence):
 
 # -----------------------------------------------------------------
 
-def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
+def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8, ignore=None):
 
     """
     This fnction ...
@@ -694,6 +715,7 @@ def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
     :param ignore_none:
     :param rtol:
     :param atol:
+    :param ignore:
     :return:
     """
 
@@ -707,6 +729,13 @@ def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
         try: first = find_first_not_none(lst)
         except: raise ValueError("Cannot use empty list (except for Nones)")
 
+    # ELIF because ignore is also passed to find_first_not_none
+    elif ignore is not None and first == ignore:
+        try:
+            if ignore_none: first = find_first_not_none(lst, ignore=ignore)
+            else: first = find_first(lst, ignore=ignore)
+        except: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
+
     # Get first value
     if hasattr(first, "unit"): first_value = first.to(first.unit).value
     else: first_value = first
@@ -716,6 +745,9 @@ def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
 
         # Ignore None?
         if ignore_none and lst[index] is None: continue
+
+        # Ignore other?
+        if ignore is not None and lst[index] == ignore: continue
 
         # If quantities, get scalar value
         if hasattr(lst[index], "unit"): value = lst[index].to(first.unit).value

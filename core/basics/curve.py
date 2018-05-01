@@ -322,12 +322,14 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def get_indices(self, x_min=None, x_max=None):
+    def get_indices(self, x_min=None, x_max=None, include_min=True, include_max=True):
 
         """
         This function ...
         :param x_min:
         :param x_max:
+        :param include_min:
+        :param include_max:
         :return:
         """
 
@@ -343,8 +345,16 @@ class Curve(SmartTable):
         for index, value in enumerate(x_values):
 
             # Checks
-            if x_min is not None and value < x_min: continue
-            if x_max is not None and value > x_max: continue
+            if x_min is not None:
+                if include_min:
+                    if value < x_min: continue
+                else:
+                    if value <= x_min: continue
+            if x_max is not None:
+                if include_max:
+                    if value > x_max: continue
+                else:
+                    if value >= x_max: continue
 
             # Add the index
             indices.append(index)
@@ -354,17 +364,19 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def splice(self, x_min=None, x_max=None):
+    def splice(self, x_min=None, x_max=None, include_min=True, include_max=True):
 
         """
         This function ...
         :param x_min:
         :param x_max:
+        :param include_min:
+        :param include_max:
         :return:
         """
 
         # Get the indices
-        indices = self.get_indices(x_min=x_min, x_max=x_max)
+        indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max) # don't name arguments because of re-definition of function in WavelengthCurve class
 
         # Get the values
         x_values = [self.get_value(self.x_name, index) for index in indices]
@@ -653,6 +665,38 @@ class WavelengthCurve(Curve):
 
         # Call the constructor of the base class
         super(WavelengthCurve, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def get_indices(self, min_wavelength=None, max_wavelength=None, include_min=True, include_max=True):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param include_min:
+        :param include_max:
+        :return:
+        """
+
+        # Call the implementation of the base class
+        return super(WavelengthCurve, self).get_indices(x_min=min_wavelength, x_max=max_wavelength, include_min=include_min, include_max=include_max)
+
+    # -----------------------------------------------------------------
+
+    def splice(self, min_wavelength=None, max_wavelength=None, include_min=True, include_max=True):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param include_min:
+        :param include_max:
+        :return:
+        """
+
+        # Call the implementation of the base class
+        return super(WavelengthCurve, self).splice(x_min=min_wavelength, x_max=max_wavelength, include_min=include_min, include_max=include_max)
 
     # -----------------------------------------------------------------
 

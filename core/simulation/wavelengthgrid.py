@@ -530,37 +530,41 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def closest_wavelength_above_index(self, wavelength):
+    def closest_wavelength_above_index(self, wavelength, inclusive=False):
 
         """
         This function ...
         :param wavelength:
+        :param inclusive:
         :return:
         """
 
-        return arrays.find_closest_above_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
+        return arrays.find_closest_above_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit, inclusive=inclusive)
 
     # -----------------------------------------------------------------
 
-    def closest_wavelength_below_index(self, wavelength):
+    def closest_wavelength_below_index(self, wavelength, inclusive=False):
 
         """
         This function ...
         :param wavelength:
+        :param inclusive:
         :return:
         """
 
-        return arrays.find_closest_below_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
+        return arrays.find_closest_below_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit, inclusive=inclusive)
 
     # -----------------------------------------------------------------
 
-    def wavelength_indices(self, min_wavelength=None, max_wavelength=None, wavelength_range=None):
+    def wavelength_indices(self, min_wavelength=None, max_wavelength=None, wavelength_range=None, include_min=False, include_max=False):
 
         """
         This function ...
         :param min_wavelength:
         :param max_wavelength:
         :param wavelength_range:
+        :param include_min:
+        :param include_max:
         :return:
         """
 
@@ -573,9 +577,16 @@ class WavelengthGrid(object):
 
         # Get indices
         if min_wavelength is None and max_wavelength is None: return list(range(len(self.table)))
-        elif min_wavelength is None: return list(range(self.closest_wavelength_below_index(max_wavelength)+1))
-        elif max_wavelength is None: return list(range(self.closest_wavelength_above_index(min_wavelength), len(self.table)))
-        else: return list(range(self.closest_wavelength_above_index(min_wavelength), self.closest_wavelength_below_index(max_wavelength)+1))
+        elif min_wavelength is None:
+            last_index = self.closest_wavelength_below_index(max_wavelength, inclusive=include_max)
+            return list(range(last_index+1))
+        elif max_wavelength is None:
+            first_index = self.closest_wavelength_above_index(min_wavelength, inclusive=include_min)
+            return list(range(first_index, len(self.table)))
+        else:
+            first_index = self.closest_wavelength_above_index(min_wavelength, inclusive=include_min)
+            last_index = self.closest_wavelength_below_index(max_wavelength, inclusive=include_max)
+            return list(range(first_index, last_index+1))
 
     # -----------------------------------------------------------------
 
@@ -615,21 +626,27 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def get_subgrid(self, min_wavelength=None, max_wavelength=None, wavelength_range=None):
+    def get_subgrid(self, min_wavelength=None, max_wavelength=None, wavelength_range=None, return_indices=False,
+                    include_min=False, include_max=False):
 
         """
         This function ...
         :param min_wavelength:
         :param max_wavelength:
         :param wavelength_range:
+        :param return_indices:
+        :param include_min:
+        :param include_max:
         :return:
         """
 
         # Get the indices
-        indices = self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength, wavelength_range=wavelength_range)
+        indices = self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                                          wavelength_range=wavelength_range, include_min=include_min, include_max=include_max)
 
         # Return the subgrid
-        return self[indices]
+        if return_indices: return self[indices], indices
+        else: return self[indices]
 
     # -----------------------------------------------------------------
 
