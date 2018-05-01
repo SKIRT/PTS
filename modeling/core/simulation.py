@@ -1862,8 +1862,8 @@ class ComponentSimulations(object):
         """
 
         # Get the datacubes as arrays
-        observed = self.observed_stellar_cube.asarray()
-        intrinsic = self.intrinsic_stellar_cube.asarray()
+        observed = self.observed_stellar_cube.asarray() # wavelength axis first
+        intrinsic = self.intrinsic_stellar_cube.asarray()  # wavelength axis first
 
         # Calculate the attenuations
         attenuation = extinction.attenuation(observed, intrinsic)

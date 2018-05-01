@@ -582,7 +582,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def asarray(self, axis=3):
+    def asarray(self, axis=0):
 
         """
         This function ...
@@ -594,11 +594,15 @@ class DataCube(Image):
         data_list = self.get_data()
 
         # Stack the frames into a 3D numpy array
-        if axis == 3: return np.dstack(data_list)
-        elif axis == 2: return np.hstack(data_list)
-        elif axis == 1: return np.vstack(data_list)
-        elif axis == 0: return np.stack(data_list)
-        else: raise ValueError("'axis' parameter should be integer 0-3")
+        #if axis == 3: return np.dstack(data_list)
+        #elif axis == 2: return np.hstack(data_list)
+        #elif axis == 1: return np.vstack(data_list)
+        #elif axis == 0: return np.stack(data_list)
+        #else: raise ValueError("'axis' parameter should be integer 0-3")
+
+        if axis == 0: return np.stack(data_list)
+        elif axis == 2: return np.dstack(data_list)
+        else: raise ValueError("'axis' parameter should be 0 or 2")
 
     # -----------------------------------------------------------------
 
