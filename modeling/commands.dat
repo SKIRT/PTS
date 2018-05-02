@@ -3,6 +3,7 @@
 # MODELING
 setup | -- | modeling.setup.ModelingSetupTool | interactive | Setup a modeling directory for a certain galaxy
 model | -- | modeling.modeler.Modeler | arguments | Perform radiative transfer modeling
+rtmod | -- | modeling.rtmod.RTMod | arguments | Interactive radiative transfer modeling
 
 # DATA
 fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties

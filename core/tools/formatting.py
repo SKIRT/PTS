@@ -262,16 +262,31 @@ def print_directories_in_list(lst, name):
 
 # -----------------------------------------------------------------
 
-def print_dictionary(dictionary):
+def print_dictionary(dictionary, bullet="-"):
 
     """
     This function ...
-    :param dictionary: 
+    :param dictionary:
+    :param bullet:
     :return: 
     """
 
     print("")
-    for label in dictionary: print(" - " + label + ": " + stringify.stringify(dictionary[label])[1])
+    for label in dictionary: print(" " + bullet + " " + bold + label + reset_bold + ": " + stringify.tostr(dictionary[label]))
+    print("")
+
+# -----------------------------------------------------------------
+
+def print_sequence(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    print("")
+    for item in sequence: print(stringify.tostr(item))
     print("")
 
 # -----------------------------------------------------------------

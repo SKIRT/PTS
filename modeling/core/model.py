@@ -1089,7 +1089,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def bolometric_attenuation_old_bulge(self):
 
         """
@@ -1161,7 +1161,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def observed_old_bulge_stellar_sed(self):
 
         """
@@ -1473,7 +1473,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def intrinsic_i1_luminosity_old(self):
 
         """
@@ -1509,7 +1509,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def i1_attenuation_old(self):
 
         """
@@ -1641,7 +1641,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def observed_old_stellar_sed(self):
 
         """
@@ -1694,7 +1694,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def observed_fuv_luminosity_young(self):
 
         """
@@ -1928,7 +1928,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def observed_fuv_luminosity_sfr(self):
 
         """
@@ -1989,7 +1989,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def fuv_attenuation_sfr(self):
 
         """
@@ -2275,7 +2275,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def observed_fuv_luminosity_unevolved(self):
 
         """
@@ -2300,7 +2300,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def intrinsic_fuv_luminosity_unevolved(self):
 
         """
@@ -2386,7 +2386,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def fuv_attenuation_unevolved(self):
 
         """

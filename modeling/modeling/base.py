@@ -292,7 +292,7 @@ class ModelerBase(Configurable):
         """
 
         # Step already finished
-        if self.history.finished(command_name):
+        if self.history.is_finished(command_name):
 
             # Rerun?
             if command_name in self.rerun_commands: return self.remove_output_and_history_for_command(command_name)

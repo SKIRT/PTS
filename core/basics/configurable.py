@@ -839,6 +839,9 @@ class InteractiveConfigurable(Configurable):
         # Parse arguments
         else: config = parse_arguments(name, definition, command=command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
+        # Remove path
+        config.pop("_path")
+
         # Return the configuration
         return config
 
@@ -852,8 +855,10 @@ class InteractiveConfigurable(Configurable):
         :return:
         """
 
+        from ..tools import strings
+
         # Get definition
-        definition_property_name = function_name.split("_command")[0] + "_definition"
+        definition_property_name = strings.split_at_last(function_name, "_command")[0] + "_definition"
         definition = getattr(self, definition_property_name, None)
 
         # Return
@@ -939,6 +944,7 @@ class InteractiveConfigurable(Configurable):
         #if subject is None: return None # no usage for this command (simple command that doesn't need input)
 
         # Get the definition
+        #print(function_name)
         definition = self.get_definition_for_function_name(function_name)
 
         # Get the kwargs
@@ -1127,6 +1133,9 @@ class InteractiveConfigurable(Configurable):
         # Parse arguments
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False,
                                  initialize=False, add_logging=False, add_cwd=False)
+
+        # Remove path
+        config.pop("_path")
 
         # Return the configuration
         return config

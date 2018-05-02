@@ -73,7 +73,7 @@ class ModelingStatus(list):
 
             self.ntotal += 1
 
-            if history.finished(command):
+            if history.is_finished(command):
                 self.append((command, "finished"))
                 self.nfinished += 1
             elif command in history: self.append((command, "started"))
@@ -177,7 +177,7 @@ class ModelingStatus(list):
 
     # -----------------------------------------------------------------
 
-    def show(self):
+    def show(self, name=True):
 
         """
         This function ...
@@ -185,16 +185,17 @@ class ModelingStatus(list):
         """
 
         print("")
-        print(fmt.underlined + self.name + fmt.reset)
-        print("")
+        if name:
+            print(fmt.underlined + self.name + fmt.reset)
+            print("")
 
         # Loop over the command
         for command, status in self:
 
             # Print status
-            if status == "finished": print(fmt.green + " - " + command + ": finished" + fmt.reset)
-            elif status == "started": print(fmt.yellow + " - " + command + ": started" + fmt.reset)
-            elif status == "not_started": print(fmt.red + " - " + command + ": not started" + fmt.reset)
+            if status == "finished": print(fmt.green + " - " + fmt.bold + command + fmt.reset_bold + ": finished" + fmt.reset)
+            elif status == "started": print(fmt.yellow + " - " + fmt.bold + command + fmt.reset_bold + ": started" + fmt.reset)
+            elif status == "not_started": print(fmt.red + " - " + fmt.bold + command + fmt.reset_bold + ": not started" + fmt.reset)
             else: print(fmt.red + " ! " + command + ": status not recognized: " + status + fmt.reset)
 
         print("")

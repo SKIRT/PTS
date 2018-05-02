@@ -22,13 +22,15 @@ definition = definition.copy()
 
 # -----------------------------------------------------------------
 
-# Name for the refitting
-definition.add_positional_optional("name", "string", "name for the refitting (required when not refitting in-place or as new fitting run)")
-
 # The fitting run for which to adapt the configuration
 if runs.empty: raise RuntimeError("No fitting runs are present")
 elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting run", runs.single_name)
 else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
+
+# -----------------------------------------------------------------
+
+# Name for the refitting
+definition.add_positional_optional("name", "string", "name for the refitting (required when not refitting in-place or as new fitting run)")
 
 # Generations?
 definition.add_optional("generations", "string_list", "generation names")

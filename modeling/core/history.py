@@ -197,6 +197,28 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unique_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(set(self["Command"]))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def finished_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def __contains__(self, command_name):
 
         """
@@ -209,7 +231,19 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def finished(self, command_name):
+    def is_finished_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return not self["End time"].mask[index] # not masked
+
+    # -----------------------------------------------------------------
+
+    def is_finished(self, command_name):
 
         """
         This function ...
@@ -220,11 +254,11 @@ class ModelingHistory(SmartTable):
         if command_name not in self.commands: return False
         else:
             index = tables.find_index(self, command_name)
-            return not self["End time"].mask[index] # not masked
+            return self.is_finished_index(index)
 
     # -----------------------------------------------------------------
 
-    def finished_commands(self, command_names):
+    def has_finished_commands(self, command_names):
 
         """
         This function ...
@@ -233,12 +267,12 @@ class ModelingHistory(SmartTable):
         """
 
         for command in command_names:
-            if not self.finished(command): return False
+            if not self.is_finished(command): return False
         return True
 
     # -----------------------------------------------------------------
 
-    def finished_all(self, *command_names):
+    def has_finished_all(self, *command_names):
 
         """
         This function ...
@@ -246,11 +280,11 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
-        return self.finished_commands(command_names)
+        return self.has_finished_commands(command_names)
 
     # -----------------------------------------------------------------
 
-    def finished_any(self, *command_names):
+    def has_finished_any(self, *command_names):
 
         """
         This function ...
@@ -259,7 +293,7 @@ class ModelingHistory(SmartTable):
         """
 
         for command in command_names:
-            if self.finished(command): return True
+            if self.is_finished(command): return True
         return False
 
     # -----------------------------------------------------------------
@@ -272,7 +306,7 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
-        return self.finished_commands(["make_old_stellar_maps", "make_young_stellar_maps", "make_ionizing_stellar_maps", "make_dust_map"])
+        return self.has_finished_all("make_old_stellar_maps", "make_young_stellar_maps", "make_ionizing_stellar_maps", "make_dust_map")
 
     # -----------------------------------------------------------------
 
@@ -288,7 +322,7 @@ class ModelingHistory(SmartTable):
 
         finished = []
         for command in maps_commands:
-            if self.finished(command): finished.append(command)
+            if self.is_finished(command): finished.append(command)
 
         return finished
 
@@ -303,7 +337,7 @@ class ModelingHistory(SmartTable):
         """
 
         #return "configure_fit" in self
-        return self.finished("configure_fit")
+        return self.is_finished("configure_fit")
 
     # -----------------------------------------------------------------
 
@@ -319,8 +353,8 @@ class ModelingHistory(SmartTable):
         #elif "initialize_fit_galaxy" in self: return True
         #else: return False
 
-        if self.finished("initialize_fit_sed"): return True
-        elif self.finished("initialize_fit_galaxy"): return True
+        if self.is_finished("initialize_fit_sed"): return True
+        elif self.is_finished("initialize_fit_galaxy"): return True
         else: return False
 
     # -----------------------------------------------------------------

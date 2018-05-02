@@ -16,13 +16,12 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools.serialization import load_dict
 from pts.core.basics.table import SmartTable
-from pts.core.tools import formatting as fmt
-from pts.core.tools.stringify import tostr
 from pts.core.data.sed import load_sed
 from pts.core.basics.composite import load_composite
 from pts.core.basics.distribution import Distribution
 from pts.core.plot.sed import plot_sed
 from pts.core.plot.distribution import plot_distribution
+from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -138,12 +137,7 @@ def show_structure(structure, filetype):
         else: print(structure)
 
     # Dictionary
-    elif filetype == dictionary:
-
-        bullet = "-"
-        for label in structure:
-            line = " " + bullet + " " + fmt.bold + label + fmt.reset + ": " + tostr(structure[label])
-            print(line)
+    elif filetype == dictionary: fmt.print_dictionary(structure, bullet="-")
 
     # SED
     elif filetype == sed:

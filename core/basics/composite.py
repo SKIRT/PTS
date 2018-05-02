@@ -24,6 +24,7 @@ from ..tools import parsing
 from ..basics.log import log
 from ..tools import formatting as fmt
 from ..tools.stringify import stringify, tostr, stringify_list_fancy
+from ..tools.utils import defaultlen
 from .map import Map
 
 # -----------------------------------------------------------------
@@ -483,7 +484,7 @@ class SimplePropertyComposite(object):
             else: suffix = ""
 
             # Set ptype string
-            if hasattr(default, '__len__') and len(default) == 0: ptype_string = "[empty " + ptype + "]"
+            if defaultlen(default, 1) == 0: ptype_string = "[empty " + ptype + "]"
             else: ptype_string = " [" + ptype + "]"
 
             # Show

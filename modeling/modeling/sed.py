@@ -195,7 +195,7 @@ class SEDModeler(ModelerBase):
         log.info("Loading the input data ...")
 
         # Plot SED
-        if not self.history.finished("plot_sed"): self.plot_sed()
+        if not self.history.is_finished("plot_sed"): self.plot_sed()
 
     # -----------------------------------------------------------------
 

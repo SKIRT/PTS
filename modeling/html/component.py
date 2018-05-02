@@ -95,7 +95,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("fetch_properties")
+        return self.history.is_finished("fetch_properties")
 
     # -----------------------------------------------------------------
 
@@ -107,7 +107,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("fetch_images")
+        return self.history.is_finished("fetch_images")
 
     # -----------------------------------------------------------------
 
@@ -119,7 +119,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("prepare_data")
+        return self.history.is_finished("prepare_data")
 
     # -----------------------------------------------------------------
 
@@ -131,7 +131,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("decompose")
+        return self.history.is_finished("decompose")
 
     # -----------------------------------------------------------------
 
@@ -143,7 +143,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("photometry")
+        return self.history.is_finished("photometry")
 
     # -----------------------------------------------------------------
 
@@ -155,7 +155,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("build_model")
+        return self.history.is_finished("build_model")
 
     # -----------------------------------------------------------------
 
@@ -167,7 +167,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("configure_fit")
+        return self.history.is_finished("configure_fit")
 
     # -----------------------------------------------------------------
 
@@ -179,7 +179,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("fit_sed")
+        return self.history.is_finished("fit_sed")
 
     # -----------------------------------------------------------------
 
@@ -192,7 +192,7 @@ class HTMLComponent(GalaxyModelingComponent):
         """
 
         return "launch_analysis" in self.history
-        #return self.history.finished("launch_analysis")
+        #return self.history.is_finished("launch_analysis")
 
     # -----------------------------------------------------------------
 
@@ -205,7 +205,7 @@ class HTMLComponent(GalaxyModelingComponent):
         """
 
         return "launch_analysis" in self.history
-        #return self.history.finished("launch_analysis")
+        #return self.history.is_finished("launch_analysis")
 
     # -----------------------------------------------------------------
 
@@ -217,7 +217,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("launch_analysis")
+        return self.history.is_finished("launch_analysis")
 
     # -----------------------------------------------------------------
 
@@ -229,7 +229,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("launch_analysis")
+        return self.history.is_finished("launch_analysis")
 
     # -----------------------------------------------------------------
 
@@ -241,7 +241,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished_any("analyse_attenuation_map", "analyse_attenuation_curve")
+        return self.history.has_finished_any("analyse_attenuation_map", "analyse_attenuation_curve")
 
     # -----------------------------------------------------------------
 
@@ -253,7 +253,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished("analyse_colours")
+        return self.history.is_finished("analyse_colours")
 
     # -----------------------------------------------------------------
 
@@ -265,7 +265,7 @@ class HTMLComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.history.finished_any("analyse_cell_heating", "analyse_projected_heating")
+        return self.history.has_finished_any("analyse_cell_heating", "analyse_projected_heating")
 
     # -----------------------------------------------------------------
 

@@ -764,3 +764,17 @@ def delegate_as(delegate_cls, to='delegate', include=frozenset(), ignore=frozens
     return inner
 
 # -----------------------------------------------------------------
+
+def defaultlen(value, default):
+
+    """
+    This function ...
+    :param value:
+    :param default:
+    :return:
+    """
+
+    try: return len(value)
+    except TypeError: return default
+
+# -----------------------------------------------------------------
