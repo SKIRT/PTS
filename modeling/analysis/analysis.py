@@ -711,7 +711,6 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Get the config
         config = self.get_config_from_command(command, self.plot_wavelengths_definition)
-        config.pop("_path")
 
         # Plot the wavelengths
         self.plot_wavelengths(**config)
@@ -1282,7 +1281,6 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # TODO: use 'component' option to do this for different components?
 
         contributions = config.pop("contributions")
-        config.pop("_path")
 
         # Plot
         self.plot_contribution_seds(contributions, **config)
@@ -1362,7 +1360,6 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Get
         components = config.pop("components")
-        config.pop("_path")
 
         # Plot
         self.plot_component_seds(config.components, **config)
@@ -1751,7 +1748,6 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # GetAbsorbed bolometric luminosity
         components = config.pop("components")
-        config.pop("_path")
 
         # Plot
         self.plot_component_attenuation(components)

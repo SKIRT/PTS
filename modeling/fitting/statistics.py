@@ -2647,7 +2647,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Get
         generation_simulation_name_a, generation_simulation_name_b, config = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_seds_definition, **kwargs)
-        config.pop("_path")
 
         # Compare
         self.compare_seds(generation_simulation_name_a, generation_simulation_name_b, **kwargs)
@@ -2714,7 +2713,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Get
         generation_simulation_name_a, generation_simulation_name_b, config = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_fluxes_definition, **kwargs)
-        config.pop("_path")
 
         # Compare
         self.compare_fluxes(generation_simulation_name_a, generation_simulation_name_b, **config)
@@ -2997,7 +2995,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Simulated or mock?
         simulated_or_mock = config.pop("simulated_or_mock")
-        config.pop("_path")
 
         # Simulated SEDs
         if simulated_or_mock == simulated_choice: self.plot_best_seds(generation_name, **config)
@@ -3446,7 +3443,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Simulated or mock?
         simulated_or_mock = config.pop("simulated_or_mock")
-        config.pop("_path")
 
         # Simulated
         if simulated_or_mock == simulated_choice: self.plot_sed(generation_name, simulation_name, **config)
@@ -3678,7 +3674,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Get the generation name
         generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_seds_definition, **kwargs)
-        config.pop("_path")
 
         # Plot
         self.plot_seds(generation_name, **config)
@@ -3799,9 +3794,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Get generation and simulation name
         generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_images_definition, **kwargs)
 
-        # Simulated or mock?
-        config.pop("_path")
-
         # Plot
         self.plot_images(generation_name, simulation_name, **config)
 
@@ -3889,9 +3881,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Get generation and simulation name
         generation_name, simulation_name, config = self.get_generation_name_simulation_name_and_config_from_command(command, self.plot_residuals_definition, **kwargs)
-
-        # Simulated or mock?
-        config.pop("_path")
 
         # Plot
         self.plot_residuals(generation_name, simulation_name, **config)

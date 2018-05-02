@@ -466,6 +466,33 @@ class RTMod(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_generation(self, fitting_run_name, name):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param name:
+        :return:
+        """
+
+        return self.get_fitting_run(fitting_run_name).get_generation(name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_names(self, fitting_run_name, generation_name):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_name:
+        :return:
+        """
+
+        return self.get_generation(fitting_run_name, generation_name).simulation_names
+
+    # -----------------------------------------------------------------
+
     def get_fitting_run_command_definition(self, command_definition=None, required_to_optional=True):
 
         """
@@ -1256,9 +1283,6 @@ class RTMod(InteractiveConfigurable):
 
         # Get fitting run name and generation name
         fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.expand_definition, **kwargs)
-
-        # Simulated or mock?
-        config.pop("_path")
 
         # Expand
         self.expand(fitting_run_name, generation_name)
