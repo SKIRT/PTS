@@ -49,7 +49,7 @@ definition.add_flag("per_generation", "only calculate probabilities per generati
 
 # Re-calculate the chi squared values
 definition.add_flag("recalculate_chisquared", "recalculate the chi squared values", False)
-definition.add_flag("recalculate_generations", "string_list", "recalculate the chi squared values only for these generations")
-definition.add_flag("recalculate_simulations", "string_list", "recalculate the chi squared values only for these simulations")
+definition.add_optional("recalculate_generations", "string_list", "recalculate the chi squared values only for these generations")
+definition.add_optional("recalculate_simulations", "string_list", "recalculate the chi squared values only for these simulations")
 
 # -----------------------------------------------------------------

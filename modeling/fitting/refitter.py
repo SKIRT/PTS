@@ -2693,8 +2693,9 @@ def show_best_simulations_impl(simulation_names, chi_squared_values, parameters,
             i = unique_values_scalar[label].index(value_scalar)
             j = nr.locate_continuous(unique_values_scalar[label], initial_value_scalar, scale=parameter_scales[label])
             if j is not None:
-                if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
                 j = int(round(j))
+                if not numbers.is_integer(j, absolute=False): raise NotImplementedError("Not yet implemented")
+                #j = int(round(j))
 
             # Show
             indicator = "[ "
