@@ -13,23 +13,31 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import InteractiveConfigurable, InvalidCommandError
-from ...core.basics.configuration import ConfigurationDefinition
+from ...core.basics.configuration import ConfigurationDefinition, prompt_proceed
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty, memoize_method
 from ...core.tools import filesystem as fs
 from ..core.environment import GalaxyModelingEnvironment
-from ...core.tools import strings, types
+from ...core.tools import strings, types, sequences, time
 from ...core.tools.formatting import print_dictionary
+from ...core.tools.stringify import tostr
+from ...core.simulation.remote import get_simulation_paths_for_host
+from ...core.tools import formatting as fmt
+from ...core.tools.serialization import load_dict, write_dict
+from ...core.launch.manager import extra_columns
+from ...core.remote.host import find_host_ids
+from ..analysis.run import AnalysisRunInfo
 
 # Fitting
 from ..fitting.manager import GenerationManager
 from ..fitting.refitter import Refitter
 from ..fitting.expander import ParameterExpander
 from ..fitting.statistics import FittingStatistics
+from ..fitting.refitter import clone_fitting_run
 
 # Analysis
 from ..analysis.initialization import AnalysisInitializer
@@ -89,6 +97,7 @@ _make_young_maps_command_name = "make_young_maps"
 _make_ionizing_maps_command_name = "make_ionizing_maps"
 _select_maps_command_name = "select_maps"
 _make_component_maps_command_name = "make_component_maps"
+_component_maps_command_name = "component_maps"
 
 # MODEL BUILDING
 _build_model_command_name = "build_model"
@@ -105,6 +114,9 @@ _refit_command_name = "refit" ## Working
 _expand_command_name = "expand" ## Working
 _statistics_command_name = "statistics" ## Working
 _remove_generations_command_name = "remove_generations" ## Working
+_generation_output_command_name = "generation_output" ## Working
+_generation_status_command_name = "generation_status" ## Working
+_generations_command_name = "generations" ## Working
 
 # ANALYSIS
 _initialize_analysis_command_name = "initialize_analysis"
@@ -112,7 +124,9 @@ _launch_analysis_command_name = "launch_analysis" ## Working
 _manage_analysis_command_name = "manage_analysis" ## Working
 _analyse_command_name = "analyse" ## Working
 
+# With subcommands
 _clear_command_name = "clear"
+_clone_command_name = "clone"
 
 # -----------------------------------------------------------------
 
@@ -134,7 +148,10 @@ commands[_commands_command_name] = ("show_commands_command", True, "show history
 # DECOMPOSITION
 # TRUNCATION
 # PHOTOMETRY
+
 # MAP MAKING
+commands[_component_maps_command_name] = ("show_component_maps", False, "list the component maps", None)
+
 # MODEL BUILDING
 
 # FITTING
@@ -143,6 +160,9 @@ commands[_refit_command_name] = ("refit_command", True, "adjust the fitting mech
 commands[_expand_command_name] = ("expand_command", True, "expand the parameter space of a generation", "fitting_run_generation")
 commands[_statistics_command_name] = ("statistics_command", True, "view statistics of a fitting run", "fitting_run")
 commands[_remove_generations_command_name] = ("remove_generations_command", True, "remove certain generation(s)", "fitting_run_generations")
+commands[_generation_output_command_name] = ("show_generation_output_command", True, "show the output of a generation", "generation")
+commands[_generation_status_command_name] = ("show_generation_status_command", True, "show the status of a generation", "generation")
+commands[_generations_command_name] = ("show_generations_command", True, "show the generations", "fitting_runs")
 
 # ANALYSIS
 commands[_initialize_analysis_command_name] = ("initialize_analysis_command", True, "create an analysis run", None)
@@ -183,14 +203,24 @@ clear_commands[_fitting_command_name] = ("clear_fitting", False, "clear fitting"
 clear_commands[_analysis_command_name] = ("clear_analysis", False, "clear analysis", None)
 
 # Fitting output
-clear_commands[_generation_command_name] = ("clear_generation_command", True, "clear a generation", "fitting_run_generation")
-clear_commands[_simulations_command_name] = ("clear_simulations_command", True, "clear simulations", "fitting_run_generation_simulations")
+clear_commands[_generation_command_name] = ("clear_generation_command", True, "clear the output of all simulations of a certain generation", "fitting_run_generation")
+clear_commands[_simulations_command_name] = ("clear_simulations_command", True, "remove the simulation files for a certain generation", "fitting_run_generation_simulations")
+
+# -----------------------------------------------------------------
+
+# Clone
+clone_commands = OrderedDict()
+
+# Fitting run and analysis run
+clone_commands[_fitting_command_name] = ("clone_fitting_command", True, "clone a fitting run (without the generations)", "fitting_run")
+clone_commands[_analysis_command_name] = ("clone_analysis_command", True, "clone an analysis run (without the results)", "analysis_run")
 
 # -----------------------------------------------------------------
 
 # Set subcommands
 subcommands = OrderedDict()
 subcommands[_clear_command_name] = clear_commands
+subcommands[_clone_command_name] = clone_commands
 
 # -----------------------------------------------------------------
 
@@ -282,6 +312,18 @@ class RTMod(InteractiveConfigurable):
 
         # Load the modeling environment
         self.environment = GalaxyModelingEnvironment(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.galaxy_name
 
     # -----------------------------------------------------------------
 
@@ -390,6 +432,42 @@ class RTMod(InteractiveConfigurable):
         """
 
         return self.environment.maps_collection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def static_maps_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.static_maps_collection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_selection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def static_maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.static_maps_selection
 
     # -----------------------------------------------------------------
 
@@ -868,6 +946,43 @@ class RTMod(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_fitting_run_name_generation_name_simulation_names_from_command(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted, fitting_run_name, generation_name, simulation_names, config = self.parse_fitting_run_generation_simulations_command(command, name=name, interactive=interactive)
+
+        # Return
+        return fitting_run_name, generation_name, simulation_names
+
+    # -----------------------------------------------------------------
+
+    def get_fitting_run_name_generation_name_simulation_names_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted, fitting_run_name, generation_name, simulation_names, config = self.parse_fitting_run_generation_simulations_command(command, command_definition, name=name, interactive=interactive)
+
+        # Return
+        return fitting_run_name, generation_name, simulation_names, config
+
+    # -----------------------------------------------------------------
+
     @property
     def analysis_context(self):
 
@@ -1165,6 +1280,156 @@ class RTMod(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def show_component_maps(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs
+        :return:
+        """
+
+        # Old
+        self.show_old_component_maps()
+
+        # Young
+        self.show_young_component_maps()
+
+        # Ionizing
+        self.show_ionizing_component_maps()
+
+        # Dust
+        self.show_dust_component_maps()
+
+    # -----------------------------------------------------------------
+
+    def show_old_component_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Old
+        print(fmt.blue + "OLD STELLAR DISK" + fmt.reset)
+        print("")
+
+        # Loop over the maps
+        for name in self.static_maps_selection.old_map_names:
+
+            print(" - " + fmt.green + fmt.underlined + name + fmt.reset)
+            print("")
+
+            # Get path
+            path = self.static_maps_selection.old_map_paths[name]
+
+            # Get origins
+            origins = self.static_maps_collection.get_old_stellar_disk_origins()[name]
+
+            # Get steps path
+            steps_path = self.static_maps_selection.get_old_steps_path_for_map(name)
+
+            # Show the info
+            show_component_map_info(name, path, origins, steps_path)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def show_young_component_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Young
+        print(fmt.blue + "YOUNG STELLAR DISK" + fmt.reset)
+        print("")
+
+        # Loop over the maps
+        for name in self.static_maps_selection.young_map_names:
+
+            print(" - " + fmt.green + fmt.underlined + name + fmt.reset)
+            print("")
+
+            # Get path
+            path = self.static_maps_selection.young_map_paths[name]
+
+            # Get origins
+            origins = self.static_maps_collection.young_origins_flat[name]
+
+            # Get steps path
+            steps_path = self.static_maps_selection.get_young_steps_path_for_map(name)
+
+            # Show the info
+            show_component_map_info(name, path, origins, steps_path)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def show_ionizing_component_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Ionizing
+        print(fmt.blue + "IONIZING STELLAR DISK" + fmt.reset)
+        print("")
+
+        # Loop over the maps
+        for name in self.static_maps_selection.ionizing_map_names:
+
+            print(" - " + fmt.green + fmt.underlined + name + fmt.reset)
+            print("")
+
+            # Get path
+            path = self.static_maps_selection.ionizing_map_paths[name]
+
+            # Get origins
+            origins = self.static_maps_collection.ionizing_origins_flat[name]
+
+            # Get steps path
+            steps_path = self.static_maps_selection.get_ionizing_steps_path_for_map(name)
+
+            # Show the info
+            show_component_map_info(name, path, origins, steps_path)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def show_dust_component_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dust
+        print(fmt.blue + "DUST DISK" + fmt.reset)
+        print("")
+
+        # Loop over the maps
+        for name in self.static_maps_selection.dust_map_names:
+
+            print(" - " + fmt.green + fmt.underlined + name + fmt.reset)
+            print("")
+
+            # Get path
+            path = self.static_maps_selection.dust_map_paths[name]
+
+            # Get origins
+            origins = self.static_maps_collection.dust_origins_flat[name]
+
+            # Get steps path
+            steps_path = self.static_maps_selection.get_dust_steps_path_for_map(name)
+
+            # Show the info
+            show_component_map_info(name, path, origins, steps_path)
+            print("")
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def manage_generation_definition(self):
 
@@ -1421,6 +1686,364 @@ class RTMod(InteractiveConfigurable):
 
         # Remove the generation directory
         fs.remove_directory(generation_path)
+
+    # -----------------------------------------------------------------
+
+    def show_generation_output_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation name
+        fitting_run_name, generation_name = self.get_fitting_run_name_generation_name_from_command(command, **kwargs)
+
+        # Show
+        self.show_generation_output(fitting_run_name, generation_name)
+
+    # -----------------------------------------------------------------
+
+    def show_generation_output(self, fitting_run_name, generation_name):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing generation output ...")
+
+        # Get the generation
+        generation = self.get_generation(fitting_run_name, generation_name)
+
+        print("")
+        print(fmt.yellow + "FILES" + fmt.reset)
+        print("")
+
+        # Show files
+        for filename in fs.files_in_path(generation.path, returns="name", extensions=True): print(" - " + fmt.bold + filename + fmt.reset)
+        print("")
+
+        print(fmt.yellow + "SIMULATIONS" + fmt.reset)
+        print("")
+
+        # Loop over the simulation names
+        for simulation_name in generation.simulation_names:
+
+            # Check whether directory is present
+            if not fs.contains_directory(generation.path, simulation_name): print(" - " + fmt.red + simulation_name + ": directory missing")
+            else:
+
+                simulation_path = fs.join(generation.path, simulation_name)
+                ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
+                out_path = fs.join(simulation_path, "out")
+                extr_path = fs.join(simulation_path, "extr")
+                plot_path = fs.join(simulation_path, "plot")
+                misc_path = fs.join(simulation_path, "misc")
+
+                # Check presence
+                has_ski = fs.is_file(ski_path)
+                has_out = fs.is_directory(out_path)
+                has_extr = fs.is_directory(extr_path)
+                has_plot = fs.is_directory(plot_path)
+                has_misc = fs.is_directory(misc_path)
+
+                missing = []
+                if not has_ski: missing.append("ski file")
+                if not has_out: missing.append("output directory")
+                if not has_extr: missing.append("extraction directory")
+                if not has_plot: missing.append("plotting directory")
+                if not has_misc: missing.append("misc directory")
+                nmissing = len(missing)
+
+                if nmissing == 0: print(" - " + fmt.green + simulation_name)
+                else: print(" - " + fmt.red + simulation_name + ": " + ",".join(missing) + " missing")
+        print("")
+
+        # Define necessary output files
+        logfiles_name = "logfiles"
+        seds_name = "seds"
+        datacubes_name = "datacubes"
+
+        print(fmt.yellow + "OUTPUT" + fmt.reset)
+        print("")
+
+        # Initialize
+        missing_output = OrderedDict()
+        missing_output[logfiles_name] = []
+        missing_output[seds_name] = []
+        if generation.use_images: missing_output[datacubes_name] = []
+
+        # Loop over the simulations
+        for simulation_name in generation.simulation_names:
+
+            # Get output
+            output = generation.get_simulation_output(simulation_name)
+
+            # Check missing files
+            if not output.has_logfiles: missing_output[logfiles_name].append(simulation_name)
+            if not output.has_seds: missing_output[seds_name].append(simulation_name)
+            if generation.use_images and not output.has_total_images: missing_output[datacubes_name].append(simulation_name)
+
+        # Show
+        for output_type in missing_output:
+
+            simulation_names = missing_output[output_type]
+            nsimulations = len(simulation_names)
+
+            if nsimulations == 0: print(" - " + fmt.green + output_type + fmt.reset)
+            else: print(" - " + fmt.red + output_type + ": missing for " + ", ".join(simulation_names) + fmt.reset)
+        print("")
+
+        # Define necessary output files
+        timeline_name = "timeline"
+        memory_name = "memory"
+
+        print(fmt.yellow + "EXTRACTION" + fmt.reset)
+        print("")
+
+        # Initialize
+        missing_extraction = OrderedDict()
+        missing_extraction[timeline_name] = []
+        missing_extraction[memory_name] = []
+
+        # Loop over the simulations
+        for simulation_name in generation.simulation_names:
+
+            # Get extraction output
+            extraction = generation.get_extraction_output(simulation_name)
+
+            # Check missing files
+            if not extraction.has_timeline: missing_extraction[timeline_name].append(simulation_name)
+            if not extraction.has_memory: missing_extraction[memory_name].append(simulation_name)
+
+        # Show
+        for output_type in missing_extraction:
+
+            simulation_names = missing_extraction[output_type]
+            nsimulations = len(simulation_names)
+
+            if nsimulations == 0: print(" - " + fmt.green + output_type + fmt.reset)
+            else: print(" - " + fmt.red + output_type + ": missing for " + ", ".join(simulation_names) + fmt.reset)
+        print("")
+
+        print(fmt.yellow + "PLOTTING" + fmt.reset)
+        print("")
+
+        # Initialize
+        missing_plotting = OrderedDict()
+        missing_plotting[seds_name] = []
+
+        # Loop over the simulations
+        for simulation_name in generation.simulation_names:
+
+            # Get plotting output
+            plotting = generation.get_plotting_output(simulation_name)
+
+            # Check missing files
+            if not plotting.has_seds: missing_plotting[seds_name].append(simulation_name)
+
+        # Show
+        for output_type in missing_plotting:
+
+            simulation_names = missing_plotting[output_type]
+            nsimulations = len(simulation_names)
+
+            if nsimulations == 0: print(" - " + fmt.green + output_type + fmt.reset)
+            else: print(" - " + fmt.red + output_type + ": missing for " + ", ".join(simulation_names) + fmt.reset)
+        print("")
+
+        # Define necessary output files and directories
+        differences_name = "differences"
+        fluxes_name = "fluxes"
+        images_name = "images"
+
+        print(fmt.yellow + "MISC" + fmt.reset)
+        print("")
+
+        # Initialize
+        missing_misc = OrderedDict()
+        missing_misc[differences_name] = []
+        missing_misc[fluxes_name] = []
+        if generation.use_images: missing_misc[images_name] = []
+
+        # Loop over the simulations
+        for simulation_name in generation.simulation_names:
+
+            # Get misc output
+            misc = generation.get_misc_output(simulation_name)
+
+            # Check missing files and directories
+            if generation.use_images:
+                if not misc.has_image_fluxes: missing_misc[fluxes_name].append(simulation_name)
+            else:
+                if not misc.has_fluxes: missing_misc[fluxes_name].append(simulation_name)
+            if generation.use_images and not misc.has_images_for_fluxes: missing_misc[images_name].append(simulation_name)
+            if not misc.has_other_filename("differences.dat"): missing_misc[differences_name].append(simulation_name)
+
+        # Show
+        for output_type in missing_misc:
+
+            simulation_names = missing_misc[output_type]
+            nsimulations = len(simulation_names)
+
+            if nsimulations == 0: print(" - " + fmt.green + output_type + fmt.reset)
+            else: print(" - " + fmt.red + output_type + ": missing for " + ", ".join(simulation_names) + fmt.reset)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_generation_status_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Hosts
+        all_host_ids = find_host_ids()
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Show parameters
+        definition.add_optional("extra", "string_list", "show extra info", choices=extra_columns)
+
+        # Options for the manager
+        definition.add_flag("offline", "offline mode")
+        definition.add_flag("lazy", "lazy mode")
+        definition.add_flag("find_simulations", "find missing simulations by searching on simulation name", True)
+        definition.add_optional("find_remotes", "string_list", "find missing simulations in these remote hosts", default=all_host_ids, choices=all_host_ids)
+        definition.add_flag("produce_missing", "produce missing simulation files", False)
+        definition.add_flag("check_paths", "check simulation paths", False)
+        definition.add_flag("correct_paths", "correct simulation paths instead of raising errors", False)
+        definition.add_flag("confirm_correction", "confirm before correcting paths", False)
+        definition.add_flag("fix_success", "check success flags in assignment table")
+        definition.add_flag("check_analysis", "check analysis output", False)
+
+        # Write the status table
+        definition.add_flag("write_status", "write the status", False)
+
+        # Correct analysis status
+        definition.add_flag("correct_status", "correct the status", True)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_generation_status_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation and config
+        fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.show_generation_status_definition, **kwargs)
+
+        # Show
+        self.show_generation_status(fitting_run_name, generation_name, config)
+
+    # -----------------------------------------------------------------
+
+    def show_generation_status(self, fitting_run_name, generation_name, config):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_name:
+        :return:
+        """
+
+        # Create simulation manager
+        manager = GenerationManager()
+
+        # Set fitting run and generation name
+        manager.config.run = fitting_run_name
+        manager.config.generation = generation_name
+
+        # Set options
+        manager.config.extra = config.extra
+        manager.config.offline = config.offline
+        manager.config.lazy = config.lazy
+        manager.config.find_simulations = config.find_simulations
+        manager.config.find_remotes = config.find_remotes
+        manager.config.produce_missing = config.produce_missing
+        manager.config.check_paths = config.check_paths
+        manager.config.correct_paths = config.correct_paths
+        manager.config.confirm_correction = config.confirm_correction
+        manager.config.fix_success = config.fix_success
+        manager.config.check_analysis = config.check_analysis
+        manager.config.write_status = config.write_status
+        manager.config.correct_status = config.correct_status
+
+        # Not interactive
+        manager.config.interactive = False
+
+        # Set the status command
+        if config.extra is not None: status_command = "status " + ",".join(config.extra)
+        else: status_command = "status"
+
+        # Set status command
+        manager.config.commands = [status_command]
+
+        # Run the generation manager
+        manager.run()
+
+    # -----------------------------------------------------------------
+
+    def show_generations_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get fitting run names
+        fitting_run_names = self.get_fitting_run_names_from_command(command, **kwargs)
+
+        # Show
+        self.show_generations(fitting_run_names)
+
+    # -----------------------------------------------------------------
+
+    def show_generations(self, fitting_run_names):
+
+        """
+        This function ...
+        :param fitting_run_names:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing generations ...")
+
+        # Loop over the fitting runs
+        for name in fitting_run_names:
+
+            # Get the fitting run
+            fitting_run = self.get_fitting_run(name)
+
+            # Show
+            print("")
+            print(fmt.green + fmt.underlined + name + fmt.reset + ":")
+            print("")
+
+            # Loop over the generations
+            for generation_name in fitting_run.generation_names: print(" - " + generation_name)
+
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -1761,20 +2384,17 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
 
         # Flags
         definition.add_flag("backup", "make backups of non-empty directories", False)
-        definition.add_flag("adapt_simulations", "unset retrieved and analysed flags of the corresponding simulations",
-                            False)
+        definition.add_flag("adapt_simulations", "unset retrieved and analysed flags of the corresponding simulations", False)
 
         # Generations to remove
         definition.add_required("generation", "string", "generation to remove (none means all)")
 
-        # Get configuration
-        #config = parse_arguments("clear_generation_output", definition,
-        #                         "Clear the output of all simulations of a certain generation")
-
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1788,23 +2408,31 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Get fitting run name and generation name
+        fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.clear_generation_definition, **kwargs)
+
+        # Clear
+        self.clear_generation(fitting_run_name, generation_name, backup=config.backup, adapt_simulations=config.adapt_simulations)
+
     # -----------------------------------------------------------------
 
-    def clear_generation(self, generation_name):
+    def clear_generation(self, fitting_run_name, generation_name, backup=False, adapt_simulations=False):
 
         """
         This function ...
+        :param backup:
+        :param adapt_simulations:
         :return:
         """
 
         # Load the fitting run
-        fitting_run = runs.load(config.name)
+        fitting_run = self.get_fitting_run(fitting_run_name)
 
         # Check
-        if not fitting_run.is_generation(config.generation): raise ValueError("Generation doesn't exist")
+        if not fitting_run.is_generation(generation_name): raise ValueError("Generation doesn't exist")
 
         # Get generation path
-        generation_path = fitting_run.get_generation_path(config.generation)
+        generation_path = fitting_run.get_generation_path(generation_name)
 
         # Loop over the simulation paths
         for path, name in fs.directories_in_path(generation_path, returns=["path", "name"]):
@@ -1820,7 +2448,7 @@ class RTMod(InteractiveConfigurable):
 
                 # Debugging
                 log.debug("Clearing output directory of '" + name + "' simulation ...")
-                if config.backup: fs.backup_directory(out_path)
+                if backup: fs.backup_directory(out_path)
                 fs.clear_directory(out_path)
 
             # Non-empty extracted data
@@ -1828,7 +2456,7 @@ class RTMod(InteractiveConfigurable):
 
                 # Debugging
                 log.debug("Clearing extraction directory of '" + name + "' simulation ...")
-                if config.backup: fs.backup_directory(extr_path)
+                if backup: fs.backup_directory(extr_path)
                 fs.clear_directory(extr_path)
 
             # Non-empty plotting output
@@ -1836,7 +2464,7 @@ class RTMod(InteractiveConfigurable):
 
                 # Debugging
                 log.debug("Clearing plotting directory of '" + name + "' simulation ...")
-                if config.backup: fs.backup_directory(plot_path)
+                if backup: fs.backup_directory(plot_path)
                 fs.clear_directory(plot_path)
 
             # Non-empty misc output
@@ -1844,30 +2472,26 @@ class RTMod(InteractiveConfigurable):
 
                 # Debugging
                 log.debug("Clearing miscellaneous output directory of '" + name + "' simulation ...")
-                if config.backup: fs.backup_directory(misc_path)
+                if backup: fs.backup_directory(misc_path)
                 fs.clear_directory(misc_path)
 
-        # -----------------------------------------------------------------
-
         # Clear chi-squared table
-        chi_squared_path = fitting_run.chi_squared_table_path_for_generation(config.generation)
-        chi_squared = fitting_run.chi_squared_table_for_generation(config.generation)
+        chi_squared_path = fitting_run.chi_squared_table_path_for_generation(generation_name)
+        chi_squared = fitting_run.chi_squared_table_for_generation(generation_name)
 
         # Non-empty
         if len(chi_squared) > 0:
 
             log.debug("Clearing chi-squared table ...")
-            if config.backup: fs.backup_file(chi_squared_path)
+            if backup: fs.backup_file(chi_squared_path)
             chi_squared.remove_all_rows()
             chi_squared.save()
 
-        # -----------------------------------------------------------------
-
         # Adapt simulations?
-        if config.adapt_simulations:
+        if adapt_simulations:
 
             # Get the simulations for the generation
-            generation = fitting_run.get_generation(config.generation)
+            generation = fitting_run.get_generation(generation_name)
 
             # Check if has assignment table
             if generation.has_assignment_table:
@@ -1903,27 +2527,21 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
 
         # Generations to remove
-        definition.add_positional_optional("generations", "string_list",
-                                           "generation(s) for which to remove the simulations")
         definition.add_optional("remote", "string", "remote host for which to remove the simulations (none means all")
 
         # Remove simulations of generations other than certain generations
-        definition.add_optional("other_generations", "string_list",
-                                "remove all other generations than these generations")
-        definition.add_flag("hard",
-                            "remove ALL simulations objects that are not from the 'other_generations' (use with CARE!)")
+        definition.add_optional("other_generations", "string_list", "remove all other generations than these generations")
+        definition.add_flag("hard", "remove ALL simulations objects that are not from the 'other_generations' (use with CARE!)")
 
         # Make backup?
         definition.add_flag("backup", "make backup of simulation files")
         definition.add_optional("backup_path", "directory_path", "backup directory path")
 
-        # Get configuration
-        #config = parse_arguments("clear_generation_simulations", definition,
-        #                         "Remove the simulation files for a certain generation")
-
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1937,145 +2555,342 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Get the fitting run name, generation names and config
+        fitting_run_name, generation_names, config = self.get_fitting_run_name_generation_names_and_config_from_command(command, self.clear_simulations_definition, **kwargs)
+
+        # Clear
+        self.clear_simulations(fitting_run_name, generation_names, hard=config.hard, remote=config.remote,
+                               other_generations=config.other_generations, backup=config.backup, backup_path=config.backup_path)
+
     # -----------------------------------------------------------------
 
-    def clear_simulations(self, generation_name, simulation_names):
+    def clear_simulations(self, fitting_run_name, generation_names, hard=False, remote=None,
+                          other_generations=None, backup=False, backup_path=None):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_names:
+        :param hard:
+        :param remote:
+        :param other_generations:
+        :param backup:
+        :param backup_path:
+        :return:
+        """
+
+        # HARD delete
+        if hard:
+
+            if other_generations is None: raise ValueError("'other_generations' has to be specified")
+            if generation_names is not None: raise ValueError("Generation names cannot be specified")
+
+            # Clear
+            self.clear_all_other_simulations(fitting_run_name, other_generations, remote=remote, backup=backup, backup_path=backup_path)
+
+        # Look only at other generations of the same fitting run
+        else: self.clear_simulations_generations(fitting_run_name, generation_names, other_generations=other_generations, remote=remote, backup=backup, backup_path=backup_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_all_other_simulations(self, fitting_run_name, generation_names, remote=None, backup=False, backup_path=None):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_names:
+        :param remote:
+        :param backup:
+        :param backup_path:
+        :return:
+        """
+
+        # Load the fitting run
+        fitting_run = self.get_fitting_run(fitting_run_name)
+
+        # Initialize a dictionary with the simulation filepaths to keep per host
+        keep_paths = defaultdict(list)
+
+        # Loop over the generations of which we CANNOT remove the simulations
+        for generation_name in generation_names:
+
+            # Check
+            if not fitting_run.is_generation(generation_name): raise ValueError("Generation '" + generation_name + "' doesn't exist")
+
+            # Get generation path
+            #generation_path = fitting_run.get_generation_path(generation_name)
+
+            # Get the generation
+            #generation = fitting_run.get_generation(generation_name)
+            generation = self.get_generation(fitting_run_name, generation_name)
+
+            # Loop over the remote hosts
+            for host_id in generation.host_ids:
+
+                # Get paths of the simulation files
+                filepaths = generation.get_simulation_paths_for_host(host_id, id_or_name="name", not_exist="ignore", as_dict=False)
+                nfilepaths = len(filepaths)
+
+                # Add the filepaths
+                keep_paths[host_id].extend(filepaths)
+
+        # Loop over the remote hosts
+        if remote is not None: host_ids = [remote]
+        else: host_ids = keep_paths.keys()
+
+        # Loop over the hosts
+        for host_id in host_ids:
+
+            # Get simulation paths
+            paths = get_simulation_paths_for_host(host_id)
+
+            # keep = keep_paths[host_id]
+            # print(keep)
+
+            # Get list of filepaths to remove
+            remove_paths = sequences.get_other(paths, keep_paths[host_id])
+            remove_names = [fs.strip_extension(fs.name(filepath)) for filepath in remove_paths]
+
+            # Proceed?
+            if not prompt_proceed("proceed removing the simulation files: " + tostr(remove_names)): continue
+
+            # Backup
+            if backup:
+
+                log.debug("Creating backup of the simulation files ...")
+                if remote is not None: backup_path = backup_path
+                else: backup_path = fs.create_directory_in(backup_path, host_id)
+                fs.copy_files(remove_paths, backup_path)
+
+            # Remove
+            fs.remove_files(remove_paths)
+
+    # -----------------------------------------------------------------
+
+    def clear_simulations_generations(self, fitting_run_name, generation_names, other_generations=None, remote=None,
+                                      backup=False, backup_path=None):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_names:
+        :param other_generations:
+        :param remote:
+        :param backup:
+        :param backup_path:
+        :return:
+        """
+
+        # Load the fitting run
+        fitting_run = self.get_fitting_run(fitting_run_name)
+
+        # Determine generation names
+        #if generation_names is not None:
+            #if config.other_generations is not None: raise ValueError("Cannot specify also 'other_generations'")
+            #generation_names = config.generations
+
+        # Other generations
+        #elif other_generations is not None:
+
+        # Set generation names
+        if generation_names is None:
+            if other_generations is not None:
+
+                # Get the other names than those specified
+                generation_names = sequences.get_other(fitting_run.generation_names, other_generations)
+
+            # Which generations?
+            else: raise ValueError("Generation names cannot be determined")
+
+        # Check
+        elif other_generations is not None: raise ValueError("Cannot specify also 'other_generations'")
+
+        # Show
+        log.debug("Removing the simulation files for generations: '" + tostr(generation_names) + "' ...")
+
+        # Loop over the generations
+        for generation_name in generation_names:
+
+            # Check
+            if not fitting_run.is_generation(generation_name): raise ValueError("Generation '" + generation_name + "' doesn't exist")
+
+            # Get generation path
+            generation_path = fitting_run.get_generation_path(generation_name)
+
+            # Get the generation
+            generation = fitting_run.get_generation(generation_name)
+
+            # Loop over the remote hosts
+            for host_id in generation.host_ids:
+
+                # Clear for this host?
+                if remote is not None and host_id != remote: continue
+
+                # Get paths of the simulation files
+                filepaths = generation.get_simulation_paths_for_host(host_id, id_or_name="name", not_exist="ignore")
+                nfilepaths = len(filepaths)
+                if nfilepaths == 0:
+                    log.warning("No simulation objects anymore for generation '" + generation_name + "'")
+                    continue  # skip generation
+
+                # Proceed?
+                remove_names = [fs.strip_extension(fs.name(filepath)) for filepath in filepaths.keys()]
+                if not prompt_proceed("proceed removing the simulation files of generation '" + generation_name + "': " + tostr(remove_names)): continue
+
+                # Get the filepaths
+                paths = filepaths.values()
+
+                # Backup
+                if backup:
+                    log.debug("Creating backup of the simulation files of generation '" + generation_name + "' ...")
+                    fs.copy_files(paths, backup_path)
+
+                # Remove
+                fs.remove_files(paths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def clone_fitting_definition(self):
 
         """
         This function ...
         :return:
         """
 
-        # Load the fitting run
-        fitting_run = runs.load(config.name)
+        # Create configuration definition
+        definition = ConfigurationDefinition(write_config=False)
 
-        # HARD delete
-        if config.hard:
+        # New name
+        definition.add_required("name", "string", "name for the new fitting run", forbidden=self.fitting_run_names)
 
-            # Initialize a dictionary with the simulation filepaths to keep per host
-            keep_paths = defaultdict(list)
+        # Return the definition
+        return definition
 
-            # Loop over the generations of which we CANNOT remove the simulations
-            for generation_name in config.other_generations:
+    # -----------------------------------------------------------------
 
-                # Check
-                if not fitting_run.is_generation(generation_name): raise ValueError(
-                    "Generation '" + generation_name + "' doesn't exist")
+    def clone_fitting_command(self, command, **kwargs):
 
-                # Get generation path
-                generation_path = fitting_run.get_generation_path(generation_name)
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
 
-                # Get the generation
-                generation = fitting_run.get_generation(generation_name)
+        # Get fitting run name
+        fitting_run_name, config = self.get_fitting_run_name_and_config_from_command(command, self.clone_fitting_definition, **kwargs)
 
-                # Loop over the remote hosts
-                for host_id in generation.host_ids:
-                    # Get paths of the simulation files
-                    filepaths = generation.get_simulation_paths_for_host(host_id, id_or_name="name", not_exist="ignore",
-                                                                         as_dict=False)
-                    nfilepaths = len(filepaths)
+        # Clone
+        self.clone_fitting_run(fitting_run_name, config.name)
 
-                    # Add the filepaths
-                    keep_paths[host_id].extend(filepaths)
+    # -----------------------------------------------------------------
 
-            # Loop over the remote hosts
-            if config.remote is not None:
-                host_ids = [config.remote]
-            else:
-                host_ids = keep_paths.keys()
+    def clone_fitting_run(self, fitting_run_name, name):
 
-            # Loop over the hosts
-            for host_id in host_ids:
+        """
+        This function ...
+        :param fitting_run_name:
+        :param name:
+        :return:
+        """
 
-                # Get simulation paths
-                paths = get_simulation_paths_for_host(host_id)
+        # Inform the user
+        log.info("Cloning fitting run ...")
 
-                # keep = keep_paths[host_id]
-                # print(keep)
+        # Get original fitting run
+        fitting_run = self.get_fitting_run(fitting_run_name)
 
-                # Get list of filepaths to remove
-                remove_paths = sequences.get_other(paths, keep_paths[host_id])
-                remove_names = [fs.strip_extension(fs.name(filepath)) for filepath in remove_paths]
+        # Clone the fitting run
+        clone_fitting_run(fitting_run, name)
 
-                # Proceed?
-                if not prompt_proceed("proceed removing the simulation files: " + tostr(remove_names)): continue
+    # -----------------------------------------------------------------
 
-                # Backup
-                if config.backup:
-                    log.debug("Creating backup of the simulation files ...")
-                    if config.remote is not None:
-                        backup_path = config.backup_path
-                    else:
-                        backup_path = fs.create_directory_in(config.backup_path, host_id)
-                    fs.copy_files(remove_paths, backup_path)
+    @lazyproperty
+    def clone_analysis_definition(self):
 
-                # Remove
-                fs.remove_files(remove_paths)
+        """
+        This function ...
+        :return:
+        """
 
-        # Look only at other generations of the same fitting run
-        else:
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
 
-            # Determine generation names
-            if config.generations is not None:
+        # New name
+        definition.add_optional("name", "string", "name for the new analysis run", forbidden=self.analysis_run_names)
 
-                if config.other_generations is not None: raise ValueError("Cannot specify also 'other_generations'")
-                generation_names = config.generations
+        # Return the definition
+        return definition
 
-            # Other generations
-            elif config.other_generations is not None:
+    # -----------------------------------------------------------------
 
-                # Get the other names than those specified
-                generation_names = sequences.get_other(fitting_run.generation_names, config.other_generations)
+    def clone_analysis_command(self, command, **kwargs):
 
-            # Which generations?
-            else:
-                raise ValueError("Generation names cannot be determined")
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
 
-            # Show
-            log.debug("Removing the simulation files for generations: '" + tostr(generation_names) + "' ...")
+        # Get analysis run name
+        analysis_run_name, config = self.get_analysis_run_name_and_config_from_command(command, self.clone_analysis_definition, **kwargs)
 
-            # Loop over the generations
-            for generation_name in generation_names:
+        # Clone
+        self.clone_analysis_run(analysis_run_name)
 
-                # Check
-                if not fitting_run.is_generation(generation_name): raise ValueError(
-                    "Generation '" + generation_name + "' doesn't exist")
+    # -----------------------------------------------------------------
 
-                # Get generation path
-                generation_path = fitting_run.get_generation_path(generation_name)
+    def clone_analysis_run(self, analysis_run_name, name=None):
 
-                # Get the generation
-                generation = fitting_run.get_generation(generation_name)
+        """
+        This function ...
+        :param analysis_run_name:
+        :param name:
+        :return:
+        """
 
-                # Loop over the remote hosts
-                for host_id in generation.host_ids:
+        # Inform the user
+        log.info("Cloning analysis run ...")
 
-                    # Clear for this host?
-                    if config.remote is not None and host_id != config.remote: continue
+        # Get analysis run path
+        path = self.analysis_runs.get_path(analysis_run_name)
 
-                    # Get paths of the simulation files
-                    filepaths = generation.get_simulation_paths_for_host(host_id, id_or_name="name", not_exist="ignore")
-                    nfilepaths = len(filepaths)
-                    if nfilepaths == 0:
-                        log.warning("No simulation objects anymore for generation '" + generation_name + "'")
-                        continue  # skip generation
+        # Generate new analysis run name
+        if name is not None: new_name = name
+        else: new_name = time.unique_name()
+        new_path = fs.create_directory_in(self.environment.analysis_path, new_name)
 
-                    # Proceed?
-                    remove_names = [fs.strip_extension(fs.name(filepath)) for filepath in filepaths.keys()]
-                    if not prompt_proceed(
-                        "proceed removing the simulation files of generation '" + generation_name + "': " + tostr(
-                            remove_names)): continue
+        clear_directories = ["out", "misc", "plot", "residuals", "heating", "extr", "colours", "attenuation"]
+        fs.copy_from_directory(path, new_path, exact_not_name=clear_directories, not_extension="sh")
+        fs.create_directories_in(new_path, clear_directories)
 
-                    # Get the filepaths
-                    paths = filepaths.values()
+        # Change the info
+        info_path = fs.join(new_path, "info.dat")
+        info = AnalysisRunInfo.from_file(info_path)
 
-                    # Backup
-                    if config.backup:
-                        log.debug("Creating backup of the simulation files of generation '" + generation_name + "' ...")
-                        fs.copy_files(paths, config.backup_path)
+        # Set properties
+        info.name = new_name
+        info.path = new_path
 
-                    # Remove
-                    fs.remove_files(paths)
+        # Save
+        info.save()
+
+        # Change the input
+        input_path = fs.join(new_path, "input.dat")
+        input = load_dict(input_path)
+
+        # Change the dust tree path
+        tree_path = fs.join(new_path, "dust grid", "tree.dat")
+        input["tree.dat"] = tree_path
+
+        # Change the wavelength grid path
+        wavelengths_path = fs.join(new_path, "wavelength_grid.dat")
+        input["wavelengths.txt"] = wavelengths_path
+
+        # Write again
+        write_dict(input, input_path)
 
     # -----------------------------------------------------------------
 
@@ -2100,5 +2915,144 @@ class RTMod(InteractiveConfigurable):
         """
 
         return "rtmod"
+
+# -----------------------------------------------------------------
+
+info_kwargs = dict()
+info_kwargs["path"] = False
+info_kwargs["name"] = False
+info_kwargs["xsize"] = True
+info_kwargs["ysize"] = True
+info_kwargs["psf_filter"] = False
+info_kwargs["filesize"] = True
+info_kwargs["filter"] = False
+info_kwargs["wavelength"] = False
+info_kwargs["unit"] = False
+
+# -----------------------------------------------------------------
+
+def show_component_map_info(environment, name, filepath, origins=None, steps_path=None):
+
+    """
+    This function ...
+    :param environment:
+    :param name:
+    :param filepath:
+    :param origins:
+    :param steps_path:
+    :return:
+    """
+
+    from ...magic.tools.info import get_image_info_from_header_file
+    from ...core.basics.composite import SimplePropertyComposite
+
+    # Get map info
+    info = get_image_info_from_header_file(name, filepath, **info_kwargs)
+
+    # Make property composite
+    info = SimplePropertyComposite.from_dict(info)
+
+    # Show the properties
+    print(info.to_string(line_prefix="   ", bullet="*"))
+
+    # Show origins
+    print("    * " + fmt.bold + "origins" + fmt.reset + ": " + tostr(origins, delimiter=", "))
+
+    # Show origin with highest pixelscale
+    highest_pixelscale_filter = get_highest_pixelscale_filter(environment, origins)
+    print("    * " + fmt.bold + "pixelgrid reference" + fmt.reset + ": " + str(highest_pixelscale_filter))
+
+    # Show origin with poorest resolution
+    highest_fwhm_filter = get_highest_fwhm_filter(environment, origins)
+    print("    * " + fmt.bold + "PSF reference" + fmt.reset + ": " + str(highest_fwhm_filter))
+
+    # Load clip info
+    clip_info_path = fs.join(steps_path, "clipped.dat")
+    clip_info = load_dict(clip_info_path)
+
+    # Show clip image references
+    clip_origins = clip_info["origins"]
+    print("    * " + fmt.bold + "clipping image references" + fmt.reset + ": " + tostr(clip_origins, delimiter=", "))
+
+    # Show levels
+    clipping_path = fs.join(steps_path, "clipping")
+    levels = OrderedDict()
+    for origin in clip_origins:
+        mask_filename = "mask__" + tostr(origin).replace(" ", "_")
+        mask_filename = fs.find_file_in_path(clipping_path, extension="fits", startswith=mask_filename, returns="name")
+        level = float(mask_filename.split("__")[2])
+        levels[origin] = level
+    print("    * " + fmt.bold + "signal-to-noise levels" + fmt.reset + ":")
+    for origin in levels: print("       " + str(origin) + ": " + str(levels[origin]))
+
+    # Show
+    softened = clip_info["soften"]
+    print("    * " + fmt.bold + "softened clip mask" + fmt.reset + ": " + str(softened))
+
+# -----------------------------------------------------------------
+
+def get_highest_pixelscale_filter(environment, filters):
+
+    """
+    This function ...
+    :param environment:
+    :param filters:
+    :return:
+    """
+
+    highest_pixelscale = None
+    highest_pixelscale_filter = None
+
+    for fltr in filters:
+
+        image_name = str(fltr)
+
+        # Show origin with highest pixelscale
+        # path = environment.get_frame_path_for_filter(fltr)
+        path = environment.get_frame_path(image_name)  # FASTER
+
+        info = get_image_info_from_header_file(image_name, path, name=False, filter=False, wavelength=False,
+                                               unit=False, fwhm=False, psf_filter=False, xsize=True, ysize=True,
+                                               filesize=False, pixelscale=True)
+        pixelscale = info["Pixelscale"]
+
+        if highest_pixelscale is None or pixelscale > highest_pixelscale:
+            highest_pixelscale = pixelscale
+            highest_pixelscale_filter = fltr
+
+    # Return
+    return highest_pixelscale_filter
+
+# -----------------------------------------------------------------
+
+def get_highest_fwhm_filter(environment, filters):
+
+    """
+    Thisf unction ...
+    :param environment:
+    :param filters:
+    :return:
+    """
+
+    highest_fwhm = None
+    highest_fwhm_filter = None
+
+    for fltr in filters:
+
+        image_name = str(fltr)
+
+        path = environment.get_frame_path(image_name)
+
+        info = get_image_info_from_header_file(image_name, path, name=False, filter=False, wavelength=False,
+                                               unit=False, fwhm=True, psf_filter=True, xsize=False, ysize=False,
+                                               filesize=False, pixelscale=False)
+        fwhm = info["FWHM"]
+
+        if highest_fwhm is None or fwhm > highest_fwhm:
+            highest_fwhm = fwhm
+            highest_fwhm_filter = fltr
+
+    # Return
+    return highest_fwhm_filter
 
 # -----------------------------------------------------------------
