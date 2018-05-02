@@ -160,8 +160,8 @@ commands[_refit_command_name] = ("refit_command", True, "adjust the fitting mech
 commands[_expand_command_name] = ("expand_command", True, "expand the parameter space of a generation", "fitting_run_generation")
 commands[_statistics_command_name] = ("statistics_command", True, "view statistics of a fitting run", "fitting_run")
 commands[_remove_generations_command_name] = ("remove_generations_command", True, "remove certain generation(s)", "fitting_run_generations")
-commands[_generation_output_command_name] = ("show_generation_output_command", True, "show the output of a generation", "generation")
-commands[_generation_status_command_name] = ("show_generation_status_command", True, "show the status of a generation", "generation")
+commands[_generation_output_command_name] = ("show_generation_output_command", True, "show the output of a generation", "fitting_run_generation")
+commands[_generation_status_command_name] = ("show_generation_status_command", True, "show the status of a generation", "fitting_run_generation")
 commands[_generations_command_name] = ("show_generations_command", True, "show the generations", "fitting_runs")
 
 # ANALYSIS
@@ -245,7 +245,7 @@ class RTMod(InteractiveConfigurable):
         # Call the constructor of the base class
         super(RTMod, self).__init__(*args, **kwargs)
 
-        # The modeling environemnt
+        # The modeling environment
         self.environment = None
 
     # -----------------------------------------------------------------
@@ -582,7 +582,7 @@ class RTMod(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("fitting_run", "integer_or_string", "fitting run name", choices=self.fitting_run_names)
+        definition.add_required("fitting_run", "string", "fitting run name", choices=self.fitting_run_names)
 
         # Add definition settings
         if command_definition is not None:
@@ -616,7 +616,7 @@ class RTMod(InteractiveConfigurable):
         else: parse_command = splitted[index:index + 1]
 
         # Get the definition
-        definition = self.get_fitting_run_generation_command_definition(command_definition, required_to_optional=required_to_optional)
+        definition = self.get_fitting_run_command_definition(command_definition, required_to_optional=required_to_optional)
 
         # Get the configuration
         config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
@@ -663,6 +663,101 @@ class RTMod(InteractiveConfigurable):
 
         # Return the fitting run name and config
         return fitting_run_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_fitting_runs_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_required("fitting_runs", "string_list", "fitting run names", choices=self.fitting_run_names)
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_fitting_runs_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]
+
+        # Get the definition
+        definition = self.get_fitting_runs_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get the configuration
+        config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
+
+        # Get fitting run name
+        fitting_run_names = config.pop("fitting_runs")
+
+        # Return
+        return splitted, fitting_run_names, config
+
+    # -----------------------------------------------------------------
+
+    def get_fitting_run_names_from_command(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, fitting_run_names, config = self.parse_fitting_runs_command(command, name=name, interactive=interactive)
+
+        # Return the fitting run names
+        return fitting_run_names
+
+    # -----------------------------------------------------------------
+
+    def get_fitting_run_names_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, fitting_run_names, config = self.parse_fitting_runs_command(command, command_definition, name=name, interactive=interactive)
+
+        # Return the fitting run names and config
+        return fitting_run_names, config
 
     # -----------------------------------------------------------------
 
