@@ -12,32 +12,20 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-from collections import OrderedDict, defaultdict
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty, memoize_method
-from .tables import WeightsTable
-from ...core.tools import filesystem as fs
-from ...core.tools import tables
-from .modelanalyser import FluxDifferencesTable
 from ...core.tools import sequences
-from ...core.misc.fluxes import ObservedFluxCalculator
-from .tables import ChiSquaredTable, BestParametersTable, ModelProbabilitiesTable, ParameterProbabilitiesTable
-from ...core.basics.distribution import Distribution
-from ...core.tools import formatting as fmt
-from ...core.tools.stringify import tostr
 from ...core.tools import nr, numbers
-from ...core.plot.distribution import plot_distributions, plot_distribution
-from .run import FittingRun
-from .tables import GenerationsTable
-from ...core.filter.filter import parse_filter
-from .generation import GenerationInfo
-from .weights import WeightsCalculator
-from ...core.launch.manager import SimulationManager
+from ...core.basics.containers import DefaultOrderedDict
+
+# -----------------------------------------------------------------
+
+up = "up"
+down = "down"
+both = "both"
+directions = [up, down, both]
 
 # -----------------------------------------------------------------
 
@@ -60,6 +48,9 @@ class ParameterExpander(FittingComponent):
 
         # The generation info
         self.info = None
+
+        # The new parameter values
+        self.new_parameter_values = DefaultOrderedDict(list)
 
     # -----------------------------------------------------------------
 
@@ -126,6 +117,18 @@ class ParameterExpander(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def free_parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.free_parameter_labels
+
+    # -----------------------------------------------------------------
+
+    @property
     def parameter_ranges(self):
 
         """
@@ -137,7 +140,7 @@ class ParameterExpander(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def parameter_labels(self):
 
         """
@@ -145,7 +148,8 @@ class ParameterExpander(FittingComponent):
         :return:
         """
 
-        return self.parameter_ranges.keys()
+        if self.config.parameters is not None: return self.config.parameters
+        else: return self.free_parameter_labels
 
     # -----------------------------------------------------------------
 
@@ -230,6 +234,30 @@ class ParameterExpander(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def is_linear(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.parameter_scales[label] == "linear"
+
+    # -----------------------------------------------------------------
+
+    def is_logarithmic(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.parameter_scales[label] == "logarithmic"
+
+    # -----------------------------------------------------------------
+
     @property
     def parameters_table(self):
 
@@ -263,12 +291,13 @@ class ParameterExpander(FittingComponent):
         """
 
         # Initialize dictionary
-        values_scalar = OrderedDict()
+        values_scalar = DefaultOrderedDict(list)
 
         # Loop over the parameters
         for label in self.unique_parameter_values:
-            value = self.unique_parameter_values[label].to(self.get_parameter_unit(label)).value
-            values_scalar[label] = value
+            for value in self.unique_parameter_values[label]:
+                scalar_value = value.to(self.get_parameter_unit(label)).value
+                values_scalar[label].append(scalar_value)
 
         # Return the scalar values
         return values_scalar
@@ -287,6 +316,57 @@ class ParameterExpander(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def up(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.direction == up
+
+    # -----------------------------------------------------------------
+
+    @property
+    def down(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.config.direction == down
+
+    # -----------------------------------------------------------------
+
+    @property
+    def both(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.direction == both
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def series(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.up: return numbers.get_linear_series(self.config.npoints, start=1, step=1)
+        elif self.down: return numbers.get_linear_series(self.config.npoints, start=-1, step=-1)
+        elif self.both: return numbers.get_alternating_series(self.config.npoints, start=1)
+        else: raise ValueError("Invalid direction")
+
+    # -----------------------------------------------------------------
+
     def generate_models(self):
 
         """
@@ -297,10 +377,55 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Generating the new model parameters ...")
 
+        # Loop over the parameters
         for label in self.parameter_labels:
 
-            unique_values = self.unique_parameter_values[label]
-            print(label, unique_values)
+            # Get sorted unique values
+            unique_values = sequences.ordered(self.unique_parameter_values_scalar[label])
+            lowest_value = unique_values[0]
+            highest_value = unique_values[-1]
+
+            # Get step
+            if self.is_linear(label):
+
+                steps = numbers.differences(unique_values)
+                step = sequences.get_all_close_value(steps)
+
+                # Add new values
+                #for i in range(self.config.npoints):
+                #    if self.up:
+                #    elif self.down:
+                #    self.new_values.append(highest_value + i * step)
+
+                if self.up:
+
+                    for i in self.series:
+                        new_value = highest_value + i * step
+                        self.new_parameter_values[label].append(new_value)
+
+                elif self.down:
+
+                    for i in self.series:
+                        new_value = lowest_value + i * step
+                        self.new_parameter_values[label].append(new_value)
+
+                elif self.both:
+
+                    for i, value in zip(self.series, sequences.alternate([highest_value, lowest_value], self.config.npoints)):
+                        new_value = value + i * step
+                        self.new_parameter_values[label].append(new_value)
+
+                else: raise ValueError("Invalid direction")
+
+            elif self.is_logarithmic(label):
+
+                factors = numbers.quotients(unique_values)
+                factor = sequences.get_all_close_value(factors)
+                print(factor)
+
+
+
+            else: raise ValueError("Invalid scale")
 
     # -----------------------------------------------------------------
 

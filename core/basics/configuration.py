@@ -2383,6 +2383,23 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def remove_setting(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name in self.fixed_names: self.remove_fixed(name)
+        elif name in self.required_names: self.remove_required(name)
+        elif name in self.positional_optional_names: self.remove_positional_optional(name)
+        elif name in self.optional_names: self.remove_optional(name)
+        elif name in self.flag_names: self.remove_flag(name)
+        else: raise ValueError("Not a setting: '" + name + "'")
+
+    # -----------------------------------------------------------------
+
     def add_fixed(self, name, description, value):
 
         """

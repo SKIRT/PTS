@@ -1786,3 +1786,66 @@ def different_sign(number_a, number_b):
     return np.sign(number_a) != np.sign(number_b)
 
 # -----------------------------------------------------------------
+
+def differences(numbers):
+
+    """
+    This function ...
+    """
+
+    result = []
+    nnumbers = len(numbers)
+    for index in range(1, nnumbers):
+        difference = float(numbers[index]) - float(numbers[index-1])
+        result.append(difference)
+    return result
+
+# -----------------------------------------------------------------
+
+def quotients(numbers):
+
+    """
+    This function ...
+    :param numbers:
+    :return:
+    """
+
+    result = []
+    nnumbers = len(numbers)
+    for index in range(1, nnumbers):
+        quotient = float(numbers[index]) / float(numbers[index-1])
+        result.append(quotient)
+    return result
+
+# -----------------------------------------------------------------
+
+def get_linear_series(npoints, start=1, step=1):
+
+    """
+    This function ...
+    :param npoints:
+    :param start:
+    :param step:
+    :return:
+    """
+
+    stop = start + npoints
+    return list(range(start, stop, step))
+
+# -----------------------------------------------------------------
+
+def get_alternating_series(npoints, start=1, step=1):
+
+    """
+    This function ...
+    :param npoints:
+    :param start:
+    :param step:
+    :return:
+    """
+
+    numbers = []
+    signs = [1, -1]
+    for i in range(start)
+
+# -----------------------------------------------------------------

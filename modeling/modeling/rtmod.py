@@ -31,6 +31,7 @@ from ...core.tools.serialization import load_dict, write_dict
 from ...core.launch.manager import extra_columns
 from ...core.remote.host import find_host_ids
 from ..analysis.run import AnalysisRunInfo
+from ..config.expand import definition as expand_definition
 
 # Fitting
 from ..fitting.manager import GenerationManager
@@ -1565,6 +1566,7 @@ class RTMod(InteractiveConfigurable):
         """
 
         manager = GenerationManager()
+        manager.config.path = self.config.path
 
         manager.run = fitting_run_name
         manager.generation = generation_name
@@ -1612,6 +1614,7 @@ class RTMod(InteractiveConfigurable):
         """
 
         refitter = Refitter()
+        refitter.config.path = self.config.path
 
         refitter.fitting_run = fitting_run_name
 
@@ -1627,8 +1630,30 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(expand_definition)
+        definition.remove_setting("run")
+        definition.remove_required("generation")
+
+        # Return the definition
         return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def expand_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
 
     # -----------------------------------------------------------------
 
@@ -1641,28 +1666,37 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Get all kwargs
+        kwargs.update(self.expand_kwargs)
+
         # Get fitting run name and generation name
-        fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.expand_definition, **kwargs)
+        #fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.expand_definition, **kwargs)
+        splitted, fitting_run_name, generation_name, config = self.parse_fitting_run_generation_command(command, self.expand_definition, **kwargs)
 
         # Expand
-        self.expand(fitting_run_name, generation_name)
+        self.expand(fitting_run_name, generation_name, config)
 
     # -----------------------------------------------------------------
 
-    def expand(self, fitting_run_name, generation_name):
+    def expand(self, fitting_run_name, generation_name, config):
 
         """
         This function ...
         :param fitting_run_name:
         :param generation_name:
+        :param config:
         :return:
         """
 
-        expander = ParameterExpander()
+        # Create expander
+        expander = ParameterExpander(config)
+        expander.config.path = self.config.path
 
+        # Set
         expander.config.run = fitting_run_name
         expander.config.generation = generation_name
 
+        # Run
         expander.run()
 
     # -----------------------------------------------------------------
@@ -1706,6 +1740,7 @@ class RTMod(InteractiveConfigurable):
         """
 
         statistics = FittingStatistics()
+        statistics.config.path = self.config.path
 
         statistics.run = fitting_run_name
 

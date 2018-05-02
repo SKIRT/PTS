@@ -9,6 +9,7 @@
 from pts.core.remote.host import find_host_ids
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.config.component import definition
+from pts.modeling.fitting.expander import directions
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,8 @@ definition.add_required("generation", "string", "generation name")
 
 # Parameters in which to expand
 definition.add_required("parameters", "string_list", "parameters for which to expand the range")  # choices are supposed to be the free parameters of a fitting run
+definition.add_required("direction", "string", "direction in which to expand", choices=directions)
+definition.add_required("npoints", "positive_integer", "number of grid points to add")
 
 # -----------------------------------------------------------------
 
