@@ -857,6 +857,18 @@ class IndividualsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def individual_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Individual name"])
+
+    # -----------------------------------------------------------------
+
     def has_individual(self, individual_name):
 
         """

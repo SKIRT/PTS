@@ -2265,3 +2265,23 @@ def least_present_value(values):
     else: raise ValueError("Not one least present value")
 
 # -----------------------------------------------------------------
+
+def alternate(items, size):
+
+    """
+    This function ...
+    :param items:
+    :param size:
+    :return:
+    """
+
+    sequence = []
+    for i, item in enumerate(itertools.cycle(items)):
+
+        if i == size: return sequence
+        else: sequence.append(item)
+
+    # We shouldn't get here
+    raise RuntimeError("We shouldn't get here")
+
+# -----------------------------------------------------------------

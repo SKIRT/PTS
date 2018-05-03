@@ -37,8 +37,8 @@ definition.add_required("generation", "string", "generation name")
 
 # Parameters in which to expand
 definition.add_required("parameters", "string_list", "parameters for which to expand the range")  # choices are supposed to be the free parameters of a fitting run
-definition.add_required("direction", "string", "direction in which to expand", choices=directions)
-definition.add_required("npoints", "positive_integer", "number of grid points to add")
+definition.add_required("direction", "string_or_string_string_dictionary", "direction in which to expand") #choices=directions)
+definition.add_required("npoints", "integer_or_string_integer_dictionary", "number of grid points to add")
 
 # -----------------------------------------------------------------
 
@@ -51,7 +51,6 @@ definition.add_flag("local", "run everything locally")
 
 # Options
 definition.add_flag("attached", "run remote simulations in attached mode")
-#definition.add_optional("nsimulations", "even_positive_integer", "number of simulations to launch in one batch/generation", 100)
 definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 

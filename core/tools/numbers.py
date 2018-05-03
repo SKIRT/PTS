@@ -1845,7 +1845,15 @@ def get_alternating_series(npoints, start=1, step=1):
     """
 
     numbers = []
-    signs = [1, -1]
-    for i in range(start)
+    #signs = [1, -1]
+    stop = start + npoints
+    for i in range(start, stop, step):
+        numbers.append(i)
+        if len(numbers) == npoints: return numbers
+        numbers.append(-i)
+        if len(numbers) == npoints: return numbers
+
+    #return numbers
+    raise RuntimeError("We shouldn't get here")
 
 # -----------------------------------------------------------------

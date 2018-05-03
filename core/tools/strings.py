@@ -282,6 +282,49 @@ def iterate_alphabet_strings():
 
 # -----------------------------------------------------------------
 
+nletters = len(ascii_lowercase)
+
+# -----------------------------------------------------------------
+
+def state_to_absolute(state):
+
+    """
+    This function ...
+    :param state:
+    :return:
+    """
+
+    dimension = len(state)
+    return sum(state[i] * nletters ** (dimension - 1 - i) for i in range(dimension))
+
+# -----------------------------------------------------------------
+
+def absolute_to_state(absolute, dimension):
+
+    """
+    This function ...
+    :param absolute:
+    :param dimension:
+    :return:
+    """
+
+    # Initialize state
+    new_state = []
+
+    remainder = absolute
+
+    for index in range(dimension):
+
+        divider = nletters ** (dimension - 1 - index)
+        quotient = remainder // divider
+        remainder = remainder % divider
+        new_state.append(quotient)
+
+    # Return
+    return new_state
+
+# -----------------------------------------------------------------
+
 class alphabet_strings_iterator(object):
 
     """
@@ -294,7 +337,73 @@ class alphabet_strings_iterator(object):
         This function ...
         """
 
-        self.state = [0,0,-1]
+        # Initialize the state
+        self.state = [0] * dimension
+
+    # -----------------------------------------------------------------
+
+    def set_state(self, state):
+
+        """
+        This function ...
+        :param state:
+        :return:
+        """
+
+        if len(state) != self.dimension: raise ValueError("Incorrect dimension")
+        self.state = state
+
+    # -----------------------------------------------------------------
+
+    def set_absolute_state(self, absolute_state):
+
+        """
+        This function ...
+        :param absolute_state:
+        :return:
+        """
+
+        # Convert absolute state to state
+        new_state = absolute_to_state(absolute_state, self.dimension)
+
+        # Set new state
+        self.set_state(new_state)
+
+    # -----------------------------------------------------------------
+
+    def reset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the state again
+        self.set_state([0] * self.dimension)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dimension(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.state)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absolute_state(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return state_to_absolute(self.state)
 
     # -----------------------------------------------------------------
 
@@ -305,21 +414,102 @@ class alphabet_strings_iterator(object):
         :return: 
         """
 
-        if self.state[-1] == 25:
+        # Loop over the digits
+        for index in reversed(range(self.dimension)):
 
-            self.state[-1] = 0
-            for index in reversed(range(len(self.state)-1)):
+            # Last index cannot be incremented
+            if self.state[index] == 25:
 
-                if self.state[index] == 25:
-                    self.state[index] = 0
-                    continue
-                else:
-                    self.state[index] += 1
-                    break
+                self.state[index] = 0
+                continue
 
-            else: raise StopIteration
+            # Increment this digit
+            else:
 
-        else: self.state[-1] += 1
+                self.state[index] += 1
+                break
+
+        # No digits left
+        else: raise StopIteration
+
+    # -----------------------------------------------------------------
+
+    def decrement_state(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the other digits
+        for index in reversed(range(self.dimension-1)):
+
+            # Last index cannot be decremented
+            if self.state[index] == 0:
+
+                self.state[index] = 25
+                continue
+
+            # Decrement the digit
+            else:
+
+                self.state[index] -= 1
+                break
+
+        # No digits left
+        else: raise StopIteration
+
+    # -----------------------------------------------------------------
+
+    def increment_to(self, string):
+
+        """
+        This function ...
+        :param string:
+        :return:
+        """
+
+        # Sequence of strings
+        if types.is_string_sequence(string):
+
+            # Get absolute states
+            absolute_states = []
+
+            # Loop over the strings
+            for s in string:
+
+                # Check dimension
+                if len(s) != self.dimension: raise ValueError("Invalid dimension of string: must be " + str(self.dimension))
+
+                # Convert into state
+                state = [ascii_lowercase.index(s[i]) for i in range(self.dimension)]
+
+                # Convert into absolute state
+                absolute = state_to_absolute(state)
+
+                # Add
+                absolute_states.append(absolute)
+
+            # Take maximum absolute state, add one
+            absolute_state = max(absolute_states) + 1
+
+        # Single string
+        elif types.is_string_type(string):
+
+            # Check dimension
+            if len(string) != self.dimension: raise ValueError("Invalid dimension of string: must be " + str(self.dimension))
+
+            # Convert into state
+            state = [ascii_lowercase.index(string[i]) for i in range(self.dimension)]
+
+            # Convert into absolute state, add one
+            absolute_state = state_to_absolute(state) + 1
+
+        # Invalid
+        else: raise ValueError("Invalid argument: must be string or string sequence")
+
+        # Set the new state if it is higher
+        if absolute_state > self.absolute_state: self.set_absolute_state(absolute_state)
 
     # -----------------------------------------------------------------
 
@@ -331,10 +521,16 @@ class alphabet_strings_iterator(object):
         """
 
         # Increment state
-        self.increment_state()
+        #self.increment_state()
 
         # Return string
-        return "".join([ascii_lowercase[index] for index in self.state])
+        string = "".join([ascii_lowercase[index] for index in self.state])
+
+        # Increment
+        self.increment_state()
+
+        # Return the state
+        return string
 
 # -----------------------------------------------------------------
 

@@ -1264,6 +1264,19 @@ def string_string_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def string_or_string_string_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_string_dictionary(argument)
+    except (ValueError, NameError) as e: return string(argument)
+
+# -----------------------------------------------------------------
+
 def string_string_list_dictionary(argument):
 
     """
@@ -1293,6 +1306,19 @@ def string_integer_dictionary(argument):
         if not types.is_string_type(key): raise ValueError("All keys must be strings")
         if not types.is_integer_type(value): raise ValueError("All values must be integers")
     return d
+
+# -----------------------------------------------------------------
+
+def integer_or_string_integer_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_integer_dictionary(argument)
+    except (ValueError, NameError) as e: return integer(argument)
 
 # -----------------------------------------------------------------
 

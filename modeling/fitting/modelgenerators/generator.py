@@ -225,8 +225,7 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
-        #print("HEREE!!!!!")
-
+        # Add range
         self.ranges[label] = parameter_range
 
     # -----------------------------------------------------------------

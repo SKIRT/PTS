@@ -2214,7 +2214,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def individuals_table(self):
 
         """
