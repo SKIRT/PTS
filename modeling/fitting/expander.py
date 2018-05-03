@@ -140,6 +140,18 @@ class ParameterExpander(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def nfree_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.free_parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @property
     def parameter_ranges(self):
 
         """
@@ -185,6 +197,30 @@ class ParameterExpander(FittingComponent):
         """
 
         return self.nparameters > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_one_parameter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nparameters == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nparameters == self.nfree_parameters
 
     # -----------------------------------------------------------------
 
@@ -746,14 +782,17 @@ class ParameterExpander(FittingComponent):
         log.info("Generating the new models ...")
 
         # Generate models with one new parameter value combined with original parameter values
-        self.generate_new_old_models()
+        self.generate_models_single_new_parameter()
+
+        # Generate models with multiple new parameter values combined with original parameter values
+        if self.has_multiple_parameters and not self.nfree_parameters == 2: self.generate_models_multiple_new_parameters()
 
         # Generate models with all new parameter values
-        if self.has_multiple_parameters: self.generate_new_new_models()
+        if self.has_multiple_parameters and self.has_all_parameters: self.generate_models_all_new_parameters()
 
     # -----------------------------------------------------------------
 
-    def generate_new_old_models(self):
+    def generate_models_single_new_parameter(self):
 
         """
         This function ...
@@ -761,7 +800,7 @@ class ParameterExpander(FittingComponent):
         """
 
         # Inform the user
-        log.info("Generating models with new and original parameter values ...")
+        log.info("Generating models with a single new parameter and other original parameter values ...")
 
         # Loop over the parameters with new values
         for label in self.parameter_labels: self.generate_new_models_for_parameter(label)
@@ -779,11 +818,77 @@ class ParameterExpander(FittingComponent):
 
         # Get labels
         if types.is_string_type(label): labels = [label]
-        elif types.is_string_sequence(label): labels = label
+        elif types.is_string_sequence(label) or types.is_string_tuple(label): labels = label
         else: raise ValueError("Invalid input")
 
         # Return other
         return sequences.get_other(self.free_parameter_labels, labels)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_grid_points_dict_for_parameters(self, parameter_labels):
+
+        """
+        This function ...
+        :param parameter_labels:
+        :return:
+        """
+
+        # Initialize
+        grid_points = OrderedDict()
+
+        # Loop over the parameters
+        for parameter_label in parameter_labels: grid_points[parameter_label] = self.get_sorted_unique_parameter_values_scalar(parameter_label)
+
+        # Return
+        return grid_points
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_new_parameter_values(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.new_parameter_values[label]
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_new_parameter_values_scalar(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return [value.to(self.get_parameter_unit(label)).value for value in self.new_parameter_values[label]]
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_new_grid_points_dict_for_parameters(self, parameter_labels):
+
+        """
+        This function ...
+        :param parameter_labels:
+        :return:
+        """
+
+        # Initialize
+        grid_points = OrderedDict()
+
+        # Loop over the parameters
+        for parameter_label in parameter_labels: grid_points[parameter_label] = self.get_new_parameter_values_scalar(parameter_label)
+
+        # Return
+        return grid_points
 
     # -----------------------------------------------------------------
 
@@ -804,53 +909,6 @@ class ParameterExpander(FittingComponent):
 
         # Return
         return grid_points
-
-    # -----------------------------------------------------------------
-
-    def get_grid_points_lists_for_other_parameters(self, label):
-
-        """
-        This function ...
-        :param label:
-        :return:
-        """
-
-        # Get dictionary
-        grid_points_dict = self.get_grid_points_dict_for_other_parameters(label)
-
-        # Return as lists
-        return self.grid_points_to_lists(grid_points_dict)
-
-    # -----------------------------------------------------------------
-
-    def grid_points_to_lists(self, grid_points_dict):
-
-        """
-        This function ...
-        :param grid_points_dict:
-        :return:
-        """
-
-        # Convert into lists, and strip units
-        grid_points_lists = []
-
-        # Get the labels
-        parameter_labels = grid_points_dict.keys()
-
-        # Loop over the free parameters
-        for label in parameter_labels:
-
-            # Get the list of scalar values
-            #if self.has_parameter_unit(label):
-            #    unit = self.get_parameter_unit(label)
-            #    values = [value.to(unit).value for value in grid_points_dict[label]]
-            #else: values = grid_points_dict[label]
-
-            # Add the list of grid point values
-            grid_points_lists.append(values)
-
-        # Return the lists
-        return grid_points_lists
 
     # -----------------------------------------------------------------
 
@@ -879,7 +937,9 @@ class ParameterExpander(FittingComponent):
             # Get number of models
             nmodels = 1
             for other_label in other_labels: nmodels *= self.get_nunique_parameter_values(other_label)
-            #print(nmodels)
+            
+            # Debugging
+            log.debug("Number of models to be generated: " + str(nmodels))
 
             # Create iterator of combinations
             iterator = sequences.iterate_lists_combinations(*parameters.values())
@@ -893,18 +953,94 @@ class ParameterExpander(FittingComponent):
                 # Generate a new individual name
                 name = self.name_iterator.next()
 
-                #print(parameters_model)
-
-                # Loop over all the parameters
-                #for i in range(len(parameters_model)):
-
                 # Add the parameter value to the dictionary
                 self.parameters[label][name] = value.to(self.get_parameter_unit(label)).value
                 for other_label, other_value in zip(other_labels, other_values): self.parameters[other_label][name] = other_value
 
     # -----------------------------------------------------------------
 
-    def generate_new_new_models(self):
+    def get_nnew_parameter_values(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return len(self.new_parameter_values[label])
+
+    # -----------------------------------------------------------------
+
+    def generate_models_multiple_new_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating models with multiple new parameter values combined with old parameter values ...")
+
+        # Set lengths (combine at least 2 parameters, and at most all of the parameters, unless these are ALL free parameters; then the function below will already take care of that)
+        lengths = list(range(2,min(self.nparameters, self.nfree_parameters-1)+1))
+
+        # Debugging
+        log.debug("Combining the parameters '" + tostr(self.parameter_labels) + "' in sets of " + tostr(lengths) + " ...")
+
+        # Loop over the combinations of multiple
+        for parameter_labels in sequences.combinations(self.parameter_labels, lengths):
+
+            # Convert into tuple
+            parameter_labels = tuple(parameter_labels)
+
+            # Debugging
+            log.debug("Generating models with the new values for the parameters " + tostr(parameter_labels) + " ...")
+
+            # Get new parameter values
+            new_parameters = self.get_new_grid_points_dict_for_parameters(parameter_labels)
+
+            # Other parameter values
+            other_parameters = self.get_grid_points_dict_for_other_parameters(parameter_labels)
+            other_labels = other_parameters.keys()
+
+            # Get number of models
+            nnew_combinations = 1
+            for label in parameter_labels: nnew_combinations *= self.get_nnew_parameter_values(label)
+            nother_combinations = 1
+            for other_label in other_labels: nother_combinations *= self.get_nunique_parameter_values(other_label)
+            nmodels = nnew_combinations * nother_combinations
+
+            # Debugging
+            log.debug("Number of models to be generated for this combination: " + str(nmodels) + " (" + str(nnew_combinations) + " combinations of new parameters and " + str(nother_combinations) + " combinations of other parameters)")
+
+            # Create iterator of combinations of new parameter values
+            new_iterator = sequences.iterate_lists_combinations(*new_parameters.values())
+
+            # Loop over the grid points of the new parameters
+            for i in range(nnew_combinations):
+
+                # The next combination
+                new_values = list(new_iterator.next())  # returns tuple
+
+                # Create iterator of combinations of other parameter values
+                other_iterator = sequences.iterate_lists_combinations(*other_parameters.values())
+
+                # Loop over the grid points of the other parameters
+                for j in range(nother_combinations):
+
+                    # The next combination
+                    other_values = list(other_iterator.next())  # returns tuple
+
+                    # Generate a new individual name
+                    name = self.name_iterator.next()
+
+                    # Add the parameter value to the dictionary
+                    for new_label, new_value in zip(parameter_labels, new_values): self.parameters[new_label][name] = new_value
+                    for other_label, other_value in zip(other_labels, other_values): self.parameters[other_label][name] = other_value
+
+    # -----------------------------------------------------------------
+
+    def generate_models_all_new_parameters(self):
 
         """
         This function ...
@@ -913,6 +1049,35 @@ class ParameterExpander(FittingComponent):
 
         # Inform the user
         log.info("Generating models with all new parameter values ...")
+
+        # Get number of models
+        nmodels = 1
+        for label in self.free_parameter_labels: nmodels *= self.get_nnew_parameter_values(label)
+
+        # Debugging
+        log.debug("Number of models to be generated: " + str(nmodels))
+
+        # Get new parameter values
+        new_parameters = self.get_new_grid_points_dict_for_parameters(tuple(self.free_parameter_labels))
+        new_parameter_labels = new_parameters.keys()
+
+        # Create iterator of combinations of new parameter values
+        iterator = sequences.iterate_lists_combinations(*new_parameters.values())
+
+        # Loop over the new models
+        for i in range(nmodels):
+
+            # The next combination
+            values = list(iterator.next())  # returns tuple
+
+            # Generate a new individual name
+            name = self.name_iterator.next()
+
+            # Loop over the parameters
+            for parameter_label, value in zip(new_parameter_labels, values):
+
+                # Add the parameter value to the dictionary
+                self.parameters[parameter_label][name] = value
 
     # -----------------------------------------------------------------
 
@@ -1047,6 +1212,7 @@ class ParameterExpander(FittingComponent):
         # Print in columns
         with fmt.print_in_columns() as print_row:
 
+            # Set column names and units
             column_names = ["Individual"] + self.free_parameter_labels
             column_units = [""] + [self.get_parameter_unit(label) for label in self.free_parameter_labels]
 
