@@ -570,7 +570,7 @@ class NewSimulationsTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
-        self.set_value("ID", index, id)
+        self.set_value("ID", index, str(id))
 
 # -----------------------------------------------------------------
 
@@ -14510,6 +14510,13 @@ class SimulationManager(InteractiveConfigurable):
         definition.add_flag("adapt_settings", "adapt simulation settings")
         definition.add_flag("adapt_analysis", "adapt analysis options")
 
+        # Custom options
+        definition.add_optional("parallelization", "parallelization", "parallelization scheme for the simulation")
+        definition.add_flag("mimic_scheduling", "mimic the scheduling options", True)
+        definition.add_flag("mimic_analysis", "mimic the analysis options", True)
+        definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
+        definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
+
         # Return the definition
         return definition
 
@@ -14544,18 +14551,29 @@ class SimulationManager(InteractiveConfigurable):
         # Get the simulation name and config
         simulation_name, config = self.get_simulation_name_and_config_from_command(command, self.mimic_simulation_definition, **kwargs)
 
+        # Get
+        if config.mimic_scheduling: scheduling_options = None
+        else: scheduling_options = config.scheduling
+        if config.mimic_analysis: analysis_options = None
+        else: analysis_options = config.analysis
+
         # Mimic the simulation
-        self.mimic_simulation(simulation_name, config.name)
+        self.mimic_simulation(simulation_name, config.name, new_values=config.labeled, parallelization=config.parallelization,
+                              analysis_options=analysis_options, scheduling_options=scheduling_options)
 
     # -----------------------------------------------------------------
 
-    def mimic_simulation(self, simulation_name, new_simulation_name, new_values=None):
+    def mimic_simulation(self, simulation_name, new_simulation_name, new_values=None, parallelization=None,
+                         analysis_options=None, scheduling_options=None):
         
         """
         This function ...
         :param simulation_name:
         :param new_simulation_name:
         :param new_values:
+        :param parallelization:
+        :param analysis_options:
+        :param scheduling_options:
         :return: 
         """
 
@@ -14572,16 +14590,45 @@ class SimulationManager(InteractiveConfigurable):
         # Get remote settings
         host_id = self.get_host_id_for_simulation(simulation_name)
         cluster_name = self.get_cluster_name_for_simulation(simulation_name)
-        print(host_id, cluster_name)
+        #print(host_id, cluster_name)
+
+        # Debugging
+        host_string = host_id + ":" + cluster_name if cluster_name is not None else host_id
+        log.debug("Simulation will be executed on host '" + host_string + "' ...")
+
+        # Get parallelization
+        if parallelization is None: parallelization = self.get_parallelization_for_simulation(simulation_name)
 
         # Get original simulation settings
-        parallelization = self.get_parallelization_for_simulation(simulation_name)
         logging_options = self.get_logging_options_for_simulation(simulation_name).copy()
-        analysis_options = self.get_analysis_options_for_simulation(simulation_name).copy()
-        scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+
+        # Get analysis options
+        if analysis_options is not None: analysis_options = AnalysisOptions(**analysis_options)
+        else:
+
+            # Get analysis options of original simulation
+            analysis_options = self.get_analysis_options_for_simulation(simulation_name).copy()
+
+            # Fix analysis options
+            from ...modeling.fitting.generation import correct_analysis_paths
+            correct_analysis_paths(analysis_options, new_simulation_name)
+
+        # Get scheduling options
+        if scheduling_options is not None: scheduling_options = SchedulingOptions(**scheduling_options)
+        else:
+
+            # Get scheduling options of original simulation
+            scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+
+            # Fix scheduling options
+            if scheduling_options.local_jobscript_path is not None:
+
+                # Replace simulation name
+                if simulation_name in scheduling_options.local_jobscript_path: scheduling_options.local_jobscript_path = scheduling_options.local_jobscript_path.replace(simulation_name, new_simulation_name)
+                else: raise RuntimeError("Don't know how to adapt the local jobscript path")
 
         # Create simulation path, save the ski file
-        simulation_path = self.get_simulation_path(simulation_name).replace(simulation_name, new_simulation_name)
+        simulation_path = self.get_base_path(simulation_name).replace(simulation_name, new_simulation_name)
         fs.create_directory(simulation_path)
         ski_path = self.get_skifile_path(simulation_name).replace(simulation_name, new_simulation_name)
         ski.saveto(ski_path)
@@ -14590,17 +14637,6 @@ class SimulationManager(InteractiveConfigurable):
         input_paths = self.get_input(simulation_name)
         output_path = self.get_output_path(simulation_name).replace(simulation_name, new_simulation_name)
         fs.create_directory(output_path)
-
-        # Adapt analysis options
-        from ...modeling.fitting.generation import correct_analysis_paths
-        correct_analysis_paths(analysis_options, new_simulation_name)
-
-        # Adapt scheduling options
-        if scheduling_options.local_jobscript_path is not None:
-
-            # Replace simulation name
-            if simulation_name in scheduling_options.local_jobscript_path: scheduling_options.local_jobscript_path = scheduling_options.local_jobscript_path.replace(simulation_name, new_simulation_name)
-            else: raise RuntimeError("Don't know how to adapt the local jobscript path")
 
         # Launch simulation
         self.launch_simulation(new_simulation_name, ski_path, host_id=host_id, input_path=input_paths,
