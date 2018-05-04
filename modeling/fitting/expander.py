@@ -26,6 +26,7 @@ from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr, stringify_dict
 from .evaluate import get_parameter_values_for_named_individual
 from .manager import GenerationManager
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -91,7 +92,7 @@ class ParameterExpander(FittingComponent):
         self.show()
 
         # 6. Write
-        #self.write()
+        self.write()
 
         # 7. Launch the models
         self.launch()
@@ -304,6 +305,18 @@ class ParameterExpander(FittingComponent):
         """
 
         return self.fitting_run.get_generation(self.generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.path
 
     # -----------------------------------------------------------------
 
@@ -1414,8 +1427,11 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Writing the individuals table ...")
 
+        test_path = fs.join(self.generation_path, "individuals_new.dat")
+        self.individuals_table.saveto(test_path)
+
         # Save
-        self.individuals_table.save()
+        #self.individuals_table.save()
 
     # -----------------------------------------------------------------
 
@@ -1429,8 +1445,11 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Writing the parameters table ...")
 
+        test_path = fs.join(self.generation_path, "parameters_new.dat")
+        self.parameters_table.saveto(test_path)
+
         # Save
-        self.parameters_table.save()
+        #self.parameters_table.save()
 
     # -----------------------------------------------------------------
 
@@ -1477,11 +1496,11 @@ class ParameterExpander(FittingComponent):
 
             # Get the parameter values
             parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
-            parameter_values_string = stringify_dict(parameter_values, quote_character="'")[1]
+            parameter_values_string = stringify_dict(parameter_values, quote_character="'", identity_symbol=":")[1]
 
             # Construct mimic command
-            mimic_command = "mimic '" + self.first_simulation_name + "' '" + simulation_name + "' " + '--labeled "' + parameter_values_string + '"'
-            print(mimic_command)
+            mimic_command = 'mimic "' + self.first_simulation_name + '" "' + simulation_name + '" ' + '--labeled "' + parameter_values_string + '"'
+            #print(mimic_command)
 
             # Add command
             manager.config.commands.append(mimic_command)

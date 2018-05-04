@@ -2236,7 +2236,8 @@ class SimulationManager(InteractiveConfigurable):
         if not self.is_job_execution(simulation_name): return None
 
         # Return the script path
-        return self.get_execution_handle(simulation_name).remote_job_script_path
+        handle = self.get_execution_handle(simulation_name)
+        return handle.remote_job_script_path if hasattr(handle, "remote_job_script_path") else None
 
     # -----------------------------------------------------------------
 
@@ -3602,17 +3603,66 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         # Screen
-        if self.is_screen_execution(simulation_name): return self.get_logging_options_for_simulation_screen(simulation_name)
+        if self.is_screen_execution(simulation_name): options = self.get_logging_options_for_simulation_screen(simulation_name, return_none=True)
             
         # Job
-        elif self.is_job_execution(simulation_name): return self.get_logging_options_for_simulation_job(simulation_name)
+        elif self.is_job_execution(simulation_name): options = self.get_logging_options_for_simulation_job(simulation_name, return_none=True)
 
         # Not supported
         else: raise NotImplementedError("Execution handle not supported")
 
+        # None?
+        if options is None:
+
+            if self.has_logfile(simulation_name): options = self.get_logging_options_for_simulation_logfile(simulation_name)
+            else: raise RuntimeError("Cannot determine logging options: original screen or job script not found, and remote or local log file not yet created")
+
+        # Return
+        return options
+
     # -----------------------------------------------------------------
         
-    def get_logging_options_for_simulation_screen(self, simulation_name):
+    def get_logging_options_for_simulation_screen(self, simulation_name, return_none=False):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param return_none:
+        :return:
+        """
+
+        screen_script = self.get_screen_script(simulation_name)
+
+        if screen_script is None:
+            if return_none: return None
+            else: raise RuntimeError("Cannot determine logging options: original screen script not found")
+
+        logging_options = screen_script.get_logging_options(simulation_name)
+        return logging_options
+
+    # -----------------------------------------------------------------
+
+    def get_logging_options_for_simulation_job(self, simulation_name, return_none=False):
+        
+        """
+        This function ...
+        :param simulation_name:
+        :param return_none:
+        :return: 
+        """
+
+        job_script = self.get_job_script(simulation_name)
+
+        if job_script is None:
+            if return_none: return None
+            else: raise RuntimeError("Cannot determine logging options: original job script not found")
+
+        logging_options = job_script.logging_options
+        return logging_options
+
+    # -----------------------------------------------------------------
+
+    def get_logging_options_for_simulation_logfile(self, simulation_name):
 
         """
         This function ...
@@ -3620,25 +3670,11 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        screen_script = self.get_screen_script(simulation_name)
-        if screen_script is None: raise RuntimeError("Cannot determine logging options: original screen script not found")
-        logging_options = screen_script.get_logging_options(simulation_name)
-        return logging_options
+        # Get the logfile
+        logfile = self.get_logfile(simulation_name)
 
-    # -----------------------------------------------------------------
-
-    def get_logging_options_for_simulation_job(self, simulation_name):
-        
-        """
-        This function ...
-        :param simulation_name: 
-        :return: 
-        """
-
-        job_script = self.get_job_script(simulation_name)
-        if job_script is None: raise RuntimeError("Cannot determine logging options: original job script not found")
-        logging_options = job_script.logging_options
-        return logging_options
+        # Return the logging options
+        return logfile.logging_options
 
     # -----------------------------------------------------------------
 
@@ -14533,10 +14569,27 @@ class SimulationManager(InteractiveConfigurable):
         if new_values is not None: ski.set_labeled_values(new_values)
         #else: # TODO: use composer to adapt the model
 
+        # Get remote settings
+        host_id = self.get_host_id_for_simulation(simulation_name)
+        cluster_name = self.get_cluster_name_for_simulation(simulation_name)
+        print(host_id, cluster_name)
+
         # Get original simulation settings
+        parallelization = self.get_parallelization_for_simulation(simulation_name)
         logging_options = self.get_logging_options_for_simulation(simulation_name).copy()
         analysis_options = self.get_analysis_options_for_simulation(simulation_name).copy()
         scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+
+        # Create simulation path, save the ski file
+        simulation_path = self.get_simulation_path(simulation_name).replace(simulation_name, new_simulation_name)
+        fs.create_directory(simulation_path)
+        ski_path = self.get_skifile_path(simulation_name).replace(simulation_name, new_simulation_name)
+        ski.saveto(ski_path)
+
+        # Get input paths and output path
+        input_paths = self.get_input(simulation_name)
+        output_path = self.get_output_path(simulation_name).replace(simulation_name, new_simulation_name)
+        fs.create_directory(output_path)
 
         # Adapt analysis options
         from ...modeling.fitting.generation import correct_analysis_paths
@@ -14549,26 +14602,10 @@ class SimulationManager(InteractiveConfigurable):
             if simulation_name in scheduling_options.local_jobscript_path: scheduling_options.local_jobscript_path = scheduling_options.local_jobscript_path.replace(simulation_name, new_simulation_name)
             else: raise RuntimeError("Don't know how to adapt the local jobscript path")
 
-        # # Check settings
-        # if config.matching is not None:
-        #     if config.contains is not None: raise ValueError(
-        #         "Cannot specify both matching string and containing string")
-        #     config.contains = config.matching
-        #
-        # # Get the settings here (so they don't have to be selected for each stealing simulation)
-        # settings = select_simulation_settings(successive=config.successive, contains=config.contains,
-        #                                       not_contains=config.not_contains,
-        #                                       exact_name=config.exact_name, exact_not_name=config.exact_not_name,
-        #                                       startswith=config.startswith, endswith=config.endswith)
-
-        # Add the simulation to the queue
-        self.launcher.add_to_queue(definition, new_simulation_name, host_id=host_id,
-                                   parallelization=parallelization,
-                                   logging_options=logging_options, scheduling_options=scheduling_options,
-                                   analysis_options=analysis_options)
-
-        # Add entry to new table
-        self.new.add_simulation(name, ski_path, host_id=host_id)
+        # Launch simulation
+        self.launch_simulation(new_simulation_name, ski_path, host_id=host_id, input_path=input_paths,
+                               output_path=output_path, parallelization=parallelization, logging_options=logging_options,
+                               scheduling_options=scheduling_options, analysis_options=analysis_options)
 
     # -----------------------------------------------------------------
 
@@ -14639,8 +14676,10 @@ class SimulationManager(InteractiveConfigurable):
         else: scheduling_options = SchedulingOptions(**config.scheduling)
 
         # Get analysis options
-        # TODO: ADAPT PATHS FOR THIS NEW SIMULATION
-        if config.analysis_from is not None: analysis_options = self.get_analysis_options_for_simulation(config.analysis_from)
+        if config.analysis_from is not None:
+            analysis_options = self.get_analysis_options_for_simulation(config.analysis_from)
+            from ...modeling.fitting.generation import correct_analysis_paths
+            correct_analysis_paths(analysis_options, config.name)
         else: analysis_options = AnalysisOptions(**config.analysis)
 
         # Launch simulation

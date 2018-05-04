@@ -37,12 +37,14 @@ class LogFile(object):
     This class ...
     """
 
-    def __init__(self, path=None, contents=None, name=None):
+    def __init__(self, path=None, contents=None, name=None, verbose_logging=None, memory_logging=None):
 
         """
         The constructor ...
         :param contents:
         :param name:
+        :param verbose_logging:
+        :param memory_logging:
         :return:
         """
 
@@ -63,7 +65,7 @@ class LogFile(object):
             except IndexError: self.process = 0
 
             # Parse the log file
-            self.contents = parse(path)
+            self.contents, self.verbose_logging, self.memory_logging = parse(path, return_options=True)
 
         # Table is passed
         elif contents is not None:
@@ -83,6 +85,8 @@ class LogFile(object):
 
             # Set contents
             self.contents = contents
+            self.verbose_logging = verbose_logging
+            self.memory_logging = memory_logging
 
     # -----------------------------------------------------------------
 
@@ -113,10 +117,10 @@ class LogFile(object):
         name = fs.name(path)
 
         # Parse the contents
-        contents = parse_from_lines(remote.read_lines(path))
+        contents, verbose_logging, memory_logging = parse_from_lines(remote.read_lines(path), return_options=True)
 
         # Create and return
-        return cls(contents=contents, name=name)
+        return cls(contents=contents, name=name, verbose_logging=verbose_logging, memory_logging=memory_logging)
 
     # -----------------------------------------------------------------
 
@@ -155,6 +159,19 @@ class LogFile(object):
                 else: return host
 
         return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def logging_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..launch.options import LoggingOptions
+        return LoggingOptions(verbose=self.verbose_logging, memory=self.memory_logging)
 
     # -----------------------------------------------------------------
 
@@ -984,11 +1001,12 @@ class LogFile(object):
 
 # -----------------------------------------------------------------
 
-def parse_from_lines(lines):
+def parse_from_lines(lines, return_options=False):
 
     """
     This function ...
     :param lines: lines (can be generator or file handle)
+    :param return_options:
     :return:
     """
 
@@ -1090,20 +1108,23 @@ def parse_from_lines(lines):
         names.append("Memory")
 
     # Create the table and return it
-    return Table(data=data, names=names, meta={"name": "the contents of the simulation's log file"})
+    table = Table(data=data, names=names, meta={"name": "the contents of the simulation's log file"})
+    if return_options: return table, verbose_logging, memory_logging
+    else: return table
 
 # -----------------------------------------------------------------
 
-def parse(path):
+def parse(path, return_options=False):
 
     """
     This function ...
     :param path:
+    :param return_options:
     :return:
     """
 
     # Open the log file
-    with open(path, 'r') as fh: return parse_from_lines(fh)
+    with open(path, 'r') as fh: return parse_from_lines(fh, return_options=return_options)
 
 # -----------------------------------------------------------------
 
