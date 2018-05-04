@@ -3642,6 +3642,18 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_analysis_options_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation(simulation_name).analysis
+
+    # -----------------------------------------------------------------
+
     def get_scheduling_options_for_simulation(self, simulation_name):
 
         """
@@ -14518,11 +14530,12 @@ class SimulationManager(InteractiveConfigurable):
 
         # Adapt labeled values
         if new_values is not None: ski.set_labeled_values(new_values)
-        #else: # use composer to adapt the model
+        #else: # TODO: use composer to adapt the model
 
         # Get original simulation settings
-        # Get the simulation
-        simulation = self.get_simulation(simulation_name)
+        logging_options = self.get_logging_options_for_simulation(simulation_name)
+        analysis_options = self.get_analysis_options_for_simulation(simulation_name)
+        scheduling_options = self.get_scheduling_options_for_simulation(simulation_name)
 
         # # Check settings
         # if config.matching is not None:
@@ -14540,7 +14553,7 @@ class SimulationManager(InteractiveConfigurable):
         self.launcher.add_to_queue(definition, new_simulation_name, host_id=host_id,
                                    parallelization=parallelization,
                                    logging_options=logging_options, scheduling_options=scheduling_options,
-                                   analysis_options=simulation.analysis)
+                                   analysis_options=analysis_options)
 
         # Add entry to new table
         self.new.add_simulation(name, ski_path, host_id=host_id)
@@ -14615,7 +14628,7 @@ class SimulationManager(InteractiveConfigurable):
 
         # Get analysis options
         # TODO: ADAPT PATHS FOR THIS NEW SIMULATION
-        if config.analysis_from is not None: analysis_options = self.get_simulation(config.analysis_from).analysis
+        if config.analysis_from is not None: analysis_options = self.get_analysis_options_for_simulation(config.analysis_from)
         else: analysis_options = AnalysisOptions(**config.analysis)
 
         # Launch simulation

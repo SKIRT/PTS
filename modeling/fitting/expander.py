@@ -24,6 +24,8 @@ from ...core.tools import nr, numbers, strings, types
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
+from .evaluate import get_parameter_values_for_named_individual
+from .manager import GenerationManager
 
 # -----------------------------------------------------------------
 
@@ -60,6 +62,9 @@ class ParameterExpander(FittingComponent):
         # The model parameters
         self.parameters = DefaultOrderedDict(OrderedDict)
 
+        # The new simulation names
+        self.new_simulation_names = []
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -79,23 +84,17 @@ class ParameterExpander(FittingComponent):
         # 3. Generate the models
         self.generate_models()
 
-        # 4. Show
+        # 4. Fill the tables for the current generation
+        self.fill_tables()
+
+        # 5. Show
         self.show()
 
-        # 7. Set the paths to the input files
-        #if self.needs_input: self.set_input()
-
-        # 8. Adjust the ski template
-        #self.adjust_ski()
-
-        # 9. Fill the tables for the current generation
-        #self.fill_tables()
-
-        # Launch the models
-        self.launch()
-
-        # Write
+        # 6. Write
         self.write()
+
+        # 7. Launch the models
+        self.launch()
 
     # -----------------------------------------------------------------
 
@@ -112,6 +111,18 @@ class ParameterExpander(FittingComponent):
 
         # Load the generation info
         self.info = self.fitting_run.get_generation_info(self.config.generation)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.run
 
     # -----------------------------------------------------------------
 
@@ -272,6 +283,18 @@ class ParameterExpander(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.generation
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def generation(self):
 
@@ -280,7 +303,7 @@ class ParameterExpander(FittingComponent):
         :return:
         """
 
-        return self.fitting_run.get_generation(self.config.generation)
+        return self.fitting_run.get_generation(self.generation_name)
 
     # -----------------------------------------------------------------
 
@@ -350,6 +373,72 @@ class ParameterExpander(FittingComponent):
         """
 
         return self.generation.parameters_table
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameters_table.simulation_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def first_simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation_names[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_indices(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        indices = []
+        for name in self.simulation_names:
+            if "__" not in name: continue
+            index = int(name.split("__")[-1])
+            indices.append(index)
+        return indices
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulation_indices(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.simulation_indices) > 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_simulation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_simulation_indices: return max(self.simulation_indices)
+        else: return -1
 
     # -----------------------------------------------------------------
 
@@ -937,7 +1026,7 @@ class ParameterExpander(FittingComponent):
             # Get number of models
             nmodels = 1
             for other_label in other_labels: nmodels *= self.get_nunique_parameter_values(other_label)
-            
+
             # Debugging
             log.debug("Number of models to be generated: " + str(nmodels))
 
@@ -1093,6 +1182,69 @@ class ParameterExpander(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def model_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.new_individual_names
+
+    # -----------------------------------------------------------------
+
+    def fill_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Filling the tables for the current generation ...")
+
+        # Loop over the model names
+        counter = 0
+        for name in self.model_names:
+
+            # Get the simulation index
+            simulation_index = self.last_simulation_index + 1 + counter
+
+            # Generate the simulation name
+            simulation_name = self.object_name + "__" + self.fitting_run_name + "__" + self.generation_name + "__" + str(simulation_index)
+
+            # Add the new simulation name
+            self.new_simulation_names.append(simulation_name)
+
+            # Debugging
+            log.debug("Adding an entry to the individuals table with:")
+            log.debug("")
+            log.debug(" - Simulation name: " + simulation_name)
+            log.debug(" - Individual_name: " + name)
+            log.debug("")
+
+            # Add entry
+            self.individuals_table.add_entry(simulation_name, name)
+
+            # Get the parameter values
+            parameter_values = get_parameter_values_for_named_individual(self.parameters, name, self.fitting_run)
+
+            # Debugging
+            log.debug("Adding entry to the parameters table with:")
+            log.debug("")
+            log.debug(" - Simulation name: " + simulation_name)
+            for label in parameter_values: log.debug(" - " + label + ": " + tostr(parameter_values[label], scientific=True, fancy=True, ndigits=self.fitting_run.ndigits_dict[label]))
+            log.debug("")
+
+            # Add an entry to the parameters table
+            self.parameters_table.add_entry(simulation_name, parameter_values)
+
+            # Increment counter
+            counter += 1
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -1234,33 +1386,6 @@ class ParameterExpander(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def launch(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Launching ...")
-
-        # Create manager
-        #self.manager = SimulationManager()
-
-        # Run the manager
-        #self.manager.run(assignment=assignment, timing=self.timing_table, memory=self.memory_table)
-
-        # status=status, info_tables=[parameters, chi_squared], remotes=remotes, simulations=simulations)
-
-        # Set the actual number of simulations for this generation
-        #self.generation_info.nsimulations = self.nmodels
-
-    # -----------------------------------------------------------------
-
-
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -1270,5 +1395,93 @@ class ParameterExpander(FittingComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # 2. Write the individuals table
+        self.write_individuals()
+
+        # 3. Write the parameters table
+        self.write_parameters()
+
+    # -----------------------------------------------------------------
+
+    def write_individuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the individuals table ...")
+
+        # Save
+        self.individuals_table.save()
+
+    # -----------------------------------------------------------------
+
+    def write_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the parameters table ...")
+
+        # Save
+        self.parameters_table.save()
+
+    # -----------------------------------------------------------------
+
+    def launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching the new simulations ...")
+
+        # Create simulation manager
+        manager = GenerationManager()
+
+        # Set fitting run and generation name
+        manager.config.run = self.fitting_run_name
+        manager.config.generation = self.generation_name
+
+        # Set options
+        #manager.config.extra = config.extra
+        #manager.config.offline = config.offline
+        #manager.config.lazy = config.lazy
+        #manager.config.find_simulations = config.find_simulations
+        #manager.config.find_remotes = config.find_remotes
+        #manager.config.produce_missing = config.produce_missing
+        #manager.config.check_paths = config.check_paths
+        #manager.config.correct_paths = config.correct_paths
+        #manager.config.confirm_correction = config.confirm_correction
+        #manager.config.fix_success = config.fix_success
+        #manager.config.check_analysis = config.check_analysis
+        #manager.config.write_status = config.write_status
+        #manager.config.correct_status = config.correct_status
+
+        # Not interactive
+        manager.config.interactive = False
+
+        # Initialize empty list of commands
+        manager.config.commands = []
+
+        # Set the mimic commands
+        for simulation_name in self.new_simulation_names:
+
+            # Construct mimic command
+            mimic_command = "mimic '" + self.first_simulation_name + "' '" + simulation_name + "'"
+
+            # Add command
+            manager.config.commands.append(mimic_command)
+
+        # Run the generation manager
+        manager.run()
 
 # -----------------------------------------------------------------
