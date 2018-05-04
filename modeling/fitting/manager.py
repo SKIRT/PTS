@@ -27,7 +27,7 @@ from pts.core.basics.log import log
 from pts.core.simulation.remote import is_analysed_status
 from pts.core.launch.batchlauncher import SimulationStatusTable
 from pts.core.tools import sequences
-from pts.modeling.fitting.generation import check_simulation_paths, correct_simulation_paths
+from pts.modeling.fitting.generation import check_simulation_paths, correct_simulation_and_analysis_paths
 from ...core.tools.utils import lazyproperty
 from .component import FittingComponent
 
@@ -310,7 +310,7 @@ class GenerationManager(SimulationManager, FittingComponent):
                     if self.config.correct_paths:
                         log.warning(str(e))
                         log.warning("Fixing simulation paths ...")
-                        correct_simulation_paths(simulation, confirm=self.config.confirm_correction)
+                        correct_simulation_and_analysis_paths(simulation, confirm=self.config.confirm_correction)
                     else: raise e
 
         # Check whether simulations with chi squared (analysed simuations) also have the other analysis output

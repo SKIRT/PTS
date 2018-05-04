@@ -23,7 +23,7 @@ from ...core.tools import sequences
 from ...core.tools import nr, numbers, strings, types
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import formatting as fmt
-from ...core.tools.stringify import tostr
+from ...core.tools.stringify import tostr, stringify_dict
 from .evaluate import get_parameter_values_for_named_individual
 from .manager import GenerationManager
 
@@ -91,7 +91,7 @@ class ParameterExpander(FittingComponent):
         self.show()
 
         # 6. Write
-        self.write()
+        #self.write()
 
         # 7. Launch the models
         self.launch()
@@ -1475,8 +1475,13 @@ class ParameterExpander(FittingComponent):
         # Set the mimic commands
         for simulation_name in self.new_simulation_names:
 
+            # Get the parameter values
+            parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
+            parameter_values_string = stringify_dict(parameter_values, quote_character="'")[1]
+
             # Construct mimic command
-            mimic_command = "mimic '" + self.first_simulation_name + "' '" + simulation_name + "'"
+            mimic_command = "mimic '" + self.first_simulation_name + "' '" + simulation_name + "' " + '--labeled "' + parameter_values_string + '"'
+            print(mimic_command)
 
             # Add command
             manager.config.commands.append(mimic_command)

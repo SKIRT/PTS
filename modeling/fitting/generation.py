@@ -3503,7 +3503,7 @@ class Generation(object):
                                     if correct_paths:
                                         log.warning(str(e))
                                         log.warning("Fixing simulation paths ...")
-                                        correct_simulation_paths(simulation, confirm=confirm_correction)
+                                        correct_simulation_and_analysis_paths(simulation, confirm=confirm_correction)
                                     else: raise e
 
                             # Save the simulation
@@ -3549,7 +3549,7 @@ class Generation(object):
                             if correct_paths:
                                 log.warning(str(e))
                                 log.warning("Fixing simulation paths ...")
-                                correct_simulation_paths(simulation, confirm=confirm_correction)
+                                correct_simulation_and_analysis_paths(simulation, confirm=confirm_correction)
                             else: raise e
                     else:
                         try: check_simulation_paths(simulation, remote=remotes[host_id])
@@ -3557,7 +3557,7 @@ class Generation(object):
                             if correct_paths:
                                 log.warning(str(e))
                                 log.warning("Fixing simulation paths ...")
-                                correct_simulation_paths(simulation, confirm=confirm_correction)
+                                correct_simulation_and_analysis_paths(simulation, confirm=confirm_correction)
                             else: raise e
 
             # Don't load the simulation
@@ -3813,6 +3813,26 @@ def check_simulation_paths(simulation, remote=None, other_remote_input_path=None
 
 # -----------------------------------------------------------------
 
+def correct_simulation_and_analysis_paths(simulation, confirm=False):
+
+    """
+    This function ...
+    :param simulation:
+    :param confirm:
+    :return:
+    """
+
+    # Correct simulation paths
+    correct_simulation_paths(simulation, confirm=confirm)
+
+    # Correct analysis paths
+    correct_analysis_paths(simulation.analysis, simulation.name, confirm=confirm)
+
+    # Save the simulation
+    simulation.save()
+
+# -----------------------------------------------------------------
+
 def correct_simulation_paths(simulation, confirm=False):
 
     """
@@ -3827,95 +3847,130 @@ def correct_simulation_paths(simulation, confirm=False):
 
     # Check output path
     if simulation_name not in simulation.output_path:
+
         log.debug("Fixing local output path ...")
         other_simulation_name = fs.name(fs.directory_of(simulation.output_path))
+
         log.debug("Path was pointing to output path of simulation '" + other_simulation_name + "'")
         correct_path = simulation.output_path.replace(other_simulation_name, simulation_name)
+
         if not confirm or prompt_yn("replace", "Replace '" + simulation.output_path + "' with '" + correct_path + "'?", default=True):
             log.debug("Replacing with new path: '" + correct_path + "' ...")
             simulation.output_path = correct_path
 
     # Check ski path
     if simulation_name not in simulation.ski_path:
+
         log.debug("Fixing local skifile path ...")
         other_simulation_name = fs.name(fs.directory_of(simulation.ski_path))
+
         log.debug("Path was pointing to skifile path of simulation '" + other_simulation_name + "'")
         correct_path = simulation.ski_path.replace(other_simulation_name, simulation_name)
+
         if not confirm or prompt_yn("replace", "Replace '" + simulation.ski_path + "' with '" + correct_path + "'?", default=True):
             log.debug("Replacing with new path: '" + correct_path + "' ...")
             simulation.ski_path = correct_path
 
     # Check base path
     if simulation_name not in simulation.base_path:
+
         log.debug("Fixing local base path ...")
         other_simulation_name = fs.name(simulation.base_path)
+
         log.debug("Path was pointing to base path of simulation '" + other_simulation_name + "'")
         #correct_path = simulation.base_path.replace(other_simulation_name, simulation_name)
         #log.debug("Replacing with new path: '" + correct_path + "' ...")
         #simulation.base_path = correct_path
         raise RuntimeError("Simulation base path cannot be fixed")
 
-    # Check extraction path
-    if simulation.analysis.extraction.path is not None:
-        log.debug("Fixing extraction path ...")
-        other_simulation_name = fs.name(fs.directory_of(simulation.extraction_path))
-        log.debug("Path was pointing to extraction path of simulation '" + other_simulation_name + "'")
-        correct_path = simulation.extraction_path.replace(other_simulation_name, simulation_name)
-        if not confirm or prompt_yn("replace", "Replace '" + simulation.extraction_path + "' with '" + correct_path + "'?", default=True):
-            log.debug("Replacing with new path: '" + correct_path + "' ...")
-            simulation.extraction_path = correct_path
-
-    # Check plotting path
-    if simulation.analysis.plotting.path is not None:
-        log.debug("Fixing plotting path ...")
-        other_simulation_name = fs.name(fs.directory_of(simulation.plotting_path))
-        log.debug("Path was pointing to plotting path of simulation '" + other_simulation_name + "'")
-        correct_path = simulation.plotting_path.replace(other_simulation_name, simulation_name)
-        if not confirm or prompt_yn("replace", "Replace '" + simulation.plotting_path + "' with '" + correct_path + "'?", default=True):
-            log.debug("Replacing with new path: '" + correct_path + "' ...")
-            simulation.plotting_path = correct_path
-
-    # Check misc path
-    if simulation.analysis.misc.path is not None:
-        log.debug("Fixing miscellaneous path ...")
-        other_simulation_name = fs.name(fs.directory_of(simulation.misc_path))
-        log.debug("Path was pointing to misc path of simulation '" + other_simulation_name + "'")
-        correct_path = simulation.misc_path.replace(other_simulation_name, simulation_name)
-        if not confirm or prompt_yn("replace", "Replace '" + simulation.misc_path + "' with '" + correct_path + "'?", default=True):
-            log.debug("Replacing with new path: '" + correct_path + "' ...")
-            simulation.misc_path = correct_path
-
     # Check remote ski path
     if simulation_name not in simulation.remote_ski_path:
+
         log.debug("Fixing remote skifile path ...")
         other_simulation_name = fs.name(fs.directory_of(simulation.remote_ski_path))
+
         log.debug("Path was pointing to remote skifile path of simulation '" + other_simulation_name + "'")
         correct_path = simulation.remote_ski_path.replace(other_simulation_name, simulation_name)
+
         if not confirm or prompt_yn("replace", "Replace '" + simulation.remote_ski_path + "' with '" + correct_path + "'?", default=True):
             log.debug("Replacing with new path: '" + correct_path + "' ...")
             simulation.remote_ski_path = correct_path
 
     # Check remote base path
     if simulation_name not in simulation.remote_simulation_path:
+
         log.debug("Fixing remote base path ...")
         other_simulation_name = fs.name(simulation.remote_simulation_path)
+
         log.debug("Path was pointing to remote base path of simulation '" + other_simulation_name + "'")
         correct_path = simulation.remote_simulation_path.replace(other_simulation_name, simulation_name)
+
         if not confirm or prompt_yn("replace", "Replace '" + simulation.remote_simulation_path + "' with '" + correct_path + "'?", default=True):
             log.debug("Replacing with new path: '" + correct_path + "' ...")
             simulation.remote_simulation_path = correct_path
 
     # Check remote output path
     if simulation_name not in simulation.remote_output_path:
+
         log.debug("Fixing remote output path ...")
         other_simulation_name = fs.name(fs.directory_of(simulation.remote_output_path))
+
         log.debug("Path was pointing to remote output path of simulation '" + other_simulation_name + "'")
         correct_path = simulation.remote_output_path.replace(other_simulation_name, simulation_name)
+
         if not confirm or prompt_yn("replace", "Replace '" + simulation.remote_output_path + "' with '" + correct_path + "'?", default=True):
             log.debug("Replacing with new path: '" + correct_path + "' ...")
             simulation.remote_output_path = correct_path
 
-    # Save the simulation
-    simulation.save()
+# -----------------------------------------------------------------
+
+def correct_analysis_paths(analysis, simulation_name, confirm=False):
+
+    """
+    This function ...
+    :param analysis:
+    :param simulation_name:
+    :param confirm:
+    :return:
+    """
+
+    # Check extraction path
+    if analysis.extraction.path is not None:
+
+        log.debug("Fixing extraction path ...")
+        other_simulation_name = fs.name(fs.directory_of(analysis.extraction.path))
+
+        log.debug("Path was pointing to extraction path of simulation '" + other_simulation_name + "'")
+        correct_path = analysis.extraction.path.replace(other_simulation_name, simulation_name)
+
+        if not confirm or prompt_yn("replace", "Replace '" + analysis.extraction.path + "' with '" + correct_path + "'?", default=True):
+            log.debug("Replacing with new path: '" + correct_path + "' ...")
+            analysis.extraction.path = correct_path
+
+    # Check plotting path
+    if analysis.plotting.path is not None:
+
+        log.debug("Fixing plotting path ...")
+        other_simulation_name = fs.name(fs.directory_of(analysis.plotting.path))
+
+        log.debug("Path was pointing to plotting path of simulation '" + other_simulation_name + "'")
+        correct_path = analysis.plotting.path.replace(other_simulation_name, simulation_name)
+
+        if not confirm or prompt_yn("replace", "Replace '" + analysis.plotting.path + "' with '" + correct_path + "'?", default=True):
+            log.debug("Replacing with new path: '" + correct_path + "' ...")
+            analysis.plotting.path = correct_path
+
+    # Check misc path
+    if analysis.misc.path is not None:
+
+        log.debug("Fixing miscellaneous path ...")
+        other_simulation_name = fs.name(fs.directory_of(analysis.misc.path))
+
+        log.debug("Path was pointing to misc path of simulation '" + other_simulation_name + "'")
+        correct_path = analysis.misc.path.replace(other_simulation_name, simulation_name)
+
+        if not confirm or prompt_yn("replace", "Replace '" + analysis.misc.path + "' with '" + correct_path + "'?", default=True):
+            log.debug("Replacing with new path: '" + correct_path + "' ...")
+            analysis.misc.path = correct_path
 
 # -----------------------------------------------------------------

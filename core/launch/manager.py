@@ -6831,7 +6831,7 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+    def get_simulation_name_and_config_from_command(self, command, command_definition, name=None, interactive=False, required_to_optional=True):
 
         """
         This function ...
@@ -6839,11 +6839,12 @@ class SimulationManager(InteractiveConfigurable):
         :param command_definition:
         :param name:
         :param interactive:
+        :param required_to_optional:
         :return:
         """
 
         # Parse the command
-        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=command_definition, name=name, interactive=interactive)
+        splitted, simulation_name, config = self.parse_simulation_command(command, command_definition=command_definition, name=name, interactive=interactive, required_to_optional=required_to_optional)
 
         # Return simulation name and config
         return simulation_name, config
@@ -14533,9 +14534,20 @@ class SimulationManager(InteractiveConfigurable):
         #else: # TODO: use composer to adapt the model
 
         # Get original simulation settings
-        logging_options = self.get_logging_options_for_simulation(simulation_name)
-        analysis_options = self.get_analysis_options_for_simulation(simulation_name)
-        scheduling_options = self.get_scheduling_options_for_simulation(simulation_name)
+        logging_options = self.get_logging_options_for_simulation(simulation_name).copy()
+        analysis_options = self.get_analysis_options_for_simulation(simulation_name).copy()
+        scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+
+        # Adapt analysis options
+        from ...modeling.fitting.generation import correct_analysis_paths
+        correct_analysis_paths(analysis_options, new_simulation_name)
+
+        # Adapt scheduling options
+        if scheduling_options.local_jobscript_path is not None:
+
+            # Replace simulation name
+            if simulation_name in scheduling_options.local_jobscript_path: scheduling_options.local_jobscript_path = scheduling_options.local_jobscript_path.replace(simulation_name, new_simulation_name)
+            else: raise RuntimeError("Don't know how to adapt the local jobscript path")
 
         # # Check settings
         # if config.matching is not None:
