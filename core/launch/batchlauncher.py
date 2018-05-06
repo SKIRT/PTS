@@ -75,6 +75,30 @@ class DifferentMemoryUsages(Exception):
 
 # -----------------------------------------------------------------
 
+class MissingSimulation(Exception):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, name, missing_from=None):
+
+        """
+        Thisf unction ...
+        :param name:
+        :param missing_from:
+        :param:
+        """
+
+        # Set message
+        message = "The simulation '" + name + "' is missing"
+        if missing_from is not None: message += " from " + missing_from
+
+        # Call the base class constructor with the parameters it needs
+        super(MissingSimulation, self).__init__(message)
+
+# -----------------------------------------------------------------
+
 class DifferentNwavelengths(Exception):
 
     """
@@ -678,6 +702,18 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def has_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self.names
+
+    # -----------------------------------------------------------------
+
     @property
     def ids(self):
 
@@ -880,6 +916,7 @@ class SimulationAssignmentTable(SmartTable):
 
         # Get the index
         index = self.get_index_for_simulation(simulation_name)
+        if index is None: raise MissingSimulation(simulation_name, "the assignment table")
 
         # Set values
         self.set_value("ID", index, id)
@@ -910,6 +947,7 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
+        if index is None: raise MissingSimulation(simulation_name, missing_from="the assignment table")
         return self.get_host_id_for_index(index)
 
     # -----------------------------------------------------------------
@@ -990,6 +1028,7 @@ class SimulationAssignmentTable(SmartTable):
         """
 
         index = self.get_index_for_simulation(simulation_name)
+        if index is None: return MissingSimulation(simulation_name, missing_from="assignment table")
         return self.get_value("ID", index)
 
     # -----------------------------------------------------------------
@@ -5232,7 +5271,7 @@ class BatchLauncher(Configurable):
         """
 
         try: self.retrieve()
-        except Exception, err:
+        except Exception:
             log.error("Retrieving simulations failed:")
             traceback.print_exc()
 

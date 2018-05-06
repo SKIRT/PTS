@@ -1266,14 +1266,19 @@ class SmartTable(Table):
                         warnings.warn("Column '" + column_name + "' with type '" + column_type_string + "' is parsed as '" + actual_column_type + "' column: fixing ...")
                         real_type = column_type_to_builtin(column_type_string)
                         table[column_name] = table[column_name].astype(real_type)
-            else:
-                for column_name in table.colnames:
-                    values = list(table[column_name])
-                    if len(values) == 0: continue
-                    #value_strings = [str(value) for value in values] # actually not necessary
-                    #print(column_name, values)
-                    if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
-                    if sequences.all_in(values, ["True", "False"]): to_boolean.append(column_name)
+
+            #else:
+            # NOW ALWAYS CHECK AGAIN
+            for column_name in table.colnames:
+                values = list(table[column_name])
+                if len(values) == 0: continue
+                #value_strings = [str(value) for value in values] # actually not necessary
+                #print(column_name, values)
+                if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
+                #print(values)
+                if sequences.all_in(values, ["True", "False"], ignore_instance=np.ma.core.MaskedConstant):
+                    if column_type_strings is not None: warnings.warn("Column type strings were specified but still I think that column '" + column_name + "' actually represents boolean values and not strings: loading as boolean column ...")
+                    to_boolean.append(column_name)
 
             #print(index, header[index], len(header))
 
@@ -1292,9 +1297,15 @@ class SmartTable(Table):
             # Loop over the columns to convert to booleans
             for column_name in to_boolean:
                 booleans = []
+                masked = []
                 for index in range(len(table)):
+
+                    # Masked?
                     if table[column_name].mask[index]:
-                        boolean = None  # masked?
+                        # boolean = None # doesn't work
+                        # boolean = np.ma.core.MaskedConstant
+                        boolean = False # just a default value
+                        masked.append(index)
                     else:
                         value = table[column_name][index]
                         boolean = eval(value)
@@ -1306,6 +1317,7 @@ class SmartTable(Table):
                 #print(table.colnames.index(column_name))
                 table.replace_column(column_name, booleans)  # TO AVOID CHANGING THE ORDER OF COLUMNS
                 #print(table.colnames.index(column_name))
+                for index in masked: table[column_name].mask[index] = True
 
         # ECSV format (with masks and units in the meta info)
         elif format == "ecsv":
@@ -1363,6 +1375,7 @@ class SmartTable(Table):
             if not self.is_string_column(colname): continue
 
             # Resize if necessary
+            #print(colname, values[index])
             self.resize_string_column_for_string(colname, values[index])
 
         # Resize columns

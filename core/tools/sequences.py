@@ -1146,16 +1146,18 @@ def multiply_all_integers(lst):
 
 # -----------------------------------------------------------------
 
-def all_in(sequence, target):
+def all_in(sequence, target, ignore_instance=None):
 
     """
     This function returns whether all elements in 'sequence' are also in 'target'
     :param sequence: 
-    :param target: 
+    :param target:
+    :param ignore_instance:
     :return: 
     """
 
     for element in sequence:
+        if ignore_instance is not None and isinstance(element, ignore_instance): continue
         if element not in target: return False
     return True
 

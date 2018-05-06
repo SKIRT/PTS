@@ -1565,12 +1565,15 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Create the manager
         manager = GenerationManager()
         manager.config.path = self.config.path
 
-        manager.run = fitting_run_name
-        manager.generation = generation_name
+        # Set fitting run name and generation name
+        manager.config.run = fitting_run_name
+        manager.config.generation = generation_name
 
+        # Run the manager
         manager.run()
 
     # -----------------------------------------------------------------

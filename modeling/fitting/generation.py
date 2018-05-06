@@ -45,7 +45,9 @@ from ...core.simulation.remote import get_simulations_for_host
 from ...core.simulation.remote import finished_name
 from ...core.launch.batchlauncher import SimulationStatusTable
 from ...core.simulation.adapter import adapt_simulation, adapt_analysis
-from ...core.basics.configuration import prompt_yn
+from ...core.basics.configuration import prompt_yn, prompt_string
+from ...core.tools.stringify import tostr
+from ...core.launch.batchlauncher import MissingSimulation
 
 # -----------------------------------------------------------------
 
@@ -452,6 +454,22 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def add_simulation_to_assignment(self, simulation_name, host_id=None, cluster_name=None, simulation_id=None, success=True):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param host_id:
+        :param cluster_name:
+        :param simulation_id:
+        :param success:
+        :return:
+        """
+
+        self.assignment_table.add_simulation(simulation_name, host_id=host_id, cluster_name=cluster_name, simulation_id=simulation_id, success=success)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def simulation_directory_names(self):
 
@@ -460,16 +478,20 @@ class Generation(object):
         :return:
         """
 
+        # Initialize list for the directory names
+        dirnames = []
+
         # As from now, simulation names all start with the name of the galaxy
-        dirnames = fs.directories_in_path(self.path, returns="name", startswith=self.object_name)
-        if len(dirnames) > 0: return dirnames
+        dirnames += fs.directories_in_path(self.path, returns="name", startswith=self.object_name)
 
         # Before last change, simulation names started with the name of the fitting run
-        dirnames = fs.directories_in_path(self.path, returns="name", startswith=self.fitting_run_name)
-        if len(dirnames) > 0: return dirnames
+        dirnames += fs.directories_in_path(self.path, returns="name", startswith=self.fitting_run_name)
 
         # Initially, simulation names were just timestamps
-        dirnames = fs.directories_in_path(self.path, returns="name")
+        #if len(dirnames) == 0: dirnames = fs.directories_in_path(self.path, returns="name")
+        dirnames += fs.directories_in_path(self.path, returns="name")
+
+        # Return the simulation directory names
         return dirnames
 
     # -----------------------------------------------------------------
@@ -491,7 +513,8 @@ class Generation(object):
         names = self.individuals_table.simulation_names
 
         # Check whether there is a directory for each name
-        if not sequences.contains_all(self.simulation_directory_names, names): raise ValueError("Some simulation directories are missing")
+        if not sequences.contains_all(self.simulation_directory_names, names):
+            raise ValueError("Some simulation directories are missing: " + tostr(sequences.elements_not_in_other(names, self.simulation_directory_names)))
 
         # Return the names
         return names
@@ -1420,6 +1443,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def in_assignment(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.assignment_table.has_simulation(name)
+
+    # -----------------------------------------------------------------
+
     def has_simulation(self, name):
 
         """
@@ -1428,11 +1463,14 @@ class Generation(object):
         :return:
         """
 
-        host_id = self.get_host_id(name)
+        try: host_id = self.get_host_id(name)
+        except MissingSimulation: return False
         if host_id is None: return False
+
         simulation_id = self.get_simulation_id(name)
         if simulation_id is None: return False
         #print(name, host_id, simulation_id)
+
         if not has_simulation_for_host(host_id, simulation_id): return False
         else:
             simulation = get_simulation_for_host(host_id, simulation_id)
@@ -3449,28 +3487,88 @@ class Generation(object):
 
             load_simulation = True
 
+            # Don't load any simulation
             if lazy: load_simulation = False
+
+            # Simulation not in assignment table
+            elif self.has_assignment_table and not self.in_assignment(simulation_name):
+
+                # Give warning
+                log.warning("The simulation '" + simulation_name + "' is missing from the assignment table")
+
+                # Find simulation?
+                if find_simulations:
+
+                    # Can we find it?
+
+                    # Give warning
+                    log.warning("Looking for the simulation '" + simulation_name + "' on any remote host ...")
+                    simulation = find_simulation(simulation_name, find_remotes)
+
+                    # Simulation is not found
+                    if simulation is None:
+
+                        # Produce missing simulation file?
+                        if produce_missing:
+
+                            # Debugging
+                            log.warning("Simulation was not found, producing simulation file ...")
+
+                            #raise RuntimeError("Cannot produce missing simulations when ")
+                            host_id = prompt_string("host_id", "string", "specify the remote host ID for simulation '" + simulation_name + "'")
+
+                            # Produce
+                            self.produce_missing_simulation_file(simulation_name, host_id=host_id, remotes=remotes, correct_paths=correct_paths,
+                                                                 confirm_correction=confirm_correction)
+
+                            # Set flag
+                            load_simulation = True
+
+                        # Don't produce: give error for missing simulation file
+                        else: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
+
+                    # Simulation is found
+                    else:
+
+                        actual_host_id = simulation.host_id
+                        actual_id = simulation.id
+                        cluster_name = simulation.cluster_name
+                        log.warning("Simulation identified as '" + str(actual_id) + "' for host '" + actual_host_id + "'")
+
+                        log.warning("Adding simulation to the assignment table ...")
+                        self.add_simulation_to_assignment(simulation_name, host_id=actual_host_id, cluster_name=cluster_name, simulation_id=actual_id)
+
+                        changed_assignment = True
+                        load_simulation = True
+
+                # Don't find: don't load the simulation
+                else: load_simulation = False
+
+            # Simulation not found
             elif not self.has_simulation(simulation_name):
 
                 # Give warning
                 log.warning("The simulation file for '" + simulation_name + "' is not present anymore")
 
                 # Get host ID and simulation ID
-                host_id = self.get_host_id(simulation_name)
-                simulation_id = self.get_simulation_id(simulation_name)
+                try: host_id = self.get_host_id(simulation_name)
+                except MissingSimulation: host_id = None
+                try: simulation_id = self.get_simulation_id(simulation_name)
+                except MissingSimulation: simulation_id = None
 
+                # Host ID or simulation ID is not found
                 if host_id is None or simulation_id is None:
 
                     if host_id is None: log.warning("Could not determine the host ID for simulation '" + simulation_name + "'")
                     if simulation_id is None: log.warning("Could not determine the simulation ID for simulation '" + simulation_name + "'")
-
                     load_simulation = False
 
-                # Find simulation on other host?
+                # Find simulation?
                 elif find_simulations:
 
                     # Give warning
-                    log.warning("Simulation ID was '" + str(simulation_id) + "' and host ID is '" + host_id + "'")
+                    if simulation_id is not None: log.warning("Simulation ID was '" + str(simulation_id) + "'")
+                    if host_id is not None: log.warning("Simulation host ID was host ID is '" + host_id + "'")
 
                     # Give warning
                     log.warning("Looking for the simulation '" + simulation_name + "' on other remote hosts ...")
@@ -3482,32 +3580,13 @@ class Generation(object):
                         # Produce missing simulation file?
                         if produce_missing:
 
-                            # Find first other simulation for this host that exists
-                            other_simulation = None
-                            for other_simulation_name in self.get_simulation_names_for_host(host_id):
-                                if not self.has_simulation(other_simulation_name): continue
-                                other_simulation = self.get_simulation(other_simulation_name)
-                                break
-                            if other_simulation is None: raise RuntimeError("Cannot produce missing simulation file: no other existing simulation file for host '" + host_id + "'")
+                            # Warning
+                            log.warning("Simulation was not found, producing simulation file ...")
 
-                            # Produce the simulation from the other simulation
-                            cluster_name = self.get_cluster_name(simulation_name)
-                            other_remote_input_path = other_simulation.remote_input_path
-                            simulation = produce_simulation_from_other(other_simulation, simulation_name, simulation_id, cluster_name)
-
-                            # Check simulation paths
-                            if remotes is None or host_id not in remotes: log.warning("Cannot check the simulation paths: remote is not passed")
-                            else:
-                                try: check_simulation_paths(simulation, remote=remotes[host_id], other_remote_input_path=other_remote_input_path)
-                                except RuntimeError as e:
-                                    if correct_paths:
-                                        log.warning(str(e))
-                                        log.warning("Fixing simulation paths ...")
-                                        correct_simulation_and_analysis_paths(simulation, confirm=confirm_correction)
-                                    else: raise e
-
-                            # Save the simulation
-                            simulation.save()
+                            # Produce
+                            self.produce_missing_simulation_file(simulation_name, host_id, simulation_id=simulation_id,
+                                                                 remotes=remotes, correct_paths=correct_paths,
+                                                                 confirm_correction=confirm_correction)
 
                             # Set flag
                             load_simulation = True
@@ -3538,7 +3617,7 @@ class Generation(object):
 
                 # Get properties
                 host_id = simulation.host_id
-                simulation_id = simulation.id
+                #simulation_id = simulation.id
 
                 # Check paths
                 if check_paths:
@@ -3567,8 +3646,9 @@ class Generation(object):
                 simulation = None
 
                 # Get host ID and simulation ID from generation assignment table
-                host_id = self.get_host_id(simulation_name)
-                simulation_id = self.get_simulation_id(simulation_name)
+                try: host_id = self.get_host_id(simulation_name)
+                except MissingSimulation: host_id = None
+                #simulation_id = self.get_simulation_id(simulation_name)
 
             # No simulation object
             if simulation is None:
@@ -3663,6 +3743,56 @@ class Generation(object):
         # Return the status table
         return status
 
+    # -----------------------------------------------------------------
+
+    def produce_missing_simulation_file(self, simulation_name, host_id, simulation_id=None, remotes=None,
+                                        correct_paths=False, confirm_correction=False):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param host_id:
+        :param simulation_id:
+        :param remotes:
+        :param correct_paths:
+        :param confirm_correction:
+        :return:
+        """
+
+        # Check
+        if host_id is None: raise ValueError("Cannot produce missing simulation when host ID is unknown")
+
+        # Find first other simulation for this host that exists
+        other_simulation = None
+        for other_simulation_name in self.get_simulation_names_for_host(host_id):
+
+            if not self.has_simulation(other_simulation_name): continue
+            other_simulation = self.get_simulation(other_simulation_name)
+            break
+
+        if other_simulation is None: raise RuntimeError("Cannot produce missing simulation file: no other existing simulation file for host '" + host_id + "'")
+
+        # Produce the simulation from the other simulation
+        cluster_name = self.get_cluster_name(simulation_name)
+        other_remote_input_path = other_simulation.remote_input_path
+        simulation = produce_simulation_from_other(other_simulation, simulation_name, host_id, simulation_id, cluster_name)
+
+        # Check simulation paths
+        if remotes is None or host_id not in remotes: log.warning("Cannot check the simulation paths: remote is not passed")
+        else:
+            try:
+                check_simulation_paths(simulation, remote=remotes[host_id],
+                                       other_remote_input_path=other_remote_input_path)
+            except RuntimeError as e:
+                if correct_paths:
+                    log.warning(str(e))
+                    log.warning("Fixing simulation paths ...")
+                    correct_simulation_and_analysis_paths(simulation, confirm=confirm_correction)
+                else: raise e
+
+        # Save the simulation
+        simulation.save()
+
 # -----------------------------------------------------------------
 
 # Initialize dictionary
@@ -3714,12 +3844,13 @@ def find_simulation(simulation_name, host_ids):
 
 # -----------------------------------------------------------------
 
-def produce_simulation_from_other(other_simulation, simulation_name, simulation_id, cluster_name):
+def produce_simulation_from_other(other_simulation, simulation_name, host_id=None, simulation_id=None, cluster_name=None):
 
     """
     This function ...
     :param other_simulation:
     :param simulation_name:
+    :param host_id:
     :param simulation_id:
     :param cluster_name:
     :return:
@@ -3743,9 +3874,9 @@ def produce_simulation_from_other(other_simulation, simulation_name, simulation_
 
     # Set the simulation name, ID, host ID and cluster name
     simulation.name = simulation_name
-    simulation.id = simulation_id
-    #simulation.host_id =  # SAME HOST ID
-    simulation.cluster_name = cluster_name
+    simulation.id = simulation_id # can be None, shouldn't be the same as original simulation
+    if host_id is not None: simulation.host_id = host_id
+    if cluster_name is not None: simulation.cluster_name = cluster_name
 
     # Create config for adapting
     adapt_config = dict()

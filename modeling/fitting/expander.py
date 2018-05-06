@@ -1494,7 +1494,7 @@ class ParameterExpander(FittingComponent):
         # EXTRA
         extra = " --parallelization 16:2:2 --not_mimic_scheduling --scheduling/walltime 54000 --scheduling/nodes 1"
 
-        # Set the mimic commands
+        # Set the mimic commandsmanager.run()
         for simulation_name in self.new_simulation_names:
 
             # Get the parameter values
