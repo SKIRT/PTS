@@ -1275,7 +1275,8 @@ class SmartTable(Table):
                 #value_strings = [str(value) for value in values] # actually not necessary
                 #print(column_name, values)
                 if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
-                #print(values)
+                #print(column_name)
+                #for value in values: print(value, type(value))
                 if sequences.all_in(values, ["True", "False"], ignore_instance=np.ma.core.MaskedConstant):
                     if column_type_strings is not None: warnings.warn("Column type strings were specified but still I think that column '" + column_name + "' actually represents boolean values and not strings: loading as boolean column ...")
                     to_boolean.append(column_name)
@@ -1308,7 +1309,10 @@ class SmartTable(Table):
                         masked.append(index)
                     else:
                         value = table[column_name][index]
-                        boolean = eval(value)
+                        #print(value, list(value))
+                        #print(value, type(value))
+                        if types.is_string_type(value): boolean = eval(value)
+                        else: boolean = bool(value)
                     booleans.append(boolean)
                 # remove original column
                 #print(table.colnames.index(column_name))

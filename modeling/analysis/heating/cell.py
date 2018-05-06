@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.celldustheating Contains the CellDustHeatingAnalyser class.
+## \package pts.modeling.analysis.heating.cell Contains the CellDustHeatingAnalyser class.
 
 # -----------------------------------------------------------------
 
