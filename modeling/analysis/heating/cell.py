@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+import matplotlib.mlab as mlab
+from scipy.interpolate import griddata
 
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent
@@ -26,11 +28,12 @@ from .tables import AbsorptionTable
 from ....core.tools.utils import lazyproperty
 from ....core.plot.distribution import plot_distribution, plot_distributions
 from ....core.basics.containers import DefaultOrderedDict
+from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
 class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
-    
+
     """
     This class...
     """
@@ -61,6 +64,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # The 2D distribution of heating fractions
         self.radial_distribution = None
+
+        # The heating maps
+        self.map = None
+        self.map_midplane = None
 
     # -----------------------------------------------------------------
 
@@ -95,6 +102,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # 4. Calculate the distribution of the heating fraction of the unevolved stellar population
         self.get_distributions()
+
+        # 5. Create the maps of the heating fraction
+        self.get_maps()
 
         # 6. Writing
         self.write()
@@ -140,9 +150,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         if self.config.recalculate_distribution and self.has_distribution: self.remove_distribution()
         if self.config.recalculate_distribution_diffuse and self.has_distribution_diffuse: self.remove_distribution_diffuse()
         if self.config.recalculate_radial_distribution and self.has_radial_distribution: self.remove_radial_distribution()
+        if self.config.recreate_map and self.has_map: self.remove_map()
+        if self.config.recreate_map_midplane and self.has_map_midplane: self.remove_map_midplane()
         if self.config.replot_distribution and self.has_distribution_plot: self.remove_distribution_plot()
         if self.config.replot_radial_distribution and self.has_radial_distribution_plot: self.remove_radial_distribution_plot()
-        if self.config.replot_map and self.has_heating_map_plot: self.remove_heating_map_plot()
+        if self.config.replot_map and self.has_map_plot: self.remove_map_plot()
+        if self.config.replot_map_midplane and self.has_map_midplane_plot: self.remove_map_midplane_plot()
 
     # -----------------------------------------------------------------
 
@@ -251,11 +264,45 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_heating_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_heating_fractions_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_write_distribution_diffuse or self.do_plot_distribution
+
+    # -----------------------------------------------------------------
+
     def get_fractions(self):
 
-        self.get_heating_fractions()
+        """
+        This function ...
+        :return:
+        """
 
-        self.get_heating_fractions_diffuse()
+        # Inform the user
+        log.info("Getting the heating fractions ...")
+
+        # Total heating fractions
+        if self.needs_heating_fractions: self.get_heating_fractions()
+
+        # Diffuse heating fractions
+        if self.needs_heating_fractions_diffuse: self.get_heating_fractions_diffuse()
 
     # -----------------------------------------------------------------
 
@@ -416,8 +463,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         ionizing_unit = self.absorptions.column_unit("ionizing")
         young_conversion = young_unit.conversion_factor("W")
         ionizing_conversion = ionizing_unit.conversion_factor("W")
-        print("young conversion", young_conversion)
-        print("ionizing conversion", ionizing_conversion)
+        #print("young conversion", young_conversion)
+        #print("ionizing conversion", ionizing_conversion)
 
         # Unevolved,  diffuse dust
         absorptions_young = np.asarray(self.absorptions["young"])
@@ -873,6 +920,464 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def needs_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map or self.do_plot_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map_midplane or self.do_plot_map_midplane
+
+    # -----------------------------------------------------------------
+
+    def get_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the maps of the heating fraction ...")
+
+        # Get the map
+        if self.needs_map: self.get_map()
+
+        # Get the map in the midplane
+        if self.needs_map_midplane: self.get_map_midplane()
+
+    # -----------------------------------------------------------------
+
+    def get_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_map: self.load_map()
+
+        # Create
+        else: self.create_map()
+
+    # -----------------------------------------------------------------
+
+    def load_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the map of the heating fraction ...")
+
+        # Load
+        self.map = Frame.from_file(self.map_path)
+
+    # -----------------------------------------------------------------
+
+    def create_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the map of the heating fraction ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absolute_z_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return abs(self.valid_z_coordinates)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def smallest_absolute_z(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.absolute_z_coordinates)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def where_smallest_absolute_z(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.absolute_z_coordinates == self.smallest_absolute_z
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def x_coordinates_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.valid_x_coordinates[self.where_smallest_absolute_z]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def y_coordinates_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.valid_y_coordinates[self.where_smallest_absolute_z]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def z_coordinates_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.valid_z_coordinates[self.where_smallest_absolute_z]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def heating_fractions_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.valid_heating_fractions[self.where_smallest_absolute_z]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_unique_x_coordinates_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sort(np.unique(self.x_coordinates_midplane))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_x_coordinate_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sorted_unique_x_coordinates_midplane[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_x_coordinate_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sorted_unique_x_coordinates_midplane[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_midplane_spacings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.diff(self.sorted_unique_x_coordinates_midplane)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_midplane_average_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.mean(self.unique_x_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_midplane_stddev_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.std(self.unique_x_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_midplane_min_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.min(self.unique_x_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_midplane_max_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.unique_x_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_unique_y_coordinates_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sort(np.unique(self.y_coordinates_midplane))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_y_coordinate_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sorted_unique_y_coordinates_midplane[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_y_coordinate_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sorted_unique_y_coordinates_midplane[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_midplane_spacings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.diff(self.sorted_unique_y_coordinates_midplane)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_midplane_average_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.mean(self.unique_y_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_midplane_stddev_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.std(self.unique_y_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_midplane_min_spacing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return np.min(self.unique_y_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_midplane_max_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.unique_y_coordinates_midplane_spacings)
+
+    # -----------------------------------------------------------------
+
+    def get_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_map_midplane: self.load_map_midplane()
+
+        # Create
+        else: self.create_map_midplane()
+
+    # -----------------------------------------------------------------
+
+    def load_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the map of the heating fraction in the midplane ...")
+
+        # Load
+        self.map_midplane = Frame.from_file(self.map_midplane_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def midplane_spacing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.mean([self.unique_x_coordinates_midplane_min_spacing, self.unique_y_coordinates_midplane_min_spacing])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def midplane_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(abs(self.min_x_coordinate_midplane), self.max_x_coordinate_midplane, abs(self.min_y_coordinate_midplane), self.max_y_coordinate_midplane)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def midplane_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.arange(-self.midplane_radius, self.midplane_radius, self.midplane_spacing)
+
+    # -----------------------------------------------------------------
+
+    def create_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the map of the heating fraction ...")
+
+        # Show
+        #print("x", self.min_x_coordinate_midplane, self.max_x_coordinate_midplane, self.unique_x_coordinates_midplane_average_spacing, self.unique_x_coordinates_midplane_stddev_spacing, self.unique_x_coordinates_midplane_min_spacing, self.unique_x_coordinates_midplane_max_spacing)
+        #print("y", self.min_y_coordinate_midplane, self.max_y_coordinate_midplane, self.unique_y_coordinates_midplane_average_spacing, self.unique_y_coordinates_midplane_stddev_spacing, self.unique_y_coordinates_midplane_min_spacing, self.unique_y_coordinates_midplane_max_spacing)
+
+        # Create 2D grid of x and y
+        #xv, yv = np.meshgrid(self.sorted_unique_x_coordinates_midplane, self.sorted_unique_y_coordinates_midplane, sparse=False)
+        # Create interpolated data in 2D
+        #z_grid = mlab.griddata(self.x_coordinates_midplane, self.y_coordinates_midplane, self.heating_fractions_midplane, xv, yv, interp="linear")
+
+        # Create grid
+        xv, yv = np.meshgrid(self.midplane_coordinates, self.midplane_coordinates, sparse=False)
+
+        # Get the interpolated heating
+        points = (self.x_coordinates_midplane, self.y_coordinates_midplane)
+        values = self.heating_fractions_midplane
+        data = griddata(points, values, (xv, yv))
+
+        # Create map
+        self.map_midplane = Frame(data)
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_absorptions(self):
 
         """
@@ -944,6 +1449,30 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map and self.map is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map_midplane and self.map_midplane is not None
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -971,6 +1500,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Write the radial distribution of heating fractions
         if self.do_write_radial_distribution: self.write_radial_distribution()
+
+        # Write the map
+        if self.do_write_map: self.write_map()
+
+        # Write the map of the midplane
+        if self.do_write_map_midplane: self.write_map_midplane()
 
     # -----------------------------------------------------------------
 
@@ -1277,6 +1812,106 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.cell_heating_path, "map.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the heating fraction ...")
+
+        # Save the map
+        self.map.saveto(self.map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_midplane_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.cell_heating_path, "map_midplane.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_midplane_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_midplane_path)
+
+    # -----------------------------------------------------------------
+
+    def write_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the heating fraction in the midplane ...")
+
+        # Save the map
+        self.map_midplane.saveto(self.map_midplane_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_plot_distribution(self):
 
         """
@@ -1308,7 +1943,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.config.plot_map and not self.has_heating_map_plot
+        return self.config.plot_map and not self.has_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.plot_map_midplane and not self.has_map_midplane_plot
 
     # -----------------------------------------------------------------
 
@@ -1329,7 +1976,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         if self.do_plot_radial_distribution: self.plot_radial_distribution()
 
         # Plot a map of the heating fraction for a face-on view of the galaxy
-        if self.do_plot_map: self.plot_map()
+        #if self.do_plot_map: self.plot_map()
+
+        # Plot
+        #if self.do_plot_map_midplane: self.plot_map_midplane()
 
     # -----------------------------------------------------------------
 
@@ -1453,7 +2103,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def heating_map_plot_path(self):
+    def map_plot_path(self):
 
         """
         This function ...
@@ -1467,25 +2117,25 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def has_heating_map_plot(self):
+    def has_map_plot(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.heating_map_plot_path)
+        return fs.is_file(self.map_plot_path)
 
     # -----------------------------------------------------------------
 
-    def remove_heating_map_plot(self):
+    def remove_map_plot(self):
 
         """
         This function ...
         :return:
         """
 
-        fs.remove_file(self.heating_map_plot_path)
+        fs.remove_file(self.map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -1499,145 +2149,51 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
 
-        # Create figure
-        plt.figure()
-
-        x_coordinates = self.valid_x_coordinates
-        y_coordinates = self.valid_y_coordinates
-        fractions = self.valid_heating_fractions
-        weights = self.valid_cell_weights
-
-        normalization = np.sum(weights)
-
-        z_indices = DefaultOrderedDict(list)
-
-        ncoordinates = len(x_coordinates)
-        for i in range(ncoordinates):
-            x = x_coordinates[i]
-            y = y_coordinates[i]
-            z_indices[(x,y)].append(i)
-
-        #print(x, x.shape)
-        #print(y, y.shape)
-        #print(z, z.shape)
-
-        #projected_x = []
-        #projected_y = []
-        #projected_fractions = []
-
-        # for x,y in z_indices:
-        #
-        #     indices = z_indices[(x,y)]
-        #     z_values = self.valid_z_coordinates[indices]
-        #
-        #     fractions_column = fractions[indices]
-        #     weights_column = weights[indices]
-        #
-        #     normalization = np.sum(fractions_column)
-        #     if normalization == 0: continue
-        #
-        #     fraction = np.sum(fractions_column * weights_column) / normalization
-        #
-        #     projected_x.append(x)
-        #     projected_y.append(y)
-        #     projected_fractions.append(fraction)
-
-        unique_x = np.array(sorted(set(x_coordinates)))
-        unique_y = np.array(sorted(set(y_coordinates)))
-
-        nunique_x = len(unique_x)
-        nunique_y = len(unique_y)
-        #print("unique x", nunique_x)
-        #print("unique y", nunique_y)
-
-        xx, yy = np.meshgrid(unique_x, unique_y)
-
-        nx = xx.shape[1]
-        ny = yy.shape[0]
-
-        #print("xx shape", xx.shape)
-        #print("yy shape", yy.shape)
-
-        zz = np.zeros_like(xx)
-
-        from ....magic.core.mask import Mask
-
-        no_info = Mask.empty(zz.shape[1], zz.shape[0])
-
-        for i in range(nx):
-            for j in range(ny):
-                x = unique_x[i]
-                y = unique_y[j]
-                #print("xy", x, y)
-
-                if (x,y) not in z_indices:
-                    no_info[j,i] = True
-                    continue
-
-                indices = z_indices[(x,y)]
-                nindices = len(indices)
-                #print("nindices", nindices)
-
-                fractions_column = fractions[indices]
-                weights_column = weights[indices]
-
-                #print("nfractions", len(fractions_column))
-
-                #normalization = np.sum(weights_column)
-                #if normalization == 0: continue
-
-                fraction = np.sum(fractions_column * weights_column) / normalization
-                #print(fraction)
-                zz[j,i] = fraction
-
-        from ....magic.tools import plotting
-        plotting.plot_mask(no_info)
-
-        #plt.pcolormesh(x, y, z, cmap='RdBu', vmin=0.0, vmax=1.0)
-        ax = plt.gca()
-        #ax.pcolormesh(x, y, fractions)
-
-        #ax.pcolormesh(projected_x, projected_y, projected_fractions)
-        #ax.pcolormesh(xx, yy, zz, vmin=0.0, vmax=1.0)
-        ax.pcolormesh(xx, yy, zz, vmin=0.0)
-
-        # Plot
-        plt.savefig(self.heating_map_plot_path)
-        plt.close()
-
     # -----------------------------------------------------------------
 
-    def plot_map2(self):
+    @property
+    def map_midplane_plot_path(self):
 
         """
         This function ...
         :return:
         """
 
-        from matplotlib import mlab
+        return fs.join(self.cell_heating_path, "map_midplane.png")
 
-        x_ticks = x
-        y_ticks = y
+    # -----------------------------------------------------------------
 
-        z_grid = mlab.griddata(x, y, z, x, y)
+    @property
+    def has_map_midplane_plot(self):
 
-        from matplotlib.backends import backend_agg as agg
-        from matplotlib import cm
+        """
+        This function ...
+        :return:
+        """
 
-        # plot
-        # fig = Figure()  # create the figure
-        fig = plt.figure()
-        agg.FigureCanvasAgg(fig)  # attach the rasterizer
-        ax = fig.add_subplot(1, 1, 1)  # make axes to plot on
-        ax.set_title("Interpolated Contour Plot of Experimental Data")
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
+        return fs.is_file(self.map_midplane_plot_path)
 
-        cmap = cm.get_cmap("hot")  # get the "hot" color map
-        contourset = ax.contourf(x_ticks, y_ticks, z_grid, 10, cmap=cmap)
+    # -----------------------------------------------------------------
 
-        # Plot
-        plt.savefig(self.heating_map_plot_path)
-        plt.close()
+    def remove_map_midplane_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_midplane_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a map of the heating fraction in the midplane of the galaxy ...")
 
 # -----------------------------------------------------------------

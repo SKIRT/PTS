@@ -47,9 +47,12 @@ definition.add_flag("recalculate_distributions", "recreate the heating distribut
 definition.add_flag("recalculate_distribution", "recalculate")
 definition.add_flag("recalculate_distribution_diffuse", "recalculate")
 definition.add_flag("recalculate_radial_distribution", "recalculate")
+definition.add_flag("recreate_map", "recreate the map")
+definition.add_flag("recreate_map_midplane", "recreate the map in the midplane")
 definition.add_flag("replot", "replot")
 definition.add_flag("replot_distribution", "replot the distribution")
 definition.add_flag("replot_radial_distribution", "replot the radial distribution")
 definition.add_flag("replot_map", "replot the map")
+definition.add_flag("replot_map_midplane", "replot the map in the midplane")
 
 # -----------------------------------------------------------------

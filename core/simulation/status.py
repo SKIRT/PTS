@@ -50,6 +50,8 @@ ndebug_output_whitespaces = 55
 # -----------------------------------------------------------------
 
 default_similarity_threshold = 0.90
+#new_default_similarity_threshold = 0.73 # decreased till similarity between 'Computing density for cell' messages was reached
+new_default_similarity_threshold = 0.6 # even more decreased for computing density for cell limit?
 
 # -----------------------------------------------------------------
 
@@ -541,7 +543,8 @@ class LogSimulationStatus(SimulationStatus):
 
     # -----------------------------------------------------------------
 
-    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None, similar_log_frequency=10, similarity_threshold=default_similarity_threshold):
+    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None, similar_log_frequency=10,
+                similarity_threshold=new_default_similarity_threshold):
 
         """
         This function ...
@@ -597,7 +600,9 @@ class LogSimulationStatus(SimulationStatus):
                 message = get_message(line)
 
                 # Current message is similar to the previous message
-                if strings.similarity(message, previous_message) > similarity_threshold:
+                similarity = strings.similarity(message, previous_message)
+                #print(similarity, similarity_threshold)
+                if similarity > similarity_threshold:
 
                     self.nsimilar += 1
                     self.current_nsimilar += 1
@@ -797,7 +802,7 @@ class SpawnSimulationStatus(SimulationStatus):
     # -----------------------------------------------------------------
 
     def track_progress(self, show=False, finish_at=None, finish_after=None, refresh_frequency=5,
-                       similar_log_frequency=10, similarity_threshold=default_similarity_threshold):
+                       similar_log_frequency=10, similarity_threshold=new_default_similarity_threshold):
 
         """
         This function ...
@@ -823,8 +828,7 @@ class SpawnSimulationStatus(SimulationStatus):
 
         # Get current number of columns of the shell
         total_ncolumns = terminal.ncolumns()
-        usable_ncolumns = total_ncolumns - 26 - len(skirt_debug_output_prefix) - len(
-            skirt_debug_output_suffix) - ndebug_output_whitespaces
+        usable_ncolumns = total_ncolumns - 26 - len(skirt_debug_output_prefix) - len(skirt_debug_output_suffix) - ndebug_output_whitespaces
         if usable_ncolumns < 20: usable_ncolumns = 20
 
         last_phase = None
@@ -866,10 +870,11 @@ class SpawnSimulationStatus(SimulationStatus):
                         else:
                             ndots = current_nsimilar
                             nspaces = usable_ncolumns - ndots
-                        total_length = ndots + nspaces
+                        #total_length = ndots + nspaces
                         #print(nsimilar, current_nsimilar, total_length)
-                        sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
-                        sys.stdout.flush()
+                        if show:
+                            sys.stdout.write(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + "." * ndots + " " * nspaces + skirt_debug_output_suffix + fmt.reset + "\r")
+                            sys.stdout.flush()
                         #print(ndots)
                         continue
 
@@ -890,7 +895,7 @@ class SpawnSimulationStatus(SimulationStatus):
                 #print(list(line))
                 message = strings.add_whitespace_or_ellipsis(message, usable_ncolumns, ellipsis_position="center")
                 #log.debug(skirt_debug_output_prefix + message + skirt_debug_output_suffix)
-                print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + message + skirt_debug_output_suffix + fmt.reset)
+                if show: print(fmt.blue + time.timestamp() + " D " + skirt_debug_output_prefix + message + skirt_debug_output_suffix + fmt.reset)
 
             # Add the line
             self.log_lines.append(line)
@@ -987,8 +992,9 @@ class SpawnSimulationStatus(SimulationStatus):
                 last_phase = self.phase
                 if last_phase is None: continue
                 else:
-                    if self.simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
-                    else: log.info("Starting " + phase_descriptions[last_phase] + " ...")
+                    if self.simulation_phase is not None:
+                        if show: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
+                    elif show: log.info("Starting " + phase_descriptions[last_phase] + " ...")
 
             # Self absorption phase
             if self.phase == "dust" and self.simulation_phase == "DUST SELF-ABSORPTION":
@@ -1002,7 +1008,7 @@ class SpawnSimulationStatus(SimulationStatus):
                     continue
 
                 if last_stage is None or self.stage != last_stage:
-                    log.info("Starting stage " + str(self.stage + 1) + " ...")
+                    if show: log.info("Starting stage " + str(self.stage + 1) + " ...")
                     last_stage = self.stage
 
                 if self.cycle is None:
@@ -1011,26 +1017,27 @@ class SpawnSimulationStatus(SimulationStatus):
 
                 if last_cycle is None or self.cycle != last_cycle:
 
-                    log.info("Starting cycle " + str(self.cycle) + " ...")
+                    if show: log.info("Starting cycle " + str(self.cycle) + " ...")
                     last_cycle = self.cycle
 
-                    # Progress bar
-                    if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True)
+                    if show:
+                        # Progress bar
+                        if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                                 filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True)
 
-                    if self.stage != last_stage:
-                        self._bar.show(100) # make sure it always ends on 100%
-                        self._bar.__exit__(None, None, None)
+                        if self.stage != last_stage:
+                            self._bar.show(100) # make sure it always ends on 100%
+                            self._bar.__exit__(None, None, None)
 
-                    if self.cycle != last_cycle:
-                        self._bar.show(100) # make sure it always ends on 100%
-                        self._bar.__exit__(None, None, None)
+                        if self.cycle != last_cycle:
+                            self._bar.show(100) # make sure it always ends on 100%
+                            self._bar.__exit__(None, None, None)
 
-                    if self.progress is None:
-                        self._bar.show(100)
-                        #self._bar.__exit__(None, None, None) # ?
+                        if self.progress is None:
+                            self._bar.show(100)
+                            #self._bar.__exit__(None, None, None) # ?
 
-                    else: self._bar.show(int(self.progress))
+                        else: self._bar.show(int(self.progress))
                     #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
                     #self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
@@ -1044,22 +1051,23 @@ class SpawnSimulationStatus(SimulationStatus):
 
                 total_length = 100
 
-                # Progress bar
-                if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                         filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
-                         add_datetime=True)
-                # Loop
-                #while True:
+                if show:
+                    # Progress bar
+                    if self._bar is None: self._bar = Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1,
+                             add_datetime=True)
+                    # Loop
+                    #while True:
 
-                if self.phase != last_phase:
-                    self._bar.show(100)  # make sure it always ends on 100%
-                    self._bar.__exit__(None, None, None)
+                    if self.phase != last_phase:
+                        self._bar.show(100)  # make sure it always ends on 100%
+                        self._bar.__exit__(None, None, None)
 
-                if self.progress is None:
-                    self._bar.show(100)
-                    self._bar.__exit__(None, None, None)
+                    if self.progress is None:
+                        self._bar.show(100)
+                        self._bar.__exit__(None, None, None)
 
-                else: self._bar.show(int(self.progress))
+                    else: self._bar.show(int(self.progress))
                 #self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
                 continue
 
@@ -1068,7 +1076,7 @@ class SpawnSimulationStatus(SimulationStatus):
 
                 if self.extra is not None:
                     if last_extra is None or last_extra != self.extra:
-                        log.info(self.extra)
+                        if show: log.info(self.extra)
                     last_extra = self.extra
 
         # We shouldn't get here
@@ -1079,23 +1087,23 @@ class SpawnSimulationStatus(SimulationStatus):
 
             message = get_message(line)
             if "Finished simulation" in message:
-                log.success("Simulation finished")
+                if show: log.success("Simulation finished")
                 self.status = "finished"
                 return True
 
             elif "Available memory" in message:
-                log.success("Simulation finished")
+                if show: log.success("Simulation finished")
                 self.status = "finished"
                 return True
 
             elif " *** Error:" in message:
-                log.error("Simulation crashed")
+                if show: log.error("Simulation crashed")
                 self.status = "crashed"
                 return False
 
         # No break
         else:
-            log.error("Simulation has been aborted")
+            if show: log.error("Simulation has been aborted")
             self.status = "aborted"
             return False
 
@@ -1474,10 +1482,6 @@ default_ignore_output = ["Adding dust population", "Grain sizes range from", "Gr
 
 # -----------------------------------------------------------------
 
-new_default_similarity_threshold = 0.73 # decreased till similarity between 'Computing density for cell' messages was reached
-
-# -----------------------------------------------------------------
-
 def show_log_summary(lines, debug_output=False, ignore_output=default_ignore_output, refresh_frequency=5, similar_log_frequency=10,
                      similarity_threshold=new_default_similarity_threshold):
 
@@ -1548,7 +1552,7 @@ def show_log_summary(lines, debug_output=False, ignore_output=default_ignore_out
             # The current message is similar to the previous message
             if last_message is not None: similarity = strings.similarity(message, last_message)
             else: similarity = None
-            #print(similarity)
+            #print(similarity, similarity_threshold)
             if last_message is not None and similarity > similarity_threshold:
 
                 nsimilar += 1

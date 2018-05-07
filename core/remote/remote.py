@@ -4240,6 +4240,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def get_last_line(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.read_last_line(path)
+
+    # -----------------------------------------------------------------
+
     def read_lines_reversed(self, path):
 
         """

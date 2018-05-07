@@ -492,6 +492,54 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def aborted_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cancelled_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def crashed_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def failed_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.aborted_names + self.cancelled_names + self.crashed_names
+
+    # -----------------------------------------------------------------
+
     @memoize_method_reset
     def is_retrieved(self, simulation_name):
 

@@ -1151,12 +1151,13 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_lines(cls, lines, format=None):
+    def from_lines(cls, lines, format=None, always_check_types=False):
 
         """
         This function ...
         :param lines:
         :param format:
+        :param always_check_types:
         :return:
         """
 
@@ -1255,6 +1256,7 @@ class SmartTable(Table):
             # and also check column types
             to_boolean = []
             if column_type_strings is not None:
+
                 for k, column_name in enumerate(table.colnames):
                     column_type_string = column_type_strings[k]
                     actual_column_type = dtype_name_to_column_type(table[column_name].dtype.name)
@@ -1268,18 +1270,20 @@ class SmartTable(Table):
                         table[column_name] = table[column_name].astype(real_type)
 
             #else:
-            # NOW ALWAYS CHECK AGAIN
-            for column_name in table.colnames:
-                values = list(table[column_name])
-                if len(values) == 0: continue
-                #value_strings = [str(value) for value in values] # actually not necessary
-                #print(column_name, values)
-                if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
-                #print(column_name)
-                #for value in values: print(value, type(value))
-                if sequences.all_in(values, ["True", "False"], ignore_instance=np.ma.core.MaskedConstant):
-                    if column_type_strings is not None: warnings.warn("Column type strings were specified but still I think that column '" + column_name + "' actually represents boolean values and not strings: loading as boolean column ...")
-                    to_boolean.append(column_name)
+            # NOW ALWAYS CHECK AGAIN?
+            if column_type_strings is None or always_check_types:
+                for column_name in table.colnames:
+                    #values = list(table[column_name]) # THIS IS VERY SLOW FOR LARGE TABLES
+                    values = table[column_name] # DOES THIS WORK AS WELL?
+                    if len(values) == 0: continue
+                    #value_strings = [str(value) for value in values] # actually not necessary
+                    #print(column_name, values)
+                    if not sequences.all_strings(values, ignore_instance=np.ma.core.MaskedConstant): continue
+                    #print(column_name)
+                    #for value in values: print(value, type(value))
+                    if sequences.all_in(values, ["True", "False"], ignore_instance=np.ma.core.MaskedConstant):
+                        if column_type_strings is not None: warnings.warn("Column type strings were specified but still I think that column '" + column_name + "' actually represents boolean values and not strings: loading as boolean column ...")
+                        to_boolean.append(column_name)
 
             #print(index, header[index], len(header))
 

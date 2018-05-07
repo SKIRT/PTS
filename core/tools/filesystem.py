@@ -2149,6 +2149,18 @@ def get_last_lines(path, nlines):
 
 # -----------------------------------------------------------------
 
+def get_last_line(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return get_last_lines(path, 1)[0]
+
+# -----------------------------------------------------------------
+
 def read_first_lines(path, nlines):
 
     """

@@ -83,6 +83,7 @@ from ..simulation.definition import SingleSimulationDefinition
 from ..simulation.remote import get_simulation_for_host
 from ..tools import introspection
 from ..simulation.logfile import LogFile
+from ..simulation.remote import aborted_name, crashed_name, cancelled_name
 
 # -----------------------------------------------------------------
 
@@ -101,6 +102,15 @@ plot_x_limits = (0., None)
 # -----------------------------------------------------------------
 
 clear_analysis_steps = ["extraction", "plotting", "misc"]
+
+# -----------------------------------------------------------------
+
+failed_name = "failed" # all failed simulations
+exceeded_walltime_name = "exceeded_walltime"
+exceeded_memory_name = "exceeded_memory"
+
+# Cases of failed simulations
+failed_cases = [failed_name, aborted_name, crashed_name, cancelled_name, exceeded_walltime_name, exceeded_memory_name]
 
 # -----------------------------------------------------------------
 
@@ -138,6 +148,7 @@ _unlaunch_command_name = "unlaunch"
 _unretrieve_command_name = "unretrieve"
 _unanalyse_command_name = "unanalyse"
 _relaunch_command_name = "relaunch"
+_retry_command_name = "retry"
 _log_command_name = "log"
 _error_command_name = "error"
 _settings_command_name = "settings"
@@ -197,6 +208,7 @@ commands[_unlaunch_command_name] = ("unlaunch_simulation_command", True, "undo l
 commands[_unretrieve_command_name] = ("unretrieve_simulation_command", True, "remove local (retrieved) output of a simulation and unset retrieved flag", "simulation")
 commands[_unanalyse_command_name] = ("unanalyse_simulation_command", True, "remove analysis output of a simulation and unset analysis flags", "simulation")
 commands[_relaunch_command_name] = ("relaunch_simulation_command", True, "relaunch simulations on the original remote host", "simulation")
+commands[_retry_command_name] = ("retry_simulations_command", True, "try launching certain failed simulations again", None)
 commands[_log_command_name] = ("show_simulation_log_command", True, "show log output of a simulation", "simulation")
 commands[_error_command_name] = ("show_simulation_errors_command", True, "show error output of a simulation", "simulation")
 commands[_settings_command_name] = ("show_simulation_settings_command", True, "show simulation settings", "simulation")
@@ -1760,8 +1772,98 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        if self.has_logfile(simulation_name): return self.get_logfile(simulation_name).elapsed_time * u("s")
+        if self.has_logfile(simulation_name): return self.get_elapsed_time_logfile(simulation_name)
         else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_elapsed_time_logfile(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Has local logfile
+        if self.has_local_log(simulation_name):
+
+            # Try the quick method
+            try: return self.get_elapsed_time_local_logfile_quick(simulation_name)
+            except ValueError: return self.get_logfile(simulation_name).elapsed_time * u("s")
+
+        # Has remote logfile
+        elif self.has_remote_log(simulation_name):
+
+            # Try the quick method (doesn't read all of the log lines), but if it fails, use the normal method (reading the entire log file remotely)
+            try: return self.get_elapsed_time_remote_logfile_quick(simulation_name)
+            except ValueError: return self.get_logfile(simulation_name).elapsed_time * u("s")
+
+        # Has no logfile
+        else: raise IOError("Log file not present for simulation '" + simulation_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_elapsed_time_local_logfile_quick(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the local log file path
+        filepath = self.get_local_log_path(simulation_name)
+
+        # Get first and last line
+        first = fs.get_first_line(filepath)
+        last = fs.get_last_line(filepath)
+
+        # Get the elapsed time
+        return self.get_elapsed_time_from_first_and_last_line(first, last)
+
+    # -----------------------------------------------------------------
+
+    def get_elapsed_time_remote_logfile_quick(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        filepath = self.get_remote_log_path(simulation_name)
+        remote = self.get_remote_for_simulation(simulation_name)
+
+        # Get first and last line
+        first = remote.get_first_line(filepath)
+        last = remote.get_last_line(filepath)
+
+        # Get the elapsed time
+        return self.get_elapsed_time_from_first_and_last_line(first, last)
+
+    # -----------------------------------------------------------------
+
+    def get_elapsed_time_from_first_and_last_line(self, first, last):
+
+        """
+        This function ...
+        :param first:
+        :param last:
+        :return:
+        """
+
+        # Get the first time
+        if not time.has_valid_timestamp(first): raise ValueError("Invalid timestamp")
+        first_time = time.parse_line(first)
+
+        # Get the last time
+        if not time.has_valid_timestamp(last): raise ValueError("Invalid timestamp")
+        last_time = time.parse_line(last)
+
+        # Return the elapsed time
+        seconds = (last_time - first_time).total_seconds()
+        return seconds * u("s")
 
     # -----------------------------------------------------------------
 
@@ -7049,6 +7151,112 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_error_lines(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Executed in screen
+        if self.is_screen_execution(simulation_name): self.get_simulation_error_lines_screen(simulation_name)
+
+        # Executed in job
+        elif self.is_job_execution(simulation_name): self.show_simulation_error_lines_job(simulation_name)
+
+        # Invalid
+        else: raise NotImplementedError("Execution handle not supported")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_error_lines_screen(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the screen output lines for the simulation
+        all_lines = self.get_screen_output(simulation_name)
+
+        # Initialize for error lines
+        lines = []
+
+        # Loop over the lines
+        break_after = False
+        for line in all_lines:
+
+            # Skip regular SKIRT output messages
+            if time.has_valid_timestamp(line): continue
+
+            # Add the line
+            lines.append(line)
+            if break_after: break
+
+            # Skip after certain MPI message
+            if "YOU CAN IGNORE THE BELOW CLEANUP MESSAGES" in line: break_after = True
+
+        # Return the lines
+        return lines
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_error_lines_job(self, simulation_name):
+
+        """
+        Thisf unction ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get the error lines
+        all_lines = self.get_job_error(simulation_name)
+
+        # Initialize for error lines
+        lines = []
+
+        # Loop over the lines
+        break_after = False
+        for line in all_lines:
+
+            # Skip regular SKIRT output messages
+            if time.has_valid_timestamp(line): continue
+
+            # Add the line
+            lines.append(line)
+            if break_after: break
+
+            # Skip after certain MPI message
+            if "YOU CAN IGNORE THE BELOW CLEANUP MESSAGES" in line: break_after = True
+
+        # Return the lines
+        return lines
+
+    # -----------------------------------------------------------------
+
+    def has_exceed_walltime(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Loop over the error lines
+        for line in self.get_simulation_error_lines(simulation_name):
+
+            # Check for walltime exceeded message
+            if "killed: walltime" in line and "exceeded limit" in line: return True
+
+        # Error message not encountered
+        return False
+
+    # -----------------------------------------------------------------
+
     def show_simulation_errors_command(self, command, **kwargs):
 
         """
@@ -10166,6 +10374,196 @@ class SimulationManager(InteractiveConfigurable):
         simulation.remove_remote_output = original_simulation.remove_remote_output  # After retrieval
         simulation.remove_remote_simulation_directory = original_simulation.remove_remote_simulation_directory  # After retrieval
         simulation.remove_local_output = original_simulation.remove_local_output  # After analysis
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def retry_simulations_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Which simulations?
+        definition.add_required("case", "string", "which simulations to relaunch (based on their status or reason for failing)", choices=failed_cases)
+
+        # Increase walltime
+        definition.add_optional("walltime_factor", "positive_real", "factor with which to increase the walltime for simulations which were aborted because they exceeded their specified walltime", 1.2)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def retry_simulations_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def failed_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.failed_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def aborted_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.aborted_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crashed_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.crashed_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cancelled_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status.cancelled_names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def exceeded_walltime_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for simulation_name in self.aborted_simulation_names:
+            if self.has_exceed_walltime(simulation_name): names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def exceed_memory_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for simulation_name in self.aborted_simulation_names: pass
+        return names
+
+    # -----------------------------------------------------------------
+
+    def retry_simulations_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Update
+        #kwargs.update(self.retry_simulations_kwargs)
+
+        # Get the configuration
+        config = self.get_config_from_command(command, self.retry_simulations_definition, **kwargs)
+
+        # The scheduling options for the different simulations
+        scheduling = dict()
+
+        # All failed simulations
+        if config.case == failed_name: simulation_names = self.failed_simulation_names
+
+        # Aborted simulations
+        elif config.case == aborted_name:
+
+            simulation_names = self.aborted_simulation_names
+
+            # Check for simulations aborted because they exceed the walltime
+            for simulation_name in simulation_names:
+                if self.has_exceed_walltime(simulation_name):
+
+                    # Determine the new walltime
+                    log.debug("Simulation '" + simulation_name + "' was aborted because the walltime was exceeded, increasing the walltime by a factor of " + str(config.walltime_factor) + " ...")
+                    scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+                    log.debug("Previous walltime: " + tostr(scheduling_options.walltime))
+                    scheduling_options.walltime *= config.walltime_factor
+                    log.debug("New walltime: " + tostr(scheduling_options.walltime))
+
+                    # Set the scheduling options for this simulation
+                    scheduling[simulation_name] = scheduling_options
+
+        # Crashed simulations
+        elif config.case == crashed_name: simulation_names = self.crashed_simulation_names
+
+        # Cancelled simulations
+        elif config.case == cancelled_name: simulation_names = self.cancelled_simulation_names
+
+        # Exceeded the walltime
+        elif config.case == exceeded_walltime_name:
+
+            # Get the names of the simulations
+            simulation_names = self.exceeded_walltime_simulation_names
+
+            # Increase the walltimes
+            for simulation_name in simulation_names:
+                scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+                log.debug("Simulation '" + simulation_name + "' exceeded the walltime of " + tostr(scheduling_options.walltime) + ", increasing by a factor of " + str(config.walltime_factor) + " ...")
+                scheduling_options.walltime *= config.walltime_factor
+                log.debug("New walltime: " + tostr(scheduling_options.walltime))
+
+        # Exceeded memory
+        elif config.case == exceeded_memory_name: raise NotImplementedError("Not implemented")
+
+        # Invalid
+        else: raise ValueError("Invalid case: '" + config.case + "'")
+
+        # Relaunch each simulation
+        for simulation_name in simulation_names:
+
+            # Get scheduling options
+            if simulation_name in scheduling: scheduling_options = scheduling[simulation_name]
+            else: scheduling_options = None
+
+            # Relaunch
+            self.relaunch_simulation(simulation_name, scheduling_options=scheduling_options)
 
     # -----------------------------------------------------------------
 
