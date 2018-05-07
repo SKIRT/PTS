@@ -501,6 +501,9 @@ class SimulationStatusTable(SmartTable):
         """
 
         names = []
+        for simulation_name in self.simulation_names:
+            if self.is_aborted(simulation_name): names.append(simulation_name)
+        return names
 
     # -----------------------------------------------------------------
 
@@ -513,6 +516,9 @@ class SimulationStatusTable(SmartTable):
         """
 
         names = []
+        for simulation_name in self.simulation_names:
+            if self.is_cancelled(simulation_name): names.append(simulation_name)
+        return names
 
     # -----------------------------------------------------------------
 
@@ -525,6 +531,9 @@ class SimulationStatusTable(SmartTable):
         """
 
         names = []
+        for simulation_name in self.simulation_names:
+            if self.is_crashed(simulation_name): names.append(simulation_name)
+        return names
 
     # -----------------------------------------------------------------
 

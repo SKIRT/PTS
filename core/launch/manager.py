@@ -7160,10 +7160,10 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         # Executed in screen
-        if self.is_screen_execution(simulation_name): self.get_simulation_error_lines_screen(simulation_name)
+        if self.is_screen_execution(simulation_name): return self.get_simulation_error_lines_screen(simulation_name)
 
         # Executed in job
-        elif self.is_job_execution(simulation_name): self.show_simulation_error_lines_job(simulation_name)
+        elif self.is_job_execution(simulation_name): return self.get_simulation_error_lines_job(simulation_name)
 
         # Invalid
         else: raise NotImplementedError("Execution handle not supported")
