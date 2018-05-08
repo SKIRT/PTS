@@ -390,7 +390,7 @@ class SmartTable(Table):
         tostr_kwargs = kwargs.pop("tostr_kwargs", {})
 
         # Create the table
-        table = cls() # WILL ALREADY CREATE THE COLUMN INFO
+        table = cls(**kwargs) # WILL ALREADY CREATE THE COLUMN INFO
 
         has_info = table.has_column_info
 

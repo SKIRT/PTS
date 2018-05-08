@@ -32,6 +32,7 @@ from ...core.data.attenuation import AttenuationCurve
 from ...magic.tools import extinction
 from ...magic.core.frame import Frame
 from ...magic.core.datacube import DataCube
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -449,6 +450,18 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_observed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def distance(self):
 
         """
@@ -469,7 +482,8 @@ class ComponentSimulations(object):
         :return:
         """
 
-        self.observed.distance = value
+        if not self.has_observed: log.warning("The simulation of the observed component does not exist: cannot set the distance")
+        else: self.observed.distance = value
 
     # -----------------------------------------------------------------
 
@@ -517,7 +531,19 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed.has_output
+        return self.has_observed and self.observed.has_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_output and self.observed_data.has_any
 
     # -----------------------------------------------------------------
 
@@ -541,7 +567,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_observed_output and self.observed_data.has_seds
+        return self.has_observed and self.has_observed_output and self.observed_data.has_seds
 
     # -----------------------------------------------------------------
 
@@ -709,7 +735,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return len(self.observed_data.seds[earth_name]) > 1
+        return self.has_observed_data and len(self.observed_data.seds[earth_name]) > 1
 
     # -----------------------------------------------------------------
 
@@ -2074,8 +2100,8 @@ class SingleComponentSimulations(ComponentSimulations):
         """
 
         # Load simulations
-        observed = ObservedComponentSimulation.from_output_path(observed)
-        intrinsic = IntrinsicComponentSimulation.from_output_path(intrinsic) if intrinsic is not None else None
+        observed = ObservedComponentSimulation.from_output_path(observed) if fs.has_files_in_path(observed) else None
+        intrinsic = IntrinsicComponentSimulation.from_output_path(intrinsic) if intrinsic is not None and fs.has_files_in_path(intrinsic) else None
 
         # Create and return
         return cls(name, observed, intrinsic=intrinsic, distance=distance)
@@ -2415,7 +2441,13 @@ class MultiComponentSimulations(ComponentSimulations):
         if self.has_transparent_sed: return self.observed_sed_transparent
 
         # Has intrinsic SEDs, add them
-        elif self.has_intrinsic_seds: return sum(self.intrinsic_seds.values())
+        elif self.has_intrinsic_seds:
+            #print([type(value) for value in self.intrinsic_seds.values()])
+            #return sum(self.intrinsic_seds.values())
+            # DOESN'T WORK?? TypeError: unsupported operand type(s) for +: 'int' and 'SED'
+            result = self.intrinsic_seds.values()[0].copy()
+            for other in self.intrinsic_seds.values()[1:]: result += other
+            return result
 
         # Cannot be calculated
         else: raise ValueError("Intrinsic SED cannot be calculated")
@@ -2486,7 +2518,7 @@ class MultiComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def edgeon_intrinsic_sed(self):
+    def edgeon_intrinsic_cube(self):
 
         """
         This function ...

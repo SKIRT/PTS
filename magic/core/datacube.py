@@ -387,12 +387,13 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_frames(cls, frames, wavelength_grid=None):
+    def from_frames(cls, frames, wavelength_grid=None, is_sorted=False):
 
         """
         This function ...
         :param frames:
         :param wavelength_grid:
+        :param is_sorted:
         :return:
         """
 
@@ -400,7 +401,9 @@ class DataCube(Image):
         datacube = cls()
 
         # The indices of the frames, sorted on wavelength
-        sorted_indices = sorted(range(len(frames)), key=lambda i: frames[i].filter.pivotwavelength())
+        nframes = len(frames)
+        if is_sorted: sorted_indices = range(nframes)
+        else: sorted_indices = sorted(range(nframes), key=lambda i: frames[i].wavelength_micron)
 
         # The list of wavelengths
         wavelengths = []
@@ -414,7 +417,7 @@ class DataCube(Image):
             datacube.add_frame(frames[index], frame_name)
 
             # Add the wavelength
-            if wavelength_grid is None: wavelengths.append(frames[index].filter.pivotwavelength())
+            if wavelength_grid is None: wavelengths.append(frames[index].wavelength_micron)
 
             # Increment the number of frames
             nframes += 1
@@ -925,7 +928,7 @@ class DataCube(Image):
             log.debug("Getting the frame for the " + str(fltr) + " filter ...")
 
             # Get the index of the wavelength closest to that of the filter
-            index, wavelength = self.get_frame_index_for_wavelength(fltr.pivot, return_wavelength=True)
+            index, wavelength = self.get_frame_index_for_wavelength(fltr.wavelength, return_wavelength=True)
 
             # Get a copy of the frame
             frame = self.frames[index].copy()

@@ -35,6 +35,8 @@ from ..config.analyse_cell_heating import definition as analyse_cell_heating_def
 from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
 from .heating.cell import CellDustHeatingAnalyser
 from .heating.projected import ProjectedDustHeatingAnalyser
+from ..config.analyse_properties import definition as analyse_properties_definition
+from .properties import PropertiesAnalyser
 
 # -----------------------------------------------------------------
 
@@ -53,6 +55,7 @@ _sed_command_name = "sed"
 _attenuation_command_name = "attenuation"
 
 # Analysis
+_properties_command_name = "properties"
 _heating_command_name = "heating"
 _energy_command_name = "energy"
 
@@ -76,6 +79,7 @@ commands[_sed_command_name] = (None, None, "plot SEDs", None)
 commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
 
 # Analysis
+commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
 commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
 #commands[_energy_command_name] = (None, None, "analyse energy budget", None)
 
@@ -497,6 +501,18 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def derived_parameter_values_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.derived_parameter_values_unevolved
+
+    # -----------------------------------------------------------------
+
+    @property
     def derived_parameter_values_dust(self):
 
         """
@@ -714,6 +730,12 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         print(fmt.cyan + fmt.underlined + "Derived parameter values of SFR component:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values_sfr: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_sfr[label]))
+        print("")
+
+        # Derived parameter values of unevolved components
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of unevolved stars:" + fmt.reset)
+        print("")
+        for label in self.derived_parameter_values_unevolved: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_unevolved[label]))
         print("")
 
         # Derived parameter values of dust component
@@ -1996,6 +2018,65 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Plot
         plot_attenuation_curve(self.model.attenuation_curve_unevolved, unevolved)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_properties_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_properties_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_properties_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_properties_definition, **kwargs)
+
+        # Analyse
+        self.analyse_properties(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_properties(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analyser
+        analyser = PropertiesAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
 
     # -----------------------------------------------------------------
 

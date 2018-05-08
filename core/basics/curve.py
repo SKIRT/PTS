@@ -43,8 +43,10 @@ class Curve(SmartTable):
         :param kwargs:
         """
 
-        if "x_unit" in kwargs: from_astropy = False
-        else: from_astropy = True
+        if kwargs.get("from_astropy", None) is None:
+            if "x_unit" in kwargs: from_astropy = False
+            else: from_astropy = True
+        else: from_astropy = kwargs.pop("from_astropy")
 
         if not from_astropy:
 
@@ -69,6 +71,8 @@ class Curve(SmartTable):
             self.x_name = x_name
             self.y_name = y_name
 
+        #else: print(kwargs)
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -80,6 +84,8 @@ class Curve(SmartTable):
         :param kwargs:
         :return:
         """
+
+        kwargs["from_astropy"] = False
 
         # USe the base class implementation
         curve = super(Curve, cls).from_columns(*columns, **kwargs)
@@ -384,6 +390,46 @@ class Curve(SmartTable):
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=[self.x_name, self.y_name])
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if hasattr(self, "x_name"): print("self", self.x_name)
+        if hasattr(other, "x_name"): print("other", other.x_name)
+        if hasattr(self, "y_name"): print("self", self.y_name)
+        if hasattr(other, "y_name"): print("other", other.y_name)
+
+        x_name = self.x_name if hasattr(self, "x_name") else other.x_name
+        y_name = self.y_name if hasattr(self, "y_name") else other.y_name
+
+        y_unit = self.y_unit if hasattr(self, "y_unit") else other.y_unit
+
+        # Check whether names are the same
+        #if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        #if self.y_name != other.y_name: raise ValueError("y name must be the same")
+
+        # Check whether the lengths are the same
+        if self.npoints != other.npoints: raise ValueError("number of data points must be the same")
+
+        # Get the conversion factor
+        conversion_factor = other.y_unit.conversion_factor(y_unit)
+
+        # Get the values of other in the same unit
+        #other_values = np.array([other.get_value(self.y_name, index).to(self.y_unit).value for index in range(self.npoints)])
+        other_values = np.asarray(other[y_name]) * conversion_factor
+
+        # Add the data
+        self[y_name] += other_values
+
+        # Return
+        return self
 
     # -----------------------------------------------------------------
 

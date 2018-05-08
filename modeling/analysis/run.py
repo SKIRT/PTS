@@ -114,6 +114,9 @@ info_filename = "info.dat"
 config_filename = "config.cfg"
 launch_config_filename = "launch_config.cfg"
 input_filename = "input.dat"
+dust_grid_tree_filename = "tree.dat"
+
+# Directories
 model_name = "model"
 instruments_name = "instruments"
 projections_name = "projections"
@@ -122,12 +125,14 @@ plot_name = "plot"
 misc_name = "misc"
 evaluation_name = "evaluation"
 contributions_name = "contributions"
+
+# Analysis directories
+properties_name = "properties"
 attenuation_name = "attenuation"
 colours_name = "colours"
 residuals_name = "residuals"
 maps_name = "maps"
 heating_name = "heating"
-dust_grid_tree_filename = "tree.dat"
 
 # Projection filenames
 earth_projection_filename = "earth.proj"
@@ -568,6 +573,18 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.path, contributions_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def properties_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, properties_name)
 
     # -----------------------------------------------------------------
 
@@ -1413,6 +1430,7 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.evaluation_path): fs.create_directory(self.evaluation_path)
 
         # Analysis directories
+        if not fs.is_directory(self.properties_path): fs.create_directory(self.properties_path)
         if not fs.is_directory(self.attenuation_path): fs.create_directory(self.attenuation_path)
         if not fs.is_directory(self.colours_path): fs.create_directory(self.colours_path)
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)

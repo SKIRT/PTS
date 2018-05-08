@@ -37,6 +37,7 @@ from ...core.simulation.execute import run_simulation
 from ...core.basics.log import log
 from .simulation import SingleComponentSimulations, MultiComponentSimulations
 from ...core.simulation.simulation import createsimulations
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -3210,6 +3211,80 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_disk_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.old_disk_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_i1_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_map.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_i1_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_i1_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_map.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
     @property
     def young_map_path(self):
 
@@ -3219,6 +3294,80 @@ class RTModel(object):
         """
 
         return self.definition.young_stars_map_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.young_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_fuv_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the young stellar map
+        frame = self.young_map.copy()
+
+        # Normalize to the FUV luminosity
+        frame.normalize(to=self.intrinsic_fuv_luminosity_young)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_fuv_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_young
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the young stellar map
+        frame = self.young_map.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_young
 
     # -----------------------------------------------------------------
 
@@ -3234,6 +3383,190 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sfr_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.sfr_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_fuv_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map.copy()
+
+        # Normalize to the FUV luminosity
+        frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_fuv_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def star_formation_rate_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map.copy()
+
+        # Normalize to the star formation rate
+        frame.normalize(to=self.sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_star_formation_rate_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map.copy()
+
+        # Normalize to the SF dust mass
+        frame.normalize(to=self.sfr_dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_fuv_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_fuv_luminosity_map + self.sfr_fuv_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_fuv_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_fuv_luminosity_map and self.has_sfr_fuv_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_bolometric_luminosity_map + self.sfr_bolometric_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_bolometric_luminosity_map and self.has_sfr_bolometric_luminosity_map
+
+    # -----------------------------------------------------------------
+
     @property
     def dust_map_path(self):
 
@@ -3243,6 +3576,85 @@ class RTModel(object):
         """
 
         return self.definition.dust_map_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.dust_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map.copy()
+
+        # Normalize to the dust mass
+        frame.normalize(to=self.dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_mass_map + self.sfr_dust_mass_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_mass_map and self.has_sfr_dust_mass_map
 
     # -----------------------------------------------------------------
 

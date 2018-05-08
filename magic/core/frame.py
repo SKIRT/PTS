@@ -40,7 +40,7 @@ from ...core.basics.log import log
 from ..basics.mask import MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
-from ...core.units.unit import PhotometricUnit
+from ...core.units.unit import PhotometricUnit, parse_unit
 from ...core.filter.filter import parse_filter
 from .mask import Mask
 from .alpha import AlphaMask
@@ -338,8 +338,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Convert string units to PhotometricUnit object
-        if types.is_string_type(unit): unit = PhotometricUnit(unit)
+        # Convert string units to PhotometricUnit or regular unit object
+        if types.is_string_type(unit): unit = parse_unit(unit)
 
         # Set the unit
         self._unit = unit
@@ -355,6 +355,18 @@ class Frame(NDDataArray):
         """
 
         return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_photometric(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_unit and isinstance(self.unit, PhotometricUnit)
 
     # -----------------------------------------------------------------
 
@@ -2449,10 +2461,6 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Return the wavelength of the frame's filter, if defined
-        #if self.filter is not None: return self.filter.wavelength
-        #else: return self._wavelength # return the wavelength (if defined, is None otherwise)
-
         # First return the wavelength, if set
         if self._wavelength is not None: return self._wavelength
         elif self.has_filter: return self.filter.wavelength
@@ -2469,6 +2477,20 @@ class Frame(NDDataArray):
         """
 
         self._wavelength = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_micron(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        wavelength = self.wavelength
+        if wavelength is None: return None
+        else: return wavelength.to("micron").value
 
     # -----------------------------------------------------------------
 
@@ -2513,22 +2535,18 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Check the unit of this frame is defined
+        if not self.has_unit: raise ValueError("The unit of the frame is not defined")
+
         # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
-        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
+        #to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
+        to_unit = parse_unit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
         # Debugging
         log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
 
-        # Set the distance
-        if distance is None: distance = self.distance
-
-        # Set the wavelength
-        if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
-
-        # Calculate the conversion factor
-        factor = self.unit.conversion_factor(to_unit, wavelength=wavelength, distance=distance,
-                                             pixelscale=self.pixelscale, density=density, brightness=brightness,
-                                             density_strict=density_strict, brightness_strict=brightness_strict)
+        # Get the conversion factor
+        factor = self._get_conversion_factor(to_unit, distance=distance, wavelength=wavelength)
 
         # Debugging
         log.debug("Conversion factor: " + str(factor))
@@ -2537,6 +2555,45 @@ class Frame(NDDataArray):
         self.convert_by_factor(factor, to_unit)
 
         # Return the conversion factor
+        return factor
+
+    # -----------------------------------------------------------------
+
+    def _get_conversion_factor(self, to_unit, distance=None, wavelength=None):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param wavelength:
+        :return:
+        """
+
+        # This frame has a photometric unit
+        if self.is_photometric:
+
+            # Check that the target unit is also photometric
+            if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric")
+
+            # Set the distance
+            if distance is None: distance = self.distance
+
+            # Set the wavelength
+            if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
+
+            # Calculate the conversion factor
+            factor = self.unit.conversion_factor(to_unit, wavelength=wavelength, distance=distance, pixelscale=self.pixelscale)
+
+        # This frame does not have a photometric unit
+        else:
+
+            # Check whether target unit is also not photometric
+            if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the unit of the frame is not")
+
+            # Calculate the conversion factor
+            factor = self.unit.to(to_unit)
+
+        # Return
         return factor
 
     # -----------------------------------------------------------------
