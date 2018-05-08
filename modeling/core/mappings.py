@@ -37,7 +37,8 @@ else: mappings_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Mappi
 
 # -----------------------------------------------------------------
 
-# This factor (~2e6) is the *magic* conversion factor from a SFR of 1 (1 M_sun / yr) to one M_sun (from a private discussion between Ilse and Brent Groves)
+# This factor (~2e6) is the *magic* conversion factor from a SFR of 1 (1 M_sun / yr) to one M_sun
+# (from a private discussion between Ilse and Brent Groves)
 sfr_to_dust_mass = 2143279.799
 
 # -----------------------------------------------------------------

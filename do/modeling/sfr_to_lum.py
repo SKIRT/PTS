@@ -33,12 +33,20 @@ from pts.core.simulation.wavelengthgrid import WavelengthGrid
 
 # Create definition
 definition = ConfigurationDefinition()
+
+# Filter
 definition.add_required("filter", "filter", "filter in which to calculate the luminosity")
+
+# SFR
 definition.add_positional_optional("sfr", "quantity", "star formation rate", "1. Msun/yr", convert_default=True)
-definition.add_positional_optional("metallicity", "positive_real", "metallicity", 0.02)
-definition.add_positional_optional("compactness", "positive_real", "compactness", 6)
-definition.add_positional_optional("pressure", "quantity", "pressure", 1e12 * u("K/m3"))
-definition.add_positional_optional("covering_factor", "positive_real", "covering factor", 0.2) # fPDR
+
+# MAPPINGS parameters
+definition.add_optional("metallicity", "positive_real", "metallicity", 0.02)
+definition.add_optional("compactness", "positive_real", "compactness", 6)
+definition.add_optional("pressure", "quantity", "pressure", 1e12 * u("K/m3"))
+definition.add_optional("covering_factor", "positive_real", "covering factor", 0.2) # fPDR
+
+# Flags
 definition.add_flag("plot", "plot the SEDs", False)
 definition.add_flag("skirt", "use SKIRT", True)
 definition.add_flag("pts", "use PTS", True)
@@ -46,9 +54,11 @@ definition.add_flag("sampled", "use SKIRT luminosities already sampled on a wave
 definition.add_flag("only_skirt", "only SKIRT", False)
 definition.add_flag("only_pts", "only PTS", False)
 definition.add_flag("only_sampled", "only sampled", False)
+
+# Output path
 definition.add_optional("output", "directory_path", "output path")
 
-# Get the arguments
+# Get the configuration
 config = parse_arguments("sfr_to_lum", definition, "Convert a SFR to a luminosity in a certain band")
 
 # -----------------------------------------------------------------

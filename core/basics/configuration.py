@@ -2085,25 +2085,9 @@ class ConfigurationDefinition(object):
         if flags: self.import_flags(definition)
 
         # Add sections
-        if sections:
-
-            # Loop over the to be imported sections
-            for name in definition.sections:
-
-                # Existing section
-                if name in self.sections:
-
-                    if recursive:
-                        self.sections[name].import_settings(definition.sections[name], fixed=fixed, required=required,
-                                                            pos_optional=pos_optional, optional=optional, flags=flags,
-                                                            sections=True, recursive=True, required_to=required_to,
-                                                            pos_optional_to=pos_optional_to, optional_to=optional_to)
-                    else: raise ValueError("Already a section '" + name + "' in this definition")
-
-                # New section
-                else:
-                    self.sections[name] = definition.sections[name].copy()
-                    self.section_descriptions[name] = definition.section_descriptions[name]
+        if sections: self.import_sections(definition, recursive=recursive, fixed=fixed, required=required,
+                                          pos_optional=pos_optional, optional=optional, flags=flags,
+                                          required_to=required_to, pos_optional_to=pos_optional_to, optional_to=optional_to)
 
     # -----------------------------------------------------------------
 
@@ -2119,7 +2103,7 @@ class ConfigurationDefinition(object):
         for name in definition.fixed:
 
             if name in self.fixed: raise ValueError("Already fixed argument '" + name + "' in this definition")
-            self.fixed[name] = definition.fixed[name]
+            self.fixed[name] = definition.fixed[name].copy()
 
     # -----------------------------------------------------------------
 
@@ -2139,19 +2123,19 @@ class ConfigurationDefinition(object):
             if to == "required":
 
                 if name in self.required: raise ValueError("Already required argument '" + name + "' in this definition")
-                self.required[name] = definition.required[name]
+                self.required[name] = definition.required[name].copy()
 
             # To positional optional
             elif to == "pos_optional":
 
                 if name in self.pos_optional: raise ValueError("Already positional optional argument '" + name + "' in this definition")
-                self.pos_optional[name] = definition.required[name]
+                self.pos_optional[name] = definition.required[name].copy()
 
             # To optional
             elif to == "optional":
 
                 if name in self.optional: raise ValueError("Already optional argument '" + name + "' in this definition")
-                self.optional[name] = definition.required[name]
+                self.optional[name] = definition.required[name].copy()
 
             # Invalid
             else: raise ValueError("Invalid")
@@ -2174,19 +2158,19 @@ class ConfigurationDefinition(object):
             if to == "required":
 
                 if name in self.required: raise ValueError("Already required argument '" + name + "' in this definition")
-                self.required[name] = definition.pos_optional[name]
+                self.required[name] = definition.pos_optional[name].copy()
 
             # To positional optional
             elif to == "pos_optional":
 
                 if name in self.pos_optional: raise ValueError("Already positional optional argument '" + name + "' in this definition")
-                self.pos_optional[name] = definition.pos_optional[name]
+                self.pos_optional[name] = definition.pos_optional[name].copy()
 
             # To optional
             elif to == "optional":
 
                 if name in self.optional: raise ValueError("Already optional argument '" + name + "' in this definition")
-                self.optional[name] = definition.pos_optional[name]
+                self.optional[name] = definition.pos_optional[name].copy()
 
             # Invalid
             else: raise ValueError("Invalid")
@@ -2209,19 +2193,19 @@ class ConfigurationDefinition(object):
             if to == "required":
 
                 if name in self.required: raise ValueError("Already required argument '" + name + "' in this definition")
-                self.required[name] = definition.optional[name]
+                self.required[name] = definition.optional[name].copy()
 
             # Positional optional
             elif to == "pos_optional":
 
                 if name in self.pos_optional: raise ValueError("Already positional optional argument '" + name + "' in this definition")
-                self.pos_optional[name] = definition.optional[name]
+                self.pos_optional[name] = definition.optional[name].copy()
 
             # Optional
             elif to == "optional":
 
                 if name in self.optional: raise ValueError("Already optional argument '" + name + "' in this definition")
-                self.optional[name] = definition.optional[name]
+                self.optional[name] = definition.optional[name].copy()
 
             # Invalid
             else: raise ValueError("Invalid")
@@ -2240,7 +2224,45 @@ class ConfigurationDefinition(object):
         for name in definition.flags:
 
             if name in self.flags: raise ValueError("Already flag '" + name + "' in this definition")
-            self.flags[name] = definition.flags[name]
+            self.flags[name] = definition.flags[name].copy()
+
+    # -----------------------------------------------------------------
+
+    def import_sections(self, definition, recursive=False, fixed=True, required=True, pos_optional=True, optional=True,
+                        flags=True, required_to="required", pos_optional_to="pos_optional", optional_to="optional"):
+
+        """
+        This function ...
+        :param definition: 
+        :param recursive:
+        :param fixed:
+        :param required:
+        :param pos_optional:
+        :param optional:
+        :param flags:
+        :param required_to:
+        :param pos_optional_to:
+        :param optional_to:
+        :return: 
+        """
+
+        # Loop over the to be imported sections
+        for name in definition.sections:
+
+            # Existing section
+            if name in self.sections:
+
+                if recursive:
+                    self.sections[name].import_settings(definition.sections[name], fixed=fixed, required=required,
+                                                        pos_optional=pos_optional, optional=optional, flags=flags,
+                                                        sections=True, recursive=True, required_to=required_to,
+                                                        pos_optional_to=pos_optional_to, optional_to=optional_to)
+                else: raise ValueError("Already a section '" + name + "' in this definition")
+
+            # New section
+            else:
+                self.sections[name] = definition.sections[name].copy()
+                self.section_descriptions[name] = definition.section_descriptions[name]
 
     # -----------------------------------------------------------------
 
@@ -2380,6 +2402,18 @@ class ConfigurationDefinition(object):
                 # Add to the definition
                 if ptype == "boolean": self.sections[name].add_flag(pname, pdescription, default_value)
                 else: self.sections[name].add_optional(pname, ptype, pdescription, default_value, choices=choices)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def property_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fixed_names + self.required_names + self.positional_optional_names + self.optional_names + self.flag_names
 
     # -----------------------------------------------------------------
 

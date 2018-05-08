@@ -1549,6 +1549,7 @@ class ComponentSimulations(object):
         :return:
         """
 
+        # TODO: use self.observed_sed_dust IF PRESENT
         return self.observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
@@ -1561,7 +1562,34 @@ class ComponentSimulations(object):
         :return:
         """
 
+        # TODO: use self.observed_cube_dust IF PRESENT
         return self.observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: use self.faceon_observed_sed_dust IF PRESENT
+        return self.faceon_observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_dust_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: use self.faceon_observed_cube_dust IF PRESENT
+        return self.faceon_observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -1599,7 +1627,7 @@ class ComponentSimulations(object):
 
         return self.intrinsic_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
 
-    # -----------------------------------------------------------------
+    # ----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_dust_cube(self):

@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
@@ -21,10 +20,9 @@ from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools import tables
-from ....core.data.sed import SED
-from ....core.simulation.wavelengthgrid import WavelengthGrid
-from ....magic.core.datacube import DataCube
 from ....magic.plot.imagegrid import StandardImageGridPlotter
+from ....core.tools.utils import lazyproperty
+from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -47,14 +45,23 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # -- Attributes --
 
-        # The flux fractions
-        self.fractions = None
-        self.fraction_maps = dict()
+        # The dust absorbed energy maps
+        self.total_absorption = None
+        self.total_absorption_faceon = None
+        self.young_absorption = None
+        self.young_absorption_faceon = None
+        self.ionizing_absorption = None
+        self.ionizing_absorption_faceon = None
+        self.internal_absorption = None
+        self.internal_absorption_faceon = None
 
-        # The TIR maps
-        self.total_tir_map = None
-        self.evolved_tir_map = None
-        self.unevolved_tir_map = None
+        # Maps of heating
+        self.map = None
+        self.map_faceon = None
+
+        # Cubes of spectral heating
+        self.cube = None
+        self.cube_faceon = None
 
     # -----------------------------------------------------------------
 
@@ -69,11 +76,17 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Calculate the heating fractions
-        self.calculate_heating_fractions()
+        # 2. Get the absorption maps
+        self.get_absorptions()
 
-        # 3. Calculate maps of the TIR luminosity
-        self.calculate_tir_maps()
+        # Get the maps of the heating fraction (earth and faceon)
+        self.get_maps()
+
+        # Get the cube of the heating fraction per wavelength (earth and faceon)
+        self.get_cubes()
+
+        # Show
+        self.show()
 
         # 4. Writing
         self.write()
@@ -96,234 +109,501 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_heating_fractions(self):
+    @property
+    def total_simulations(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the heating fractions ...")
-
-        # Calculate the flux fractions of the evolved and unevolved stellar populations over the wavelength spectrum
-        self.calculate_sed_heating_fractions()
-
-        # Calculate the flux fractions of the evolved and unevolved stellar population for selected wavelenghts in each pixel
-        self.calculate_pixel_heating_fractions()
+        return self.model.total_simulations
 
     # -----------------------------------------------------------------
 
     @property
-    def total_sed(self):
+    def young_simulations(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.total_contribution_total_sed
+        return self.model.young_simulations
 
     # -----------------------------------------------------------------
 
     @property
-    def old_sed(self):
+    def ionizing_simulations(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_contribution_total_sed
+        return self.model.sfr_simulations
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_sed(self):
+    def get_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.unevolved_contribution_total_sed
+        # Total
+        self.get_total_absorptions()
+
+        # Young
+        self.get_young_absorptions()
+
+        # Ionizing
+        self.get_ionizing_absorptions()
+
+        # Internal
+        self.get_internal_absorptions()
 
     # -----------------------------------------------------------------
 
-    def calculate_sed_heating_fractions(self):
+    def get_total_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the flux fractions over the wavelength spectrum ...")
+        # Earth
+        self.get_total_absorption()
 
-        # ...
-        all_wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
-        dust_wavelengths = all_wavelengths > 10.
-
-        total_fluxes = self.total_sed.photometry(asarray=True)
-        evolved_fluxes = self.old_sed.photometry(asarray=True)
-        unevolved_fluxes = self.unevolved_sed.photometry(asarray=True)
-
-        # Calculate the heating fractions
-        unevolved_fractions = 0.5 * (unevolved_fluxes + total_fluxes - evolved_fluxes) / total_fluxes
-        evolved_fractions = 0.5 * (evolved_fluxes + total_fluxes - unevolved_fluxes) / total_fluxes
-
-        # Create the table of flux fractions
-        names = ["Wavelength", "Flux fraction from unevolved stellar populations",
-                 "Flux fraction from evolved stellar population"]
-        data = [all_wavelengths[dust_wavelengths], unevolved_fractions[dust_wavelengths],
-                evolved_fractions[dust_wavelengths]]
-        self.fractions = tables.new(data, names)
+        # Face-on
+        self.get_total_absorption_faceon()
 
     # -----------------------------------------------------------------
 
-    @property
-    def total_datacube(self):
-
+    def get_total_absorption(self):
+        
         """
         This function ...
-        :return:
+        :return: 
         """
 
-        return self.total_contribution_total_datacube
+        # Get total absorption map
+        if self.has_total_absorption: self.load_total_absorption()
+
+        # Calculate
+        else: self.calculate_total_absorption()
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_datacube(self):
+    def load_total_absorption(self):
 
         """
-        This function ...
+        Thisf unction ...
         :return:
         """
 
-        return self.old_contribution_total_datacube
+        # Load
+        self.total_absorption = Frame.from_file(self.total_absorption)
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_datacube(self):
+    def calculate_total_absorption(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.unevolved_contribution_total_datacube
+        # Integrates the dust spectral cube
+        self.total_absorption = self.total_simulations.observed_dust_frame
 
     # -----------------------------------------------------------------
 
-    def calculate_pixel_heating_fractions(self):
+    def get_total_absorption_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the flux fractions for selected wavelengths in each pixel ...")
+        # Load
+        if self.has_total_absorption_faceon: self.load_total_absorptions_faceon()
 
-        # The interesting wavelengths
-        wavelengths = [12., 24., 70., 100., 250., 350., 500.]
-
-        # Loop over the interesting wavelengths
-        for wavelength in wavelengths:
-
-            # Get the index of the wavelength grid point closest to this wavelength
-            index = self.wavelength_grid.closest_wavelength_index(wavelength)
-            wavelength = self.wavelength_grid.table["Wavelength"][index]
-
-            # Determine the name of the corresponding frame in the datacube image
-            frame_name = "frame" + str(index)
-
-            total_fluxes = self.total_datacube.frames[frame_name]
-            evolved_fluxes = self.old_datacube.frames[frame_name]
-            unevolved_fluxes = self.unevolved_datacube.frames[frame_name]
-
-            # Calculate the heating fractions
-            unevolved_fractions = 0.5 * (unevolved_fluxes + total_fluxes - evolved_fluxes) / total_fluxes
-            #evolved_fractions = 0.5 * (evolved_fluxes + total_fluxes - unevolved_fluxes) / total_fluxes
-
-            # Add the fraction map to the dictionary
-            self.fraction_maps[wavelength] = unevolved_fractions
+        # Calculate
+        else: self.calculate_total_absorptions_faceon()
 
     # -----------------------------------------------------------------
 
-    def calculate_tir_maps(self):
+    def load_total_absorptions_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the TIR luminosity in each pixel ...")
-
-        # Calculate the TIR maps
-        self.calculate_total_tir_map()
-        self.calculate_unevolved_tir_map()
-        self.calculate_evolved_tir_map()
+        # Load
+        self.total_absorption_faceon = Frame.from_file(self.total_absorption_faceon_path)
 
     # -----------------------------------------------------------------
 
-    def calculate_total_tir_map(self):
+    def calculate_total_absorptions_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the total TIR luminosity in each pixel ...")
-
-        cube = self.total_datacube.asarray()
-        wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
-        deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
-
-        # Calculate the map
-        self.total_tir_map = integrate_pixel_seds(cube, wavelengths, deltas)
+        # Integrates the dust spectral cube
+        self.total_absorption_faceon = self.total_simulations.faceon_observed_dust_sed
 
     # -----------------------------------------------------------------
 
-    def calculate_unevolved_tir_map(self):
+    def get_young_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the unevolved TIR luminosity in each pixel ...")
+        # Earth
+        self.get_young_absorption()
 
-        cube = self.unevolved_datacube.asarray()
-        wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
-        deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
-
-        # Calculate the map
-        self.unevolved_tir_map = integrate_pixel_seds(cube, wavelengths, deltas)
+        # Face-on
+        self.get_young_absorption_faceon()
 
     # -----------------------------------------------------------------
 
-    def calculate_evolved_tir_map(self):
+    def get_young_absorption(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Calculating the evolved TIR luminosity in each pixel ...")
+        # Load
+        if self.has_young_absorption: self.load_young_absorption()
 
-        cube = self.old_datacube.asarray()
-        wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
-        deltas = self.wavelength_grid.deltas(asarray=True, unit="micron")
+        # Calculate
+        else: self.calculate_young_absorption()
 
-        # Calculate the map
-        self.evolved_tir_map = integrate_pixel_seds(cube, wavelengths, deltas)
+    # -----------------------------------------------------------------
+
+    def load_young_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.young_absorption = Frame.from_file(self.young_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_young_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Integrates the dust spectral cube
+        self.young_absorption = self.young_simulations.observed_dust_frame
+
+    # -----------------------------------------------------------------
+
+    def get_young_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_young_absorption_faceon: self.load_young_absorption_faceon()
+
+        # Calculate
+        else: self.calculate_young_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    def load_young_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.young_absorption_faceon = Frame.from_file(self.young_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_young_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Integrates the dust spectral cube
+        self.young_absorption_faceon = self.young_simulations.faceon_observed_dust_frame
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.get_ionizing_absorption()
+
+        # Face-on
+        self.get_ionizing_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_ionizing_absorption: self.load_ionizing_absorption()
+
+        # Calculate
+        else: self.calculate_ionizing_absorption()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.ionizing_absorption = Frame.from_file(self.ionizing_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_ionizing_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Integrates the dust spectral cube
+        self.ionizing_absorption = self.ionizing_simulations.observed_dust_frame
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_ionizing_absorption_faceon: self.load_ionizing_absorption_faceon()
+
+        # Calculate
+        else: self.calculate_ionizing_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.ionizing_absorption_faceon = Frame.from_file(self.ionizing_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_ionizing_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Integrates the dust spectral cube
+        self.ionizing_absorption_faceon = self.ionizing_simulations.faceon_observed_dust_frame
+
+    # -----------------------------------------------------------------
+
+    def get_internal_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.get_internal_absorption()
+
+        # Faceon
+        self.get_internal_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    def get_internal_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_internal_absorption: self.load_internal_absorption()
+
+        # Calculate
+        else: self.calculate_internal_absorption()
+
+    # -----------------------------------------------------------------
+
+    def load_internal_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        self.internal_absorption = Frame.from_file(self.internal_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_internal_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def get_internal_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_internal_absorption_faceon: self.load_internal_absorption_faceon()
+
+        # Calculate
+        else: self.calculate_internal_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    def load_internal_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.internal_absorption_faceon = Frame.from_file(self.internal_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def calculate_internal_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.get_earth_map()
+
+        # Face-on
+        self.get_faceon_map()
+
+    # -----------------------------------------------------------------
+
+    def get_earth_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_cubes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.get_earth_cube()
+
+        # Face-on
+        self.get_faceon_cube()
+
+    # -----------------------------------------------------------------
+
+    def get_earth_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_faceon_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -337,59 +617,460 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the table with the flux fractions
-        self.write_fractions()
-
-        # Write the TIR maps
-        self.write_tir_maps()
+        # Write
+        self.write_absorptions()
 
     # -----------------------------------------------------------------
 
-    def write_fractions(self):
+    @lazyproperty
+    def absorptions_path(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Writing a table with the flux fractions at different wavelengths ...")
-
-        # Determine the path to the table of the flux fractions
-        path = fs.join(self.projected_heating_path, "fractions.dat")
-
-        # Write the table
-        tables.write(self.fractions, path, format="ascii.ecsv")
+        return fs.create_directory_in(self.projected_heating_path, "absorptions")
 
     # -----------------------------------------------------------------
 
-    def write_tir_maps(self):
+    def write_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Writing the TIR maps ...")
+        # Total
+        self.write_total_absorptions()
 
-        # Determine the path to the total TIR map
-        path = fs.join(self.projected_heating_path, "tir_total.fits")
+        # Young
+        self.write_young_absorptions()
 
-        # Write the total TIR map
-        self.total_tir_map.saveto(path)
+        # Ionizing
+        self.write_ionizing_absorptions()
 
-        # Determine the path to the unevolved TIR map
-        path = fs.join(self.projected_heating_path, "tir_unevolved.fits")
+        # Internal
+        self.write_internal_absorptions()
 
-        # Write the unevolved TIR map
-        self.unevolved_tir_map.saveto(path)
+    # -----------------------------------------------------------------
 
-        # Determine the path to the evolved TIR map
-        path = fs.join(self.projected_heating_path, "tir_evolved.fits")
+    def write_total_absorptions(self):
 
-        # Write the evolved TIR map
-        self.evolved_tir_map.saveto(path)
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.write_total_absorption()
+
+        # Write
+        self.write_total_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorption_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "total.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.total_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_total_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.total_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_total_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.total_absorption.saveto(self.total_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorption_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "total_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.total_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_total_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.total_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_total_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.total_absorption_faceon.saveto(self.total_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.write_young_absorption()
+
+        # Faceon
+        self.write_young_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_absorption_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "young.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.young_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_young_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.young_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.young_absorption.saveto(self.young_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_absorption_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "young_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.young_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_young_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.young_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.young_absorption_faceon.saveto(self.young_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.write_ionizing_absorption()
+
+        # Face-on
+        self.write_ionizing_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_absorption_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "ionizing.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.ionizing_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_ionizing_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.remove_file(self.ionizing_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ionizing_absorption.saveto(self.ionizing_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_absorption_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "ionizing_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.ionizing_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_ionizing_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.ionizing_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ionizing_absorption_faceon.saveto(self.ionizing_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_internal_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        self.write_internal_absorption()
+
+        # Face-on
+        self.write_internal_absorption_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorption_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "internal.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_internal_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.internal_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_internal_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.internal_absorption.saveto(self.internal_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorption_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.absorptions_path, "internal_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_internal_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.internal_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_internal_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.remove_file(self.internal_absorption_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_internal_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.internal_absorption_faceon.saveto(self.internal_absorption_faceon_path)
 
     # -----------------------------------------------------------------
 
@@ -402,100 +1083,5 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Inform the user
         log.info("Plotting ...")
-
-        # Plot the flux fraction as a function of wavelength
-        self.plot_fractions()
-
-        # Plot the maps of the flux fraction at specific wavelengths
-        self.plot_fraction_maps()
-
-    # -----------------------------------------------------------------
-
-    def plot_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the flux fractions as a function of wavelength ...")
-
-        # Determine the path to the plot file
-        path = fs.join(self.projected_heating_path, "fractions.pdf")
-
-        # Create the figure
-        plt.figure(figsize=(7, 5))
-        plt.ylabel('$F^\prime_{\lambda,\mathrm{unev.}}$ [$\%$]', fontsize=20)
-        plt.xlabel('$\lambda/\mu\mathrm{m}$', fontsize=20)
-
-        plt.xlim(10., 1.e3)
-        plt.ylim(0., 60.)
-
-        plt.xscale('log')
-        plt.tick_params(labelsize=20)
-
-        # plt.subplots_adjust(bottom=0.1)
-        # plt.plot(dustwls,Fold, 'r-', label="old stars")
-
-        plt.plot(self.fractions["Wavelength"], self.fractions["Flux fraction from unevolved stellar populations"], 'k-', label="Unevolved stellar populations")
-        plt.plot(self.fractions["Wavelength"], self.fractions["Flux fraction from evolved stellar population"], "g-", label="Evolved stellar population")
-
-        # plt.plot(dustwls,Fyoung_alternative1, 'r-', label="alt 1")
-        # plt.plot(dustwls,Fyoung_alternative2, 'g-', label="alt 2")
-        # plt.plot(dustwls,Fyoung_alternative3, 'c-', label="alt 3")
-
-        #plt.plot(dustwls, Fyoung_alternative4, 'k-', label="alt 4")
-
-        #plt.fill_between(dustwls, Fyoung, Fyoung_alternative4, color='grey', alpha='0.5')
-
-        plt.tight_layout()
-        # plt.legend(loc='upper left',numpoints=1,markerscale=1.5,fontsize=14)
-
-        # Save the figure
-        plt.savefig(path)
-        plt.close()
-
-    # -----------------------------------------------------------------
-
-    def plot_fraction_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting maps of the heating fraction by unevolved stars at specific wavelengths ...")
-
-        # Create the image grid plotter
-        plotter = StandardImageGridPlotter()
-
-# -----------------------------------------------------------------
-
-def integrate_pixel_seds(cube, wls, dwls):
-
-    """
-    This function ...
-    :param cube:
-    :param wls:
-    :param dwls:
-    :return:
-    """
-
-    Lsun = 3.846e26 # Watts
-    MjySr_to_LsunMicron = 1.e6 * (36./206264.806247)**2 * 1.e-26 * 4*np.pi*(0.785e6*3.086e+16)**2 * 3.e14/(wls**2) / Lsun
-
-    xaxis = len(cube[0,0,0:])
-    yaxis = len(cube[0,0:,0])
-    zaxis = len(cube[0:,0,0])
-
-    slice = np.zeros((yaxis,xaxis))
-    for i in range(0,yaxis):
-        for j in range(0,xaxis):
-            sed = cube[0:,i,j]
-            slice[i,j] = np.sum(sed * MjySr_to_LsunMicron * dwls)
-
-    return slice
 
 # -----------------------------------------------------------------

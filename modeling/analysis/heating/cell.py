@@ -29,6 +29,7 @@ from ....core.tools.utils import lazyproperty
 from ....core.plot.distribution import plot_distribution, plot_distributions
 from ....core.basics.containers import DefaultOrderedDict
 from ....magic.core.frame import Frame
+from ....core.tools import nr
 
 # -----------------------------------------------------------------
 
@@ -1040,6 +1041,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def npixels_with_smallest_absolute_z(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(np.sum(self.where_smallest_absolute_z))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def x_coordinates_midplane(self):
 
         """
@@ -1345,6 +1358,33 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def nmidplane_coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.midplane_coordinates)
+
+    # -----------------------------------------------------------------
+
+    def get_pixel_in_midplane(self, x, y):
+
+        """
+        This function returns i, j
+        :param x:
+        :param y:
+        :return:
+        """
+
+        i = nr.find_nearest_index(self.midplane_coordinates, x)
+        j = nr.find_nearest_index(self.midplane_coordinates, y)
+        return i, j
+
+    # -----------------------------------------------------------------
+
     def create_map_midplane(self):
 
         """
@@ -1364,8 +1404,34 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Create interpolated data in 2D
         #z_grid = mlab.griddata(self.x_coordinates_midplane, self.y_coordinates_midplane, self.heating_fractions_midplane, xv, yv, interp="linear")
 
+        # Debugging
+        log.debug("Creating a grid of " + str(self.nmidplane_coordinates) + " x " + str(self.nmidplane_coordinates) + " pixels in the midplane ...")
+
         # Create grid
         xv, yv = np.meshgrid(self.midplane_coordinates, self.midplane_coordinates, sparse=False)
+
+        #print("npixels", self.npixels_with_smallest_absolute_z)
+
+        from ....magic.core.mask import Mask
+        #print(self.where_smallest_absolute_z)
+        #mask = Mask(self.where_smallest_absolute_z)
+        mask = Mask.empty(self.nmidplane_coordinates, self.nmidplane_coordinates)
+
+        for i in range(len(self.where_smallest_absolute_z)):
+            if not self.where_smallest_absolute_z[i]: continue
+            x = self.valid_x_coordinates[i]
+            y = self.valid_y_coordinates[i]
+            i, j = self.get_pixel_in_midplane(x, y)
+            mask[j, i] = True
+        mask.saveto(fs.join(self.cell_heating_path, "mask.fits"))
+
+        where_smallest_absolute_z = self.absolute_z_coordinates == self.smallest_absolute_z
+        npixels_with_smallest_absolute_z = int(np.sum(self.where_smallest_absolute_z))
+
+        #map_x = Frame(xv)
+        #map_y = Frame(yv)
+        #map_x.saveto(fs.join(self.cell_heating_path, "x.fits"))
+        #map_y.saveto(fs.join(self.cell_heating_path, "y.fits"))
 
         # Get the interpolated heating
         points = (self.x_coordinates_midplane, self.y_coordinates_midplane)

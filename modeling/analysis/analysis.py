@@ -31,6 +31,10 @@ from ..core.environment import load_modeling_environment
 from ...core.plot.sed import plot_seds, SEDPlotter, plot_sed
 from ...core.config.plot_seds import definition as plot_seds_definition
 from ...core.plot.attenuation import plot_attenuation_curve, plot_attenuation_curves
+from ..config.analyse_cell_heating import definition as analyse_cell_heating_definition
+from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
+from .heating.cell import CellDustHeatingAnalyser
+from .heating.projected import ProjectedDustHeatingAnalyser
 
 # -----------------------------------------------------------------
 
@@ -47,6 +51,10 @@ _wavelengths_command_name = "wavelengths"
 _dustgrid_command_name = "grid"
 _sed_command_name = "sed"
 _attenuation_command_name = "attenuation"
+
+# Analysis
+_heating_command_name = "heating"
+_energy_command_name = "energy"
 
 # -----------------------------------------------------------------
 
@@ -66,6 +74,10 @@ commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot t
 commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 commands[_sed_command_name] = (None, None, "plot SEDs", None)
 commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
+
+# Analysis
+commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
+#commands[_energy_command_name] = (None, None, "analyse energy budget", None)
 
 # -----------------------------------------------------------------
 
@@ -153,10 +165,35 @@ attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", T
 
 # -----------------------------------------------------------------
 
+_cell_name = "cell"
+_projected_name = "projected"
+
+# -----------------------------------------------------------------
+
+# Heating subcommands
+heating_commands = OrderedDict()
+
+# Cell and projected
+heating_commands[_cell_name] = ("analyse_cell_heating_command", True, "analyse the cell heating", None)
+heating_commands[_projected_name] = ("analyse_projected_heating_command", True, "analyse the projected heating", None)
+
+# -----------------------------------------------------------------
+
+# Energy subcommands
+energy_commands = OrderedDict()
+
+# Cell and projected
+energy_commands[_cell_name] = ("analyse_cell_energy_command", True, "analyse the cell energy budget", None)
+energy_commands[_projected_name] = ("analyse_projected_energy_command", True, "analyse the projected energy budget", None)
+
+# -----------------------------------------------------------------
+
 # Set subcommands
 subcommands = OrderedDict()
 subcommands[_sed_command_name] = sed_commands
 subcommands[_attenuation_command_name] = attenuation_commands
+subcommands[_heating_command_name] = heating_commands
+#subcommands[_energy_command_name] = energy_commands
 
 # -----------------------------------------------------------------
 
@@ -1959,6 +1996,130 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Plot
         plot_attenuation_curve(self.model.attenuation_curve_unevolved, unevolved)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_cell_heating_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        #print(analyse_cell_heating_definition.property_names)
+        #print(analyse_cell_heating_definition.section_names)
+
+        # Add settings
+        definition.import_settings(analyse_cell_heating_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_cell_heating_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_cell_heating_definition, **kwargs)
+
+        # Analyse
+        self.analyse_cell_heating(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_cell_heating(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analyser
+        analyser = CellDustHeatingAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_projected_heating_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        #print(analyse_projected_heating_definition.property_names)
+        #print(analyse_projected_heating_definition.section_names)
+
+        # Add settings
+        definition.import_settings(analyse_projected_heating_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_projected_heating_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_projected_heating_definition, **kwargs)
+
+        # Analyse
+        self.analyse_projected_heating(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_projected_heating(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analyser
+        analyser = ProjectedDustHeatingAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
 
     # -----------------------------------------------------------------
 

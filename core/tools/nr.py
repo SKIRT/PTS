@@ -26,8 +26,21 @@ def find_nearest(array, value):
     :return:
     """
 
-    idx = (np.abs(array-value)).argmin()
+    idx = find_nearest_index(array, value)
     return array[idx]
+
+# -----------------------------------------------------------------
+
+def find_nearest_index(array, value):
+
+    """
+    This function ...
+    :param array:
+    :param value:
+    :return:
+    """
+
+    return (np.abs(array-value)).argmin()
 
 # -----------------------------------------------------------------
 

@@ -580,7 +580,29 @@ class InteractiveConfigurable(Configurable):
                 success = False
             except Exception as e:
                 message = str(e)
-                if "too few arguments" in message: log.error("Too few arguments")
+                if "too few arguments" in message:
+                    log.error("Too few arguments")
+                    # Get first word == key
+                    key = command.split(" ")[0]
+                    if self.has_subcommands(key):
+                        from ..tools import strings
+                        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+                        if len(splitted) > 1: usage = self.get_usage_for_key(splitted[1], self._subcommands[key])
+                        else:
+                            # Set subcommands with descriptions
+                            subcommands = self.get_subcommands(key)
+                            subcommands_descriptions = OrderedDict()
+                            for subkey in subcommands:
+                                function_name, pass_command, description, subject = subcommands[subkey]
+                                subcommands_descriptions[subkey] = description
+                            from .configuration import ConfigurationDefinition, get_usage
+                            definition = ConfigurationDefinition(write_config=False)
+                            definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                            usage = get_usage(key, definition, add_logging=False, add_cwd=False)
+                        for line in usage: log.error(line)
+                    else:
+                        usage = self.get_usage_for_key(key, self._commands)
+                        for line in usage: log.error(line)
                 elif "invalid choice" in message: log.error(str(e))
                 else:
                     traceback.print_exc()

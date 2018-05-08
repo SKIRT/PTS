@@ -13,6 +13,11 @@ from pts.modeling.fitting.expander import directions
 
 # -----------------------------------------------------------------
 
+# Copy the definition
+definition = definition.copy()
+
+# -----------------------------------------------------------------
+
 # Set the modeling path
 environment = load_modeling_environment_cwd()
 runs = environment.fitting_runs

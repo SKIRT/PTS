@@ -243,8 +243,8 @@ class MappingsPlayground(object):
         # Create output path
         if output_path is None:
             # Create a directory within the temporary directory
-            outpath = fs.join(self.temp_path, parameter_string)
-            fs.create_directory(outpath)
+            output_path = fs.join(self.temp_path, parameter_string)
+            fs.create_directory(output_path)
 
         # Log debug
         log.info("Simulating SED in temporary directory '" + output_path + "' ...")

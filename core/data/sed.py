@@ -372,7 +372,8 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_text_file(cls, path, wavelength_unit=None, photometry_unit=None, density=False, wavelength_column=0, photometry_column=1):
+    def from_text_file(cls, path, wavelength_unit=None, photometry_unit=None, density=False, wavelength_column=0,
+                       photometry_column=1, skiprows=None):
 
         """
         This function ...
@@ -382,6 +383,7 @@ class SED(WavelengthCurve):
         :param density:
         :param wavelength_column:
         :param photometry_column:
+        :param skiprows:
         :return:
         """
 
@@ -401,8 +403,15 @@ class SED(WavelengthCurve):
 
         from ..tools import types
 
+        # Skip rows?
+        if skiprows is not None:
+            from ..tools import filesystem as fs
+            lines = fs.get_lines(path)
+            contents = "\n".join(lines[skiprows:])
+        else: contents = path
+
         # Load as table
-        table = tables.from_file(path, format="ascii")
+        table = tables.from_file(contents, format="ascii")
 
         # Find wavelength column
         wavelength_column_name = table.colnames[wavelength_column]
