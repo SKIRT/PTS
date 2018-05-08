@@ -17,6 +17,7 @@ import numpy as np
 import StringIO
 import warnings
 from collections import OrderedDict, defaultdict
+import copy
 
 # Import astronomical modules
 from astropy.table import Table, MaskedColumn
@@ -311,6 +312,11 @@ def merge_tables(*tables, **kwargs):
 
 # -----------------------------------------------------------------
 
+delattr(Table, "__copy__")
+delattr(Table, "__deepcopy__")
+
+# -----------------------------------------------------------------
+
 class SmartTable(Table):
 
     """
@@ -351,6 +357,17 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
     @property
     def has_column_info(self):
 
@@ -385,14 +402,18 @@ class SmartTable(Table):
         units = kwargs.pop("units", None)
         dtypes = kwargs.pop("dtypes", None)
         descriptions = kwargs.pop("descriptions", None)
+        #print("names", names)
 
         # Get tostr kwargs
         tostr_kwargs = kwargs.pop("tostr_kwargs", {})
 
         # Create the table
+        #print(kwargs)
         table = cls(**kwargs) # WILL ALREADY CREATE THE COLUMN INFO
 
         has_info = table.has_column_info
+        #print(type(table).__name__)
+        #print(table.column_info)
 
         # Get the names if necessary
         if names is None:
@@ -430,6 +451,7 @@ class SmartTable(Table):
             else: description = "no description"
 
             # Add the column
+            #print(unit)
             if not has_info: table.add_column_info(name, dtype, unit, description)
 
         # Set None string
@@ -437,6 +459,7 @@ class SmartTable(Table):
 
         # Setup the table
         table._setup()
+        #print(table.colnames)
 
         # Add the rows, using the Table add_row implementation directly
         # because the add_row function may be prohibited in the actual class (because of lazy features)
@@ -462,6 +485,8 @@ class SmartTable(Table):
 
             # Add the row
             #super(SmartTable, table).add_row(row)
+            #print(row)
+            #print([table.column_unit(colname) for colname in table.colnames])
             SmartTable.add_row(table, row)
 
         # Return the table
@@ -1569,24 +1594,35 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_value(self, colname, index, add_unit=True):
+    def get_value(self, colname, index, add_unit=True, unit=None):
 
         """
         This function ...
         :param colname:
         :param index:
         :param add_unit:
+        :param unit:
         :return:
         """
+
+        # Masked? -> return None
+        if self[colname].mask[index]: value = None
 
         # Get raw, scalar value
         value = self[colname][index]
 
-        if self[colname].mask[index]: value = None
-        elif self.has_column_unit(colname) and add_unit: value = value * self.column_unit(colname)
+        # Add unit
+        if self.has_column_unit(colname): value = value * self.column_unit(colname)
+
+        # Convert?
+        if unit is not None:
+            if not self.has_column_unit(colname): raise ValueError("Column '" + colname + "' does not have a unit")
+            value = value.to(unit)
 
         # Return the value
-        return value
+        if add_unit: return value
+        elif self.has_column_unit(colname): return value.value
+        else: return value
 
     # -----------------------------------------------------------------
 

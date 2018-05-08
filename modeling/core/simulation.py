@@ -2099,9 +2099,20 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # Load simulations
-        observed = ObservedComponentSimulation.from_output_path(observed) if fs.has_files_in_path(observed) else None
-        intrinsic = IntrinsicComponentSimulation.from_output_path(intrinsic) if intrinsic is not None and fs.has_files_in_path(intrinsic) else None
+        # Load observed simulation
+        if not fs.is_directory(observed): raise ValueError("Observed simulation directory does not exist")
+        if fs.has_files_in_path(observed): observed = ObservedComponentSimulation.from_output_path(observed)
+        else:
+            log.warning("Observed simulation has not been performed: no output files")
+            observed = None
+
+        # Load intrinsic simulation
+        if intrinsic is not None:
+            if not fs.is_directory(intrinsic): raise ValueError("Intrinsic simulation directory does not exist")
+            if fs.has_files_in_path(intrinsic): intrinsic = IntrinsicComponentSimulation.from_output_path(intrinsic)
+            else:
+                log.warning("Intrinsic simulation has not been performed: no output files")
+                intrinsic = None
 
         # Create and return
         return cls(name, observed, intrinsic=intrinsic, distance=distance)
@@ -2441,13 +2452,7 @@ class MultiComponentSimulations(ComponentSimulations):
         if self.has_transparent_sed: return self.observed_sed_transparent
 
         # Has intrinsic SEDs, add them
-        elif self.has_intrinsic_seds:
-            #print([type(value) for value in self.intrinsic_seds.values()])
-            #return sum(self.intrinsic_seds.values())
-            # DOESN'T WORK?? TypeError: unsupported operand type(s) for +: 'int' and 'SED'
-            result = self.intrinsic_seds.values()[0].copy()
-            for other in self.intrinsic_seds.values()[1:]: result += other
-            return result
+        elif self.has_intrinsic_seds: return sequences.sum(self.intrinsic_seds.values())
 
         # Cannot be calculated
         else: raise ValueError("Intrinsic SED cannot be calculated")
@@ -2466,7 +2471,7 @@ class MultiComponentSimulations(ComponentSimulations):
         if self.has_transparent_cube: return self.observed_cube_transparent
 
         # Has intrinsic cubes, add them
-        elif self.has_intrinsic_cubes: return sum(self.intrinsic_cubes.values())
+        elif self.has_intrinsic_cubes: return sequences.sum(self.intrinsic_cubes.values())
 
         # Cannot be calculated
         else: raise ValueError("Intrinsic datacube cannot be calculated")

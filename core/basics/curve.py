@@ -87,6 +87,30 @@ class Curve(SmartTable):
 
         kwargs["from_astropy"] = False
 
+        # x and y name
+        if kwargs.get("names", None) is not None:
+            names = kwargs.get("names")
+            x_name = names[0]
+            y_name = names[1]
+            kwargs["x_name"] = x_name
+            kwargs["y_name"] = y_name
+
+        # x and y unit
+        if kwargs.get("units", None) is not None:
+            units = kwargs.get("units")
+            x_unit = units[0]
+            y_unit = units[1]
+            kwargs["x_unit"] = x_unit
+            kwargs["y_unit"] = y_unit
+
+        # x and y descriptions
+        #if kwargs.get("descriptions", None) is not None:
+        descriptions = kwargs.get("descriptions", ("no description", "no description"))
+        x_description = descriptions[0]
+        y_description = descriptions[1]
+        kwargs["x_description"] = x_description
+        kwargs["y_description"] = y_description
+
         # USe the base class implementation
         curve = super(Curve, cls).from_columns(*columns, **kwargs)
 
@@ -384,12 +408,20 @@ class Curve(SmartTable):
         # Get the indices
         indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max) # don't name arguments because of re-definition of function in WavelengthCurve class
 
+        # Set the x and y unit
+        x_unit = self.x_unit
+        y_unit = self.y_unit
+
         # Get the values
-        x_values = [self.get_value(self.x_name, index) for index in indices]
-        y_values = [self.get_value(self.y_name, index) for index in indices]
+        x_values = [self.get_value(self.x_name, index, unit=x_unit, add_unit=False) for index in indices]
+        y_values = [self.get_value(self.y_name, index, unit=y_unit, add_unit=False) for index in indices]
+
+        # Set the names and units
+        names = (self.x_name, self.y_name)
+        units = (x_unit, y_unit)
 
         # Create new curve
-        return self.__class__.from_columns(x_values, y_values, names=[self.x_name, self.y_name])
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
     # -----------------------------------------------------------------
 
@@ -401,19 +433,23 @@ class Curve(SmartTable):
         :return:
         """
 
-        if hasattr(self, "x_name"): print("self", self.x_name)
-        if hasattr(other, "x_name"): print("other", other.x_name)
-        if hasattr(self, "y_name"): print("self", self.y_name)
-        if hasattr(other, "y_name"): print("other", other.y_name)
+        # HACKS
+        #if hasattr(self, "x_name"): print("self", self.x_name)
+        #if hasattr(other, "x_name"): print("other", other.x_name)
+        #if hasattr(self, "y_name"): print("self", self.y_name)
+        #if hasattr(other, "y_name"): print("other", other.y_name)
 
-        x_name = self.x_name if hasattr(self, "x_name") else other.x_name
-        y_name = self.y_name if hasattr(self, "y_name") else other.y_name
-
-        y_unit = self.y_unit if hasattr(self, "y_unit") else other.y_unit
+        #x_name = self.x_name if hasattr(self, "x_name") else other.x_name
+        #y_name = self.y_name if hasattr(self, "y_name") else other.y_name
+        #x_unit = self.x_unit if hasattr(self, "x_unit") and self.x_unit is not None else other.x_unit
+        #y_unit = self.y_unit if hasattr(self, "y_unit") and self.y_unit is not None else other.y_unit
+        #print(x_unit, y_unit)
 
         # Check whether names are the same
-        #if self.x_name != other.x_name: raise ValueError("x name must be the same")
-        #if self.y_name != other.y_name: raise ValueError("y name must be the same")
+        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        if self.y_name != other.y_name: raise ValueError("y name must be the same")
+        y_name = self.y_name
+        y_unit = self.y_unit
 
         # Check whether the lengths are the same
         if self.npoints != other.npoints: raise ValueError("number of data points must be the same")
@@ -427,6 +463,12 @@ class Curve(SmartTable):
 
         # Add the data
         self[y_name] += other_values
+
+        # HACKS
+        #if not hasattr(self, "x_name"): self.x_name = x_name
+        #if not hasattr(self, "y_name"): self.y_name = y_name
+        #if not hasattr(self, "x_unit") or self.x_unit is None: self[x_name].unit = x_unit
+        #if not hasattr(self, "y_unit") or self.y_unit is None: self[y_name].unit = y_unit
 
         # Return
         return self
@@ -442,8 +484,14 @@ class Curve(SmartTable):
         """
 
         # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
         x_name = self.x_name
+
+        # Get the units
+        x_unit = self.x_unit
+        y_unit = self.y_unit
+        if x_unit is not None and other.x_unit is None: raise ValueError("unit of '" + other.x_name + "' is not defined")
+        if y_unit is not None and other.y_unit is None: raise ValueError("unit of '" + other.y_name + "' is not defined")
 
         # Initialize a list for the x values and y values
         x_values = []
@@ -455,13 +503,13 @@ class Curve(SmartTable):
         while True:
 
             # Get the values
-            x_a = self.get_value(self.x_name, i)
-            x_b = other.get_value(other.x_name, j)
+            x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
+            x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
 
             # Value is the same: add
             if x_a == x_b:
 
-                result = self.get_value(self.y_name, i) + other.get_value(other.y_name, j)
+                result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) + other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
 
                 x_values.append(x_a)
                 y_values.append(result)
@@ -484,8 +532,14 @@ class Curve(SmartTable):
         if self.y_name == other.y_name: y_name = self.y_name
         else: y_name = self.y_name + " + " + other.y_name
 
+        # Set the names and units
+        names = (x_name, y_name)
+        units = (x_unit, y_unit)
+        #print("names", names)
+        #print("units", units)
+
         # Create new curve
-        return self.__class__.from_columns(x_values, y_values, names=[x_name, y_name])
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
     # -----------------------------------------------------------------
 
@@ -498,8 +552,14 @@ class Curve(SmartTable):
         """
 
         # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
         x_name = self.x_name
+
+        # Get the units
+        x_unit = self.x_unit
+        y_unit = self.y_unit
+        if x_unit is not None and other.x_unit is None: raise ValueError("unit of '" + other.x_name + "' is not defined")
+        if y_unit is not None and other.y_unit is None: raise ValueError("unit of '" + other.y_name + "' is not defined")
 
         # Initialize a list for the x values and y values
         x_values = []
@@ -511,13 +571,13 @@ class Curve(SmartTable):
         while True:
 
             # Get the values
-            x_a = self.get_value(self.x_name, i)
-            x_b = other.get_value(other.x_name, j)
+            x_a = self.get_value(self.x_name, i, unit=x_unit, add_unit=False)
+            x_b = other.get_value(other.x_name, j, unit=x_unit, add_unit=False)
 
             # Value is the same: add
             if x_a == x_b:
 
-                result = self.get_value(self.y_name, i) - other.get_value(other.y_name, j)
+                result = self.get_value(self.y_name, i, unit=y_unit, add_unit=False) - other.get_value(other.y_name, j, unit=y_unit, add_unit=False)
 
                 x_values.append(x_a)
                 y_values.append(result)
@@ -540,8 +600,14 @@ class Curve(SmartTable):
         if self.y_name == other.y_name: y_name = self.y_name
         else: y_name = self.y_name + " - " + other.y_name
 
+        # Set the names and units
+        names = (x_name, y_name)
+        units = (x_unit, y_unit)
+        #print("names", names)
+        #print("units", units)
+
         # Create new curve
-        return self.__class__.from_columns(x_values, y_values, names=[x_name, y_name])
+        return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
     # -----------------------------------------------------------------
 
@@ -554,7 +620,7 @@ class Curve(SmartTable):
         """
 
         # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
         x_name = self.x_name
 
         # Initialize a list for the x values and y values
@@ -610,7 +676,7 @@ class Curve(SmartTable):
         """
 
         # Check whether x name is the same
-        if self.x_name != other.x_name: raise ValueError("x name must be the same")
+        if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
         x_name = self.x_name
 
         # Initialize a list for the x values and y values

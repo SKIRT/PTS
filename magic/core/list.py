@@ -3163,20 +3163,32 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
     else: log.debug("Rebinning frame '" + name + "' without unit ...")
 
     # CONVERT TO PER ANGULAR OR INTRINSIC AREA, IF UNIT IS DEFINED
-    if frame.unit is not None:
+    if frame.unit is not None and frame.is_photometric:
 
         # Convert to the corresponding brightness unit
         #original_unit = frame.convert_to_corresponding_brightness_unit()
         original_unit = frame.unit
         conversion_factor = frame.convert_to_corresponding_angular_or_intrinsic_area_unit()
+        correction_factor = None
 
         # Converted?
         if original_unit != frame.unit: log.debug("Unit has been converted to " + tostr(frame.unit, add_physical_type=True) + " prior to rebinning (conversion factor of " + str(conversion_factor) + ")")
+
+    # UNIT IS DEFINED, NOT PHOTOMETRIC
+    elif frame.unit is not None:
+
+        conversion_factor = None
+        original_unit = None
+        correction_factor = (wcs.pixelarea / frame.pixelarea).to("").value
+        print(type(correction_factor))
+        #exit()
 
     # UNIT IS NOT DEFINED
     else:
         if not unitless: log.warning("The unit of the '" + name + "' frame is not defined: make sure it is per unit of angular or intrinsic area (or only the relative variation is important)")
         original_unit = None
+        conversion_factor = None
+        correction_factor = None
 
     # REBIN remotely
     if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
@@ -3190,7 +3202,7 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         # Remote rebinning
         from .remote import RemoteFrame
         remoteframe = RemoteFrame.from_local(frame, session)
-        remoteframe.rebin(wcs)
+        remoteframe.rebin(wcs, convert=False)  # should already be converted, or correction factor to be applied later
         rebinned = remoteframe.to_local()
 
     # REBIN locally
@@ -3200,9 +3212,9 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         log.debug("Rebinning frame locally ...")
 
         if in_place:
-            frame.rebin(wcs)
+            frame.rebin(wcs, convert=False) # should already be converted, or correction factor to be applied later
             rebinned = None
-        else: rebinned = frame.rebinned(wcs)
+        else: rebinned = frame.rebinned(wcs, convert=False) # should already be converted, or correction factor to be applied later
 
     # IF THERE WAS AN ORIGINAL UNIT
     if original_unit is not None:
@@ -3215,6 +3227,9 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
         # CONVERT THE RESULT AS WELL IF NOT 'IN PLACE'
         if not in_place: rebinned.convert_to(original_unit)
+
+    # CORRECT
+    elif correction_factor is not None: rebinned *= correction_factor
 
     # Return rebinned frame
     if not in_place: return rebinned

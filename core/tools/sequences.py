@@ -2287,3 +2287,51 @@ def alternate(items, size):
     raise RuntimeError("We shouldn't get here")
 
 # -----------------------------------------------------------------
+
+def sum(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return reduce(operator.add, sequence)
+
+# -----------------------------------------------------------------
+
+def subtract(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return reduce(operator.sub, sequence)
+
+# -----------------------------------------------------------------
+
+def multiply(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return reduce(operator.mul, sequence)
+
+# -----------------------------------------------------------------
+
+def divide(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return reduce(operator.div, sequence)
+
+# -----------------------------------------------------------------

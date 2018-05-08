@@ -3870,6 +3870,7 @@ class Frame(NDDataArray):
 
         # The unit of the frame is not defined
         if self.unit is None: log.warning("The unit of this frame is not defined. Be aware of the fact that " + task + " a frame not in brightness units gives an incorrect result")
+        elif not self.is_photometric: log.warning("The frame does not have a photometric unit. Cannot test whether the unit is per angular or intrinsic area.")
         elif not self.is_per_angular_or_intrinsic_area:
 
             # Pixelscale is not defined

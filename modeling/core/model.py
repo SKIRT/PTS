@@ -38,6 +38,7 @@ from ...core.basics.log import log
 from .simulation import SingleComponentSimulations, MultiComponentSimulations
 from ...core.simulation.simulation import createsimulations
 from ...magic.core.frame import Frame
+from ...magic.core.list import convolve_and_rebin
 
 # -----------------------------------------------------------------
 
@@ -3527,7 +3528,15 @@ class RTModel(object):
         :return:
         """
 
-        return self.young_fuv_luminosity_map + self.sfr_fuv_luminosity_map
+        # Get contributions
+        young = self.young_fuv_luminosity_map
+        sfr = self.sfr_fuv_luminosity_map
+
+        # Uniformize
+        young, sfr = convolve_and_rebin(young, sfr)
+
+        # Sum the contributions
+        return young + sfr
 
     # -----------------------------------------------------------------
 
@@ -3551,7 +3560,15 @@ class RTModel(object):
         :return:
         """
 
-        return self.young_bolometric_luminosity_map + self.sfr_bolometric_luminosity_map
+        # Get contributions
+        young = self.young_bolometric_luminosity_map
+        sfr = self.sfr_bolometric_luminosity_map
+
+        # Unformize
+        young, sfr = convolve_and_rebin(young, sfr)
+
+        # Sum the contributions
+        return young + sfr
 
     # -----------------------------------------------------------------
 
@@ -3642,7 +3659,15 @@ class RTModel(object):
         :return:
         """
 
-        return self.dust_mass_map + self.sfr_dust_mass_map
+        # Get the contributions
+        dust_mass = self.dust_mass_map
+        sfr_dust_mass = self.sfr_dust_mass_map
+
+        # Uniformize
+        dust_mass, sfr_dust_mass = convolve_and_rebin(dust_mass, sfr_dust_mass)
+
+        # Sum the contributions
+        return dust_mass + sfr_dust_mass
 
     # -----------------------------------------------------------------
 
