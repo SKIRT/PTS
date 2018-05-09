@@ -42,6 +42,7 @@ from ...core.tools.utils import lazyproperty
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.basics.range import QuantityRange
 from ...core.tools import strings
+from ..basics.properties import GalaxyProperties
 
 # -----------------------------------------------------------------
 
@@ -299,6 +300,56 @@ class FittingRun(object):
         """
 
         return fs.name(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_properties_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..core.environment import properties_name, data_name
+        return fs.join(self.modeling_path, data_name, properties_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the properties
+        return GalaxyProperties.from_file(self.galaxy_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.center
 
     # -----------------------------------------------------------------
 
@@ -2213,7 +2264,8 @@ class FittingRun(object):
         parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
         # Create a RTModel object and return it
-        return RTModel(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
+        return RTModel(self.model_definition, simulation_name=best_simulation_name, chi_squared=chi_squared,
+                       free_parameter_values=parameter_values, center=self.galaxy_center)
 
     # -----------------------------------------------------------------
 
@@ -3644,6 +3696,10 @@ def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
 
     from .context import get_model_name_for_run
 
+    # Get the galaxy properties
+    from ..component.galaxy import get_galaxy_properties
+    properties = get_galaxy_properties(modeling_path)
+
     # Get the model name
     model_name = get_model_name_for_run(modeling_path, fitting_run)
 
@@ -3666,7 +3722,8 @@ def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
     parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
 
     # Create a RTModel object and return it
-    return RTModel(definition, simulation_name=best_simulation_name, chi_squared=chi_squared, free_parameter_values=parameter_values)
+    return RTModel(definition, simulation_name=best_simulation_name, chi_squared=chi_squared,
+                   free_parameter_values=parameter_values, center=properties.center)
 
 # -----------------------------------------------------------------
 

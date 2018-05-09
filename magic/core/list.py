@@ -3180,7 +3180,7 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         conversion_factor = None
         original_unit = None
         correction_factor = (wcs.pixelarea / frame.pixelarea).to("").value
-        print(type(correction_factor))
+        #print(type(correction_factor))
         #exit()
 
     # UNIT IS NOT DEFINED

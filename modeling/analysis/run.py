@@ -22,7 +22,7 @@ from ..core.model import RTModel
 from ...core.tools import sequences
 from ...core.basics.composite import SimplePropertyComposite
 from ..fitting.run import FittingRun
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 from ...core.tools.serialization import load_dict
 from ...core.simulation.tree import DustGridTree
 from ...core.simulation.grids import FileTreeDustGrid, load_grid
@@ -51,6 +51,7 @@ from ...core.data.sed import ObservedSED, SED
 from ...magic.core.datacube import DataCube
 from ...core.simulation.tree import get_nleaves
 from ..build.definition import ModelDefinition
+from ..basics.properties import GalaxyProperties
 
 # -----------------------------------------------------------------
 
@@ -2384,6 +2385,56 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def galaxy_properties_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..core.environment import properties_name, data_name
+        return fs.join(self.modeling_path, data_name, properties_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the properties
+        return GalaxyProperties.from_file(self.galaxy_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.center
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def fitting_run_name(self):
 
         """
@@ -2763,7 +2814,7 @@ class AnalysisRun(AnalysisRunBase):
                        observed_total_output_path=self.total_output_path, observed_bulge_output_path=self.bulge_output_path,
                        observed_disk_output_path=self.disk_output_path, observed_old_output_path=self.old_output_path,
                        observed_young_output_path=self.young_output_path, observed_sfr_output_path=self.ionizing_output_path,
-                       observed_unevolved_output_path=self.unevolved_output_path)
+                       observed_unevolved_output_path=self.unevolved_output_path, center=self.galaxy_center)
 
     # -----------------------------------------------------------------
 

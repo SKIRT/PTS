@@ -1763,6 +1763,30 @@ class SimulationOutput(Output):
     # -----------------------------------------------------------------
 
     @property
+    def has_single_total_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_single_file(self._output_types.total_images)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_total_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_single_file(self._output_types.total_images)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ncount_images(self):
 
         """

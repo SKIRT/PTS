@@ -29,7 +29,7 @@ from ...core.basics.containers import create_subdict
 from ..basics.instruments import SEDInstrument
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
-from ...core.prep.smile import get_panchromatic_template
+from ...core.prep.smile import get_panchromatic_template, get_oligochromatic_template
 from ..build.construct import add_new_stellar_component
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.simulation.definition import SingleSimulationDefinition
@@ -39,6 +39,9 @@ from .simulation import SingleComponentSimulations, MultiComponentSimulations
 from ...core.simulation.simulation import createsimulations
 from ...magic.core.frame import Frame
 from ...magic.core.list import convolve_and_rebin
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ..basics.projection import GalaxyProjection
+from ..basics.instruments import FrameInstrument, FullInstrument, FullSEDInstrument
 
 # -----------------------------------------------------------------
 
@@ -125,6 +128,7 @@ diffuse_dust_lum_name = "Bolometric diffuse dust luminosity"
 # -----------------------------------------------------------------
 
 sed_dirname = "sed"
+projections_dirname = "projections"
 
 # -----------------------------------------------------------------
 
@@ -144,6 +148,7 @@ ionizing_component_name = "Ionizing stars"
 # -----------------------------------------------------------------
 
 default_npackages = 1e5
+projections_default_npackages = 5e7
 wavelengths_filename = "wavelengths.txt"
 map_filename = "map.fits"
 
@@ -176,7 +181,7 @@ class RTModel(object):
                  free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
                  observed_bulge_output_path=None, observed_disk_output_path=None, observed_old_output_path=None,
                  observed_young_output_path=None, observed_sfr_output_path=None, observed_unevolved_output_path=None,
-                 parameters=None):
+                 parameters=None, center=None):
 
         """
         The constructor ...
@@ -194,6 +199,7 @@ class RTModel(object):
         :param observed_sfr_output_path: output path of simulation with SFR contribution + dust
         :param observed_unevolved_output_path: output path of simulation with young stellar and SFR contribution + dust
         :param parameters:
+        :param center: the galaxy center as a sky coordinate
         :return:
         """
 
@@ -241,6 +247,21 @@ class RTModel(object):
 
         # Set parameters
         if parameters is not None: self.set_parameters(**parameters)
+
+        # Set the center
+        self.center = center
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center is not None
 
     # -----------------------------------------------------------------
 
@@ -355,7 +376,7 @@ class RTModel(object):
         """
 
         # Run simulation?
-        if not self.has_old_bulge_simulation: self.run_old_bulge_simulation()
+        if not self.has_old_bulge_sed_simulation: self.run_old_bulge_sed_simulation()
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(bulge_simulation_name, observed=self.observed_bulge_output_path,
@@ -372,7 +393,7 @@ class RTModel(object):
         """
 
         # Run simulation?
-        if not self.has_old_disk_simulation: self.run_old_disk_simulation()
+        if not self.has_old_disk_sed_simulation: self.run_old_disk_sed_simulation()
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(disk_simulation_name, observed=self.observed_disk_output_path,
@@ -424,7 +445,7 @@ class RTModel(object):
         """
 
         # Run simulation?
-        if not self.has_young_simulation: self.run_young_simulation()
+        if not self.has_young_sed_simulation: self.run_young_sed_simulation()
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(young_simulation_name, observed=self.observed_young_output_path,
@@ -2557,6 +2578,18 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def full_sed_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullSEDInstrument.from_properties(self.distance, self.inclination, self.position_angle)
+
+    # -----------------------------------------------------------------
+
     @property
     def definition_path(self):
 
@@ -2642,6 +2675,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_bulge_projections_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_path, projections_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_disk_sed_path(self):
 
         """
@@ -2650,6 +2695,18 @@ class RTModel(object):
         """
 
         return fs.create_directory_in(self.old_disk_path, sed_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_projections_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_disk_path, projections_dirname)
 
     # -----------------------------------------------------------------
 
@@ -2666,6 +2723,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def young_projections_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.young_path, projections_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_sed_path(self):
 
         """
@@ -2674,6 +2743,18 @@ class RTModel(object):
         """
 
         return fs.create_directory_in(self.sfr_path, sed_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_projections_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.sfr_path, projections_dirname)
 
     # -----------------------------------------------------------------
 
@@ -3165,6 +3246,78 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_bulge_projections_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_projections_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_projections_earth_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_projections_earth_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_projections_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_projections_faceon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_projections_faceon_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_projections_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_projections_edgeon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_bulge_projections_edgeon_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_disk_sed_out_path(self):
 
         """
@@ -3173,6 +3326,54 @@ class RTModel(object):
         """
 
         return fs.create_directory_in(self.old_disk_sed_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_projections_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_disk_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_projections_faceon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_disk_projections_faceon_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_projections_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_disk_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_projections_edgeon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.old_disk_projections_edgeon_path, "out")
 
     # -----------------------------------------------------------------
 
@@ -3189,6 +3390,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def young_projections_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.young_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_projections_faceon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.young_projections_faceon_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_projections_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.young_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_projections_edgeon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.young_projections_edgeon_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_sed_out_path(self):
 
         """
@@ -3197,6 +3446,54 @@ class RTModel(object):
         """
 
         return fs.create_directory_in(self.sfr_sed_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_projections_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.sfr_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_projections_faceon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.sfr_projections_faceon_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_projections_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.sfr_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_projections_edgeon_out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.sfr_projections_edgeon_path, "out")
 
     # -----------------------------------------------------------------
 
@@ -3221,6 +3518,104 @@ class RTModel(object):
         """
 
         return Frame.from_file(self.old_disk_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_map_psf_filter(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.old_disk_map.psf_filter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_map_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_map.fwhm
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_map_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.old_disk_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_map_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        azimuth = 0.0
+        if not self.has_center: raise ValueError("Galaxy center coordinate is not defined")
+        return GalaxyProjection.from_wcs(self.old_disk_map_wcs, self.center, self.distance, self.inclination, azimuth, self.position_angle)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FrameInstrument.from_projection(self.old_disk_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_full_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_projection(self.old_disk_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_map_shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_map_wcs.shape
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_map_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_map_wcs.pixelscale
 
     # -----------------------------------------------------------------
 
@@ -3310,6 +3705,104 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def young_map_psf_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_map.psf_filter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_map.fwhm
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_map_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.young_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_map_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        azimuth = 0.0
+        if not self.has_center: raise ValueError("Galaxy center coordinate is not defined")
+        return GalaxyProjection.from_wcs(self.young_map_wcs, self.center, self.distance, self.inclination, azimuth, self.position_angle)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FrameInstrument.from_projection(self.young_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_full_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_projection(self.young_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_map_wcs.shape
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_map_wcs.pixelscale
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def young_fuv_luminosity_map(self):
 
@@ -3393,6 +3886,104 @@ class RTModel(object):
         """
 
         return Frame.from_file(self.sfr_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_map_psf_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_map.psf_filter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_map_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_map.fwhm
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_map_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.sfr_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_map_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        azimuth = 0.0
+        if not self.has_center: raise ValueError("Galaxy center coordinate is not defined")
+        return GalaxyProjection.from_wcs(self.sfr_map_wcs, self.center, self.distance, self.inclination, azimuth, self.position_angle)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FrameInstrument.from_projection(self.sfr_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_full_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_projection(self.sfr_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_map_shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_map_wcs.shape
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_map_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_map_wcs.pixelscale
 
     # -----------------------------------------------------------------
 
@@ -3609,6 +4200,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def dust_map_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.dust_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dust_mass_map(self):
 
         """
@@ -3743,7 +4346,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_definition(self):
+    def old_bulge_sed_definition(self):
 
         """
         This function ...
@@ -3759,7 +4362,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_disk_definition(self):
+    def old_disk_sed_definition(self):
 
         """
         This function ...
@@ -3775,7 +4378,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def young_definition(self):
+    def young_sed_definition(self):
 
         """
         This function ...
@@ -3791,7 +4394,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def sfr_definition(self):
+    def sfr_sed_definition(self):
 
         """
         This function ...
@@ -3807,50 +4410,1142 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_old_bulge_output(self):
+    def has_old_bulge_earth_projection_simulation(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.old_bulge_projections_earth_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_earth_projection_simulation(self):
 
         """
         This function ...
         :return:
         """
 
-        return not fs.is_empty(self.old_bulge_sed_out_path)
+        # Simulation already performed?
+        if self.has_old_bulge_earth_projection_simulation: return createsimulations(self.old_bulge_projections_earth_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_old_bulge_earth_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_earth_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_earth_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_earth_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_earth_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_earth_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.old_bulge_earth_map_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def has_old_disk_output(self):
+    def old_bulge_earth_projection_ski_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return not fs.is_empty(self.old_disk_sed_out_path)
+        return fs.join(self.old_bulge_projections_earth_path, bulge_simulation_name + ".ski")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_young_output(self):
+    def has_old_bulge_earth_projection_skifile(self):
 
         """
         This function ...
         :return:
         """
 
-        return not fs.is_empty(self.young_sed_out_path)
+        return fs.is_file(self.old_bulge_earth_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_old_bulge_earth_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a ski template
+        ski = get_oligochromatic_template()
+
+        # Add the old stellar bulge component
+        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+
+        # Add the instrument
+        ski.add_instrument(earth_name, self.old_disk_frame_instrument)
+
+        # Set the wavelength grid
+        #ski.set_file_wavelength_grid(wavelengths_filename)
+
+        # Set the number of photon packages
+        ski.setpackages(projections_default_npackages)
+
+        # Remove the dust system
+        ski.remove_dust_system()
+
+        # Save the skifile
+        ski.saveto(self.old_bulge_earth_projection_ski_path, fix=True)
+
+        # Return the skifile
+        return ski
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_earth_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_old_bulge_earth_projection_skifile: self.create_old_bulge_earth_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.old_bulge_earth_projection_ski_path, self.old_bulge_projections_earth_out_path,
+                                          input_path=self.old_bulge_input_filepaths, name=bulge_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_old_bulge_earth_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
     @property
-    def has_sfr_output(self):
+    def has_old_bulge_faceon_projection_simulation(self):
 
         """
         This function ...
         :return:
         """
 
-        return not fs.is_empty(self.sfr_sed_out_path)
+        return fs.has_files_in_path(self.old_bulge_projections_faceon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_old_bulge_faceon_projection_simulation: return createsimulations(self.old_bulge_projections_faceon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_old_bulge_faceon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_faceon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_faceon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_faceon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_faceon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.old_bulge_faceon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_faceon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.old_bulge_projections_faceon_path, bulge_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_bulge_faceon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_old_bulge_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_faceon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_old_bulge_faceon_projection_skifile: self.create_old_bulge_faceon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.old_bulge_faceon_projection_ski_path, self.old_bulge_projections_faceon_out_path,
+                                          input_path=self.old_bulge_input_filepaths, name=bulge_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_old_bulge_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.old_bulge_projections_edgeon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_edgeon_projection_simulation(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_old_bulge_edgeon_projection_simulation: return createsimulations(self.old_bulge_projections_edgeon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_old_bulge_edgeon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_edgeon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_edgeon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_edgeon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_edgeon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_edgeon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.old_bulge_edgeon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_edgeon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.old_bulge_projections_edgeon_path, bulge_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_bulge_edgeon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_old_bulge_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_edgeon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_old_bulge_edgeon_projection_skifile: self.create_old_bulge_edgeon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.old_bulge_edgeon_projection_ski_path, self.old_bulge_projections_edgeon_out_path,
+                                          input_path=self.old_bulge_input_filepaths, name=bulge_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_old_bulge_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.old_disk_projections_faceon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_projection_simulation(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_old_disk_faceon_projection_simulation: return createsimulations(self.old_disk_projections_faceon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_old_disk_faceon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_faceon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_faceon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.old_disk_faceon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_faceon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.old_disk_projections_faceon_path, disk_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_disk_faceon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_old_disk_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_old_disk_faceon_projection_skifile: self.create_old_disk_faceon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.old_disk_faceon_projection_ski_path, self.old_disk_projections_faceon_out_path,
+                                          input_path=self.old_disk_input_filepaths, name=disk_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_old_disk_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.old_disk_projections_edgeon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_old_disk_edgeon_projection_simulation: return createsimulations(self.old_disk_projections_edgeon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_old_disk_edgeon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_edgeon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_disk_edgeon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.old_disk_edgeon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_edgeon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.old_disk_projections_edgeon_path, disk_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.old_disk_edgeon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_old_disk_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_old_disk_edgeon_projection_skifile: self.create_old_disk_edgeon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.old_disk_edgeon_projection_ski_path, self.old_disk_projections_edgeon_out_path,
+                                          input_path=self.old_disk_input_filepaths, name=disk_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_old_disk_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.young_projections_faceon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_young_faceon_projection_simulation: return createsimulations(self.young_projections_faceon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_young_faceon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_faceon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_faceon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_faceon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_faceon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.young_faceon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_faceon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.young_projections_faceon_path, young_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.young_faceon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_young_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_faceon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_young_faceon_projection_skifile: self.create_young_faceon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.young_faceon_projection_ski_path, self.young_projections_faceon_out_path,
+                                          input_path=self.young_input_filepaths, name=young_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_young_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.young_projections_edgeon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_young_edgeon_projection_simulation: return createsimulations(self.young_projections_edgeon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_young_edgeon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_edgeon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_edgeon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_edgeon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_edgeon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_edgeon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.young_edgeon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_edgeon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.young_projections_edgeon_path, young_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.young_edgeon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_young_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_edgeon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_young_edgeon_projection_skifile: self.create_young_edgeon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.young_edgeon_projection_ski_path, self.young_projections_edgeon_out_path,
+                                          input_path=self.young_input_filepaths, name=young_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_young_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.sfr_projections_faceon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_sfr_faceon_projection_simulation: return createsimulations(self.sfr_projections_faceon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_sfr_faceon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_faceon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_faceon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_faceon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_faceon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.sfr_faceon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_faceon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.sfr_projections_faceon_path, sfr_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.sfr_faceon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_sfr_faceon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_faceon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_sfr_faceon_projection_skifile: self.create_sfr_faceon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.sfr_faceon_projection_ski_path, self.sfr_projections_faceon_out_path,
+                                          input_path=self.sfr_input_filepaths, name=sfr_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_sfr_faceon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.has_files_in_path(self.sfr_projections_edgeon_out_path, extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation already performed?
+        if self.has_sfr_edgeon_projection_simulation: return createsimulations(self.sfr_projections_edgeon_out_path, single=True)
+
+        # Run the simulation
+        else: return self.run_sfr_edgeon_projection_simulation()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_edgeon_projection_output(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_edgeon_projection_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_edgeon_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_edgeon_projection_output.single_total_images
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_edgeon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Frame.from_file(self.sfr_edgeon_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_edgeon_projection_ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.sfr_projections_edgeon_path, sfr_simulation_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.sfr_edgeon_projection_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def create_sfr_edgeon_projection_skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_edgeon_projection_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the skifile if necessary
+        if not self.has_sfr_edgeon_projection_skifile: self.create_sfr_edgeon_projection_skifile()
+
+        # Create the definition and return
+        return SingleSimulationDefinition(self.sfr_edgeon_projection_ski_path, self.sfr_projections_edgeon_out_path,
+                                          input_path=self.sfr_input_filepaths, name=sfr_simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def run_sfr_edgeon_projection_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Show message
+        log.info("Running SKIRT for the SFR stellar component edge-on projection ...")
+
+        # Run simulation
+        return run_simulation(self.sfr_edgeon_projection_definition, show_progress=True, debug_output=True)
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -3868,7 +5563,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_old_bulge_simulation(self):
+    def has_old_bulge_sed_simulation(self):
 
         """
         This function ...
@@ -3880,7 +5575,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_simulation(self):
+    def old_bulge_sed_simulation(self):
 
         """
         This function ...
@@ -3888,26 +5583,26 @@ class RTModel(object):
         """
 
         # Simulation already performed?
-        if self.has_old_bulge_simulation: return createsimulations(self.old_bulge_sed_out_path, single=True)
+        if self.has_old_bulge_sed_simulation: return createsimulations(self.old_bulge_sed_out_path, single=True)
 
         # Run the simulation
-        return self.run_old_bulge_simulation()
+        return self.run_old_bulge_sed_simulation()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_output(self):
+    def old_bulge_sed_output(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_simulation.output
+        return self.old_bulge_sed_simulation.output
 
     # -----------------------------------------------------------------
 
-    def run_old_bulge_simulation(self):
+    def run_old_bulge_sed_simulation(self):
 
         """
         This function ...
@@ -3915,10 +5610,10 @@ class RTModel(object):
         """
 
         # Show message
-        log.info("Running SKIRT for the old stellar bulge component ...")
+        log.info("Running SKIRT for the old stellar bulge component intrinsic SED ...")
 
         # Run simulation
-        return run_simulation(self.old_bulge_definition, show_progress=True, debug_output=True)
+        return run_simulation(self.old_bulge_sed_definition, show_progress=True, debug_output=True)
 
     # -----------------------------------------------------------------
 
@@ -3930,7 +5625,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.old_bulge_output.single_sed
+        return self.old_bulge_sed_output.single_sed
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -3948,7 +5643,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_old_disk_simulation(self):
+    def has_old_disk_sed_simulation(self):
 
         """
         This function ...
@@ -3960,7 +5655,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_disk_simulation(self):
+    def old_disk_sed_simulation(self):
 
         """
         This function ...
@@ -3968,26 +5663,26 @@ class RTModel(object):
         """
 
         # Simulation already performed?
-        if self.has_old_disk_simulation: return createsimulations(self.old_disk_sed_out_path, single=True)
+        if self.has_old_disk_sed_simulation: return createsimulations(self.old_disk_sed_out_path, single=True)
 
         # Run the simulation
-        return self.run_old_disk_simulation()
+        return self.run_old_disk_sed_simulation()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_disk_output(self):
+    def old_disk_sed_output(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_disk_simulation.output
+        return self.old_disk_sed_simulation.output
 
     # -----------------------------------------------------------------
 
-    def run_old_disk_simulation(self):
+    def run_old_disk_sed_simulation(self):
 
         """
         This function ...
@@ -3995,10 +5690,10 @@ class RTModel(object):
         """
 
         # Show message
-        log.info("Running SKIRT for the old stellar disk component ...")
+        log.info("Running SKIRT for the old stellar disk component intrinsic SED ...")
 
         # Run
-        return run_simulation(self.old_disk_definition, show_progress=True, debug_output=True)
+        return run_simulation(self.old_disk_sed_definition, show_progress=True, debug_output=True)
 
     # -----------------------------------------------------------------
 
@@ -4010,7 +5705,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.old_disk_output.single_sed
+        return self.old_disk_sed_output.single_sed
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -4028,7 +5723,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_young_simulation(self):
+    def has_young_sed_simulation(self):
 
         """
         This function ...
@@ -4040,7 +5735,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def young_simulation(self):
+    def young_sed_simulation(self):
 
         """
         This function ...
@@ -4048,26 +5743,26 @@ class RTModel(object):
         """
 
         # Simulation already performed?
-        if self.has_young_simulation: return createsimulations(self.young_sed_out_path, single=True)
+        if self.has_young_sed_simulation: return createsimulations(self.young_sed_out_path, single=True)
 
         # Run the simulation
-        return self.run_young_simulation()
+        return self.run_young_sed_simulation()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def young_output(self):
+    def young_sed_output(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.young_simulation.output
+        return self.young_sed_simulation.output
 
     # -----------------------------------------------------------------
 
-    def run_young_simulation(self):
+    def run_young_sed_simulation(self):
 
         """
         This function ...
@@ -4075,10 +5770,10 @@ class RTModel(object):
         """
 
         # Show message
-        log.info("Running SKIRT simulation for the young stellar component ...")
+        log.info("Running SKIRT simulation for the young stellar component intrinsic SED ...")
 
         # Run
-        return run_simulation(self.young_definition, show_progress=True, debug_output=True)
+        return run_simulation(self.young_sed_definition, show_progress=True, debug_output=True)
 
     # -----------------------------------------------------------------
 
@@ -4090,7 +5785,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.young_output.single_sed
+        return self.young_sed_output.single_sed
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -4108,7 +5803,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_sfr_simulation(self):
+    def has_sfr_sed_simulation(self):
 
         """
         This function ...
@@ -4120,7 +5815,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def sfr_simulation(self):
+    def sfr_sed_simulation(self):
 
         """
         This function ...
@@ -4128,26 +5823,26 @@ class RTModel(object):
         """
 
         # Simulation already performed?
-        if self.has_sfr_simulation: return createsimulations(self.sfr_sed_out_path, single=True)
+        if self.has_sfr_sed_simulation: return createsimulations(self.sfr_sed_out_path, single=True)
 
         # Run the simulation
-        return self.run_sfr_simulation()
+        return self.run_sfr_sed_simulation()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def sfr_output(self):
+    def sfr_sed_output(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.sfr_simulation.output
+        return self.sfr_sed_simulation.output
 
     # -----------------------------------------------------------------
 
-    def run_sfr_simulation(self):
+    def run_sfr_sed_simulation(self):
 
         """
         This function ...
@@ -4155,10 +5850,10 @@ class RTModel(object):
         """
 
         # Show message
-        log.info("Running SKIRT simulation for the SFR component ...")
+        log.info("Running SKIRT simulation for the SFR component intrinsic SED ...")
 
         # Run
-        return run_simulation(self.sfr_definition, show_progress=True, debug_output=True)
+        return run_simulation(self.sfr_sed_definition, show_progress=True, debug_output=True)
 
     # -----------------------------------------------------------------
 
@@ -4170,7 +5865,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.sfr_output.single_sed
+        return self.sfr_sed_output.single_sed
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------

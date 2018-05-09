@@ -641,6 +641,42 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def maps_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "earth")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "faceon")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "edgeon")
+
+    # -----------------------------------------------------------------
+
     def write_maps(self):
 
         """
@@ -680,7 +716,50 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the total maps ...")
 
-        # Attenuation?
+        # Earth
+        self.write_total_maps_earth()
+
+        # Face-on
+        self.write_total_maps_faceon()
+
+        # Edge-on
+        self.write_total_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def write_total_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the total maps in the earth projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_total_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the total maps in the faceon projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_total_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the total maps in the edgeon projection ...")
 
     # -----------------------------------------------------------------
 
@@ -766,11 +845,56 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the disk maps ...")
 
+        # Earth
+        self.write_disk_maps_earth()
+
+        # Face-on
+        self.write_disk_maps_faceon()
+
+        # Edge-on
+        self.write_disk_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def write_disk_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the disk maps in the earth projection ...")
+
         # I1 lum
         if self.has_disk_i1_map: self.disk_i1_map.saveto(self.disk_i1_map_path)
 
         # Bol lum
         if self.has_disk_bol_map: self.disk_bol_map.saveto(self.disk_bol_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_disk_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the disk maps in the faceon projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_disk_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the disk maps in the edgeon projection ...")
 
     # -----------------------------------------------------------------
 
@@ -856,11 +980,56 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the young maps ...")
 
+        # Earth
+        self.write_young_maps_earth()
+
+        # Face-on
+        self.write_young_maps_faceon()
+
+        # Edge-on
+        self.write_young_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def write_young_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the young maps in the earth projection ...")
+
         # FUV lum
         if self.has_young_fuv_map: self.young_fuv_map.saveto(self.young_fuv_map_path)
 
         # Bol lum
         if self.has_young_bol_map: self.young_bol_map.saveto(self.young_bol_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the young maps in the faceon projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_young_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the young maps in the edgeon projection ...")
 
     # -----------------------------------------------------------------
 
@@ -1018,6 +1187,27 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the SFR maps ...")
 
+        # Earth
+        self.write_sfr_maps_earth()
+
+        # Face-on
+        self.write_sfr_maps_faceon()
+
+        # Edge-on
+        self.write_sfr_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def write_sfr_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the SFR maps in the earth projection ...")
+
         # FUV lum
         if self.has_sfr_fuv_map: self.sfr_fuv_map.saveto(self.sfr_fuv_map_path)
 
@@ -1029,6 +1219,30 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Dust mass
         if self.has_sfr_dust_mass_map: self.sfr_dust_mass_map.saveto(self.sfr_dust_mass_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_sfr_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the SFR maps in the faceon projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_sfr_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the SFR maps in the edgeon projection ...")
 
     # -----------------------------------------------------------------
 
@@ -1114,11 +1328,56 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the unevolved maps ...")
 
+        # Earth
+        self.write_unevolved_maps_earth()
+
+        # Face-on
+        self.write_unevolved_maps_faceon()
+
+        # Edge-on
+        self.write_unevolved_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def write_unevolved_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the unevolved maps in the earth projection ...")
+
         # FUV lum
         if self.has_unevolved_fuv_map: self.unevolved_fuv_map.saveto(self.unevolved_fuv_map_path)
 
         # Bol lum
         if self.has_unevolved_bol_map: self.unevolved_bol_map.saveto(self.unevolved_bol_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_unevolved_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the unevolved maps in the faceon projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_unevolved_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the unevolved maps in the edgeon projection ...")
 
     # -----------------------------------------------------------------
 
@@ -1204,10 +1463,55 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the dust maps ...")
 
+        # Earth
+        self.write_dust_maps_earth()
+
+        # Face-on
+        self.write_dust_maps_faceon()
+
+        # Edge-on
+        self.write_dust_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def write_dust_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust maps in the earth projection ...")
+
         # Dust mass
         if self.has_dust_mass_map: self.dust_mass_map.saveto(self.dust_mass_map_path)
 
         # Total dust mass
         if self.has_total_dust_mass_map: self.total_dust_mass_map.saveto(self.total_dust_mass_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust maps in the faceon projection ...")
+
+    # -----------------------------------------------------------------
+
+    def write_dust_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust maps in the edgeon projection ...")
 
 # -----------------------------------------------------------------
