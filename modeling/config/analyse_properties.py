@@ -27,3 +27,7 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
+
+# -----------------------------------------------------------------

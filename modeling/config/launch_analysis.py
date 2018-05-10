@@ -93,11 +93,6 @@ definition.import_section_from_composite_class("scheduling", "simulation analysi
 
 # -----------------------------------------------------------------
 
-# Vertical extent of the total model
-definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
-
-# -----------------------------------------------------------------
-
 # EXTRA SIMULATION OUTPUT
 definition.add_flag("temperatures", "get dust temperature data from the simulation", False)
 definition.add_flag("emissivities", "get dust emissivity data from the simulation", False)

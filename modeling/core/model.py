@@ -3572,6 +3572,88 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_disk_faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get properties
+        distance = deprojection.distance
+        physical_pixelscale = deprojection.pixelscale
+
+        # Determine extent in the radial direction
+        radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
+
+        # Determine number of pixels
+        npixels = int(round(radial_extent / physical_pixelscale))
+        npixels = PixelShape.square(npixels)
+
+        # Get the center pixel
+        center = get_center(npixels)
+
+        # Get field of view
+        # field = get_field(pixelscale, npixels, self.galaxy_distance)
+        field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
+
+        # Get physical center
+        center_physical = get_physical_center(field, npixels, center)
+
+        # Create the face-on projection system
+        # faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+        faceon_projection = FaceOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y,
+                                             center_x=center_physical.x, center_y=center_physical.y,
+                                             field_x=field.x, field_y=field.y)
+
+        # Return the projection
+        return faceon_projection
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get properties
+        distance = deprojection.distance
+        physical_pixelscale = deprojection.pixelscale
+
+        # Determine extent in the radial and in the vertical direction
+        radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
+
+        # Determine number of pixels
+        nx = int(round(radial_extent / physical_pixelscale))
+        nz = int(round(z_extent / physical_pixelscale))
+
+        # Return the pixel shape
+        npixels = PixelShape.from_xy(nx, nz)
+
+        # Get the center pixel
+        center = get_center(npixels)
+
+        # Get field of view
+        # field = get_field(pixelscale, npixels, self.galaxy_distance)
+        field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
+
+        # Get physical center
+        center_physical = get_physical_center(field, npixels, center)
+
+        # edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+        edgeon_projection = EdgeOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y,
+                                             center_x=center_physical.x, center_y=center_physical.y,
+                                             field_x=field.x, field_y=field.y)
+
+        # Return the projection
+        return edgeon_projection
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_disk_frame_instrument(self):
 
         """
@@ -3592,6 +3674,54 @@ class RTModel(object):
         """
 
         return FullInstrument.from_projection(self.old_disk_map_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FrameInstrument.from_projection(self.old_disk_faceon_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_faceon_full_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_projection(self.old_disk_faceon_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FrameInstrument.from_projection(self.old_disk_edgeon_projection)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_full_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_projection(self.old_disk_edgeon_projection)
 
     # -----------------------------------------------------------------
 
@@ -4513,14 +4643,11 @@ class RTModel(object):
         # Add the instrument
         ski.add_instrument(earth_name, self.old_disk_frame_instrument)
 
-        # Set the wavelength grid
-        #ski.set_file_wavelength_grid(wavelengths_filename)
-
         # Set the number of photon packages
         ski.setpackages(projections_default_npackages)
 
         # Remove the dust system
-        ski.remove_dust_system()
+        #ski.remove_dust_system()
 
         # Save the skifile
         ski.saveto(self.old_bulge_earth_projection_ski_path, fix=True)
@@ -4650,6 +4777,27 @@ class RTModel(object):
         This function ...
         :return:
         """
+
+        # Create a ski template
+        ski = get_oligochromatic_template()
+
+        # Add the old stellar bulge component
+        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+
+        # Add the instrument
+        ski.add_instrument(faceon_name, self.old_disk_faceon_frame_instrument)
+
+        # Set the number of photon packages
+        ski.setpackages(projections_default_npackages)
+
+        # Remove the dust system
+        # ski.remove_dust_system()
+
+        # Save the skifile
+        ski.saveto(self.old_bulge_faceon_projection_ski_path, fix=True)
+
+        # Return the skifile
+        return ski
 
     # -----------------------------------------------------------------
 
