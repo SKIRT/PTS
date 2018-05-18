@@ -10585,6 +10585,7 @@ class SimulationManager(InteractiveConfigurable):
 
         # Increase walltime
         definition.add_optional("walltime_factor", "positive_real", "factor with which to increase the walltime for simulations which were aborted because they exceeded their specified walltime", 1.2)
+        definition.add_optional("walltime", "duration", "new walltime for the simulations")
 
         # Return
         return definition
@@ -10706,18 +10707,30 @@ class SimulationManager(InteractiveConfigurable):
         # Aborted simulations
         elif config.case == aborted_name:
 
+            # Get the names of the simulations
             simulation_names = self.aborted_simulation_names
 
             # Check for simulations aborted because they exceed the walltime
             for simulation_name in simulation_names:
+                
                 if self.has_exceed_walltime(simulation_name):
 
-                    # Determine the new walltime
-                    log.debug("Simulation '" + simulation_name + "' was aborted because the walltime was exceeded, increasing the walltime by a factor of " + str(config.walltime_factor) + " ...")
-                    scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
-                    log.debug("Previous walltime: " + tostr(scheduling_options.walltime))
-                    scheduling_options.walltime *= config.walltime_factor
-                    log.debug("New walltime: " + tostr(scheduling_options.walltime))
+                    if config.walltime is not None:
+
+                        # Check the new walltime
+                        log.debug("Simulation '" + simulation_name + "' was aborted because the walltime was exceeded")
+                        scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+                        if scheduling_options.walltime >= config.walltime: raise ValueError("Invalid walltime: must be higher than the previous walltime of " + tostr(scheduling_options.walltime) + " seconds")
+                        scheduling_options.walltime = config.walltime
+
+                    else:
+
+                        # Determine the new walltime
+                        log.debug("Simulation '" + simulation_name + "' was aborted because the walltime was exceeded, increasing the walltime by a factor of " + str(config.walltime_factor) + " ...")
+                        scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+                        log.debug("Previous walltime: " + tostr(scheduling_options.walltime))
+                        scheduling_options.walltime *= config.walltime_factor
+                        log.debug("New walltime: " + tostr(scheduling_options.walltime))
 
                     # Set the scheduling options for this simulation
                     scheduling[simulation_name] = scheduling_options
@@ -10736,10 +10749,26 @@ class SimulationManager(InteractiveConfigurable):
 
             # Increase the walltimes
             for simulation_name in simulation_names:
-                scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
-                log.debug("Simulation '" + simulation_name + "' exceeded the walltime of " + tostr(scheduling_options.walltime) + ", increasing by a factor of " + str(config.walltime_factor) + " ...")
-                scheduling_options.walltime *= config.walltime_factor
-                log.debug("New walltime: " + tostr(scheduling_options.walltime))
+
+                # New walltime is given, check
+                if config.walltime is not None:
+
+                    # Check the new walltime
+                    scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+                    log.debug("Simulation '" + simulation_name + "' exceeded the walltime of " + tostr(scheduling_options.walltime) + " seconds")
+                    if scheduling_options.walltime >= config.walltime: raise ValueError("Invalid walltime: must be higher than the previous walltime of " + tostr(scheduling_options.walltime) + " seconds")
+                    scheduling_options.walltime = config.walltime
+
+                # Determine new walltime
+                else:
+
+                    scheduling_options = self.get_scheduling_options_for_simulation(simulation_name).copy()
+                    log.debug("Simulation '" + simulation_name + "' exceeded the walltime of " + tostr(scheduling_options.walltime) + ", increasing by a factor of " + str(config.walltime_factor) + " ...")
+                    scheduling_options.walltime *= config.walltime_factor
+                    log.debug("New walltime: " + tostr(scheduling_options.walltime))
+
+                # Set the scheduling options for this simulation
+                scheduling[simulation_name] = scheduling_options
 
         # Exceeded memory
         elif config.case == exceeded_memory_name: raise NotImplementedError("Not implemented")
