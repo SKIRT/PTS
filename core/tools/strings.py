@@ -848,6 +848,21 @@ def startswith_any(line, patterns):
 
 # -----------------------------------------------------------------
 
+def any_startswith(lines, pattern):
+
+    """
+    This function ...
+    :param lines:
+    :param pattern:
+    :return:
+    """
+
+    for line in lines:
+        if line.startswith(pattern): return True
+    return False
+
+# -----------------------------------------------------------------
+
 def endswith_any(line, patterns):
 
     """
@@ -863,6 +878,21 @@ def endswith_any(line, patterns):
 
 # -----------------------------------------------------------------
 
+def any_endswith(lines, pattern):
+
+    """
+    This function ...
+    :param lines:
+    :param pattern:
+    :return:
+    """
+
+    for line in lines:
+        if line.endswith(pattern): return True
+    return False
+
+# -----------------------------------------------------------------
+
 def contains_any(line, patterns):
 
     """
@@ -873,6 +903,21 @@ def contains_any(line, patterns):
     """
 
     for pattern in patterns:
+        if pattern in line: return True
+    return False
+
+# -----------------------------------------------------------------
+
+def any_contains(lines, pattern):
+
+    """
+    This function ...
+    :param lines:
+    :param pattern:
+    :return:
+    """
+
+    for line in lines:
         if pattern in line: return True
     return False
 

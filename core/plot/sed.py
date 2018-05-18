@@ -405,6 +405,9 @@ class SEDPlotter(Configurable):
         # Add SED files present in the current working directory (if nothing is added manually)
         if self.no_seds: self.load_seds()
 
+        # STILL NO SEDS?
+        if self.no_seds: raise RuntimeError("There are no SEDs loaded or found in the input directory")
+
         # Add additional errors
         if self.config.additional_error is not None: self.add_relative_errors()
 

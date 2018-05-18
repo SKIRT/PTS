@@ -9,6 +9,16 @@
 from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.analysis.run import AnalysisRuns
 from pts.modeling.config.component import definition
+from pts.modeling.analysis.heating.cell import disk_components, ionizing
+
+# -----------------------------------------------------------------
+
+default_disk_component = ionizing
+
+# -----------------------------------------------------------------
+
+default_spacing_measure = "min"
+spacing_measures = ["min", "max", "mean", "median"]
 
 # -----------------------------------------------------------------
 
@@ -29,6 +39,18 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 # The number of bins
 definition.add_optional("nbins", "positive_integer", "number of bins", 20)
 definition.add_optional("nradial_bins", "positive_integer", "number of radial bins", 200)
+
+# For the midplane heating
+definition.add_optional("midplane_component", "string", "disk component of which to use the scaleheight as the reference for defining the midplane height", default_disk_component, choices=disk_components)
+definition.add_optional("midplane_factor", "positive_real", "factor to be multiplied with the component scaleheight to define the height of the midplane", 0.5)
+
+# For the scale of the heating map
+definition.add_optional("map_spacing_measure", "string", "measure to be used to determined the spacing of the heating map w.r.t. to the spacing of the cell coordinates", default_spacing_measure, choices=spacing_measures)
+definition.add_optional("map_spacing_factor", "positive_real", "factor to be multiplied with the spacing determined from the average of the x and y spacing measure", 5.)
+
+# For the scale of the midplane heating map
+definition.add_optional("midplane_spacing_measure", "string", "measure to be used to determine the spacing of the midplane heating map w.r.t. the spacing of the cell coordinates in the midplane", default_spacing_measure, choices=spacing_measures)
+definition.add_optional("midplane_spacing_factor", "positive_real", "factor to be multiplied with the spacing determined from the average of the x and y spacing measure", 2.)
 
 # -----------------------------------------------------------------
 
@@ -54,5 +76,10 @@ definition.add_flag("replot_distribution", "replot the distribution")
 definition.add_flag("replot_radial_distribution", "replot the radial distribution")
 definition.add_flag("replot_map", "replot the map")
 definition.add_flag("replot_map_midplane", "replot the map in the midplane")
+
+# -----------------------------------------------------------------
+
+# Keep consistent
+definition.add_flag("consistency", "assure heating fraction maps are consistent with ncells and stddev maps")
 
 # -----------------------------------------------------------------

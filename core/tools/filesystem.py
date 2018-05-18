@@ -28,6 +28,7 @@ from itertools import takewhile
 from . import time
 from . import types
 from . import sequences
+from . import strings
 
 # -----------------------------------------------------------------
 
@@ -2345,6 +2346,47 @@ def get_header_labels(filepath):
     """
 
     return get_first_header_line(filepath).split()
+
+# -----------------------------------------------------------------
+
+def get_column_names(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    lines = get_header_lines(filepath)
+    nlines = len(lines)
+
+    # Only one line: return splitted first line
+    if nlines == 1: return lines[0].split()
+    elif strings.any_startswith(lines, "column"):
+        colnames = dict()
+        for line in lines:
+            if not line.startswith("column"): continue
+            colno = int(line.split("column")[1].split(":")[0].strip().split(" ")[0])
+            if ":" in line: name = line.split(":")[1].strip()
+            else: name = line.split(str(colno))[1].strip()
+            colnames[colno] = name
+        minno = min(colnames.keys())
+        maxno = max(colnames.keys())
+        first_is_one = minno == 1
+        if first_is_one: ncolumns = maxno
+        else: ncolumns = maxno - 1
+        print(ncolumns)
+        names = [None] * ncolumns
+        #print(maxno)
+        for colno in colnames:
+            if first_is_one: new_colno = colno - 1
+            else: new_colno = colno
+            print(new_colno, colnames[colno])
+            names[new_colno] = colnames[colno]
+        return names
+
+    # Return splitted last line of the header
+    else: return lines[-1].split()
 
 # -----------------------------------------------------------------
 

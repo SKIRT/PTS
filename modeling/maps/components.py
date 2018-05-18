@@ -8008,11 +8008,11 @@ class ComponentMapsMaker(MapsSelectionComponent):
         """
 
         radial_extent = max(self.max_old_x_range.span, self.max_old_y_range.span)
-        z_radius = 2. * self.old_scaleheight * self.config.scale_heights
+        vertical_extent = 2. * self.old_scaleheight * self.config.scale_heights
 
         # Determine number of pixels
         nx = int(round(radial_extent / self.old_projection_physical_pixelscale))
-        nz = int(round(z_radius / self.old_projection_physical_pixelscale))
+        nz = int(round(vertical_extent / self.old_projection_physical_pixelscale))
 
         # Return the pixel shape
         return PixelShape.from_xy(nx, nz)

@@ -107,7 +107,18 @@ def is_sed(path):
     """
 
     # From SKIRT?
-    if is_from_skirt(path): return "_sed" in path
+    if is_from_skirt(path):
+
+        # Directly from SKIRT output
+        if "_sed" in path: return True
+
+        # In SKIRT format, but renamed?
+        else:
+
+            from ..tools import filesystem as fs
+            from ..tools import strings
+            colnames = fs.get_column_names(path)
+            return strings.any_startswith(colnames, "lambda") and strings.any_startswith(colnames, "total flux")
 
     # PTS data format
     elif is_pts_data_format(path):

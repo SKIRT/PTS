@@ -3873,6 +3873,25 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_disk_i1_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_faceon_map.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_disk_bolometric_luminosity_map(self):
 
         """

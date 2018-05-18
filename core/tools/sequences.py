@@ -764,7 +764,7 @@ def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8, ignore=None):
 
 # -----------------------------------------------------------------
 
-def all_true(lst, ignore_none=False):
+def all_true(sequence, ignore_none=False):
 
     """
     This function ...
@@ -773,14 +773,47 @@ def all_true(lst, ignore_none=False):
     :return:
     """
 
-    if len(lst) == 0: raise ValueError("Cannot use empty list")
-
-    indices = not_none_indices(lst) if ignore_none else range(len(lst))
-
-    if len(lst) == 0: raise ValueError("List only contains None values")
+    if len(sequence) == 0: raise ValueError("Cannot use empty list")
+    indices = not_none_indices(sequence) if ignore_none else range(len(sequence))
+    if len(sequence) == 0: raise ValueError("List only contains None values")
 
     for index in indices:
-        if not lst[index]: return False
+        if not sequence[index]: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def some_true_but_not_all(sequence, ignore_none=False):
+
+    """
+    This function ...
+    :param sequence:
+    :param ignore_none:
+    :return:
+    """
+
+    if all_true(sequence, ignore_none=ignore_none): return False
+    elif all_false(sequence, ignore_none=ignore_none): return False
+    elif all_none(sequence): raise ValueError("Cannot work with only None values")
+    else: return True
+
+# -----------------------------------------------------------------
+
+def all_false(sequence, ignore_none=False):
+
+    """
+    This function ...
+    :param sequence:
+    :param ignore_none:
+    :return:
+    """
+
+    if len(sequence) == 0: raise ValueError("Cannot use empty list")
+    indices = not_none_indices(sequence) if ignore_none else range(len(sequence))
+    if len(sequence) == 0: raise ValueError("List only contains None values")
+
+    for index in indices:
+        if sequence[index]: return False
     return True
 
 # -----------------------------------------------------------------
@@ -1804,34 +1837,6 @@ def is_descending(sequence):
     """
 
     return sorted(sequence, reverse=True) == sequence
-
-# -----------------------------------------------------------------
-
-# def all_true(sequence):
-#
-#     """
-#     This function ...
-#     :param sequence:
-#     :return:
-#     """
-#
-#     for item in sequence:
-#         if not item: return False
-#     return True
-
-# -----------------------------------------------------------------
-
-def all_false(sequence):
-
-    """
-    This function ...
-    :param sequence:
-    :return:
-    """
-
-    for item in sequence:
-        if item: return False
-    return True
 
 # -----------------------------------------------------------------
 

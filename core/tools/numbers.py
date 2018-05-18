@@ -1140,6 +1140,18 @@ def arithmetic_mean(*numbers):
 
 # -----------------------------------------------------------------
 
+def arithmetic_mean_numpy(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    return np.mean(array)
+
+# -----------------------------------------------------------------
+
 def variance(*numbers, **kwargs):
 
     """
@@ -1182,17 +1194,20 @@ def weighed_arithmetic_mean(numbers, weights):
 
 # -----------------------------------------------------------------
 
-def numpy_weighted_mean(data, weights=None):
+def weighed_arithmetic_mean_numpy(data, weights=None):
 
     """
     Calculate the weighted mean of an array/list using numpy
     """
 
+    # Not weighted
+    if weights is None: return arithmetic_mean_numpy(data)
+
     import numpy as np
-
-    weights = np.array(weights).flatten() / float(sum(weights))
-
-    return np.dot(np.array(data), weights)
+    #weights = np.array(weights).flatten() / float(sum(weights))
+    #return np.dot(np.array(data), weights)
+    norm_weights = weights / float(np.sum(weights))
+    return np.dot(data, norm_weights)
 
 # -----------------------------------------------------------------
 
@@ -1202,6 +1217,7 @@ def weighted_median(data, weights=None):
     Calculate the weighted median of a list
     """
 
+    # Not weighted
     if weights is None: return median(data)
 
     midpoint = 0.5 * sum(weights)
@@ -1232,6 +1248,7 @@ def weighed_median_numpy(data, weights=None):
 
     import numpy as np
 
+    # Not weighed?
     if weights is None: return np.median(np.array(data).flatten())
 
     data, weights = np.array(data).flatten(), np.array(weights).flatten()
@@ -1298,7 +1315,24 @@ def weighed_standard_deviation(numbers, weights, mean=None):
     """
 
     if mean is None: mean = weighed_arithmetic_mean(numbers, weights)
-    return sum(weighed_squared_differences(numbers, mean, weights)) / sum(weights)
+    return np.sqrt(sum(weighed_squared_differences(numbers, mean, weights)) / sum(weights))
+
+# -----------------------------------------------------------------
+
+def weighed_standard_deviation_numpy(numbers, weights, mean=None):
+
+    """
+    This function ...
+    :param numbers:
+    :param weights:
+    :param mean:
+    :return:
+    """
+
+    if mean is None: mean = weighed_arithmetic_mean_numpy(numbers, weights)
+    sq_diffs = (numbers - mean)**2
+    norm_weights = weights / float(np.sum(weights))
+    return np.sqrt(np.dot(sq_diffs, norm_weights))
 
 # -----------------------------------------------------------------
 

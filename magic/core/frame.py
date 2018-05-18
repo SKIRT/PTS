@@ -186,6 +186,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def set_meta(self, key, value):
+
+        """
+        This function ...
+        :param key:
+        :param value:
+        :return:
+        """
+
+        self.metadata[key] = value
+
+    # -----------------------------------------------------------------
+
     @property
     def shape(self):
 
@@ -2304,6 +2317,24 @@ class Frame(NDDataArray):
         # Create a new frame
         if hasattr(frame, "_data"): new = cls(np.zeros_like(frame._data), wcs=wcs)
         else: new = cls(np.zeros_like(frame), wcs=wcs)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize_nans(cls, shape, wcs=None, filter=None, unit=None):
+
+        """
+        This function ...
+        :param shape:
+        :param wcs:
+        :param filter:
+        :param unit:
+        :return:
+        """
+
+        # Create a new frame
+        new = cls(np.full(shape, nan_value), wcs=wcs, filter=filter, unit=unit)
         return new
 
     # -----------------------------------------------------------------
