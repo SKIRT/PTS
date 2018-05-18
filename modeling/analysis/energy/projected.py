@@ -43,6 +43,63 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # -- Attributes --
 
+        # The analysis run
+        self.analysis_run = None
+
     # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # Write
+        self.write()
+
+        # Plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ProjectedEnergyAnalyser, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
 
 # -----------------------------------------------------------------

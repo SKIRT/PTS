@@ -12,11 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-import matplotlib.pyplot as plt
-from collections import OrderedDict
-
 # Import the relevant PTS classes and modules
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
@@ -42,6 +37,9 @@ class CellEnergyAnalyser(AnalysisComponent):
         super(CellEnergyAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
+
+        # The analysis run
+        self.analysis_run = None
 
     # -----------------------------------------------------------------
 
@@ -84,6 +82,36 @@ class CellEnergyAnalyser(AnalysisComponent):
         # Call the setup function of the base class
         super(CellEnergyAnalyser, self).setup(**kwargs)
 
+        # Load the run
+        self.load_run()
+
+    # -----------------------------------------------------------------
+
+    def load_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the analysis run " + self.config.run + " ...")
+
+        # Get the run
+        self.analysis_run = self.get_run(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.model
+
     # -----------------------------------------------------------------
 
     def get_absorptions(self):
@@ -92,6 +120,37 @@ class CellEnergyAnalyser(AnalysisComponent):
         This function ...
         :return:
         """
+
+        # Load
+        if self.has_absorptions: self.load_absorptions()
+
+        # Create
+        else: self.create_absorptions()
+
+    # -----------------------------------------------------------------
+
+    def load_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    def create_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        total_absorptions = self.total_contribution_absorption_luminosities
+        total_unit = self.total_contribution_absorption_unit
+        total_conversion = total_unit.conversion_factor("W")
+        total_absorptions_watt = total_absorptions * total_conversion
 
     # -----------------------------------------------------------------
 
@@ -129,9 +188,53 @@ class CellEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
+        if self.has_bulge_emissions: self.load_bulge_emissions()
+
+        else: self.create_bulge_emissions()
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_bulge_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
     # -----------------------------------------------------------------
 
     def get_disk_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_disk_emissions: self.load_disk_emissions()
+
+        else: self.create_disk_emissions()
+
+    # -----------------------------------------------------------------
+
+    def load_disk_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_disk_emissions(self):
 
         """
         This function ...
@@ -147,9 +250,57 @@ class CellEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Load
+        if self.has_young_emissions: self.load_young_emissions()
+
+        # Create
+        else: self.create_young_emissions()
+
+    # -----------------------------------------------------------------
+
+    def load_young_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_young_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
     # -----------------------------------------------------------------
 
     def get_ionizing_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_ionizing_emissions: self.load_ionizing_emissions()
+
+        # Create
+        else: self.create_ionizing_emissions()
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_ionizing_emissions(self):
 
         """
         This function ...
@@ -166,6 +317,28 @@ class CellEnergyAnalyser(AnalysisComponent):
         """
 
         # Combine bulge, disk, young and ionizing
+        if self.has_total_emissions: self.load_total_emissions()
+
+        # Create
+        else: self.create_total_emissions()
+
+    # -----------------------------------------------------------------
+
+    def load_total_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_total_emissions(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -251,12 +424,98 @@ class CellEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("")
+
     # -----------------------------------------------------------------
 
     def create_map_midplane(self):
 
         """
         This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the map of the energy imbalance in the midplane ...")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_bulge_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_disk_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_young_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ionizing_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_total_emissions(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_map_midplane(self):
+
+        """
+        Thisn function ...
         :return:
         """
 
@@ -272,12 +531,16 @@ class CellEnergyAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Absorptions
         if self.do_write_absorptions: self.write_absorptions()
 
-        if self.do_write_emissions: self.write_emissions()
+        # Emissions
+        self.write_emissions()
 
+        # Map
         if self.do_write_map: self.write_map()
 
+        # Map of midplane
         if self.do_write_map_midplane: self.write_map_midplane()
 
     # -----------------------------------------------------------------
@@ -295,6 +558,66 @@ class CellEnergyAnalyser(AnalysisComponent):
 
         """
         This function ...
+        :return:
+        """
+
+        # Bulge
+        if self.do_write_bulge_emissions: self.write_bulge_emissions()
+
+        # Disk
+        if self.do_write_disk_emissions: self.write_disk_emissions()
+
+        # Young
+        if self.do_write_young_emissions: self.write_young_emissions()
+
+        # Ionizing
+        if self.do_write_ionizing_emissions: self.write_ionizing_emissions()
+
+        # Total
+        if self.do_write_total_emissions: self.write_total_emissions()
+
+    # -----------------------------------------------------------------
+
+    def write_bulge_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def write_disk_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def write_young_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_emissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def write_total_emissions(self):
+
+        """
+        Thisn function ...
         :return:
         """
 

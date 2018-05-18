@@ -155,7 +155,8 @@ class Frame(NDDataArray):
         self._fwhm = kwargs.pop("fwhm", None)
 
         # Set pixelscale
-        if kwargs.get("pixelscale", None) is not None: self._pixelscale = angular_or_physical_pixelscale(kwargs.pop("pixelscale"))
+        pixelscale = kwargs.pop("pixelscale", None)
+        if pixelscale is not None: self._pixelscale = angular_or_physical_pixelscale(pixelscale)
         else: self._pixelscale = None
 
         # Set wavelength
@@ -5115,6 +5116,20 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace(self, mask, value):
+
+        """
+        This function ...
+        :param mask:
+        :param value:
+        :return:
+        """
+
+        # Replace
+        self.data[mask] = value
+
+    # -----------------------------------------------------------------
+
     def replace_where_greater_than(self, value, replacement):
 
         """
@@ -5128,7 +5143,7 @@ class Frame(NDDataArray):
         mask = self.where_greater_than(value)
 
         # Replace
-        self.data[mask] = replacement
+        self.replace(mask, replacement)
 
         # Return the mask
         return mask
@@ -5270,6 +5285,42 @@ class Frame(NDDataArray):
         """
 
         return self.replace_where_smaller_than(value, inf_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_zeroes(self, mask):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        self.replace(mask, zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_nans(self, mask):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        self.replace(mask, nan_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_by_infs(self, mask):
+
+        """
+        This function ...
+        :param mask:
+        :return:
+        """
+
+        self.replace(mask, inf_value)
 
     # -----------------------------------------------------------------
 

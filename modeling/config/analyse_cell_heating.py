@@ -32,7 +32,7 @@ definition = definition.copy()
 # ANALYSIS RUN
 if runs.empty: raise ValueError("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
-else: definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", runs.names)
+else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.names)
 
 # -----------------------------------------------------------------
 
@@ -81,5 +81,23 @@ definition.add_flag("replot_map_midplane", "replot the map in the midplane")
 
 # Keep consistent
 definition.add_flag("consistency", "assure heating fraction maps are consistent with ncells and stddev maps", True)
+
+# -----------------------------------------------------------------
+
+default_format = "pdf"
+formats = ["png", "pdf"]
+
+# -----------------------------------------------------------------
+
+# Plotting
+# M81: radii = [2.22953938405, 3.34430907608, 5.90827936773, 8.9181575362]  # kpc
+definition.add_optional("radial_distribution_radii", "quantity_list", "radii at which to draw vertical lines on the radial distribution plot")
+definition.add_optional("plotting_format", "string", "plotting format", default_format, choices=formats)
+
+# -----------------------------------------------------------------
+
+# For creating interpolated maps
+definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated map of the heating fraction", 10)
+definition.add_optional("min_ncells_midplane", "positive_integer", "minimum number of cells for each pixel of the interpolated map of the heating fraction in the midplane", 5)
 
 # -----------------------------------------------------------------

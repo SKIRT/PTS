@@ -1004,7 +1004,8 @@ def plot_frame_contours(frame, **kwargs):
 # -----------------------------------------------------------------
 
 def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None,
-                  format=None, cmap="jet", single_colour=None, labels=False, show_axes=True, transparent=False):
+                  format=None, cmap="jet", single_colour=None, labels=False, show_axes=True, transparent=False,
+                  plot_data=False, axes=None, xsize=7, ysize=7, colorbar=False):
 
     """
     This function ...
@@ -1022,6 +1023,11 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param labels:
     :param show_axes:
     :param transparent:
+    :param plot_data:
+    :param axes:
+    :param xsize:
+    :param ysize:
+    :param colorbar:
     :return:
     """
 
@@ -1029,49 +1035,97 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     if isinstance(box, np.ndarray): data = box
     else: data = box.data
 
+    # Get shape
+    nxpix = data.shape[1]
+    nypix = data.shape[0]
+
+    # Create figure if necessary, get the axes
+    only_axes = False
+    if axes is None:
+        plt.figure(figsize=(xsize, ysize))
+        plt.xlim(0, nxpix - 1)
+        plt.ylim(0, nypix - 1)
+        axes = plt.gca()
+    else: only_axes = True
+
+    # Also plot the image data underneath
+    if plot_data:
+
+        # Get interval
+        vmin, vmax = get_vmin_vmax(data, interval=interval, around_zero=around_zero, symmetric=symmetric,
+                                   normalize_in=normalize_in, soft_min=soft_min, soft_max=soft_max,
+                                   soft_min_scaling=soft_min_scaling, soft_max_scaling=soft_max_scaling,
+                                   symmetric_method=symmetric_method, check_around_zero=check_around_zero, wcs=wcs)
+
+        # Get the normalization
+        norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
+
+        # Show the data
+        extent = None
+        image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm,
+                            cmap=cmap, alpha=alpha, aspect=aspect, extent=extent)
+
+    # Set to None
+    else: vmin = vmax = image = None
+
     # Define X and Y labels
-    x = np.arange(data.shape[1])
-    y = np.arange(data.shape[0])
+    x = np.arange(nxpix)
+    y = np.arange(nypix)
 
     # Square figure
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.set_aspect('equal')
+    #fig = plt.figure()
+    #ax = fig.add_subplot(111)
+    axes.set_aspect('equal')
 
     # Contour and labels
     if single_colour is not None:
         colors = single_colour
         cmap = None
     else: colors = None
-    cs = ax.contour(x, y, data, nlevels, colors=colors, cmap=cmap, linewidths=line_width)
+    cs = axes.contour(x, y, data, nlevels, colors=colors, cmap=cmap, linewidths=line_width)
     if labels: plt.clabel(cs, fontsize=font_size)
 
     # Axes labels
-    ax.set_xlabel(x_label, fontsize=font_size)
-    ax.set_ylabel(y_label, fontsize=font_size)
+    axes.set_xlabel(x_label, fontsize=font_size)
+    axes.set_ylabel(y_label, fontsize=font_size)
 
     # Make tick lines thicker
-    for l in ax.get_xticklines(): l.set_markeredgewidth(line_width)
-    for l in ax.get_yticklines(): l.set_markeredgewidth(line_width)
+    for l in axes.get_xticklines(): l.set_markeredgewidth(line_width)
+    for l in axes.get_yticklines(): l.set_markeredgewidth(line_width)
 
     # Make axis label larger
-    for tick in ax.xaxis.get_major_ticks(): tick.label.set_fontsize(font_size)
-    for tick in ax.yaxis.get_major_ticks(): tick.label.set_fontsize(font_size)
+    for tick in axes.xaxis.get_major_ticks(): tick.label.set_fontsize(font_size)
+    for tick in axes.yaxis.get_major_ticks(): tick.label.set_fontsize(font_size)
 
     # Make figure box thicker
-    for s in ax.spines.values(): s.set_linewidth(line_width)
+    for s in axes.spines.values(): s.set_linewidth(line_width)
 
-    # Show axes?
-    if not show_axes: plt.axis("off")
+    # Axes were not provided: we are supposed to create the whole figure thingy and close it
+    if not only_axes:
 
-    if title is not None: plt.title(title)
+        # Show axis?
+        if not show_axes: plt.axis('off')
 
-    # Show or save
-    if path is None: plt.show()
-    else: plt.savefig(path, format=format, transparent=transparent)
+        # Add title
+        if title is not None: plt.title(title)
 
-    # Close
-    plt.close()
+        # Add colorbar?
+        if colorbar: plt.colorbar(image)
+
+        # Show or save as file
+        if path is None: plt.show()
+        else: plt.savefig(path, format=format, transparent=transparent)
+
+        # Close the figure
+        plt.close()
+
+    # Return vmin and vmax
+    if return_image:
+        if return_normalization: return vmin, vmax, image, norm
+        else: return vmin, vmax, image
+    else:
+        if return_normalization: return vmin, vmax, norm
+        else: return vmin, vmax
 
 # -----------------------------------------------------------------
 

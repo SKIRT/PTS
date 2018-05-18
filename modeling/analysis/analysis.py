@@ -37,6 +37,10 @@ from .heating.cell import CellDustHeatingAnalyser
 from .heating.projected import ProjectedDustHeatingAnalyser
 from ..config.analyse_properties import definition as analyse_properties_definition
 from .properties import PropertiesAnalyser
+from ..config.analyse_cell_energy import definition as analyse_cell_energy_definition
+from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
+from .energy.cell import CellEnergyAnalyser
+from .energy.projected import ProjectedEnergyAnalyser
 
 # -----------------------------------------------------------------
 
@@ -197,7 +201,7 @@ subcommands = OrderedDict()
 subcommands[_sed_command_name] = sed_commands
 subcommands[_attenuation_command_name] = attenuation_commands
 subcommands[_heating_command_name] = heating_commands
-#subcommands[_energy_command_name] = energy_commands
+subcommands[_energy_command_name] = energy_commands
 
 # -----------------------------------------------------------------
 
@@ -2192,6 +2196,124 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create the analyser
         analyser = ProjectedDustHeatingAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_cell_energy_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_cell_energy_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_cell_energy_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_cell_energy_definition, **kwargs)
+
+        # Analyse
+        self.analyse_cell_energy(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_cell_energy(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analyser
+        analyser = CellEnergyAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_projected_energy_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_projected_energy_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_projected_energy_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_projected_energy_definition, **kwargs)
+
+        # Analyse
+        self.analyse_projected_energy(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_projected_energy(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analyser
+        analyser = ProjectedEnergyAnalyser(config=config)
 
         # Set the modeling path
         analyser.config.path = self.config.path
