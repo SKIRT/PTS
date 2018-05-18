@@ -94,6 +94,7 @@ formats = ["png", "pdf"]
 # M81: radii = [2.22953938405, 3.34430907608, 5.90827936773, 8.9181575362]  # kpc
 definition.add_optional("radial_distribution_radii", "quantity_list", "radii at which to draw vertical lines on the radial distribution plot")
 definition.add_optional("plotting_format", "string", "plotting format", default_format, choices=formats)
+definition.add_optional("nlevels", "positive_integer", "number of levels for contour plots of the heating fraction maps", 5)
 
 # -----------------------------------------------------------------
 
