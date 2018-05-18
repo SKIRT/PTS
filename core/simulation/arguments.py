@@ -152,11 +152,12 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_command(cls, command):
+    def from_command(cls, command, nnodes=None):
 
         """
         This function ...
         :param command:
+        :param nnodes:
         :return:
         """
 
@@ -190,8 +191,12 @@ class SkirtArguments(object):
             if "-np" in command: nprocesses = int(command.split("-np")[1].split()[0])
             elif "-n" in command: nprocesses = int(command.split("-n")[1].split()[0])
             else: #raise ValueError("Unknown MPI command")
-                log.warning("Unknown MPI command: '" + command.split(skirt_path)[0].strip() + "': cannot determine the number of processes")
-                nprocesses = None
+                if "--hybrid" in command and nnodes is not None:
+                    nprocesses_per_node = int(command.split("--hybrid ")[1].split(" ")[0])
+                    nprocesses = nprocesses_per_node * nnodes
+                else:
+                    log.warning("Unknown MPI command: '" + command.split(skirt_path)[0].strip() + "': cannot determine the number of processes")
+                    nprocesses = None
 
             # Get cores per process
             if "--map-by socket" in command: cores_per_process = int(command.split("--map-by socket:pe=")[1].split()[0])
