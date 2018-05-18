@@ -27,7 +27,7 @@ from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 from astropy.convolution import interpolate_replace_nans
 from astropy.convolution import Gaussian2DKernel
-from astropy.units.core import UnitTypeError, UnitConversionError
+from astropy.units.core import UnitConversionError
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
@@ -50,7 +50,7 @@ from ...core.units.parsing import parse_unit as u
 from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
-from ..basics.pixelscale import Pixelscale, PhysicalPixelscale
+from ..basics.pixelscale import Pixelscale, PhysicalPixelscale, angular_or_physical_pixelscale
 from ..basics.vector import Pixel
 from ..region.region import PixelRegion, SkyRegion
 
@@ -155,8 +155,10 @@ class Frame(NDDataArray):
         self._fwhm = kwargs.pop("fwhm", None)
 
         # Set pixelscale
-        self._pixelscale = kwargs.pop("pixelscale", None)
-        if self._pixelscale is not None and not isinstance(self._pixelscale, Pixelscale): self._pixelscale = Pixelscale(self._pixelscale)
+        #self._pixelscale = kwargs.pop("pixelscale", None)
+        #if self.has_pixelscale and not isinstance(self._pixelscale, Pixelscale): self._pixelscale = Pixelscale(self._pixelscale)
+        if kwargs.get("pixelscale", None) is not None: self._pixelscale = angular_or_physical_pixelscale(kwargs.pop("pixelscale"))
+        else: self._pixelscale = None
 
         # Set wavelength
         self._wavelength = kwargs.pop("wavelength", None)
@@ -2085,19 +2087,7 @@ class Frame(NDDataArray):
         """
 
         # Convert to pixelscale
-        if not isinstance(value, Pixelscale):
-
-            # Angular pixelscale
-            try: value = Pixelscale(value)
-
-            # Not angular pixelscale
-            except (UnitTypeError, UnitConversionError) as e:
-
-                # Physical pixelscale
-                try: value = PhysicalPixelscale(value)
-
-                # Invalid
-                except (UnitTypeError, UnitConversionError) as e: raise ValueError("The passed value does not represent an angular or physical pixelscale")
+        pixelscale = angular_or_physical_pixelscale(value)
 
         # Set the internal pixelscale
         self._pixelscale = value

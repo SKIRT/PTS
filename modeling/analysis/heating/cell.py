@@ -178,7 +178,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Check for consistency
         if self.config.consistency:
 
+            # Remove the map of heating fraction and/or stddev and/or ncells if either one of them is not present
             if sequences.some_true_but_not_all([self.has_map, self.has_map_stddev, self.has_map_ncells]): self.remove_map_stddev_and_ncells()
+
+            # Remove the map of the heating fraction in the midplane and/or stddev and/or ncells if either one of them is not present
             if sequences.some_true_but_not_all([self.has_map_midplane, self.has_map_midplane_stddev, self.has_map_midplane_ncells]): self.remove_map_midplane_stddev_and_ncells()
 
     # -----------------------------------------------------------------
@@ -1469,6 +1472,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Set the pixelscale and the coordinate info
         self.map.pixelscale = self.map_spacing * self.coordinates_unit
+        self.map.distance = self.galaxy_distance
         self.map.set_meta("x_min", repr(-self.map_radius) + " " + self.coordinates_unit_string)
         self.map.set_meta("x_max", repr(self.map_radius) + " " + self.coordinates_unit_string)
         self.map.set_meta("y_min", repr(-self.map_radius) + " " + self.coordinates_unit_string)
@@ -2145,6 +2149,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Set the pixelscale and the coordinate info
         self.map_midplane.pixelscale = self.midplane_map_spacing * self.coordinates_unit
+        self.map_midplane.distance = self.galaxy_distance
         self.map_midplane.set_meta("x_min", repr(-self.midplane_map_radius) + " " + self.coordinates_unit_string)
         self.map_midplane.set_meta("x_max", repr(self.midplane_map_radius) + " " + self.coordinates_unit_string)
         self.map_midplane.set_meta("y_min", repr(-self.midplane_map_radius) + " " + self.coordinates_unit_string)

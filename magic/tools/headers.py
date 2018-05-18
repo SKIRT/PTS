@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import warnings
 import numpy as np
 
 # Import astronomical modules
@@ -24,7 +25,7 @@ from astropy.io.fits import getheader
 from ...core.filter.filter import parse_filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.log import log
-from ..basics.pixelscale import Pixelscale
+from ..basics.pixelscale import Pixelscale, angular_or_physical_pixelscale
 from ...core.units.unit import PhotometricUnit
 from ...core.units.parsing import parse_unit as u
 from ...core.units.utils import interpret_physical_type
@@ -100,15 +101,18 @@ def get_pixelscale(header):
                     try: unit = u(unit)
                     except ValueError: unit = None
 
+                # Debugging
                 log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
                 log.debug("unit for the pixelscale = " + str(unit))
 
                 # If no unit is found, guess that it's arcseconds / pixel ...
-                if unit is None: unit = u("arcsec/pix")
+                if unit is None:
+                    warnings.warn("Unit of the pixelscale is not defined in the header, assuming arcsec/pix ...")
+                    unit = u("arcsec/pix")
                 scale = scale * unit
 
             # Return the scale
-            return Pixelscale(scale)
+            return angular_or_physical_pixelscale(scale)
 
     # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
     for keyword_combination in (("PXSCAL1", "PXSCAL2"), ("XPIXSIZE", "YPIXSIZE")):
@@ -140,17 +144,24 @@ def get_pixelscale(header):
                 try: unit2 = u(unit2)
                 except ValueError: unit2 = None
 
+            # Debugging
             log.debug("pixelscale found in PXSCAL1 and PXSCAL2 keywords = (" + str(scale1) + "," +str(scale2) + ")")
             log.debug("unit for the pixelscale = (" + str(unit1) + "," + str(unit2) + ")")
 
             # If no unit is found, guess that it's arcseconds / pixel ...
-            if unit1 is None: unit1 = u("arcsec/pix")
-            if unit2 is None: unit2 = u("arcsec/pix")
+            if unit1 is None:
+                warnings.warn("Unit of the pixelscale in axis1 is not defined in the header, assuming arcsec/pix ...")
+                unit1 = u("arcsec/pix")
+            if unit2 is None:
+                warnings.warn("Unit of the pixelscale in axis2 is not defined in the header, assuming arcsec/pix ...")
+                unit2 = u("arcsec/pix")
+
+            # Set quantities
             scale1 = scale1 * unit1
             scale2 = scale2 * unit2
 
             # Return the pixelscale
-            return Pixelscale(scale1, scale2)
+            return angular_or_physical_pixelscale(scale1, scale2)
 
     # If none of the above keywords were found, return None
     else: return None

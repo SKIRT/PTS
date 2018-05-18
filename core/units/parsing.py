@@ -124,7 +124,8 @@ def split_value_unit(argument):
 
 # -----------------------------------------------------------------
 
-def parse_quantity(argument, density=False, physical_type=None, brightness=False, default_unit=None, density_strict=False, brightness_strict=False):
+def parse_quantity(argument, density=False, physical_type=None, brightness=False, default_unit=None,
+                   density_strict=False, brightness_strict=False, allow_scalar=False):
 
     """
     This function ...
@@ -135,6 +136,7 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
     :param default_unit: for when numerical value is zero and no unit is in the argument string
     :param density_strict:
     :param brightness_strict:
+    :param allow_scalar:
     :return:
     """
 
@@ -157,6 +159,9 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
 
             # Check whether the number is zero and default unit is specified
             if number == 0 and default_unit is not None: unit = parse_unit(default_unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+
+            #
+            elif allow_scalar: return number
 
             # Otherwise, we cannot make a quantity
             else: raise ValueError("Unit is not specified")

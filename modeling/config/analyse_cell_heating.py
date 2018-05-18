@@ -80,6 +80,6 @@ definition.add_flag("replot_map_midplane", "replot the map in the midplane")
 # -----------------------------------------------------------------
 
 # Keep consistent
-definition.add_flag("consistency", "assure heating fraction maps are consistent with ncells and stddev maps")
+definition.add_flag("consistency", "assure heating fraction maps are consistent with ncells and stddev maps", True)
 
 # -----------------------------------------------------------------

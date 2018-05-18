@@ -294,8 +294,21 @@ class SKIRTJobScript(JobScript):
         cluster = kwargs.pop("cluster", None)
         cluster_name = kwargs.pop("cluster_name", None)
         remote = kwargs.pop("remote", None)
-        if "host_id" not in kwargs and remote is None: raise ValueError("Host ID or remote must be specified")
-        host_id = kwargs.pop("host_id")
+
+        if "host_id" not in kwargs and remote is None:
+
+            #raise ValueError("Host ID or remote must be specified")
+            for line in lines:
+                if line.startswith("# pts set_postponed_job_id"):
+                    host_id = line.split("set_postponed_job_id ")[1].split(" ")[0].strip()
+                    break
+            # Break is not encountered
+            else: raise ValueError("Host ID or remote must be specified (not found in job script)")
+
+        elif kwargs.get("host_id", None) is not None: host_id = kwargs.pop("host_id")
+        elif remote is not None: host_id = remote.host_id
+        else: raise ValueError("We shouldn't get here")
+
         if host_id is None:
             if remote is None: raise ValueError("Host ID or remote must be specified")
             host_id = remote.id

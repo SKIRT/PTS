@@ -18,9 +18,55 @@ import numpy as np
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
+from astropy.units.core import UnitTypeError, UnitConversionError
 
 # Import standard modules
 from .stretch import AngleExtent, PhysicalExtent
+
+# -----------------------------------------------------------------
+
+def angular_or_physical_pixelscale(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    from ...core.units.parsing import parse_quantity
+    from ...core.tools import types
+
+    # Too many arguments
+    if len(args) > 2: raise ValueError("Too many arguments")
+
+    # Parse
+    x = args[0] if len(args) > 0 else kwargs.get("x")
+    y = args[1] if len(args) > 1 else kwargs.get("y", None)
+    x = parse_quantity(x, allow_scalar=True)
+    y = parse_quantity(y, allow_scalar=True) if y is not None else None
+
+    # Return pixelscale
+    if types.is_length_quantity(x): return PhysicalPixelscale(x, y=y, **kwargs)
+    elif types.is_angle(x): return Pixelscale(x, y=y, **kwargs)
+    else:
+
+        #print(x, y, kwargs)
+
+        # Angular pixelscale
+        try: pixelscale = Pixelscale(x, y=y, **kwargs)
+
+        # Not angular pixelscale
+        except (UnitTypeError, UnitConversionError) as e:
+
+            # Physical pixelscale
+            try: pixelscale = PhysicalPixelscale(x, y=y, **kwargs)
+
+            # Invalid
+            except (UnitTypeError, UnitConversionError) as e: raise ValueError("The passed value does not represent an angular or physical pixelscale")
+
+        # Return
+        return pixelscale
 
 # -----------------------------------------------------------------
 
@@ -229,8 +275,8 @@ class PhysicalPixelscale(PhysicalExtent):
         if y is None: y = x
 
         # Convert to just arcsec or just
-        x = only_angle(x, unit=unit)
-        y = only_angle(y, unit=unit)
+        x = only_physical(x, unit=unit)
+        y = only_physical(y, unit=unit)
 
         # Call the constructor of the base class
         super(PhysicalPixelscale, self).__init__(x, y)
