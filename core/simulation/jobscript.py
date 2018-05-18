@@ -20,7 +20,7 @@ import warnings
 # Import the relevant PTS classes and modules
 from ..remote.jobscript import JobScript, get_jobscript_properties
 from ..tools import filesystem as fs
-from ..tools import numbers
+from ..tools import numbers, types
 
 # -----------------------------------------------------------------
 
@@ -292,11 +292,33 @@ class SKIRTJobScript(JobScript):
 
         # Get the remote properties
         cluster = kwargs.pop("cluster", None)
+        cluster_name = kwargs.pop("cluster_name", None)
         remote = kwargs.pop("remote", None)
+        if "host_id" not in kwargs and remote is None: raise ValueError("Host ID or remote must be specified")
         host_id = kwargs.pop("host_id")
         if host_id is None:
-            if remote is None: raise ValueError("Host ID must be specified")
+            if remote is None: raise ValueError("Host ID or remote must be specified")
             host_id = remote.id
+
+        from ..remote.host import load_host
+
+        # Get cluster name from 'cluster' argument
+        if types.is_string_type(cluster):
+            if cluster_name is not None and cluster != cluster_name: raise ValueError("Invalid input: 'cluster' is not the same string as 'cluster_name'")
+            cluster_name = cluster
+            cluster = None
+
+        # Get host, if we don't have a cluster
+        if cluster is None:
+
+            if remote is not None: host = remote.host
+            else: host = load_host(host_id)
+
+            # Get the cluster
+            if cluster_name is not None: cluster = host.clusters[cluster_name]
+            elif host.cluster_name is not None:
+                warnings.warn("Cluster name is not passed, assuming default cluster (" + host.cluster_name + ")")
+                cluster = host.cluster
 
         # Bind to cores?
         bind_to_cores = "--bind-to core" in command
@@ -343,7 +365,7 @@ class SKIRTJobScript(JobScript):
         """
 
         from ..launch.options import SchedulingOptions
-        return SchedulingOptions(nodes=self.nnodes, mail=self.mail, full_node=True, walltime=self.walltime, local_jobscript_path=self.path)
+        return SchedulingOptions(nodes=self.nnodes, mail=self.mail, full_node=True, walltime=self.walltime_seconds, local_jobscript_path=self.path)
 
 # -----------------------------------------------------------------
 

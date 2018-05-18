@@ -44,6 +44,7 @@ from ..fitting.refitter import clone_fitting_run
 from ..analysis.initialization import AnalysisInitializer
 from ..analysis.launcher import AnalysisLauncher
 from ..analysis.analysis import Analysis
+from ..analysis.manager import AnalysisManager
 
 # -----------------------------------------------------------------
 
@@ -2306,6 +2307,16 @@ class RTMod(InteractiveConfigurable):
         :param analysis_run_name:
         :return:
         """
+
+        # Create the manager
+        manager = AnalysisManager()
+        manager.config.path = self.config.path
+
+        # Set analysis run name
+        manager.config.run = analysis_run_name
+
+        # Run the manager
+        manager.run()
 
     # -----------------------------------------------------------------
 

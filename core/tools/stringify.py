@@ -95,6 +95,8 @@ def tostr(value, **kwargs):
         else: scientific = False
 
         #print("scien", scientific)
+        #print("dec", decimal_places)
+        #print("nd", ndigits)
 
         # Set the options
         kwargs["scientific"] = scientific
@@ -994,8 +996,12 @@ def str_from_real(real, **kwargs):
 
         if doround:
 
+            #numbers.order_of_magnitude()
             if ndigits is not None: return repr(numbers.round_to_n_significant_digits(real, ndigits))
-            else: return ("{:." + str(decimal_places) + "}").format(real)
+            else:
+                primary_ndigits = numbers.order_of_magnitude(real) + 1
+                ndigits = decimal_places + primary_ndigits
+                return ("{:." + str(ndigits) + "}").format(real)
 
         else: return repr(real)
 

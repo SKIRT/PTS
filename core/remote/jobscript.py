@@ -159,6 +159,20 @@ class JobScript(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def walltime_seconds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        walltime = self.walltime
+        if walltime is None: return walltime
+        else: return self.walltime * 3600
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path, **kwargs):
 

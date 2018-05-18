@@ -25,10 +25,9 @@ from reproject import reproject_exact, reproject_interp
 from astropy.io import fits
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
-from astropy.units import UnitConversionError
 from astropy.convolution import interpolate_replace_nans
 from astropy.convolution import Gaussian2DKernel
-from astropy.units.core import UnitTypeError
+from astropy.units.core import UnitTypeError, UnitConversionError
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
@@ -2092,13 +2091,13 @@ class Frame(NDDataArray):
             try: value = Pixelscale(value)
 
             # Not angular pixelscale
-            except UnitTypeError:
+            except (UnitTypeError, UnitConversionError) as e:
 
                 # Physical pixelscale
                 try: value = PhysicalPixelscale(value)
 
                 # Invalid
-                except UnitTypeError: raise ValueError("The passed value does not represent an angular or physical pixelscale")
+                except (UnitTypeError, UnitConversionError) as e: raise ValueError("The passed value does not represent an angular or physical pixelscale")
 
         # Set the internal pixelscale
         self._pixelscale = value
@@ -5436,9 +5435,20 @@ class Frame(NDDataArray):
         else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
 
         # Set pixelscale
-        if self.wcs is None and self.pixelscale is not None:
-            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
-            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+        if not self.has_wcs and self.has_pixelscale:
+
+            # Angular
+            if self.has_angular_pixelscale:
+                header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
+                header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+
+            # Physical
+            elif self.has_physical_pixelscale:
+                header.set("XPIXSIZE", repr(self.pixelscale.x.to("pc").value), "[pc] Pixelscale for x axis")
+                header.set("YPIXSIZE", repr(self.pixelscale.y.to("pc").value), "[pc] Pixelscale for y axis")
+
+            # Invalid pixelscale
+            else: raise RuntimeError("We shouldn't get here")
 
         # Set distance
         if self.distance is not None: header.set("DISTANCE", repr(self.distance.to("Mpc").value), "[Mpc] Distance to the object")

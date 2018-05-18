@@ -386,9 +386,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         volumes = self.model.cell_volumes
         density = self.model.sfr_cell_stellar_density
         absorbed_energy = self.model.intrinsic_sfr_dust_luminosity
-        print("absorbed energy", absorbed_energy)
+        #print("absorbed energy", absorbed_energy)
         absorbed_energy_watt = absorbed_energy.to("W", distance=self.galaxy_distance).value
-        print("absorbed energy (watt)", absorbed_energy_watt)
+        #print("absorbed energy (watt)", absorbed_energy_watt)
 
         #absorptions_unevolved_diffuse = self.absorptions["Absorbed bolometric luminosity of the young stellar population"] + self.absorptions["Absorbed bolometric luminosity of the ionizing stellar population"]
         #absorptions_unevolved_diffuse = self.absorptions["young"] + self.absorptions["ionizing"]
@@ -399,8 +399,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         ionizing_unit = self.absorptions.column_unit("ionizing")
         young_conversion = young_unit.conversion_factor("W")
         ionizing_conversion = ionizing_unit.conversion_factor("W")
-        print("young conversion", young_conversion)
-        print("ionizing conversion", ionizing_conversion)
+        #print("young conversion", young_conversion)
+        #print("ionizing conversion", ionizing_conversion)
 
         # Unevolved,  diffuse dust
         absorptions_young = np.asarray(self.absorptions["young"])
@@ -413,7 +413,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Mass of ionizing stars for each cell
         relative_mass_ionizing = volumes * density
         normalization = sum(relative_mass_ionizing)
-        print("norm", normalization)
+        #print("norm", normalization)
         relative_mass_ionizing /= normalization
 
         #
@@ -432,7 +432,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         #absorptions_evolved = self.absorptions.old(unit="W", asarray=True)
         old_unit = self.absorptions.column_unit("old")
         old_conversion = old_unit.conversion_factor("W")
-        print("old conversion", old_conversion)
+        #print("old conversion", old_conversion)
         absorptions_old = np.asarray(self.absorptions["old"])
         absorptions_old_watt = absorptions_old * old_conversion
 
@@ -714,6 +714,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return sequences.get_all_equal_value([self.x_coordinates_unit, self.y_coordinates_unit, self.z_coordinates_unit])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def coordinates_unit_string(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return tostr(self.coordinates_unit)
 
     # -----------------------------------------------------------------
 
@@ -1453,13 +1465,14 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Initialize map of the midplane heating fraction
         self.map = Frame.initialize_nans(self.map_shape)
         self.map_stddev = Frame.initialize_nans(self.map_shape)
+        self.map_ncells = Frame.initialize_nans(self.map_shape)
 
         # Set the pixelscale and the coordinate info
         self.map.pixelscale = self.map_spacing * self.coordinates_unit
-        self.map.set_meta("x_min", -self.map_radius * self.coordinates_unit)
-        self.map.set_meta("x_max", self.map_radius * self.coordinates_unit)
-        self.map.set_meta("y_min", -self.map_radius * self.coordinates_unit)
-        self.map.set_meta("y_max", self.map_radius * self.coordinates_unit)
+        self.map.set_meta("x_min", repr(-self.map_radius) + " " + self.coordinates_unit_string)
+        self.map.set_meta("x_max", repr(self.map_radius) + " " + self.coordinates_unit_string)
+        self.map.set_meta("y_min", repr(-self.map_radius) + " " + self.coordinates_unit_string)
+        self.map.set_meta("y_max", repr(self.map_radius) + " " + self.coordinates_unit_string)
 
         # Loop over the x and y coordinates
         index = 1
@@ -1470,7 +1483,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
                 x_range, y_range = self.get_coordinate_range_around_pixel_map(x, y)
 
                 # Show
-                if index % 100 == 0: log.debug("Calculating heating fraction in the pixel " + str(index) + " of " + str(self.map_npixels) + " (" + tostr(float(index) / self.map_npixels * 100, decimal_places=1) + "%) ...")
+                if index % 100 == 0: log.debug("Calculating heating fraction in the pixel " + str(index) + " of " + str(self.map_npixels) + " (" + tostr(float(index) / self.map_npixels * 100, decimal_places=1, round=True) + "%) ...")
 
                 # Get the indices
                 indices = self.get_coordinate_indices_in_column_for_map(x_range, y_range)
@@ -2128,13 +2141,14 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # INitialize map of the midplane heating fraction
         self.map_midplane = Frame.initialize_nans(self.midplane_map_shape)
         self.map_midplane_stddev = Frame.initialize_nans(self.midplane_map_shape)
+        self.map_midplane_ncells = Frame.initialize_nans(self.midplane_map_shape)
 
         # Set the pixelscale and the coordinate info
         self.map_midplane.pixelscale = self.midplane_map_spacing * self.coordinates_unit
-        self.map_midplane.set_meta("x_min", -self.midplane_map_radius * self.coordinates_unit)
-        self.map_midplane.set_meta("x_max", self.midplane_map_radius * self.coordinates_unit)
-        self.map_midplane.set_meta("y_min", -self.midplane_map_radius * self.coordinates_unit)
-        self.map_midplane.set_meta("y_max", self.midplane_map_radius * self.coordinates_unit)
+        self.map_midplane.set_meta("x_min", repr(-self.midplane_map_radius) + " " + self.coordinates_unit_string)
+        self.map_midplane.set_meta("x_max", repr(self.midplane_map_radius) + " " + self.coordinates_unit_string)
+        self.map_midplane.set_meta("y_min", repr(-self.midplane_map_radius) + " " + self.coordinates_unit_string)
+        self.map_midplane.set_meta("y_max", repr(self.midplane_map_radius) + " " + self.coordinates_unit_string)
 
         # Loop over the x and y coordinates
         index = 1
@@ -2145,7 +2159,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
                 x_range, y_range = self.get_coordinate_range_around_pixel_midplane_map(x, y)
 
                 # Show
-                if index % 100 == 0: log.debug("Calculating heating fraction of the midplane in the pixel " + str(index) + " of " + str(self.midplane_map_npixels) + " (" + tostr(float(index) / self.midplane_map_npixels * 100, decimal_places=1) + "%) ...")
+                if index % 100 == 0: log.debug("Calculating heating fraction of the midplane in the pixel " + str(index) + " of " + str(self.midplane_map_npixels) + " (" + tostr(float(index) / self.midplane_map_npixels * 100, decimal_places=1, round=True) + "%) ...")
 
                 # Get the indices
                 indices = self.get_coordinate_indices_in_column_for_map_midplane(x_range, y_range)
