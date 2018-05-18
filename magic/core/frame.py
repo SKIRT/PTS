@@ -28,6 +28,7 @@ from astropy.nddata import NDDataArray
 from astropy.units import UnitConversionError
 from astropy.convolution import interpolate_replace_nans
 from astropy.convolution import Gaussian2DKernel
+from astropy.units.core import UnitTypeError
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
@@ -50,7 +51,7 @@ from ...core.units.parsing import parse_unit as u
 from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
-from ..basics.pixelscale import Pixelscale
+from ..basics.pixelscale import Pixelscale, PhysicalPixelscale
 from ..basics.vector import Pixel
 from ..region.region import PixelRegion, SkyRegion
 
@@ -2084,7 +2085,22 @@ class Frame(NDDataArray):
         :return:
         """
 
-        if not isinstance(value, Pixelscale): value = Pixelscale(value)
+        # Convert to pixelscale
+        if not isinstance(value, Pixelscale):
+
+            # Angular pixelscale
+            try: value = Pixelscale(value)
+
+            # Not angular pixelscale
+            except UnitTypeError:
+
+                # Physical pixelscale
+                try: value = PhysicalPixelscale(value)
+
+                # Invalid
+                except UnitTypeError: raise ValueError("The passed value does not represent an angular or physical pixelscale")
+
+        # Set the internal pixelscale
         self._pixelscale = value
 
     # -----------------------------------------------------------------

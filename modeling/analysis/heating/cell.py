@@ -34,6 +34,7 @@ from ....magic.basics.vector import PixelShape
 from ....core.basics.range import QuantityRange, RealRange
 from ....core.tools.stringify import tostr
 from ....core.tools import numbers, sequences
+from ....core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -705,6 +706,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def coordinates_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.get_all_equal_value([self.x_coordinates_unit, self.y_coordinates_unit, self.z_coordinates_unit])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def x_coordinates(self):
 
         """
@@ -713,6 +726,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return np.asarray(self.absorptions["x"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def x_coordinates_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.absorptions.column_unit("x")
 
     # -----------------------------------------------------------------
 
@@ -741,6 +766,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def y_coordinates_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.absorptions.column_unit("y")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def valid_y_coordinates(self):
 
         """
@@ -761,6 +798,18 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return np.asarray(self.absorptions["z"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def z_coordinates_unit(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.absorptions.column_unit("z")
 
     # -----------------------------------------------------------------
 
@@ -1406,11 +1455,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.map_stddev = Frame.initialize_nans(self.map_shape)
 
         # Set the pixelscale and the coordinate info
-        self.map.pixelscale = self.map_spacing
-        self.map.set_meta("x_min", -self.map_radius)
-        self.map.set_meta("x_max", self.map_radius)
-        self.map.set_meta("y_min", -self.map_radius)
-        self.map.set_meta("y_max", self.map_radius)
+        self.map.pixelscale = self.map_spacing * self.coordinates_unit
+        self.map.set_meta("x_min", -self.map_radius * self.coordinates_unit)
+        self.map.set_meta("x_max", self.map_radius * self.coordinates_unit)
+        self.map.set_meta("y_min", -self.map_radius * self.coordinates_unit)
+        self.map.set_meta("y_max", self.map_radius * self.coordinates_unit)
 
         # Loop over the x and y coordinates
         index = 1
@@ -2081,11 +2130,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         self.map_midplane_stddev = Frame.initialize_nans(self.midplane_map_shape)
 
         # Set the pixelscale and the coordinate info
-        self.map_midplane.pixelscale = self.midplane_map_spacing
-        self.map_midplane.set_meta("x_min", -self.midplane_map_radius)
-        self.map_midplane.set_meta("x_max", self.midplane_map_radius)
-        self.map_midplane.set_meta("y_min", -self.midplane_map_radius)
-        self.map_midplane.set_meta("y_max", self.midplane_map_radius)
+        self.map_midplane.pixelscale = self.midplane_map_spacing * self.coordinates_unit
+        self.map_midplane.set_meta("x_min", -self.midplane_map_radius * self.coordinates_unit)
+        self.map_midplane.set_meta("x_max", self.midplane_map_radius * self.coordinates_unit)
+        self.map_midplane.set_meta("y_min", -self.midplane_map_radius * self.coordinates_unit)
+        self.map_midplane.set_meta("y_max", self.midplane_map_radius * self.coordinates_unit)
 
         # Loop over the x and y coordinates
         index = 1
