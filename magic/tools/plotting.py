@@ -1005,7 +1005,14 @@ def plot_frame_contours(frame, **kwargs):
 
 def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None,
                   format=None, cmap="jet", single_colour=None, labels=False, show_axes=True, transparent=False,
-                  plot_data=False, axes=None, xsize=7, ysize=7, colorbar=False):
+                  plot_data=False, axes=None, xsize=7, ysize=7, colorbar=False,
+
+                  # For plotting data
+                  interval="pts", data_cmap="viridis", around_zero=False, symmetric=False, soft_min=False, soft_max=False,
+                  soft_min_scaling=1., soft_max_scaling=1., interpolation="nearest", alpha=1,
+                  return_image=False, return_normalization=False, aspect="equal", symmetric_method="mean",
+                  check_around_zero=True
+                  ):
 
     """
     This function ...
@@ -1028,6 +1035,21 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param xsize:
     :param ysize:
     :param colorbar:
+    :param interval:
+    :param data_cmap:
+    :param around_zero:
+    :param symmetric:
+    :param soft_min:
+    :param soft_max:
+    :param soft_min_scaling:
+    :param soft_max_scaling:
+    :param interpolation:
+    :param alpha:
+    :param return_image:
+    :param return_normalization:
+    :param aspect:
+    :param symmetric_method:
+    :param check_around_zero:
     :return:
     """
 
@@ -1051,22 +1073,25 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     # Also plot the image data underneath
     if plot_data:
 
+        # Set cmap
+        if data_cmap is None: data_cmap = cmap
+
         # Get interval
         vmin, vmax = get_vmin_vmax(data, interval=interval, around_zero=around_zero, symmetric=symmetric,
-                                   normalize_in=normalize_in, soft_min=soft_min, soft_max=soft_max,
-                                   soft_min_scaling=soft_min_scaling, soft_max_scaling=soft_max_scaling,
-                                   symmetric_method=symmetric_method, check_around_zero=check_around_zero, wcs=wcs)
+                                   soft_min=soft_min, soft_max=soft_max, soft_min_scaling=soft_min_scaling,
+                                   soft_max_scaling=soft_max_scaling, symmetric_method=symmetric_method,
+                                   check_around_zero=check_around_zero)
 
         # Get the normalization
-        norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
+        norm = get_normalization("linear", vmin, vmax, data=data)
 
         # Show the data
         extent = None
         image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm,
-                            cmap=cmap, alpha=alpha, aspect=aspect, extent=extent)
+                            cmap=data_cmap, alpha=alpha, aspect=aspect, extent=extent)
 
     # Set to None
-    else: vmin = vmax = image = None
+    else: vmin = vmax = norm = image = None
 
     # Define X and Y labels
     x = np.arange(nxpix)

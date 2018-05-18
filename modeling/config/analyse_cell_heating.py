@@ -59,6 +59,7 @@ definition.add_flag("plot", "do plotting", True)
 definition.add_flag("plot_distribution", "plot distribution", True)
 definition.add_flag("plot_radial_distribution", "plot radial distribution", True)
 definition.add_flag("plot_map", "plot map", True)
+definition.add_flag("plot_map_midplane", "plot map of the midplane", True)
 
 # -----------------------------------------------------------------
 
