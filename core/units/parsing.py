@@ -170,7 +170,7 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
         else: unit = parse_unit(units.strip(), density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
     # Invalid input
-    else: raise ValueError("Argument must be either a string or a quantity")
+    else: raise ValueError("Argument must be either a string or a quantity (type is " + str(type(argument)) + ")")
 
     # Check physical type
     if physical_type is not None:

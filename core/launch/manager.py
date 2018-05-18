@@ -159,6 +159,8 @@ _compare_command_name = "compare"
 _steal_command_name = "steal"
 _retrieve_command_name = "retrieve"
 _analyse_command_name = "analyse"
+_allretrieve_command_name = "allretrieve"
+_allanalyse_command_name = "allanalyse"
 _reanalyse_command_name = "reanalyse"
 _mimic_command_name = "mimic"
 _launch_command_name = "launch"
@@ -217,8 +219,10 @@ commands[_steps_command_name] = ("show_analysis_steps_command", True, "show anal
 commands[_adapt_command_name] = (None, None, "adapt simulation settings or analysis options", "simulations")
 commands[_compare_command_name] = (None, None, "compare simulation settings or analysis options between simulations", "simulations")
 commands[_steal_command_name] = (None, None, "take on simulation settings or analysis options from one simulation to another", "simulations_simulation")
-commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve a simulation from the remote host", "simulations")
-commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse a simulation", "simulations")
+commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve one or multiple simulation(s) from the remote host", "simulations")
+commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse one or multiple simulation(s)", "simulations")
+commands[_allretrieve_command_name] = ("retrieve_all", False, "retrieve all finished simulations", None)
+commands[_allanalyse_command_name] = ("analyse_all", False, "analyse all retrieved simulations", None)
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
 commands[_mimic_command_name] = ("mimic_simulation_command", True, "mimic a simulation", "simulation")
 commands[_launch_command_name] = ("launch_simulation_command", True, "launch a new simulation", None)
@@ -1353,6 +1357,18 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def all_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_queued_simulations(self):
         
         """
@@ -1363,6 +1379,18 @@ class SimulationManager(InteractiveConfigurable):
         for simulation in self.all_simulations:
             if not self.is_queued(simulation.name): continue
             yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_queued_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation_name in self.all_queued_simulations: yield simulation.name
 
     # -----------------------------------------------------------------
 
@@ -1381,6 +1409,18 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def all_running_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_running_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_queued_or_running_simulations(self):
 
         """
@@ -1391,6 +1431,18 @@ class SimulationManager(InteractiveConfigurable):
         for simulation in self.all_simulations:
             if not (self.is_queued(simulation.name) or self.is_running(simulation.name)): continue
             yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_queued_or_running_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_queued_or_running_simulations: yield simulation.name
 
     # -----------------------------------------------------------------
 
@@ -1407,7 +1459,19 @@ class SimulationManager(InteractiveConfigurable):
             yield simulation
 
     # -----------------------------------------------------------------
-    
+
+    @property
+    def all_finished_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_finished_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
     @property
     def all_not_finished_simulations(self):
         
@@ -1423,6 +1487,45 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def all_not_finished_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_not_finished_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_finished_not_retrieved_simulations(self):
+        
+        """
+        Thisn function ...
+        :return: 
+        """
+        
+        for simulation in self.all_simulations:
+            if not simulation.finished: continue
+            if simulation.retrieved: continue
+            yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_finished_not_retrieved_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_finished_not_retrieved_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_retrieved_simulations(self):
 
         """
@@ -1433,6 +1536,18 @@ class SimulationManager(InteractiveConfigurable):
         for simulation in self.all_simulations:
             if not simulation.retrieved: continue
             yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_retrieved_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_retrieved_simulations: yield simulation.name
 
     # -----------------------------------------------------------------
 
@@ -1451,6 +1566,18 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def all_not_retrieved_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_not_retrieved_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_analysed_simulations(self):
 
         """
@@ -1465,6 +1592,18 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def all_analysed_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_analysed_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_not_analysed_simulations(self):
 
         """
@@ -1475,6 +1614,43 @@ class SimulationManager(InteractiveConfigurable):
         for simulation in self.all_simulations:
             if simulation.analysed: continue
             yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_not_analysed_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_not_analysed_simulations: yield simulation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_retrieved_not_analysed_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        for simulation in self.all_retrieved_simulations:
+            if not simulation.analysed: yield simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_retrieved_not_analysed_simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for simulation in self.all_retrieved_not_analysed_simulations: yield simulation.name
 
     # -----------------------------------------------------------------
 
@@ -4259,6 +4435,22 @@ class SimulationManager(InteractiveConfigurable):
         # Get the remote and retrieve the simulation
         remote = self.get_remote(simulation.host_id)
         remote.retrieve_simulation(simulation)
+
+    # -----------------------------------------------------------------
+
+    def retrieve_all(self, **kwargs):
+        
+        """
+        This function ...
+        :param kwargs: 
+        :return: 
+        """
+
+        # Loop over all finished but not yet retrieved simulations
+        for simulation_name in self.all_finished_not_retrieved_simulation_names:
+
+            # Retrieve the simulation
+            self.retrieve_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -14884,6 +15076,22 @@ class SimulationManager(InteractiveConfigurable):
 
         # Reset the status
         self.reset_status_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def analyse_all(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Loop over the retrieved but not yet analysed simulations
+        for simulation_name in self.all_retrieved_not_analysed_simulation_names:
+
+            # Analyse simulation
+            self.analyse_simulation(simulation_name, config=kwargs)
 
     # -----------------------------------------------------------------
 

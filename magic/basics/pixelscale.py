@@ -34,6 +34,10 @@ def angular_or_physical_pixelscale(*args, **kwargs):
     :return:
     """
 
+    if len(args) == 1:
+        if isinstance(args[0], Pixelscale): return args[0]
+        elif isinstance(args[0], PhysicalPixelscale): return args[0]
+
     from ...core.units.parsing import parse_quantity
     from ...core.tools import types
 
@@ -43,6 +47,7 @@ def angular_or_physical_pixelscale(*args, **kwargs):
     # Parse
     x = args[0] if len(args) > 0 else kwargs.get("x")
     y = args[1] if len(args) > 1 else kwargs.get("y", None)
+    #print(x, y)
     x = parse_quantity(x, allow_scalar=True)
     y = parse_quantity(y, allow_scalar=True) if y is not None else None
 

@@ -155,8 +155,6 @@ class Frame(NDDataArray):
         self._fwhm = kwargs.pop("fwhm", None)
 
         # Set pixelscale
-        #self._pixelscale = kwargs.pop("pixelscale", None)
-        #if self.has_pixelscale and not isinstance(self._pixelscale, Pixelscale): self._pixelscale = Pixelscale(self._pixelscale)
         if kwargs.get("pixelscale", None) is not None: self._pixelscale = angular_or_physical_pixelscale(kwargs.pop("pixelscale"))
         else: self._pixelscale = None
 
@@ -2090,7 +2088,7 @@ class Frame(NDDataArray):
         pixelscale = angular_or_physical_pixelscale(value)
 
         # Set the internal pixelscale
-        self._pixelscale = value
+        self._pixelscale = pixelscale
 
     # -----------------------------------------------------------------
 
