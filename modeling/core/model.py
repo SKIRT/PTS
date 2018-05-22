@@ -468,7 +468,7 @@ class RTModel(object):
         """
 
         # Run simulation?
-        if not self.has_sfr_simulation: self.run_sfr_simulation()
+        if not self.has_sfr_sed_simulation: self.run_sfr_sed_simulation()
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(sfr_simulation_name, observed=self.observed_sfr_output_path,
@@ -955,6 +955,102 @@ class RTModel(object):
         return self.total_simulations.bolometric_attenuation
 
     # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_total_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     # OLD BULGE
@@ -1425,6 +1521,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_observed_old_disk_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_disk_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_old_disk_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_old_disk_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_simulations.intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_old_disk_stellar_sed(self):
 
         """
@@ -1671,6 +1815,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_observed_old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_old_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_simulations.intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_old_stellar_sed(self):
 
         """
@@ -1901,6 +2093,54 @@ class RTModel(object):
         """
 
         return self.young_simulations.has_bolometric_attenuation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_young_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_simulations.intrinsic_sed
 
     # -----------------------------------------------------------------
 
@@ -2161,6 +2401,102 @@ class RTModel(object):
         """
 
         return self.sfr_simulations.has_bolometric_attenuation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_sfr_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_stellar_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.has_observed_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_simulations.has_observed_dust_sed
 
     # -----------------------------------------------------------------
 
@@ -2479,11 +2815,59 @@ class RTModel(object):
     def has_bolometric_attenuation_unevolved(self):
 
         """
-        This function ...
+        Thisf unction ...
         :return:
         """
 
         return self.unevolved_simulations.has_bolometric_attenuation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_simulations.has_observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_simulations.observed_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_simulations.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_unevolved_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_simulations.intrinsic_sed
 
     # -----------------------------------------------------------------
 
@@ -2515,7 +2899,7 @@ class RTModel(object):
     def observed_unevolved_dust_sed(self):
 
         """
-        This function ...
+        Thisn function ...
         :return:
         """
 

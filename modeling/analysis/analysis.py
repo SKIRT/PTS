@@ -705,13 +705,13 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         print("")
 
         # Derived parameter values of bulge
-        print(fmt.cyan + fmt.underlined + "Derived parameter values of bulge:" + fmt.reset)
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of old bulge stellar component:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values_bulge: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_bulge[label]))
         print("")
 
         # Derived parameter values of disk
-        print(fmt.cyan + fmt.underlined + "Derived parameter values of disk:" + fmt.reset)
+        print(fmt.cyan + fmt.underlined + "Derived parameter values of old disk stellar component:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values_disk: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_disk[label]))
         print("")
