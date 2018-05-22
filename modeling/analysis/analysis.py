@@ -44,6 +44,18 @@ from .energy.projected import ProjectedEnergyAnalyser
 
 # -----------------------------------------------------------------
 
+# Define names of maps to show
+total_map_names = ("bol",)
+bulge_map_names = ("bol", "i1",)
+disk_map_names = ("bol", "i1",)
+old_map_names = ("bol", "i1",)
+young_map_names = ("bol", "fuv",)
+sfr_map_names = ("bol", "fuv", "sfr", "dust_mass",)
+unevolved_map_names = ("bol", "fuv",)
+dust_map_names = ("mass", "total_mass",)
+
+# -----------------------------------------------------------------
+
 # Standard commands
 _help_command_name = "help"
 _history_command_name = "history"
@@ -2137,6 +2149,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Create
         definition = ConfigurationDefinition(write_config=False)
 
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=bulge_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+
         # Return
         return definition
 
@@ -2156,12 +2172,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_bulge_map_command(self):
+    def show_bulge_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_bulge_map_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2175,6 +2196,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create
         definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=disk_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
 
         # Return
         return definition
@@ -2195,12 +2220,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_disk_map_command(self):
+    def show_disk_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_disk_map_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2214,6 +2244,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create
         definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=old_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
 
         # Return
         return definition
@@ -2234,12 +2268,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_old_map_command(self):
+    def show_old_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_old_map_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2253,6 +2292,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create
         definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=young_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
 
         # Return
         return definition
@@ -2273,12 +2316,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_young_map_command(self):
+    def show_young_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_young_map_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2292,6 +2340,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create
         definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=sfr_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
 
         # Return
         return definition
@@ -2312,12 +2364,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_sfr_map_command(self):
+    def show_sfr_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_sfr_map_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2331,6 +2388,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create
         definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=unevolved_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
 
         # Return
         return definition
@@ -2351,12 +2412,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_unevolved_map_command(self):
+    def show_unevolved_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_unevolved_map_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2370,6 +2436,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create
         definition = ConfigurationDefinition(write_config=False)
+
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=dust_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
 
         # Return
         return definition
@@ -2390,12 +2460,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_dust_map_command(self):
+    def show_dust_map_command(self, command, **kwargs):
 
         """
         This function ...
+        :param command:
+        :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_dust_map_kwargs)
 
     # -----------------------------------------------------------------
 
