@@ -4775,6 +4775,44 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sfr_fuv_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_faceon.copy()
+
+        # Normalize to the FUV luminosity
+        frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_fuv_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_edgeon.copy()
+
+        # Normalize to the FUV luminosity
+        frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
     @property
     def has_sfr_fuv_luminosity_map(self):
 
@@ -4797,6 +4835,44 @@ class RTModel(object):
 
         # Get the SF map
         frame = self.sfr_map.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_faceon.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_edgeon.copy()
 
         # Normalize to the bolometric luminosity
         frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
@@ -4837,6 +4913,44 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def star_formation_rate_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_faceon.copy()
+
+        # Normalize to the star formation rate
+        frame.normalize(to=self.sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def star_formation_rate_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_edgeon.copy()
+
+        # Normalize to the star formation rate
+        frame.normalize(to=self.sfr)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
     @property
     def has_star_formation_rate_map(self):
 
@@ -4868,6 +4982,44 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sfr_dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_faceon.copy()
+
+        # Normalize to the SF dust mass
+        frame.normalize(to=self.sfr_dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_edgeon.copy()
+
+        # Normalize to the SF dust mass
+        frame.normalize(to=self.sfr_dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
     @property
     def has_sfr_dust_mass_map(self):
 
@@ -4877,6 +5029,144 @@ class RTModel(object):
         """
 
         return self.has_sfr_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_stellar_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map.copy()
+
+        # Normalize
+        frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_stellar_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_faceon.copy()
+
+        # Normalize
+        frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_stellar_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_edgeon.copy()
+
+        # Normalize
+        frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_stellar_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map.copy()
+
+        # Normalize
+        frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_faceon.copy()
+
+        # Normalize
+        frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SF map
+        frame = self.sfr_map_edgeon.copy()
+
+        # Normalize
+        frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_dust_luminosity_sfr
 
     # -----------------------------------------------------------------
 
@@ -4897,6 +5187,40 @@ class RTModel(object):
 
         # Sum the contributions
         return young + sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_fuv_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get contributions
+        young = self.young_fuv_luminosity_map_faceon
+        sfr = self.sfr_fuv_luminosity_map_faceon
+
+        # Combine (no WCS): regrid and recenter??
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_fuv_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get contributions
+        young = self.young_fuv_luminosity_map_edgeon
+        sfr = self.young_fuv_luminosity_map_edgeon
+
+        # Combine (no WCS): regrid and recenter??
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -4929,6 +5253,40 @@ class RTModel(object):
 
         # Sum the contributions
         return young + sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get contributions
+        young = self.young_bolometric_luminosity_map_faceon
+        sfr = self.sfr_bolometric_luminosity_map_faceon
+
+        # Combine (no WCS): regrid and recenter??
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get contributions
+        young = self.young_bolometric_luminosity_map_edgeon
+        sfr = self.sfr_bolometric_luminosity_map_edgeon
+
+        # Combine (no WCS): regrid and recenter??
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -5133,6 +5491,44 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_faceon.copy()
+
+        # Normalize to the dust mass
+        frame.normalize(to=self.dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_edgeon.copy()
+
+        # Normalize to the dust mass
+        frame.normalize(to=self.dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
     @property
     def has_dust_mass(self):
 
@@ -5177,6 +5573,40 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the contributions
+        dust_mass = self.dust_mass_map_faceon
+        sfr_dust_mass = self.sfr_dust_mass_map_faceon
+
+        # Combine (no WCS): regrid and center??
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the contributions
+        dust_mass = self.dust_mass_map_edgeon
+        sfr_dust_mass = self.sfr_dust_mass_map_edgeon
+
+        # Combine (no WCS): regrid and center??
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
     @property
     def has_total_dust_mass_map(self):
 
@@ -5186,6 +5616,141 @@ class RTModel(object):
         """
 
         return self.has_dust_mass_map and self.has_sfr_dust_mass_map
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_luminosity_map(self):
+
+        """
+        This function
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map.copy()
+
+        # Normalize to the (diffuse) dust mass
+        frame.normalize(to=self.dust_mass)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_faceon.copy()
+
+        # Normalize to the (diffuse) dust mass
+        frame.normalize(to=self.dust_mass)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_edgeon.copy()
+
+        # Normalize to the (diffuse) dust mass
+        frame.normalize(to=self.dust_mass)
+
+        # Return
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_diffuse_dust_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the contributions
+        dust_lum = self.dust_luminosity_map
+        sfr_dust_lum = self.sfr_dust_luminosity_map
+
+        # Uniformize
+        dust_lum, sfr_dust_lum = convolve_and_rebin(dust_lum, sfr_dust_lum)
+
+        # Sum the contributions
+        return dust_lum + sfr_dust_lum
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the contributions
+        dust_lum = self.dust_luminosity_map_faceon
+        sfr_dust_lum = self.sfr_dust_luminosity_map_faceon
+
+        # Combine (no WCS): regrid and recenter??
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the contributions
+        dust_lum = self.dust_luminosity_map_edgeon
+        sfr_dust_lum = self.sfr_dust_luminosity_map_edgeon
+
+        # Combine (no WCS): regrid and recenter??
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_luminosity
 
     # -----------------------------------------------------------------
 

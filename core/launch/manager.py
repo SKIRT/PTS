@@ -15151,8 +15151,14 @@ class SimulationManager(InteractiveConfigurable):
         # Loop over the retrieved but not yet analysed simulations
         for simulation_name in self.all_retrieved_not_analysed_simulation_names:
 
+            # Show steps that will be performed
+            show_analysis_steps(self.get_simulation(simulation_name))
+
             # Analyse simulation
             self.analyse_simulation(simulation_name, config=config)
+
+            # Cache now?
+            if self.do_caching and self.config.cache_after_analysis: self.cache_simulation(simulation_name)
 
     # -----------------------------------------------------------------
 

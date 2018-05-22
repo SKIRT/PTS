@@ -41,18 +41,33 @@ from ..config.analyse_cell_energy import definition as analyse_cell_energy_defin
 from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
+from ...magic.tools.plotting import plot_frame, plot_frame_contours
+
+# -----------------------------------------------------------------
+
+bol_map_name = "bol"
+i1_map_name = "i1"
+fuv_map_name = "fuv"
+sfr_map_name = "sfr"
+dust_mass_map_name = "dust_mass"
+stellar_lum_map_name = "stellar_lum"
+dust_lum_map_name = "dust_lum"
+mass_map_name = "mass"
+total_mass_map_name = "total_mass"
+lum_map_name = "lum"
+total_lum_map_name = "total_lum"
 
 # -----------------------------------------------------------------
 
 # Define names of maps to show
-total_map_names = ("bol",)
-bulge_map_names = ("bol", "i1",)
-disk_map_names = ("bol", "i1",)
-old_map_names = ("bol", "i1",)
-young_map_names = ("bol", "fuv",)
-sfr_map_names = ("bol", "fuv", "sfr", "dust_mass",)
-unevolved_map_names = ("bol", "fuv",)
-dust_map_names = ("mass", "total_mass",)
+total_map_names = (bol_map_name,)
+bulge_map_names = (bol_map_name, i1_map_name,)
+disk_map_names = (bol_map_name, i1_map_name,)
+old_map_names = (bol_map_name, i1_map_name,)
+young_map_names = (bol_map_name, fuv_map_name,)
+sfr_map_names = (bol_map_name, fuv_map_name, sfr_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name)
+unevolved_map_names = (bol_map_name, fuv_map_name,)
+dust_map_names = (mass_map_name, total_mass_map_name, lum_map_name, total_lum_map_name,)
 
 # -----------------------------------------------------------------
 
@@ -2070,6 +2085,24 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def show_map(self, frame, contours=False, ncontours=5):
+
+        """
+        This function ...
+        :param frame:
+        :param contours:
+        :param ncontours:
+        :return:
+        """
+
+        # With contours
+        if contours: plot_frame_contours(frame, nlevels=ncontours)
+
+        # Just frame
+        else: plot_frame(frame)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def show_total_map_definition(self):
 
@@ -2084,6 +2117,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=total_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2124,6 +2159,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_total_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric luminosity
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.total_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.total_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.total_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
     def show_total_map(self, which, orientation=earth_name):
 
         """
@@ -2135,6 +2192,12 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Debugging
         log.debug("Showing the " + which + " map of the total model from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_total_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
 
     # -----------------------------------------------------------------
 
@@ -2152,6 +2215,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=bulge_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2184,6 +2249,62 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Set kwargs
         kwargs.update(self.show_bulge_map_kwargs)
 
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_bulge_map_definition, **kwargs)
+
+        # Show
+        self.show_bulge_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric luminosity
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.bulge_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.bulge_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.bulge_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # I1 lum
+        elif which == i1_map_name:
+
+            if orientation == earth_name: return self.model.bulge_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.bulge_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.bulge_i1_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_bulge_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the old stellar bulge component from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_bulge_map(which, orientation=orientation)
+
+        # Show the map
+        self.show_map(frame)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -2200,6 +2321,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=disk_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2232,6 +2355,62 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Set kwargs
         kwargs.update(self.show_disk_map_kwargs)
 
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_disk_map_definition, **kwargs)
+
+        # Show
+        self.show_disk_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.old_disk_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.old_disk_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_disk_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # I1
+        elif which == i1_map_name:
+
+            if orientation == earth_name: return self.model.old_disk_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.old_disk_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_disk_i1_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_disk_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the old stellar disk component from the " + orientation + " orientation ...")
+
+        # Get the disk map
+        frame = self.get_disk_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -2248,6 +2427,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=old_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2280,6 +2461,62 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Set kwargs
         kwargs.update(self.show_old_map_kwargs)
 
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_old_map_definition, **kwargs)
+
+        # Show
+        self.show_old_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_old_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.old_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.old_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # I1
+        elif which == i1_map_name:
+
+            if orientation == earth_name: return self.model.old_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.old_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_i1_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_old_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the old stellar component from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_old_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -2296,6 +2533,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=young_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2328,6 +2567,62 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Set kwargs
         kwargs.update(self.show_young_map_kwargs)
 
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_young_map_definition, **kwargs)
+
+        # Show
+        self.show_young_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_young_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.young_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.young_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.young_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # FUV
+        elif which == fuv_map_name:
+
+            if orientation == earth_name: return self.model.young_fuv_luminosity_map
+            elif orientation == faceon_name: return self.model.young_fuv_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.young_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_young_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the young stellar component from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_young_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -2344,6 +2639,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=sfr_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2376,6 +2673,94 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Set kwargs
         kwargs.update(self.show_sfr_map_kwargs)
 
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_sfr_map_definition, **kwargs)
+
+        # Show
+        self.show_sfr_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.sfr_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.sfr_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # FUV
+        elif which == fuv_map_name:
+
+            if orientation == earth_name: return self.model.sfr_fuv_luminosity_map
+            elif orientation == faceon_name: return self.model.sfr_fuv_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # SFR
+        elif which == sfr_map_name:
+
+            if orientation == earth_name: return self.model.star_formation_rate_map
+            elif orientation == faceon_name: return self.model.star_formation_rate_map_faceon
+            elif orientation == edgeon_name: return self.model.star_formation_rate_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Dust mass
+        elif which == dust_mass_map_name:
+
+            if orientation == earth_name: return self.model.sfr_dust_mass_map
+            elif orientation == faceon_name: return self.model.sfr_dust_mass_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_dust_mass_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Stellar bolometric luminosity
+        elif which == stellar_lum_map_name:
+
+            if orientation == earth_name: return self.model.sfr_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.sfr_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Dust bolometric luminosity
+        elif which == dust_lum_map_name:
+
+            if orientation == earth_name: return self.model.sfr_dust_luminosity_map
+            elif orientation == faceon_name: return self.model.sfr_dust_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_dust_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_sfr_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the SFR stellar component from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_sfr_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -2392,6 +2777,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=unevolved_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2424,6 +2811,62 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Set kwargs
         kwargs.update(self.show_unevolved_map_kwargs)
 
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_unevolved_map_definition, **kwargs)
+
+        # Show
+        self.show_unevolved_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Bolometric
+        if which == bol_map_name:
+
+            if orientation == earth_name: return self.model.unevolved_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.unevolved_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.unevolved_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # FUV
+        elif which == fuv_map_name:
+
+            if orientation == earth_name: return self.model.unevolved_fuv_luminosity_map
+            elif orientation == faceon_name: return self.model.unevolved_fuv_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.unevolved_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_unevolved_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the unevolved stellar component from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_unevolved_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -2440,6 +2883,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Options
         definition.add_required("which", "string", "which map to plot", choices=dust_map_names)
         definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+        definition.add_flag("contours", "show contours", False)
+        definition.add_optional("ncontours", "positive_integer", "number of contour lines", 5)
 
         # Return
         return definition
@@ -2471,6 +2916,78 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Set kwargs
         kwargs.update(self.show_dust_map_kwargs)
+
+        # Get the configuration
+        config = self.get_config_from_command(command, self.show_dust_map_definition, **self.show_dust_map_kwargs)
+
+        # Show
+        self.show_dust_map(config.which, orientation=config.orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Dust mass
+        if which == mass_map_name:
+
+            if orientation == earth_name: return self.model.dust_mass_map
+            elif orientation == faceon_name: return self.model.dust_mass_map_faceon
+            elif orientation == edgeon_name: return self.model.dust_mass_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Total dust mass
+        elif which == total_mass_map_name:
+
+            if orientation == earth_name: return self.model.total_dust_mass_map
+            elif orientation == faceon_name: return self.model.total_dust_mass_map_faceon
+            elif orientation == edgeon_name: return self.model.total_dust_mass_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Dust luminosity
+        elif which == lum_map_name:
+
+            if orientation == earth_name: return self.model.dust_luminosity_map
+            elif orientation == faceon_name: return self.model.dust_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.dust_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Total dust luminosity
+        elif which == total_lum_map_name:
+
+            if orientation == earth_name: return self.model.total_dust_luminosity_map
+            elif orientation == faceon_name: return self.model.total_dust_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.total_dust_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Invalid
+        else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+
+    def show_dust_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " dust map from the " + orientation + " orientation ...")
+
+        # Get the map
+        frame = self.get_dust_map(which, orientation=orientation)
+
+        # Show
+        self.show_map(frame)
 
     # -----------------------------------------------------------------
 
