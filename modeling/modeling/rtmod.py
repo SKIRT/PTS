@@ -1553,9 +1553,35 @@ class RTMod(InteractiveConfigurable):
         # Create the definition
         definition = ConfigurationDefinition(write_config=False)
 
+        # From manage_generation
+        import_names = ["lazy", "find_simulations", "find_remotes", "produce_missing", "check_paths", "correct_paths", "confirm_correction", "check_analysis"]
+
+        # Below: from manage_simulations
+
+        import_names.append("offline")
+        import_names.append("dry")
+        import_names.append("fix_success")
+
+        import_names.append("backup_simulations")
+        import_names.append("backup_assignment")
+        import_names.append("backup_path")
+        import_names.append("backup_dir_path")
+        import_names.append("backup_dirname")
+
+        import_names.append("local")
+        import_names.append("warn_local")
+        import_names.append("success")
+
+        import_names.append("cache_path")
+        import_names.append("cache_root")
+        import_names.append("cache_output")
+        import_names.append("cache_datacubes")
+        import_names.append("cache_misc")
+        import_names.append("cache_images")
+        import_names.append("cache_after_analysis")
+
         # Import properties from the manage_generation definition
-        names = ("lazy", "find_simulations", "find_remotes", "produce_missing", "check_paths", "correct_paths", "confirm_correction", "check_analysis")
-        definition.import_properties(manage_generation_definition, names)
+        definition.import_properties(manage_generation_definition, import_names)
 
         # Return the definition
         return definition

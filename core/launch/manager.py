@@ -4051,6 +4051,9 @@ class SimulationManager(InteractiveConfigurable):
         # Set the assignment scheme
         self.assignment = assignment
 
+        # Set remotes?
+        if self.config.remotes is None: self.config.remotes = self.assignment.unique_host_ids
+
         # Loop over the simulations
         for index in range(self.assignment.nsimulations):
 
