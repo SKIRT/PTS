@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -96,6 +97,18 @@ class CellEnergyAnalyser(AnalysisComponent):
 
         # Get the run
         self.analysis_run = self.get_run(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_energy_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.energy_path, "cell")
 
     # -----------------------------------------------------------------
 

@@ -5627,14 +5627,18 @@ class RTModel(object):
         :return:
         """
 
-        # Get the dust map
-        frame = self.dust_map.copy()
+        # WRONG!
 
-        # Normalize to the (diffuse) dust mass
-        frame.normalize(to=self.dust_mass)
+        # # Get the dust map
+        # frame = self.dust_map.copy()
+        #
+        # # Normalize to the (diffuse) dust luminosity
+        # frame.normalize(to=self.diffuse_dust_luminosity)
+        #
+        # # Return
+        # return frame
 
-        # Return
-        return frame
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -5646,14 +5650,18 @@ class RTModel(object):
         :return:
         """
 
-        # Get the dust map
-        frame = self.dust_map_faceon.copy()
+        # WRONG!
 
-        # Normalize to the (diffuse) dust mass
-        frame.normalize(to=self.dust_mass)
+        # # Get the dust map
+        # frame = self.dust_map_faceon.copy()
+        #
+        # # Normalize to the (diffuse) dust luminosity
+        # frame.normalize(to=self.diffuse_dust_luminosity)
+        #
+        # # Return
+        # return frame
 
-        # Return
-        return frame
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -5665,14 +5673,18 @@ class RTModel(object):
         :return:
         """
 
-        # Get the dust map
-        frame = self.dust_map_edgeon.copy()
+        # WRONG!
 
-        # Normalize to the (diffuse) dust mass
-        frame.normalize(to=self.dust_mass)
+        # # Get the dust map
+        # frame = self.dust_map_edgeon.copy()
+        #
+        # # Normalize to the (diffuse) dust luminosity
+        # frame.normalize(to=self.diffuse_dust_luminosity)
+        #
+        # # Return
+        # return frame
 
-        # Return
-        return frame
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -5696,15 +5708,19 @@ class RTModel(object):
         :return:
         """
 
-        # Get the contributions
-        dust_lum = self.dust_luminosity_map
-        sfr_dust_lum = self.sfr_dust_luminosity_map
+        # WRONG!
 
-        # Uniformize
-        dust_lum, sfr_dust_lum = convolve_and_rebin(dust_lum, sfr_dust_lum)
+        # # Get the contributions
+        # dust_lum = self.dust_luminosity_map
+        # sfr_dust_lum = self.sfr_dust_luminosity_map
+        #
+        # # Uniformize
+        # dust_lum, sfr_dust_lum = convolve_and_rebin(dust_lum, sfr_dust_lum)
+        #
+        # # Sum the contributions
+        # return dust_lum + sfr_dust_lum
 
-        # Sum the contributions
-        return dust_lum + sfr_dust_lum
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -5715,6 +5731,8 @@ class RTModel(object):
         This function ...
         :return:
         """
+
+        # WRONG!
 
         # Get the contributions
         dust_lum = self.dust_luminosity_map_faceon
@@ -5732,6 +5750,8 @@ class RTModel(object):
         This function ...
         :return:
         """
+
+        # WRONG!
 
         # Get the contributions
         dust_lum = self.dust_luminosity_map_edgeon

@@ -968,6 +968,30 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def faceon_observed_cube_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[faceon_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_cube_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[edgeon_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_cube_scattered(self):
 
         """
@@ -976,6 +1000,30 @@ class ComponentSimulations(object):
         """
 
         return self.observed_data.images[earth_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_observed_cube_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[faceon_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_cube_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[edgeon_name][scattered_contribution]
 
     # -----------------------------------------------------------------
 
@@ -991,6 +1039,30 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def faceon_observed_cube_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[faceon_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_cube_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[edgeon_name][dust_contribution]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def observed_cube_dust_direct(self):
 
@@ -1000,6 +1072,30 @@ class ComponentSimulations(object):
         """
 
         return self.observed_cube_dust - self.observed_cube_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_cube_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.faceon_observed_cube_dust - self.faceon_observed_cube_dust_scattered
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_cube_dust_direct(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edgeon_observed_cube_dust - self.edgeon_observed_cube_dust_scattered
 
     # -----------------------------------------------------------------
 
@@ -1016,6 +1112,30 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def faceon_observed_cube_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[faceon_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_cube_dust_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[edgeon_name][dust_scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def observed_cube_transparent(self):
 
         """
@@ -1024,6 +1144,30 @@ class ComponentSimulations(object):
         """
 
         return self.observed_data.images[earth_name][transparent_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_observed_cube_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[faceon_name][transparent_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_observed_cube_transparent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_data.images[edgeon_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 

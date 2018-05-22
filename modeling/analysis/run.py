@@ -134,6 +134,7 @@ colours_name = "colours"
 residuals_name = "residuals"
 maps_name = "maps"
 heating_name = "heating"
+energy_name = "energy"
 
 # Projection filenames
 earth_projection_filename = "earth.proj"
@@ -890,6 +891,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def energy_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, energy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def dust_grid_build_path(self):
 
         """
@@ -1437,6 +1450,7 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.maps_path): fs.create_directory(self.maps_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
+        if not fs.is_directory(self.energy_path): fs.create_directory(self.energy_path)
 
         # Maps subdirectories
         if not fs.is_directory(self.colour_maps_path): fs.create_directory(self.colour_maps_path)
