@@ -623,7 +623,8 @@ class InteractiveConfigurable(Configurable):
             success = True
             try: self.process_command(command)
             except InvalidCommandError as e:
-                log.warning("Invalid command: '" + e.command + "'")
+                if "Invalid command" in e.message: log.warning("Invalid command: '" + e.command + "'")
+                else: log.warning("Invalid command: '" + e.command + "': " + e.message)
                 success = False
             except Exception as e:
                 message = str(e)

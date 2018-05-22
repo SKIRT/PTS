@@ -659,6 +659,34 @@ class PTSLogger(Logger):
 
     # -----------------------------------------------------------------
 
+    @property
+    def subsection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.sections is None: return None
+        elif len(self.sections) == 0: return None
+        else: return self.sections[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def supersection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.sections is None: return None
+        elif len(self.sections) == 0: return None
+        else: return self.sections[0]
+
+    # -----------------------------------------------------------------
+
     def add_subsection(self, name):
 
         """
@@ -668,6 +696,7 @@ class PTSLogger(Logger):
         """
 
         if self.sections is None: self.sections = (name,)
+        elif self.subsection == name: self.warning("Already a log subsection '" + name + "': not adding ...")
         else: self.sections = self.sections + (name,)
 
     # -----------------------------------------------------------------
@@ -692,6 +721,7 @@ class PTSLogger(Logger):
         """
 
         if self.sections is None: self.sections = (name,)
+        elif self.supersection == name: self.warning("Already a log supersection '" + name + "': not adding ...")
         else: self.sections = (name,) + self.sections
 
     # -----------------------------------------------------------------

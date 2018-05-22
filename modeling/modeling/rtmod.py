@@ -544,6 +544,19 @@ class RTMod(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def is_generation(self, fitting_run_name, generation_name):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param generation_name:
+        :return:
+        """
+
+        return generation_name in self.get_generation_names(fitting_run_name)
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_generation(self, fitting_run_name, name):
 
@@ -818,6 +831,9 @@ class RTMod(InteractiveConfigurable):
         # Get generation name
         if types.is_integer_type(config.generation): generation_name = self.get_generation_names(fitting_run_name)[config.pop("generation")]
         else: generation_name = config.pop("generation")
+
+        # Check whether generation exists
+        if not self.is_generation(fitting_run_name, generation_name): raise InvalidCommandError("Generation '" + generation_name + "' does not exist", command)
 
         # Return
         return splitted, fitting_run_name, generation_name, config
@@ -1741,11 +1757,14 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Initialize
         statistics = FittingStatistics()
         statistics.config.path = self.config.path
 
-        statistics.run = fitting_run_name
+        # Set fitting run name
+        statistics.config.run = fitting_run_name
 
+        # Run
         statistics.run()
 
     # -----------------------------------------------------------------
