@@ -885,8 +885,8 @@ class DataCube(Image):
         # Inform the user
         log.info("Convolving the datacube with the " + str(fltr) + " filter ...")
 
-        # Convert the datacube to a numpy array where wavelength is the third dimension
-        array = self.asarray()
+        # Convert the datacube to a numpy array where wavelength is the third dimension (index=2)
+        array = self.asarray(axis=2)
 
         # Get the wavelengths of the datacube
         wavelengths = self.wavelengths(asarray=True)
@@ -1412,8 +1412,8 @@ class DataCube(Image):
         # Debugging
         log.debug("Converting the datacube into a single 3D array ...")
 
-        # Convert the datacube to a numpy array where wavelength is the third dimension
-        array = self.asarray()
+        # Convert the datacube to a numpy array where wavelength is the third dimension (index=2)
+        array = self.asarray(axis=2)
 
         # Get the array of wavelengths
         wavelengths = self.wavelengths(asarray=True, unit="micron")
@@ -2546,15 +2546,20 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     # Inform the user
     log.info(message_prefix + "Converting datacube to 3D array ...")
 
-    # Convert the datacube to a numpy array where wavelength is the third dimension
-    array = datacube.asarray()
-    log.debug("Datacube array shape: " + str(array.shape))
+    # Convert the datacube to a numpy array where wavelength is the third dimension (index=2)
+    array = datacube.asarray(axis=2)
+
+    # Check shape of the datacube
+    if array.shape[2] != len(wavelengths): raise ValueError("The wavelength axis of the 3D array must be the last one")
+
+    # Debugging
+    log.debug("Image shape: " + str(array.shape))
 
     # Slice the cube array to only the required range of wavelengths for this filter
     use = (fltr.min.to("micron").value <= wavelengths) * (wavelengths <= fltr.max.to("micron").value)
     #print(use.shape)
-    #array = array[:, :, use]
-    array = array[use, :, :]
+    array = array[:, :, use]
+    #array = array[use, :, :]
     wavelengths = wavelengths[use]
 
     # Inform the user
@@ -2600,15 +2605,21 @@ def _do_one_filter_convolution(fltr, wavelengths, array, unit, wcs):
     # Debugging
     log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
 
+    # Check shape
+    if array.shape[2] != len(wavelengths): raise ValueError("The wavelength axis of the 3D array must be the last one")
+
     # Debugging
-    log.debug("Datacube array shape: " + str(array.shape))
+    log.debug("Image shape: " + str(array.shape[1]) + " x " + str(array.shape[0]))
 
     # Slice the cube array to just the wavaelength range required for the filter
     use = (fltr.min.to("micron").value <= wavelengths) * (wavelengths <= fltr.max.to("micron").value)
     #print(use.shape)
-    #array = array[:, :, use]
-    array = array[use, :, :]
+    array = array[:, :, use]
+    #array = array[use, :, :]
     wavelengths = wavelengths[use]
+
+    # Debugging
+    log.debug("The number of wavelengths for this filter is " + str(len(wavelengths)))
 
     # Calculate the observed image frame, time it
     with time.elapsed_timer() as elapsed:

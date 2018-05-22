@@ -182,28 +182,28 @@ attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", T
 map_commands = OrderedDict()
 
 ## TOTAL
-map_commands[_total_name] = ("show_total_maps_command", True, "show maps of the total model", None)
+map_commands[_total_name] = ("show_total_map_command", True, "show a map of the total model", None)
 
 ## Bulge
-map_commands[_bulge_name] = ("show_bulge_maps_command", True, "show maps of the old stellar bulge component", None)
+map_commands[_bulge_name] = ("show_bulge_map_command", True, "show a map of the old stellar bulge component", None)
 
 ## Disk
-map_commands[_disk_name] = ("show_disk_maps_command", True, "show maps of the old stellar disk component", None)
+map_commands[_disk_name] = ("show_disk_map_command", True, "show a map of the old stellar disk component", None)
 
 ## Old
-map_commands[_old_name] = ("show_old_maps_command", True, "show maps of the old stellar component", None)
+map_commands[_old_name] = ("show_old_map_command", True, "show a map of the old stellar component", None)
 
 ## Young
-map_commands[_young_name] = ("show_young_maps_command", True, "show maps of the young stellar component", None)
+map_commands[_young_name] = ("show_young_map_command", True, "show a map of the young stellar component", None)
 
 ## SFR
-map_commands[_sfr_name] = ("show_sfr_maps_command", True, "show maps of the SFR component", None)
+map_commands[_sfr_name] = ("show_sfr_map_command", True, "show a map of the SFR component", None)
 
 ## Unevolved
-map_commands[_unevolved_name] = ("show_unevolved_maps_command", True, "show maps of the unevolved stellar component", None)
+map_commands[_unevolved_name] = ("show_unevolved_map_command", True, "show a map of the unevolved stellar component", None)
 
 ## Dust
-map_commands[_dust_name] = ("show_dust_maps_command", True, "show maps of the dust component", None)
+map_commands[_dust_name] = ("show_dust_map_command", True, "show a map of the dust component", None)
 
 # -----------------------------------------------------------------
 
@@ -2059,7 +2059,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_total_maps_definition(self):
+    def show_total_map_definition(self):
 
         """
         Thisn function ...
@@ -2079,7 +2079,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_total_maps_kwargs(self):
+    def show_total_map_kwargs(self):
 
         """
         This function ...
@@ -2092,7 +2092,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_total_maps_command(self, command, **kwargs):
+    def show_total_map_command(self, command, **kwargs):
 
         """
         This function ...
@@ -2102,17 +2102,32 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         # Set kwargs
-        kwargs.update(self.show_total_maps_kwargs)
+        kwargs.update(self.show_total_map_kwargs)
 
         # Get the configuration
-        config = self.get_config_from_command(command, definition=self.show_total_maps_definition, **kwargs)
+        config = self.get_config_from_command(command, definition=self.show_total_map_definition, **kwargs)
 
+        # Show
+        self.show_total_map(config.which, orientation=config.orientation)
 
+    # -----------------------------------------------------------------
+
+    def show_total_map(self, which, orientation=earth_name):
+
+        """
+        This function ...
+        :param which:
+        :param orientation:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the " + which + " map of the total model from the " + orientation + " orientation ...")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_bulge_maps_definition(self):
+    def show_bulge_map_definition(self):
 
         """
         This function ...
@@ -2128,7 +2143,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_bulge_maps_kwargs(self):
+    def show_bulge_map_kwargs(self):
 
         """
         This function ...
@@ -2141,7 +2156,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_bulge_maps_command(self):
+    def show_bulge_map_command(self):
 
         """
         This function ...
@@ -2151,7 +2166,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_disk_maps_definition(self):
+    def show_disk_map_definition(self):
 
         """
         This function ...
@@ -2167,7 +2182,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_disk_maps_kwargs(self):
+    def show_disk_map_kwargs(self):
 
         """
         This function ...
@@ -2180,7 +2195,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_disk_maps_command(self):
+    def show_disk_map_command(self):
 
         """
         This function ...
@@ -2190,7 +2205,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_old_maps_definition(self):
+    def show_old_map_definition(self):
 
         """
         This function ...
@@ -2206,7 +2221,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_old_maps_kwargs(self):
+    def show_old_map_kwargs(self):
 
         """
         This function ...
@@ -2219,7 +2234,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_old_maps_command(self):
+    def show_old_map_command(self):
 
         """
         This function ...
@@ -2229,7 +2244,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_young_maps_definition(self):
+    def show_young_map_definition(self):
 
         """
         This function ...
@@ -2245,7 +2260,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_young_maps_kwargs(self):
+    def show_young_map_kwargs(self):
 
         """
         This function ...
@@ -2258,7 +2273,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_young_maps_command(self):
+    def show_young_map_command(self):
 
         """
         This function ...
@@ -2268,7 +2283,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_sfr_maps_definition(self):
+    def show_sfr_map_definition(self):
 
         """
         This function ...
@@ -2284,7 +2299,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_sfr_maps_kwargs(self):
+    def show_sfr_map_kwargs(self):
 
         """
         This function ...
@@ -2297,7 +2312,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_sfr_maps_command(self):
+    def show_sfr_map_command(self):
 
         """
         This function ...
@@ -2307,7 +2322,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_unevolved_maps_definition(self):
+    def show_unevolved_map_definition(self):
 
         """
         This function ...
@@ -2323,7 +2338,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_unevolved_maps_kwargs(self):
+    def show_unevolved_map_kwargs(self):
 
         """
         This function ...
@@ -2336,7 +2351,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_unevolved_maps_command(self):
+    def show_unevolved_map_command(self):
 
         """
         This function ...
@@ -2346,7 +2361,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_dust_maps_definition(self):
+    def show_dust_map_definition(self):
 
         """
         This function ...
@@ -2362,7 +2377,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def show_dust_maps_kwargs(self):
+    def show_dust_map_kwargs(self):
 
         """
         This function ...
@@ -2375,7 +2390,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_dust_maps_command(self):
+    def show_dust_map_command(self):
 
         """
         This function ...
