@@ -185,6 +185,47 @@ class BasicAnalyser(Configurable):
         self.plotting_options = self.simulation.analysis.plotting
         self.misc_options = self.simulation.analysis.misc
 
+        # Make paths if necessary
+        if self.extraction and not fs.is_directory(self.extraction_path): fs.create_directory(self.extraction_path, recursive=True)
+        if self.plotting and not fs.is_directory(self.plotting_path): fs.create_directory(self.plotting_path, recursive=True)
+        if self.miscellaneous and not fs.is_directory(self.misc_path): fs.create_directory(self.misc_path, recursive=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extraction_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.extraction_options.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotting_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.plotting_options.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def misc_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.misc_options.path
+
     # -----------------------------------------------------------------
 
     def load_simulation(self):

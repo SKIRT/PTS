@@ -2069,6 +2069,10 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Create
         definition = ConfigurationDefinition(write_config=False)
 
+        # Options
+        definition.add_required("which", "string", "which map to plot", choices=total_map_names)
+        definition.add_positional_optional("orientation", "string", "orientation of the map", default=earth_name, choices=orientations)
+
         # Return
         return definition
 
@@ -2096,6 +2100,14 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Set kwargs
+        kwargs.update(self.show_total_maps_kwargs)
+
+        # Get the configuration
+        config = self.get_config_from_command(command, definition=self.show_total_maps_definition, **kwargs)
+
+
 
     # -----------------------------------------------------------------
 

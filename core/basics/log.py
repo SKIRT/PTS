@@ -493,7 +493,7 @@ class PTSLogRecord(logging.LogRecord):
         # Add section
         if hasattr(self, "sections"):
             sections = getattr(self, "sections")
-            if sections is not None:
+            if sections is not None and len(sections) > 0:
                 msg = " > ".join(sections) + " | " + msg
 
         # Return

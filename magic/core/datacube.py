@@ -2548,10 +2548,13 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
 
     # Convert the datacube to a numpy array where wavelength is the third dimension
     array = datacube.asarray()
+    log.debug("Datacube array shape: " + str(array.shape))
 
     # Slice the cube array to only the required range of wavelengths for this filter
     use = (fltr.min.to("micron").value <= wavelengths) * (wavelengths <= fltr.max.to("micron").value)
-    array = array[:, :, use]
+    #print(use.shape)
+    #array = array[:, :, use]
+    array = array[use, :, :]
     wavelengths = wavelengths[use]
 
     # Inform the user
@@ -2597,9 +2600,14 @@ def _do_one_filter_convolution(fltr, wavelengths, array, unit, wcs):
     # Debugging
     log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
 
+    # Debugging
+    log.debug("Datacube array shape: " + str(array.shape))
+
     # Slice the cube array to just the wavaelength range required for the filter
     use = (fltr.min.to("micron").value <= wavelengths) * (wavelengths <= fltr.max.to("micron").value)
-    array = array[:, :, use]
+    #print(use.shape)
+    #array = array[:, :, use]
+    array = array[use, :, :]
     wavelengths = wavelengths[use]
 
     # Calculate the observed image frame, time it

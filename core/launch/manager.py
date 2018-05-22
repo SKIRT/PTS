@@ -15145,6 +15145,9 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Analysing all retrieved simulations ...")
+
         # Loop over the retrieved but not yet analysed simulations
         for simulation_name in self.all_retrieved_not_analysed_simulation_names:
 
