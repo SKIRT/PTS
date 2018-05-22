@@ -56,16 +56,13 @@ class SimulationSEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param simulation:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(simulation)
 
         # 2. Make SED plots for each instrument seperately
         self.plot_single()
@@ -166,11 +163,11 @@ class SimulationSEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
+        :param kwargs:
         :return:
         """
 
@@ -178,7 +175,7 @@ class SimulationSEDPlotter(Configurable):
         super(SimulationSEDPlotter, self).setup()
 
         # Make a local reference to the simulation object
-        self.simulation = simulation
+        self.simulation = kwargs.pop("simulation")
 
     # -----------------------------------------------------------------
 

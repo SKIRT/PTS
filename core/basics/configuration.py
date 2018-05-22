@@ -2091,6 +2091,28 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def import_properties(self, definition, names):
+
+        """
+        This function ...
+        :param definition:
+        :param names:
+        :return:
+        """
+
+        # Loop over the property names
+        for name in names:
+
+            # Get the entry
+            if definition.is_fixed(name): self.fixed[name] = definition.fixed[name].copy()
+            elif definition.is_required(name): self.required[name] = definition.required[name].copy()
+            elif definition.is_positional_optional(name): self.pos_optional[name] = definition.pos_optional[name].copy()
+            elif definition.is_optional(name): self.optional[name] = definition.optional[name].copy()
+            elif definition.is_flag(name): self.flags[name] = definition.flags[name].copy()
+            else: raise ValueError("Property '" + name + "' does not exist in definition")
+
+    # -----------------------------------------------------------------
+
     def import_fixed(self, definition):
 
         """
@@ -2298,6 +2320,18 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def is_section(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.section_names
+
+    # -----------------------------------------------------------------
+
     def remove_section(self, name):
 
         """
@@ -2460,6 +2494,18 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def is_fixed(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.fixed_names
+
+    # -----------------------------------------------------------------
+
     def remove_fixed(self, name):
 
         """
@@ -2522,6 +2568,18 @@ class ConfigurationDefinition(object):
         """
 
         return self.required.keys()
+
+    # -----------------------------------------------------------------
+
+    def is_required(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.required_names
 
     # -----------------------------------------------------------------
 
@@ -2609,6 +2667,18 @@ class ConfigurationDefinition(object):
         """
 
         return self.pos_optional.keys()
+
+    # -----------------------------------------------------------------
+
+    def is_positional_optional(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.positional_optional_names
 
     # -----------------------------------------------------------------
 
@@ -2712,6 +2782,18 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def is_optional(self, name):
+
+        """
+        This function ...
+        :param name
+        :return:
+        """
+
+        return name in self.optional_names
+
+    # -----------------------------------------------------------------
+
     def remove_optional(self, name):
 
         """
@@ -2765,6 +2847,18 @@ class ConfigurationDefinition(object):
         """
 
         return self.flags.keys()
+
+    # -----------------------------------------------------------------
+
+    def is_flag(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.flag_names
 
     # -----------------------------------------------------------------
 

@@ -32,6 +32,7 @@ from ...core.launch.manager import extra_columns
 from ...core.remote.host import find_host_ids
 from ..analysis.run import AnalysisRunInfo
 from ..config.expand import definition as expand_definition
+from ..config.manage_generation import definition as manage_generation_definition
 
 # Fitting
 from ..fitting.manager import GenerationManager
@@ -1549,7 +1550,14 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Import properties from the manage_generation definition
+        names = ("lazy", "find_simulations", "find_remotes", "produce_missing", "check_paths", "correct_paths", "confirm_correction", "check_analysis")
+        definition.import_properties(manage_generation_definition, names)
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1567,26 +1575,30 @@ class RTMod(InteractiveConfigurable):
         fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.manage_generation_definition, **kwargs)
 
         # Manage
-        self.manage_generation(fitting_run_name, generation_name)
+        self.manage_generation(fitting_run_name, generation_name, config=config)
 
     # -----------------------------------------------------------------
 
-    def manage_generation(self, fitting_run_name, generation_name):
+    def manage_generation(self, fitting_run_name, generation_name, config=None):
 
         """
         This function ...
         :param fitting_run_name:
         :param generation_name:
+        :param config:
         :return:
         """
 
         # Create the manager
-        manager = GenerationManager()
+        manager = GenerationManager(config=config)
         manager.config.path = self.config.path
 
         # Set fitting run name and generation name
         manager.config.run = fitting_run_name
         manager.config.generation = generation_name
+
+        # Set cache volume name
+        manager.config.cache_volume = self.config.cache_volume
 
         # Run the manager
         manager.run()

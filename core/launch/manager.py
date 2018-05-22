@@ -221,7 +221,7 @@ commands[_steal_command_name] = (None, None, "take on simulation settings or ana
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve one or multiple simulation(s) from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse one or multiple simulation(s)", "simulations")
 commands[_allretrieve_command_name] = ("retrieve_all", False, "retrieve all finished simulations", None)
-commands[_allanalyse_command_name] = ("analyse_all", False, "analyse all retrieved simulations", None)
+commands[_allanalyse_command_name] = ("analyse_all_command", True, "analyse all retrieved simulations", None)
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
 commands[_mimic_command_name] = ("mimic_simulation_command", True, "mimic a simulation", "simulation")
 commands[_launch_command_name] = ("launch_simulation_command", True, "launch a new simulation", None)
@@ -15105,11 +15105,40 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def analyse_all(self, **kwargs):
+    @lazyproperty
+    def analyse_all_definition(self):
 
         """
         This function ...
+        :return:
+        """
+
+        return analyse_simulation_definition.copy(pos_optional=False)
+
+    # -----------------------------------------------------------------
+
+    def analyse_all_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
         :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_all_definition, **kwargs)
+
+        # Analyse all retrieved simulations
+        self.analyse_all_simulations(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_all_simulations(self, config=None):
+
+        """
+        This function ...
+        :param config:
         :return:
         """
 
@@ -15117,7 +15146,7 @@ class SimulationManager(InteractiveConfigurable):
         for simulation_name in self.all_retrieved_not_analysed_simulation_names:
 
             # Analyse simulation
-            self.analyse_simulation(simulation_name, config=kwargs)
+            self.analyse_simulation(simulation_name, config=config)
 
     # -----------------------------------------------------------------
 

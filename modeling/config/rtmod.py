@@ -20,3 +20,8 @@ definition.add_optional("commands", "string_list", "commands to be run in intera
 definition.add_flag("interactive", "use interactive mode", True)
 
 # -----------------------------------------------------------------
+
+# Caching
+definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")
+
+# -----------------------------------------------------------------

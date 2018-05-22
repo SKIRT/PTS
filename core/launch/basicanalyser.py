@@ -987,7 +987,7 @@ class BasicAnalyser(Configurable):
         plotter.config.reference_seds = self.plotting_options.reference_seds
 
         # Run the plotter
-        plotter.run(self.simulation)
+        plotter.run(simulation=self.simulation)
 
         # Done
         self.simulation.analysed_plotting.append(seds_name)

@@ -57,6 +57,7 @@ _wavelengths_command_name = "wavelengths"
 _dustgrid_command_name = "grid"
 _sed_command_name = "sed"
 _attenuation_command_name = "attenuation"
+_map_command_name = "map"
 
 # Analysis
 _properties_command_name = "properties"
@@ -81,6 +82,7 @@ commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot t
 commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust grid", None)
 commands[_sed_command_name] = (None, None, "plot SEDs", None)
 commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
+commands[_map_command_name] = (None, None, "plot a map", None)
 
 # Analysis
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
@@ -88,6 +90,9 @@ commands[_heating_command_name] = (None, None, "analyse dust heating contributio
 #commands[_energy_command_name] = (None, None, "analyse energy budget", None)
 
 # -----------------------------------------------------------------
+
+_bulge_name = "bulge"
+_disk_name = "disk"
 
 _total_name = "total"
 _old_bulge_name = "old_bulge"
@@ -173,6 +178,35 @@ attenuation_commands[_unevolved_name] = ("plot_unevolved_attenuation_command", T
 
 # -----------------------------------------------------------------
 
+# Map subcommands
+map_commands = OrderedDict()
+
+## TOTAL
+map_commands[_total_name] = ("show_total_maps_command", True, "show maps of the total model", None)
+
+## Bulge
+map_commands[_bulge_name] = ("show_bulge_maps_command", True, "show maps of the old stellar bulge component", None)
+
+## Disk
+map_commands[_disk_name] = ("show_disk_maps_command", True, "show maps of the old stellar disk component", None)
+
+## Old
+map_commands[_old_name] = ("show_old_maps_command", True, "show maps of the old stellar component", None)
+
+## Young
+map_commands[_young_name] = ("show_young_maps_command", True, "show maps of the young stellar component", None)
+
+## SFR
+map_commands[_sfr_name] = ("show_sfr_maps_command", True, "show maps of the SFR component", None)
+
+## Unevolved
+map_commands[_unevolved_name] = ("show_unevolved_maps_command", True, "show maps of the unevolved stellar component", None)
+
+## Dust
+map_commands[_dust_name] = ("show_dust_maps_command", True, "show maps of the dust component", None)
+
+# -----------------------------------------------------------------
+
 _cell_name = "cell"
 _projected_name = "projected"
 
@@ -200,6 +234,7 @@ energy_commands[_projected_name] = ("analyse_projected_energy_command", True, "a
 subcommands = OrderedDict()
 subcommands[_sed_command_name] = sed_commands
 subcommands[_attenuation_command_name] = attenuation_commands
+subcommands[_map_command_name] = map_commands
 subcommands[_heating_command_name] = heating_commands
 subcommands[_energy_command_name] = energy_commands
 
@@ -2020,6 +2055,320 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Plot
         plot_attenuation_curve(self.model.attenuation_curve_unevolved, unevolved)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_total_maps_definition(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_total_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_total_maps_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_bulge_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_bulge_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_bulge_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_disk_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_disk_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_disk_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_old_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_old_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_old_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_young_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_young_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_young_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_sfr_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_sfr_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_sfr_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_unevolved_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_unevolved_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_unevolved_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_dust_maps_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def show_dust_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["required_to_optional"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def show_dust_maps_command(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
