@@ -142,14 +142,11 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         When this function is called, the scaling test is started.
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load (and create) the info tables
         self.create_info_table()

@@ -382,6 +382,6 @@ class UKIDSS(object):
         log.info("Downloading the image '" + url + "' to '" + path + " ...")
 
         # Download
-        network.download_file(url, path, new_name=name, progress_bar=log.is_debug(), stream=True)
+        network.download_file(url, path, new_name=name, progress_bar=log.is_debug, stream=True)
 
 # -----------------------------------------------------------------

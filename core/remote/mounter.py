@@ -204,7 +204,7 @@ class RemoteMounter(object):
         else: mount_point_string = ""
 
         # Debug flags for sshfs
-        debug_flags = "-f -d " if log.is_debug() else ""
+        debug_flags = "-f -d " if log.is_debug else ""
 
         # e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
         # SMB EXAMPLE: mount_smbfs //sjversto:password@files.ugent.be/sjversto/www/users ~/Remotes/WWW
@@ -324,7 +324,7 @@ class RemoteMounter(object):
         #      elif index == 3: raise RuntimeError("A timeout has occurred")
         #      else: raise RuntimeError("Unknown error")
 
-        if log.is_debug(): child.logfile = sys.stdout
+        if log.is_debug: child.logfile = sys.stdout
 
         # Execute the command and get the output
         child.logfile = sys.stdout

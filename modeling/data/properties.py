@@ -61,15 +61,13 @@ class PropertyFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def _run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup()
 
         # 2. Get the NGC name
         self.get_ngc_name()

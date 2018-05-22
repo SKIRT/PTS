@@ -269,6 +269,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     _commands = commands
     _subcommands = subcommands
+    _log_section = "ANALYSIS"
 
     # -----------------------------------------------------------------
 
@@ -310,16 +311,13 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         Thisf unction ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Run commands
         if self.do_commands: self.run_commands()

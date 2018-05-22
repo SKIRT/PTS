@@ -132,16 +132,13 @@ class YoungStellarMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Make the map of young stars
         self.make_maps()

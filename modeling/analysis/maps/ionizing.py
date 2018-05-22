@@ -50,16 +50,13 @@ class IonizingMapsAnalyser(MapsAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         Thisf ucntion ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load
         self.load_frames()

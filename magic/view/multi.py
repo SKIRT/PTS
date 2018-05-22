@@ -95,16 +95,13 @@ class MultiImageViewer(ImageViewer):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Make info
         if self.config.info: self.get_info()

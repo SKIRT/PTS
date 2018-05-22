@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable, write_input
-from ...core.basics.log import log, add_log_file, write_log_to
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ..fitting.explorer import ParameterExplorer
 from ..fitting.sedfitting import SEDFitter
@@ -341,7 +341,7 @@ class ModelerBase(Configurable):
         :return:
         """
 
-        add_log_file(self.log_path_for_component(cls_or_instance))
+        log.add_log_file(self.log_path_for_component(cls_or_instance))
 
     # -----------------------------------------------------------------
 
@@ -353,7 +353,7 @@ class ModelerBase(Configurable):
         :return:
         """
 
-        return write_log_to(self.log_path_for_component(cls_or_instance))
+        return log.log_to_file(self.log_path_for_component(cls_or_instance), filter_level="DEBUG")
 
     # -----------------------------------------------------------------
 

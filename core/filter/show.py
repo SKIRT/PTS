@@ -61,16 +61,13 @@ class FilterShower(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. call the setup fucntion
-        self.setup(**kwargs)
 
         # 2. Categorize
         self.categorize()

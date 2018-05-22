@@ -64,16 +64,13 @@ class ComponentsPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Setup
-        self.setup(**kwargs)
 
         # Make plots
         self.make_plots()

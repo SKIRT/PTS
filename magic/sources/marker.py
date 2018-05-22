@@ -107,16 +107,13 @@ class SourceMarker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs: 
         :return: 
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Mark extended regions
         self.create_extended_regions()

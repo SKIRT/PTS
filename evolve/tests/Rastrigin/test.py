@@ -68,16 +68,13 @@ class RastringinTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Call the setup function
-        self.setup(**kwargs)
 
         # Optimize
         self.optimize()

@@ -42,16 +42,13 @@ class Deployer(RemotesConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Install and update SKIRT
         if self.config.skirt: self.install_or_update_skirt()

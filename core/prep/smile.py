@@ -155,7 +155,7 @@ class SKIRTSmileSchema(object):
         command = [introspection.skirt_path, "-x"]
 
         # Run SKIRT
-        if log.is_debug(): subprocess.call(command, cwd=temp_path)
+        if log.is_debug: subprocess.call(command, cwd=temp_path)
         else: subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'), cwd=temp_path)
 
         # Get the SKIRT version

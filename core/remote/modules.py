@@ -148,8 +148,8 @@ class Modules(object):
         log.info("Checking the presence of C++ and MPI compilers ...")
 
         # Get the compiler paths
-        compiler_path, cpp_module = self.remote.find_and_load_cpp_compiler(return_module=True, show_output=log.is_debug())
-        mpi_compiler_path, mpi_module = self.remote.find_and_load_mpi_compiler(return_module=True, show_output=log.is_debug())
+        compiler_path, cpp_module = self.remote.find_and_load_cpp_compiler(return_module=True, show_output=log.is_debug)
+        mpi_compiler_path, mpi_module = self.remote.find_and_load_mpi_compiler(return_module=True, show_output=log.is_debug)
 
         # Compiler is found
         if compiler_path is not None:
@@ -195,7 +195,7 @@ class Modules(object):
         log.info("Checking for Qt installation on remote ...")
 
         # Load Qt module, find the qmake path
-        qmake_path, module = self.remote.find_and_load_qmake(return_module=True, show_output=log.is_debug())
+        qmake_path, module = self.remote.find_and_load_qmake(return_module=True, show_output=log.is_debug)
 
         # Qmake is found
         if qmake_path is not None:
@@ -231,7 +231,7 @@ class Modules(object):
         log.info("Checking the presence of git ...")
 
         # Find and load git
-        path, version, module = self.remote.find_and_load_git(return_module=True, show_output=log.is_debug())
+        path, version, module = self.remote.find_and_load_git(return_module=True, show_output=log.is_debug)
 
         # Git is found
         if path is not None:

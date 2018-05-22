@@ -414,15 +414,12 @@ class DataPreparer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function runs the data preparation ...
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Extract sources
         self.extract_sources()

@@ -71,15 +71,12 @@ class ColourAnalyser(ColourAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load the images
         self.load_images()

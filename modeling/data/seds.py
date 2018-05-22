@@ -50,14 +50,11 @@ class SEDFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Get the SEDs
         self.get_seds()

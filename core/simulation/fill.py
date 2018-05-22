@@ -53,16 +53,13 @@ class SkiFiller(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Call the setup function
-        self.setup(**kwargs)
 
         # Run SKIRT to generate the parameters file
         self.generate_parameters()
@@ -113,7 +110,7 @@ class SkiFiller(Configurable):
         command = ["skirt", "-p", ski_path, "-o", self.temp_path]
 
         # Run SKIRT
-        if log.is_debug(): subprocess.call(command)
+        if log.is_debug: subprocess.call(command)
         else: subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
 
         # Load the parameters file

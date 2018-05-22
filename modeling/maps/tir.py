@@ -87,16 +87,13 @@ class TIRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Make maps based on a single band
         if self.make_single: self.make_maps_single()

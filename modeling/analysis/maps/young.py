@@ -58,16 +58,13 @@ class YoungMapsAnalyser(MapsAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         Thisf ucntion ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load the necessary input maps
         self.load_input()

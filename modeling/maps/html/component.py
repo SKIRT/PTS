@@ -110,16 +110,13 @@ class ComponentMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Filter the images
         if self.config.filter: self.filter_maps()

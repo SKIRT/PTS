@@ -93,16 +93,13 @@ class OldStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Make disk map
         if self.disk: self.make_disk_map()

@@ -61,7 +61,7 @@ class ImageImporter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, path, bad_region_path=None, unit=None, fwhm=None, find_error_frame=True):
+    def _run(self, **kwargs):
 
         """
         This function ...
@@ -73,11 +73,8 @@ class ImageImporter(Configurable):
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(path, bad_region_path, unit, fwhm)
-
         # 2. Load the image
-        self.load_image(find_error_frame)
+        self.load_image(**kwargs)
 
         # 3. Set the mask of bad pixels
         if "bad" not in self.image.masks: self.set_mask()
@@ -101,19 +98,22 @@ class ImageImporter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, path, bad_region_path=None, unit=None, fwhm=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param path:
-        :param bad_region_path:
-        :param unit:
-        :param fwhm:
+        :param kwargs:
         :return:
         """
 
+        # Get arguments
+        path = kwargs.pop("path")
+        bad_region_path = kwargs.pop("bad_region_path", None)
+        unit = kwargs.pop("unit", None)
+        fwhm = kwargs.pop("fwhm", None)
+
         # Call the setup function of the base class
-        super(ImageImporter, self).setup()
+        super(ImageImporter, self).setup(**kwargs)
 
         # Set the image path and name
         self.directory_path = fs.directory_of(path)
@@ -129,15 +129,19 @@ class ImageImporter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_image(self, find_error_frame=True):
+    def load_image(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Inform the user
         log.info("Importing image from " + self.image_path + " ...")
+
+        # Get flag
+        find_error_frame = kwargs.pop("find_error_frame", "True")
 
         # Open the image
         self.image = Image.from_file(self.image_path)

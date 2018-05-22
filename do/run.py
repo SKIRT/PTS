@@ -253,7 +253,7 @@ def initialize_pts(config, remote=None, command_name=None):
     log = initialize_log(config, remote=remote, command_name=command_name)
 
     # Initialize the file monitor
-    if log.is_debug():
+    if log.is_debug:
         monitor = FileMonitor(short=True)
         monitor.patch()
 
@@ -277,6 +277,10 @@ def initialize_log(config, remote=None, command_name=None):
     if config.debug: level = "DEBUG"
     if config.brief: level = "SUCCESS"
 
+    # Determine memuse flag
+    if hasattr(config, "memuse"): memuse = config.memuse
+    else: memuse = False
+
     # Determine log path
     #if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
     #else: logfile_path = None
@@ -291,7 +295,7 @@ def initialize_log(config, remote=None, command_name=None):
 
     # Initialize the logger
     from ..core.basics.log import setup_log
-    log = setup_log(level=level, path=logfile_path)
+    log = setup_log(level=level, path=logfile_path, memory=memuse)
 
     # Return the logger
     return log

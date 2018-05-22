@@ -144,7 +144,7 @@ if modules.names["git"] is not None:
     installation_commands["clone"].append(Map(line="module purge", comment="Unload all modules (to avoid conflicts)"))
 
 # Clone
-#self.remote.execute(command, show_output=log.is_debug())
+#self.remote.execute(command, show_output=log.is_debug)
 
 # Get the git version
 #git_version = git.get_short_git_version(self.skirt_repo_path, self.remote)
@@ -214,7 +214,7 @@ log.debug(" 2) " + make_command)
 #log.debug("in directory " + skirt_repo_path)
 
 # Configure
-#output = remote.execute(make_make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
+#output = remote.execute(make_make_command, show_output=log.is_debug, cwd=skirt_repo_path)
 
 # Overwrite the git version
 #git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
@@ -223,7 +223,7 @@ log.debug(" 2) " + make_command)
 #remote.execute(write_command)
 
 # Make
-#output = remote.execute(make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
+#output = remote.execute(make_command, show_output=log.is_debug, cwd=skirt_repo_path)
 
 installation_commands["build"].append(Map(lines=[make_make_command, make_command], comment="build SKIRT"))
 

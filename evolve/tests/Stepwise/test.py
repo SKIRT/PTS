@@ -163,16 +163,13 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Optimize
         self.optimize()
@@ -399,7 +396,7 @@ class StepWiseTest(TestImplementation):
 
         # Debugging
         log.debug("Best individual:")
-        if log.is_debug(): print(self.best)
+        if log.is_debug: print(self.best)
 
     # -----------------------------------------------------------------
 

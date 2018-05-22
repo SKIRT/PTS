@@ -200,16 +200,13 @@ class Publisher(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Generate the pages
         if self.config.regenerate or self.config.generate: self.generate()
@@ -379,7 +376,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the index page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.index_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.index_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -401,7 +398,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the status page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.status_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.status_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -422,7 +419,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the data page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.data_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.data_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -443,7 +440,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the preparation page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.preparation_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.preparation_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -464,7 +461,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the components page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.components_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.components_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -485,7 +482,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the photometry page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.photometry_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.photometry_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -506,7 +503,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.maps_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.maps_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -527,7 +524,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the model page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.model_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.model_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -548,7 +545,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the fitting page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.fitting_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.fitting_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -569,7 +566,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the SEDs page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.seds_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.seds_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -590,7 +587,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the datacubes page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.datacubes_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.datacubes_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -611,7 +608,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the fluxes page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.fluxes_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.fluxes_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -632,7 +629,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the images page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.images_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.images_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -653,7 +650,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the colours page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.colours_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.colours_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -674,7 +671,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading attenuation page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.attenuation_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.attenuation_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -695,7 +692,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the heating page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.heating_page_path, self.remote_galaxy_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.heating_page_path, self.remote_galaxy_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated:
@@ -734,7 +731,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading truncation ellipse page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.truncation_ellipse_page_path, self.remote_truncation_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.truncation_ellipse_page_path, self.remote_truncation_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -755,7 +752,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading significance levels page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.truncation_significance_page_path, self.remote_truncation_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.truncation_significance_page_path, self.remote_truncation_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -812,7 +809,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading all maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.all_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.all_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -833,7 +830,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading maps summary page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.maps_summary_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.maps_summary_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -854,7 +851,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading old maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.old_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.old_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -875,7 +872,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading young maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.young_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.young_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -896,7 +893,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading ionizing maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.ionizing_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.ionizing_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -917,7 +914,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading dust maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.dust_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.dust_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -938,7 +935,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading clip maps page ...")
 
         # Update
-        updated, filepath = fs.update_file_in(self.clip_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug(), return_target=True)
+        updated, filepath = fs.update_file_in(self.clip_maps_page_path, self.remote_maps_path, create=True, report=log.is_debug, return_target=True)
 
         # Report
         if updated: log.success("Successfully uploaded the page")
@@ -992,7 +989,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the images of the main pages ...")
 
         # Synchronize
-        updated = fs.update_directory(self.images_path, self.remote_galaxy_images_path, create=True, report=log.is_debug())
+        updated = fs.update_directory(self.images_path, self.remote_galaxy_images_path, create=True, report=log.is_debug)
 
         if updated: log.success("Succesfully uploaded the images")
         else: log.info("Already up-to-date")
@@ -1013,7 +1010,7 @@ class Publisher(HTMLPageComponent):
         truncation_html_plots_path = fs.join(self.truncation_html_path, "plots")
 
         # Synchronize
-        updated = fs.update_directory(truncation_html_plots_path, self.remote_truncation_images_path, create=True, report=log.is_debug())
+        updated = fs.update_directory(truncation_html_plots_path, self.remote_truncation_images_path, create=True, report=log.is_debug)
 
         if updated: log.success("Succesfully uploaded the images")
         else: log.info("Already up-to-date")
@@ -1034,7 +1031,7 @@ class Publisher(HTMLPageComponent):
         maps_html_plots_path = fs.join(self.maps_html_path, "plots")
 
         # Synchronize
-        updated = fs.update_directory(maps_html_plots_path, self.remote_maps_images_path, create=True, report=log.is_debug())
+        updated = fs.update_directory(maps_html_plots_path, self.remote_maps_images_path, create=True, report=log.is_debug)
 
         if updated: log.success("Succesfully uploaded the images")
         else: log.info("Already up-to-date")
@@ -1067,7 +1064,7 @@ class Publisher(HTMLPageComponent):
         log.info("Uploading the scripts of the main pages ...")
 
         # Synchronize
-        updated = fs.update_directory(self.scripts_path, self.remote_galaxy_scripts_path, create=True, report=log.is_debug())
+        updated = fs.update_directory(self.scripts_path, self.remote_galaxy_scripts_path, create=True, report=log.is_debug)
 
         if updated: log.success("Succesfully uploaded the scripts")
         else: log.info("Already up-to-date")

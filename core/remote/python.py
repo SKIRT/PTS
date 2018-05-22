@@ -100,7 +100,7 @@ class RemotePythonSession(object):
         self.import_package("filesystem", as_name="fs", from_name="pts.core.tools")
 
         # Set logging level to match that of local PTS
-        if log.is_debug():
+        if log.is_debug:
 
             self.import_package("setup_log", from_name="pts.core.basics.log")
             self.send_line("log = setup_log('DEBUG')")
@@ -191,7 +191,7 @@ class RemotePythonSession(object):
             command += " as " + as_name
 
         # Execute the import command
-        #output = self.send_line(command, output=True, show_output=log.is_debug())
+        #output = self.send_line(command, output=True, show_output=log.is_debug)
         output = self.send_line(command, show_output=show_output)
 
         # If output is given, this is normally not so good
@@ -773,7 +773,7 @@ class RemotePythonSession(object):
         if remote_temp_path is None: remote_temp_path = self.session_temp_directory
 
         # Import the parsing module remotely
-        self.import_package("parsing", from_name="pts.core.tools", show_output=log.is_debug())
+        self.import_package("parsing", from_name="pts.core.tools", show_output=log.is_debug)
 
         # Paths to input files that have to be uploaded
         local_input_filepaths = []
@@ -831,7 +831,7 @@ class RemotePythonSession(object):
         #### UPLOAD THE INPUT :
 
         # Upload the input files
-        self.remote.upload_retry(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
+        self.remote.upload_retry(local_input_filepaths, remote_temp_path, show_output=log.is_debug)
 
         # UPLOAD DEPENDING FILEPATHS
 
@@ -860,7 +860,7 @@ class RemotePythonSession(object):
                 new_name = str(index) + "." + extension
 
                 # Upload the file, giving it a new name
-                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, dirpath, new_name=new_name, show_output=log.is_debug())
+                remote_depending_filepath = self.remote.upload_file_to(local_depending_filepath, dirpath, new_name=new_name, show_output=log.is_debug)
 
                 # Set the remote path
                 remote_depending_filepaths[name][label] = remote_depending_filepath
@@ -871,7 +871,7 @@ class RemotePythonSession(object):
         ### LOAD THE INPUT DICT REMOTELY
 
         # Initialize the remote input dictionary
-        self.send_line(dictionary_name + " = dict()", show_output=log.is_debug())
+        self.send_line(dictionary_name + " = dict()", show_output=log.is_debug)
 
         # Add the stuff
         for name in dictionary:
@@ -888,8 +888,8 @@ class RemotePythonSession(object):
                 # Import the class of the filetype remotely
                 classpath = str(type(value)).split("'")[1].split("'")[0]
                 modulepath, classname = classpath.rsplit(".", 1)
-                self.send_line("input_module = importlib.import_module('" + modulepath + "')", show_output=log.is_debug())  # get the module of the class
-                self.send_line("input_cls = getattr(input_module, '" + classname + "')", show_output=log.is_debug())  # get the class
+                self.send_line("input_module = importlib.import_module('" + modulepath + "')", show_output=log.is_debug)  # get the module of the class
+                self.send_line("input_cls = getattr(input_module, '" + classname + "')", show_output=log.is_debug)  # get the class
 
                 # Open the input file
                 if name in depending_filepaths: self.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "', check=False)", show_output=True)
@@ -1476,7 +1476,7 @@ class DetachedPythonSession(RemotePythonSession):
         log.debug(send_command)
 
         # Send the line
-        output = self.remote.execute(send_command, show_output=log.is_debug(), timeout=timeout)
+        output = self.remote.execute(send_command, show_output=log.is_debug, timeout=timeout)
 
         # Sleep for a while so that we are sure that the actual python stuff has reached the interactive python session within the screen
         time.wait(5) # in seconds
@@ -1500,7 +1500,7 @@ class DetachedPythonSession(RemotePythonSession):
         if self.attached: self.detach()
 
         # Remove things if we are not in debug mode
-        if not log.is_debug():
+        if not log.is_debug:
 
             # Using tmux
             if self.tmux:

@@ -2377,15 +2377,12 @@ class DataSetCreator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load the image paths
         if self.image_paths is None: self.load_paths()

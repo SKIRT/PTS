@@ -194,16 +194,13 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load the ski template
         self.load_ski()
@@ -2414,7 +2411,7 @@ class ParameterExplorer(FittingComponent):
             # Something went wrong launching the simulations, show error message
             log.error("No simulations could be launched: removing generation ...")
             log.error(str(e))
-            if log.is_debug(): traceback.print_exc()
+            if log.is_debug: traceback.print_exc()
             log.error("Try again later")
             log.error("Cleaning up generation and quitting ...")
 

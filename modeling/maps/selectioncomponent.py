@@ -906,7 +906,7 @@ class MapsSelectionComponent(MapsComponent):
 
                 # Debugging
                 log.debug("Coordinate system of the frames:")
-                if log.is_debug(): print(wcs)
+                if log.is_debug: print(wcs)
 
             # Set softening radius from relative softening radius
             if relative_softening_radius is not None:

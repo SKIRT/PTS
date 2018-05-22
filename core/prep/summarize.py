@@ -129,16 +129,13 @@ class SkiSummarizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # Find ski file(s)?
         if self.ski is None: self.find()

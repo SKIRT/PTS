@@ -79,7 +79,7 @@ class RGBImageMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
@@ -87,10 +87,7 @@ class RGBImageMaker(Configurable):
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(**kwargs)
-
-
+        pass
 
     # -----------------------------------------------------------------
 

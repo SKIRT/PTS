@@ -83,16 +83,13 @@ class MapsPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # Get info
         self.get_info()

@@ -23,7 +23,7 @@ from .jobscript import MultiJobScript, SKIRTJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
-from ..basics.log import log, no_debugging
+from ..basics.log import log
 from ..launch.options import SchedulingOptions
 from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
@@ -1284,7 +1284,7 @@ class SKIRTRemote(Remote):
             handle = handles
 
             # Show the simulation progress
-            with no_debugging(): success = status.show_progress(handle)
+            with log.no_debugging(): success = status.show_progress(handle)
 
             # Check whether not crashed
             if not success: raise RuntimeError("The simulation crashed")

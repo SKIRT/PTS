@@ -42,16 +42,13 @@ class CellDistributionsPlotter(FittingPlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Call the setup function
-        self.setup(**kwargs)
 
         # Plot
         self.plot()

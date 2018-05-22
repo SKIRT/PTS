@@ -88,15 +88,12 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Create the necessary directories
         self.create_directories()
@@ -597,13 +594,13 @@ class SKIRTInstaller(Installer):
         qt_everywhere_opensource_path = fs.directories_in_path(decompress_path)[0]
 
         # Configure
-        terminal.execute(configure_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug())
+        terminal.execute(configure_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug)
 
         # Make
-        terminal.execute(make_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug())
+        terminal.execute(make_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug)
 
         # Install
-        terminal.execute(install_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug())
+        terminal.execute(install_command, cwd=qt_everywhere_opensource_path, show_output=log.is_debug)
 
         # Remove the tar.gz file and the temporary directory
         fs.remove_file(path)
@@ -644,9 +641,9 @@ class SKIRTInstaller(Installer):
             lines.append(("':", password))
 
             # Clone the repository
-            terminal.execute_lines(*lines, cwd=self.skirt_root_path, show_output=log.is_debug())
+            terminal.execute_lines(*lines, cwd=self.skirt_root_path, show_output=log.is_debug)
 
-        else: terminal.execute(command, cwd=self.skirt_root_path, show_output=log.is_debug())
+        else: terminal.execute(command, cwd=self.skirt_root_path, show_output=log.is_debug)
 
         # Get git version
         self.git_version = git.get_short_git_version(self.skirt_repo_path)
@@ -957,8 +954,8 @@ class SKIRTInstaller(Installer):
         log.info("Installing Qt ...")
 
         # Load compiler modules
-        if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
-        if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
+        if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug)
+        if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug)
 
         # Determine location based on how much space is available
         if self.remote.free_space_home_directory < full_qt_installation_size:
@@ -988,7 +985,7 @@ class SKIRTInstaller(Installer):
         if not self.remote.is_file(path): self.remote.download_from_url_to(self.qt_url, path)
 
         # Unarchive
-        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install", show_output=log.is_debug())
+        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install", show_output=log.is_debug)
 
         if not self.remote.is_directory(decompress_path) or self.remote.is_empty(decompress_path):
 
@@ -1011,7 +1008,7 @@ class SKIRTInstaller(Installer):
                 install_command = "make install"
 
                 # Execute the commands
-                self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=qt_everywhere_opensource_path)
+                self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug, cwd=qt_everywhere_opensource_path)
 
         # Remove decompressed folder and the tar.gz file
         if self.remote.is_file(path): self.remote.remove_file(path)
@@ -1047,7 +1044,7 @@ class SKIRTInstaller(Installer):
         log.info("Getting the SKIRT source code ...")
 
         # Load git module
-        if self.git_module is not None: self.remote.load_module(self.git_module, show_output=log.is_debug())
+        if self.git_module is not None: self.remote.load_module(self.git_module, show_output=log.is_debug)
 
         # Get repository link
         if self.config.repository is not None: url = introspection.skirt_git_remote_url(self.config.repository)
@@ -1075,7 +1072,7 @@ class SKIRTInstaller(Installer):
         command = "git clone " + url + " " + self.skirt_repo_path
 
         # Clone
-        self.remote.execute(command, show_output=log.is_debug())
+        self.remote.execute(command, show_output=log.is_debug)
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.skirt_repo_path, self.remote)
@@ -1116,10 +1113,10 @@ class SKIRTInstaller(Installer):
         log.info("Building SKIRT ...")
 
         # Load modules
-        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug)
         else:
-            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
-            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug)
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug)
 
         # Execute the build
         build_skirt_on_remote(self.remote, self.skirt_repo_path, self.qmake_path, self.git_version)
@@ -1142,7 +1139,7 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Testing the SKIRT installation locally ...")
 
-        output = terminal.execute("skirt -h", show_output=log.is_debug())
+        output = terminal.execute("skirt -h", show_output=log.is_debug)
         for line in output:
             if "Welcome to SKIRT" in line:
                 log.success("SKIRT is working")
@@ -1167,12 +1164,12 @@ class SKIRTInstaller(Installer):
         log.info("Testing the SKIRT installation on remote host '" + self.remote.host_id + "'...")
 
         # Load modules
-        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug)
         else:
-            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
-            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug)
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug)
 
-        output = self.remote.execute("skirt -h", show_output=log.is_debug())
+        output = self.remote.execute("skirt -h", show_output=log.is_debug)
         for line in output:
             if "Welcome to SKIRT" in line:
                 log.success("SKIRT is working")
@@ -1211,7 +1208,7 @@ def build_skirt_local(skirt_repo_path, qmake_path, git_version):
     log.debug("in directory " + skirt_repo_path)
 
     # Execute
-    output = terminal.execute(make_make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
+    output = terminal.execute(make_make_command, show_output=log.is_debug, cwd=skirt_repo_path)
 
     # Overwrite the git version
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
@@ -1219,7 +1216,7 @@ def build_skirt_local(skirt_repo_path, qmake_path, git_version):
     fs.write_line(git_version_path, git_version_content)
 
     # Make
-    terminal.execute(make_command, cwd=skirt_repo_path, show_output=log.is_debug())
+    terminal.execute(make_command, cwd=skirt_repo_path, show_output=log.is_debug)
 
     # Success
     log.success("SKIRT was successfully built")
@@ -1249,16 +1246,16 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     log.debug("in directory " + skirt_repo_path)
 
     # Configure
-    output = remote.execute(make_make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
+    output = remote.execute(make_make_command, show_output=log.is_debug, cwd=skirt_repo_path)
 
     # Overwrite the git version
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
     git_version_path = fs.join(skirt_repo_path, "SKIRTmain", "git_version.h")
     write_command = 'echo "' + git_version_content + '" > ' + git_version_path
-    remote.execute(write_command, show_output=log.is_debug())
+    remote.execute(write_command, show_output=log.is_debug)
 
     # Make
-    output = remote.execute(make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
+    output = remote.execute(make_command, show_output=log.is_debug, cwd=skirt_repo_path)
 
     # Check the output
     for line in output:
@@ -1694,9 +1691,9 @@ class PTSInstaller(Installer):
             lines.append(("':", password))
 
             # Clone the repository
-            terminal.execute_lines(*lines, show_output=log.is_debug())
+            terminal.execute_lines(*lines, show_output=log.is_debug)
 
-        else: terminal.execute(command, show_output=log.is_debug())
+        else: terminal.execute(command, show_output=log.is_debug)
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.pts_package_path)
@@ -1720,7 +1717,7 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies ...")
 
         # Get available conda packages
-        #output = terminal.execute_no_pexpect(self.conda_executable_path + " search", show_output=log.is_debug())
+        #output = terminal.execute_no_pexpect(self.conda_executable_path + " search", show_output=log.is_debug)
         output = terminal.execute_no_pexpect(self.conda_executable_path + " search")
         available_packages = []
         for line in output:
@@ -1729,7 +1726,7 @@ class PTSInstaller(Installer):
 
         # Get already installed packages
         already_installed = []
-        #for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name, show_output=log.is_debug()):
+        #for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name, show_output=log.is_debug):
         for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
@@ -1827,15 +1824,15 @@ class PTSInstaller(Installer):
                     # Skip module if already installed together with another package in the meantime
                     if command[0].startswith(self.conda_executable_path):
                         if conda.is_present_package(module, self.config.python_name, self.conda_executable_path): continue
-                    output = terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
+                    output = terminal.execute_lines_expect_clone(*command, show_output=log.is_debug)
                 elif types.is_string_type(command):
                     if "setup.py" in command:
                         # special: for python setup.py, we must be in the directory or it won't work
                         dir_path = fs.directory_of(command.split()[1])
                         setup_path = fs.join(dir_path, "setup.py")
                         command.replace(setup_path, "setup.py")
-                        output = terminal.execute(command, show_output=log.is_debug(), cwd=dir_path)
-                    else: output = terminal.execute_no_pexpect(command, show_output=log.is_debug())
+                        output = terminal.execute(command, show_output=log.is_debug, cwd=dir_path)
+                    else: output = terminal.execute_no_pexpect(command, show_output=log.is_debug)
                 else: raise ValueError("Invalid installation command: " + str(command))
 
                 # Check the output
@@ -1968,13 +1965,13 @@ class PTSInstaller(Installer):
         if self.remote.is_macos: url = imfit_macos_binary_url
         elif self.remote.is_linux: url = imfit_linux_binary_url
         else: raise NotImplementedError("Platform not supported")
-        filepath = self.remote.download_from_url_to(url, self.remote.home_directory, show_output=log.is_debug())
+        filepath = self.remote.download_from_url_to(url, self.remote.home_directory, show_output=log.is_debug)
 
         # Decompress into "~/Imfit"
         imfit_installation_path = fs.join(self.remote.home_directory, "Imfit")
         if self.remote.is_directory(imfit_installation_path): raise RuntimeError("There is already a directory '" + imfit_installation_path + "'")
         else: self.remote.create_directory(imfit_installation_path)
-        self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug(), remove=True)
+        self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug, remove=True)
 
         # Set the imfit path
         self.imfit_path = imfit_installation_path
@@ -2014,13 +2011,13 @@ class PTSInstaller(Installer):
         log.info("Getting Montage on the remote host ...")
 
         # Download the tar.gz file
-        filepath = self.remote.download_from_url_to(montage_url, self.remote.home_directory, show_output=log.is_debug())
+        filepath = self.remote.download_from_url_to(montage_url, self.remote.home_directory, show_output=log.is_debug)
 
         # Extract the file
-        montage_path = self.remote.decompress_directory_in_place(filepath, show_output=log.is_debug(), remove=True)
+        montage_path = self.remote.decompress_directory_in_place(filepath, show_output=log.is_debug, remove=True)
 
         # Compile
-        self.remote.execute("make", cwd=montage_path, show_output=log.is_debug())
+        self.remote.execute("make", cwd=montage_path, show_output=log.is_debug)
 
         montage_bin_path = fs.join(montage_path, "bin")
         #montage_exec_path = fs.join(montage_bin_path, "montage")
@@ -2147,7 +2144,7 @@ class PTSInstaller(Installer):
         command = "git clone " + url + " " + self.pts_package_path
 
         # Clone
-        self.remote.execute(command, show_output=log.is_debug())
+        self.remote.execute(command, show_output=log.is_debug)
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.pts_package_path, self.remote)
@@ -2190,7 +2187,7 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Testing the PTS installation locally ...")
 
-        output = terminal.execute_no_pexpect(self.pts_path + " -h", show_output=log.is_debug())
+        output = terminal.execute_no_pexpect(self.pts_path + " -h", show_output=log.is_debug)
         for line in output:
             if "usage: pts" in line: break
         else:
@@ -2212,7 +2209,7 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Testing the PTS installation on remote host '" + self.remote.host_id + "'...")
 
-        output = self.remote.execute(self.pts_path + " -h", show_output=log.is_debug())
+        output = self.remote.execute(self.pts_path + " -h", show_output=log.is_debug)
         for line in output:
             if "usage: pts" in line: break
         else:
@@ -2488,7 +2485,7 @@ def find_qmake():
         log.debug("Found a qmake executable at '" + qmake_path + "'")
 
         # Get the version
-        output = terminal.execute(qmake_path + " -v", show_output=log.is_debug())
+        output = terminal.execute(qmake_path + " -v", show_output=log.is_debug)
         for line in output:
             if "Qt version" in line:
                 qt_version = line.split("Qt version ")[1].split(" in")[0]
@@ -2537,7 +2534,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     # List
     if conda_environment is not None: list_command = conda_path + " list --name " + conda_environment
     else: list_command = conda_path + " list"
-    #for line in remote.execute(list_command, show_output=log.is_debug()):
+    #for line in remote.execute(list_command, show_output=log.is_debug):
     for line in remote.execute(list_command):
         if line.startswith("#"): continue
         already_installed.append(line.split(" ")[0])
@@ -2558,7 +2555,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
         lines = []
         lines.append(command)
         lines.append(("Proceed ([y]/n)?", "y", True))
-        remote.execute_lines(*lines, show_output=log.is_debug())
+        remote.execute_lines(*lines, show_output=log.is_debug)
 
     # Use the introspection module on the remote end to get the dependencies and installed python packages
     screen_output_path = remote.create_directory_in(remote.pts_temp_path, time.unique_name("installation"))
@@ -2589,7 +2586,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     log.info("Activating the '" + conda_environment + "' conda environment ...")
 
     # Change the conda environment
-    previous_environment = remote.activate_conda_environment(conda_environment, conda_path, conda_activate_path, show_output=log.is_debug())
+    previous_environment = remote.activate_conda_environment(conda_environment, conda_path, conda_activate_path, show_output=log.is_debug)
 
     # Get installation commands
     # dependencies, packages, already_installed, available_packages, conda_path="conda",
@@ -2742,7 +2739,7 @@ def install_conda_local():
     log.debug("Running the installer ...")
 
     # Run the installation script
-    terminal.run_script(installer_path, options, show_output=log.is_debug(), no_pexpect=True)
+    terminal.run_script(installer_path, options, show_output=log.is_debug, no_pexpect=True)
 
     # Debugging
     log.debug("Removing the installer ...")
@@ -2814,7 +2811,7 @@ def install_conda_remote(remote):
     log.debug("Running the '" + installer_path + "' script with options: [" + options + "]")
 
     # Run the installation script
-    remote.run_script(installer_path, options, show_output=log.is_debug())
+    remote.run_script(installer_path, options, show_output=log.is_debug)
 
     # Debugging
     log.debug("Removing the installer script ...")
@@ -2952,7 +2949,7 @@ def create_conda_environment_local(environment_name, conda_installation_path, pt
     lines.append((expect, "y", True))
 
     # Execute the lines
-    terminal.execute_lines_expect_clone(*lines, show_output=log.is_debug())
+    terminal.execute_lines_expect_clone(*lines, show_output=log.is_debug)
 
     # Check whether the environment has been made and the executables are present
     environment_bin_path = fs.join(conda_installation_path, "envs", environment_name, "bin")
@@ -3041,7 +3038,7 @@ def create_conda_environment_remote(remote, environment_name, conda_installation
     lines.append((expect, "y", True))
 
     # Execute the commands
-    remote.execute_lines(*lines, show_output=log.is_debug())
+    remote.execute_lines(*lines, show_output=log.is_debug)
 
     # Check whether the environment has been made and the executables are present
     environment_bin_path = fs.join(conda_installation_path, "envs", environment_name, "bin")
@@ -3154,7 +3151,7 @@ def install_module_remote(remote, command, conda_path, module, conda_environment
             # Skip module if already installed together with another package in the meantime
             if command[0].startswith(conda_path) and check_present:
                 if remote.is_present_conda_package(module, conda_environment, conda_path): return False
-            output = remote.execute_lines(*command, show_output=log.is_debug())
+            output = remote.execute_lines(*command, show_output=log.is_debug)
 
         # Simple command
         elif isinstance(command, basestring):
@@ -3165,10 +3162,10 @@ def install_module_remote(remote, command, conda_path, module, conda_environment
                 dir_path = fs.directory_of(command.split()[1])
                 setup_path = fs.join(dir_path, "setup.py")
                 command.replace(setup_path, "setup.py")
-                output = remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
+                output = remote.execute(command, show_output=log.is_debug, cwd=dir_path)
 
             # Execute the command
-            else: output = remote.execute(command, show_output=log.is_debug())
+            else: output = remote.execute(command, show_output=log.is_debug)
 
         else: raise ValueError("Invalid command: " + str(command))
 

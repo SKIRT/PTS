@@ -74,16 +74,13 @@ class MemoryTester(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Call the setup function
-        self.setup(**kwargs)
 
         # Launch the simulations
         self.launch()

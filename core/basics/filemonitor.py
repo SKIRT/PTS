@@ -178,7 +178,7 @@ class FileMonitor(object):
         indent = '  > '
         terminal_width = 80
 
-        if self.has_open_files and log.is_debug():
+        if self.has_open_files and log.is_debug:
             print("")
             print(fmt.red + "Open files:" + fmt.reset)
             print("")

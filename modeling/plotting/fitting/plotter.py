@@ -84,16 +84,13 @@ class FittingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Call the setup function
-        self.setup(**kwargs)
 
         # Plot chi-squared
         if "chi-squared" in self.config.features: self.plot_chi_squared()

@@ -67,16 +67,13 @@ class ModelPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Make tables
         self.make_tables()

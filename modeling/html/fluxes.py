@@ -46,16 +46,13 @@ class FluxesPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Setup
-        self.setup(**kwargs)
 
         # Generate the html
         self.generate()

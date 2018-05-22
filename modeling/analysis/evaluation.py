@@ -105,7 +105,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
@@ -113,59 +113,47 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(**kwargs)
+        # 1. Get the weights
+        self.get_weights()
 
-        # 2. Calculate weight for each band
-        if not self.has_weights: self.calculate_weights()
-        else: self.load_weights()
+        # 2. Get the differences
+        self.get_differences()
 
-        # 3. Calculate flux differences
-        if not self.has_differences: self.calculate_differences()
-        else: self.load_differences()
-
-        # 4. Calculate chi squared
+        # 3. Calculate chi squared
         self.calculate_chi_squared()
 
-        # 5. Create simulated SED derived from the datacubes
-        if not self.has_simulated_datacube_sed: self.create_simulated_datacube_sed()
-        else: self.load_simulated_datacube_sed()
+        # 4. Get the simulated SED
+        self.get_simulated_datacube_sed()
 
-        # 6. Make images
+        # 5. Make images
         self.make_images()
 
-        # 7. Load images created with convolution etc.
+        # 6. Load images created with convolution etc.
         self.load_proper_images()
 
-        # 8. Load observed images
+        # 7. Load observed images
         self.load_observed_images()
 
-        # 9. Rebin the images to the same pixelscale
+        # 8. Rebin the images to the same pixelscale
         self.rebin_images()
 
-        # 10. Calculate fluxes from the images
-        if not self.has_image_fluxes: self.calculate_image_fluxes()
-        else: self.load_image_fluxes()
+        # 9. Get image fluxes
+        self.get_image_fluxes()
 
-        # 11. Calculate fluxes from the proper images
-        if not self.has_proper_image_fluxes: self.calculate_proper_image_fluxes()
-        else: self.load_proper_image_fluxes()
+        # 10. Get proper image fluxes
+        self.get_proper_image_fluxes()
 
-        # 12. Calculate SED
-        if not self.has_images_sed: self.calculate_image_sed()
-        else: self.load_images_sed()
+        # 11. Get images SED
+        self.get_images_sed()
 
-        # 13. Calcualte differences between fluxes calculated from the images and the observed fluxes
-        if not self.has_images_differences: self.calculate_image_differences()
-        else: self.load_image_differences()
+        # 12. Get image differences
+        self.get_image_differences()
 
-        # 14. Calculate the differences between the simulated fluxes and the fluxes from the observed images
-        if not self.has_fluxes_differences: self.calculate_fluxes_differences()
-        else: self.load_fluxes_differences()
+        # Get fluxes differences
+        self.get_fluxes_differences()
 
-        # 15. Calculate the differences between the observed fluxes and the observed fluxes from the images
-        if not self.has_sed_differences: self.calculate_sed_differences()
-        else: self.load_sed_differences()
+        # Get SED differences
+        self.get_sed_differences()
 
         # 16. Calculate the residual images
         self.calculate_residuals()
@@ -307,6 +295,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_weights(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 2. Calculate weight for each band
+        if not self.has_weights: self.calculate_weights()
+        else: self.load_weights()
+
+    # -----------------------------------------------------------------
+
     def calculate_weights(self):
 
         """
@@ -408,6 +409,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 3. Calculate flux differences
+        if not self.has_differences: self.calculate_differences()
+        else: self.load_differences()
+
+    # -----------------------------------------------------------------
+
     def calculate_differences(self):
 
         """
@@ -495,6 +509,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Debugging
         log.debug("The chi squared value is " + str(self.chi_squared))
+
+    # -----------------------------------------------------------------
+
+    def get_simulated_datacube_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 5. Create simulated SED derived from the datacubes
+        if not self.has_simulated_datacube_sed: self.create_simulated_datacube_sed()
+        else: self.load_simulated_datacube_sed()
 
     # -----------------------------------------------------------------
 
@@ -795,6 +822,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 10. Calculate fluxes from the images
+        if not self.has_image_fluxes: self.calculate_image_fluxes()
+        else: self.load_image_fluxes()
+
+    # -----------------------------------------------------------------
+
     def calculate_image_fluxes(self):
 
         """
@@ -834,6 +874,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Load
         self.images_fluxes = ObservedSED.from_file(self.images_fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 11. Calculate fluxes from the proper images
+        if not self.has_proper_image_fluxes: self.calculate_proper_image_fluxes()
+        else: self.load_proper_image_fluxes()
 
     # -----------------------------------------------------------------
 
@@ -879,7 +932,20 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_image_sed(self):
+    def get_images_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 12. Calculate SED
+        if not self.has_images_sed: self.calculate_images_sed()
+        else: self.load_images_sed()
+
+    # -----------------------------------------------------------------
+
+    def calculate_images_sed(self):
 
         """
         This function ...
@@ -918,6 +984,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Load
         self.images_sed = ObservedSED.from_file(self.images_sed_filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_image_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 13. Calcualte differences between fluxes calculated from the images and the observed fluxes
+        if not self.has_images_differences: self.calculate_image_differences()
+        else: self.load_image_differences()
 
     # -----------------------------------------------------------------
 
@@ -972,6 +1051,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_fluxes_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 14. Calculate the differences between the simulated fluxes and the fluxes from the observed images
+        if not self.has_fluxes_differences: self.calculate_fluxes_differences()
+        else: self.load_fluxes_differences()
+
+    # -----------------------------------------------------------------
+
     def calculate_fluxes_differences(self):
 
         """
@@ -1011,6 +1103,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Load
         self.fluxes_differences = FluxDifferencesTable.from_file(self.fluxes_differences_filepath)
+
+    # -----------------------------------------------------------------
+
+    def get_sed_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 15. Calculate the differences between the observed fluxes and the observed fluxes from the images
+        if not self.has_sed_differences: self.calculate_sed_differences()
+        else: self.load_sed_differences()
 
     # -----------------------------------------------------------------
 

@@ -2757,16 +2757,13 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Check the input files for all simulations
         if self.do_check_input: self.check_input()
@@ -4808,7 +4805,7 @@ class BatchLauncher(Configurable):
 
         # Run the simulation
         else: simulation = self.skirt.run(definition, logging_options=logging_options,
-                                        parallelization=parallelization, silent=(not log.is_debug()),
+                                        parallelization=parallelization, silent=(not log.is_debug),
                                         show_progress=self.config.show_progress)
 
         # Overwrite the simulation object when the definition had been altered by this class

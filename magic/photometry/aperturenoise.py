@@ -100,16 +100,13 @@ class ApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # Try the exact method
         success = self.try_exact()
@@ -308,16 +305,13 @@ class ExactApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         Function that attempts to estimate aperture noise using randomly-positioned sky apertures of given dimensions
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Calculate the noise
         self.calculate()
@@ -1057,7 +1051,7 @@ class ExactApertureNoiseCalculator(Configurable):
                 # Create mask
                 ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
 
-                if log.is_debug():
+                if log.is_debug:
                     #ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                     #plotting.plot_mask(ap_mask, title="Aperture " + str(sky_success_counter + 1) + ", generation " + str(sky_gen_counter))
                     attempt_mask[np.where(ap_mask == 1)] = sky_success_counter

@@ -142,16 +142,13 @@ class MapsAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         Thisf ucntion ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Analyse colour maps
         if self.needs_colour_maps: self.analyse_colour_maps()

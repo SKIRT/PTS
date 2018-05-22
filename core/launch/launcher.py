@@ -237,16 +237,13 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Set or check parallelization scheme
         self.set_or_check_parallelization()
@@ -1052,7 +1049,7 @@ class SingleImageSKIRTLauncher(object):
         log.info("Running a SKIRT simulation with " + str(fs.name(ski_path)) + " ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True, show_progress=show_progress)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug else True, show_progress=show_progress)
 
         # Get the simulation prefix
         prefix = simulation.prefix()

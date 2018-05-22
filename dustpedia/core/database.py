@@ -1245,7 +1245,7 @@ class DustPediaDatabase(object):
                 break
 
         # Download
-        network.download_file(get_link, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        network.download_file(get_link, path, progress_bar=log.is_debug, stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 
@@ -1259,7 +1259,7 @@ class DustPediaDatabase(object):
         """
 
         # Download
-        filepath = network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        filepath = network.download_file(url, path, progress_bar=log.is_debug, stream=True, session=self.session)
 
         # Check if compressed
         if archive.is_archive(filepath): # based on extension
@@ -1302,7 +1302,7 @@ class DustPediaDatabase(object):
         #     log.debug("Downloading ...")
         #
         #     # Download compressed file
-        #     network.download_file(url, compressed_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        #     network.download_file(url, compressed_path, progress_bar=log.is_debug, stream=True, session=self.session)
         #
         #     # Debugging
         #     log.debug("Decompressing ...")
@@ -1311,7 +1311,7 @@ class DustPediaDatabase(object):
         #     archive.decompress_file(compressed_path, path)
         #
         # # Regular download
-        # else: network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        # else: network.download_file(url, path, progress_bar=log.is_debug, stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 
@@ -1343,7 +1343,7 @@ class DustPediaDatabase(object):
             image_path = fs.join(path, image_name)
 
             # Download this image
-            #network.download_file(url, image_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+            #network.download_file(url, image_path, progress_bar=log.is_debug, stream=True, session=self.session)
 
             # Download (and decompress)
             self.download_image_from_url(url, image_path)
@@ -1671,7 +1671,7 @@ class DustPediaDatabase(object):
         url = "http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/" + galaxy_name + ".png"
 
         # Download
-        filepath = network.download_file(url, path, session=self.session, progress_bar=log.is_debug())
+        filepath = network.download_file(url, path, session=self.session, progress_bar=log.is_debug)
 
         # Return the filepath
         return filepath
@@ -1702,7 +1702,7 @@ class DustPediaDatabase(object):
         :return: 
         """
 
-        filepath = network.download_file(all_mmb_results_url, path, session=self.session, progress_bar=log.is_debug())
+        filepath = network.download_file(all_mmb_results_url, path, session=self.session, progress_bar=log.is_debug)
         return filepath
 
     # -----------------------------------------------------------------
@@ -1913,7 +1913,7 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        filepath = network.download_file(all_cigale_results_url, path, session=self.session, progress_bar=log.is_debug())
+        filepath = network.download_file(all_cigale_results_url, path, session=self.session, progress_bar=log.is_debug)
         return filepath
 
     # -----------------------------------------------------------------
@@ -2244,7 +2244,7 @@ class DustPediaDatabase(object):
         log.info("Downloading the photometry cutouts for galaxy '" + galaxy_name + "' ...")
 
         url = self.get_photometry_cutouts_url(galaxy_name)
-        return network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
+        return network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug)
 
     # -----------------------------------------------------------------
 

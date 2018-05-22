@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import traceback
 from collections import OrderedDict
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
@@ -160,6 +160,7 @@ class Configurable(object):
     """
 
     __metaclass__ = ABCMeta
+    _log_section = None
 
     # -----------------------------------------------------------------
 
@@ -208,6 +209,49 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
+    def _run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 2. Call the implementation
+        self._run(**kwargs)
+
+        # 3. Finish
+        self.finish()
+
+    # -----------------------------------------------------------------
+
+    def finish(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._log_section is not None: log.remove_subsection()
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def get_config(cls, *args, **kwargs):
 
@@ -252,6 +296,9 @@ class Configurable(object):
         :param kwargs:
         :return:
         """
+
+        # Set the log section
+        if self._log_section is not None: log.add_subsection(self._log_section)
 
         # NEW: WRITE THE CONFIGURATION
         if self.config.write_config: self.config.saveto(self.config.config_file_path(self.command_name()))

@@ -57,16 +57,13 @@ class TSPTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Setup
-        self.setup()
 
         # Set properties
         self.set_properties()
@@ -77,6 +74,7 @@ class TSPTest(TestImplementation):
         # Make animation
         self.make_animation()
 
+        # Run the reference
         self.reference()
 
     # -----------------------------------------------------------------

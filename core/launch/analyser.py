@@ -850,16 +850,13 @@ class SimulationAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. If the simulation has no analysis options, finish the procedure right away
         if self.simulation.analysis is None: return

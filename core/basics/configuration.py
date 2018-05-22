@@ -2862,6 +2862,7 @@ class ConfigurationSetter(object):
             definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
             definition.add_flag("debug", "enable debug output", letter="d")
             definition.add_flag("brief", "brief output", letter="b")
+            definition.add_flag("memuse", "log memory usage", letter="m")
 
             # Report?
             if definition.log_path is not None: definition.add_fixed("report", "write a report file", True) # if log path is defined in definition, always report

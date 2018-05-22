@@ -117,16 +117,13 @@ class ModelLauncher(ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         The constructor ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup class
-        self.setup(**kwargs)
 
         # 2. Get the model
         self.get_model()
@@ -1266,7 +1263,7 @@ class ModelLauncher(ModelSimulationInterface):
         analysis_options.misc.path = self.simulation_misc_path
 
         # Other settings
-        if log.is_debug(): self.launcher.config.show = True
+        if log.is_debug: self.launcher.config.show = True
 
         # Run the simulation
         self.launcher.run(definition=definition, analysis_options=analysis_options, parallelization=parallelization,

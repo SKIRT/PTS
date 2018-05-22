@@ -50,16 +50,13 @@ class ComponentMapsSelector(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Auto-select
         if self.config.auto: self.auto_select()

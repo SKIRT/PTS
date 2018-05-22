@@ -60,16 +60,13 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Setup
-        self.setup(**kwargs)
 
         # Load the images
         self.load_images()

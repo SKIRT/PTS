@@ -82,16 +82,13 @@ class ImageFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Fetch the images urls from the DustPedia archive
         self.get_dustpedia_urls()

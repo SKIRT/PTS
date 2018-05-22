@@ -42,16 +42,13 @@ class Truncator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # Create the truncation ellipse
         self.make_ellipse()

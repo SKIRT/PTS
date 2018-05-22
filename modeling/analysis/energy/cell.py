@@ -43,16 +43,13 @@ class CellEnergyAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # Get the dust absorptions
         self.get_absorptions()

@@ -36,16 +36,13 @@ class ContinuousOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Initialize
         self.initialize(**kwargs)
@@ -122,7 +119,7 @@ class ContinuousOptimizer(Optimizer):
         #self.set_engine_adapters()
 
         # Let evolve
-        self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=(not log.is_debug()))
+        self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=(not log.is_debug))
 
         # Get the best individual
         self.best = self.engine.bestIndividual()

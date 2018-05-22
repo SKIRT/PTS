@@ -234,6 +234,7 @@ class RTMod(InteractiveConfigurable):
 
     _commands = commands
     _subcommands = subcommands
+    _log_section = "RTMOD"
 
     # -----------------------------------------------------------------
 
@@ -276,16 +277,13 @@ class RTMod(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Run commands
         if self.do_commands: self.run_commands()

@@ -42,16 +42,13 @@ class SignificanceLevelsSetter(TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # Prompt
         if not self.has_levels: self.prompt()

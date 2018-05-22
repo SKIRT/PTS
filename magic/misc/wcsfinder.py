@@ -36,16 +36,15 @@ class WCSFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup()
-        
+        pass
+
 # -----------------------------------------------------------------
 
 # From: https://github.com/fred3m/astropyp/blob/master/astropyp/astrometry.py

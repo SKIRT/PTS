@@ -17,7 +17,7 @@ import imp
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics.log import log, write_log_to
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
@@ -166,16 +166,13 @@ class PTSTestSuite(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Prompt for which test has to be executed
         if not self.test_names_for_all_subprojects and not self.config.only_checks: self.prompt()
@@ -480,7 +477,7 @@ class PTSTestSuite(Configurable):
                 if self.config.settings is not None:
                     # Debugging
                     log.debug("Setting options for the '" + name + "' test from the following dictionary:")
-                    if log.is_debug(): fmt.print_dictionary(self.config.settings)
+                    if log.is_debug: fmt.print_dictionary(self.config.settings)
 
                 # Create the test configuration
                 config = create_configuration_flexible(name, definition, self.config.settings, self.config.default)
@@ -560,7 +557,7 @@ class PTSTestSuite(Configurable):
                 log_path = fs.join(test.output_path, "log.txt")
 
                 # Write log output to test log file
-                with write_log_to(log_path):
+                with log.log_to_file(log_path, filter_level="DEBUG"):
 
                     # Start
                     log.start("Starting test '" + test.name + "' ...")

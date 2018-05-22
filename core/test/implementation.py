@@ -59,17 +59,6 @@ class TestImplementation(Configurable):
 
     # -----------------------------------------------------------------
 
-    @abstractmethod
-    def run(self, **kwargs):
-
-        """
-        This function ...
-        """
-            
-        pass
-
-    # -----------------------------------------------------------------
-
     def setup(self, **kwargs):
 
         """
@@ -113,6 +102,6 @@ class TestImplementation(Configurable):
         if remote is not None:
             output = launch_remote(remote, the_command, settings_dict, input_dict)
             return RemoteInstance()
-        else: return launch_local(the_command, settings_dict, input_dict, description=description, cwd=output_path, debug=log.is_debug())
+        else: return launch_local(the_command, settings_dict, input_dict, description=description, cwd=output_path, debug=log.is_debug)
 
 # -----------------------------------------------------------------

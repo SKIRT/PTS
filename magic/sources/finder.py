@@ -404,15 +404,12 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 3. Find the galaxies
         if self.config.find_galaxies: self.find_galaxies()

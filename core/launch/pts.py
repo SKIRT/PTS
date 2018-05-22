@@ -610,9 +610,9 @@ class PTSRemoteLauncher(object):
         python = self.remote.start_python_session(output_path=remote_temp_path, attached=True)
 
         # Import the class from which to make an instance
-        python.import_package("importlib", show_output=log.is_debug())
-        python.send_line("module = importlib.import_module('" + class_module_path + "')", show_output=log.is_debug())  # get the module of the class
-        python.send_line("cls = getattr(module, '" + class_name + "')", show_output=log.is_debug())  # get the class
+        python.import_package("importlib", show_output=log.is_debug)
+        python.send_line("module = importlib.import_module('" + class_module_path + "')", show_output=log.is_debug)  # get the module of the class
+        python.send_line("cls = getattr(module, '" + class_name + "')", show_output=log.is_debug)  # get the class
 
         # Inform the user
         log.start("Starting " + exact_command_name + " ...")
@@ -639,7 +639,7 @@ class PTSRemoteLauncher(object):
 
         # Upload the config file
         remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
-        self.remote.upload_retry(temp_conf_path, remote_temp_path, show_output=log.is_debug())
+        self.remote.upload_retry(temp_conf_path, remote_temp_path, show_output=log.is_debug)
 
         # Remove the original config file
         fs.remove_file(temp_conf_path)
@@ -658,13 +658,13 @@ class PTSRemoteLauncher(object):
         ###
 
         # Import the Configuration class remotely
-        python.import_package("Configuration", from_name="pts.core.basics.configuration", show_output=log.is_debug())
+        python.import_package("Configuration", from_name="pts.core.basics.configuration", show_output=log.is_debug)
 
         # Load the config into the remote python session
-        python.send_line("config = Configuration.from_file('" + remote_conf_path + "')", show_output=log.is_debug())
+        python.send_line("config = Configuration.from_file('" + remote_conf_path + "')", show_output=log.is_debug)
 
         # Create the class instance, configure it with the configuration settings
-        python.send_line("inst = cls(config)", show_output=log.is_debug())
+        python.send_line("inst = cls(config)", show_output=log.is_debug)
 
         # Run the instance
         if input_dict is not None: output = python.send_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
@@ -685,7 +685,7 @@ class PTSRemoteLauncher(object):
             output_list = []
 
             # Fill in the values in the dict
-            for name in return_output_names: output_list.append(python.get_simple_property("inst", name, show_output=log.is_debug()))
+            for name in return_output_names: output_list.append(python.get_simple_property("inst", name, show_output=log.is_debug))
 
         ######
 
@@ -758,7 +758,7 @@ class PTSRemoteLauncher(object):
 
         # Upload the config file
         remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
-        self.remote.upload_retry(temp_conf_path, remote_temp_path, show_output=log.is_debug())
+        self.remote.upload_retry(temp_conf_path, remote_temp_path, show_output=log.is_debug)
 
         # Remove the original config file
         fs.remove_file(temp_conf_path)
@@ -791,7 +791,7 @@ class PTSRemoteLauncher(object):
             #### UPLOAD THE INPUT :
 
             # Upload the input files
-            self.remote.upload_retry(local_input_filepaths, remote_input_path, show_output=log.is_debug())
+            self.remote.upload_retry(local_input_filepaths, remote_input_path, show_output=log.is_debug)
 
             # Set remote input paths
             remote_input_paths = dict()

@@ -129,16 +129,13 @@ class GALEXMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Create directories
         self.create_directories()
@@ -202,7 +199,7 @@ class GALEXMosaicMaker(Configurable):
         super(GALEXMosaicMaker, self).setup(**kwargs)
 
         # Show the configuration
-        if log.is_debug():
+        if log.is_debug:
             log.debug("Configuration:")
             print_mapping(self.config, empty_lines=False, indent="  ")
             print("")
@@ -328,7 +325,7 @@ class GALEXMosaicMaker(Configurable):
 
         # Debugging
         log.debug("Rebin WCS:")
-        if log.is_debug():
+        if log.is_debug:
             print("")
             print(self.rebin_wcs)
             print("")

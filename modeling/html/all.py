@@ -298,16 +298,13 @@ class AllPagesGenerator(HTMLComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Generate the index page
         if self.needs_index: self.generate_index()

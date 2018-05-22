@@ -2970,10 +2970,10 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
         frame.saveto(filepath)
 
     # Upload temporary directory to the remote
-    remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug())
+    remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug)
 
     # Run PTS remotely
-    output = execute_pts_remote(remote, "rebin", cwd=remote_temp_path, show_output=log.is_debug(), wcs=wcs, backup=False)
+    output = execute_pts_remote(remote, "rebin", cwd=remote_temp_path, show_output=log.is_debug, wcs=wcs, backup=False)
 
     # Download the rebinned frames
     temp_path = remote.download_directory_to(remote_temp_path, introspection.pts_temp_dir)
@@ -3521,10 +3521,10 @@ def convolve_to_fwhm_remote(*frames, **kwargs):
         frame.saveto(filepath)
 
     # Upload temporary directory to the remote
-    remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug())
+    remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug)
 
     # Run PTS remotely
-    output = execute_pts_remote(remote, "convolve", cwd=remote_temp_path, show_output=log.is_debug(), filter=fltr, fwhm=fwhm, backup=False)
+    output = execute_pts_remote(remote, "convolve", cwd=remote_temp_path, show_output=log.is_debug, filter=fltr, fwhm=fwhm, backup=False)
 
     # Download the rebinned frames
     temp_path = remote.download_directory_to(remote_temp_path, introspection.pts_temp_dir)

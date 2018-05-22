@@ -63,16 +63,13 @@ class PhotometryPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Make plots
         self.make_plots()

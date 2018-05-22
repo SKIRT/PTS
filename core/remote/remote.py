@@ -4316,7 +4316,7 @@ class Remote(object):
         """
 
         # If debugging is enabled, always show the scp output
-        if log.is_debug(): show_output = True
+        if log.is_debug: show_output = True
 
         # WITH SPACES:
         # scp documents.zip remote:"\"/var/path/containing some spaces/foo/\""
@@ -4600,7 +4600,7 @@ class Remote(object):
         """
 
         # If debugging is enabled, always show the scp output
-        if log.is_debug(): show_output = True
+        if log.is_debug: show_output = True
 
         # WITH SPACES:
         # scp documents.zip remote:"\"/var/path/containing some spaces/foo/\""
@@ -4912,7 +4912,7 @@ class Remote(object):
         if not self.is_directory(destination): raise IOError("Destination directory '" + destination + "' does not exist")
 
         # If debugging is enabled, always show the scp output
-        if log.is_debug(): show_output = True
+        if log.is_debug: show_output = True
 
         # Construct the command string
         command = "rsync -chavP --stats " #--stats user@remote.host:/path/to/copy /path/to/local/storage"

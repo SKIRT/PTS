@@ -25,7 +25,6 @@ from ..basics.task import Task
 from ..tools import formatting as fmt
 from ..tools import introspection
 from ..simulation.status import LogSimulationStatus
-from ..basics.log import no_debugging
 from ..simulation.remote import get_retrieved_simulations, get_retrieved_tasks, get_status_simulations, get_status_tasks
 from ..simulation.remote import queued_name, running_name, finished_name, retrieved_name, analysed_name, aborted_name, cancelled_name, crashed_name, unknown_name, invalid_name
 
@@ -78,15 +77,12 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Gather the simulations and tasks
         self.gather()
@@ -1016,7 +1012,7 @@ class RemoteSynchronizer(Configurable):
         status = LogSimulationStatus(simulation.remote_log_file_path, remote=self.get_remote(simulation.host_id), debug_output=self.config.debug_output)
 
         # Show the simulation progress
-        with no_debugging(): success = status.show_progress(simulation.handle)
+        with log.no_debugging(): success = status.show_progress(simulation.handle)
 
         # Check whether not crashed
         if not success: raise RuntimeError("The simulation crashed")

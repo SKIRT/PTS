@@ -714,7 +714,7 @@ class AnianoKernels(Kernels):
         #urllib.urlretrieve(kernel_link, gz_path)
 
         # Download the kernel
-        network.download_file(kernel_link, gz_path, progress_bar=log.is_debug())
+        network.download_file(kernel_link, gz_path, progress_bar=log.is_debug)
 
         # Inform the user
         log.info("Decompressing kernel file ...")
@@ -751,7 +751,7 @@ class AnianoKernels(Kernels):
         #urllib.urlretrieve(psf_link, gz_path)
 
         # Download the file
-        network.download_file(psf_link, gz_path, progress_bar=log.is_debug())
+        network.download_file(psf_link, gz_path, progress_bar=log.is_debug)
 
         # Inform the user
         log.info("Decompressing PSF file ...")

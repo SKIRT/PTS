@@ -38,16 +38,13 @@ class AttenuationPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Setup
-        self.setup(**kwargs)
 
         # Make tables
         self.make_tables()

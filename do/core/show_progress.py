@@ -17,8 +17,8 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.remote.host import all_host_ids
 from pts.core.simulation.remote import get_simulation_for_host
 from pts.core.simulation.status import LogSimulationStatus
-from pts.core.basics.log import no_debugging
 from pts.core.remote.remote import Remote
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -48,7 +48,7 @@ if not remote.setup(host_id=config.remote): raise RuntimeError("Could not connec
 status = LogSimulationStatus(simulation.remote_log_file_path, remote=remote, debug_output=config.debug_output)
 
 # Show the simulation progress
-with no_debugging(): success = status.show_progress(simulation.handle)
+with log.no_debugging(): success = status.show_progress(simulation.handle)
 
 # Check whether not crashed
 if not success: raise RuntimeError("The simulation crashed")

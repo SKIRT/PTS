@@ -128,16 +128,13 @@ class DustGridBuilder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Create the ski file
         self.create_ski()
@@ -1084,7 +1081,7 @@ class DustGridBuilder(Configurable):
         log.info("Plotting the grid ...")
 
         # Plot the dust grid for the simulation
-        plotgrids(self.simulation, output_path=self.config.output_path(), silent=(not log.is_debug()))
+        plotgrids(self.simulation, output_path=self.config.output_path(), silent=(not log.is_debug))
 
     # -----------------------------------------------------------------
 

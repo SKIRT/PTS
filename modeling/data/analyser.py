@@ -81,16 +81,13 @@ class MosaicAnalyser(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Load the results from the mosaicing
         if not self.has_results: self.load_results()

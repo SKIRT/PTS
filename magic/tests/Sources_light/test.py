@@ -56,16 +56,13 @@ class SourcesLightTest(SourcesTestBase):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # Call the setup function
-        self.setup(**kwargs)
 
         # Set the center coordinate
         self.set_center_coordinate()

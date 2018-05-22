@@ -44,16 +44,13 @@ class Uninstaller(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Uninstall SKIRT
         if "skirt" in self.config.skirt_and_or_pts: self.uninstall_skirt()

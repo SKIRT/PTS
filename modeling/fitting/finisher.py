@@ -63,16 +63,13 @@ class ExplorationFinisher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs: 
         :return: 
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Evaluate the last generation
         self.evaluate()
@@ -369,6 +366,6 @@ class ExplorationFinisher(FittingComponent):
 
         # Debugging
         log.debug("Best individual:")
-        if log.is_debug(): print(self.best)
+        if log.is_debug: print(self.best)
 
 # -----------------------------------------------------------------

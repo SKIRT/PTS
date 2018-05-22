@@ -101,16 +101,13 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Make a dust map based on black body pixel fitting
         if self.black_body: self.make_black_body()

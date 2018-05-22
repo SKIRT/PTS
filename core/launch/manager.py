@@ -38,7 +38,6 @@ from ..tools import strings
 from ..remote.host import load_host
 from ..basics.containers import create_nested_defaultdict, create_subdict
 from ..tools import sequences
-from ..basics.log import no_debugging
 from ..simulation.remote import is_running_status, finished_name, is_invalid_or_unknown_status
 from ..simulation.remote import is_analysing_or_analysed_status, is_retrieved_status, is_finished_status
 from ..basics.configuration import prompt_variable
@@ -1105,16 +1104,13 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Run commands
         if self.do_commands: self.run_commands()
@@ -1390,7 +1386,7 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        for simulation_name in self.all_queued_simulations: yield simulation.name
+        for simulation in self.all_queued_simulations: yield simulation.name
 
     # -----------------------------------------------------------------
 
@@ -4329,7 +4325,7 @@ class SimulationManager(InteractiveConfigurable):
             host_id = simulation.host_id
             screen_states = self.screens[host_id]
             jobs_status = self.jobs[host_id]
-            with no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
+            with log.no_debugging(): simulation_status = self.get_remote(host_id).get_simulation_status(simulation, screen_states=screen_states, jobs_status=jobs_status)
 
         else: simulation_status = "unknown"
 

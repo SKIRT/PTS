@@ -124,16 +124,13 @@ class MapsStandaloneTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Get the data
         if not self.from_existing_reference: self.get_data()

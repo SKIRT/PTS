@@ -41,7 +41,7 @@ class FittingReinitializer(FittingComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
@@ -49,9 +49,7 @@ class FittingReinitializer(FittingComponent, GalaxyModelingComponent):
         :return:
         """
 
-        # 1. Call the setup fucntion
-        self.setup(**kwargs)
-
+        # Load
         self.load_model()
 
     # -----------------------------------------------------------------

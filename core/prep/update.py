@@ -61,15 +61,12 @@ class Updater(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Update
         self.update()
@@ -527,7 +524,7 @@ class SKIRTUpdater(Updater):
         log.info("Getting latest version of SKIRT ...")
 
         # Load the git module
-        if self.git_module is not None: self.remote.load_module(self.git_module, show_output=log.is_debug())
+        if self.git_module is not None: self.remote.load_module(self.git_module, show_output=log.is_debug)
 
         # Get the url of the 'origin'
         repo_name = "origin"
@@ -571,10 +568,10 @@ class SKIRTUpdater(Updater):
             lines.append(("':", password))
 
             # Clone the repository
-            self.remote.execute_lines(*lines, show_output=log.is_debug(), cwd=self.remote.skirt_repo_path)
+            self.remote.execute_lines(*lines, show_output=log.is_debug, cwd=self.remote.skirt_repo_path)
 
         # Pull
-        else: self.remote.execute(command, show_output=log.is_debug(), cwd=self.remote.skirt_repo_path)
+        else: self.remote.execute(command, show_output=log.is_debug, cwd=self.remote.skirt_repo_path)
 
         # Get git version
         self.git_version = git.get_short_git_version(self.remote.skirt_repo_path, self.remote)
@@ -598,10 +595,10 @@ class SKIRTUpdater(Updater):
         log.debug("Compiling latest version ...")
 
         # Load modules
-        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug)
         else:
-            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
-            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug)
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug)
 
         # Execute the build
         build_skirt_on_remote(self.remote, self.remote.skirt_repo_path, self.qmake_path, self.git_version)
@@ -649,10 +646,10 @@ class SKIRTUpdater(Updater):
         log.info("Testing the SKIRT installation on remote host '" + self.remote.host_id + "'...")
 
         # Load modules
-        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug)
         else:
-            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
-            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug)
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug)
 
         output = self.remote.execute("skirt -h")
         for line in output:
@@ -993,10 +990,10 @@ class PTSUpdater(Updater):
             lines.append(("':", password))
 
             # Clone the repository
-            self.remote.execute_lines(*lines, show_output=log.is_debug(), cwd=self.remote.pts_package_path)
+            self.remote.execute_lines(*lines, show_output=log.is_debug, cwd=self.remote.pts_package_path)
 
         # Pull
-        else: self.remote.execute(command, show_output=log.is_debug(), cwd=self.remote.pts_package_path)
+        else: self.remote.execute(command, show_output=log.is_debug, cwd=self.remote.pts_package_path)
 
         # Get git version
         self.git_version = git.get_short_git_version(self.remote.pts_package_path, self.remote)
@@ -1039,13 +1036,13 @@ class PTSUpdater(Updater):
         if self.remote.is_macos: url = imfit_macos_binary_url
         elif self.remote.is_linux: url = imfit_linux_binary_url
         else: raise NotImplementedError("Platform not supported")
-        filepath = self.remote.download_from_url_to(url, self.remote.home_directory, show_output=log.is_debug())
+        filepath = self.remote.download_from_url_to(url, self.remote.home_directory, show_output=log.is_debug)
 
         # Decompress into "~/Imfit"
         imfit_installation_path = fs.join(self.remote.home_directory, "Imfit")
         if self.remote.is_directory(imfit_installation_path): raise RuntimeError("There is already a directory '" + imfit_installation_path + "'")
         else: self.remote.create_directory(imfit_installation_path)
-        self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug(), remove=True)
+        self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug, remove=True)
 
         # Set the imfit path
         self.imfit_path = imfit_installation_path
@@ -1085,18 +1082,18 @@ class PTSUpdater(Updater):
         log.info("Getting Montage on the remote host ...")
 
         # Download the tar.gz file
-        filepath = self.remote.download_from_url_to(montage_url, self.remote.home_directory, show_output=log.is_debug())
+        filepath = self.remote.download_from_url_to(montage_url, self.remote.home_directory, show_output=log.is_debug)
 
         # Extract the file
-        montage_path = self.remote.decompress_directory_in_place(filepath, show_output=log.is_debug(), remove=True)
+        montage_path = self.remote.decompress_directory_in_place(filepath, show_output=log.is_debug, remove=True)
 
         # Determine the path to the montage source code directory
         #montage_montage_path = fs.join(montage_path, "Montage")
 
-        #self.remote.execute("./configure", cwd=montage_montage_path, show_output=log.is_debug())
+        #self.remote.execute("./configure", cwd=montage_montage_path, show_output=log.is_debug)
 
         # Compile
-        self.remote.execute("make", cwd=montage_path, show_output=log.is_debug())
+        self.remote.execute("make", cwd=montage_path, show_output=log.is_debug)
 
         montage_bin_path = fs.join(montage_path, "bin")
         #montage_exec_path = fs.join(montage_bin_path, "montage")
@@ -1468,7 +1465,7 @@ def fix_repo_url(url, repo_path, remote=None, repo_name="origin"):
     log.warning("Replacing the url of the '" + repo_name + "' remote repository to '" + new_url + "' ...")
 
     # Replace the URL
-    git.replace_remote_url(new_url, repo_path, repo_name=repo_name, remote=remote, show_output=log.is_debug())
+    git.replace_remote_url(new_url, repo_path, repo_name=repo_name, remote=remote, show_output=log.is_debug)
 
     # Return the correct URL
     return new_url

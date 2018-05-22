@@ -22,7 +22,7 @@ from .arguments import SkirtArguments
 from .definition import SimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..basics.log import log, no_debugging
+from ..basics.log import log
 from .definition import SingleSimulationDefinition
 from .status import LogSimulationStatus, SpawnSimulationStatus
 from ..tools import strings
@@ -342,7 +342,7 @@ class SkirtExec:
         # Show the simulation progress
         if self.using_pexpect: success = status.show_progress(finish_at=finish_at, finish_after=finish_after)
         else:
-            with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
+            with log.no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
 
         # Check whether not crashed
         if not success:

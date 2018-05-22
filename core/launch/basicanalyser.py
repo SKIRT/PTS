@@ -142,16 +142,13 @@ class BasicAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Extract information from the simulation's log files
         if self.extraction: self.extract()
@@ -336,7 +333,7 @@ class BasicAnalyser(Configurable):
 
         # Debugging
         log.debug("Extraction options:")
-        if log.is_debug(): print(str(self.extraction_options))
+        if log.is_debug: print(str(self.extraction_options))
 
     # -----------------------------------------------------------------
 
@@ -658,7 +655,7 @@ class BasicAnalyser(Configurable):
 
         # Debugging
         log.debug("Plotting options:")
-        if log.is_debug(): print(str(self.plotting_options))
+        if log.is_debug: print(str(self.plotting_options))
 
     # -----------------------------------------------------------------
 
@@ -821,7 +818,7 @@ class BasicAnalyser(Configurable):
 
         # Debugging
         log.debug("Miscellaneous options:")
-        if log.is_debug(): print(str(self.misc_options))
+        if log.is_debug: print(str(self.misc_options))
 
     # -----------------------------------------------------------------
 
@@ -1009,7 +1006,7 @@ class BasicAnalyser(Configurable):
         log.info("Plotting grids ...")
 
         # Plot the dust grid for the simulation
-        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=(not log.is_debug()))
+        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=(not log.is_debug))
 
         # Done
         self.simulation.analysed_plotting.append(grids_name)

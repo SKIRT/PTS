@@ -59,16 +59,13 @@ class WavelengthGridBuilder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Build
         self.build()
@@ -501,7 +498,7 @@ class WavelengthGridBuilder(Configurable):
         for line in stringify_list_fancy(self.new)[1].split("\n"): log.debug("    " + line)
         log.debug("")
 
-        if log.is_debug():
+        if log.is_debug:
             print("")
             print(self.wavelength_grid)
             print("")

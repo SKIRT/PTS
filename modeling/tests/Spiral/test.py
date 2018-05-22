@@ -59,7 +59,7 @@ class SpiralTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
@@ -67,7 +67,7 @@ class SpiralTest(TestImplementation):
         :return:
         """
 
-        self.setup(**kwargs)
+        pass
 
     # -----------------------------------------------------------------
 

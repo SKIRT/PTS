@@ -257,16 +257,13 @@ class DustGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
 
         # 2. Generate the dust grids
         self.generate()
@@ -357,7 +354,7 @@ class DustGridGenerator(Configurable):
 
         # Debugging
         log.debug("Created a cartesian dust grid with:")
-        if log.is_debug():
+        if log.is_debug:
             print("")
             print(grid)
             print("")
@@ -385,7 +382,7 @@ class DustGridGenerator(Configurable):
 
         # Debugging
         log.debug("Created a binary tree dust grid with:")
-        if log.is_debug():
+        if log.is_debug:
             print("")
             print(grid)
             print("")
@@ -413,7 +410,7 @@ class DustGridGenerator(Configurable):
 
         # Debugging
         log.debug("Created an octtree dust grid with:")
-        if log.is_debug():
+        if log.is_debug:
             print("")
             print(grid)
             print("")

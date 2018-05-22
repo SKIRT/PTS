@@ -191,7 +191,7 @@ def print_files_in_path(path):
     :return:
     """
 
-    if not log.is_debug(): return
+    if not log.is_debug: return
     in_path = fs.files_in_path(path, returns="name", extensions=True)
     if len(in_path) == 0: log.debug("No files in '" + path + "'")
     else:
@@ -212,7 +212,7 @@ def print_files_in_list(lst, name, only_name=False):
     :return:
     """
 
-    if not log.is_debug(): return
+    if not log.is_debug: return
     if len(lst) == 0: log.debug("No files in '" + name + "'")
     else:
         log.debug(str(len(lst)) + " files in '" + name + "':")
@@ -232,7 +232,7 @@ def print_directories_in_path(path):
     :return:
     """
 
-    if not log.is_debug(): return
+    if not log.is_debug: return
     in_path = fs.directories_in_path(path, returns="name")
     if len(in_path) == 0: log.debug("No directories in '" + path + "'")
     else:
@@ -252,7 +252,7 @@ def print_directories_in_list(lst, name):
     :return:
     """
 
-    if not log.is_debug(): return
+    if not log.is_debug: return
     if len(lst) == 0: log.debug("No directories in '" + name + "'")
     else:
         log.debug(str(len(lst)) + " directories in '" + name +"':")

@@ -82,16 +82,13 @@ class AttenuationMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def _run(self, **kwargs):
 
         """
         This function ...
         :param kwargs:
         :return:
         """
-
-        # 1. Setup
-        self.setup(**kwargs)
 
         # 2. Cortese
         if self.make_cortese: self.make_cortese_attenuation_maps()
