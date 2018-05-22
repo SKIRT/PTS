@@ -32,6 +32,10 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
     This class ...
     """
 
+    _log_section = "ANALYSIS MANAGER"
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """

@@ -633,6 +633,7 @@ class SimulationManager(InteractiveConfigurable):
 
     _commands = commands
     _subcommands = subcommands
+    _log_section = "SIMULATION MANAGER"
 
     # -----------------------------------------------------------------
 

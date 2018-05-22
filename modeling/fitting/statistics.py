@@ -193,6 +193,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     _commands = commands
     _subcommands = subcommands
+    _log_section = "FITTING STATISTICS"
 
     # -----------------------------------------------------------------
 

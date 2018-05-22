@@ -242,6 +242,7 @@ class ImagePreparer(InteractiveConfigurable):
 
     _commands = commands
     _subcommands = subcommands
+    _log_section = "IMAGE PREPARER"
 
     # -----------------------------------------------------------------
 

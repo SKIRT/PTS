@@ -44,6 +44,10 @@ class GenerationManager(SimulationManager, FittingComponent):
     This class ...
     """
 
+    _log_section = "GENERATION MANAGER"
+
+    # -----------------------------------------------------------------
+
     def __init__(self, *args, **kwargs):
 
         """
