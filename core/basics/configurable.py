@@ -277,6 +277,7 @@ class Configurable(object):
         cwd = kwargs.pop("cwd", None)
         prompt_optional = kwargs.pop("prompt_optional", None)
         use_default = kwargs.pop("use_default", None)
+        check_required = kwargs.pop("check_required", True)
 
         from .configuration import get_config_for_class
 
@@ -285,7 +286,8 @@ class Configurable(object):
             from .map import Map
             assert isinstance(config, Map)
             return config
-        else: return get_config_for_class(cls, config, interactive=interactive, cwd=cwd, prompt_optional=prompt_optional, use_default=use_default)
+        else: return get_config_for_class(cls, config, interactive=interactive, cwd=cwd, prompt_optional=prompt_optional,
+                                          use_default=use_default, check_required=check_required)
 
     # -----------------------------------------------------------------
 

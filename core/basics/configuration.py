@@ -681,7 +681,7 @@ def create_configuration_flexible(name, definition, settings=None, default=False
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None, use_default=None):
+def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None, use_default=None, check_required=True):
 
     """
     This function ...
@@ -691,6 +691,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
     :param cwd:
     :param prompt_optional:
     :param use_default:
+    :param check_required:
     :return:
     """
 
@@ -720,7 +721,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
             else:
 
                 # Create the DictConfigurationSetter
-                setter = DictConfigurationSetter(config, command_name, description)
+                setter = DictConfigurationSetter(config, command_name, description, check_required=check_required)
                 config = setter.run(definition)
 
             # Set the path
@@ -3375,7 +3376,8 @@ class DictConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, add_config_path=True,
+                 check_required=True):
 
         """
         The constructor ...
@@ -3385,6 +3387,7 @@ class DictConfigurationSetter(ConfigurationSetter):
         :param add_logging:
         :param add_cwd:
         :param add_config_path:
+        :param check_required:
         """
 
         # Call the constructor of the base class
@@ -3392,6 +3395,9 @@ class DictConfigurationSetter(ConfigurationSetter):
 
         # Set the user-provided dictionary
         self.dictionary = dictionary
+
+        # Flag
+        self.check_required = check_required
 
     # -----------------------------------------------------------------
 
@@ -3426,7 +3432,7 @@ class DictConfigurationSetter(ConfigurationSetter):
 
         # Add the settings to the configuration
         #config, definition, dictionary
-        add_settings_from_dict(self.config, self.definition, self.dictionary)
+        add_settings_from_dict(self.config, self.definition, self.dictionary, check_required=self.check_required)
 
 # -----------------------------------------------------------------
 
@@ -3800,13 +3806,14 @@ def write_definition(definition, configfile, indent=""):
 
 # -----------------------------------------------------------------
 
-def add_settings_from_dict(config, definition, dictionary):
+def add_settings_from_dict(config, definition, dictionary, check_required=True):
 
     """
     This function ...
     :param config:
     :param definition:
     :param dictionary:
+    :param check_required:
     :return:
     """
 
@@ -3827,31 +3834,36 @@ def add_settings_from_dict(config, definition, dictionary):
     # Required
     for name in definition.required:
 
-        if name not in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
+        if name not in dictionary:
 
-        # Get properties
-        real_type = definition.required[name].type
-        description = definition.required[name].description
-        choices = definition.required[name].choices
-        dynamic_list = definition.required[name].dynamic_list
-        suggestions = definition.required[name].suggestions
-        min_value = definition.required[name].min_value
-        max_value = definition.required[name].max_value
-        forbidden = definition.required[name].forbidden
+            if check_required: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
+            else: value = None
 
-        # Get the value specified in the dictionary
-        value = dict_that_is_emptied.pop(name)
-        removed_keys.append(name)
+        else:
 
-        # Checks
-        check_list(name, value, real_type)
-        check_tuple(name, value, real_type)
-        check_dictionary(name, value, real_type)
-        check_type(name, value, real_type)
-        check_forbidden(name, value, real_type, forbidden)
-        check_min(name, value, real_type, min_value)
-        check_max(name, value, real_type, max_value)
-        check_choices(name, value, real_type, choices)
+            # Get properties
+            real_type = definition.required[name].type
+            description = definition.required[name].description
+            choices = definition.required[name].choices
+            dynamic_list = definition.required[name].dynamic_list
+            suggestions = definition.required[name].suggestions
+            min_value = definition.required[name].min_value
+            max_value = definition.required[name].max_value
+            forbidden = definition.required[name].forbidden
+
+            # Get the value specified in the dictionary
+            value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
+
+            # Checks
+            check_list(name, value, real_type)
+            check_tuple(name, value, real_type)
+            check_dictionary(name, value, real_type)
+            check_type(name, value, real_type)
+            check_forbidden(name, value, real_type, forbidden)
+            check_min(name, value, real_type, min_value)
+            check_max(name, value, real_type, max_value)
+            check_choices(name, value, real_type, choices)
 
         # Set the value
         config[name] = value
@@ -3965,7 +3977,7 @@ def add_settings_from_dict(config, definition, dictionary):
         else: section_dictionary = dict() # new empty dict
 
         # Add the settings
-        removed_section_keys = add_settings_from_dict(config[name], section_definition, section_dictionary)
+        removed_section_keys = add_settings_from_dict(config[name], section_definition, section_dictionary, check_required=check_required)
 
         if name in dictionary:
             #print(dict_that_is_emptied[name])

@@ -31,10 +31,12 @@ from ..tools.stringify import tostr
 
 batch = "batch"
 scaling = "scaling"
+extra = "extra"
 
 # -----------------------------------------------------------------
 
 all_steps = steps + [batch, scaling]
+all_steps_and_extra = all_steps + [extra]
 
 # -----------------------------------------------------------------
 
@@ -354,6 +356,22 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
 
             # Set analysed_scaling flag to False
             simulation.analysed_scaling = False
+
+        # Extra
+        elif step == extra:
+
+            # All features (=classes)
+            if features is None: simulation.unset_analysed_extra()
+
+            # Select features
+            else:
+
+                # Check classes
+                if not sequences.all_in(features, simulation.analyser_class_names): raise ValueError("Classes contains invalid value(s): '" + tostr(features) + "': can only contain '" + tostr(simulation.analyser_class_names) + "'")
+
+                # Remove
+                #for class_name in features: simulation.remove_
+                simulation.analysed_extra = sequences.elements_not_in_other(simulation.analyser_class_names, features, check_existing=True)
 
         # Invalid
         else: raise ValueError("Invalid step: '" + step + "'")
@@ -1035,7 +1053,7 @@ class SimulationAnalyser(Configurable):
             log.debug("Running the " + class_name + " on the simulation ...")
 
             # Create an instance of the analyser class
-            analyser = analyser_class.for_simulation(self.simulation, config=self.get_config_for_analyser_class(class_name))
+            analyser = analyser_class.for_simulation(self.simulation, config=self.get_config_for_analyser_class(class_name), check_required=False)
 
             # Run the analyser, giving this simulation analyser instance as an argument
             analyser.run(simulation_analyser=self)

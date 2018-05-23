@@ -54,7 +54,7 @@ from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools import time
 from ..config.analyse_simulation import definition as analyse_simulation_definition
-from .analyser import all_steps
+from .analyser import all_steps, all_steps_and_extra
 from .options import LoggingOptions, SchedulingOptions, AnalysisOptions
 from ..remote.load import show_status
 from ..remote.mounter import mount_remote
@@ -14814,9 +14814,9 @@ class SimulationManager(InteractiveConfigurable):
         definition = ConfigurationDefinition(write_config=False)
 
         # Add settings
-        definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
+        definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps_and_extra, default=all_steps_and_extra)
         definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
-        definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)
+        definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps_and_extra)
         definition.add_optional("not_features", "string_list", "don't analyse these features (if a single not_step is defined)")
         definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
 
