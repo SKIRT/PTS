@@ -91,17 +91,28 @@ class WavelengthGrid(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, table=None):
 
         """
         The constructor ...
         """
 
         # The wavelength grid table
-        self.table = None
+        self.table = table
 
         # The path
         self.path = None
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthGrid(table=self.table.copy())
 
     # -----------------------------------------------------------------
 

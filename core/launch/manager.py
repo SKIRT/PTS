@@ -40,7 +40,7 @@ from ..basics.containers import create_nested_defaultdict, create_subdict
 from ..tools import sequences
 from ..simulation.remote import is_running_status, finished_name, is_invalid_or_unknown_status
 from ..simulation.remote import is_analysing_or_analysed_status, is_retrieved_status, is_finished_status
-from ..basics.configuration import prompt_variable
+from ..basics.configuration import prompt_variable, prompt_string
 from ..remote.host import find_host_ids
 from ..simulation.shower import show_simulation, show_analysis, compare_simulations, compare_analysis
 from ..simulation.shower import select_simulation_settings, select_analysis_options
@@ -14812,11 +14812,16 @@ class SimulationManager(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
         definition.add_positional_optional("steps", "string_list", "re-analyse only certain steps", choices=all_steps, default=all_steps)
         definition.add_positional_optional("features", "string_list", "re-analyse only certain features (if a single step is defined)")
         definition.add_optional("not_steps", "string_list", "don't analyse these steps", choices=all_steps)
         definition.add_optional("not_features", "string_list", "don't analyse these features (if a single not_step is defined)")
         definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
+
+        # Prompt for extra?
+        definition.add_flag("prompt_extra_configs", "prompt configuration settings for extra analyser classes")
 
         # Return the definition
         return definition
@@ -14955,6 +14960,55 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def prompt_extra_analysis_configs(self, simulation_names):
+
+        """
+        This function ...
+        :param simulation_names:
+        :return:
+        """
+
+        extra_configs = dict()
+
+        # Get all unique analyser class names
+        analyser_classes = defaultdict(list)
+        for simulation_name in simulation_names:
+            simulation = self.get_simulation(simulation_name)
+            for class_name in simulation.analyser_class_names: analyser_classes[class_name].append(simulation_name)
+
+        # Loop over the class names
+        for class_name in analyser_classes:
+
+            # Prompt
+            if not prompt_proceed("set configuration for '" + class_name + "'", default=True): continue
+
+            # Initialize config for class
+            class_config = dict()
+
+            # Keep adding settings
+            while True:
+
+                # Get name
+                name = prompt_string("name", "name of the setting (press ENTER to finish configuring)")
+                if not name: break
+
+                # Get ptype
+                ptype = prompt_string("ptype", "type of the setting")
+
+                # Get value
+                value = prompt_variable(name, ptype, "value of the setting")
+
+                # Add value
+                class_config[name] = value
+
+            # Add config for class
+            extra_configs[class_name] = class_config
+
+        # Return the configs
+        return extra_configs
+
+    # -----------------------------------------------------------------
+
     def reanalyse_simulations_command(self, command, **kwargs):
 
         """
@@ -14973,6 +15027,12 @@ class SimulationManager(InteractiveConfigurable):
         not_steps = config.not_steps
         not_features = config.not_features
 
+        # Set extra configs?
+        if config.prompt_extra_configs: extra_configs = self.prompt_extra_analysis_configs(simulation_names)
+
+        # No extra configs
+        else: extra_configs = None
+
         # Loop over the simulations
         for simulation_name in simulation_names:
 
@@ -14980,11 +15040,13 @@ class SimulationManager(InteractiveConfigurable):
             if not self.analysed_any(simulation_name): raise ValueError("The simulation '" + simulation_name + "' has not been analysed yet")
 
             # Reanalyse the simulation
-            self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps, not_features=not_features, config=config.analysis)
+            self.reanalyse_simulation(simulation_name, steps=steps, features=features, not_steps=not_steps,
+                                      not_features=not_features, config=config.analysis, extra_configs=extra_configs)
 
     # -----------------------------------------------------------------
 
-    def reanalyse_simulation(self, simulation_name, steps=None, features=None, not_steps=None, not_features=None, config=None):
+    def reanalyse_simulation(self, simulation_name, steps=None, features=None, not_steps=None, not_features=None,
+                             config=None, extra_configs=None):
 
         """
         This function ...
@@ -14994,6 +15056,7 @@ class SimulationManager(InteractiveConfigurable):
         :param not_steps:
         :param not_features:
         :param config:
+        :param extra_configs:
         :return:
         """
 
@@ -15004,7 +15067,7 @@ class SimulationManager(InteractiveConfigurable):
         simulation = self.get_simulation(simulation_name)
 
         # Reanalyse simulation
-        reanalyse_simulation(simulation, steps, features, not_steps=not_steps, not_features=not_features, config=config)
+        reanalyse_simulation(simulation, steps, features, not_steps=not_steps, not_features=not_features, config=config, extra_configs=extra_configs)
 
         # Reset the status
         self.reset_status_for_simulation(simulation_name)
@@ -15058,7 +15121,14 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        return analyse_simulation_definition.copy(pos_optional=False)
+        # Get the definition
+        definition = analyse_simulation_definition.copy(pos_optional=False)
+
+        # Prompt for extra?
+        definition.add_flag("prompt_extra_configs", "prompt configuration settings for extra analyser classes")
+
+        # Return
+        return definition
 
     # -----------------------------------------------------------------
 
@@ -15074,6 +15144,11 @@ class SimulationManager(InteractiveConfigurable):
         # Get simulation names and config
         simulation_names, config = self.get_simulation_names_and_config_from_command(command, command_definition=self.analyse_simulation_definition, **kwargs)
 
+        # Set extra configs?
+        if config.get("prompt_extra_configs", False): extra_configs = self.prompt_extra_analysis_configs(simulation_names)
+        else: extra_configs = None
+        if "prompt_extra_configs" in config: config.pop("prompt_extra_configs")
+
         # Analyse simulations
         for simulation_name in simulation_names:
 
@@ -15081,16 +15156,17 @@ class SimulationManager(InteractiveConfigurable):
             if not self.is_retrieved(simulation_name): raise ValueError("Simulation '" + simulation_name + "' is not yet retrieved")
 
             # Analyse
-            self.analyse_simulation(simulation_name, config=config)
+            self.analyse_simulation(simulation_name, config=config, extra_configs=extra_configs)
 
     # -----------------------------------------------------------------
 
-    def analyse_simulation(self, simulation_name, config=None):
+    def analyse_simulation(self, simulation_name, config=None, extra_configs=None):
 
         """
         This function ...
         :param simulation_name:
         :param config:
+        :param extra_configs:
         :return:
         """
 
@@ -15101,7 +15177,7 @@ class SimulationManager(InteractiveConfigurable):
         simulation = self.get_simulation(simulation_name)
 
         # Analyse the simulation
-        analyse_simulation(simulation, config=config)
+        analyse_simulation(simulation, config=config, extra_configs=extra_configs)
 
         # Reset the status
         self.reset_status_for_simulation(simulation_name)

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from .output import SimulationOutput
 from .table import SkirtTable, is_valid
@@ -578,6 +581,31 @@ class SimulationData(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def image_paths_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        paths_instruments = defaultdict(list)
+
+        # Loop over the paths
+        for path in self.image_paths:
+
+            # Get the instrument name
+            instrument_name = get_datacube_instrument_name(path, self.simulation_prefix)
+
+            # Set the datacube path for this instrument
+            paths_instruments[instrument_name].append(path)
+
+        # Return the dictionary
+        return paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def images(self):
 
         """
@@ -857,5 +885,19 @@ def get_sed_instrument_name(sed_path, prefix):
     """
 
     return fs.name(sed_path).split("_sed.dat")[0].split(prefix + "_")[1]
+
+# -----------------------------------------------------------------
+
+def get_datacube_instrument_name(datacube_path, prefix):
+
+    """
+    This function ...
+    :param datacube_path:
+    :param prefix:
+    :return:
+    """
+
+    # For all
+    return fs.name(datacube_path).split(prefix + "_")[1].rsplit("_", 1)[0]
 
 # -----------------------------------------------------------------

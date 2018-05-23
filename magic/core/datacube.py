@@ -514,6 +514,54 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def __sub__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Regular number
+        if types.is_real_type(other) or types.is_integer_type(other):
+
+            # Create frames
+            frames = [self.frames[index] - other for index in range(self.nframes)]
+
+        # Quantity
+        elif types.is_quantity(other):
+
+            # Get the wavelengths
+            wavelengths = self.wavelengths()
+
+            # Create frames
+            frames = []
+            for index in range(self.nframes):
+                frame = self.frames[index]
+                new_frame = frame - other.to(frame.unit, wavelength=wavelengths[index]).value
+                frames.append(new_frame)
+
+        # Datacube
+        elif isinstance(other, DataCube):
+
+            # Check the number of frames
+            if self.nframes != other.nframes: raise ValueError("Datacubes must have an equal number of frames")
+
+            # TODO: units!
+            # Create new frames
+            frames = [self.frames[index] - other.frames[index] for index in range(self.nframes)]
+
+        # Frame
+        elif isinstance(other, Frame): frames = [self.frames[index] - other for index in range(self.nframes)]
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+        # Create new datacube
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
+
+    # -----------------------------------------------------------------
+
     def integrate(self):
 
         """

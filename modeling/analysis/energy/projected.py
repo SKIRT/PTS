@@ -18,6 +18,7 @@ from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty
 from ....magic.core.frame import Frame
+from ....magic.tools.plotting import plot_frame_contours, plot_frame
 
 # -----------------------------------------------------------------
 
@@ -53,6 +54,11 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         self.absorption_map_faceon = None
         self.absorption_map_edgeon = None
 
+        # The maps of the energy balance
+        self.map_earth = None
+        self.map_faceon = None
+        self.map_edgeon = None
+
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -68,6 +74,9 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # Get the dust absorption maps
         self.get_absorptions()
+
+        # Get the maps of the energy balance
+        self.get_maps()
 
         # Write
         self.write()
@@ -129,6 +138,42 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         return self.model.total_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_faceon_observed_cube_orientation and self.total_simulations.has_other_observed_cube_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_edgeon_observed_cube_orientation and self.total_simulations.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 
@@ -500,13 +545,13 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         # Earth
-        self.get_emissions_earth()
+        if self.do_earth: self.get_emissions_earth()
 
         # Faceon
-        self.get_emissions_faceon()
+        if self.do_faceon: self.get_emissions_faceon()
 
         # Edgeon
-        self.get_emissions_edgeon()
+        if self.do_edgeon: self.get_emissions_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -624,13 +669,13 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         # Earth
-        self.get_absorptions_earth()
+        if self.do_earth: self.get_absorptions_earth()
 
         # Face-on
-        self.get_absorptions_faceon()
+        if self.do_faceon: self.get_absorptions_faceon()
 
         # Edge-on
-        self.get_absorptions_edgeon()
+        if self.do_edgeon: self.get_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -736,6 +781,155 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_map_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_map_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_map_earth: self.load_map_earth()
+        else: self.create_map_earth()
+
+    # -----------------------------------------------------------------
+
+    def load_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.map_earth = Frame.from_file(self.map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def create_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make absolute map
+        self.map_earth = self.emission_map_earth - self.absorption_map_earth
+
+        # Split up
+        #more_absorption = self.map_earth < 0
+        #more_emission = self.map_earth > 0
+
+        # Make relative
+        #self.map_earth[more_absorption] /= self.absorption_map_earth[more_absorption]
+        #self.map_earth[more_emission] /= self.emission_map_earth[more_emission]
+
+        self.map_earth /= self.emission_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_map_faceon: self.load_map_faceon()
+        else: self.create_map_faceon()
+
+    # -----------------------------------------------------------------
+
+    def load_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.map_faceon = Frame.from_file(self.map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def create_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make absolute map
+        self.map_faceon = self.emission_map_faceon - self.absorption_map_faceon
+
+        # Split up
+        more_absorption = self.map_faceon < 0
+        more_emission = self.map_faceon > 0
+
+        # Make relative
+        self.map_faceon[more_absorption] /= self.absorption_map_faceon[more_absorption]
+        self.map_faceon[more_emission] /= self.emission_map_faceon[more_emission]
+
+    # -----------------------------------------------------------------
+
+    def get_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_map_edgeon: self.load_map_edgeon()
+        else: self.create_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.map_edgeon = Frame.from_file(self.map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def create_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make absolute map
+        self.map_edgeon = self.emission_map_edgeon - self.absorption_map_edgeon
+
+        # Split up
+        more_absorption = self.map_edgeon < 0
+        more_emission = self.map_edgeon > 0
+
+        # Make relative
+        self.map_edgeon[more_absorption] /= self.absorption_map_edgeon[more_absorption]
+        self.map_edgeon[more_emission] /=  self.emission_map_edgeon[more_emission]
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -751,6 +945,9 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # Absorptions
         self.write_absorptions()
+
+        # Maps
+        self.write_maps()
 
     # -----------------------------------------------------------------
 
@@ -1168,6 +1365,210 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def write_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_map_earth: self.write_map_earth()
+
+        # Face-on
+        if self.do_write_map_faceon: self.write_map_faceon()
+
+        # Edge-on
+        if self.do_write_map_edgeon: self.write_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map_earth and self.map_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projected_energy_path, "earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the energy balance from the earth projection ...")
+
+        # Save
+        self.map_earth.saveto(self.map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map_faceon and self.map_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projected_energy_path, "faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the energy balance from the faceon projection ...")
+
+        # Save
+        self.map_faceon.saveto(self.map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map_edgeon and self.map_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projected_energy_path, "edgeon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the energy balance from the edgeon projection ...")
+
+        # Save
+        self.map_edgeon.saveto(self.map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -1177,5 +1578,204 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Earth
+        if self.do_plot_map_earth: self.plot_map_earth()
+
+        # Faceon
+        if self.do_plot_map_faceon: self.plot_map_faceon()
+
+        # Edgeon
+        if self.do_plot_map_edgeon: self.plot_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_earth and not self.has_map_earth_plot and self.map_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_earth_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projected_energy_path, "earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_earth_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_earth_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the earth map ...")
+
+        # Plot
+        #plot_frame_contours(self.map_earth, nlevels=5, path=self.map_earth_plot_path, plot_data=True, interval=[-1,1], data_cmap="RdBu")
+        #plot_frame(self.map_earth, path=self.map_earth_plot_path, interval=(-1,1), cmap="RdBu", colorbar=True, scale="linear")
+        plot_frame(self.map_earth, path=self.map_earth_plot_path, interval=(-1.,1.), cmap="RdBu", colorbar=True, scale="linear")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_faceon and not self.has_map_faceon_plot and self.map_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_faceon_plot_path(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return fs.join(self.projected_energy_path, "faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_faceon_plot(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_faceon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the faceon map ...")
+
+        # Plot
+        #plot_frame_contours(self.map_faceon, nlevels=5, path=self.map_faceon_plot_path, plot_data=True, interval=[-1, 1], data_cmap="RdBu")
+        plot_frame(self.map_faceon, path=self.map_faceon_plot_path, interval=(-1., 1.), cmap="RdBu")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_edgeon and not self.has_map_edgeon_plot and self.map_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_edgeon_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projected_energy_path, "edgeon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_edgeon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.map_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_map_edgeon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.map_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the edgeon map ...")
+
+        # Plot
+        #plot_frame_contours(self.map_edgeon, nlevels=5, path=self.map_edgeon_plot_path, plot_data=True, interval=[-1, 1], data_cmap="RdBu")
+        plot_frame(self.map_edgeon, path=self.map_edgeon_plot_path, interval=[-1, 1], cmap="RdBu")
 
 # -----------------------------------------------------------------

@@ -323,16 +323,17 @@ class SEDFitModelAnalyser(FittingComponent):
     # -----------------------------------------------------------------
 
     @classmethod
-    def for_simulation(cls, simulation):
+    def for_simulation(cls, simulation, config=None):
 
         """
         This function ...
         :param simulation:
+        :param config:
         :return:
         """
 
         # Create the instance
-        analyser = cls()
+        analyser = cls(config=config)
 
         # Set the modeling path as the working path for this class
         analyser.config.path = simulation.analysis.modeling_path
@@ -987,16 +988,17 @@ class ImagesFitModelAnalyser(FittingComponent):
     # -----------------------------------------------------------------
 
     @classmethod
-    def for_simulation(cls, simulation):
+    def for_simulation(cls, simulation, config=None):
 
         """
         This function ...
         :param simulation:
+        :param config:
         :return:
         """
 
         # Create the instance
-        analyser = cls()
+        analyser = cls(config=config)
 
         # Set the modeling path as the working path for this class
         analyser.config.path = simulation.analysis.modeling_path

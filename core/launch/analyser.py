@@ -264,7 +264,7 @@ def is_analysed(simulation, steps, features=None):
 
 # -----------------------------------------------------------------
 
-def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_features=None, config=None):
+def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_features=None, config=None, extra_configs=None):
 
     """
     This function ...
@@ -274,6 +274,7 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
     :param not_steps:
     :param not_features:
     :param config:
+    :param extra_configs:
     :return:
     """
 
@@ -382,11 +383,11 @@ def reanalyse_simulation(simulation, steps, features=None, not_steps=None, not_f
         if scaling in steps: simulation.analysed_scaling = False
 
     # Now analyse the simulation
-    analyse_simulation(simulation, not_steps=not_steps, not_features=not_features, config=config)
+    analyse_simulation(simulation, not_steps=not_steps, not_features=not_features, config=config, extra_configs=extra_configs)
 
 # -----------------------------------------------------------------
 
-def analyse_simulation(simulation, not_steps=None, not_features=None, config=None):
+def analyse_simulation(simulation, not_steps=None, not_features=None, config=None, extra_configs=None):
 
     """
     This function ...
@@ -394,6 +395,7 @@ def analyse_simulation(simulation, not_steps=None, not_features=None, config=Non
     :param not_steps:
     :param not_features:
     :param config:
+    :param extra_configs:
     :return:
     """
 
@@ -500,7 +502,7 @@ def analyse_simulation(simulation, not_steps=None, not_features=None, config=Non
     analyser = SimulationAnalyser(config=config)
 
     # Run the analyser on the simulation
-    analyser.run(simulation=simulation)
+    analyser.run(simulation=simulation, extra_configs=extra_configs)
 
 # -----------------------------------------------------------------
 
@@ -776,6 +778,9 @@ class SimulationAnalyser(Configurable):
         self.batch_analyser = None
         self.scaling_analyser = None
 
+        # Configs for the extra analysers
+        self.extra_configs = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -900,6 +905,10 @@ class SimulationAnalyser(Configurable):
         self.basic_analyser.config.ignore_missing_data = self.config.ignore_missing_data
         self.batch_analyser.config.ignore_missing_data = self.config.ignore_missing_data
 
+        # Get extra configs
+        if kwargs.get("extra_configs", None) is not None: self.extra_configs = kwargs.pop("extra_configs")
+        else: self.extra_configs = dict()
+
     # -----------------------------------------------------------------
 
     def load_simulation(self):
@@ -988,6 +997,19 @@ class SimulationAnalyser(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_config_for_analyser_class(self, class_name):
+
+        """
+        This function ...
+        :param class_name:
+        :return:
+        """
+
+        if class_name not in self.extra_configs: return None
+        else: return self.extra_configs[class_name]
+
+    # -----------------------------------------------------------------
+
     def analyse_extra(self):
 
         """
@@ -1013,7 +1035,7 @@ class SimulationAnalyser(Configurable):
             log.debug("Running the " + class_name + " on the simulation ...")
 
             # Create an instance of the analyser class
-            analyser = analyser_class.for_simulation(self.simulation)
+            analyser = analyser_class.for_simulation(self.simulation, config=self.get_config_for_analyser_class(class_name))
 
             # Run the analyser, giving this simulation analyser instance as an argument
             analyser.run(simulation_analyser=self)

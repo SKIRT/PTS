@@ -114,7 +114,7 @@ commands[_map_command_name] = (None, None, "plot a map", None)
 # Analysis
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
 commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
-#commands[_energy_command_name] = (None, None, "analyse energy budget", None)
+commands[_energy_command_name] = (None, None, "analyse the energy budget in the galaxy", None)
 
 # -----------------------------------------------------------------
 

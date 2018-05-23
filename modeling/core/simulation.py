@@ -740,6 +740,30 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_other_observed_sed_contributions_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_data and len(self.observed_data.seds[faceon_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_sed_contributions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_data and len(self.observed_data.seds[edgeon_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_transparent_sed(self):
 
         """
@@ -939,7 +963,31 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return len(self.observed_data.images[earth_name]) > 1
+        return self.has_observed_data and len(self.observed_data.images[earth_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_cube_contributions_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_data and len(self.observed_data.images[faceon_name]) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_observed_cube_contributions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_data and len(self.observed_data.images[edgeon_name]) > 1
 
     # -----------------------------------------------------------------
 

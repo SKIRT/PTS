@@ -962,6 +962,25 @@ class SkirtSimulation(object):
         self.analyser_paths.append(clspath)
 
     @property
+    def analyser_class_names(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # The list of class names
+        names = []
+
+        # Loop over the class paths
+        for class_path in self.analyser_paths:
+            module_path, class_name = class_path.rsplit('.', 1)
+            names.append(class_name)
+
+        # Return the list of class names
+        return names
+
+    @property
     def analyser_classes(self):
 
         # The list of classes
