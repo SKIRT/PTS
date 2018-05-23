@@ -1436,6 +1436,21 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def add_or_set_chi_squared(self, simulation_name, chi_squared):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param chi_squared:
+        :return:
+        """
+
+        index = self.find_index(simulation_name, "Simulation name")
+        if index is None: self.add_entry(simulation_name, chi_squared)
+        else: self.set_value("Chi squared", index, chi_squared)
+
+    # -----------------------------------------------------------------
+
     def sort_as(self, simulation_names):
 
         """

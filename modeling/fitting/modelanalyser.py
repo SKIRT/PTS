@@ -830,6 +830,18 @@ class SEDFitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation.name
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -892,6 +904,9 @@ class SEDFitModelAnalyser(FittingComponent):
         # Determine the path to the differences table
         path = fs.join(self.simulation.analysis.misc.path, "differences.dat")
 
+        # Debugging
+        log.debug("Writing the differences to '" + path + "' ...")
+
         # Save the differences table
         self.differences.saveto(path)
 
@@ -908,7 +923,8 @@ class SEDFitModelAnalyser(FittingComponent):
         log.info("Adding the chi squared value for the current model to the chi squared data file ...")
 
         # Add entry
-        self.chi_squared_table.add_entry(self.simulation.name, self.chi_squared)
+        #self.chi_squared_table.add_entry(self.simulation.name, self.chi_squared)
+        self.chi_squared_table.add_or_set_chi_squared(self.simulation_name, self.chi_squared)
 
         # Save the table
         self.chi_squared_table.save()
