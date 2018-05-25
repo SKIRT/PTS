@@ -753,4 +753,15 @@ class PixelShape(tuple):
 
         return self.ntotal >= other.ntotal
 
+    # -----------------------------------------------------------------
+
+    def as_tuple(self):
+
+        """
+        This function returns the shape as a regular tuple
+        :return:
+        """
+
+        return (self.y, self.x,)
+
 # -----------------------------------------------------------------

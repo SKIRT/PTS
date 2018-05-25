@@ -601,8 +601,6 @@ class DataCube(Image):
 
         # Get array of wavelengths
         wavelengths = self.wavelengths(asarray=True, unit=unit)
-        #wavelengths.reshape((1, self.nframes))
-        #print(wavelengths.shape)
 
         # Calculate data of mean wavelength per pixel
         data = numbers.weighed_arithmetic_mean_numpy(wavelengths, weights=self.asarray(axis=2))

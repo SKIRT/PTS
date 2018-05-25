@@ -677,6 +677,10 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             if contribution != total: ski.remove_stellar_components_except(component_names[contribution])
 
             # For the simulation with only the ionizing stellar component, also write out the stellar density
+            # NEW: also for bulge, disk, and young (all individual components)
+            if contribution == bulge: ski.set_write_stellar_density()
+            if contribution == disk: ski.set_write_stellar_density()
+            if contribution == young: ski.set_write_stellar_density()
             if contribution == ionizing: ski.set_write_stellar_density()
 
             # For the bulge and disk simulations, use less photon packages (only SED instruments)
@@ -791,8 +795,8 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             # Remove the existing instruments
             ski.remove_all_instruments()
 
-            # Total contribution
-            if contribution == total:
+            # Total, young and ionizing contribution: full instruments for projected heating analysis
+            if contribution == total or contribution == young or contribution == ionizing:
 
                 # Add instruments
                 ski.add_instrument(earth_name, self.full_earth_instrument)
@@ -800,9 +804,10 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
                 ski.add_instrument(edgeon_name, self.full_edgeon_instrument)
 
             # Ionizing contribution: full instrument for earth orientation
-            elif contribution == ionizing: ski.add_instrument(earth_name, self.full_earth_instrument)
+            #elif contribution == ionizing: ski.add_instrument(earth_name, self.full_earth_instrument)
 
-            # Bulge and disk: SED instrument
+            # Bulge and disk: #SED instrument
+            # simple instrument
             elif (contribution == bulge) or (contribution == disk): ski.add_instrument(earth_name, self.sed_earth_instrument)
 
             # Other simulations: only simple earth instrument
@@ -1854,6 +1859,32 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def parallelization_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.uses_remote: return None
+        else: return self.parallelization
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nprocesses_local(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        if self.uses_remote: return None
+        else: return self.nprocesses
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -1892,14 +1923,6 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             # Set scheduling options for this simulation
             if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.get_scheduling_options_for_contribution(contribution))
 
-        # Set parallelization and nprocesses
-        if self.uses_remote:
-            parallelization_local = None
-            nprocesses_local = None
-        else:
-            parallelization_local = self.parallelization
-            nprocesses_local = self.nprocesses
-
         # Memory usage
         memory = None
 
@@ -1908,6 +1931,6 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
         # Run the launcher, schedules the simulations
         self.launcher.run(memory=memory, ncells=self.ndust_cells, nwavelengths=self.nwavelengths,
-                          parallelization_local=parallelization_local, nprocesses_local=nprocesses_local)
+                          parallelization_local=self.parallelization_local, nprocesses_local=self.nprocesses_local)
 
 # -----------------------------------------------------------------

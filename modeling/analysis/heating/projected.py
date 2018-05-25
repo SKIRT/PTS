@@ -45,23 +45,35 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # -- Attributes --
 
-        # The dust absorbed energy maps
-        self.total_absorption = None
-        self.total_absorption_faceon = None
-        self.young_absorption = None
-        self.young_absorption_faceon = None
-        self.ionizing_absorption = None
-        self.ionizing_absorption_faceon = None
-        self.internal_absorption = None
-        self.internal_absorption_faceon = None
+        # Total
+        self.total_absorptions_earth = None
+        self.total_absorptions_faceon = None
+        self.total_absorptions_edgeon = None
 
-        # Maps of heating
-        self.map = None
+        # Young
+        self.young_absorptions_earth = None
+        self.young_absorptions_faceon = None
+        self.young_absorptions_edgeon = None
+
+        # Ionizing
+        self.ionizing_absorptions_earth = None
+        self.ionizing_absorptions_faceon = None
+        self.ionizing_absorptions_edgeon = None
+
+        # Internal SFR absorption
+        self.internal_absorptions_earth = None
+        self.internal_absorptions_faceon = None
+        self.internal_absorptions_edgeon = None
+
+        # Maps of heating fraction
+        self.map_earth = None
         self.map_faceon = None
+        self.map_edgeon = None
 
         # Cubes of spectral heating
-        self.cube = None
+        self.cube_earth = None
         self.cube_faceon = None
+        self.cube_edgeon = None
 
     # -----------------------------------------------------------------
 
@@ -73,13 +85,13 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # 2. Get the absorption maps
+        # Get the absorption maps
         self.get_absorptions()
 
-        # Get the maps of the heating fraction (earth and faceon)
+        # Get the maps of the heating fraction
         self.get_maps()
 
-        # Get the cube of the heating fraction per wavelength (earth and faceon)
+        # Get the cube of the heating fraction per wavelength
         self.get_cubes()
 
         # Show
@@ -104,6 +116,117 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(ProjectedDustHeatingAnalyser, self).setup()
 
+        # Check
+        if (not self.do_earth) and (not self.do_faceon) and (not self.do_edgeon): raise RuntimeError("Cannot create any map: not enough simulation data is present")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_earth_cube_contributions_all
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_cube_contributions_all
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def do_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_edgeon_cube_contributions_all
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_earth_cube_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_earth_cube_total and self.has_earth_cube_young and self.has_earth_cube_ionizing
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_earth_cube_contributions_all(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.has_earth_cube_contributions_total and self.has_earth_cube_contributions_young and self.has_earth_cube_contributions_ionizing
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_faceon_cube_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_cube_total and self.has_faceon_cube_young and self.has_faceon_cube_ionizing
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_faceon_cube_contributions_all(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.has_faceon_cube_contributions_total and self.has_faceon_cube_contributions_young and self.has_faceon_cube_contributions_ionizing
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_edgeon_cube_all(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.has_edgeon_cube_total and self.has_edgeon_cube_young and self.has_edgeon_cube_ionizing
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_edgeon_cube_contributions_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_edgeon_cube_contributions_total and self.has_edgeon_cube_contributions_young and self.has_edgeon_cube_contributions_ionizing
+
     # -----------------------------------------------------------------
 
     @property
@@ -115,6 +238,78 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return self.model.total_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_cube_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_cube_contributions_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_earth_cube_total and self.total_simulations.has_other_observed_cube_contributions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_faceon_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_contributions_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_cube_total and self.total_simulations.has_other_observed_cube_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.has_edgeon_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_contributions_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_edgeon_cube_total and self.total_simulations.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 
@@ -131,6 +326,78 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_earth_cube_young(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.young_simulations.has_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_cube_contributions_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_earth_cube_young and self.young_simulations.has_other_observed_cube_contributions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_simulations.has_faceon_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_contributions_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_cube_young and self.young_simulations.has_other_observed_cube_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_simulations.has_edgeon_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_contributions_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_edgeon_cube_young and self.young_simulations.has_other_observed_cube_contributions_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_simulations(self):
 
         """
@@ -142,12 +409,87 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_earth_cube_ionizing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.ionizing_simulations.has_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_cube_contributions_ionizing(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.has_earth_cube_ionizing and self.ionizing_simulations.has_other_observed_cube_contributions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_simulations.has_faceon_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_contributions_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_cube_ionizing and self.ionizing_simulations.has_other_observed_cube_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_simulations.has_edgeon_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_contributions_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_edgeon_cube_ionizing and self.ionizing_simulations.has_other_observed_cube_contributions_edgeon
+
+    # -----------------------------------------------------------------
+
     def get_absorptions(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Getting the absorption maps ...")
 
         # Total
         self.get_total_absorptions()
@@ -170,30 +512,39 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the total absorption maps ..")
+
         # Earth
-        self.get_total_absorption()
+        self.get_total_absorptions_earth()
 
         # Face-on
-        self.get_total_absorption_faceon()
+        self.get_total_absorptions_faceon()
+
+        # Edge-on
+        self.get_total_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
-    def get_total_absorption(self):
+    def get_total_absorptions_earth(self):
         
         """
         This function ...
         :return: 
         """
 
+        # Inform the user
+        log.info("Getting the total absorption map from the earth projection ...")
+
         # Get total absorption map
-        if self.has_total_absorption: self.load_total_absorption()
+        if self.has_total_absorptions_earth: self.load_total_absorptions_earth()
 
         # Calculate
-        else: self.calculate_total_absorption()
+        else: self.calculate_total_absorptions_earth()
 
     # -----------------------------------------------------------------
 
-    def load_total_absorption(self):
+    def load_total_absorptions_earth(self):
 
         """
         Thisf unction ...
@@ -201,11 +552,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        self.total_absorption = Frame.from_file(self.total_absorption)
+        self.total_absorptions_earth = Frame.from_file(self.total_absorptions_earth_path)
 
     # -----------------------------------------------------------------
 
-    def calculate_total_absorption(self):
+    def calculate_total_absorptions_earth(self):
 
         """
         This function ...
@@ -213,19 +564,22 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Integrates the dust spectral cube
-        self.total_absorption = self.total_simulations.observed_dust_frame
+        self.total_absorptions_earth = self.total_simulations.observed_dust_frame
 
     # -----------------------------------------------------------------
 
-    def get_total_absorption_faceon(self):
+    def get_total_absorptions_faceon(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the total absorption map from the faceon projection ...")
+
         # Load
-        if self.has_total_absorption_faceon: self.load_total_absorptions_faceon()
+        if self.has_total_absorptions_faceon: self.load_total_absorptions_faceon()
 
         # Calculate
         else: self.calculate_total_absorptions_faceon()
@@ -240,7 +594,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        self.total_absorption_faceon = Frame.from_file(self.total_absorption_faceon_path)
+        self.total_absorptions_faceon = Frame.from_file(self.total_absorptions_faceon_path)
 
     # -----------------------------------------------------------------
 
@@ -252,7 +606,43 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Integrates the dust spectral cube
-        self.total_absorption_faceon = self.total_simulations.faceon_observed_dust_sed
+        self.total_absorptions_faceon = self.total_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    def get_total_absorptions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the total absorption maps from the edgeon projection ...")
+
+        # Load
+        if self.has_total_absorptions_edgeon: self.load_total_absorptions_edgeon()
+
+        # Calculate
+        else: self.calculate_total_absorptions_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_total_absorptions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def calculate_total_absorptions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -263,15 +653,21 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the young stellar absorption maps ...")
+
         # Earth
-        self.get_young_absorption()
+        self.get_young_absorptions_earth()
 
         # Face-on
-        self.get_young_absorption_faceon()
+        self.get_young_absorptions_faceon()
+
+        # Edge-on
+        self.get_young_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
-    def get_young_absorption(self):
+    def get_young_absorptions_earth(self):
 
         """
         This function ...
@@ -279,14 +675,14 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        if self.has_young_absorption: self.load_young_absorption()
+        if self.has_young_absorptions_earth: self.load_young_absorptions()
 
         # Calculate
-        else: self.calculate_young_absorption()
+        else: self.calculate_young_absorptions()
 
     # -----------------------------------------------------------------
 
-    def load_young_absorption(self):
+    def load_young_absorptions_earth(self):
 
         """
         This function ...
@@ -294,11 +690,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        self.young_absorption = Frame.from_file(self.young_absorption_path)
+        self.young_absorptions_earth = Frame.from_file(self.young_absorptions_earth_path)
 
     # -----------------------------------------------------------------
 
-    def calculate_young_absorption(self):
+    def calculate_young_absorptions_earth(self):
 
         """
         This function ...
@@ -306,11 +702,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Integrates the dust spectral cube
-        self.young_absorption = self.young_simulations.observed_dust_frame
+        self.young_absorptions_earth = self.young_simulations.observed_dust_frame
 
     # -----------------------------------------------------------------
 
-    def get_young_absorption_faceon(self):
+    def get_young_absorptions_faceon(self):
 
         """
         This function ...
@@ -318,25 +714,25 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        if self.has_young_absorption_faceon: self.load_young_absorption_faceon()
+        if self.has_young_absorptions_faceon: self.load_young_absorptions_faceon()
 
         # Calculate
-        else: self.calculate_young_absorption_faceon()
+        else: self.calculate_young_absorptions_faceon()
 
     # -----------------------------------------------------------------
 
-    def load_young_absorption_faceon(self):
+    def load_young_absorptions_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        self.young_absorption_faceon = Frame.from_file(self.young_absorption_faceon_path)
+        self.young_absorptions_faceon = Frame.from_file(self.young_absorptions_faceon_path)
 
     # -----------------------------------------------------------------
 
-    def calculate_young_absorption_faceon(self):
+    def calculate_young_absorptions_faceon(self):
 
         """
         This function ...
@@ -344,7 +740,40 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Integrates the dust spectral cube
-        self.young_absorption_faceon = self.young_simulations.faceon_observed_dust_frame
+        self.young_absorptions_faceon = self.young_simulations.faceon_observed_dust_frame
+
+    # -----------------------------------------------------------------
+
+    def get_young_absorption_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load
+        if self.has_young_absorptions_edgeon: self.load_young_absorptions_edgeon()
+
+        # Calculate
+        else: self.calculate_young_absorptions_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def load_young_absorptions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def calculate_young_absorptions_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -355,15 +784,21 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the ionizing stellar absorption maps ...")
+
         # Earth
-        self.get_ionizing_absorption()
+        self.get_ionizing_absorptions_earth()
 
         # Face-on
-        self.get_ionizing_absorption_faceon()
+        self.get_ionizing_absorptions_faceon()
+
+        # Edge-on
+        self.get_ionizing_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
-    def get_ionizing_absorption(self):
+    def get_ionizing_absorptions_earth(self):
 
         """
         This function ...
@@ -371,14 +806,14 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        if self.has_ionizing_absorption: self.load_ionizing_absorption()
+        if self.has_ionizing_absorptions_earth: self.load_ionizing_absorptions_earth()
 
         # Calculate
-        else: self.calculate_ionizing_absorption()
+        else: self.calculate_ionizing_absorptions_earth()
 
     # -----------------------------------------------------------------
 
-    def load_ionizing_absorption(self):
+    def load_ionizing_absorptions_earth(self):
 
         """
         This function ...
@@ -386,11 +821,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        self.ionizing_absorption = Frame.from_file(self.ionizing_absorption_path)
+        self.ionizing_absorptions_earth = Frame.from_file(self.ionizing_absorptions_earth_path)
 
     # -----------------------------------------------------------------
 
-    def calculate_ionizing_absorption(self):
+    def calculate_ionizing_absorptions_earth(self):
 
         """
         This function ...
@@ -398,11 +833,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Integrates the dust spectral cube
-        self.ionizing_absorption = self.ionizing_simulations.observed_dust_frame
+        self.ionizing_absorptions_earth = self.ionizing_simulations.observed_dust_frame
 
     # -----------------------------------------------------------------
 
-    def get_ionizing_absorption_faceon(self):
+    def get_ionizing_absorptions_faceon(self):
 
         """
         This function ...
@@ -410,14 +845,14 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        if self.has_ionizing_absorption_faceon: self.load_ionizing_absorption_faceon()
+        if self.has_ionizing_absorptions_faceon: self.load_ionizing_absorptions_faceon()
 
         # Calculate
-        else: self.calculate_ionizing_absorption_faceon()
+        else: self.calculate_ionizing_absorptions_faceon()
 
     # -----------------------------------------------------------------
 
-    def load_ionizing_absorption_faceon(self):
+    def load_ionizing_absorptions_faceon(self):
 
         """
         This function ...
@@ -425,7 +860,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        self.ionizing_absorption_faceon = Frame.from_file(self.ionizing_absorption_faceon_path)
+        self.ionizing_absorptions_faceon = Frame.from_file(self.ionizing_absorptions_faceon_path)
 
     # -----------------------------------------------------------------
 
@@ -437,7 +872,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Integrates the dust spectral cube
-        self.ionizing_absorption_faceon = self.ionizing_simulations.faceon_observed_dust_frame
+        self.ionizing_absorptions_faceon = self.ionizing_simulations.faceon_observed_dust_frame
 
     # -----------------------------------------------------------------
 
@@ -449,14 +884,17 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Earth
-        self.get_internal_absorption()
+        self.get_internal_absorptions_earth()
 
         # Faceon
-        self.get_internal_absorption_faceon()
+        self.get_internal_absorptions_faceon()
+
+        # Edge-on
+        self.get_internal_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
-    def get_internal_absorption(self):
+    def get_internal_absorptions_earth(self):
 
         """
         This function ...
@@ -464,14 +902,14 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        if self.has_internal_absorption: self.load_internal_absorption()
+        if self.has_internal_absorptions_earth: self.load_internal_absorptions_earth()
 
         # Calculate
-        else: self.calculate_internal_absorption()
+        else: self.calculate_internal_absorptions_earth()
 
     # -----------------------------------------------------------------
 
-    def load_internal_absorption(self):
+    def load_internal_absorptions_earth(self):
 
         """
         This function ...
@@ -479,7 +917,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        self.internal_absorption = Frame.from_file(self.internal_absorption_path)
+        self.internal_absorptions_earth = Frame.from_file(self.internal_absorptions_earth_path)
 
     # -----------------------------------------------------------------
 
@@ -494,7 +932,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def get_internal_absorption_faceon(self):
+    def get_internal_absorptions_faceon(self):
 
         """
         This function ...
@@ -502,25 +940,25 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Load
-        if self.has_internal_absorption_faceon: self.load_internal_absorption_faceon()
+        if self.has_internal_absorptions_faceon: self.load_internal_absorptions_faceon()
 
         # Calculate
-        else: self.calculate_internal_absorption_faceon()
+        else: self.calculate_internal_absorptions_faceon()
 
     # -----------------------------------------------------------------
 
-    def load_internal_absorption_faceon(self):
+    def load_internal_absorptions_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        self.internal_absorption_faceon = Frame.from_file(self.internal_absorption_faceon_path)
+        self.internal_absorptions_faceon = Frame.from_file(self.internal_absorptions_faceon_path)
 
     # -----------------------------------------------------------------
 
-    def calculate_internal_absorption_faceon(self):
+    def calculate_internal_absorptions_faceon(self):
 
         """
         This function ...
@@ -537,10 +975,49 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Earth
-        self.get_earth_map()
+        self.get_map_earth()
 
         # Face-on
-        self.get_faceon_map()
+        self.get_map_faceon()
+
+        # Edge-on
+        self.get_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorptions_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_absorptions_earth + self.ionizing_absorptions_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorptions_earth_with_internal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_absorptions_earth + self.internal_absorptions_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorptions_earth_with_internal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_absorptions_earth + self.internal_absorptions_earth
 
     # -----------------------------------------------------------------
 
@@ -551,9 +1028,37 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        if self.has_map_earth: self.load_map_earth()
+
+        else: self.calculate_map_earth()
+
+    # -----------------------------------------------------------------
+
+    def calculate_map_earth(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Calculate
+        self.map_earth = self.unevolved_absorptions_earth_with_internal / self.total_absorptions_earth_with_internal
+
     # -----------------------------------------------------------------
 
     def get_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate
+        self.map_faceon = self.unevolved_absorptions_faceon_with_internal /
+
+    # -----------------------------------------------------------------
+
+    def get_edgeon_map(self):
 
         """
         This function ...
@@ -659,35 +1164,41 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # Write
-        self.write_total_absorption()
+        # Inform the user
+        log.info("Writing the total absorption maps ...")
 
-        # Write
+        # Earth
+        self.write_total_absorption_earth()
+
+        # Face-on
         self.write_total_absorption_faceon()
 
+        # Edge-on
+        self.write_total_absorption_edgeon()
+
     # -----------------------------------------------------------------
 
     @property
-    def total_absorption_path(self):
+    def total_absorption_earth_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.absorptions_path, "total.fits")
+        return fs.join(self.absorptions_path, "total_earth.fits")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_total_absorption(self):
+    def has_total_absorption_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.total_absorption_path)
+        return fs.is_file(self.total_absorption_earth_path)
 
     # -----------------------------------------------------------------
 
@@ -698,18 +1209,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        fs.remove_file(self.total_absorption_path)
+        fs.remove_file(self.total_absorption_earth_path)
 
     # -----------------------------------------------------------------
 
-    def write_total_absorption(self):
+    def write_total_absorption_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        self.total_absorption.saveto(self.total_absorption_path)
+        self.total_absorption.saveto(self.total_absorption_earth_path)
 
     # -----------------------------------------------------------------
 
@@ -760,6 +1271,15 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def write_total_absorption_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def write_young_absorptions(self):
 
         """
@@ -776,26 +1296,26 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def young_absorption_path(self):
+    def young_absorption_earth_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.absorptions_path, "young.fits")
+        return fs.join(self.absorptions_path, "young_earth.fits")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_young_absorption(self):
+    def has_young_absorption_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.young_absorption_path)
+        return fs.is_file(self.young_absorption_earth_path)
 
     # -----------------------------------------------------------------
 
@@ -806,7 +1326,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        fs.remove_file(self.young_absorption_path)
+        fs.remove_file(self.young_absorption_earth_path)
 
     # -----------------------------------------------------------------
 

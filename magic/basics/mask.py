@@ -652,25 +652,29 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    def open(self):
+    def open(self, structure, iterations=1):
 
         """
         This function ...
+        :param structure:
+        :param iterations:
         :return:
         """
 
-        pass
+        self._data = ndimage.binary_opening(self._data, structure, iterations)
 
     # -----------------------------------------------------------------
 
-    def close(self):
+    def close(self, structure, iterations=1):
 
         """
         This function ...
+        :param structure:
+        :param iterations:
         :return:
         """
 
-        pass
+        self._data = ndimage.binary_closing(self._data, structure, iterations)
 
     # -----------------------------------------------------------------
 

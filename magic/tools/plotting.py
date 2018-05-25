@@ -843,8 +843,9 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
     # String -> parse
     elif isinstance(interval, basestring):
 
+        print(interval)
         from ...core.tools import parsing
-        try: vmin, vmax = parsing.real_tuple(interval)
+        try: vmin, vmax = parsing.real_pair(interval)
         except ValueError: raise ValueError("Cannot interpret the interval")
 
         if soft_min: vmin = max(vmin/soft_min_scaling, normalize_min)
@@ -870,7 +871,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
              around_zero=False, symmetric=False, normalize_in=None, scale_parameter=None, show_axes=True,
              transparent=False, soft_min=False, soft_max=False, soft_min_scaling=1., soft_max_scaling=1.,
              region=None, regions=None, axes=None, xsize=7, ysize=7, interpolation="nearest", alpha=1, return_image=False,
-             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True):
+             return_normalization=False, aspect="equal", symmetric_method="mean", check_around_zero=True, background_color=None):
 
     """
     This function ...
@@ -943,6 +944,9 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     image = axes.imshow(data, origin="lower", interpolation=interpolation, vmin=vmin, vmax=vmax, norm=norm, cmap=cmap,
                 alpha=alpha, aspect=aspect, extent=extent)
 
+    # Set background color
+    if background_color is not None: axes.set_facecolor(background_color)
+
     # Add region
     if region is not None:
 
@@ -988,7 +992,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 # -----------------------------------------------------------------
 
 def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-             contours_color="white", path=None):
+             contours_color="white", path=None, background_color=None):
 
     """
     This function ...
@@ -1001,6 +1005,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     :param ncontours:
     :param contours_color:
     :param path:
+    :param background_color:
     :return:
     """
 
@@ -1010,13 +1015,13 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
         # Plot with contours
         plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
                             data_cmap=cmap, plot_data=True, nlevels=ncontours,
-                            single_colour=contours_color, path=path)
+                            single_colour=contours_color, path=path, background_color=background_color)
 
     # No contours
     else:
 
         # Plot frame
-        plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path)
+        plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path, background_color=background_color)
 
 # -----------------------------------------------------------------
 
@@ -1045,7 +1050,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
                   interval="pts", data_cmap="viridis", around_zero=False, symmetric=False, soft_min=False, soft_max=False,
                   soft_min_scaling=1., soft_max_scaling=1., interpolation="nearest", alpha=1,
                   return_image=False, return_normalization=False, aspect="equal", symmetric_method="mean",
-                  check_around_zero=True
+                  check_around_zero=True, background_color=None
                   ):
 
     """
@@ -1085,6 +1090,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param aspect:
     :param symmetric_method:
     :param check_around_zero:
+    :param background_color:
     :return:
     """
 
@@ -1127,6 +1133,9 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
 
     # Set to None
     else: vmin = vmax = norm = image = None
+
+    # Set background color
+    if background_color is not None: axes.set_facecolor(background_color)
 
     # Define X and Y labels
     x = np.arange(nxpix)

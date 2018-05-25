@@ -978,14 +978,6 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         # Make absolute map
         self.map_earth = self.emission_map_earth - self.absorption_map_earth
 
-        # Split up
-        #more_absorption = self.map_earth < 0
-        #more_emission = self.map_earth > 0
-
-        # Make relative
-        #self.map_earth[more_absorption] /= self.absorption_map_earth[more_absorption]
-        #self.map_earth[more_emission] /= self.emission_map_earth[more_emission]
-
         # Make relative
         self.map_earth /= self.emission_map_earth
 
@@ -1024,13 +1016,8 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         # Make absolute map
         self.map_faceon = self.emission_map_faceon - self.absorption_map_faceon
 
-        # Split up
-        more_absorption = self.map_faceon < 0
-        more_emission = self.map_faceon > 0
-
         # Make relative
-        self.map_faceon[more_absorption] /= self.absorption_map_faceon[more_absorption]
-        self.map_faceon[more_emission] /= self.emission_map_faceon[more_emission]
+        self.map_faceon /= self.emission_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -1067,13 +1054,8 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         # Make absolute map
         self.map_edgeon = self.emission_map_edgeon - self.absorption_map_edgeon
 
-        # Split up
-        more_absorption = self.map_edgeon < 0
-        more_emission = self.map_edgeon > 0
-
         # Make relative
-        self.map_edgeon[more_absorption] /= self.absorption_map_edgeon[more_absorption]
-        self.map_edgeon[more_emission] /=  self.emission_map_edgeon[more_emission]
+        self.map_edgeon /= self.emission_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1137,7 +1119,11 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         if self.has_scattered_wavelength_map_earth: self.scat_wavelengths_earth = Frame.from_file(self.scattered_wavelength_map_earth_path)
 
-        else: self.scat_wavelengths_earth = self.mean_scattered_wavelengths_earth
+        else:
+
+            self.scat_wavelengths_earth = self.mean_scattered_wavelengths_earth
+
+            nans = self.scat_wavelengths_earth.dilate_nans(radius=4, niterations=2)
 
     # -----------------------------------------------------------------
 
@@ -1230,7 +1216,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         if self.has_absorbed_wavelength_map_earth: self.abs_wavelengths_earth = Frame.from_file(self.absorbed_wavelength_map_earth_path)
 
-        else: self.abs_wavelengths_earth = self.mean_absorbed_wavelengths_earth
+        else:
+
+            self.abs_wavelengths_earth = self.mean_absorbed_wavelengths_earth
+
+            negatives = self.abs_wavelengths_earth.negatives.disk_dilated(radius=3)
+            negatives.fill_holes()
+            mask = negatives.largest(connectivity=4).inverse()
+            mask.disk_dilate(radius=3, niterations=2)
+            self.abs_wavelengths_earth.apply_mask(mask, fill=nan_value)
+            self.abs_wavelengths_earth.replace_negatives_by_nans()
+            #self.abs_wavelengths_earth.cutoff_greater(1)
+            self.abs_wavelengths_earth.replace_by_nans_where_greater_than(1)
 
     # -----------------------------------------------------------------
 
@@ -1323,7 +1320,11 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         if self.has_emitted_wavelength_map_earth: self.em_wavelengths_earth = Frame.from_file(self.emitted_wavelength_map_earth_path)
 
-        else: self.em_wavelengths_earth = self.mean_emitted_wavelengths_earth
+        else:
+
+            self.em_wavelengths_earth = self.mean_emitted_wavelengths_earth
+            self.em_wavelengths_earth.replace_by_nans_where_greater_than(200)
+            self.em_wavelengths_earth.replace_by_nans_where_smaller_than(50)
 
     # -----------------------------------------------------------------
 
@@ -2959,7 +2960,7 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
-        plot_map(self.scat_wavelengths_earth, self.scat_wavelengths_earth_plot_path)
+        plot_map(self.scat_wavelengths_earth, path=self.scat_wavelengths_earth_plot_path, interval=(0.7,1))
 
     # -----------------------------------------------------------------
 
@@ -3006,7 +3007,7 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
-        plot_map(self.scat_wavelengths_faceon, self.scat_wavelengths_faceon_plot_path)
+        plot_map(self.scat_wavelengths_faceon, path=self.scat_wavelengths_faceon_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3053,7 +3054,7 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
-        plot_map(self.scat_wavelengths_edgeon, self.scat_wavelengths_edgeon_plot_path)
+        plot_map(self.scat_wavelengths_edgeon, path=self.scat_wavelengths_edgeon_plot_path, interval=(0.7,1), cmap="inferno_r")
 
     # -----------------------------------------------------------------
 
@@ -3118,7 +3119,7 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
-        plot_map(self.abs_wavelengths_earth, path=self.abs_wavelengths_earth_plot_path)
+        plot_map(self.abs_wavelengths_earth, path=self.abs_wavelengths_earth_plot_path, interval=(0.1,1), cmap="inferno_r")
 
     # -----------------------------------------------------------------
 
@@ -3277,7 +3278,7 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
-        plot_map(self.em_wavelengths_earth, path=self.em_wavelengths_earth_plot_path)
+        plot_map(self.em_wavelengths_earth, path=self.em_wavelengths_earth_plot_path, interval=(80,150), cmap="inferno_r", background_color="black")
 
     # -----------------------------------------------------------------
 
