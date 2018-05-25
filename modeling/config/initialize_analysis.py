@@ -61,7 +61,8 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 # -----------------------------------------------------------------
 
 # Vertical extent of the total model
-definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 25.)
+definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections", 1.7)
 
 # -----------------------------------------------------------------
 

@@ -1180,6 +1180,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def make_absolute(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._data = np.abs(self._data)
+
+    # -----------------------------------------------------------------
+
     @property
     def nans(self):
 
@@ -4245,6 +4256,31 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def dilate_nans(self, radius=5, niterations=1):
+
+        """
+        This function ...
+        :param radius:
+        :param niterations:
+        :return:
+        """
+
+        # Get original nans
+        nans = self.nans
+        original_nans = nans.copy()
+
+        # Dilate
+        #nans.dilate_rc(rank, connectivity=connectivity, iterations=iterations)
+        nans.disk_dilate(radius=radius, niterations=niterations)
+
+        # Apply
+        self.apply_mask_nans(nans)
+
+        # Return the original nans
+        return original_nans
+
+    # -----------------------------------------------------------------
+
     def downsampled(self, factor, order=3, dilate_nans=True, dilate_infs=True, convert=None):
 
         """
@@ -5083,6 +5119,20 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace_positives(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        positives = self.positives
+        self._data[positives] = value
+        return positives
+
+    # -----------------------------------------------------------------
+
     def replace_negatives_by_zeroes(self):
 
         """
@@ -5091,6 +5141,17 @@ class Frame(NDDataArray):
         """
 
         return self.replace_negatives(zero_value)
+
+    # -----------------------------------------------------------------
+
+    def replace_positives_by_zeroes(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.replace_positives(zero_value)
 
     # -----------------------------------------------------------------
 
@@ -5697,5 +5758,46 @@ def rotate_wcs(wcs, angle):
 
     if hasattr(wcs.wcs, 'cd'): wcs.wcs.cd = np.dot(create_rotate_matrix(angle.to("deg").value), wcs.wcs.cd)
     else: wcs.wcs.pc = np.dot(create_rotate_matrix(angle.to("deg").value), wcs.wcs.pc)
+
+# -----------------------------------------------------------------
+
+def regularize_frame(frame, absolute=False, dilate_nans=False, dilation_radius=5, dilation_niterations=1,
+                     no_nans=False, no_infs=False, no_negatives=False, no_positives=False, cutoff_above=None,
+                     cutoff_below=None, replace_nans=zero_value, replace_infs=zero_value):
+
+    """
+    This function ...
+    :param frame:
+    :param absolute:
+    :param dilate_nans:
+    :param dilation_radius:
+    :param dilation_niterations:
+    :param no_nans:
+    :param no_infs:
+    :param no_negatives:
+    :param no_positives:
+    :param cutoff_above:
+    :param cutoff_below:
+    :param replace_nans:
+    :param replace_infs:
+    :return:
+    """
+
+    # Absolute?
+    if absolute: frame.make_absolute()
+
+    # Dilate
+    if dilate_nans:
+        nans = frame.dilate_nans(radius=dilation_radius, niterations=dilation_niterations)
+        # plotting.plot_mask(nans, title="previous nans")
+        # plotting.plot_mask(frame.nans, title="new nans")
+
+    # Remove nans or infs
+    if no_infs: frame.replace_infs(replace_infs) #frame.replace_infs_by_zeroes()
+    if no_nans: frame.replace_nans(replace_nans) #frame.replace_nans_by_zeroes()
+    if no_negatives: frame.replace_negatives_by_zeroes()
+    if no_positives: frame.replace_positives_by_zeroes()
+    if cutoff_above is not None: frame.cutoff_greater(cutoff_above)
+    if cutoff_below is not None: frame.cutoff_smaller(cutoff_below)
 
 # -----------------------------------------------------------------

@@ -987,6 +987,39 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
 # -----------------------------------------------------------------
 
+def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
+             contours_color="white", path=None):
+
+    """
+    This function ...
+    :param frame:
+    :param interval:
+    :param scale:
+    :param colorbar:
+    :param cmap:
+    :param contours:
+    :param ncontours:
+    :param contours_color:
+    :param path:
+    :return:
+    """
+
+    # With contours
+    if contours:
+
+        # Plot with contours
+        plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
+                            data_cmap=cmap, plot_data=True, nlevels=ncontours,
+                            single_colour=contours_color, path=path)
+
+    # No contours
+    else:
+
+        # Plot frame
+        plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path)
+
+# -----------------------------------------------------------------
+
 def plot_frame_contours(frame, **kwargs):
 
     """
@@ -1006,7 +1039,7 @@ def plot_frame_contours(frame, **kwargs):
 
 def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_width=1, font_size=16, title=None,
                   format=None, cmap="jet", single_colour=None, labels=False, show_axes=True, transparent=False,
-                  plot_data=False, axes=None, xsize=7, ysize=7, colorbar=False,
+                  plot_data=False, axes=None, xsize=7, ysize=7, colorbar=False, scale="linear",
 
                   # For plotting data
                   interval="pts", data_cmap="viridis", around_zero=False, symmetric=False, soft_min=False, soft_max=False,
@@ -1036,6 +1069,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
     :param xsize:
     :param ysize:
     :param colorbar:
+    :param scale:
     :param interval:
     :param data_cmap:
     :param around_zero:
@@ -1071,20 +1105,20 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
         axes = plt.gca()
     else: only_axes = True
 
+    # Get interval
+    vmin, vmax = get_vmin_vmax(data, interval=interval, around_zero=around_zero, symmetric=symmetric,
+                               soft_min=soft_min, soft_max=soft_max, soft_min_scaling=soft_min_scaling,
+                               soft_max_scaling=soft_max_scaling, symmetric_method=symmetric_method,
+                               check_around_zero=check_around_zero)
+
+    # Get the normalization
+    norm = get_normalization(scale, vmin, vmax, data=data)
+
     # Also plot the image data underneath
     if plot_data:
 
         # Set cmap
         if data_cmap is None: data_cmap = cmap
-
-        # Get interval
-        vmin, vmax = get_vmin_vmax(data, interval=interval, around_zero=around_zero, symmetric=symmetric,
-                                   soft_min=soft_min, soft_max=soft_max, soft_min_scaling=soft_min_scaling,
-                                   soft_max_scaling=soft_max_scaling, symmetric_method=symmetric_method,
-                                   check_around_zero=check_around_zero)
-
-        # Get the normalization
-        norm = get_normalization("linear", vmin, vmax, data=data)
 
         # Show the data
         extent = None
@@ -1108,7 +1142,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
         colors = single_colour
         cmap = None
     else: colors = None
-    cs = axes.contour(x, y, data, nlevels, colors=colors, cmap=cmap, linewidths=line_width)
+    cs = axes.contour(x, y, data, nlevels, colors=colors, cmap=cmap, linewidths=line_width, norm=norm)
     if labels: plt.clabel(cs, fontsize=font_size)
 
     # Axes labels
@@ -1136,7 +1170,7 @@ def plot_contours(box, nlevels=20, path=None, x_label="x", y_label="y", line_wid
         if title is not None: plt.title(title)
 
         # Add colorbar?
-        if colorbar: plt.colorbar(image)
+        if colorbar and image is not None: plt.colorbar(image)
 
         # Show or save as file
         if path is None: plt.show()

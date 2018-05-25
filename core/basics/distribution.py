@@ -103,13 +103,25 @@ class Distribution(Curve):
         # Get the finite values
         values = data[finite]
 
+        # Get min or max value
+        min_value = kwargs.pop("min_value", None)
+        max_value = kwargs.pop("max_value", None)
+        if min_value is not None and max_value is not None: mask = (values >= min_value) * (values <= max_value)
+        elif min_value is not None: mask = values >= min_value
+        elif max_value is not None: mask = values <= max_value
+        else: mask = None
+
+        # Mask
+        if mask is not None: values = values[mask]
+
         # Sigma clip
         sigma_clip = kwargs.pop("sigma_clip", False)
         if sigma_clip:
+            from .log import log
             noriginal = len(values)
             sigma_level = kwargs.pop("sigma_level", 3.)
             values, nmasked = numbers.sigma_clip(values, sigma_level=sigma_level, return_nmasked=True)
-            print(str(nmasked) + " masked from " + str(noriginal))
+            log.debug("Masked " + str(nmasked) + " out of  " + str(noriginal) + " values by sigma-clipping")
 
         # Create the distribution
         return cls.from_values(name, values, **kwargs)

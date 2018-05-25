@@ -186,6 +186,8 @@ def is_integer(value, absolute=True, rtol=1.e-5, atol=1.e-8):
     :return:
     """
 
+    if isinstance(value, int): return True
+
     #print(value, int(round(value)), int(value))
     #print(value - round(value))
 
@@ -1204,10 +1206,27 @@ def weighed_arithmetic_mean_numpy(data, weights=None):
     if weights is None: return arithmetic_mean_numpy(data)
 
     import numpy as np
+
+    # Get the number of dimensions
+    ndim_data = len(data.shape)
+    ndim_weights = len(weights.shape)
+
     #weights = np.array(weights).flatten() / float(sum(weights))
     #return np.dot(np.array(data), weights)
-    norm_weights = weights / float(np.sum(weights))
+
+    if ndim_weights > 1:
+        divisors = np.sum(weights, axis=-1)
+        #norm_weights = weights /
+        norm_weights = np.moveaxis(weights, -1, 0) # move last to first axis
+        # Loop over
+        for index in range(norm_weights.shape[0]):
+            norm_weights[index] /= divisors
+        norm_weights = np.moveaxis(weights, 0, -1)
+
+    else: norm_weights = weights / float(np.sum(weights))
+
     return np.dot(data, norm_weights)
+    #return np.dot(norm_weights, data)
 
 # -----------------------------------------------------------------
 
@@ -1485,6 +1504,10 @@ def nearest_odd_integer(number):
     :param number:
     :return:
     """
+
+    if is_integer(number):
+        if is_odd(number): return number
+        else: return number + 1
 
     new = nearest_integer(number)
     if is_odd(new): return new

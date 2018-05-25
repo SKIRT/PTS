@@ -36,7 +36,7 @@ from ...core.tools.parallelization import ParallelTarget
 from ...core.tools import types
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr, get_list_string_max_nvalues
-from ...core.tools import sequences
+from ...core.tools import sequences, numbers
 
 # -----------------------------------------------------------------
 
@@ -588,6 +588,27 @@ class DataCube(Image):
 
         # Return the frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    def mean_wavelengths(self, unit="micron"):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        # Get array of wavelengths
+        wavelengths = self.wavelengths(asarray=True, unit=unit)
+        #wavelengths.reshape((1, self.nframes))
+        #print(wavelengths.shape)
+
+        # Calculate data of mean wavelength per pixel
+        data = numbers.weighed_arithmetic_mean_numpy(wavelengths, weights=self.asarray(axis=2))
+
+        # Return the frame
+        return Frame(data, unit=unit, wcs=self.wcs, distance=self.distance, fwhm=self.fwhm)
 
     # -----------------------------------------------------------------
 

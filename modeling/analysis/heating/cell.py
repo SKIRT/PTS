@@ -3492,6 +3492,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
 
         # Plot
+        plotting.plot_map(self.map_interpolated, path=self.map_plot_path, interval=(0.,1.), )
+
+        # Plot
         plotting.plot_frame_contours(self.map_interpolated, plot_data=True, single_colour="white",
                                      path=self.map_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
 

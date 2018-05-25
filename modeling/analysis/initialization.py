@@ -44,7 +44,9 @@ simple_earth_name = "earth_simple"
 sed_earth_name = "earth_sed"
 full_sed_earth_name = "earth_full_sed"
 simple_faceon_name = "faceon_simple"
+full_faceon_name = "faceon_full"
 simple_edgeon_name = "edgeon_simple"
+full_edgeon_name = "edgeon_full"
 
 # -----------------------------------------------------------------
 
@@ -364,7 +366,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Creating the projections ...")
 
         # Create projections
-        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True)
+        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True, radial_factor=self.config.radial_factor)
 
         # Set the deprojection name in the analysis info
         self.analysis_run_info.reference_deprojection = deprojection_name
@@ -381,6 +383,27 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Inform the user
         log.info("Creating the instruments ...")
 
+        # Earth
+        self.create_earth_instruments()
+
+        # Faceon
+        self.create_faceon_instruments()
+
+        # Edgeon
+        self.create_edgeon_instruments()
+
+    # -----------------------------------------------------------------
+
+    def create_earth_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the earth instruments ...")
+
         # Create full earth instrument
         self.instruments[full_earth_name] = FullInstrument.from_projection(self.earth_projection, **self.full_instrument_properties)
 
@@ -393,11 +416,41 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         # Create full SED earth instrument
         self.instruments[full_sed_earth_name] = FullSEDInstrument.from_projection(self.earth_projection)
 
+    # -----------------------------------------------------------------
+
+    def create_faceon_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the face-on instruments ...")
+
         # Create simple faceon instrument
         self.instruments[simple_faceon_name] = SimpleInstrument.from_projection(self.faceon_projection)
 
+        # Full
+        self.instruments[full_faceon_name] = FullInstrument.from_projection(self.faceon_projection, **self.full_instrument_properties)
+
+    # -----------------------------------------------------------------
+
+    def create_edgeon_instruments(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the edge-on instruments ...")
+
         # Create simple edgeon instrument
         self.instruments[simple_edgeon_name] = SimpleInstrument.from_projection(self.edgeon_projection)
+
+        # Full
+        self.instruments[full_edgeon_name] = FullInstrument.from_projection(self.edgeon_projection, **self.full_instrument_properties)
 
     # -----------------------------------------------------------------
 
@@ -790,11 +843,13 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         self.instruments[sed_earth_name].saveto(self.analysis_run.sed_earth_instrument_path)
         self.instruments[full_sed_earth_name].saveto(self.analysis_run.full_sed_earth_instrument_path)
 
-        # Write the faceon instrument
+        # Write the faceon instruments
         self.instruments[simple_faceon_name].saveto(self.analysis_run.simple_faceon_instrument_path)
+        self.instruments[full_faceon_name].saveto(self.analysis_run.full_faceon_instrument_path)
 
-        # Write the edgeon instrument
+        # Write the edgeon instruments
         self.instruments[simple_edgeon_name].saveto(self.analysis_run.simple_edgeon_instrument_path)
+        self.instruments[full_edgeon_name].saveto(self.analysis_run.full_edgeon_instrument_path)
 
     # -----------------------------------------------------------------
 

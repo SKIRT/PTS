@@ -17,8 +17,8 @@ from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty
-from ....magic.core.frame import Frame
-from ....magic.tools.plotting import plot_frame_contours, plot_frame
+from ....magic.core.frame import Frame, regularize_frame, nan_value
+from ....magic.tools.plotting import plot_frame_contours, plot_frame, plot_map
 
 # -----------------------------------------------------------------
 
@@ -59,6 +59,17 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         self.map_faceon = None
         self.map_edgeon = None
 
+        # The maps of the mean wavelengths
+        self.scat_wavelengths_earth = None
+        self.scat_wavelengths_faceon = None
+        self.scat_wavelengths_edgeon = None
+        self.abs_wavelengths_earth = None
+        self.abs_wavelengths_faceon = None
+        self.abs_wavelengths_edgeon = None
+        self.em_wavelengths_earth = None
+        self.em_wavelengths_faceon = None
+        self.em_wavelengths_edgeon = None
+
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -77,6 +88,9 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # Get the maps of the energy balance
         self.get_maps()
+
+        # Get the wavelength maps
+        self.get_wavelength_maps()
 
         # Write
         self.write()
@@ -174,6 +188,42 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         return self.total_simulations.has_edgeon_observed_cube_orientation and self.total_simulations.has_other_observed_cube_contributions_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_cube_scattered(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.observed_cube_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_cube_scattered_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.faceon_observed_cube_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_cube_scattered_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_simulations.edgeon_observed_cube_scattered
 
     # -----------------------------------------------------------------
 
@@ -322,6 +372,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def intrinsic_stellar_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_transparent
+
+    # -----------------------------------------------------------------
+
+    @property
     def intrinsic_stellar_frame(self):
 
         """
@@ -366,6 +428,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         return self.observed_stellar_cube.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_stellar_cube_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_transparent_faceon
 
     # -----------------------------------------------------------------
 
@@ -418,6 +492,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def intrinsic_stellar_cube_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_transparent_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def intrinsic_stellar_frame_edgeon(self):
 
         """
@@ -466,6 +552,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def absorbed_stellar_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_stellar_cube - self.observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def absorbed_stellar_frame(self):
 
         """
@@ -478,6 +576,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def absorbed_stellar_cube_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_stellar_cube_faceon - self.observed_stellar_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def absorbed_stellar_frame_faceon(self):
 
         """
@@ -486,6 +596,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         return self.intrinsic_stellar_frame_faceon - self.observed_stellar_frame_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absorbed_stellar_cube_edgeon(self):
+
+        """
+        This fnuction ...
+        :return:
+        """
+
+        return self.intrinsic_stellar_cube_edgeon - self.observed_stellar_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -534,6 +656,18 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         """
 
         return fs.create_directory_in(self.projected_energy_path, "absorptions")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.projected_energy_path, "wavelengths")
 
     # -----------------------------------------------------------------
 
@@ -709,7 +843,11 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Get
         self.absorption_map_earth = self.absorbed_stellar_frame
+
+        # Remove negatives
+        self.absorption_map_earth.replace_negatives_by_zeroes()
 
     # -----------------------------------------------------------------
 
@@ -743,7 +881,11 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Get
         self.absorption_map_faceon = self.absorbed_stellar_frame_faceon
+
+        # Remove negatives
+        self.absorption_map_faceon.replace_negatives_by_zeroes()
 
     # -----------------------------------------------------------------
 
@@ -777,7 +919,11 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Get
         self.absorption_map_edgeon = self.absorbed_stellar_frame_edgeon
+
+        # Remove negatives
+        self.absorption_map_edgeon.replace_negatives_by_zeroes()
 
     # -----------------------------------------------------------------
 
@@ -840,6 +986,7 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         #self.map_earth[more_absorption] /= self.absorption_map_earth[more_absorption]
         #self.map_earth[more_emission] /= self.emission_map_earth[more_emission]
 
+        # Make relative
         self.map_earth /= self.emission_map_earth
 
     # -----------------------------------------------------------------
@@ -930,6 +1077,306 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the maps of the scattered and absorbed wavelengths ...")
+
+        # Scattered
+        self.get_scattered_wavelength_maps()
+
+        # Absorbed
+        self.get_absorbed_wavelength_maps()
+
+        # Emitted (by dust)
+        self.get_emitted_wavelength_maps()
+
+    # -----------------------------------------------------------------
+
+    def get_scattered_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_scattered_wavelength_map_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_scattered_wavelength_map_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_scattered_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_scattered_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_scattered.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_scattered_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_scattered_wavelength_map_earth: self.scat_wavelengths_earth = Frame.from_file(self.scattered_wavelength_map_earth_path)
+
+        else: self.scat_wavelengths_earth = self.mean_scattered_wavelengths_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_scattered_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_scattered_faceon.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_scattered_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_scattered_wavelength_map_faceon: self.scat_wavelengths_faceon = Frame.from_file(self.scattered_wavelength_map_faceon_path)
+
+        else: self.scat_wavelengths_faceon = self.mean_scattered_wavelengths_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_scattered_wavelengths_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_scattered_edgeon.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_scattered_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_scattered_wavelength_map_edgeon: self.scat_wavelengths_edgeon = Frame.from_file(self.scattered_wavelength_map_edgeon_path)
+
+        else: self.scat_wavelengths_edgeon = self.mean_scattered_wavelengths_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_absorbed_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_absorbed_wavelength_map_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_absorbed_wavelength_map_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_absorbed_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_absorbed_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.absorbed_stellar_cube.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_absorbed_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_absorbed_wavelength_map_earth: self.abs_wavelengths_earth = Frame.from_file(self.absorbed_wavelength_map_earth_path)
+
+        else: self.abs_wavelengths_earth = self.mean_absorbed_wavelengths_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_absorbed_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.absorbed_stellar_cube_faceon.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_absorbed_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_absorbed_wavelength_map_faceon: self.abs_wavelengths_faceon = Frame.from_file(self.absorbed_wavelength_map_faceon_path)
+
+        else: self.abs_wavelengths_faceon = self.mean_absorbed_wavelengths_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_absorbed_wavelengths_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.absorbed_stellar_cube_edgeon.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_absorbed_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_absorbed_wavelength_map_edgeon: self.abs_wavelengths_edgeon = Frame.from_file(self.absorbed_wavelength_map_edgeon_path)
+
+        else: self.abs_wavelengths_edgeon = self.mean_absorbed_wavelengths_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_emitted_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_emitted_wavelength_map_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_emitted_wavelength_map_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_emitted_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_emitted_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_dust.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_emitted_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_emitted_wavelength_map_earth: self.em_wavelengths_earth = Frame.from_file(self.emitted_wavelength_map_earth_path)
+
+        else: self.em_wavelengths_earth = self.mean_emitted_wavelengths_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_emitted_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_dust_faceon.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_emitted_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_emitted_wavelength_map_faceon: self.em_wavelengths_faceon = Frame.from_file(self.emitted_wavelength_map_faceon_path)
+
+        else: self.em_wavelengths_faceon = self.mean_emitted_wavelengths_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_emitted_wavelengths_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.observed_cube_dust_edgeon.mean_wavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_emitted_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_emitted_wavelength_map_edgeon: self.em_wavelengths_edgeon = Frame.from_file(self.emitted_wavelength_map_edgeon_path)
+
+        else: self.em_wavelengths_edgeon = self.mean_emitted_wavelengths_edgeon
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -948,6 +1395,9 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # Maps
         self.write_maps()
+
+        # Wavelength maps
+        self.write_wavelength_maps()
 
     # -----------------------------------------------------------------
 
@@ -1569,6 +2019,624 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def write_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Scattered radiation
+        self.write_scattered_wavelength_maps()
+
+        # Absorbed radiation
+        self.write_absorbed_wavelength_maps()
+
+        # Emitted dust radiation
+        self.write_emitted_wavelength_maps()
+
+    # -----------------------------------------------------------------
+
+    def write_scattered_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_scat_wavelengths_earth: self.write_scattered_wavelength_map_earth()
+
+        # Face-on
+        if self.do_write_scat_wavelengths_faceon: self.write_scattered_wavelength_map_faceon()
+
+        # Edge-on
+        if self.do_write_scat_wavelengths_edgeon: self.write_scattered_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_scat_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_scattered_wavelength_map_earth and self.scat_wavelengths_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scattered_wavelength_map_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "scattered_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.scattered_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_scattered_wavelength_map_earth(self):
+
+        """
+        Thisfnuction ...
+        :return:
+        """
+
+        fs.remove_file(self.scattered_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_scattered_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the mean scattered wavelength from the earth projection ...")
+
+        # Save
+        self.scat_wavelengths_earth.saveto(self.scattered_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_scat_wavelengths_faceon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return not self.has_scattered_wavelength_map_faceon and self.scat_wavelengths_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scattered_wavelength_map_faceon_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "scattered_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.scattered_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_scattered_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.scattered_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_scattered_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the mean scattered wavelength from the faceon projection ...")
+
+        # Save
+        self.scat_wavelengths_faceon.saveto(self.scattered_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_scat_wavelengths_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_scattered_wavelength_map_edgeon and self.scat_wavelengths_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scattered_wavelength_map_edgeon_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "scattered_edgeon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_wavelength_map_edgeon(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.is_file(self.scattered_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_scattered_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.scattered_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_scattered_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the mean scattered wavelength from the edgeon projection ...")
+
+        # Save
+        self.scat_wavelengths_edgeon.saveto(self.scattered_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_absorbed_wavelength_maps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_abs_wavelengths_earth: self.write_absorbed_wavelength_map_earth()
+
+        # Face-on
+        if self.do_write_abs_wavelengths_faceon: self.write_absorbed_wavelength_map_faceon()
+
+        # Edge-on
+        if self.do_write_abs_wavelengths_edgeon: self.write_absorbed_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_abs_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_absorbed_wavelength_map_earth and self.abs_wavelengths_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorbed_wavelength_map_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "absorbed_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorbed_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.absorbed_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_absorbed_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.absorbed_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_absorbed_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the mean absorbed wavelength from the earth projection ...")
+
+        # Save
+        self.abs_wavelengths_earth.saveto(self.absorbed_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_abs_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_absorbed_wavelength_map_faceon and self.abs_wavelengths_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorbed_wavelength_map_faceon_path(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "absorbed_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorbed_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.absorbed_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_absorbed_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.absorbed_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_absorbed_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the mean absorbed wavelength from the faceon projection ...")
+
+        # Save
+        self.abs_wavelengths_faceon.saveto(self.absorbed_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_abs_wavelengths_edgeon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return not self.has_absorbed_wavelength_map_edgeon and self.abs_wavelengths_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorbed_wavelength_map_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "absorbed_edgeon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorbed_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.absorbed_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_absorbed_wavelength_map_edgeon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        fs.remove_file(self.absorbed_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_absorbed_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of the mean absorbed wavelength from the edgeon projection ...")
+
+        # Save
+        self.abs_wavelengths_edgeon.saveto(self.absorbed_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_emitted_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_em_wavelengths_earth: self.write_emitted_wavelength_map_earth()
+
+        # Face-on
+        if self.do_write_em_wavelengths_faceon: self.write_emitted_wavelength_map_faceon()
+
+        # Edge-on
+        if self.do_write_em_wavelengths_edgeon: self.write_emitted_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_em_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_emitted_wavelength_map_earth and self.em_wavelengths_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def emitted_wavelength_map_earth_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "emitted_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_emitted_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.emitted_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_emitted_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.emitted_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_emitted_wavelength_map_earth(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        self.em_wavelengths_earth.saveto(self.emitted_wavelength_map_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_em_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_emitted_wavelength_map_faceon and self.em_wavelengths_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def emitted_wavelength_map_faceon_path(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "emitted_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_emitted_wavelength_map_faceon(self):
+
+        """
+        Thsi function ...
+        :return:
+        """
+
+        return fs.is_file(self.emitted_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_emitted_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.emitted_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_emitted_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.em_wavelengths_faceon.saveto(self.emitted_wavelength_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_em_wavelengths_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_emitted_wavelength_map_edgeon and self.em_wavelengths_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def emitted_wavelength_map_edgeon_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "emitted_edgeon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_emitted_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.emitted_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_emitted_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.emitted_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_emitted_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.em_wavelengths_edgeon.saveto(self.emitted_wavelength_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -1578,6 +2646,21 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Plot the maps
+        self.plot_maps()
+
+        # Plot the wavelength maps
+        self.plot_wavelength_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Earth
         if self.do_plot_map_earth: self.plot_map_earth()
@@ -1650,7 +2733,21 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         # Plot
         #plot_frame_contours(self.map_earth, nlevels=5, path=self.map_earth_plot_path, plot_data=True, interval=[-1,1], data_cmap="RdBu")
         #plot_frame(self.map_earth, path=self.map_earth_plot_path, interval=(-1,1), cmap="RdBu", colorbar=True, scale="linear")
-        plot_frame(self.map_earth, path=self.map_earth_plot_path, interval=(-1.,1.), cmap="RdBu", colorbar=True, scale="linear")
+        #plot_frame(self.map_earth, path=self.map_earth_plot_path, interval=(-1.,1.), cmap="RdBu", colorbar=True, scale="linear")
+
+        # Regularize
+        #regularize_frame(self.map_earth, dilate_nans=True, dilation_radius=4, dilation_niterations=5, cutoff_above=2,
+        #                 cutoff_below=-2, no_infs=True, replace_infs=nan_value)
+
+        regularize_frame(self.map_earth, dilate_nans=True, dilation_radius=4, dilation_niterations=4, cutoff_above=1,
+                        cutoff_below=0, no_infs=True, replace_infs=nan_value)
+
+        # Plot
+        #plot_frame_contours(self.map_earth, interval=(-2,2), data_cmap="RdBu", colorbar=True, nlevels=5, path=self.map_earth_plot_path, plot_data=True, single_colour="green")
+
+        # Plot
+        #plot_map(self.map_earth, interval=(-2,2), cmap="RdBu", path=self.map_earth_plot_path)
+        plot_map(self.map_earth, interval=(0,1), path=self.map_earth_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -1777,5 +2874,503 @@ class ProjectedEnergyAnalyser(AnalysisComponent):
         # Plot
         #plot_frame_contours(self.map_edgeon, nlevels=5, path=self.map_edgeon_plot_path, plot_data=True, interval=[-1, 1], data_cmap="RdBu")
         plot_frame(self.map_edgeon, path=self.map_edgeon_plot_path, interval=[-1, 1], cmap="RdBu")
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the wavelength maps ...")
+
+        # Scattered radiation
+        self.plot_scattered_wavelength_maps()
+
+        # Absorbed radiation
+        self.plot_absorbed_wavelength_maps()
+
+        # Emitted dust radiation
+        self.plot_emitted_wavelength_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_scattered_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_scat_wavelengths_earth: self.plot_scattered_wavelength_map_earth()
+
+        # Faceon
+        if self.do_plot_scat_wavelengths_faceon: self.plot_scattered_wavelength_map_faceon()
+
+        # Edgeon
+        if self.do_plot_scat_wavelengths_edgeon: self.plot_scattered_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_scat_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_earth and not self.has_scat_wavelengths_earth_plot and self.scat_wavelengths_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scat_wavelengths_earth_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "scattered_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scat_wavelengths_earth_plot(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.scat_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_scattered_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.scat_wavelengths_earth, self.scat_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_scat_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_faceon and not self.has_scat_wavelengths_faceon_plot and self.scat_wavelengths_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scat_wavelengths_faceon_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "scattered_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scat_wavelengths_faceon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.scat_wavelengths_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_scattered_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.scat_wavelengths_faceon, self.scat_wavelengths_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_scat_wavelengths_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_edgeon and not self.has_scat_wavelengths_edgeon_plot and self.scat_wavelengths_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scat_wavelengths_edgeon_plot_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "scattered_edgeon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scat_wavelengths_edgeon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.scat_wavelengths_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_scattered_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.scat_wavelengths_edgeon, self.scat_wavelengths_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorbed_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_abs_wavelengths_earth: self.plot_absorbed_wavelength_map_earth()
+
+        # Faceon
+        if self.do_plot_abs_wavelengths_faceon: self.plot_absorbed_wavelength_map_faceon()
+
+        # Edgeon
+        if self.do_plot_abs_wavelengths_edgeon: self.plot_absorbed_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_abs_wavelengths_earth(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.do_earth and not self.has_abs_wavelengths_earth_plot and self.abs_wavelengths_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_wavelengths_earth_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "absorbed_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_abs_wavelengths_earth_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.abs_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorbed_wavelength_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.abs_wavelengths_earth, path=self.abs_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_abs_wavelengths_faceon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.do_faceon and not self.has_abs_wavelengths_faceon_plot and self.abs_wavelengths_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_wavelengths_faceon_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "absorbed_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_abs_wavelengths_faceon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.abs_wavelengths_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorbed_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.abs_wavelengths_faceon, path=self.abs_wavelengths_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_abs_wavelengths_edgeon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.do_edgeon and not self.has_abs_wavelengths_edgeon_plot and self.abs_wavelengths_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_wavelengths_edgeon_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "absorbed_edgeon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_abs_wavelengths_edgeon_plot(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.abs_wavelengths_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorbed_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.abs_wavelengths_edgeon, path=self.abs_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_emitted_wavelength_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_em_wavelengths_earth: self.plot_emitted_wavelength_map_earth()
+
+        # Faceon
+        if self.do_plot_em_wavelengths_faceon: self.plot_emitted_wavelength_map_faceon()
+
+        # Edgeon
+        if self.do_plot_em_wavelengths_edgeon: self.plot_emitted_wavelength_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_em_wavelengths_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_earth and not self.has_em_wavelengths_earth_plot and self.em_wavelengths_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def em_wavelengths_earth_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "emitted_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_em_wavelengths_earth_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.em_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_emitted_wavelength_map_earth(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        plot_map(self.em_wavelengths_earth, path=self.em_wavelengths_earth_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_em_wavelengths_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.do_faceon and not self.has_em_wavelengths_faceon_plot and self.em_wavelengths_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def em_wavelengths_faceon_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "emitted_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_em_wavelengths_faceon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.em_wavelengths_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_emitted_wavelength_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.em_wavelengths_faceon, path=self.em_wavelengths_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_em_wavelengths_edgeon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.do_edgeon and not self.has_em_wavelengths_edgeon_plot and self.em_wavelengths_edgeon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def em_wavelengths_edgeon_plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.wavelengths_path, "emitted_edgeon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_em_wavelengths_edgeon_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.em_wavelengths_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_emitted_wavelength_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.em_wavelengths_edgeon, path=self.em_wavelengths_edgeon_plot_path)
 
 # -----------------------------------------------------------------

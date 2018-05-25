@@ -31,6 +31,7 @@ from ....magic.basics.vector import PixelShape
 from ...basics.projection import get_center, get_physical_center
 from ....magic.basics.stretch import PhysicalExtent
 from ....core.tools.stringify import tostr
+from ....core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -398,7 +399,7 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
 
 def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights,
                                           return_deprojection_name=False, scale_heights_reference=None,
-                                          reference_deprojection_name=None):
+                                          reference_deprojection_name=None, radial_factor=1):
 
     """
     This function ...
@@ -409,6 +410,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :param return_deprojection_name:
     :param scale_heights_reference:
     :param reference_deprojection_name:
+    :param radial_factor:
     :return:
     """
 
@@ -423,7 +425,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     earth_projection = create_projection(reference_deprojection, galaxy_distance, azimuth)
 
     # Create the face-on projection system
-    faceon_projection = create_faceon_projection(reference_deprojection)
+    faceon_projection = create_faceon_projection(reference_deprojection, radial_factor=radial_factor)
 
     # Determine the reference scale height for determining the physical z scale
     if scale_heights_reference is not None:
@@ -435,7 +437,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     z_extent = 2. * scale_height * scale_heights
 
     # Create the edge-on projection system
-    edgeon_projection = create_edgeon_projection(reference_deprojection, z_extent)
+    edgeon_projection = create_edgeon_projection(reference_deprojection, z_extent, radial_factor=radial_factor)
 
     # Return the projections
     if return_deprojection_name: return earth_projection, faceon_projection, edgeon_projection, deprojection_name
@@ -472,11 +474,12 @@ def create_projection(deprojection, distance, azimuth):
 
 # -----------------------------------------------------------------
 
-def create_faceon_projection(deprojection):
+def create_faceon_projection(deprojection, radial_factor=1):
 
     """
     This function ...
     :param deprojection:
+    :param radial_factor:
     :return:
     """
 
@@ -488,8 +491,11 @@ def create_faceon_projection(deprojection):
     radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
 
     # Determine number of pixels
-    npixels = int(round(radial_extent / physical_pixelscale))
+    npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
     npixels = PixelShape.square(npixels)
+
+    # Make sure that the number of pixels is odd
+    npixels = numbers.nearest_odd_integer(npixels)
 
     # Get the center pixel
     center = get_center(npixels)
@@ -511,12 +517,13 @@ def create_faceon_projection(deprojection):
 
 # -----------------------------------------------------------------
 
-def create_edgeon_projection(deprojection, z_extent):
+def create_edgeon_projection(deprojection, z_extent, radial_factor=1):
 
     """
     Thisf unction ...
     :param deprojection:
     :param z_extent:
+    :param radial_factor:
     :return:
     """
 
@@ -528,8 +535,12 @@ def create_edgeon_projection(deprojection, z_extent):
     radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
 
     # Determine number of pixels
-    nx = int(round(radial_extent / physical_pixelscale))
+    nx = int(round(radial_extent / physical_pixelscale)) * radial_factor
     nz = int(round(z_extent / physical_pixelscale))
+
+    # Make sure that the number of pixels is odd
+    nx = numbers.nearest_odd_integer(nx)
+    nz = numbers.nearest_odd_integer(nz)
 
     # Return the pixel shape
     npixels = PixelShape.from_xy(nx, nz)

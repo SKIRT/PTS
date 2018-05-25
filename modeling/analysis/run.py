@@ -147,7 +147,9 @@ full_sed_earth_instrument_filename = "earth_full_sed.instr"
 simple_earth_instrument_filename = "earth_simple.instr"
 full_earth_instrument_filename = "earth_full.instr"
 simple_faceon_instrument_filename = "faceon_simple.instr"
+full_faceon_instrument_filename = "faceon_full.instr"
 simple_edgeon_instrument_filename = "edgeon_simple.instr"
+full_edgeon_instrument_filename = "edgeon_full.instr"
 
 # -----------------------------------------------------------------
 
@@ -2279,6 +2281,18 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_sed_earth_instrument(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.is_file(self.sed_earth_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def full_sed_earth_instrument_path(self):
 
         """
@@ -2287,6 +2301,18 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return fs.join(self.instruments_path, full_sed_earth_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_sed_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.full_sed_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -2303,6 +2329,18 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_simple_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simple_earth_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def full_earth_instrument_path(self):
 
         """
@@ -2311,6 +2349,18 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         return fs.join(self.instruments_path, full_earth_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.full_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -2327,6 +2377,42 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @property
+    def has_simple_faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simple_faceon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_faceon_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, full_faceon_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.full_faceon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def simple_edgeon_instrument_path(self):
 
         """
@@ -2338,6 +2424,42 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_simple_edgeon_instrument(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.is_file(self.simple_edgeon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_edgeon_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, full_edgeon_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.full_edgeon_instrument_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sed_earth_instrument(self):
 
@@ -2345,6 +2467,10 @@ class AnalysisRun(AnalysisRunBase):
         This function ...
         :return:
         """
+
+        if not self.has_sed_earth_instrument:
+            instrument = SEDInstrument.from_projection(self.earth_projection)
+            instrument.saveto(self.sed_earth_instrument_path)
 
         return SEDInstrument.from_file(self.sed_earth_instrument_path)
 
@@ -2358,6 +2484,10 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
+        if not self.has_simple_earth_instrument:
+            instrument = SimpleInstrument.from_projection(self.earth_projection)
+            instrument.saveto(self.sed_earth_instrument_path)
+
         return SimpleInstrument.from_file(self.simple_earth_instrument_path)
 
     # -----------------------------------------------------------------
@@ -2369,6 +2499,10 @@ class AnalysisRun(AnalysisRunBase):
         This function ...
         :return:
         """
+
+        if not self.has_full_earth_instrument:
+            instrument = FullInstrument.from_projection(self.earth_projection)
+            instrument.saveto(self.full_earth_instrument_path)
 
         return FullInstrument.from_file(self.full_earth_instrument_path)
 
@@ -2382,7 +2516,27 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
+        if not self.has_simple_faceon_instrument:
+            instrument = SimpleInstrument.from_projection(self.faceon_projection)
+            instrument.saveto(self.simple_faceon_instrument_path)
+
         return SimpleInstrument.from_file(self.simple_faceon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def full_faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_full_faceon_instrument:
+            instrument = FullInstrument.from_projection(self.faceon_projection)
+            instrument.saveto(self.full_faceon_instrument_path)
+
+        return FullInstrument.from_file(self.full_faceon_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -2394,7 +2548,27 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
+        if not self.has_simple_edgeon_instrument:
+            instrument = SimpleInstrument.from_projection(self.edgeon_projection)
+            instrument.saveto(self.simple_edgeon_instrument_path)
+
         return SimpleInstrument.from_file(self.simple_edgeon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def full_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_full_edgeon_instrument:
+            instrument = FullInstrument.from_projection(self.edgeon_projection)
+            instrument.saveto(self.full_edgeon_instrument_path)
+
+        return FullInstrument.from_file(self.full_edgeon_instrument_path)
 
     # -----------------------------------------------------------------
 

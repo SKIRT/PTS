@@ -737,6 +737,18 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @property
+    def full_faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.full_faceon_instrument
+
+    # -----------------------------------------------------------------
+
+    @property
     def simple_edgeon_instrument(self):
 
         """
@@ -745,6 +757,18 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         """
 
         return self.analysis_run.simple_edgeon_instrument
+
+    # -----------------------------------------------------------------
+
+    @property
+    def full_edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.full_edgeon_instrument
 
     # -----------------------------------------------------------------
 
@@ -772,8 +796,8 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
                 # Add instruments
                 ski.add_instrument(earth_name, self.full_earth_instrument)
-                ski.add_instrument(faceon_name, self.simple_faceon_instrument)
-                ski.add_instrument(edgeon_name, self.simple_edgeon_instrument)
+                ski.add_instrument(faceon_name, self.full_faceon_instrument)
+                ski.add_instrument(edgeon_name, self.full_edgeon_instrument)
 
             # Ionizing contribution: full instrument for earth orientation
             elif contribution == ionizing: ski.add_instrument(earth_name, self.full_earth_instrument)

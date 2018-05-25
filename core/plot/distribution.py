@@ -144,6 +144,9 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
         elif soft_ymax: y_max = min(y_limits[1], y_max_auto)
         else: y_max = y_limits[1]
 
+    #print(x_min, x_max)
+    #print(y_min, y_max)
+
     # Set the axis limits
     axes.set_xlim(x_min, x_max)
     axes.set_ylim(y_min, y_max)

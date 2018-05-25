@@ -1900,6 +1900,8 @@ class ConfigurationDefinition(object):
         :return:
         """
 
+        #print(arguments)
+
         # Add fixed
         for name in self.fixed: settings[name] = self.fixed[name].value
 

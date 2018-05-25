@@ -328,7 +328,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_projection_systems(self, make_edgeon=True, make_faceon=True, use_grid=None, reference_name=None):
+    def create_projection_systems(self, make_edgeon=True, make_faceon=True, use_grid=None, reference_name=None, radial_factor=1):
 
         """
         This function ...
@@ -336,6 +336,7 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :param make_faceon:
         :param use_grid:
         :param reference_name:
+        :param radial_factor:
         :return:
         """
 
@@ -363,7 +364,8 @@ class ModelSimulationInterface(GalaxyModelingComponent):
                                                                                                azimuth, self.config.old_scale_heights,
                                                                                                return_deprojection_name=True,
                                                                                                scale_heights_reference="old",
-                                                                                               reference_deprojection_name=reference_name)
+                                                                                               reference_deprojection_name=reference_name,
+                                                                                               radial_factor=radial_factor)
 
         # Set the projection systems
         self.projections[earth_name] = earth

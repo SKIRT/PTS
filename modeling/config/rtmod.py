@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Commands to be run
-definition.add_optional("commands", "string_list", "commands to be run in interactive mode")
+definition.add_positional_optional("commands", "string_list", "commands to be run in interactive mode")
 
 # Interactive mode
 definition.add_flag("interactive", "use interactive mode", True)
