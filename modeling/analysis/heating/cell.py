@@ -388,7 +388,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # For intrinsic SFR heating
         volumes = self.model.cell_volumes
         density = self.model.sfr_cell_stellar_density
-        absorbed_energy = self.model.intrinsic_sfr_dust_luminosity
+        absorbed_energy = self.model.intrinsic_dust_luminosity_sfr
         #print("absorbed energy", absorbed_energy)
         absorbed_energy_watt = absorbed_energy.to("W", distance=self.galaxy_distance).value
         #print("absorbed energy (watt)", absorbed_energy_watt)

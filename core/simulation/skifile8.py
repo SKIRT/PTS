@@ -1679,7 +1679,7 @@ class SkiFile8:
 
             # Check for too much input
             if sed_type is not None or sed_properties is not None: raise ValueError("Cannot specify 'sed_type' or 'sed_properties' for oligochromatic simulations")
-            if normalization_type is not None or normalization_properties is not None: raise ValueError("Cannot specify 'normalization_type' or 'normalization_properties' for oligochromatic simulations")
+            #if normalization_type is not None or normalization_properties is not None: raise ValueError("Cannot specify 'normalization_type' or 'normalization_properties' for oligochromatic simulations")
 
             # Get the stellar system
             stellar_system = self.get_stellar_system()
