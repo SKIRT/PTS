@@ -22,7 +22,7 @@ definition = definition.copy()
 # -----------------------------------------------------------------
 
 # The analysis run
-if runs.empty: raise ValueError("No analysis runs present (yet)")
+if runs.empty: print("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
 
