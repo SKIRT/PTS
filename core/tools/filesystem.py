@@ -2591,9 +2591,10 @@ def creation_date(filepath):
         except AttributeError:
             # We're probably on Linux. No easy way to get creation dates here,
             # so we'll settle for when its content was last modified.
-            #seconds = stat.st_mtime
+            seconds = stat.st_mtime
             # NO: Giving an error is clearer!
-            raise NotImplementedError("Getting the creation date is impossible")
+            #raise NotImplementedError("Getting the creation date is impossible")
+            # OK-> temporarily just give the modification date
 
     # Return datetime object
     return datetime.datetime.fromtimestamp(seconds)
