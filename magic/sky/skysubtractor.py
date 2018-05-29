@@ -482,7 +482,7 @@ class SkySubtractor(Configurable):
         try:
             bkg = Background2D(cutout, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
                                bkg_estimator=bkg_estimator, mask=mask_cutout, filter_threshold=None, #exclude_mesh_method="threshold", (option does not exist anymore)
-                               exclude_percentile=self.config.estimation.photutils.exclude_mesh_percentile) # used to be exclude_mesh_percentile
+                               exclude_mesh_percentile=self.config.estimation.photutils.exclude_mesh_percentile) # used to be exclude_mesh_percentile
         except ValueError:
 
             plotting.plot_box(cutout)
