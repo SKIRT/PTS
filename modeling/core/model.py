@@ -3986,6 +3986,105 @@ class RTModel(object):
         return fs.create_directory_in(self.sfr_projections_edgeon_path, "out")
 
     # -----------------------------------------------------------------
+    # BULGE MAPS
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_i1_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_i1_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_bulge_map_earth.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_i1_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_i1_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_i1_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_old_bulge_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_i1_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_i1_luminosity_old_bulge and self.has_old_bulge_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_i1_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_i1_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+    # DISK MAPS
+    # -----------------------------------------------------------------
 
     @property
     def old_disk_map_path(self):
@@ -4070,14 +4169,6 @@ class RTModel(object):
         azimuth = 0.0
         if not self.has_center: raise ValueError("Galaxy center coordinate is not defined")
         return GalaxyProjection.from_wcs(self.old_disk_map_wcs, self.center, self.distance, self.inclination, azimuth, self.position_angle)
-
-    # -----------------------------------------------------------------
-
-
-
-    # -----------------------------------------------------------------
-
-
 
     # -----------------------------------------------------------------
 
