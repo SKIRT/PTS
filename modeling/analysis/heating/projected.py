@@ -516,13 +516,13 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Getting the total absorption maps ..")
 
         # Earth
-        self.get_total_absorptions_earth()
+        if self.do_earth: self.get_total_absorptions_earth()
 
         # Face-on
-        self.get_total_absorptions_faceon()
+        if self.do_faceon: self.get_total_absorptions_faceon()
 
         # Edge-on
-        self.get_total_absorptions_edgeon()
+        if self.do_edgeon: self.get_total_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -662,13 +662,13 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Getting the young stellar absorption maps ...")
 
         # Earth
-        self.get_young_absorptions_earth()
+        if self.do_earth: self.get_young_absorptions_earth()
 
         # Face-on
-        self.get_young_absorptions_faceon()
+        if self.do_faceon: self.get_young_absorptions_faceon()
 
         # Edge-on
-        self.get_young_absorptions_edgeon()
+        if self.do_edgeon: self.get_young_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -797,13 +797,13 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Getting the ionizing stellar absorption maps ...")
 
         # Earth
-        self.get_ionizing_absorptions_earth()
+        if self.do_earth: self.get_ionizing_absorptions_earth()
 
         # Face-on
-        self.get_ionizing_absorptions_faceon()
+        if self.do_facon: self.get_ionizing_absorptions_faceon()
 
         # Edge-on
-        self.get_ionizing_absorptions_edgeon()
+        if self.do_edgeon: self.get_ionizing_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -893,13 +893,13 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Earth
-        self.get_internal_absorptions_earth()
+        if self.do_earth: self.get_internal_absorptions_earth()
 
         # Faceon
-        self.get_internal_absorptions_faceon()
+        if self.do_faceon: self.get_internal_absorptions_faceon()
 
         # Edge-on
-        self.get_internal_absorptions_edgeon()
+        if self.do_edgeon: self.get_internal_absorptions_edgeon()
 
     # -----------------------------------------------------------------
 

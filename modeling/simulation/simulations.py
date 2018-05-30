@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.model Contains the IntrinsicComponentSimulation, ObservedComponentSimulation,
-#  and ComponentSimulation class.
+## \package pts.modeling.simulation.simulations Contains the ComponentSimulations class.
 
 # -----------------------------------------------------------------
 
@@ -15,407 +14,21 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from abc import ABCMeta, abstractproperty
-from collections import OrderedDict
-import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.simulation.simulation import SkirtSimulation
-from ...core.units.unit import parse_unit as u
-from ...core.simulation.simulation import createsimulations
 from ...core.tools.utils import lazyproperty, memoize_method
-from ...core.simulation.output import SimulationOutput
-from ...core.simulation.data import SimulationData
-from ...core.tools import filesystem as fs
-from ...core.tools import sequences
-from ...core.data.sed import load_sed
 from ...core.data.attenuation import AttenuationCurve
 from ...magic.tools import extinction
 from ...magic.core.frame import Frame
 from ...magic.core.datacube import DataCube
 from ...core.basics.log import log
+from .simulation import earth_name, faceon_name, edgeon_name
+from .simulation import total_contribution, scattered_contribution, direct_contribution, transparent_contribution
+from .simulation import dust_contribution, dust_direct_contribution, dust_scattered_contribution
 
 # -----------------------------------------------------------------
 
 stellar_dust_sed_split_wavelength = 5. * u("micron")
-
-# -----------------------------------------------------------------
-
-# Instruments/orientations
-earth_name = "earth"
-faceon_name = "faceon"
-edgeon_name = "edgeon"
-
-# -----------------------------------------------------------------
-
-# Contributions
-total_contribution = "total"
-direct_contribution = "direct"
-scattered_contribution = "scattered"
-dust_contribution = "dust"
-dust_direct_contribution = "dust_direct"
-dust_scattered_contribution = "dust_scattered"
-transparent_contribution = "transparent"
-contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, dust_direct_contribution, dust_scattered_contribution, transparent_contribution]
-
-# -----------------------------------------------------------------
-
-class ComponentSimulation(SkirtSimulation):
-
-    """
-    This class ...
-    """
-
-    __metaclass__ = ABCMeta
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_output_path(cls, path, name=None):
-
-        """
-        This function ...
-        :param path:
-        :param name:
-        :return:
-        """
-
-        return createsimulations(path, single=True, name=name, cls=cls)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ski_file(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.parameters()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def instrument_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ski_file.instrumentnames()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        instruments = OrderedDict()
-        for name in self.instrument_names: instruments[name] = self.ski_file.get_instrument_object(name)
-        return instruments
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def instrument_distances(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        distances = OrderedDict()
-        for name in self.instrument_names: distances[name] = self.instruments[name].distance
-        return distances
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return sequences.get_all_close_value(self.instrument_distances.values(), ignore_none=True, return_none=True)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_empty(self.output_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationOutput.from_directory(self.output_path, prefix=self.prefix())
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.output)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data.has_cell_properties
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data.cell_properties
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_properties_columns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.cell_properties.colnames
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_volumes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "Volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Volume"])  # SKIRT 7
-        elif "Cell volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Cell volume"])  # SKIRT 8
-        else: raise IOError("")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_dust_densities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if "Density" in self.cell_properties_columns: return np.asarray(self.cell_properties["Density"])  # SKIRT 7
-        elif "Average dust density in cell" in self.cell_properties_columns: return np.asarray(self.cell_properties["Average dust density in cell"])  # SKIRT 8
-        else: raise IOError("")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_mass_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.asarray(self.cell_properties["Mass fraction"])
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_optical_depths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.asarray(self.cell_properties["Optical depth"])
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_x_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.asarray(self.cell_properties["X coordinate of cell center"])
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_y_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.asarray(self.cell_properties["Y coordinate of cell center"])
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_z_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.asarray(self.cell_properties["Z coordinate of cell center"])
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_grid_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.output.has_grids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def grid_filepaths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.output.grids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def grid_xy_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return sequences.pick_contains(self.grid_filepaths, "gridxy.")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def grid_xz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return sequences.pick_contains(self.grid_filepaths, "gridxz.")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def grid_yz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return sequences.pick_contains(self.grid_filepaths, "gridyz.")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def grid_xyz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return sequences.pick_contains(self.grid_filepaths, "gridxyz.")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_cell_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data.has_stellar_density
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.asarray(self.data.stellar_density["Stellar density"])
-
-# -----------------------------------------------------------------
-
-class IntrinsicComponentSimulation(ComponentSimulation):
-
-    """
-    This class ...
-    """
-
-# -----------------------------------------------------------------
-
-class ObservedComponentSimulation(ComponentSimulation):
-
-    """
-    This class ...
-    """
 
 # -----------------------------------------------------------------
 
@@ -1039,6 +652,42 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_direct_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_cube_direct.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_direct_frame_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.faceon_observed_cube_direct.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_direct_frame_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edgeon_observed_cube_direct.integrate()
+
+    # -----------------------------------------------------------------
+
     @property
     def observed_cube_scattered(self):
 
@@ -1072,6 +721,42 @@ class ComponentSimulations(object):
         """
 
         return self.observed_data.images[edgeon_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_scattered_frame(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        return self.observed_cube_scattered.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_scattered_frame_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.faceon_observed_cube_scattered.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_scattered_frame_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.edgeon_observed_cube_scattered.integrate()
 
     # -----------------------------------------------------------------
 
@@ -1399,6 +1084,122 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_full_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_sed_contributions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_sed_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_sed_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_sed_edgeon(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return self.has_other_observed_sed_contributions_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_cube_contributions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_cube_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_cube_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_full_cube_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_cube_contributions_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_part(self, sed_or_cube, fit_stellar=False, fit_dust=False, full=False):
+
+        """
+        This function ...
+        :param sed_or_cube:
+        :param fit_stellar: improve the accuracy by fitting a smooth function to the stellar part of the SED (or cube pixels)
+        :param fit_dust: improve the accuracy by fitting a smooth function (MBB) to the dust part of the SED (or cube pixels), and subtracting this from the total
+        :param full: keep the full wavelength grid
+        :return:
+        """
+
+        # Fit stuff
+        if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")
+
+        # Don't fit, just split at a certain wavelength
+        else:
+
+            if full: return sed_or_cube.flattened_above(stellar_dust_sed_split_wavelength)
+            else: return sed_or_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_part(self, sed_or_cube, fit_stellar=False, fit_dust=False, full=False):
+
+        """
+        This function ...
+        :param sed_or_cube:
+        :param fit_stellar: improve the accuracy by fitting a smooth function to the stellar part of the SED (or cube pixels), and subtracting this from the total
+        :param fit_dust: improve the accuracy by fitting a smooth function (MBB) to the dust part of the SED (or cube pixels)
+        :param full: keep the full wavelength grid
+        :return:
+        """
+
+        # Fit stuff?
+        if fit_stellar or fit_dust: raise NotImplementedError("Not yet implemented")
+
+        # Don't fit, just split at a certain wavelength
+        else:
+
+            if full: return sed_or_cube.flattened_below(stellar_dust_sed_split_wavelength)
+            else: return sed_or_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def observed_stellar_sed(self):
 
@@ -1407,7 +1208,23 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed_sed.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+        # Has full instrument
+        if self.has_full_sed: return self.observed_sed - self.observed_dust_sed
+
+        # No full instrument data: get the stellar part of the total SED
+        else: return self.get_stellar_part(self.observed_sed, full=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_stellar_sed_needs_reprocessed_internal_part(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_full_sed
 
     # -----------------------------------------------------------------
 
@@ -1419,7 +1236,25 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+        # Has full instrument
+        # stellar = observed - dust (=> BUT THIS IS WITH MAPPINGS INTERNAL DUST EM => GOOD, EMITTED MAPPINGS IS ALSO ABSORBED INTRINSIC MAPPINGS STELLAR [ENERGY BALANCE IN MAPPINGS])
+        #         = direct + scattered
+        if self.has_full_cube: return self.observed_cube - self.observed_dust_cube
+
+        # No full instrument data: get the stellar part of the total spectral cube
+        else: return self.get_stellar_part(self.observed_cube, full=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_stellar_cube_needs_reprocessed_internal_part(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_full_cube
 
     # -----------------------------------------------------------------
 
@@ -1527,7 +1362,8 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_sed.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+        #return self.intrinsic_sed.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_stellar_part(self.intrinsic_sed)
 
     # -----------------------------------------------------------------
 
@@ -1539,7 +1375,8 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+        #return self.intrinsic_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_stellar_part(self.intrinsic_cube)
 
     # -----------------------------------------------------------------
 
@@ -1768,7 +1605,8 @@ class ComponentSimulations(object):
         """
 
         # TODO: use self.observed_sed_dust IF PRESENT
-        return self.observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        #return self.observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_dust_part(self.observed_sed)
 
     # -----------------------------------------------------------------
 
@@ -1781,7 +1619,8 @@ class ComponentSimulations(object):
         """
 
         # TODO: use self.observed_cube_dust IF PRESENT
-        return self.observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        #return self.observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_dust_part(self.observed_cube)
 
     # -----------------------------------------------------------------
 
@@ -1794,7 +1633,8 @@ class ComponentSimulations(object):
         """
 
         # TODO: use self.faceon_observed_sed_dust IF PRESENT
-        return self.faceon_observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        #return self.faceon_observed_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_dust_part(self.faceon_observed_sed)
 
     # -----------------------------------------------------------------
 
@@ -1807,7 +1647,32 @@ class ComponentSimulations(object):
         """
 
         # TODO: use self.faceon_observed_cube_dust IF PRESENT
-        return self.faceon_observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        #return self.faceon_observed_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_dust_part(self.faceon_observed_cube)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_dust_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_part(self.edgeon_observed_sed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_dust_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_part(self.edgeon_observed_cube)
 
     # -----------------------------------------------------------------
 
@@ -1843,7 +1708,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_sed.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_dust_part(self.intrinsic_sed, full=True)
 
     # ----------------------------------------------------------------
 
@@ -1855,7 +1720,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_cube.splice(min_wavelength=stellar_dust_sed_split_wavelength)
+        return self.get_dust_part(self.intrinsic_cube, full=True)
 
     # -----------------------------------------------------------------
 
@@ -2252,482 +2117,5 @@ class ComponentSimulations(object):
         """
 
         return self.has_observed_cube and self.has_intrinsic_cube
-
-# -----------------------------------------------------------------
-
-class SingleComponentSimulations(ComponentSimulations):
-    
-    """
-    Objects of this class describe the simulation(s) of radiative transfer model of a certain stellar component.
-    """
-
-    def __init__(self, name, observed, intrinsic=None, distance=None):
-
-        """
-        This function ...
-        :param name:
-        :param intrinsic:
-        :param observed:
-        :param distance:
-        """
-
-        # Call the constructor of the base class
-        super(SingleComponentSimulations, self).__init__(name, observed, distance=distance)
-
-        # Set the intrinsic simulation
-        self.intrinsic = intrinsic
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_output_paths(cls, name, observed, intrinsic=None, distance=None):
-
-        """
-        This function ...
-        :param name:
-        :param observed:
-        :param intrinsic:
-        :param distance:
-        :return:
-        """
-
-        # Load observed simulation
-        if not fs.is_directory(observed): raise ValueError("Observed simulation directory does not exist")
-        if fs.has_files_in_path(observed): observed = ObservedComponentSimulation.from_output_path(observed)
-        else:
-            log.warning("Observed simulation has not been performed: no output files")
-            observed = None
-
-        # Load intrinsic simulation
-        if intrinsic is not None:
-            if not fs.is_directory(intrinsic): raise ValueError("Intrinsic simulation directory does not exist")
-            if fs.has_files_in_path(intrinsic): intrinsic = IntrinsicComponentSimulation.from_output_path(intrinsic)
-            else:
-                log.warning("Intrinsic simulation has not been performed: no output files")
-                intrinsic = None
-
-        # Create and return
-        return cls(name, observed, intrinsic=intrinsic, distance=distance)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def intrinsic_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic.output_path if self.has_intrinsic else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def intrinsic_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic.output
-
-    # -----------------------------------------------------------------
-
-    @property
-    def intrinsic_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic.data
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_sed(self):
-
-        """
-        This function ..
-        :return:
-        """
-
-        return self.has_transparent_sed
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_transparent_cube
-
-    # -----------------------------------------------------------------
-
-    @property
-    def intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether transparent SED is created
-        if not self.has_transparent_sed: raise ValueError("Intrinsic SED cannot be calculated")
-
-        # Return
-        return self.observed_sed_transparent
-
-    # -----------------------------------------------------------------
-
-    @property
-    def intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether transparant SED is created
-        if not self.has_transparent_cube: raise ValueError("Intrinsic cube cannot be calculated")
-
-        # Return
-        return self.observed_cube_transparent
-
-    # -----------------------------------------------------------------
-
-    @property
-    def faceon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # ISOTROPIC RADIATION
-        return self.intrinsic_sed
-
-    # -----------------------------------------------------------------
-
-    @property
-    def faceon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check
-        #if not self.has_faceon_transparent_cube: raise ValueError("Intrinsic cube from face-on orientation cannot be calculated")
-
-        # Return
-        #return self.faceon_observed_cube_transparent
-
-        raise NotImplementedError("Not implemented")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def edgeon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # ISOTROPIC RADIATION
-        return self.intrinsic_sed
-
-    # -----------------------------------------------------------------
-
-    @property
-    def edgeon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check
-        #if not self.has_edgeon_transparent_cube: raise ValueError("Intrinsic cube from edge-on orientation cannot be calculated")
-
-        # Return
-        #return self.edgeon_observed_cube_transparent
-
-        raise NotImplementedError("Not implemented")
-
-# -----------------------------------------------------------------
-
-class MultiComponentSimulations(ComponentSimulations):
-
-    """
-    Objects of this class describe the simulation(s) of a radiative transfer model containing of multiple stellar components.
-    """
-
-    def __init__(self, name, observed, intrinsic_seds=None, intrinsic_cubes=None, distance=None):
-
-        """
-        This function ...
-        :param name:
-        :param observed:
-        :param intrinsic_seds:
-        :param intrinsic_cubes:
-        :param distance:
-        """
-
-        # Call the constructor of the base class
-        super(MultiComponentSimulations, self).__init__(name, observed, distance=distance)
-
-        # Set the SEDs of the components
-        self.intrinsic_seds = intrinsic_seds
-
-        # Set the datacubes of the components
-        self.intrinsic_cubes = intrinsic_cubes
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_output_path(cls, name, observed, intrinsic_sed_paths=None, intrinsic_cube_paths=None, distance=None):
-
-        """
-        This function ...
-        :param name:
-        :param observed:
-        :param intrinsic_sed_paths:
-        :param intrinsic_cube_paths:
-        :param distance:
-        :return:
-        """
-
-        # Load observed simulation
-        observed = ObservedComponentSimulation.from_output_path(observed)
-
-        # Load intrinsic SEDs
-        if intrinsic_sed_paths is not None:
-            intrinsic_seds = OrderedDict()
-            for component_name in intrinsic_sed_paths: intrinsic_seds[component_name] = load_sed(intrinsic_sed_paths[component_name])
-        else: intrinsic_seds = None
-
-        # Load intrinsic cubes
-        if intrinsic_cube_paths is not None:
-            if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
-            intrinsic_cubes = OrderedDict()
-            for component_name in intrinsic_cube_paths:
-                if component_name not in intrinsic_seds: raise ValueError("SED of component '" + component_name + "' is not loaded")
-                wavelength_grid = intrinsic_seds[component_name].wavelength_grid() # create wavelength grid from SED
-                intrinsic_cubes[component_name] = DataCube.from_file(intrinsic_cube_paths[component_name], wavelength_grid=wavelength_grid)
-        else: intrinsic_cubes = None
-
-        # Create and return
-        return cls(name, observed, intrinsic_seds=intrinsic_seds, intrinsic_cubes=intrinsic_cubes, distance=distance)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_intrinsic_seds: return self.intrinsic_seds.keys()
-        elif self.has_intrinsic_cubes: return self.intrinsic_cubes.keys()
-        else: raise ValueError("Component names are not defined")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def nintrinsic_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.intrinsic_seds)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def nintrinsic_cubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.intrinsic_cubes)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic_seds is not None and self.nintrinsic_seds > 0
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_cubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.intrinsic_cubes is not None and self.nintrinsic_cubes > 0
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_transparent_sed: return True
-        elif self.has_intrinsic_seds: return True
-        else: return False
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_transparent_cube: return True
-        elif self.has_intrinsic_cubes: return True
-        else: return False
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Transparent SED is written out
-        if self.has_transparent_sed: return self.observed_sed_transparent
-
-        # Has intrinsic SEDs, add them
-        elif self.has_intrinsic_seds: return sequences.sum(self.intrinsic_seds.values())
-
-        # Cannot be calculated
-        else: raise ValueError("Intrinsic SED cannot be calculated")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Transparent cube is written out
-        if self.has_transparent_cube: return self.observed_cube_transparent
-
-        # Has intrinsic cubes, add them
-        elif self.has_intrinsic_cubes: return sequences.sum(self.intrinsic_cubes.values())
-
-        # Cannot be calculated
-        else: raise ValueError("Intrinsic datacube cannot be calculated")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def faceon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # ISOTROPIC RADIATION
-        return self.intrinsic_sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def faceon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Transparent cube is written out
-        #if self.has_faceon_transparent_cube: return self.faceon_observed_cube_transparent
-
-        # Cannot be calculated
-        #else: raise ValueError("Intrinsic datacube from face-on orientation cannot be calculated")
-
-        raise NotImplementedError("Not implemented")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def edgeon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # ISOTROPIC RADIATION
-        return self.intrinsic_sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def edgeon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Transparent cube is written out
-        #if self.has_edgeon_transparent_cube: return self.edgeon_observed_cube_transparent
-
-        # Cannot be calculated
-        #else: raise ValueError("Intrinsic datacube from edge-on orientation cannot be calculated")
-
-        raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------

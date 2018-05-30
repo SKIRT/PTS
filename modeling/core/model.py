@@ -35,7 +35,8 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.simulation.execute import run_simulation
 from ...core.basics.log import log
-from .simulation import SingleComponentSimulations, MultiComponentSimulations
+from ..simulation.single import SingleComponentSimulations
+from ..simulation.multi import MultiComponentSimulations
 from ...core.simulation.simulation import createsimulations
 from ...magic.core.frame import Frame
 from ...magic.core.list import convolve_and_rebin
@@ -1012,7 +1013,12 @@ class RTModel(object):
         :return:
         """
 
-        return self.total_simulations.observed_stellar_sed
+        # Get the SED
+        sed = self.total_simulations.observed_stellar_sed
+
+        # We need to add the internal dust emission part of the the SFR
+        if self.total_simulations.observed_stellar_sed_needs_reprocessed_internal_part: return sed + self.intrinsic_dust_sed_sfr
+        else: return sed
 
     # -----------------------------------------------------------------
 

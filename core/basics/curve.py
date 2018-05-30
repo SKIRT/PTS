@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import copy
 from scipy.interpolate import interp1d
 
 # Import astronomical modules
@@ -72,6 +73,22 @@ class Curve(SmartTable):
             self.y_name = y_name
 
         #else: print(kwargs)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new = copy.deepcopy(self)
+
+        if hasattr(self, "x_name"): new.x_name = self.x_name
+        if hasattr(self, "y_name"): new.y_name = self.y_name
+
+        return new
 
     # -----------------------------------------------------------------
 
@@ -422,6 +439,112 @@ class Curve(SmartTable):
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
+
+    # -----------------------------------------------------------------
+
+    def flatten_above(self, value, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param value:
+        :param flatten_value:
+        :param include:
+        :return:
+        """
+
+        from ..units.parsing import parse_quantity
+
+        # Check value with unit
+        if self.x_unit is not None:
+            if hasattr(value, "unit"): pass
+            elif isinstance(value, basestring): value = parse_quantity(value)
+            else: raise ValueError("Unit of the value is not defined")
+        elif hasattr(value, "unit") or isinstance(value, basestring): raise ValueError("Unit of the value is defined, but column unit is not")
+
+        # Get the indices of the values to be flattened
+        #indices = self.get_indices(x_min=value, include_min=include)
+        indices = self.get_indices(value, None, include_min=include) # works also with derived class implementation
+
+        # Set flatten value with unit
+        if self.y_unit is not None:
+            if hasattr(flatten_value, "unit"): pass
+            elif flatten_value == 0.: flatten_value = flatten_value * self.y_unit
+            else: raise ValueError("Unit of the flatten value is not defined")
+        elif hasattr(flatten_value, "unit") or isinstance(flatten_value, basestring): raise ValueError("Unit of the flatten value is defined, but column unit is not")
+        #print(flatten_value)
+
+        # Flatten values
+        for index in indices: self.set_value(self.y_name, index, flatten_value)
+
+    # -----------------------------------------------------------------
+
+    def flatten_below(self, value, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param value:
+        :param flatten_value:
+        :param include:
+        :return:
+        """
+
+        from ..units.parsing import parse_quantity
+
+        # Check value with unit
+        if self.x_unit is not None:
+            if hasattr(value, "unit"): pass
+            elif isinstance(value, basestring): value = parse_quantity(value)
+            else: raise ValueError("Unit of the value is not defined")
+        elif hasattr(value, "unit") or isinstance(value, basestring): raise ValueError("Unit of the value is defined, but column unit is not")
+
+        # Get the indices of the values to be flattened
+        #indices = self.get_indices(x_max=value, include_max=include)
+        indices = self.get_indices(None, value, include_max=include) # works also with derived class implementation
+
+        # Set flatten value with unit
+        if self.y_unit is not None:
+            if hasattr(flatten_value, "unit"): pass
+            elif isinstance(flatten_value, basestring): flatten_value = parse_quantity(flatten_value)
+            elif flatten_value == 0.: flatten_value = flatten_value * self.y_unit
+            else: raise ValueError("Unit of the flatten value is not defined")
+        elif hasattr(flatten_value, "unit") or isinstance(flatten_value, basestring): raise ValueError("Unit of the flatten value is defined, but column unit is not")
+        #print(flatten_value)
+
+        # Flatten values
+        for index in indices: self.set_value(self.y_name, index, flatten_value)
+
+    # -----------------------------------------------------------------
+
+    def flattened_above(self, value, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param value:
+        :param flatten_value:
+        :param include:
+        :return:
+        """
+
+        # Make copy
+        new = self.copy()
+        new.flatten_above(value, flatten_value=flatten_value, include=include)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def flattened_below(self, value, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param value:
+        :param flatten_value:
+        :return:
+        """
+
+        # Make copy
+        new = self.copy()
+        new.flatten_below(value, flatten_value=flatten_value, include=include)
+        return new
 
     # -----------------------------------------------------------------
 

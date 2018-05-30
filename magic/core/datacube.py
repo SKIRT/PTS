@@ -476,16 +476,18 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def get_indices(self, min_wavelength=None, max_wavelength=None):
+    def get_indices(self, min_wavelength=None, max_wavelength=None, include_min=True, include_max=True):
 
         """
         This function ...
         :param min_wavelength:
         :param max_wavelength:
+        :param include_min:
+        :param include_max:
         :return:
         """
 
-        return self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+        return self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength, include_min=include_min, include_max=include_max)
 
     # -----------------------------------------------------------------
 
@@ -511,6 +513,121 @@ class DataCube(Image):
 
         # Create new datacube
         return self.__class__.from_frames(frames, wavelength_grid=wavelength_grid)
+
+    # -----------------------------------------------------------------
+
+    def flatten_above(self, wavelength, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param wavelength:
+        :param flatten_value:
+        :param include:
+        :return:
+        """
+
+        from ...core.units.parsing import parse_quantity
+
+        # Check whether wavelength is passed
+        if hasattr(wavelength, "unit"):
+            if not types.is_length_quantity(wavelength): raise ValueError("Not a wavelength: '" + tostr(wavelength) + "'")
+        elif types.is_string_type(wavelength): wavelength = parse_quantity(wavelength)
+        else: raise ValueError("Invalid argument: must be length quantity or string")
+
+        # Get the indices
+        indices = self.get_indices(wavelength, None, include_min=include)
+
+        # Set flatten value with unit
+        if self.has_unit:
+            if hasattr(flatten_value, "unit"): pass # OK
+            elif flatten_value == 0.: pass # OK
+            else: raise ValueError("Unit of the flatten value is not defined")
+        # Unit of the datacube is not defined
+        elif hasattr(flatten_value, "unit") or types.is_string_type(flatten_value): raise ValueError("Unit of the flatten value is defined, but column unit is not")
+
+        # Flatten the frames
+        for index in indices:
+
+            # Determine the flatten value for this frame
+            if hasattr(flatten_value, "unit"): value = flatten_value.to(self.unit, wavelength=self.get_wavelength(index), distance=self.distance, pixelscale=self.pixelscale).value
+            else: value = flatten_value
+
+            # Set the value
+            self.frames[index].fill(value)
+
+    # -----------------------------------------------------------------
+
+    def flatten_below(self, wavelength, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param wavelength:
+        :param flatten_value:
+        :param include:
+        :return:
+        """
+
+        from ...core.units.parsing import parse_quantity
+
+        # Check whether wavelength is passed
+        if hasattr(wavelength, "unit"):
+            if not types.is_length_quantity(wavelength): raise ValueError("Not a wavelength: '" + tostr(wavelength) + "'")
+        elif types.is_string_type(wavelength): wavelength = parse_quantity(wavelength)
+        else: raise ValueError("Invalid argument: must be length quantity or string")
+
+        # Get the indices
+        indices = self.get_indices(None, wavelength, include_max=include)
+
+        # Set flatten value with unit
+        if self.has_unit:
+            if hasattr(flatten_value, "unit"): pass # OK
+            elif flatten_value == 0.: pass # OK
+            else: raise ValueError("Unit of the flatten value is not defined")
+        # Unit of the datacube is not defined
+        elif hasattr(flatten_value, "unit") or types.is_string_type(flatten_value): raise ValueError("Unit of the flatten value is defined, but column unit is not")
+
+        # Flatten the frames
+        for index in indices:
+
+            # Determine the flatten value for this frame
+            if hasattr(flatten_value, "unit"): value = flatten_value.to(self.unit, wavelength=self.get_wavelength(index), distance=self.distance, pixelscale=self.pixelscale).value
+            else: value = flatten_value
+
+            # Set the value
+            self.frames[index].fill(value)
+
+    # -----------------------------------------------------------------
+
+    def flattened_above(self, value, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param value:
+        :param flatten_value:
+        :param include:
+        :return:
+        """
+
+        # Make copy
+        new = self.copy()
+        new.flatten_above(value, flatten_value=flatten_value, include=include)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def flattened_below(self, value, flatten_value=0., include=True):
+
+        """
+        This function ...
+        :param value:
+        :param flatten_value:
+        :return:
+        """
+
+        # Make copy
+        new = self.copy()
+        new.flatten_below(value, flatten_value=flatten_value, include=include)
+        return new
 
     # -----------------------------------------------------------------
 

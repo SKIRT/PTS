@@ -46,6 +46,15 @@ from ...magic.tools.plotting import plot_frame, plot_frame_contours
 # -----------------------------------------------------------------
 
 bol_map_name = "bol"
+intr_stellar_map_name = "intr_stellar" # intrinsic stellar (bol) luminosity (transparent)
+obs_stellar_map_name = "obs_stellar" # observed stellar (bol) luminosity
+dust_map_name = "dust" # dust (bol) luminosity
+dust_with_internal_map_name = "dust_with_internal" # dust (bol) luminosity + internal dust (MAPPINGS)
+scattered_map_name = "scattered" # scattered stellar luminosity
+absorbed_map_name = "absorbed" # absorbed stellar luminosity
+absorbed_with_internal_map_name = "absorbed_with_internal" # absorbed stellar luminosity + internal absorption (MAPPINGS)
+attenuated_map_name = "attenuated" # attenuated stellar luminosity
+direct_map_name = "direct" # direct stellar luminosity
 i1_map_name = "i1"
 fuv_map_name = "fuv"
 sfr_map_name = "sfr"
@@ -60,7 +69,7 @@ total_lum_map_name = "total_lum"
 # -----------------------------------------------------------------
 
 # Define names of maps to show
-total_map_names = (bol_map_name,)
+total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, dust_map_name, dust_with_internal_map_name, scattered_map_name, absorbed_map_name, absorbed_with_internal_map_name, attenuated_map_name, direct_map_name,)
 bulge_map_names = (bol_map_name, i1_map_name,)
 disk_map_names = (bol_map_name, i1_map_name,)
 old_map_names = (bol_map_name, i1_map_name,)
@@ -2159,6 +2168,90 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def total_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.total_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.bulge_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.disk_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_simulations(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.model.old_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_simulations(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.model.young_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.sfr_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.unevolved_simulations
+
+    # -----------------------------------------------------------------
+
     def get_total_map(self, which, orientation=earth_name):
 
         """
@@ -2174,6 +2267,92 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             if orientation == earth_name: return self.model.total_bolometric_luminosity_map
             elif orientation == faceon_name: return self.model.total_bolometric_luminosity_map_faceon
             elif orientation == edgeon_name: return self.model.total_bolometric_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic stellar luminosity (transparent luminosity)
+        if which == intr_stellar_map_name:
+
+            if orientation == earth_name: return self.total_simulations.observed_transparent_frame
+            elif orientation == faceon_name: return self.total_simulations.observed_transparent_frame_faceon
+            elif orientation == edgeon_name: return self.total_simulations.observed_transparent_frame_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Observed stellar luminosity
+        elif which == obs_stellar_map_name:
+
+            # TODO: change how observed_stellar_frame is implemented:
+            # IF FULL INSTRUMENT IS PRESENT: stellar = observed - dust (=> BUT THIS IS WITH MAPPINGS INTERNAL DUST EM)
+            # NOW: stellar = OBSERVED SED UNTIL 5 MICRON (=> THIS IS WITHOUT MAPPINGS INTERNAL DUST EM)
+            #if orientation == earth_name: return self.total_simulations.observed_stellar_frame
+            #elif orientation == faceon_name: return self.total_simulations.observed_stellar_frame_faceon
+            #elif orientation == edgeon_name: return self.total_simulations.observed_stellar_frame_edgeon
+            #else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+            if orientation == earth_name: return self.model.total_observed_stellar_frame
+            elif orientation == faceon_name: return self.model.total_observed_stellar_frame_faceon
+            elif orientation == edgeon_name: return self.model.total_observed_stellar_frame_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Dust emission luminosity
+        elif which == dust_map_name:
+
+            # TODO: change how observed_dust_frame is implemented:
+            # IF FULL INSTRUMENT IS PRESENT: dust = dust contribution (=> BUT THIS IS WITHOUT MAPPINGS INTERNAL DUST, ONLY DIFFUSE)
+            if orientation == earth_name: return self.total_simulations.observed_dust_frame
+            elif orientation == faceon_name: return self.total_simulations.observed_dust_frame_faceon
+            elif orientation == edgeon_name: return self.total_simulations.observed_dust_frame_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Dust emission with internal dust
+        elif which == dust_with_internal_map_name:
+
+            # TODO: TO BE IMPLEMENTED
+            if orientation == earth_name: return self.total_simulations.observed_dust_frame_with_internal
+            elif orientation == faceon_name: return self.total_simulations.observed_dust_frame_with_internal_faceon
+            elif orientation == edgeon_name: return self.total_simulations.observed_dust_frame_with_internal_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Scattered stellar luminosity
+        elif which == scattered_map_name:
+
+            if orientation == earth_name: return self.total_simulations.observed_scattered_frame
+            elif orientation == faceon_name: return self.total_simulations.observed_scattered_frame_faceon
+            elif orientation == edgeon_name: return self.total_simulations.observed_scattered_frame_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Absorbed stellar luminosity
+        elif which == absorbed_map_name: # absorbed = transparent - observed stellar (= observed - dust = direct + scattered)
+
+            # TODO: TO BE IMPLEMENTED
+            if orientation == earth_name: return self.total_simulations.absorbed_stellar_frame
+            elif orientation == faceon_name: return self.total_simulations.absorbed_stellar_frame_faceon
+            elif orientation == edgeon_name: return self.total_simulations.absorbed_stellar_frame_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Absorbed + internal
+        elif which == absorbed_with_internal_map_name:
+
+            # TODO: TO BE IMPLEMENTED
+            if orientation == earth_name: return self.total_simulations.absorbed_stellar_frame_with_internal
+            elif orientation == faceon_name: return self.total_simulations.absorbed_stellar_frame_with_internal_faceon
+            elif orientation == edgeon_name: return self.total_simulations.absorbed_stellar_frame_with_internal_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Attenuated stellar luminosity
+        elif which == attenuated_map_name: # attenuated = transparent - direct stellar
+
+            # TODO: TO BE IMPLEMENTED
+            if orientation == earth_name: return self.total_simulations.attenuated_stellar_frame
+            elif orientation == faceon_name: return self.total_simulations.attenuated_stellar_frame_faceon
+            elif orientation == edgeon_name: return self.total_simulations.attenuated_stellar_frame_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Direct luminosity
+        elif which == direct_map_name:
+
+            if orientation == earth_name: return self.total_simulations.observed_direct_frame
+            elif orientation == faceon_name: return self.total_simulations.observed_direct_frame_faceon
+            elif orientation == edgeon_name: return self.total_simulations.observed_direct_frame_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid
