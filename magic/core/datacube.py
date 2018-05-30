@@ -244,6 +244,62 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_sed_and_map(cls, sed, frame):
+
+        """
+        This fnuction
+        :param sed: SED to scale the frame to
+        :param frame: map of surface density distribution
+        :return:
+        """
+
+        # Initialize list of frames
+        frames = []
+
+        # Loop over the photometry points
+        for index in range(sed.npoints):
+
+            # Get the photometry
+            photometry = sed.get_photometry(index)
+
+            # Create scaled frame
+            frame = frame.normalized(to=photometry)
+
+            # Add the frame
+            frames.append(frame)
+
+        # Create the wavelength grid
+        wavelength_grid = sed.wavelength_grid()
+
+        # Create and return
+        return cls.from_frames(frames, wavelength_grid=wavelength_grid)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_sed_and_map_file(cls, sed_path, frame_path):
+
+        """
+        This function ...
+        :param sed_path:
+        :param frame_path:
+        :return:
+        """
+
+        from ...core.data.sed import load_sed
+
+        # Load the SED (can be ObservedSED, and can be from SKIRT output)
+        sed = load_sed(sed_path)
+
+        # Load the map
+        frame = Frame.from_file(frame_path)
+
+        # Create and return
+        return cls.from_sed_and_map(sed, frame)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_skirt_output(cls, instrument_name, output_path=None, contribution="total", wavelength_range=None):
 
         """

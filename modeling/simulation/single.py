@@ -18,6 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from .simulations import ComponentSimulations
 from .simulation import ObservedComponentSimulation, IntrinsicComponentSimulation
+from .simulation import earth_name, faceon_name, edgeon_name, total_contribution
 
 # -----------------------------------------------------------------
 
@@ -126,14 +127,110 @@ class SingleComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @property
-    def has_intrinsic_sed(self):
+    def has_intrinsic_output(self):
 
         """
-        This function ..
+        This function ...
         :return:
         """
 
-        return self.has_transparent_sed
+        return self.has_intrinsic and self.intrinsic.has_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_output and self.intrinsic_data.has_any
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sed_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic and self.has_intrinsic_output and self.intrinsic_data.has_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cube_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic and self.has_intrinsic_output and self.intrinsic_data.has_images
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_cube_from_intrinsic_simulation(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_intrinsic and self.has_intrinsic_output and self.has_faceon_intrinsic_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_cube_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic and self.has_intrinsic_output and self.has_edgeon_intrinsic_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_transparent_sed or self.has_sed_from_intrinsic_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_sed_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_sed_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
@@ -145,7 +242,251 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        return self.has_transparent_cube
+        return self.has_transparent_cube or self.has_cube_from_intrinsic_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_cube_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_transparent_cube_faceon or self.has_faceon_cube_from_intrinsic_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_cube_edgeon(self):
+
+        """
+        This fnuction ...
+        :return:
+        """
+
+        return self.has_transparent_cube_edgeon or self.has_edgeon_cube_from_intrinsic_simulation
+
+    # -----------------------------------------------------------------
+    # INTRINSIC SEDs
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_intrinsic_sed_orientations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.intrinsic_data.sed_paths_instruments) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_intrinsic_sed_orientation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return faceon_name in self.intrinsic_data.sed_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_intrinsic_sed_orientation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return edgeon_name in self.intrinsic_data.sed_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.sed_paths_instruments[earth_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_intrinsic_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.sed_paths_instruments[faceon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_intrinsic_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.sed_paths_instruments[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.seds[earth_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_sed_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.seds[faceon_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_sed_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.seds[edgeon_name][total_contribution]
+
+    # -----------------------------------------------------------------
+    # INTRINSIC CUBES
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_intrinsic_cube_orientations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.intrinsic_data.image_paths_instruments) > 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_intrinsic_cube_orientation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return faceon_name in self.intrinsic_data.image_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_intrinsic_cube_orientation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return edgeon_name in self.intrinsic_data.image_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_cube_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.image_paths_instruments[earth_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_intrinsic_cube_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.image_paths_instruments[faceon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_intrinsic_cube_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.image_paths_instruments[edgeon_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cube_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.images[earth_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_cube_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.images[faceon_name][total_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_cube_from_intrinsic_simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_data.images[edgeon_name][total_contribution]
 
     # -----------------------------------------------------------------
 
@@ -157,11 +498,14 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # Check whether transparent SED is created
-        if not self.has_transparent_sed: raise ValueError("Intrinsic SED cannot be calculated")
+        # Transparent SED is written out
+        if self.has_transparent_sed: return self.observed_sed_transparent
 
-        # Return
-        return self.observed_sed_transparent
+        # Has intrinsic simulation
+        elif self.has_sed_from_intrinsic_simulation: return self.sed_from_intrinsic_simulation
+
+        # Cannot be calculated
+        else: raise ValueError("Intrinsic SED cannot be calculated")
 
     # -----------------------------------------------------------------
 
@@ -173,11 +517,14 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # Check whether transparant SED is created
-        if not self.has_transparent_cube: raise ValueError("Intrinsic cube cannot be calculated")
+        # Transparent cube is written out
+        if self.has_transparent_cube: return self.observed_cube_transparent
 
-        # Return
-        return self.observed_cube_transparent
+        # Has intrinsic simulation
+        elif self.has_cube_from_intrinsic_simulation: return self.cube_from_intrinsic_simulation
+
+        # Cannot be calculated
+        else: raise ValueError("Intrinsic cube cannot be calculated")
 
     # -----------------------------------------------------------------
 
@@ -189,7 +536,7 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # ISOTROPIC RADIATION
+        # ISOTROPIC RADIATION, SO SAME AS EARTH PROJECTION
         return self.intrinsic_sed
 
     # -----------------------------------------------------------------
@@ -202,13 +549,14 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # Check
-        #if not self.has_faceon_transparent_cube: raise ValueError("Intrinsic cube from face-on orientation cannot be calculated")
+        # Transparent cube is written out
+        if self.has_transparent_cube_faceon: return self.faceon_observed_cube_transparent
 
-        # Return
-        #return self.faceon_observed_cube_transparent
+        # Has intrinsic simulation
+        elif self.has_faceon_cube_from_intrinsic_simulation: return self.faceon_cube_from_intrinsic_simulation
 
-        raise NotImplementedError("Not implemented")
+        # Cannot be calculated
+        else: raise ValueError("Intrinsic cube cannot be calculated")
 
     # -----------------------------------------------------------------
 
@@ -220,7 +568,7 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # ISOTROPIC RADIATION
+        # ISOTROPIC RADIATION, SO SAME AS EARTH PROJECTION
         return self.intrinsic_sed
 
     # -----------------------------------------------------------------
@@ -233,12 +581,13 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        # Check
-        #if not self.has_edgeon_transparent_cube: raise ValueError("Intrinsic cube from edge-on orientation cannot be calculated")
+        # Transparent cube is written out
+        if self.has_transparent_cube_edgeon: return self.edgeon_observed_cube_transparent
 
-        # Return
-        #return self.edgeon_observed_cube_transparent
+        # Has intrinsic simulation
+        elif self.has_edgeon_cube_from_intrinsic_simulation: return self.edgeon_cube_from_intrinsic_simulation
 
-        raise NotImplementedError("Not implemented")
+        # Cannot be calculated
+        else: raise ValueError("Intrinsic cube cannot be calculated")
 
 # -----------------------------------------------------------------

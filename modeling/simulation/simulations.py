@@ -192,7 +192,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_observed_output and self.observed_data.has_images
+        return self.has_observed and self.has_observed_output and self.observed_data.has_images
 
     # -----------------------------------------------------------------
 
@@ -218,6 +218,20 @@ class ComponentSimulations(object):
 
         pass
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed.wavelength_grid()
+
+    # -----------------------------------------------------------------
+    # SEDs
     # -----------------------------------------------------------------
 
     @property
@@ -289,18 +303,6 @@ class ComponentSimulations(object):
         """
 
         return self.observed_data.sed_paths_instruments[edgeon_name]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sed.wavelength_grid()
 
     # -----------------------------------------------------------------
 
@@ -459,6 +461,8 @@ class ComponentSimulations(object):
         return self.observed_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
+    # CUBES
+    # -----------------------------------------------------------------
 
     @property
     def observed_cube_path(self):
@@ -613,6 +617,30 @@ class ComponentSimulations(object):
         """
 
         return self.has_other_observed_cube_contributions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_transparent_cube_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_cube_contributions_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_transparent_cube_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 
