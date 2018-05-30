@@ -42,7 +42,7 @@ from ...magic.core.frame import Frame
 from ...magic.core.list import convolve_and_rebin
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..basics.projection import GalaxyProjection, get_center
-from ..basics.instruments import FrameInstrument, FullInstrument, FullSEDInstrument
+from ..basics.instruments import FrameInstrument, FullSEDInstrument
 from ..simulation.projections import ComponentProjections
 
 # -----------------------------------------------------------------
@@ -4105,7 +4105,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def old_disk_i1_luminosity_map(self):
 
         """
@@ -4113,8 +4113,58 @@ class RTModel(object):
         :return:
         """
 
+        return self.old_disk_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_i1_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the old disk map
-        frame = self.old_disk_map.copy()
+        frame = self.old_disk_map_earth.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_i1_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_map_faceon.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_i1_luminosity_map_edgeon(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_map_edgeon.copy()
 
         # Normalize to the I1 specific luminosity
         frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
@@ -4132,30 +4182,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_i1_luminosity_old_disk
+        return self.has_old_disk_i1_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def old_disk_i1_luminosity_map_faceon(self):
+    @property
+    def has_old_disk_i1_luminosity_map_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        # Get the old disk map
-        frame = self.old_disk_faceon_map.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.has_intrinsic_i1_luminosity_old_disk and self.has_old_disk_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_old_disk_i1_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_i1_luminosity_old_disk and self.has_old_disk_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_i1_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_i1_luminosity_old_disk and self.has_old_disk_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_disk_bolometric_luminosity_map(self):
 
         """
@@ -4163,8 +4230,58 @@ class RTModel(object):
         :return:
         """
 
+        return self.old_disk_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the old disk map
-        frame = self.old_disk_map.copy()
+        frame = self.old_disk_map_earth.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_map_faceon.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old disk map
+        frame = self.old_disk_map_edgeon.copy()
 
         # Normalize to the bolometric luminosity
         frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
@@ -4182,7 +4299,43 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_bolometric_luminosity_old_disk
+        return self.has_old_disk_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_disk and self.has_old_disk_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_disk and self.has_old_disk_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_bolometric_luminosity_map_edgeon(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_disk and self.has_old_disk_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -4296,7 +4449,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def young_fuv_luminosity_map(self):
 
         """
@@ -4304,8 +4457,58 @@ class RTModel(object):
         :return:
         """
 
+        return self.young_fuv_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_fuv_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the young stellar map
-        frame = self.young_map.copy()
+        frame = self.young_map_earth.copy()
+
+        # Normalize to the FUV luminosity
+        frame.normalize(to=self.intrinsic_fuv_luminosity_young)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_fuv_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the young stellar map
+        frame = self.young_map_faceon.copy()
+
+        # Normalize to the FUV luminosity
+        frame.normalize(to=self.intrinsic_fuv_luminosity_young)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_fuv_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the young stellar map
+        frame = self.young_map_edgeon.copy()
 
         # Normalize to the FUV luminosity
         frame.normalize(to=self.intrinsic_fuv_luminosity_young)
@@ -4323,11 +4526,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_fuv_luminosity_young
+        return self.has_young_fuv_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_young_fuv_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_young and self.has_young_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_fuv_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_young and self.has_young_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_fuv_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_young and self.has_young_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_bolometric_luminosity_map(self):
 
         """
@@ -4335,8 +4574,58 @@ class RTModel(object):
         :return:
         """
 
+        return self.young_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the young stellar map
-        frame = self.young_map.copy()
+        frame = self.young_map_earth.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the young stellar map
+        frame = self.young_map_faceon.copy()
+
+        # Normalize to the bolometric luminosity
+        frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the young stellar map
+        frame = self.young_map_edgeon.copy()
 
         # Normalize to the bolometric luminosity
         frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
@@ -4354,7 +4643,43 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_bolometric_luminosity_young
+        return self.has_young_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_young and self.has_young_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_young and self.has_young_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_young and self.has_young_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -4468,7 +4793,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def sfr_fuv_luminosity_map(self):
 
         """
@@ -4476,8 +4801,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.sfr_fuv_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_fuv_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SF map
-        frame = self.sfr_map.copy()
+        frame = self.sfr_map_earth.copy()
 
         # Normalize to the FUV luminosity
         frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
@@ -4533,11 +4870,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_fuv_luminosity_sfr
+        return self.has_sfr_fuv_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_sfr_fuv_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_sfr and self.has_sfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_fuv_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_sfr and self.has_sfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_fuv_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_fuv_luminosity_sfr and self.has_sfr_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_bolometric_luminosity_map(self):
 
         """
@@ -4545,8 +4918,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.sfr_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SF map
-        frame = self.sfr_map.copy()
+        frame = self.sfr_map_earth.copy()
 
         # Normalize to the bolometric luminosity
         frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
@@ -4602,11 +4987,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_bolometric_luminosity_sfr
+        return self.has_sfr_bolometric_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_sfr_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_sfr and self.has_sfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_bolometric_luminosity_map_faceon(self):
+
+        """
+        Thsi function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_sfr and self.has_sfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_sfr and self.has_sfr_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def star_formation_rate_map(self):
 
         """
@@ -4614,8 +5035,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.star_formation_rate_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def star_formation_rate_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SF map
-        frame = self.sfr_map.copy()
+        frame = self.sfr_map_earth.copy()
 
         # Normalize to the star formation rate
         frame.normalize(to=self.sfr)
@@ -4671,11 +5104,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_sfr
+        return self.has_star_formation_rate_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_star_formation_rate_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr and self.has_sfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_star_formation_rate_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr and self.has_sfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_star_formation_rate_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr and self.has_sfr_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_dust_mass_map(self):
 
         """
@@ -4683,8 +5152,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.sfr_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SF map
-        frame = self.sfr_map.copy()
+        frame = self.sfr_map_earth.copy()
 
         # Normalize to the SF dust mass
         frame.normalize(to=self.sfr_dust_mass)
@@ -4740,11 +5221,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_sfr_dust_mass
+        return self.has_sfr_dust_mass_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_sfr_dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_dust_mass and self.has_sfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_dust_mass and self.has_sfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_dust_mass and self.has_sfr_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_stellar_luminosity_map(self):
 
         """
@@ -4752,8 +5269,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.sfr_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_stellar_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SF map
-        frame = self.sfr_map.copy()
+        frame = self.sfr_map_earth.copy()
 
         # Normalize
         frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
@@ -4809,11 +5338,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_stellar_luminosity_sfr
+        return self.has_sfr_stellar_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_sfr_stellar_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_luminosity_sfr and self.has_sfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_stellar_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_luminosity_sfr and self.has_sfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_stellar_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_luminosity_sfr and self.has_sfr_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_dust_luminosity_map(self):
 
         """
@@ -4821,8 +5386,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.sfr_dust_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SF map
-        frame = self.sfr_map.copy()
+        frame = self.sfr_map_earth.copy()
 
         # Normalize
         frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
@@ -4878,12 +5455,60 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_intrinsic_dust_luminosity_sfr
+        return self.has_sfr_dust_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_dust_luminosity_sfr and self.has_sfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_dust_luminosity_sfr and self.has_sfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_dust_luminosity_sfr and self.has_sfr_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_fuv_luminosity_map(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.unevolved_fuv_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def unevolved_fuv_luminosity_map(self):
+    def unevolved_fuv_luminosity_map_earth(self):
 
         """
         This function ...
@@ -4891,8 +5516,8 @@ class RTModel(object):
         """
 
         # Get contributions
-        young = self.young_fuv_luminosity_map
-        sfr = self.sfr_fuv_luminosity_map
+        young = self.young_fuv_luminosity_map_earth
+        sfr = self.sfr_fuv_luminosity_map_earth
 
         # Uniformize
         young, sfr = convolve_and_rebin(young, sfr)
@@ -4944,11 +5569,47 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_young_fuv_luminosity_map and self.has_sfr_fuv_luminosity_map
+        return self.has_unevolved_fuv_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def has_unevolved_fuv_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_fuv_luminosity_map_earth and self.has_sfr_fuv_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_fuv_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_fuv_luminosity_map_faceon and self.has_sfr_fuv_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_fuv_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_fuv_luminosity_map_edgeon and self.has_sfr_fuv_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_bolometric_luminosity_map(self):
 
         """
@@ -4956,9 +5617,21 @@ class RTModel(object):
         :return:
         """
 
+        return self.unevolved_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get contributions
-        young = self.young_bolometric_luminosity_map
-        sfr = self.sfr_bolometric_luminosity_map
+        young = self.young_bolometric_luminosity_map_earth
+        sfr = self.sfr_bolometric_luminosity_map_earth
 
         # Unformize
         young, sfr = convolve_and_rebin(young, sfr)
@@ -5010,7 +5683,43 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_young_bolometric_luminosity_map and self.has_sfr_bolometric_luminosity_map
+        return self.has_unevolved_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_bolometric_luminosity_map_earth and self.has_sfr_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_bolometric_luminosity_map_faceon(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.has_young_bolometric_luminosity_map_faceon and self.has_sfr_bolometric_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_bolometric_luminosity_map_edgeon and self.has_sfr_bolometric_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5100,7 +5809,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def dust_mass_map(self):
 
         """
@@ -5108,8 +5817,20 @@ class RTModel(object):
         :return:
         """
 
+        return self.dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the dust map
-        frame = self.dust_map.copy()
+        frame = self.dust_map_earth.copy()
 
         # Normalize to the dust mass
         frame.normalize(to=self.dust_mass)
@@ -5177,7 +5898,19 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_map and self.has_dust_mass
+        return self.has_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_map_earth and self.has_dust_mass
 
     # -----------------------------------------------------------------
 
@@ -5205,8 +5938,20 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def total_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_mass_map_earth(self):
 
         """
         This function ...
@@ -5267,7 +6012,43 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_mass_map and self.has_sfr_dust_mass_map
+        return self.has_total_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_mass_map_earth and self.has_sfr_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_mass_map_faceon and self.has_sfr_dust_mass_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_mass_map_edgeon and self.has_sfr_dust_mass_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5646,6 +6427,42 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_old_disk_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_old_disk_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_old_disk_map # if we have the input map, we can deproject it
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_old_disk_map # if we have the input map, we can deproject it
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def young_projections(self):
 
@@ -5691,6 +6508,42 @@ class RTModel(object):
         """
 
         return self.young_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_map # if we have the input map, we can deproject it
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_young_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
 
@@ -5742,6 +6595,42 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_sfr_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_map # if we have the input map, we can deproject it
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_sfr_map # if we have the input map, we can deproject it
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def dust_projections(self):
 
@@ -5787,6 +6676,42 @@ class RTModel(object):
         """
 
         return self.dust_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_map_earth(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_dust_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_map # if there is an input map, we can deproject it
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_map # if there is an input map, we can deproject it
 
     # -----------------------------------------------------------------
 
