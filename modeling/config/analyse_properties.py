@@ -31,3 +31,9 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 #definition.add_optional("scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("earth", "write earth maps", True)
+definition.add_flag("faceon", "write faceon maps", True)
+definition.add_flag("edgeon", "write edgeon maps", True)
+
+# -----------------------------------------------------------------

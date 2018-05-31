@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..basics.log import log
 from ..basics.configurable import Configurable
 from ...modeling.basics.models import create_3d_model, DeprojectionModel3D
-from ...modeling.build.representations.galaxy import create_projection, create_faceon_projection, create_edgeon_projection
+from ...modeling.build.representations.galaxy import create_projection_from_deprojection, create_faceon_projection_from_deprojection, create_edgeon_projection_from_deprojection
 from ...modeling.basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
 from ...core.tools import filesystem as fs
 from ...modeling.basics.models import deprojection
@@ -618,10 +618,10 @@ def create_projections_from_deprojection(deprojection, distance=None, azimuth=0.
     else: distance = deprojection.distance
 
     # Create the 'earth' projection system
-    earth_projection = create_projection(deprojection, distance, azimuth)
+    earth_projection = create_projection_from_deprojection(deprojection, distance, azimuth)
 
     # Create the face-on projection system
-    faceon_projection = create_faceon_projection(deprojection)
+    faceon_projection = create_faceon_projection_from_deprojection(deprojection)
 
     # Determine the reference scale height for determining the physical z scale
     # Determine the z extent of the model based on the given number of scale heights
@@ -629,7 +629,7 @@ def create_projections_from_deprojection(deprojection, distance=None, azimuth=0.
     z_extent = 2. * scale_height * scale_heights
 
     # Create the edge-on projection system
-    edgeon_projection = create_edgeon_projection(deprojection, z_extent)
+    edgeon_projection = create_edgeon_projection_from_deprojection(deprojection, z_extent)
 
     # Return the projections
     return earth_projection, faceon_projection, edgeon_projection

@@ -3800,13 +3800,6 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-
-    # -----------------------------------------------------------------
-
-
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def old_disk_sed_out_path(self):
 
@@ -3816,54 +3809,6 @@ class RTModel(object):
         """
 
         return fs.create_directory_in(self.old_disk_sed_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_projections_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.old_disk_projections_path, faceon_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_projections_faceon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.old_disk_projections_faceon_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_projections_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.old_disk_projections_path, edgeon_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_projections_edgeon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.old_disk_projections_edgeon_path, "out")
 
     # -----------------------------------------------------------------
 
@@ -3880,54 +3825,6 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def young_projections_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.young_projections_path, faceon_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_projections_faceon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.young_projections_faceon_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_projections_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.young_projections_path, edgeon_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_projections_edgeon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.young_projections_edgeon_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def sfr_sed_out_path(self):
 
         """
@@ -3936,54 +3833,6 @@ class RTModel(object):
         """
 
         return fs.create_directory_in(self.sfr_sed_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_projections_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.sfr_projections_path, faceon_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_projections_faceon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.sfr_projections_faceon_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_projections_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.sfr_projections_path, edgeon_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_projections_edgeon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.sfr_projections_edgeon_path, "out")
 
     # -----------------------------------------------------------------
     # BULGE MAPS
@@ -6568,8 +6417,9 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(bulge_simulation_name, self.old_bulge_component, self.old_bulge_projections_path,
-                                    description="old bulge stellar component", input_filepaths=self.old_bulge_input_filepaths)
+        return ComponentProjections(bulge_simulation_name, self.old_bulge_component, path=self.old_bulge_projections_path,
+                                    description="old bulge stellar component",
+                                    projection=self.old_disk_projections.projection_earth, center=self.center)
 
     # -----------------------------------------------------------------
 
@@ -6677,7 +6527,9 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(disk_simulation_name, self.old_disk_component, self.old_disk_projections_path, earth=False, description="old disk stellar component")
+        return ComponentProjections(disk_simulation_name, self.old_disk_component, path=self.old_disk_projections_path,
+                                    earth=False, description="old disk stellar component",
+                                    input_filepaths=[self.old_disk_map_path], center=self.center)
 
     # -----------------------------------------------------------------
 
@@ -6761,7 +6613,9 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(young_simulation_name, self.young_component, self.young_projections_path, earth=False)
+        return ComponentProjections(young_simulation_name, self.young_component, path=self.young_projections_path,
+                                    earth=False, description="young stellar component",
+                                    input_filepaths=[self.young_map_path], center=self.center)
 
     # -----------------------------------------------------------------
 
@@ -6845,7 +6699,9 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(sfr_simulation_name, self.sfr_component, self.sfr_projections_path, earth=False)
+        return ComponentProjections(sfr_simulation_name, self.sfr_component, path=self.sfr_projections_path,
+                                    earth=False, description="SFR component", input_filepaths=[self.sfr_map_path],
+                                    center=self.center)
 
     # -----------------------------------------------------------------
 
@@ -6929,7 +6785,8 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(dust_simulation_name, self.dust_component, self.dust_projections_path, earth=False)
+        return ComponentProjections(dust_simulation_name, self.dust_component, path=self.dust_projections_path,
+                                    earth=False, description="dust component", input_filepaths=[self.dust_map_path])
 
     # -----------------------------------------------------------------
 

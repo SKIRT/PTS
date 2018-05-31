@@ -23,9 +23,9 @@ from ...core.simulation.execute import run_simulation
 from ...core.prep.smile import get_panchromatic_template, get_oligochromatic_template
 from ...core.tools import introspection
 from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection, get_center, get_physical_center
-from ...magic.basics.vector import PixelShape
-from ...magic.basics.stretch import PhysicalExtent
 from ..basics.instruments import FrameInstrument, FullInstrument
+from ..build.representations.galaxy import create_faceon_projection, create_edgeon_projection, create_projection_from_deprojection
+from ..basics.models import DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
@@ -51,7 +51,7 @@ class ComponentProjections(object):
 
     def __init__(self, name, model, projection=None, projection_faceon=None, projection_edgeon=None,
                  path=None, earth=True, faceon=True, edgeon=True, npackages=default_npackages,
-                 description=None, input_filepaths=None, distance=None, wcs=None):
+                 description=None, input_filepaths=None, distance=None, wcs=None, center=None):
 
         """
         This function ...
@@ -66,6 +66,7 @@ class ComponentProjections(object):
         :param input_filepaths:
         :param distance:
         :param wcs:
+        :param center: galaxy center, as sky coordinate
         :param
         """
 
@@ -76,9 +77,10 @@ class ComponentProjections(object):
         # Set the model
         self.model = model
 
-        # Extra info
-        self.distance = distance
-        self.wcs = wcs
+        # Extra info: set lazy properties
+        if distance is not None: self.distance = distance
+        if wcs is not None: self.wcs = wcs
+        if center is not None: self.center = center
 
         # Set the earth projection
         if projection is None: projection = self.create_projection_earth()
@@ -116,6 +118,43 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return isinstance(self.model, DeprojectionModel3D)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_deprojection: return self.model
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_deprojection and self.deprojection.has_map
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def distance(self):
 
@@ -125,8 +164,33 @@ class ComponentProjections(object):
         """
 
         if not self.has_deprojection: return None
+        else: return self.deprojection.distance
 
+    # -----------------------------------------------------------------
 
+    @property
+    def has_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_deprojection and self.distance is not None
+        return self.distance is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_map: return None
+        else: return self.deprojection.map
 
     # -----------------------------------------------------------------
 
@@ -138,9 +202,96 @@ class ComponentProjections(object):
         :return:
         """
 
+        if not self.has_map: return None
+        else: return self.map.wcs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_map and self.wcs is not None
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         if not self.has_deprojection: return None
+        else: return self.deprojection.inclination
 
+    # -----------------------------------------------------------------
 
+    @property
+    def has_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.inclination is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_deprojection: return None
+        else: return self.deprojection.position_angle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.position_angle is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not (self.has_wcs and self.has_deprojection): return None
+        else: return self.deprojection.center.to_sky(self.wcs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center is not None
 
     # -----------------------------------------------------------------
 
@@ -152,7 +303,7 @@ class ComponentProjections(object):
         """
 
         # Check whether deprojection is defined
-        if self.has_deprojection: return GalaxyProjection.from_deprojection(self.deprojection)
+        if self.has_deprojection: return create_projection_from_deprojection(self.deprojection)
         else:
 
             # Checks
@@ -826,51 +977,36 @@ class ComponentProjections(object):
 
 # -----------------------------------------------------------------
 
-def create_faceon_projection_from_earth_projection(earth_projection):
+def create_faceon_projection_from_earth_projection(earth_projection, radial_factor=1):
 
     """
     This function ...
     :param earth_projection:
+    :param radial_factor:
     :return:
     """
 
     # Determine extent in the radial direction
-    # radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
     radial_extent = max(earth_projection.field_x, earth_projection.field_y)
 
     # Get pixelscale
     physical_pixelscale = earth_projection.physical_pixelscale
 
     # Determine number of pixels
-    npixels = int(round(radial_extent / physical_pixelscale))
-    npixels = PixelShape.square(npixels)
+    npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
 
-    # Get the center pixel
-    center = get_center(npixels)
-
-    # Get field of view
-    # field = get_field(pixelscale, npixels, self.galaxy_distance)
-    field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
-
-    # Get physical center
-    center_physical = get_physical_center(field, npixels, center)
-
-    # Create the face-on projection system
-    faceon_projection = FaceOnProjection(distance=earth_projection.distance, pixels_x=npixels.x, pixels_y=npixels.y,
-                                         center_x=center_physical.x, center_y=center_physical.y,
-                                         field_x=field.x, field_y=field.y)
-
-    # Return the projection
-    return faceon_projection
+    # Create and return
+    return create_faceon_projection(npixels, physical_pixelscale, earth_projection.distance)
 
 # -----------------------------------------------------------------
 
-def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight):
+def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight, radial_factor=1):
 
     """
     This function ...
     :param earth_projection:
     :param scaleheight:
+    :param radial_factor:
     :return:
     """
 
@@ -878,35 +1014,16 @@ def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight
     physical_pixelscale = earth_projection.physical_pixelscale
 
     # Determine extent in the radial and in the vertical direction
-    # radial_extent = max(deprojection.x_range.span, deprojection.y_range.span)
     radial_extent = max(earth_projection.field_x, earth_projection.field_y)
 
     # Determine the z extent
     z_extent = 2. * scaleheight * default_scale_heights
 
     # Determine number of pixels
-    nx = int(round(radial_extent / physical_pixelscale))
+    nx = int(round(radial_extent / physical_pixelscale)) * radial_factor
     nz = int(round(z_extent / physical_pixelscale))
 
-    # Return the pixel shape
-    npixels = PixelShape.from_xy(nx, nz)
-
-    # Get the center pixel
-    center = get_center(npixels)
-
-    # Get field of view
-    # field = get_field(pixelscale, npixels, self.galaxy_distance)
-    field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
-
-    # Get physical center
-    center_physical = get_physical_center(field, npixels, center)
-
-    # edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
-    edgeon_projection = EdgeOnProjection(distance=earth_projection.distance, pixels_x=npixels.x, pixels_y=npixels.y,
-                                         center_x=center_physical.x, center_y=center_physical.y,
-                                         field_x=field.x, field_y=field.y)
-
-    # Return the projection
-    return edgeon_projection
+    # Create and return
+    return create_edgeon_projection(nx, nz, physical_pixelscale, earth_projection.distance)
 
 # -----------------------------------------------------------------

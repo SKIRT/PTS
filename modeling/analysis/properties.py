@@ -674,6 +674,42 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.edgeon
+
+    # -----------------------------------------------------------------
+
     def write_maps(self):
 
         """
@@ -720,13 +756,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the total maps ...")
 
         # Earth
-        self.write_total_maps_earth()
+        if self.do_earth: self.write_total_maps_earth()
 
         # Face-on
-        self.write_total_maps_faceon()
+        if self.do_faceon: self.write_total_maps_faceon()
 
         # Edge-on
-        self.write_total_maps_edgeon()
+        if self.do_edgeon: self.write_total_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -791,6 +827,33 @@ class PropertiesAnalyser(AnalysisComponent):
         # Bolometric
         if self.do_write_total_bol_map: self.total_bol_map.saveto(self.total_bol_map_path)
 
+        # Intrinsic stellar
+        if self.do_write_total_intr_stellar_map: self.total_intr_stellar_map.saveto(self.total_intr_stellar_map_path)
+
+        # Observed stellar
+        if self.do_write_total_obs_stellar_map: self.total_obs_stellar_map.saveto(self.total_obs_stellar_map_path)
+
+        # Dust emission luminosity
+        if self.do_write_total_dust_map: self.total_dust_map.saveto(self.total_dust_map_path)
+
+        # Dust emission with internal dust
+        if self.do_write_total_dust_with_internal_map: self.total_dust_with_internal_map.saveto(self.total_dust_with_internal_map_path)
+
+        # Scattered stellar
+        if self.do_write_total_scat_map: self.total_scat_map.saveto(self.total_scat_map_path)
+
+        # Absorbed stellar
+        if self.do_write_total_abs_map: self.total_abs_map.saveto(self.total_abs_map_path)
+
+        # Absorbed with internal
+        if self.do_write_total_abs_with_internal_map: self.total_abs_with_internal_map.saveto(self.total_abs_with_internal_map_path)
+
+        # Attenuated
+        if self.do_write_total_att_map: self.total_att_map.saveto(self.total_att_map_path)
+
+        # Direct stellar
+        if self.do_write_total_dir_map: self.total_dir_map.saveto(self.total_dir_map_path)
+
     # -----------------------------------------------------------------
 
     def write_total_maps_faceon(self):
@@ -804,7 +867,34 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the total maps in the faceon projection ...")
 
         # Bolometric
-        if self.has_total_bol_map_faceon: self.total_bol_map_faceon.saveto(self.total_bol_map_faceon_path)
+        if self.has_total_bol_map_faceon: self.total_bol_map_faceon.saveto(self.total_bol_map_faceon_faceon_path)
+
+        # Intrinsic stellar
+        if self.do_write_total_intr_stellar_map_faceon: self.total_intr_stellar_map_faceon.saveto(self.total_intr_stellar_map_faceon_path)
+
+        # Observed stellar
+        if self.do_write_total_obs_stellar_map_faceon: self.total_obs_stellar_map_faceon.saveto(self.total_obs_stellar_map_faceon_path)
+
+        # Dust emission luminosity
+        if self.do_write_total_dust_map_faceon: self.total_dust_map_faceon.saveto(self.total_dust_map_faceon_path)
+
+        # Dust emission with internal dust
+        if self.do_write_total_dust_with_internal_map_faceon: self.total_dust_with_internal_map_faceon.saveto(self.total_dust_with_internal_map_faceon_path)
+
+        # Scattered stellar
+        if self.do_write_total_scat_map_faceon: self.total_scat_map_faceon.saveto(self.total_scat_map_faceon_path)
+
+        # Absorbed stellar
+        if self.do_write_total_abs_map_faceon: self.total_abs_map_faceon.saveto(self.total_abs_map_faceon_path)
+
+        # Absorbed with internal
+        if self.do_write_total_abs_with_internal_map_faceon: self.total_abs_with_internal_map_faceon.saveto(self.total_abs_with_internal_map_faceon_path)
+
+        # Attenuated
+        if self.do_write_total_att_map_faceon: self.total_att_map_faceon.saveto(self.total_att_map_faceon_path)
+
+        # Direct stellar
+        if self.do_write_total_dir_map_faceon: self.total_dir_map_faceon.saveto(self.total_dir_map_faceon_path)
 
     # -----------------------------------------------------------------
 
@@ -821,6 +911,33 @@ class PropertiesAnalyser(AnalysisComponent):
         # Bolometric
         if self.has_total_bol_map_edgeon: self.total_bol_map_edgeon.saveto(self.total_bol_map_edgeon_path)
 
+        # Intrinsic stellar
+        if self.do_write_total_intr_stellar_map_edgeon: self.total_intr_stellar_map_edgeon.saveto(self.total_intr_stellar_map_edgeon_path)
+
+        # Observed stellar
+        if self.do_write_total_obs_stellar_map_edgeon: self.total_obs_stellar_map_edgeon.saveto(self.total_obs_stellar_map_edgeon_path)
+
+        # Dust emission luminosity
+        if self.do_write_total_dust_map_edgeon: self.total_dust_map_edgeon.saveto(self.total_dust_map_edgeon_path)
+
+        # Dust emission with internal dust
+        if self.do_write_total_dust_with_internal_map_edgeon: self.total_dust_with_internal_map_edgeon.saveto(self.total_dust_with_internal_map_edgeon_path)
+
+        # Scattered stellar
+        if self.do_write_total_scat_map_edgeon: self.total_scat_map_edgeon.saveto(self.total_scat_map_edgeon_path)
+
+        # Absorbed stellar
+        if self.do_write_total_abs_map_edgeon: self.total_abs_map_edgeon.saveto(self.total_abs_map_edgeon_path)
+
+        # Absorbed with internal
+        if self.do_write_total_abs_with_internal_map_edgeon: self.total_abs_with_internal_map_edgeon.saveto(self.total_abs_with_internal_map_edgeon_path)
+
+        # Attenuated
+        if self.do_write_total_att_map_edgeon: self.total_att_map_edgeon.saveto(self.total_att_map_edgeon_path)
+
+        # Direct stellar
+        if self.do_write_total_dir_map_edgeon: self.total_dir_map_edgeon.saveto(self.total_dir_map_edgeon_path)
+
     # -----------------------------------------------------------------
 
     def write_bulge_maps(self):
@@ -834,13 +951,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the bulge maps ...")
 
         # Earth
-        self.write_bulge_maps_earth()
+        if self.do_earth: self.write_bulge_maps_earth()
 
         # Face-on
-        self.write_bulge_maps_faceon()
+        if self.do_faceon: self.write_bulge_maps_faceon()
 
         # Edge-on
-        self.write_bulge_maps_edgeon()
+        if self.do_edgeon: self.write_bulge_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -1269,13 +1386,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the disk maps ...")
 
         # Earth
-        self.write_disk_maps_earth()
+        if self.do_earth: self.write_disk_maps_earth()
 
         # Face-on
-        self.write_disk_maps_faceon()
+        if self.do_faceon: self.write_disk_maps_faceon()
 
         # Edge-on
-        self.write_disk_maps_edgeon()
+        if self.do_edgeon: self.write_disk_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -1560,13 +1677,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the old maps ...")
 
         # Earth
-        self.write_old_maps_earth()
+        if self.do_earth: self.write_old_maps_earth()
 
         # Face-on
-        self.write_old_maps_faceon()
+        if self.do_faceon: self.write_old_maps_faceon()
 
         # Edge-on
-        self.write_old_maps_edgeon()
+        if self.do_edgeon: self.write_old_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -1923,13 +2040,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the young maps ...")
 
         # Earth
-        self.write_young_maps_earth()
+        if self.do_earth: self.write_young_maps_earth()
 
         # Face-on
-        self.write_young_maps_faceon()
+        if self.do_faceon: self.write_young_maps_faceon()
 
         # Edge-on
-        self.write_young_maps_edgeon()
+        if self.do_edgeon: self.write_young_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -2478,13 +2595,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the SFR maps ...")
 
         # Earth
-        self.write_sfr_maps_earth()
+        if self.do_earth: self.write_sfr_maps_earth()
 
         # Face-on
-        self.write_sfr_maps_faceon()
+        if self.do_faceon: self.write_sfr_maps_faceon()
 
         # Edge-on
-        self.write_sfr_maps_edgeon()
+        if self.do_edgeon: self.write_sfr_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -2954,13 +3071,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the unevolved maps ...")
 
         # Earth
-        self.write_unevolved_maps_earth()
+        if self.do_earth: self.write_unevolved_maps_earth()
 
         # Face-on
-        self.write_unevolved_maps_faceon()
+        if self.do_faceon: self.write_unevolved_maps_faceon()
 
         # Edge-on
-        self.write_unevolved_maps_edgeon()
+        if self.do_edgeon: self.write_unevolved_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -3317,13 +3434,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Writing the dust maps ...")
 
         # Earth
-        self.write_dust_maps_earth()
+        if self.do_earth: self.write_dust_maps_earth()
 
         # Face-on
-        self.write_dust_maps_faceon()
+        if self.do_faceon: self.write_dust_maps_faceon()
 
         # Edge-on
-        self.write_dust_maps_edgeon()
+        if self.do_edgeon: self.write_dust_maps_edgeon()
 
     # -----------------------------------------------------------------
 

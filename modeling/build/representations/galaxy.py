@@ -422,10 +422,10 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     else: reference_deprojection, deprojection_name = get_deprojection(deprojections, reference_deprojection_name), reference_deprojection_name
 
     # Create the 'earth' projection system
-    earth_projection = create_projection(reference_deprojection, galaxy_distance, azimuth)
+    earth_projection = create_projection_from_deprojection(reference_deprojection, galaxy_distance, azimuth)
 
     # Create the face-on projection system
-    faceon_projection = create_faceon_projection(reference_deprojection, radial_factor=radial_factor)
+    faceon_projection = create_faceon_projection_from_deprojection(reference_deprojection, radial_factor=radial_factor)
 
     # Determine the reference scale height for determining the physical z scale
     if scale_heights_reference is not None:
@@ -437,7 +437,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     z_extent = 2. * scale_height * scale_heights
 
     # Create the edge-on projection system
-    edgeon_projection = create_edgeon_projection(reference_deprojection, z_extent, radial_factor=radial_factor)
+    edgeon_projection = create_edgeon_projection_from_deprojection(reference_deprojection, z_extent, radial_factor=radial_factor)
 
     # Return the projections
     if return_deprojection_name: return earth_projection, faceon_projection, edgeon_projection, deprojection_name
@@ -460,21 +460,27 @@ def get_physical_pixelscale_from_map(the_map, distance, downsample_factor=1.):
 
 # -----------------------------------------------------------------
 
-def create_projection(deprojection, distance, azimuth):
+def create_projection_from_deprojection(deprojection, distance=None, azimuth=0.0):
 
     """
     This function ...
     :param deprojection:
     :param distance:
-    :param azimuth
+    :param azimuth:
     :return:
     """
 
+    # Get the distance
+    if distance is None:
+        if deprojection.distance is None: raise ValueError("Distance is not defined")
+        distance = deprojection.distance
+
+    # Create
     return GalaxyProjection.from_deprojection(deprojection, distance, azimuth)
 
 # -----------------------------------------------------------------
 
-def create_faceon_projection(deprojection, radial_factor=1):
+def create_faceon_projection_from_deprojection(deprojection, radial_factor=1):
 
     """
     This function ...
@@ -492,24 +498,38 @@ def create_faceon_projection(deprojection, radial_factor=1):
 
     # Determine number of pixels
     npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
-    npixels = PixelShape.square(npixels)
+
+    # Create and return
+    return create_faceon_projection(npixels, physical_pixelscale, distance)
+
+# -----------------------------------------------------------------
+
+def create_faceon_projection(npixels, physical_pixelscale, distance):
+
+    """
+    This function ...
+    :param npixels:
+    :param physical_pixelscale:
+    :param distance:
+    :return:
+    """
 
     # Make sure that the number of pixels is odd
     npixels = numbers.nearest_odd_integer(npixels)
+    npixels = PixelShape.square(npixels)
 
     # Get the center pixel
     center = get_center(npixels)
 
     # Get field of view
-    #field = get_field(pixelscale, npixels, self.galaxy_distance)
     field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
 
     # Get physical center
     center_physical = get_physical_center(field, npixels, center)
 
     # Create the face-on projection system
-    #faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
-    faceon_projection = FaceOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y, center_x=center_physical.x, center_y=center_physical.y,
+    faceon_projection = FaceOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y,
+                                         center_x=center_physical.x, center_y=center_physical.y,
                                          field_x=field.x, field_y=field.y)
 
     # Return the projection
@@ -517,7 +537,7 @@ def create_faceon_projection(deprojection, radial_factor=1):
 
 # -----------------------------------------------------------------
 
-def create_edgeon_projection(deprojection, z_extent, radial_factor=1):
+def create_edgeon_projection_from_deprojection(deprojection, z_extent, radial_factor=1):
 
     """
     Thisf unction ...
@@ -538,6 +558,22 @@ def create_edgeon_projection(deprojection, z_extent, radial_factor=1):
     nx = int(round(radial_extent / physical_pixelscale)) * radial_factor
     nz = int(round(z_extent / physical_pixelscale))
 
+    # Create and return
+    return create_edgeon_projection(nx, nz, physical_pixelscale, distance)
+
+# -----------------------------------------------------------------
+
+def create_edgeon_projection(nx, nz, physical_pixelscale, distance):
+
+    """
+    This function ...
+    :param nx:
+    :param nz:
+    :param physical_pixelscale:
+    :param distance:
+    :return:
+    """
+
     # Make sure that the number of pixels is odd
     nx = numbers.nearest_odd_integer(nx)
     nz = numbers.nearest_odd_integer(nz)
@@ -549,14 +585,15 @@ def create_edgeon_projection(deprojection, z_extent, radial_factor=1):
     center = get_center(npixels)
 
     # Get field of view
-    #field = get_field(pixelscale, npixels, self.galaxy_distance)
     field = PhysicalExtent(physical_pixelscale * npixels.x, physical_pixelscale * npixels.y)
 
     # Get physical center
     center_physical = get_physical_center(field, npixels, center)
 
+    # Create the projection
     # edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
-    edgeon_projection = EdgeOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y, center_x=center_physical.x, center_y=center_physical.y,
+    edgeon_projection = EdgeOnProjection(distance=distance, pixels_x=npixels.x, pixels_y=npixels.y,
+                                         center_x=center_physical.x, center_y=center_physical.y,
                                          field_x=field.x, field_y=field.y)
 
     # Return the projection
