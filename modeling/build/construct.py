@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from ...core.filter.filter import parse_filter
-from pts.core.tools.introspection import skirt_main_version, has_skirt
+from ...core.tools.introspection import skirt_main_version, has_skirt
 from ...core.tools.stringify import tostr
 from ...core.filter.filter import Filter
 from ...core.tools import types

@@ -1401,3 +1401,35 @@ def invert_dictionary(dictionary, one_to_one=False):
     else: return new
 
 # -----------------------------------------------------------------
+
+def get_keys_for_value(dictionary, value):
+
+    """
+    This function ...
+    :param dictionary:
+    :param value:
+    :return:
+    """
+
+    keys = []
+    for key in dictionary:
+        if dictionary[key] == value: keys.append(key)
+    return keys
+
+# -----------------------------------------------------------------
+
+def get_key_for_value(dictionary, value):
+
+    """
+    This function ...
+    :param dictionary:
+    :param value:
+    :return:
+    """
+
+    keys = get_keys_for_value(dictionary, value)
+    if len(keys) == 0: raise ValueError("Value '" + str(value) + "' not in dictionary")
+    elif len(keys) > 1: raise ValueError("Multiple keys for value '" + str(value) + "'")
+    else: return keys[0]
+
+# -----------------------------------------------------------------

@@ -1606,123 +1606,147 @@ class SkiFile7:
         # Panchromatic simulation
         if self.panchromatic():
 
-            # Get the stellar system
-            stellar_system = self.get_stellar_system()
-
-            # Get the 'components' element
-            stellar_components_parent = xml.get_unique_element_direct(stellar_system, "components")
-
-            # Create the stellar component
-            stellar_component = stellar_components_parent.makeelement("PanStellarComp", {})
-
-            # Create children
-            geometry_parent = stellar_component.makeelement("geometry", {"type":"Geometry"})
-            sed_parent = stellar_component.makeelement("sed", {"type":"StellarSED"})
-            normalization_parent = stellar_component.makeelement("normalization", {"type":"StellarCompNormalization"})
-
-            # Create geometry
-            if geometry_type is not None:
-                if geometry is not None: raise ValueError("Cannot specify 'geometry' and 'geometry_type'")
-                if geometry_properties is None: raise ValueError("Geometry properties must be defined")
-                geometry = self.create_element(geometry_type, geometry_properties)
-                geometry_parent.append(geometry)
-
-            # Create SED
-            if sed_type is not None:
-                if sed_properties is None: sed_properties = {}
-                sed = self.create_element(sed_type, sed_properties)
-                sed_parent.append(sed)
-
-            # Create normalization
-            if normalization_type is not None:
-                if normalization_properties is None: normalization_properties = {}
-                normalization = self.create_element(normalization_type, normalization_properties)
-                normalization_parent.append(normalization)
-
-            # Set geometry, sed and normalization to the stellar component
-            stellar_component.append(geometry_parent)
-            stellar_component.append(sed_parent)
-            stellar_component.append(normalization_parent)
-
-            # Add the component ID, if possible
-            if component_id is not None:
-                comment = etree.Comment(" " + component_id + " ")
-                stellar_components_parent.append(comment)
-
-            # Add the new stellar component
-            stellar_components_parent.append(stellar_component)
-
-            # Set component ID
-            if component_id is None: component_id = self.nstellar_components - 1
-
-            # Set geometry
-            if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
-
-            # Set SED
-            if sed_template is not None:
-
-                # Set MAPPINGS or other template
-                if sed_template == "Mappings": self.set_stellar_component_mappingssed(component_id, metallicity, compactness, pressure, covering_factor)
-                else: self.set_stellar_component_sed(component_id, sed_template, age, metallicity)
-
-            # Set normalization based on filter or wavelength
-            if filter_or_wavelength is not None and types.is_quantity(filter_or_wavelength): self.set_stellar_component_normalization_wavelength(component_id, filter_or_wavelength) # actually this step is not needed?
-            if luminosity is not None:
-                #if filter_or_wavelength is None: raise ValueError("If luminosity is passed, filter or wavelength should be specified") # not true: bolometric is also possible
-                self.set_stellar_component_luminosity(component_id, luminosity, filter_or_wavelength=filter_or_wavelength)
+            # Call the implementation
+            self._create_new_stellar_component_pan(component_id=component_id, geometry=geometry, geometry_type=geometry_type,
+                                                   geometry_properties=geometry_properties, sed_type=sed_type, sed_properties=sed_properties,
+                                                   normalization_type=normalization_type, normalization_properties=normalization_properties, sed_template=sed_template, age=age,
+                                                   filter_or_wavelength=filter_or_wavelength, luminosity=luminosity, metallicity=metallicity, compactness=compactness,
+                                                   pressure=pressure, covering_factor=covering_factor)
 
         # Oligochromatic simulation
         else:
-
-            from ..tools.stringify import tostr
-
-            # Check that luminosities are passed
-            if luminosities is None: raise ValueError("Luminosities must be passed")
-            if not self.uses_wavelength_file and len(luminosities) != self.nwavelengths(): raise ValueError("The number of luminosities must match the number of wavelengths")
 
             # Check for too much input
             if sed_type is not None or sed_properties is not None: raise ValueError("Cannot specify 'sed_type' or 'sed_properties' for oligochromatic simulations")
             if normalization_type is not None or normalization_properties is not None: raise ValueError("Cannot specify 'normalization_type' or 'normalization_properties' for oligochromatic simulations")
 
-            # Get the stellar system
-            stellar_system = self.get_stellar_system()
+            # Check that luminosities are passed
+            if luminosities is None: raise ValueError("Luminosities must be passed")
 
-            # Get the 'components' element
-            stellar_components_parent = xml.get_unique_element_direct(stellar_system, "components")
+            # Create
+            self._create_new_stellar_component_oligo(component_id=component_id, geometry=geometry, geometry_type=geometry_type,
+                                                    geometry_properties=geometry_properties, luminosities=luminosities)
 
-            # Set luminositites property for oligochomratic stellar component
-            stellar_comp_properties = dict()
-            stellar_comp_properties["luminosities"] = ", ".join(map(tostr, luminosities))
+    ## This function is the implementation for adding a new stellar component in panchromatic ski files
+    def _create_new_stellar_component_pan(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,
+                                     sed_type=None, sed_properties=None, normalization_type=None,
+                                     normalization_properties=None, sed_template=None, age=None,
+                                     filter_or_wavelength=None, luminosity=None, metallicity=None, compactness=None,
+                                     pressure=None, covering_factor=None):
 
-            # Create the stellar component
-            stellar_component = stellar_components_parent.makeelement("OligoStellarComp", stellar_comp_properties)
+        # Get the stellar system
+        stellar_system = self.get_stellar_system()
 
-            # Create geometry child
-            geometry_parent = stellar_component.makeelement("geometry", {"type": "Geometry"})
+        # Get the 'components' element
+        stellar_components_parent = xml.get_unique_element_direct(stellar_system, "components")
 
-            # Create geometry
-            if geometry_type is not None:
-                if geometry is not None: raise ValueError("Cannot specify 'geometry' and 'geometry_type'")
-                if geometry_properties is None: raise ValueError("Geometry properties must be defined")
-                geometry = self.create_element(geometry_type, geometry_properties)
-                geometry_parent.append(geometry)
+        # Create the stellar component
+        stellar_component = stellar_components_parent.makeelement("PanStellarComp", {})
 
-            # Set geometry to the stellar component
-            stellar_component.append(geometry_parent)
+        # Create children
+        geometry_parent = stellar_component.makeelement("geometry", {"type":"Geometry"})
+        sed_parent = stellar_component.makeelement("sed", {"type":"StellarSED"})
+        normalization_parent = stellar_component.makeelement("normalization", {"type":"StellarCompNormalization"})
 
-            # Add the component ID, if possible
-            if component_id is not None:
-                comment = etree.Comment(" " + component_id + " ")
-                stellar_components_parent.append(comment)
+        # Create geometry
+        if geometry_type is not None:
+            if geometry is not None: raise ValueError("Cannot specify 'geometry' and 'geometry_type'")
+            if geometry_properties is None: raise ValueError("Geometry properties must be defined")
+            geometry = self.create_element(geometry_type, geometry_properties)
+            geometry_parent.append(geometry)
 
-            # Add the new stellar component
-            stellar_components_parent.append(stellar_component)
+        # Create SED
+        if sed_type is not None:
+            if sed_properties is None: sed_properties = {}
+            sed = self.create_element(sed_type, sed_properties)
+            sed_parent.append(sed)
 
-            # Set component ID
-            if component_id is None: component_id = self.nstellar_components - 1
+        # Create normalization
+        if normalization_type is not None:
+            if normalization_properties is None: normalization_properties = {}
+            normalization = self.create_element(normalization_type, normalization_properties)
+            normalization_parent.append(normalization)
 
-            # Set geometry
-            if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
+        # Set geometry, sed and normalization to the stellar component
+        stellar_component.append(geometry_parent)
+        stellar_component.append(sed_parent)
+        stellar_component.append(normalization_parent)
+
+        # Add the component ID, if possible
+        if component_id is not None:
+            comment = etree.Comment(" " + component_id + " ")
+            stellar_components_parent.append(comment)
+
+        # Add the new stellar component
+        stellar_components_parent.append(stellar_component)
+
+        # Set component ID
+        if component_id is None: component_id = self.nstellar_components - 1
+
+        # Set geometry
+        if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
+
+        # Set SED
+        if sed_template is not None:
+
+            # Set MAPPINGS or other template
+            if sed_template == "Mappings": self.set_stellar_component_mappingssed(component_id, metallicity, compactness, pressure, covering_factor)
+            else: self.set_stellar_component_sed(component_id, sed_template, age, metallicity)
+
+        # Set normalization based on filter or wavelength
+        if filter_or_wavelength is not None and types.is_quantity(filter_or_wavelength): self.set_stellar_component_normalization_wavelength(component_id, filter_or_wavelength) # actually this step is not needed?
+        if luminosity is not None:
+            #if filter_or_wavelength is None: raise ValueError("If luminosity is passed, filter or wavelength should be specified") # not true: bolometric is also possible
+            self.set_stellar_component_luminosity(component_id, luminosity, filter_or_wavelength=filter_or_wavelength)
+
+    ## This function is the implementation for adding a new stellar component in oligochromatic skifiles
+    def _create_new_stellar_component_oligo(self, component_id=None, geometry=None, geometry_type=None,
+                                            geometry_properties=None, luminosities=None):
+
+        from ..tools.stringify import tostr
+
+        # Check the number of luminosities
+        if not self.uses_wavelength_file and len(luminosities) != self.nwavelengths(): raise ValueError("The number of luminosities must match the number of wavelengths")
+
+        # Get the stellar system
+        stellar_system = self.get_stellar_system()
+
+        # Get the 'components' element
+        stellar_components_parent = xml.get_unique_element_direct(stellar_system, "components")
+
+        # Set luminositites property for oligochomratic stellar component
+        stellar_comp_properties = dict()
+        stellar_comp_properties["luminosities"] = ", ".join(map(tostr, luminosities))
+
+        # Create the stellar component
+        stellar_component = stellar_components_parent.makeelement("OligoStellarComp", stellar_comp_properties)
+
+        # Create geometry child
+        geometry_parent = stellar_component.makeelement("geometry", {"type": "Geometry"})
+
+        # Create geometry
+        if geometry_type is not None:
+            if geometry is not None: raise ValueError("Cannot specify 'geometry' and 'geometry_type'")
+            if geometry_properties is None: raise ValueError("Geometry properties must be defined")
+            geometry = self.create_element(geometry_type, geometry_properties)
+            geometry_parent.append(geometry)
+
+        # Set geometry to the stellar component
+        stellar_component.append(geometry_parent)
+
+        # Add the component ID, if possible
+        if component_id is not None:
+            comment = etree.Comment(" " + component_id + " ")
+            stellar_components_parent.append(comment)
+
+        # Add the new stellar component
+        stellar_components_parent.append(stellar_component)
+
+        # Set component ID
+        if component_id is None: component_id = self.nstellar_components - 1
+
+        # Set geometry
+        if geometry is not None: self.set_stellar_component_geometry(component_id, geometry)
 
     ## This function creates a new dust component
     def create_new_dust_component(self, component_id=None, geometry=None, geometry_type=None, geometry_properties=None,

@@ -28,22 +28,16 @@ from ..config.parameters import modeling_parameter_labels
 from ...core.basics.containers import create_subdict
 from ..basics.instruments import SEDInstrument
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import SkiFile
-from ...core.prep.smile import get_panchromatic_template, get_oligochromatic_template
-from ..build.construct import add_new_stellar_component
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.simulation.execute import run_simulation
-from ...core.basics.log import log
 from ..simulation.single import SingleComponentSimulations
 from ..simulation.multi import MultiComponentSimulations
-from ...core.simulation.simulation import createsimulations
 from ...magic.core.frame import Frame
 from ...magic.core.list import convolve_and_rebin
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ..basics.projection import GalaxyProjection, get_center
+from ..basics.projection import GalaxyProjection
 from ..basics.instruments import FrameInstrument, FullSEDInstrument
 from ..simulation.projections import ComponentProjections
+from ..simulation.sed import ComponentSED
 
 # -----------------------------------------------------------------
 
@@ -155,7 +149,6 @@ ionizing_component_name = "Ionizing stars"
 # -----------------------------------------------------------------
 
 default_npackages = 1e5
-projections_default_npackages = 5e7
 wavelengths_filename = "wavelengths.txt"
 map_filename = "map.fits"
 
@@ -3178,16 +3171,6 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def old_bulge_sed_ski_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.old_bulge_sed_path, bulge_simulation_name + ".ski")
-
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -3223,18 +3206,6 @@ class RTModel(object):
         """
 
         return fs.join(self.sfr_sed_path, sfr_name + ".ski")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_old_bulge_sed_skifile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.old_bulge_sed_ski_path)
 
     # -----------------------------------------------------------------
 
@@ -3571,268 +3542,6 @@ class RTModel(object):
         """
 
         return fs.join(self.wavelengths_path, "grid.txt")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_bulge_sed_skifile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the ski file if it already exists
-        if self.has_old_bulge_sed_skifile: return SkiFile(self.old_bulge_sed_ski_path)
-
-        # Create
-        else: return self.create_old_bulge_sed_skifile()
-
-    # -----------------------------------------------------------------
-
-    def create_old_bulge_sed_skifile(self, npackages=default_npackages):
-
-        """
-        This function ...
-        :param npackages:
-        :return:
-        """
-
-        # Check whether the wavelength grid is defined
-        if not self.has_wavelength_grid: raise ValueError("Wavelength grid path must be set")
-
-        # Create a ski template
-        ski = get_panchromatic_template()
-
-        # Add the old stellar bulge component
-        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
-
-        # Add the instrument
-        ski.add_instrument(earth_name, self.sed_instrument)
-
-        # Set the wavelength grid
-        ski.set_file_wavelength_grid(wavelengths_filename)
-
-        # Set the number of photon packages
-        ski.setpackages(npackages)
-
-        # Remove the dust system
-        ski.remove_dust_system()
-
-        # Save the skifile
-        ski.saveto(self.old_bulge_sed_ski_path, fix=True)
-
-        # Return the skifile
-        return ski
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_sed_skifile(self):
-
-        """
-        This fnuction ...
-        :return:
-        """
-
-        # Load the ski file if it already exists
-        if self.has_old_disk_sed_skifile: return SkiFile(self.old_disk_sed_ski_path)
-
-        # Create
-        else: return self.create_old_disk_sed_skifile()
-
-    # -----------------------------------------------------------------
-
-    def create_old_disk_sed_skifile(self, npackages=default_npackages):
-
-        """
-        This function ...
-        :param npackages:
-        :return:
-        """
-
-        # Check whether the wavelength grid is defined
-        if not self.has_wavelength_grid: raise ValueError("Wavelength grid path must be set")
-
-        # Create a ski template
-        ski = get_panchromatic_template()
-
-        # Add the old stellar disk component
-        # print(self.old_disk_component.parameters)
-        add_new_stellar_component(ski, disk_component_name, self.old_disk_component)
-
-        # Add the instrument
-        ski.add_instrument(earth_name, self.sed_instrument)
-
-        # Set the wavelength grid
-        ski.set_file_wavelength_grid(wavelengths_filename)
-
-        # Set the number of photon packages
-        ski.setpackages(npackages)
-
-        # Remove the dust system
-        ski.remove_dust_system()
-
-        # Save the skifile
-        ski.saveto(self.old_disk_sed_ski_path, fix=True)
-
-        # Return the skifile
-        return ski
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_sed_skifile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the ski file if it already exists
-        if self.has_young_sed_skifile: return SkiFile(self.young_sed_ski_path)
-
-        # Create
-        else: return self.create_young_sed_skifile()
-
-    # -----------------------------------------------------------------
-
-    def create_young_sed_skifile(self, npackages=default_npackages):
-
-        """
-        This function ...
-        :param npackages:
-        :return:
-        """
-
-        # Check whether the wavelength grid is defined
-        if not self.has_wavelength_grid: raise ValueError("Wavelength grid path must be set")
-
-        # Create a ski template
-        ski = get_panchromatic_template()
-
-        # Add the young stellar component
-        # print(self.young_component.parameters)
-        add_new_stellar_component(ski, young_component_name, self.young_component)
-
-        # Add the instrument
-        ski.add_instrument(earth_name, self.sed_instrument)
-
-        # Set the wavelength grid
-        ski.set_file_wavelength_grid(wavelengths_filename)
-
-        # Set the number of photon packages
-        ski.setpackages(npackages)
-
-        # Remove the dust system
-        ski.remove_dust_system()
-
-        # Save the skifile
-        ski.saveto(self.young_sed_ski_path, fix=True)
-
-        # Return the skifile
-        return ski
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_sed_skifile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the ski file if it already exists
-        if self.has_sfr_sed_skifile: return SkiFile(self.sfr_sed_ski_path)
-
-        # Create
-        else: return self.create_sfr_sed_skifile()
-
-    # -----------------------------------------------------------------
-
-    def create_sfr_sed_skifile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether the wavelength grid is defined
-        if not self.has_wavelength_grid: raise ValueError("Wavelength grid path must be set")
-
-        # Create a ski template
-        ski = get_panchromatic_template()
-
-        # Add the sfr component
-        # print(self.sfr_component.parameters)
-        add_new_stellar_component(ski, sfr_name, self.sfr_component)
-
-        # Add the instrument
-        ski.add_instrument(earth_name, self.sed_instrument)
-
-        # Set the wavelength grid
-        ski.set_file_wavelength_grid(wavelengths_filename)
-
-        # Set the number of photon packages
-        ski.setpackages(default_npackages)
-
-        # Remove the dust system
-        ski.remove_dust_system()
-
-        # Save the skifile
-        ski.saveto(self.sfr_sed_ski_path, fix=True)
-
-        # Return the skifile
-        return ski
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_bulge_sed_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.old_bulge_sed_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_sed_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.old_disk_sed_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_sed_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.young_sed_path, "out")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_sed_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.sfr_sed_path, "out")
 
     # -----------------------------------------------------------------
     # BULGE MAPS
@@ -6346,70 +6055,6 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_sed_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the skifile if necessary
-        if not self.has_old_bulge_sed_skifile: self.create_old_bulge_sed_skifile()
-
-        # Create the definition and return
-        return SingleSimulationDefinition(self.old_bulge_sed_ski_path, self.old_bulge_sed_out_path, input_path=self.old_bulge_input_filepaths, name=bulge_simulation_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_sed_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the skifile if necessary
-        if not self.has_old_disk_sed_skifile: self.create_old_disk_sed_skifile()
-
-        # Create the definition and return
-        return SingleSimulationDefinition(self.old_disk_sed_ski_path, self.old_disk_sed_out_path, input_path=self.old_disk_input_filepaths, name=disk_simulation_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_sed_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the skifile if necessary
-        if not self.has_young_sed_skifile: self.create_young_sed_skifile()
-
-        # Create the definition and return
-        return SingleSimulationDefinition(self.young_sed_ski_path, self.young_sed_out_path, input_path=self.young_input_filepaths, name=young_simulation_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_sed_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the skifile if necessary
-        if not self.has_sfr_sed_skifile: self.create_sfr_sed_skifile()
-
-        # Create the definition and return
-        return SingleSimulationDefinition(self.sfr_sed_ski_path, self.sfr_sed_out_path, input_path=self.sfr_input_filepaths, name=sfr_simulation_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def old_bulge_projections(self):
 
         """
@@ -6419,7 +6064,9 @@ class RTModel(object):
 
         return ComponentProjections(bulge_simulation_name, self.old_bulge_component, path=self.old_bulge_projections_path,
                                     description="old bulge stellar component",
-                                    projection=self.old_disk_projections.projection_earth, center=self.center)
+                                    projection=self.old_disk_projections.projection_earth,
+                                    projection_faceon=self.old_disk_projections.projection_faceon,
+                                    projection_edgeon=self.old_disk_projections.projection_edgeon, center=self.center)
 
     # -----------------------------------------------------------------
 
@@ -6861,75 +6508,36 @@ class RTModel(object):
         return self.has_dust_map # if there is an input map, we can deproject it
 
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_component_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ComponentSED(bulge_component_name, self.old_bulge_component, description="old stellar bulge component",
+                            path=self.old_bulge_sed_path, input_filepaths=self.old_bulge_input_filepaths,
+                            distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
+                            wavelengths_filename=wavelengths_filename)
+
+    # -----------------------------------------------------------------
 
     @property
-    def has_old_bulge_sed(self):
+    def old_bulge_sed(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.has_files_in_path(self.old_bulge_sed_out_path, extension="dat", endswith="_sed")
+        return self.old_bulge_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
-    def has_old_bulge_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_old_bulge_sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_bulge_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Simulation already performed?
-        if self.has_old_bulge_sed_simulation: return createsimulations(self.old_bulge_sed_out_path, single=True)
-
-        # Run the simulation
-        return self.run_old_bulge_sed_simulation()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_bulge_sed_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.old_bulge_sed_simulation.output
-
-    # -----------------------------------------------------------------
-
-    def run_old_bulge_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show message
-        log.info("Running SKIRT for the old stellar bulge component intrinsic SED ...")
-
-        # Run simulation
-        return run_simulation(self.old_bulge_sed_definition, show_progress=True, debug_output=True)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def old_bulge_sed_filepath(self):
 
         """
@@ -6937,79 +6545,39 @@ class RTModel(object):
         :return:
         """
 
-        return self.old_bulge_sed_output.single_sed
+        return self.old_bulge_component.sed_filepath
 
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_component_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ComponentSED(disk_component_name, self.old_disk_component, description="old stellar disk component",
+                            path=self.old_disk_sed_path, input_filepaths=self.old_disk_input_filepaths,
+                            distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
+                            wavelengths_filename=wavelengths_filename)
+
     # -----------------------------------------------------------------
 
     @property
-    def has_old_disk_sed(self):
+    def old_disk_sed(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.has_files_in_path(self.old_disk_sed_out_path, extension="dat", endswith="_sed")
+        return self.old_disk_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
-    def has_old_disk_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_old_disk_sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Simulation already performed?
-        if self.has_old_disk_sed_simulation: return createsimulations(self.old_disk_sed_out_path, single=True)
-
-        # Run the simulation
-        return self.run_old_disk_sed_simulation()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_disk_sed_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.old_disk_sed_simulation.output
-
-    # -----------------------------------------------------------------
-
-    def run_old_disk_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show message
-        log.info("Running SKIRT for the old stellar disk component intrinsic SED ...")
-
-        # Run
-        return run_simulation(self.old_disk_sed_definition, show_progress=True, debug_output=True)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def old_disk_sed_filepath(self):
 
         """
@@ -7017,79 +6585,39 @@ class RTModel(object):
         :return:
         """
 
-        return self.old_disk_sed_output.single_sed
+        return self.old_disk_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_component_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ComponentSED(young_component_name, self.young_component, description="young stellar component",
+                            path=self.young_sed_path, input_filepaths=self.young_input_filepaths,
+                            distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
+                            wavelengths_filename=wavelengths_filename)
+
     # -----------------------------------------------------------------
 
     @property
-    def has_young_sed(self):
+    def young_sed(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.has_files_in_path(self.young_sed_out_path, extension="dat", endswith="_sed")
+        return self.young_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
-    def has_young_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_young_sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Simulation already performed?
-        if self.has_young_sed_simulation: return createsimulations(self.young_sed_out_path, single=True)
-
-        # Run the simulation
-        return self.run_young_sed_simulation()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_sed_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.young_sed_simulation.output
-
-    # -----------------------------------------------------------------
-
-    def run_young_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show message
-        log.info("Running SKIRT simulation for the young stellar component intrinsic SED ...")
-
-        # Run
-        return run_simulation(self.young_sed_definition, show_progress=True, debug_output=True)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def young_sed_filepath(self):
 
         """
@@ -7097,75 +6625,35 @@ class RTModel(object):
         :return:
         """
 
-        return self.young_sed_output.single_sed
+        return self.young_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.has_files_in_path(self.sfr_sed_out_path, extension="dat", endswith="_sed")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_sfr_sed
-
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def sfr_sed_simulation(self):
+    def sfr_component_sed(self):
 
         """
         This function ...
         :return:
         """
 
-        # Simulation already performed?
-        if self.has_sfr_sed_simulation: return createsimulations(self.sfr_sed_out_path, single=True)
-
-        # Run the simulation
-        return self.run_sfr_sed_simulation()
+        return ComponentSED(ionizing_component_name, self.sfr_component, description="SFR component",
+                            path=self.sfr_sed_path, input_filepaths=self.sfr_input_filepaths,
+                            distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
+                            wavelengths_filename=wavelengths_filename)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def sfr_sed_output(self):
+    @property
+    def sfr_sed(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.sfr_sed_simulation.output
-
-    # -----------------------------------------------------------------
-
-    def run_sfr_sed_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show message
-        log.info("Running SKIRT simulation for the SFR component intrinsic SED ...")
-
-        # Run
-        return run_simulation(self.sfr_sed_definition, show_progress=True, debug_output=True)
+        return self.sfr_component_sed.sed
 
     # -----------------------------------------------------------------
 
@@ -7177,7 +6665,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.sfr_sed_output.single_sed
+        return self.sfr_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------

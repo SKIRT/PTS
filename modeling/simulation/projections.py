@@ -20,12 +20,13 @@ from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.simulation.execute import run_simulation
-from ...core.prep.smile import get_panchromatic_template, get_oligochromatic_template
+from ...core.prep.smile import get_oligochromatic_template
 from ...core.tools import introspection
-from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection, get_center, get_physical_center
+from ..basics.projection import GalaxyProjection
 from ..basics.instruments import FrameInstrument, FullInstrument
 from ..build.representations.galaxy import create_faceon_projection, create_edgeon_projection, create_projection_from_deprojection
 from ..basics.models import DeprojectionModel3D
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ class ComponentProjections(object):
 
     def __init__(self, name, model, projection=None, projection_faceon=None, projection_edgeon=None,
                  path=None, earth=True, faceon=True, edgeon=True, npackages=default_npackages,
-                 description=None, input_filepaths=None, distance=None, wcs=None, center=None):
+                 description=None, input_filepaths=None, distance=None, wcs=None, center=None, radial_factor=1):
 
         """
         This function ...
@@ -67,6 +68,7 @@ class ComponentProjections(object):
         :param distance:
         :param wcs:
         :param center: galaxy center, as sky coordinate
+        :param radial_factor:
         :param
         """
 
@@ -87,11 +89,11 @@ class ComponentProjections(object):
         self.projection_earth = projection
 
         # Set the face-on projection
-        if projection_faceon is None: projection_faceon = self.create_projection_faceon()
+        if projection_faceon is None: projection_faceon = self.create_projection_faceon(radial_factor=radial_factor)
         self.projection_faceon = projection_faceon
 
         # Set the edge-on projection
-        if projection_edgeon is None: projection_edgeon = self.create_projection_edgeon()
+        if projection_edgeon is None: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor)
         self.projection_edgeon = projection_edgeon
 
         # Set the path
@@ -318,25 +320,27 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
-    def create_projection_faceon(self):
+    def create_projection_faceon(self, radial_factor=1):
 
         """
         This function ...
+        :param radial_factor:
         :return:
         """
 
-        return create_faceon_projection_from_earth_projection(self.projection_earth)
+        return create_faceon_projection_from_earth_projection(self.projection_earth, radial_factor=radial_factor)
 
     # -----------------------------------------------------------------
 
-    def create_projection_edgeon(self):
+    def create_projection_edgeon(self, radial_factor=1):
 
         """
         This function ...
+        :param radial_factor:
         :return:
         """
 
-        return create_edgeon_projection_from_earth_projection(self.projection_earth, self.scaleheight)
+        return create_edgeon_projection_from_earth_projection(self.projection_earth, self.scaleheight, radial_factor=radial_factor)
 
     # -----------------------------------------------------------------
 
@@ -790,7 +794,8 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1. * u("W")])
 
         # Add the instrument
         ski.add_instrument(earth_name, self.frame_instrument_earth)
@@ -820,7 +825,8 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1. * u("W")])
 
         # Add the instrument
         ski.add_instrument(faceon_name, self.frame_instrument_faceon)
@@ -850,7 +856,8 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
+        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1. * u("W")])
 
         # Add the instrument
         ski.add_instrument(earth_name, self.frame_instrument_edgeon)
