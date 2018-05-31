@@ -4009,7 +4009,7 @@ class RTModel(object):
         :return:
         """
 
-        # Get the old disk map
+        # Get the old bulge map
         frame = self.old_bulge_map_earth.copy()
 
         # Normalize to the I1 specific luminosity
@@ -4028,6 +4028,15 @@ class RTModel(object):
         :return:
         """
 
+        # Get the old bulge map
+        frame = self.old_bulge_map_faceon.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
+
+        # Return the frame
+        return frame
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -4037,6 +4046,15 @@ class RTModel(object):
         This function ...
         :return:
         """
+
+        # Get the old bulge map
+        frame = self.old_bulge_map_edgeon.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
+
+        # Return the frame
+        return frame
 
     # -----------------------------------------------------------------
 
@@ -4072,6 +4090,8 @@ class RTModel(object):
         :return:
         """
 
+        return self.has_intrinsic_i1_luminosity_old_bulge and self.has_old_bulge_map_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -4081,6 +4101,125 @@ class RTModel(object):
         This function ...
         :return:
         """
+
+        return self.has_intrinsic_i1_luminosity_old_bulge and self.has_old_bulge_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old bulge map
+        frame = self.old_bulge_map_earth.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old bulge map
+        frame = self.old_bulge_map_faceon.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_bolometric_luminosity_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the old bulge map
+        frame = self.old_bulge_map_edgeon.copy()
+
+        # Normalize to the I1 specific luminosity
+        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_bolometric_luminosity_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_old_bulge_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_bolometric_luminosity_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_bulge and self.has_old_bulge_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_bolometric_luminosity_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_bulge and self.has_old_bulge_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_bolometric_luminosity_map_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_intrinsic_bolometric_luminosity_old_bulge and self.has_old_bulge_map_edgeon
 
     # -----------------------------------------------------------------
     # DISK MAPS
@@ -6435,6 +6574,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_bulge_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_bulge_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_bulge_map_earth(self):
 
         """
@@ -6467,6 +6618,54 @@ class RTModel(object):
         """
 
         return self.old_bulge_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_old_bulge_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
 
     # -----------------------------------------------------------------
 
