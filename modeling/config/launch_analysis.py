@@ -53,26 +53,6 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Tru
 
 # -----------------------------------------------------------------
 
-# Wavelength grid from fitting run
-definition.add_optional("wavelength_grid", "string", "wavelength grid from fitting run (only if origin is fitting run)")
-
-# Settings for the wavelength grid
-definition.add_section("wg", "options for the wavelength grid")
-definition.sections["wg"].add_optional("range", "quantity_range", "the wavelength range", wavelength_range)
-definition.sections["wg"].add_optional("npoints", "integer", "the number of wavelength points", 50)
-definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", True)
-
-# -----------------------------------------------------------------
-
-# Representation from model building
-definition.add_optional("representation", "string", "representation name")
-
-# Projections/instruments
-definition.add_flag("use_grid_resolution", "use resolution of the grid for determining instrument resolution", None) # None means it is asked interactively
-definition.add_optional("resolution_reference", "string", "use the map with this name as the reference for the instrument resolution", None) # None means it is asked interactively
-
-# -----------------------------------------------------------------
-
 # The number of parallel processes for local execution
 definition.add_optional("nprocesses_local", "positive_integer", "number of parallel processes for local execution", 2)
 definition.add_optional("nprocesses_remote", "positive_integer", "number of parallel processes for remote execution")

@@ -25,6 +25,7 @@ from ...core.basics.log import log
 from .simulation import earth_name, faceon_name, edgeon_name
 from .simulation import total_contribution, scattered_contribution, direct_contribution, transparent_contribution
 from .simulation import dust_contribution, dust_direct_contribution, dust_scattered_contribution
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

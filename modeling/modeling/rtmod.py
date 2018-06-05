@@ -1780,7 +1780,7 @@ class RTMod(InteractiveConfigurable):
         """
 
         # Get fitting run name
-        fitting_run_name = self.get_fitting_run_name_and_config_from_command(command, self.statistics_definition, **kwargs)
+        fitting_run_name, config = self.get_fitting_run_name_and_config_from_command(command, self.statistics_definition, **kwargs)
 
         # Statistics
         self.statistics(fitting_run_name)

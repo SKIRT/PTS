@@ -888,16 +888,19 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def get_frame_for_wavelength(self, wavelength):
+    def get_frame_for_wavelength(self, wavelength, copy=False):
 
         """
         This function ...
         :param wavelength:
+        :param copy:
         :return:
         """
 
         index = self.get_frame_index_for_wavelength(wavelength)
-        return self.frames[index]
+
+        if copy: return self.frames[index].copy()
+        else: return self.frames[index]
 
     # -----------------------------------------------------------------
 

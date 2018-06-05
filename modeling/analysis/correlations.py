@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.heating.correlations Contains the HeatingCorrelationsAnalyser class.
+## \package pts.modeling.analysis.correlations Contains the CorrelationsAnalyser class.
 
 # -----------------------------------------------------------------
 
@@ -14,12 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent
-from ....core.tools import filesystem as fs
-from ....core.basics.log import log
+from ...core.tools import filesystem as fs
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 
-class HeatingCorrelationsAnalyser(DustHeatingAnalysisComponent):
+class CorrelationsAnalyser(DustHeatingAnalysisComponent):
     
     """
     This class...
@@ -34,7 +34,7 @@ class HeatingCorrelationsAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Call the constructor of the base class
-        super(HeatingCorrelationsAnalyser, self).__init__(*args, **kwargs)
+        super(CorrelationsAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -65,7 +65,7 @@ class HeatingCorrelationsAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(HeatingCorrelationsAnalyser, self).setup()
+        super(CorrelationsAnalyser, self).setup()
 
     # -----------------------------------------------------------------
 
@@ -87,5 +87,10 @@ class HeatingCorrelationsAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        self.plot_sfr_funev()
 
 # -----------------------------------------------------------------

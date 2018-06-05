@@ -60,7 +60,9 @@ fabs_map_name = "fabs"
 attenuated_map_name = "attenuated" # attenuated stellar luminosity
 direct_map_name = "direct" # direct stellar luminosity
 i1_map_name = "i1"
+intr_i1_map_name = "intr_i1"
 fuv_map_name = "fuv"
+intr_fuv_map_name = "intr_fuv"
 sfr_map_name = "sfr"
 dust_mass_map_name = "dust_mass"
 stellar_lum_map_name = "stellar_lum"
@@ -73,13 +75,14 @@ total_lum_map_name = "total_lum"
 # -----------------------------------------------------------------
 
 # Define names of maps to show
-total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, dust_map_name, dust_with_internal_map_name, scattered_map_name, absorbed_map_name, absorbed_with_internal_map_name, attenuated_map_name, direct_map_name,)
-bulge_map_names = (bol_map_name, i1_map_name,)
-disk_map_names = (bol_map_name, i1_map_name,)
-old_map_names = (bol_map_name, i1_map_name,)
-young_map_names = (bol_map_name, fuv_map_name,)
-sfr_map_names = (bol_map_name, fuv_map_name, sfr_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name)
-unevolved_map_names = (bol_map_name, fuv_map_name,)
+#total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, dust_map_name, dust_with_internal_map_name, scattered_map_name, absorbed_map_name, absorbed_with_internal_map_name, attenuated_map_name, direct_map_name,)
+total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name, scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, attenuated_map_name, direct_map_name, sfr_map_name)
+bulge_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
+disk_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
+old_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
+young_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name,)
+sfr_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name)
+unevolved_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name,)
 dust_map_names = (mass_map_name, total_mass_map_name,) #lum_map_name, total_lum_map_name,)
 
 # -----------------------------------------------------------------
@@ -2358,6 +2361,14 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             elif orientation == edgeon_name: return self.model.total_direct_stellar_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
+        # Star formation rate
+        elif which == sfr_map_name:
+
+            if orientation == earth_name: return self.model.total_star_formation_rate_map_earth
+            elif orientation == faceon_name: return self.model.total_star_formation_rate_map_faceon
+            elif orientation == edgeon_name: return self.model.total_star_formation_rate_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
 
@@ -2451,17 +2462,33 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Bolometric luminosity
         if which == bol_map_name:
 
-            if orientation == earth_name: return self.model.bulge_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.bulge_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.bulge_bolometric_luminosity_map_edgeon
+            if orientation == earth_name: return self.model.old_bulge_bolometric_luminosity_map
+            elif orientation == faceon_name: return self.model.old_bulge_bolometric_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_bulge_bolometric_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
-        # I1 lum
+        # Direct
+        elif which == direct_map_name:
+
+            if orientation == earth_name: return self.model.old_bulge_direct_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.old_bulge_direct_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_bulge_direct_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation +"'")
+
+        # (observed) I1 lum
         elif which == i1_map_name:
 
-            if orientation == earth_name: return self.model.bulge_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.bulge_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.bulge_i1_luminosity_map_edgeon
+            if orientation == earth_name: return self.model.old_bulge_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.old_bulge_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_bulge_i1_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic I1
+        elif which == intr_i1_map_name:
+
+            if orientation == earth_name: return self.model.old_bulge_intrinsic_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid
@@ -2562,12 +2589,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             elif orientation == edgeon_name: return self.model.old_disk_bolometric_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
-        # I1
+        # Direct
+        if which == direct_map_name:
+
+            if orientation == earth_name: return self.model.old_disk_direct_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.old_disk_direct_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_disk_direct_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # (observed) I1
         elif which == i1_map_name:
 
             if orientation == earth_name: return self.model.old_disk_i1_luminosity_map
             elif orientation == faceon_name: return self.model.old_disk_i1_luminosity_map_faceon
             elif orientation == edgeon_name: return self.model.old_disk_i1_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic I1
+        elif which == intr_i1_map_name:
+
+            if orientation == earth_name: return self.model.old_disk_intrinsic_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.old_disk_intrinsic_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid
@@ -2668,12 +2711,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             elif orientation == edgeon_name: return self.model.old_bolometric_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
-        # I1
+        # Direct
+        if which == direct_map_name:
+
+            if orientation == earth_name: return self.model.old_direct_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.old_direct_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_direct_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # (observed) I1
         elif which == i1_map_name:
 
             if orientation == earth_name: return self.model.old_i1_luminosity_map
             elif orientation == faceon_name: return self.model.old_i1_luminosity_map_faceon
             elif orientation == edgeon_name: return self.model.old_i1_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic I1
+        elif which == intr_i1_map_name:
+
+            if orientation == earth_name: return self.model.old_intrinsic_i1_luminosity_map
+            elif orientation == faceon_name: return self.model.old_intrinsic_i1_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.old_intrinsic_i1_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid
@@ -2774,12 +2833,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             elif orientation == edgeon_name: return self.model.young_bolometric_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
-        # FUV
+        # Direct
+        elif which == direct_map_name:
+
+            if orientation == earth_name: return self.model.young_direct_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.young_direct_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.young_direct_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # (observed) FUV
         elif which == fuv_map_name:
 
             if orientation == earth_name: return self.model.young_fuv_luminosity_map
             elif orientation == faceon_name: return self.model.young_fuv_luminosity_map_faceon
             elif orientation == edgeon_name: return self.model.young_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic FUV
+        elif which == intr_fuv_map_name:
+
+            if orientation == earth_name: return self.model.young_intrinsic_fuv_luminosity_map
+            elif orientation == faceon_name: return self.model.young_intrinsic_fuv_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.young_intrinsic_fuv_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid
@@ -2880,12 +2955,28 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             elif orientation == edgeon_name: return self.model.sfr_bolometric_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
-        # FUV
+        # Direct
+        elif which == direct_map_name:
+
+            if orientation == earth_name: return self.model.sfr_direct_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.sfr_direct_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_direct_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # (observed) FUV
         elif which == fuv_map_name:
 
             if orientation == earth_name: return self.model.sfr_fuv_luminosity_map
             elif orientation == faceon_name: return self.model.sfr_fuv_luminosity_map_faceon
             elif orientation == edgeon_name: return self.model.sfr_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic FUV
+        elif which == intr_fuv_map_name:
+
+            if orientation == earth_name: return self.model.sfr_intrinsic_fuv_luminosity_map
+            elif orientation == faceon_name: return self.model.sfr_intrinsic_fuv_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.sfr_intrinsic_fuv_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # SFR
@@ -3018,12 +3109,36 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             elif orientation == edgeon_name: return self.model.unevolved_bolometric_luminosity_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
+        # Direct
+        elif which == direct_map_name:
+
+            if orientation == earth_name: return self.model.unevolved_direct_stellar_luminosity_map
+            elif orientation == faceon_name: return self.model.unevolved_direct_stellar_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.unevolved_direct_stellar_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
         # FUV
         elif which == fuv_map_name:
 
             if orientation == earth_name: return self.model.unevolved_fuv_luminosity_map
             elif orientation == faceon_name: return self.model.unevolved_fuv_luminosity_map_faceon
             elif orientation == edgeon_name: return self.model.unevolved_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Intrinsic FUV
+        elif which == intr_fuv_map_name:
+
+            if orientation == earth_name: return self.model.unevolved_intrinsic_fuv_luminosity_map
+            elif orientation == faceon_name: return self.model.unevolved_intrinsic_fuv_luminosity_map_faceon
+            elif orientation == edgeon_name: return self.model.unevolved_intrinsic_fuv_luminosity_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # SFR
+        elif which == sfr_map_name:
+
+            if orientation == earth_name: return self.model.unevolved_star_formation_rate_map
+            elif orientation == faceon_name: return self.model.unevolved_star_formation_rate_map_faceon
+            elif orientation == edgeon_name: return self.model.unevolved_star_formation_rate_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid

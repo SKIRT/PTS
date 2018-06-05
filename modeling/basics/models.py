@@ -1181,7 +1181,6 @@ class DeprojectionModel3D(Model3D):
         self.add_property("y_size", "positive_integer", "number of y pixels in the map")
         self.add_property("x_center", "real", "x center in image coordinates")
         self.add_property("y_center", "real", "y center in image coordinates")
-        self.add_property("y_center", "real", "y center in image coordinates")
         self.add_property("scale_height", "quantity", "scale height")
 
         # Path of the directory containing the map
