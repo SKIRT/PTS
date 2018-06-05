@@ -53,8 +53,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        # 2. Write
+        # Write
         self.write()
+
+        # Plot
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -3783,5 +3786,152 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Total dust mass
         if self.do_write_total_dust_mass_map_edgeon: self.total_dust_mass_map_edgeon.saveto(self.total_dust_mass_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Maps
+        self.plot_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps ...")
+
+        # Total
+        self.plot_total_maps()
+
+        # Bulge
+        self.plot_bulge_maps()
+
+        # Disk
+        self.plot_disk_maps()
+
+        # Old
+        self.plot_old_maps()
+
+        # Young
+        self.plot_young_maps()
+
+        # SFR
+        self.plot_sfr_maps()
+
+        # Unevolved
+        self.plot_unevolved_maps()
+
+        # Dust
+        self.plot_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_total_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the total model ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_bulge_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the old stellar bulge component ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_disk_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the old stellar disk component ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the old stellar component ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the young stellar component ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the SFR component ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the unevolved stellar component ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the dust component ...")
 
 # -----------------------------------------------------------------

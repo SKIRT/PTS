@@ -37,3 +37,8 @@ definition.add_flag("faceon", "write faceon maps", True)
 definition.add_flag("edgeon", "write edgeon maps", True)
 
 # -----------------------------------------------------------------
+
+# Flags
+definition.add_flag("plot", "do plotting", True)
+
+# -----------------------------------------------------------------

@@ -1010,8 +1010,10 @@ class RTModel(object):
         sed = self.total_simulations.observed_stellar_sed
 
         # We need to add the internal dust emission part of the the SFR
-        if self.total_simulations.observed_stellar_sed_needs_reprocessed_internal_part: return sed + self.intrinsic_dust_sed_sfr
-        else: return sed
+        #if self.total_simulations.observed_stellar_sed_needs_reprocessed_internal_part: return sed + self.intrinsic_dust_sed_sfr
+        #else: return sed
+
+        return sed
 
     # -----------------------------------------------------------------
 
@@ -3542,6 +3544,462 @@ class RTModel(object):
         """
 
         return fs.join(self.wavelengths_path, "grid.txt")
+
+    # -----------------------------------------------------------------
+    # TOTAL CUBES
+    # -----------------------------------------------------------------
+
+    @property
+    def total_bolometric_luminosity_cube_earth(self):
+        return self.total_simulations.observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_bolometric_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_bolometric_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_diffuse_dust_luminosity_cube_earth(self):
+        return self.total_simulations.observed_diffuse_dust_cube
+
+    # -----------------------------------------------------------------
+        
+    @property
+    def total_diffuse_dust_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_diffuse_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_diffuse_dust_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_diffuse_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_luminosity_cube_earth(self):
+        return self.total_simulations.observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_scattered_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.observed_cube_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_scattered_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_cube_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_scattered_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_cube_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_attenuated_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.observed_cube_attenuated
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_attenuated_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_cube_attenuated
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_attenuated_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_cube_attenuated
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+    # TOTAL MAPS
+    # -----------------------------------------------------------------
+
+    # 1. TOTAL BOLOMETRIC LUMINOSITY
+
+    @property
+    def total_bolometric_luminosity_map(self):
+        return self.total_bolometric_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_bolometric_luminosity_map_earth(self):
+        return self.total_bolometric_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_bolometric_luminosity_map_faceon(self):
+        return self.total_bolometric_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_bolometric_luminosity_map_edgeon(self):
+        return self.total_bolometric_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 2. INTRINSIC STELLAR LUMINSOTY
+
+    @property
+    def total_intrinsic_stellar_luminosity_map(self):
+        return self.total_intrinsic_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_intrinsic_stellar_luminosity_map_earth(self):
+        return self.total_intrinsic_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_intrinsic_stellar_luminosity_map_faceon(self):
+        return self.total_intrinsic_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_intrinsic_stellar_luminosity_map_edgeon(self):
+        return self.total_intrinsic_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 3. OBSERVED STELLAR LUMINOSITY
+
+    @property
+    def total_observed_stellar_luminosity_map(self):
+        return self.total_observed_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_observed_stellar_luminosity_map_earth(self):
+        return self.total_observed_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_observed_stellar_luminosity_map_faceon(self):
+        return self.total_observed_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_observed_stellar_luminosity_map_edgeon(self):
+        return self.total_observed_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 4. DIFFUSE DUST LUMINOSITY
+
+    @property
+    def total_diffuse_dust_luminosity_map(self):
+        return self.total_diffuse_dust_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_diffuse_dust_luminosity_map_earth(self):
+        return self.total_diffuse_dust_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_diffuse_dust_luminosity_map_faceon(self):
+        return self.total_diffuse_dust_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_diffuse_dust_luminosity_map_edgeon(self):
+        return self.total_diffuse_dust_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 5. DUST LUMINOSITY
+
+    @property
+    def total_dust_luminosity_map(self):
+        return self.total_dust_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_luminosity_map_earth(self):
+        return self.total_dust_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_luminosity_map_faceon(self):
+        return self.total_dust_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_dust_luminosity_map_edgeon(self):
+        return self.total_dust_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 6. SCATTERED STELLAR LUMINOSITY
+
+    @property
+    def total_scattered_stellar_luminosity_map(self):
+        return self.total_scattered_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_scattered_stellar_luminosity_map_earth(self):
+        return self.total_scattered_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_scattered_stellar_luminosity_map_faceon(self):
+        return self.total_scattered_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_scattered_stellar_luminosity_map_edgeon(self):
+        return self.total_scattered_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 7. ABSORBED STELLAR LUMINOSITY BY DIFFUSE DUST
+
+    @property
+    def total_absorbed_diffuse_stellar_luminosity_map(self):
+        return self.total_absorbed_diffuse_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorbed_diffuse_stellar_luminosity_map_earth(self):
+        return self.total_absorbed_diffuse_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorbed_diffuse_stellar_luminosity_map_faceon(self):
+        return self.total_absorbed_diffuse_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorbed_diffuse_stellar_luminosity_map_edgeon(self):
+        return self.total_absorbed_diffuse_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # X. ABSORBED STELLAR LUMINOSITY WITH INTERNAL -> THIS INFORMATION (MAPPINGS ABSORPTION) IS NOT AVAILABLE
+
+    # -----------------------------------------------------------------
+
+    # 7. FABS DIFFUSE
+
+    @property
+    def total_fabs_diffuse_map(self):
+        return self.total_fabs_diffuse_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fabs_diffuse_map_earth(self):
+        return self.total_diffuse_dust_luminosity_map_earth / self.total_intrinsic_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fabs_diffuse_map_faceon(self):
+        return self.total_diffuse_dust_luminosity_map_faceon / self.total_intrinsic_stellar_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fabs_diffuse_map_edgeon(self):
+        return self.total_diffuse_dust_luminosity_map_edgeon / self.total_intrinsic_stellar_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    # 8. FABS
+
+    @property
+    def total_fabs_map(self):
+        return self.total_fabs_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fabs_map_earth(self):
+        return self.total_dust_luminosity_map_earth / self.total_intrinsic_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fabs_map_faceon(self):
+        return self.total_dust_luminosity_map_faceon / self.total_intrinsic_stellar_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fabs_map_edgeon(self):
+        return self.total_dust_luminosity_map_edgeon / self.total_intrinsic_stellar_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    # 9. ATTENUATED
+
+    @property
+    def total_attenuated_stellar_luminosity_map(self):
+        return self.total_attenuated_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_attenuated_stellar_luminosity_map_earth(self):
+        return self.total_attenuated_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_attenuated_stellar_luminosity_map_faceon(self):
+        return self.total_attenuated_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_attenuated_stellar_luminosity_map_edgeon(self):
+        return self.total_attenuated_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    # 10. DIRECT
+
+    @property
+    def total_direct_stellar_luminosity_map(self):
+        return self.total_direct_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_direct_stellar_luminosity_map_earth(self):
+        return self.total_direct_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_direct_stellar_luminosity_map_faceon(self):
+        return self.total_direct_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_direct_stellar_luminosity_map_edgeon(self):
+        return self.total_direct_stellar_luminosity_cube_edgeon.integrate()
 
     # -----------------------------------------------------------------
     # BULGE MAPS
