@@ -67,8 +67,9 @@ sfr_map_name = "sfr"
 dust_mass_map_name = "dust_mass"
 stellar_lum_map_name = "stellar_lum"
 dust_lum_map_name = "dust_lum"
+diffuse_mass_map_name = "diffuse_mass"
 mass_map_name = "mass"
-total_mass_map_name = "total_mass"
+#total_mass_map_name = "total_mass"
 lum_map_name = "lum"
 total_lum_map_name = "total_lum"
 
@@ -83,7 +84,8 @@ old_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
 young_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name,)
 sfr_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name)
 unevolved_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name,)
-dust_map_names = (mass_map_name, total_mass_map_name,) #lum_map_name, total_lum_map_name,)
+#dust_map_names = (mass_map_name, total_mass_map_name,) #lum_map_name, total_lum_map_name,)
+dust_map_names = (diffuse_mass_map_name, mass_map_name,)
 
 # -----------------------------------------------------------------
 
@@ -3232,36 +3234,22 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         # Dust mass
-        if which == mass_map_name:
+        #if which == mass_map_name:
+        if which == diffuse_mass_map_name:
+
+            if orientation == earth_name: return self.model.diffuse_dust_mass_map
+            elif orientation == faceon_name: return self.model.diffuse_dust_mass_map_faceon
+            elif orientation == edgeon_name: return self.model.diffuse_dust_mass_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Total dust mass
+        #elif which == total_mass_map_name:
+        elif which == mass_map_name:
 
             if orientation == earth_name: return self.model.dust_mass_map
             elif orientation == faceon_name: return self.model.dust_mass_map_faceon
             elif orientation == edgeon_name: return self.model.dust_mass_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
-
-        # Total dust mass
-        elif which == total_mass_map_name:
-
-            if orientation == earth_name: return self.model.total_dust_mass_map
-            elif orientation == faceon_name: return self.model.total_dust_mass_map_faceon
-            elif orientation == edgeon_name: return self.model.total_dust_mass_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
-
-        # # Dust luminosity
-        # elif which == lum_map_name:
-        #
-        #     if orientation == earth_name: return self.model.dust_luminosity_map
-        #     elif orientation == faceon_name: return self.model.dust_luminosity_map_faceon
-        #     elif orientation == edgeon_name: return self.model.dust_luminosity_map_edgeon
-        #     else: raise ValueError("Invalid orientation: '" + orientation + "'")
-        #
-        # # Total dust luminosity
-        # elif which == total_lum_map_name:
-        #
-        #     if orientation == earth_name: return self.model.total_dust_luminosity_map
-        #     elif orientation == faceon_name: return self.model.total_dust_luminosity_map_faceon
-        #     elif orientation == edgeon_name: return self.model.total_dust_luminosity_map_edgeon
-        #     else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")

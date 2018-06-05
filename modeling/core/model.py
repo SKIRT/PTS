@@ -2503,7 +2503,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def dust_mass(self):
+    def diffuse_dust_mass(self):
 
         """
         This function ...
@@ -2539,6 +2539,18 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.diffuse_dust_mass + self.sfr_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_mass(self):
 
         """
@@ -2546,7 +2558,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.dust_mass + self.sfr_dust_mass
+        return self.dust_mass
 
     # -----------------------------------------------------------------
 
@@ -6419,19 +6431,19 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def unevolved_fuv_luminosity_map(self):
+    def unevolved_intrinsic_fuv_luminosity_map(self):
 
         """
         Thisfunction ...
         :return:
         """
 
-        return self.unevolved_fuv_luminosity_map_earth
+        return self.unevolved_intrinsic_fuv_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def unevolved_fuv_luminosity_map_earth(self):
+    def unevolved_intrinsic_fuv_luminosity_map_earth(self):
 
         """
         This function ...
@@ -6439,8 +6451,8 @@ class RTModel(object):
         """
 
         # Get contributions
-        young = self.young_fuv_luminosity_map_earth
-        sfr = self.sfr_fuv_luminosity_map_earth
+        young = self.young_intrinsic_fuv_luminosity_map_earth
+        sfr = self.sfr_intrinsic_fuv_luminosity_map_earth
 
         # Uniformize
         young, sfr = convolve_and_rebin(young, sfr)
@@ -6451,7 +6463,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def unevolved_fuv_luminosity_map_faceon(self):
+    def unevolved_intrinsic_fuv_luminosity_map_faceon(self):
 
         """
         This function ...
@@ -6459,8 +6471,8 @@ class RTModel(object):
         """
 
         # Get contributions
-        young = self.young_fuv_luminosity_map_faceon
-        sfr = self.sfr_fuv_luminosity_map_faceon
+        young = self.young_intrinsic_fuv_luminosity_map_faceon
+        sfr = self.sfr_intrinsic_fuv_luminosity_map_faceon
 
         # Combine (no WCS): regrid and recenter??
         raise NotImplementedError("Not implemented")
@@ -6468,7 +6480,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def unevolved_fuv_luminosity_map_edgeon(self):
+    def unevolved_intrinsic_fuv_luminosity_map_edgeon(self):
 
         """
         This function ...
@@ -6476,8 +6488,8 @@ class RTModel(object):
         """
 
         # Get contributions
-        young = self.young_fuv_luminosity_map_edgeon
-        sfr = self.young_fuv_luminosity_map_edgeon
+        young = self.young_intrinsic_fuv_luminosity_map_edgeon
+        sfr = self.young_intrinsic_fuv_luminosity_map_edgeon
 
         # Combine (no WCS): regrid and recenter??
         raise NotImplementedError("Not implemented")
@@ -6695,6 +6707,56 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def unevolved_direct_stellar_luminosity_map(self):
+        return self.unevolved_direct_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_direct_stellar_luminosity_map_earth(self):
+        return self.unevolved_direct_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_direct_stellar_luminosity_map_faceon(self):
+        return self.unevolved_direct_stellar_luminosity_cube_faceon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_direct_stellar_luminosity_map_edgeon(self):
+        return self.unevolved_direct_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_fuv_luminosity_map(self):
+        return self.unevolved_fuv_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_fuv_luminosity_map_earth(self):
+        return self.unevolved_observed_stellar_luminosity_cube_earth.get_frame_for_wavelength(self.fuv_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_fuv_luminosity_map_faceon(self):
+        return self.unevolved_observed_stellar_luminosity_cube_faceon.get_frame_for_wavelength(self.fuv_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_fuv_luminosity_map_edgeon(self):
+        return self.unevolved_observed_stellar_luminosity_cube_edgeon.get_frame_for_wavelength(self.fuv_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+    # DUST MAPS
+    # -----------------------------------------------------------------
+
+    @property
     def dust_map_path(self):
 
         """
@@ -6781,6 +6843,135 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def diffuse_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.diffuse_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def diffuse_dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_earth.copy()
+
+        # Normalize to the dust mass
+        frame.normalize(to=self.diffuse_dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def diffuse_dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_faceon.copy()
+
+        # Normalize to the dust mass
+        frame.normalize(to=self.diffuse_dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def diffuse_dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dust map
+        frame = self.dust_map_edgeon.copy()
+
+        # Normalize to the dust mass
+        frame.normalize(to=self.diffuse_dust_mass)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_diffuse_dust_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_diffuse_dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_diffuse_dust_mass_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_map_earth and self.has_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_diffuse_dust_mass_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_map_edgeon and self.has_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_diffuse_dust_mass_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_dust_map_faceon and self.has_dust_mass
+
+    # -----------------------------------------------------------------
+
+    @property
     def dust_mass_map(self):
 
         """
@@ -6800,14 +6991,15 @@ class RTModel(object):
         :return:
         """
 
-        # Get the dust map
-        frame = self.dust_map_earth.copy()
+        # Get the contributions
+        diffuse = self.diffuse_dust_mass_map_earth
+        sfr = self.sfr_dust_mass_map_earth
 
-        # Normalize to the dust mass
-        frame.normalize(to=self.dust_mass)
+        # Uniformize
+        diffuse, sfr = convolve_and_rebin(diffuse, sfr)
 
-        # Return the frame
-        return frame
+        # Sum the contributions
+        return diffuse + sfr
 
     # -----------------------------------------------------------------
 
@@ -6819,14 +7011,12 @@ class RTModel(object):
         :return:
         """
 
-        # Get the dust map
-        frame = self.dust_map_faceon.copy()
+        # Get the contributions
+        diffuse = self.diffuse_dust_mass_map_faceon
+        sfr = self.sfr_dust_mass_map_faceon
 
-        # Normalize to the dust mass
-        frame.normalize(to=self.dust_mass)
-
-        # Return the frame
-        return frame
+        # Combine (no WCS): regrid and center??
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -6838,26 +7028,12 @@ class RTModel(object):
         :return:
         """
 
-        # Get the dust map
-        frame = self.dust_map_edgeon.copy()
+        # Get the contributions
+        diffuse = self.diffuse_dust_mass_map_edgeon
+        sfr = self.sfr_dust_mass_map_edgeon
 
-        # Normalize to the dust mass
-        frame.normalize(to=self.dust_mass)
-
-        # Return the frame
-        return frame
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return True
+        # Combine (no WCS): regrid and center??
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -6881,7 +7057,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_map_earth and self.has_dust_mass
+        return self.has_diffuse_dust_mass_map_earth and self.has_sfr_dust_mass_map_earth
 
     # -----------------------------------------------------------------
 
@@ -6893,121 +7069,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_map_edgeon and self.has_dust_mass
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_dust_map_faceon and self.has_dust_mass
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.total_dust_mass_map_earth
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_dust_mass_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the contributions
-        dust_mass = self.dust_mass_map
-        sfr_dust_mass = self.sfr_dust_mass_map
-
-        # Uniformize
-        dust_mass, sfr_dust_mass = convolve_and_rebin(dust_mass, sfr_dust_mass)
-
-        # Sum the contributions
-        return dust_mass + sfr_dust_mass
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the contributions
-        dust_mass = self.dust_mass_map_faceon
-        sfr_dust_mass = self.sfr_dust_mass_map_faceon
-
-        # Combine (no WCS): regrid and center??
-        raise NotImplementedError("Not implemented")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the contributions
-        dust_mass = self.dust_mass_map_edgeon
-        sfr_dust_mass = self.sfr_dust_mass_map_edgeon
-
-        # Combine (no WCS): regrid and center??
-        raise NotImplementedError("Not implemented")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_total_dust_mass_map_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_mass_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_dust_mass_map_earth and self.has_sfr_dust_mass_map_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_dust_mass_map_faceon and self.has_sfr_dust_mass_map_faceon
+        return self.has_diffuse_dust_mass_map_faceon and self.has_sfr_dust_mass_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -7019,7 +7081,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_mass_map_edgeon and self.has_sfr_dust_mass_map_edgeon
+        return self.has_diffuse_dust_mass_map_edgeon and self.has_sfr_dust_mass_map_edgeon
 
     # -----------------------------------------------------------------
 
