@@ -3234,7 +3234,6 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         """
 
         # Dust mass
-        #if which == mass_map_name:
         if which == diffuse_mass_map_name:
 
             if orientation == earth_name: return self.model.diffuse_dust_mass_map
@@ -3243,7 +3242,6 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Total dust mass
-        #elif which == total_mass_map_name:
         elif which == mass_map_name:
 
             if orientation == earth_name: return self.model.dust_mass_map

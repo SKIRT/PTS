@@ -1328,26 +1328,39 @@ def sequence_from_dict(dictionary, keys):
 
 # -----------------------------------------------------------------
 
-def create_nested_defaultdict(nlevels, initializer):
+def create_nested_defaultdict(nlevels, initializer, ordered=False):
 
     """
     This function ...
     :param nlevels:
     :param initializer:
+    :param ordered:
     :return:
     """
 
     # Only one level
-    if nlevels == 1: return defaultdict(initializer)
+    if nlevels == 1:
+
+        if ordered: return DefaultOrderedDict(initializer)
+        else: return defaultdict(initializer)
 
     # 2 levels
-    elif nlevels == 2: return defaultdict(lambda: defaultdict(initializer))
+    elif nlevels == 2:
+
+        if ordered: return DefaultOrderedDict(lambda: DefaultOrderedDict(initializer))
+        else: return defaultdict(lambda: defaultdict(initializer))
 
     # 3 levels
-    elif nlevels == 3: return defaultdict(lambda: defaultdict(lambda: initializer))
+    elif nlevels == 3:
+
+        if ordered: return DefaultOrderedDict(lambda: DefaultOrderedDict(lambda: DefaultOrderedDict(initializer)))
+        else: return defaultdict(lambda: defaultdict(lambda: defaultdict(initializer)))
 
     # 4 levels
-    elif nlevels == 4: return defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: initializer)))
+    elif nlevels == 4:
+
+        if ordered: return DefaultOrderedDict(lambda: DefaultOrderedDict(lambda: DefaultOrderedDict(lambda: DefaultOrderedDict(initializer))))
+        else: return defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(initializer))))
 
     # Not implemented
     else: raise NotImplementedError("Not implemented for nlevels > 4")

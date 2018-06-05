@@ -12,12 +12,33 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
 from ...core.tools.serialization import write_dict
+from ...core.basics.containers import DefaultOrderedDict
+from .analysis import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
+from .analysis import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name
+from .analysis import attenuated_map_name, direct_map_name, sfr_map_name, i1_map_name, intr_i1_map_name, fuv_map_name
+from .analysis import intr_fuv_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name
+from .analysis import diffuse_mass_map_name, mass_map_name, earth_name, faceon_name, edgeon_name
+from ...magic.core.frame import Frame
+
+# -----------------------------------------------------------------
+
+total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name, scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, attenuated_map_name, direct_map_name, sfr_map_name)
+bulge_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
+disk_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
+old_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
+young_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name,)
+sfr_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name)
+unevolved_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name,)
+dust_map_names = (diffuse_mass_map_name, mass_map_name,)
 
 # -----------------------------------------------------------------
 
@@ -43,6 +64,16 @@ class PropertiesAnalyser(AnalysisComponent):
         # The analysis run
         self.analysis_run = None
 
+        # The maps
+        self.total_maps = DefaultOrderedDict(OrderedDict)
+        self.bulge_maps = DefaultOrderedDict(OrderedDict)
+        self.disk_maps = DefaultOrderedDict(OrderedDict)
+        self.old_maps = DefaultOrderedDict(OrderedDict)
+        self.young_maps = DefaultOrderedDict(OrderedDict)
+        self.sfr_maps = DefaultOrderedDict(OrderedDict)
+        self.unevolved_maps = DefaultOrderedDict(OrderedDict)
+        self.dust_maps = DefaultOrderedDict(OrderedDict)
+
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -52,6 +83,9 @@ class PropertiesAnalyser(AnalysisComponent):
         :param kwargs:
         :return:
         """
+
+        # Get the maps
+        self.get_maps()
 
         # Write
         self.write()
@@ -98,6 +132,927 @@ class PropertiesAnalyser(AnalysisComponent):
         """
 
         return self.analysis_run.properties_path
+
+    # -----------------------------------------------------------------
+
+    def get_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the maps ...")
+
+        # Total
+        self.get_total_maps()
+
+        # Bulge
+        self.get_bulge_maps()
+
+        # Disk
+        self.get_disk_maps()
+
+        # Old
+        self.get_old_maps()
+
+        # Young
+        self.get_young_maps()
+
+        # SFR
+        self.get_sfr_maps()
+
+        # Unevolved
+        self.get_unevolved_maps()
+
+        # Dust
+        self.get_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def get_total_maps(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_total_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_total_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_total_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_total_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the total maps from the earth projection ...")
+
+        # Bolometric luminosity
+        if self.has_total_earth_map(bol_map_name): self.total_maps[earth_name][bol_map_name] = self.load_total_earth_map(bol_map_name)
+        else: self.total_maps[earth_name][bol_map_name] = self.model.total_bolometric_luminosity_map_earth
+
+        # Intrinsic stellar luminosity (transparent luminosity)
+        if self.has_total_earth_map(intr_stellar_map_name): self.total_maps[earth_name][intr_stellar_map_name] = self.load_total_earth_map(intr_stellar_map_name)
+        else: self.total_maps[earth_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_earth
+
+        # Observed stellar luminosity
+        if self.has_total_earth_map(obs_stellar_map_name): self.total_maps[earth_name][obs_stellar_map_name] = self.load_total_earth_map(obs_stellar_map_name)
+        else: self.total_maps[earth_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_earth
+
+        # Diffuse dust emission luminosity
+        if self.has_total_earth_map(diffuse_dust_map_name): self.total_maps[earth_name][diffuse_dust_map_name] = self.load_total_earth_map(diffuse_dust_map_name)
+        else: self.total_maps[earth_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_earth
+
+        # Dust emission luminosity
+        if self.has_total_earth_map(dust_map_name): self.total_maps[earth_name][dust_map_name] = self.load_total_earth_map(dust_map_name)
+        else: self.total_maps[earth_name][dust_map_name] = self.model.total_dust_luminosity_map_earth
+
+        # Scattered stellar luminosity
+        if self.has_total_earth_map(scattered_map_name): self.total_maps[earth_name][scattered_map_name] = self.load_total_earth_map(scattered_map_name)
+        else: self.total_maps[earth_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_earth
+
+        # Absorbed stellar luminosity (by diffuse dust) (extinction)
+        if self.has_total_earth_map(absorbed_diffuse_map_name): self.total_maps[earth_name][absorbed_diffuse_map_name] = self.load_total_earth_map(absorbed_diffuse_map_name)
+        else: self.total_maps[earth_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_earth
+
+        # Fraction of energy absorbed by DIFFUSE dust
+        if self.has_total_earth_map(fabs_diffuse_map_name): self.total_maps[earth_name][fabs_diffuse_map_name] = self.load_total_earth_map(fabs_diffuse_map_name)
+        else: self.total_maps[earth_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_earth
+
+        # Fraction of energy absorbed by dust
+        if self.has_total_earth_map(fabs_map_name): self.total_maps[earth_name][fabs_map_name] = self.load_total_earth_map(fabs_map_name)
+        else: self.total_maps[earth_name][fabs_map_name] = self.model.total_fabs_map_earth
+
+        # Attenuated stellar luminosity (attenuation)
+        if self.has_total_earth_map(attenuated_map_name): self.total_maps[earth_name][attenuated_map_name] = self.load_total_earth_map(attenuated_map_name)
+        else: self.total_maps[earth_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_earth
+
+        # Direct luminosity
+        if self.has_total_earth_map(direct_map_name): self.total_maps[earth_name][direct_map_name] = self.load_total_earth_map(direct_map_name)
+        else: self.total_maps[earth_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_earth
+
+        # Star formation rate
+        if self.has_total_earth_map(sfr_map_name): self.total_maps[earth_name][sfr_map_name] = self.load_total_earth_map(sfr_map_name)
+        else: self.total_maps[earth_name][sfr_map_name] = self.model.total_star_formation_rate_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_total_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the total maps from the face-on projection ...")
+
+        # Bolometric luminosity
+        if self.has_total_faceon_map(bol_map_name): self.total_maps[faceon_name][bol_map_name] = self.load_total_faceon_map(bol_map_name)
+        else: self.total_maps[faceon_name][bol_map_name] = self.model.total_bolometric_luminosity_map_faceon
+
+        # Intrinsic stellar luminosity (transparent luminosity)
+        if self.has_total_faceon_map(intr_stellar_map_name): self.total_maps[faceon_name][intr_stellar_map_name] = self.load_total_faceon_map(intr_stellar_map_name)
+        else: self.total_maps[faceon_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_faceon
+
+        # Observed stellar luminosity
+        if self.has_total_faceon_map(obs_stellar_map_name): self.total_maps[faceon_name][obs_stellar_map_name] = self.load_total_faceon_map(obs_stellar_map_name)
+        else: self.total_maps[faceon_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_faceon
+
+        # Diffuse dust emission luminosity
+        if self.has_total_faceon_map(diffuse_dust_map_name): self.total_maps[faceon_name][diffuse_dust_map_name] = self.load_total_faceon_map(diffuse_dust_map_name)
+        else: self.total_maps[faceon_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_faceon
+
+        # Dust emission luminosity
+        if self.has_total_faceon_map(dust_map_name): self.total_maps[faceon_name][dust_map_name] = self.load_total_faceon_map(dust_map_name)
+        else: self.total_maps[faceon_name][dust_map_name] = self.model.total_dust_luminosity_map_faceon
+
+        # Scattered stellar luminosity
+        if self.has_total_faceon_map(scattered_map_name): self.total_maps[faceon_name][scattered_map_name] = self.load_total_faceon_map(scattered_map_name)
+        else: self.total_maps[faceon_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_faceon
+
+        # Absorbed stellar luminosity (by diffuse dust) (extinction)
+        if self.has_total_faceon_map(absorbed_diffuse_map_name): self.total_maps[faceon_name][absorbed_diffuse_map_name] = self.load_total_faceon_map(absorbed_diffuse_map_name)
+        else: self.total_maps[faceon_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_faceon
+
+        # Fraction of energy absorbed by DIFFUSE dust
+        if self.has_total_faceon_map(fabs_diffuse_map_name): self.total_maps[faceon_name][fabs_diffuse_map_name] = self.load_total_faceon_map(fabs_diffuse_map_name)
+        else: self.total_maps[faceon_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_faceon
+
+        # Fraction of energy absorbed by dust
+        if self.has_total_faceon_map(fabs_map_name): self.total_maps[faceon_name][fabs_map_name] = self.load_total_faceon_map(fabs_map_name)
+        else: self.total_maps[faceon_name][fabs_map_name] = self.model.total_fabs_map_faceon
+
+        # Attenuated stellar luminosity (attenuation)
+        if self.has_total_faceon_map(attenuated_map_name): self.total_maps[faceon_name][attenuated_map_name] = self.load_total_faceon_map(attenuated_map_name)
+        else: self.total_maps[faceon_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_faceon
+
+        # Direct luminosity
+        if self.has_total_faceon_map(direct_map_name): self.total_maps[faceon_name][direct_map_name] = self.load_total_faceon_map(direct_map_name)
+        else: self.total_maps[faceon_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_faceon
+
+        # Star formation rate
+        if self.has_total_faceon_map(sfr_map_name): self.total_maps[faceon_name][sfr_map_name] = self.load_total_faceon_map(sfr_map_name)
+        else: self.total_maps[faceon_name][sfr_map_name] = self.model.total_star_formation_rate_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_total_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the total maps from the edge-on projection ...")
+
+        # Bolometric luminosity
+        if self.has_total_edgeon_map(bol_map_name): self.total_maps[edgeon_name][bol_map_name] = self.load_total_edgeon_map(bol_map_name)
+        else: self.total_maps[edgeon_name][bol_map_name] = self.model.total_bolometric_luminosity_map_edgeon
+
+        # Intrinsic stellar luminosity (transparent luminosity)
+        if self.has_total_edgeon_map(intr_stellar_map_name): self.total_maps[edgeon_name][intr_stellar_map_name] = self.load_total_edgeon_map(intr_stellar_map_name)
+        else: self.total_maps[edgeon_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_edgeon
+
+        # Observed stellar luminosity
+        if self.has_total_edgeon_map(obs_stellar_map_name): self.total_maps[edgeon_name][obs_stellar_map_name] = self.load_total_edgeon_map(obs_stellar_map_name)
+        else: self.total_maps[edgeon_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_edgeon
+
+        # Diffuse dust emission luminosity
+        if self.has_total_edgeon_map(diffuse_dust_map_name): self.total_maps[edgeon_name][diffuse_dust_map_name] = self.load_total_edgeon_map(diffuse_dust_map_name)
+        else: self.total_maps[edgeon_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_edgeon
+
+        # Dust emission luminosity
+        if self.has_total_edgeon_map(dust_map_name): self.total_maps[edgeon_name][dust_map_name] = self.load_total_edgeon_map(dust_map_name)
+        else: self.total_maps[edgeon_name][dust_map_name] = self.model.total_dust_luminosity_map_edgeon
+
+        # Scattered stellar luminosity
+        if self.has_total_edgeon_map(scattered_map_name): self.total_maps[edgeon_name][scattered_map_name] = self.load_total_edgeon_map(scattered_map_name)
+        else: self.total_maps[edgeon_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_edgeon
+
+        # Absorbed stellar luminosity (by diffuse dust) (extinction)
+        if self.has_total_edgeon_map(absorbed_diffuse_map_name): self.total_maps[edgeon_name][absorbed_diffuse_map_name] = self.load_total_edgeon_map(absorbed_diffuse_map_name)
+        else: self.total_maps[edgeon_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_edgeon
+
+        # Fraction of energy absorbed by DIFFUSE dust
+        if self.has_total_edgeon_map(fabs_diffuse_map_name): self.total_maps[edgeon_name][fabs_diffuse_map_name] = self.load_total_edgeon_map(fabs_diffuse_map_name)
+        else: self.total_maps[edgeon_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_edgeon
+
+        # Fraction of energy absorbed by dust
+        if self.has_total_edgeon_map(fabs_map_name): self.total_maps[edgeon_name][fabs_map_name] = self.load_total_edgeon_map(fabs_map_name)
+        else: self.total_maps[edgeon_name][fabs_map_name] = self.model.total_fabs_map_edgeon
+
+        # Attenuated stellar luminosity (attenuation)
+        if self.has_total_edgeon_map(attenuated_map_name): self.total_maps[edgeon_name][attenuated_map_name] = self.load_total_edgeon_map(attenuated_map_name)
+        else: self.total_maps[edgeon_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_edgeon
+
+        # Direct luminosity
+        if self.has_total_edgeon_map(direct_map_name): self.total_maps[edgeon_name][direct_map_name] = self.load_total_edgeon_map(direct_map_name)
+        else: self.total_maps[edgeon_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_edgeon
+
+        # Star formation rate
+        if self.has_total_edgeon_map(sfr_map_name): self.total_maps[edgeon_name][sfr_map_name] = self.load_total_edgeon_map(sfr_map_name)
+        else: self.total_maps[edgeon_name][sfr_map_name] = self.model.total_star_formation_rate_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_bulge_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_bulge_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_bulge_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric luminosity
+        if self.has_bulge_earth_map(bol_map_name): self.bulge_maps[earth_name][bol_map_name] = self.load_bulge_earth_map(bol_map_name)
+        else: self.bulge_maps[earth_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_earth
+
+        # Direct
+        if self.has_bulge_earth_map(direct_map_name): self.bulge_maps[earth_name][direct_map_name] = self.load_bulge_earth_map(direct_map_name)
+        else: self.bulge_maps[earth_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_earth
+
+        # (observed) I1 lum
+        if self.has_bulge_earth_map(i1_map_name): self.bulge_maps[earth_name][i1_map_name] = self.load_bulge_earth_map(i1_map_name)
+        else: self.bulge_maps[earth_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_earth
+
+        # Intrinsic I1
+        if self.has_bulge_earth_map(intr_i1_map_name): self.bulge_maps[earth_name][intr_i1_map_name] = self.load_bulge_earth_map(intr_i1_map_name)
+        else: self.bulge_maps[earth_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric luminosity
+        if self.has_bulge_faceon_map(bol_map_name): self.bulge_maps[faceon_name][bol_map_name] = self.load_bulge_faceon_map(bol_map_name)
+        else: self.bulge_maps[faceon_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_faceon
+
+        # Direct
+        if self.has_bulge_faceon_map(direct_map_name): self.bulge_maps[faceon_name][direct_map_name] = self.load_bulge_faceon_map(direct_map_name)
+        else: self.bulge_maps[faceon_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_faceon
+
+        # (observed) I1 lum
+        if self.has_bulge_faceon_map(i1_map_name): self.bulge_maps[faceon_name][i1_map_name] = self.load_bulge_faceon_map(i1_map_name)
+        else: self.bulge_maps[faceon_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_faceon
+
+        # Intrinsic I1
+        if self.has_bulge_faceon_map(intr_i1_map_name): self.bulge_maps[faceon_name][intr_i1_map_name] = self.load_bulge_faceon_map(intr_i1_map_name)
+        else: self.bulge_maps[faceon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric luminosity
+        if self.has_bulge_edgeon_map(bol_map_name): self.bulge_maps[edgeon_name][bol_map_name] = self.load_bulge_edgeon_map(bol_map_name)
+        else: self.bulge_maps[edgeon_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_edgeon
+
+        # Direct
+        if self.has_bulge_edgeon_map(direct_map_name): self.bulge_maps[edgeon_name][direct_map_name] = self.load_bulge_edgeon_map(direct_map_name)
+        else: self.bulge_maps[edgeon_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_edgeon
+
+        # (observed) I1 lum
+        if self.has_bulge_edgeon_map(i1_map_name): self.bulge_maps[edgeon_name][i1_map_name] = self.load_bulge_edgeon_map(i1_map_name)
+        else: self.bulge_maps[edgeon_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_edgeon
+
+        # Intrinsic I1
+        if self.has_bulge_edgeon_map(intr_i1_map_name): self.bulge_maps[edgeon_name][intr_i1_map_name] = self.load_bulge_edgeon_map(intr_i1_map_name)
+        else: self.bulge_maps[edgeon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_disk_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_disk_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_disk_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_disk_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_disk_maps_earth(self):
+
+        """
+        This unction ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_disk_earth_map(bol_map_name): self.disk_maps[earth_name][bol_map_name] = self.load_disk_earth_map(bol_map_name)
+        else: self.disk_maps[earth_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_earth
+
+        # Direct
+        if self.has_disk_earth_map(direct_map_name): self.disk_maps[earth_name][direct_map_name] = self.load_disk_earth_map(direct_map_name)
+        else: self.disk_maps[earth_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_earth
+
+        # (observed) I1
+        if self.has_disk_earth_map(i1_map_name): self.disk_maps[earth_name][i1_map_name] = self.load_disk_earth_map(i1_map_name)
+        else: self.disk_maps[earth_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_earth
+
+        # Intrinsic I1
+        if self.has_disk_earth_map(intr_i1_map_name): self.disk_maps[earth_name][intr_i1_map_name] = self.load_disk_earth_map(intr_i1_map_name)
+        else: self.disk_maps[earth_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_disk_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_disk_faceon_map(bol_map_name): self.disk_maps[faceon_name][bol_map_name] = self.load_disk_faceon_map(bol_map_name)
+        else: self.disk_maps[faceon_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_faceon
+
+        # Direct
+        if self.has_disk_faceon_map(direct_map_name): self.disk_maps[faceon_name][direct_map_name] = self.load_disk_faceon_map(direct_map_name)
+        else: self.disk_maps[faceon_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_faceon
+
+        # (observed) I1
+        if self.has_disk_faceon_map(i1_map_name): self.disk_maps[faceon_name][i1_map_name] = self.load_disk_faceon_map(i1_map_name)
+        else: self.disk_maps[faceon_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_faceon
+
+        # Intrinsic I1
+        if self.has_disk_faceon_map(intr_i1_map_name): self.disk_maps[faceon_name][intr_i1_map_name] = self.load_disk_faceon_map(intr_i1_map_name)
+        else: self.disk_maps[faceon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_disk_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_disk_edgeon_map(bol_map_name): self.disk_maps[edgeon_name][bol_map_name] = self.load_disk_edgeon_map(bol_map_name)
+        else: self.disk_maps[edgeon_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_edgeon
+
+        # Direct
+        if self.has_disk_edgeon_map(direct_map_name): self.disk_maps[edgeon_name][direct_map_name] = self.load_disk_edgeon_map(direct_map_name)
+        else: self.disk_maps[edgeon_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_edgeon
+
+        # (observed) I1
+        if self.has_disk_edgeon_map(i1_map_name): self.disk_maps[edgeon_name][i1_map_name] = self.load_disk_edgeon_map(i1_map_name)
+        else: self.disk_maps[edgeon_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_edgeon
+
+        # Intrinsic I1
+        if self.has_disk_edgeon_map(intr_i1_map_name): self.disk_maps[edgeon_name][intr_i1_map_name] = self.load_disk_edgeon_map(intr_i1_map_name)
+        else: self.disk_maps[edgeon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_old_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_old_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_old_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_old_earth_map(bol_map_name): self.old_maps[earth_name][bol_map_name] = self.load_old_earth_map(bol_map_name)
+        else: self.old_maps[earth_name][bol_map_name] = self.model.old_bolometric_luminosity_map_earth
+
+        # Direct
+        if self.has_old_earth_map(direct_map_name): self.old_maps[earth_name][direct_map_name] = self.load_old_earth_map(direct_map_name)
+        else: self.old_maps[earth_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_earth
+
+        # (observed) I1
+        if self.has_old_earth_map(i1_map_name): self.old_maps[earth_name][i1_map_name] = self.load_old_earth_map(i1_map_name)
+        else: self.old_maps[earth_name][i1_map_name] = self.model.old_i1_luminosity_map_earth
+
+        # Intrinsic I1
+        if self.has_old_earth_map(intr_i1_map_name): self.old_maps[earth_name][intr_i1_map_name] = self.load_old_earth_map(intr_i1_map_name)
+        else: self.old_maps[earth_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_old_faceon_map(bol_map_name): self.old_maps[faceon_name][bol_map_name] = self.load_old_faceon_map(bol_map_name)
+        else: self.old_maps[faceon_name][bol_map_name] = self.model.old_bolometric_luminosity_map_faceon
+
+        # Direct
+        if self.has_old_faceon_map(direct_map_name): self.old_maps[faceon_name][direct_map_name] = self.load_old_faceon_map(direct_map_name)
+        else: self.old_maps[faceon_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_faceon
+
+        # (observed) I1
+        if self.has_old_faceon_map(i1_map_name): self.old_maps[faceon_name][i1_map_name] = self.load_old_faceon_map(i1_map_name)
+        else: self.old_maps[faceon_name][i1_map_name] = self.model.old_i1_luminosity_map_faceon
+
+        # Intrinsic I1
+        if self.has_old_faceon_map(intr_i1_map_name): self.old_maps[faceon_name][intr_i1_map_name] = self.load_old_faceon_map(intr_i1_map_name)
+        else: self.old_maps[faceon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps_edgeon(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_old_edgeon_map(bol_map_name): self.old_maps[edgeon_name][bol_map_name] = self.load_old_edgeon_map(bol_map_name)
+        else: self.old_maps[edgeon_name][bol_map_name] = self.model.old_bolometric_luminosity_map_edgeon
+
+        # Direct
+        if self.has_old_edgeon_map(direct_map_name): self.old_maps[edgeon_name][direct_map_name] = self.load_old_edgeon_map(direct_map_name)
+        else: self.old_maps[edgeon_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_edgeon
+
+        # (observed) I1
+        if self.has_old_edgeon_map(i1_map_name): self.old_maps[edgeon_name][i1_map_name] = self.load_old_edgeon_map(i1_map_name)
+        else: self.old_maps[edgeon_name][i1_map_name] = self.model.old_i1_luminosity_map_edgeon
+
+        # Intrinsic I1
+        if self.has_old_edgeon_map(intr_i1_map_name): self.old_maps[edgeon_name][intr_i1_map_name] = self.load_old_edgeon_map(intr_i1_map_name)
+        else: self.old_maps[edgeon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_young_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_young_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_young_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_young_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_young_earth_map(bol_map_name): self.young_maps[earth_name][bol_map_name] = self.load_young_earth_map(bol_map_name)
+        else: self.young_maps[earth_name][bol_map_name] = self.model.young_bolometric_luminosity_map_earth
+
+        # Direct
+        if self.has_young_earth_map(direct_map_name): self.young_maps[earth_name][direct_map_name] = self.load_young_earth_map(direct_map_name)
+        else: self.young_maps[earth_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_earth
+
+        # (observed) FUV
+        if self.has_young_earth_map(fuv_map_name): self.young_maps[earth_name][fuv_map_name] = self.load_young_earth_map(fuv_map_name)
+        else: self.young_maps[earth_name][fuv_map_name] = self.model.young_fuv_luminosity_map_earth
+
+        # Intrinsic FUV
+        if self.has_young_earth_map(intr_fuv_map_name): self.young_maps[earth_name][intr_fuv_map_name] = self.load_young_earth_map(intr_fuv_map_name)
+        else: self.young_maps[earth_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_young_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_young_faceon_map(bol_map_name): self.young_maps[faceon_name][bol_map_name] = self.load_young_faceon_map(bol_map_name)
+        else: self.young_maps[faceon_name][bol_map_name] = self.model.young_bolometric_luminosity_map_faceon
+
+        # Direct
+        if self.has_young_faceon_map(direct_map_name): self.young_maps[faceon_name][direct_map_name] = self.load_young_faceon_map(direct_map_name)
+        else: self.young_maps[faceon_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_faceon
+
+        # (observed) FUV
+        if self.has_young_faceon_map(fuv_map_name): self.young_maps[faceon_name][fuv_map_name] = self.load_young_faceon_map(fuv_map_name)
+        else: self.young_maps[faceon_name][fuv_map_name] = self.model.young_fuv_luminosity_map_faceon
+
+        # Intrinsic FUV
+        if self.has_young_faceon_map(intr_fuv_map_name): self.young_maps[faceon_name][intr_fuv_map_name] = self.load_young_faceon_map(intr_fuv_map_name)
+        else: self.young_maps[faceon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_young_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_young_edgeon_map(bol_map_name): self.young_maps[edgeon_name][bol_map_name] = self.load_young_edgeon_map(bol_map_name)
+        else: self.young_maps[edgeon_name][bol_map_name] = self.model.young_bolometric_luminosity_map_edgeon
+
+        # Direct
+        if self.has_young_edgeon_map(direct_map_name): self.young_maps[edgeon_name][direct_map_name] = self.load_young_edgeon_map(direct_map_name)
+        else: self.young_maps[edgeon_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_edgeon
+
+        # (observed) FUV
+        if self.has_young_edgeon_map(fuv_map_name): self.young_maps[edgeon_name][fuv_map_name] = self.load_young_edgeon_map(fuv_map_name)
+        else: self.young_maps[edgeon_name][fuv_map_name] = self.model.young_fuv_luminosity_map_edgeon
+
+        # Intrinsic FUV
+        if self.has_young_edgeon_map(intr_fuv_map_name): self.young_maps[edgeon_name][intr_fuv_map_name] = self.load_young_edgeon_map(intr_fuv_map_name)
+        else: self.young_maps[edgeon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_sfr_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_sfr_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_sfr_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_sfr_earth_map(bol_map_name): self.sfr_maps[earth_name][bol_map_name] = self.load_sfr_earth_map(bol_map_name)
+        else: self.sfr_maps[earth_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_earth
+
+        # Direct
+        if self.has_sfr_earth_map(direct_map_name): self.sfr_maps[earth_name][direct_map_name] = self.load_sfr_earth_map(direct_map_name)
+        else: self.sfr_maps[earth_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_earth
+
+        # (observed) FUV
+        if self.has_sfr_earth_map(fuv_map_name): self.sfr_maps[earth_name][fuv_map_name] = self.load_sfr_earth_map(fuv_map_name)
+        else: self.sfr_maps[earth_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_earth
+
+        # Intrinsic FUV
+        if self.has_sfr_earth_map(intr_fuv_map_name): self.sfr_maps[earth_name][intr_fuv_map_name] = self.load_sfr_earth_map(intr_fuv_map_name)
+        else: self.sfr_maps[earth_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_earth
+
+        # SFR
+        if self.has_sfr_earth_map(sfr_map_name): self.sfr_maps[earth_name][sfr_map_name] = self.load_sfr_earth_map(sfr_map_name)
+        else: self.sfr_maps[earth_name][sfr_map_name] = self.model.star_formation_rate_map_earth
+
+        # Dust mass
+        if self.has_sfr_earth_map(dust_mass_map_name): self.sfr_maps[earth_name][dust_mass_map_name] = self.load_sfr_earth_map(dust_mass_map_name)
+        else: self.sfr_maps[earth_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_earth
+
+        # Stellar bolometric luminosity
+        if self.has_sfr_earth_map(stellar_lum_map_name): self.sfr_maps[earth_name][stellar_lum_map_name] = self.load_sfr_earth_map(stellar_lum_map_name)
+        else: self.sfr_maps[earth_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_earth
+
+        # Dust bolometric luminosity
+        if self.has_sfr_earth_map(dust_lum_map_name): self.sfr_maps[earth_name][dust_lum_map_name] = self.load_sfr_earth_map(dust_lum_map_name)
+        else: self.sfr_maps[earth_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_sfr_faceon_map(bol_map_name): self.sfr_maps[faceon_name][bol_map_name] = self.load_sfr_faceon_map(bol_map_name)
+        else: self.sfr_maps[faceon_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_faceon
+
+        # Direct
+        if self.has_sfr_faceon_map(direct_map_name): self.sfr_maps[faceon_name][direct_map_name] = self.load_sfr_faceon_map(direct_map_name)
+        else: self.sfr_maps[faceon_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_faceon
+
+        # (observed) FUV
+        if self.has_sfr_faceon_map(fuv_map_name): self.sfr_maps[faceon_name][fuv_map_name] = self.load_sfr_faceon_map(fuv_map_name)
+        else: self.sfr_maps[faceon_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_faceon
+
+        # Intrinsic FUV
+        if self.has_sfr_faceon_map(intr_fuv_map_name): self.sfr_maps[faceon_name][intr_fuv_map_name] = self.load_sfr_faceon_map(intr_fuv_map_name)
+        else: self.sfr_maps[faceon_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_faceon
+
+        # SFR
+        if self.has_sfr_faceon_map(sfr_map_name): self.sfr_maps[faceon_name][sfr_map_name] = self.load_sfr_faceon_map(sfr_map_name)
+        else: self.sfr_maps[faceon_name][sfr_map_name] = self.model.star_formation_rate_map_faceon
+
+        # Dust mass
+        if self.has_sfr_faceon_map(dust_mass_map_name): self.sfr_maps[faceon_name][dust_mass_map_name] = self.load_sfr_faceon_map(dust_mass_map_name)
+        else: self.sfr_maps[faceon_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_faceon
+
+        # Stellar bolometric luminosity
+        if self.has_sfr_faceon_map(stellar_lum_map_name): self.sfr_maps[faceon_name][stellar_lum_map_name] = self.load_sfr_faceon_map(stellar_lum_map_name)
+        else: self.sfr_maps[faceon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_faceon
+
+        # Dust bolometric luminosity
+        if self.has_sfr_faceon_map(dust_lum_map_name): self.sfr_maps[faceon_name][dust_lum_map_name] = self.load_sfr_faceon_map(dust_lum_map_name)
+        else: self.sfr_maps[faceon_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_sfr_edgeon_map(bol_map_name): self.sfr_maps[edgeon_name][bol_map_name] = self.load_sfr_edgeon_map(bol_map_name)
+        else: self.sfr_maps[edgeon_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_edgeon
+
+        # Direct
+        if self.has_sfr_edgeon_map(direct_map_name): self.sfr_maps[edgeon_name][direct_map_name] = self.load_sfr_edgeon_map(direct_map_name)
+        else: self.sfr_maps[edgeon_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_edgeon
+
+        # (observed) FUV
+        if self.has_sfr_edgeon_map(fuv_map_name): self.sfr_maps[edgeon_name][fuv_map_name] = self.load_sfr_edgeon_map(fuv_map_name)
+        else: self.sfr_maps[edgeon_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_edgeon
+
+        # Intrinsic FUV
+        if self.has_sfr_edgeon_map(intr_fuv_map_name): self.sfr_maps[edgeon_name][intr_fuv_map_name] = self.load_sfr_edgeon_map(intr_fuv_map_name)
+        else: self.sfr_maps[edgeon_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_edgeon
+
+        # SFR
+        if self.has_sfr_edgeon_map(sfr_map_name): self.sfr_maps[edgeon_name][sfr_map_name] = self.load_sfr_edgeon_map(sfr_map_name)
+        else: self.sfr_maps[edgeon_name][sfr_map_name] = self.model.star_formation_rate_map_edgeon
+
+        # Dust mass
+        if self.has_sfr_edgeon_map(dust_mass_map_name): self.sfr_maps[edgeon_name][dust_mass_map_name] = self.load_sfr_edgeon_map(dust_mass_map_name)
+        else: self.sfr_maps[edgeon_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_edgeon
+
+        # Stellar bolometric luminosity
+        if self.has_sfr_edgeon_map(stellar_lum_map_name): self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.load_sfr_edgeon_map(stellar_lum_map_name)
+        else: self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_edgeon
+
+        # Dust bolometric luminosity
+        if self.has_sfr_edgeon_map(dust_lum_map_name): self.sfr_maps[edgeon_name][dust_lum_map_name] = self.load_sfr_edgeon_map(dust_lum_map_name)
+        else: self.sfr_maps[edgeon_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_unevolved_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_unevolved_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_unevolved_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_unevolved_earth_map(bol_map_name): self.unevolved_maps[earth_name][bol_map_name] = self.load_unevolved_earth_map(bol_map_name)
+        else: self.unevolved_maps[earth_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_earth
+
+        # Direct
+        if self.has_unevolved_earth_map(direct_map_name): self.unevolved_maps[earth_name][direct_map_name] = self.load_unevolved_earth_map(direct_map_name)
+        else: self.unevolved_maps[earth_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_earth
+
+        # FUV
+        if self.has_unevolved_earth_map(fuv_map_name): self.unevolved_maps[earth_name][fuv_map_name] = self.load_unevolved_earth_map(direct_map_name)
+        else: self.unevolved_maps[earth_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_earth
+
+        # Intrinsic FUV
+        if self.has_unevolved_earth_map(intr_fuv_map_name): self.unevolved_maps[earth_name][intr_fuv_map_name] = self.load_unevolved_earth_map(intr_fuv_map_name)
+        else: self.unevolved_maps[earth_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_earth
+
+        # SFR
+        if self.has_unevolved_earth_map(sfr_map_name): self.unevolved_maps[earth_name][sfr_map_name] = self.load_unevolved_earth_map(sfr_map_name)
+        else: self.unevolved_maps[earth_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_unevolved_faceon_map(bol_map_name): self.unevolved_maps[faceon_name][bol_map_name] = self.load_unevolved_faceon_map(bol_map_name)
+        else: self.unevolved_maps[faceon_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_faceon
+
+        # Direct
+        if self.has_unevolved_faceon_map(direct_map_name): self.unevolved_maps[faceon_name][direct_map_name] = self.load_unevolved_faceon_map(direct_map_name)
+        else: self.unevolved_maps[faceon_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_faceon
+
+        # FUV
+        if self.has_unevolved_faceon_map(fuv_map_name): self.unevolved_maps[faceon_name][fuv_map_name] = self.load_unevolved_faceon_map(direct_map_name)
+        else: self.unevolved_maps[faceon_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_faceon
+
+        # Intrinsic FUV
+        if self.has_unevolved_faceon_map(intr_fuv_map_name): self.unevolved_maps[faceon_name][intr_fuv_map_name] = self.load_unevolved_faceon_map(intr_fuv_map_name)
+        else: self.unevolved_maps[faceon_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_faceon
+
+        # SFR
+        if self.has_unevolved_faceon_map(sfr_map_name): self.unevolved_maps[faceon_name][sfr_map_name] = self.load_unevolved_faceon_map(sfr_map_name)
+        else: self.unevolved_maps[faceon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Bolometric
+        if self.has_unevolved_edgeon_map(bol_map_name): self.unevolved_maps[edgeon_name][bol_map_name] = self.load_unevolved_edgeon_map(bol_map_name)
+        else: self.unevolved_maps[edgeon_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_edgeon
+
+        # Direct
+        if self.has_unevolved_edgeon_map(direct_map_name): self.unevolved_maps[edgeon_name][direct_map_name] = self.load_unevolved_edgeon_map(direct_map_name)
+        else: self.unevolved_maps[edgeon_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_edgeon
+
+        # FUV
+        if self.has_unevolved_edgeon_map(fuv_map_name): self.unevolved_maps[edgeon_name][fuv_map_name] = self.load_unevolved_edgeon_map(direct_map_name)
+        else: self.unevolved_maps[edgeon_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_edgeon
+
+        # Intrinsic FUV
+        if self.has_unevolved_edgeon_map(intr_fuv_map_name): self.unevolved_maps[edgeon_name][intr_fuv_map_name] = self.load_unevolved_edgeon_map(intr_fuv_map_name)
+        else: self.unevolved_maps[edgeon_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_edgeon
+
+        # SFR
+        if self.has_unevolved_edgeon_map(sfr_map_name): self.unevolved_maps[edgeon_name][sfr_map_name] = self.load_unevolved_edgeon_map(sfr_map_name)
+        else: self.unevolved_maps[edgeon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def get_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth: self.get_dust_maps_earth()
+
+        # Face-on
+        if self.do_faceon: self.get_dust_maps_faceon()
+
+        # Edge-on
+        if self.do_edgeon: self.get_dust_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_dust_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dust mass
+        if self.has_dust_earth_map(diffuse_mass_map_name): self.dust_maps[earth_name][diffuse_mass_map_name] = self.load_dust_earth_map(diffuse_mass_map_name)
+        else: self.dust_maps[earth_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_earth
+
+        # Total dust mass
+        if self.has_dust_earth_map(mass_map_name): self.dust_maps[earth_name][mass_map_name] = self.load_dust_earth_map(mass_map_name)
+        else: self.dust_maps[earth_name][mass_map_name] = self.model.dust_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    def get_dust_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dust mass
+        if self.has_dust_faceon_map(diffuse_mass_map_name): self.dust_maps[faceon_name][diffuse_mass_map_name] = self.load_dust_faceon_map(diffuse_mass_map_name)
+        else: self.dust_maps[faceon_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_faceon
+
+        # Total dust mass
+        if self.has_dust_faceon_map(mass_map_name): self.dust_maps[faceon_name][mass_map_name] = self.load_dust_faceon_map(mass_map_name)
+        else: self.dust_maps[faceon_name][mass_map_name] = self.model.dust_mass_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def get_dust_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dust mass
+        if self.has_dust_edgeon_map(diffuse_mass_map_name): self.dust_maps[edgeon_name][diffuse_mass_map_name] = self.load_dust_edgeon_map(diffuse_mass_map_name)
+        else: self.dust_maps[edgeon_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_edgeon
+
+        # Total dust mass
+        if self.has_dust_edgeon_map(mass_map_name): self.dust_maps[edgeon_name][mass_map_name] = self.load_dust_edgeon_map(mass_map_name)
+        else: self.dust_maps[edgeon_name][mass_map_name] = self.model.dust_mass_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -642,38 +1597,386 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def maps_earth_path(self):
+    def maps_total_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.create_directory_in(self.maps_path, "earth")
+        return fs.create_directory_in(self.maps_path, "total")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def maps_faceon_path(self):
+    def maps_total_earth_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.create_directory_in(self.maps_path, "faceon")
+        return fs.create_directory_in(self.maps_total_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def maps_edgeon_path(self):
+    def maps_total_faceon_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.create_directory_in(self.maps_path, "edgeon")
+        return fs.create_directory_in(self.maps_total_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_total_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_total_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_bulge_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "bulge")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_bulge_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_bulge_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_bulge_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_bulge_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_bulge_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_bulge_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_disk_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "disk")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_disk_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_disk_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_disk_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_disk_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_disk_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_disk_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_old_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "old")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_old_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_old_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_old_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_old_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_old_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_old_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_young_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "young")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_young_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_young_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_young_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_young_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_young_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_young_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_sfr_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "sfr")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_sfr_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_sfr_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_sfr_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_sfr_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_sfr_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_sfr_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_unevolved_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "unevolved")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_unevolved_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_unevolved_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_unevolved_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_unevolved_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_unevolved_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_unevolved_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_dust_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_path, "dust")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_dust_earth_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_dust_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_dust_faceon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_dust_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_dust_edgeon_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.maps_dust_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
@@ -770,50 +2073,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_total_bol_map(self):
+    def total_earth_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_total_bolometric_luminosity_map and not self.has_total_bol_map
+        return self.total_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def total_bol_map(self):
+    def get_total_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.total_bolometric_luminosity_map
+        return fs.join(self.maps_total_earth_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def total_bol_map_path(self):
+    def has_total_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_total_earth_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def load_total_earth_map(self, name):
 
         """
         Thisn function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_earth_path, "total_bol.fits")
+        return Frame.from_file(self.get_total_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_total_bol_map(self):
+    def remove_total_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.total_bol_map_path)
+        fs.remove_file(self.get_total_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -827,35 +2142,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the total maps in the earth projection ...")
 
-        # Bolometric
-        if self.do_write_total_bol_map: self.total_bol_map.saveto(self.total_bol_map_path)
+        # Loop over the map names
+        for name in self.total_earth_map_names:
 
-        # Intrinsic stellar
-        if self.do_write_total_intr_stellar_map: self.total_intr_stellar_map.saveto(self.total_intr_stellar_map_path)
+            # Has to be written?
+            if self.has_total_earth_map(name): continue
 
-        # Observed stellar
-        if self.do_write_total_obs_stellar_map: self.total_obs_stellar_map.saveto(self.total_obs_stellar_map_path)
+            # Determine the path
+            path = self.get_total_earth_map_path(name)
 
-        # Dust emission luminosity
-        if self.do_write_total_dust_map: self.total_dust_map.saveto(self.total_dust_map_path)
+            # Save
+            self.total_maps[earth_name][name].saveto(path)
 
-        # Dust emission with internal dust
-        if self.do_write_total_dust_with_internal_map: self.total_dust_with_internal_map.saveto(self.total_dust_with_internal_map_path)
+    # -----------------------------------------------------------------
 
-        # Scattered stellar
-        if self.do_write_total_scat_map: self.total_scat_map.saveto(self.total_scat_map_path)
+    @property
+    def total_faceon_map_names(self):
 
-        # Absorbed stellar
-        if self.do_write_total_abs_map: self.total_abs_map.saveto(self.total_abs_map_path)
+        """
+        This function ...
+        :return:
+        """
 
-        # Absorbed with internal
-        if self.do_write_total_abs_with_internal_map: self.total_abs_with_internal_map.saveto(self.total_abs_with_internal_map_path)
+        return self.total_maps[faceon_name].keys()
 
-        # Attenuated
-        if self.do_write_total_att_map: self.total_att_map.saveto(self.total_att_map_path)
+    # -----------------------------------------------------------------
 
-        # Direct stellar
-        if self.do_write_total_dir_map: self.total_dir_map.saveto(self.total_dir_map_path)
+    def get_total_faceon_map_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_total_faceon_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_total_faceon_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_total_faceon_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def load_total_faceon_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return Frame.from_file(self.get_total_faceon_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def remove_total_faceon_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        fs.remove_file(self.get_total_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -869,35 +2226,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the total maps in the faceon projection ...")
 
-        # Bolometric
-        if self.has_total_bol_map_faceon: self.total_bol_map_faceon.saveto(self.total_bol_map_faceon_faceon_path)
+        # Loop over the map names
+        for name in self.total_faceon_map_names:
 
-        # Intrinsic stellar
-        if self.do_write_total_intr_stellar_map_faceon: self.total_intr_stellar_map_faceon.saveto(self.total_intr_stellar_map_faceon_path)
+            # Has to be written?
+            if self.has_total_faceon_map(name): continue
 
-        # Observed stellar
-        if self.do_write_total_obs_stellar_map_faceon: self.total_obs_stellar_map_faceon.saveto(self.total_obs_stellar_map_faceon_path)
+            # Determine the path
+            path = self.get_total_faceon_map_path(name)
 
-        # Dust emission luminosity
-        if self.do_write_total_dust_map_faceon: self.total_dust_map_faceon.saveto(self.total_dust_map_faceon_path)
+            # Save
+            self.total_maps[faceon_name][name].saveto(path)
 
-        # Dust emission with internal dust
-        if self.do_write_total_dust_with_internal_map_faceon: self.total_dust_with_internal_map_faceon.saveto(self.total_dust_with_internal_map_faceon_path)
+    # -----------------------------------------------------------------
 
-        # Scattered stellar
-        if self.do_write_total_scat_map_faceon: self.total_scat_map_faceon.saveto(self.total_scat_map_faceon_path)
+    @property
+    def total_edgeon_map_names(self):
 
-        # Absorbed stellar
-        if self.do_write_total_abs_map_faceon: self.total_abs_map_faceon.saveto(self.total_abs_map_faceon_path)
+        """
+        This function ...
+        :return:
+        """
 
-        # Absorbed with internal
-        if self.do_write_total_abs_with_internal_map_faceon: self.total_abs_with_internal_map_faceon.saveto(self.total_abs_with_internal_map_faceon_path)
+        return self.total_maps[edgeon_name].keys()
 
-        # Attenuated
-        if self.do_write_total_att_map_faceon: self.total_att_map_faceon.saveto(self.total_att_map_faceon_path)
+    # -----------------------------------------------------------------
 
-        # Direct stellar
-        if self.do_write_total_dir_map_faceon: self.total_dir_map_faceon.saveto(self.total_dir_map_faceon_path)
+    def get_total_edgeon_map_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_total_edgeon_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_total_edgeon_map(self, name):
+
+        """
+        Thisnf unction ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_total_edgeon_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def load_total_edgeon_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return Frame.from_file(self.get_total_edgeon_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def remove_total_edgeon_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        fs.remove_file(self.get_total_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -911,35 +2310,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the total maps in the edgeon projection ...")
 
-        # Bolometric
-        if self.has_total_bol_map_edgeon: self.total_bol_map_edgeon.saveto(self.total_bol_map_edgeon_path)
+        # Loop over the map names
+        for name in self.total_edgeon_map_names:
 
-        # Intrinsic stellar
-        if self.do_write_total_intr_stellar_map_edgeon: self.total_intr_stellar_map_edgeon.saveto(self.total_intr_stellar_map_edgeon_path)
+            # Has to be written?
+            if self.has_total_edgeon_map(name): continue
 
-        # Observed stellar
-        if self.do_write_total_obs_stellar_map_edgeon: self.total_obs_stellar_map_edgeon.saveto(self.total_obs_stellar_map_edgeon_path)
+            # Determine the path
+            path = self.get_total_edgeon_map_path(name)
 
-        # Dust emission luminosity
-        if self.do_write_total_dust_map_edgeon: self.total_dust_map_edgeon.saveto(self.total_dust_map_edgeon_path)
-
-        # Dust emission with internal dust
-        if self.do_write_total_dust_with_internal_map_edgeon: self.total_dust_with_internal_map_edgeon.saveto(self.total_dust_with_internal_map_edgeon_path)
-
-        # Scattered stellar
-        if self.do_write_total_scat_map_edgeon: self.total_scat_map_edgeon.saveto(self.total_scat_map_edgeon_path)
-
-        # Absorbed stellar
-        if self.do_write_total_abs_map_edgeon: self.total_abs_map_edgeon.saveto(self.total_abs_map_edgeon_path)
-
-        # Absorbed with internal
-        if self.do_write_total_abs_with_internal_map_edgeon: self.total_abs_with_internal_map_edgeon.saveto(self.total_abs_with_internal_map_edgeon_path)
-
-        # Attenuated
-        if self.do_write_total_att_map_edgeon: self.total_att_map_edgeon.saveto(self.total_att_map_edgeon_path)
-
-        # Direct stellar
-        if self.do_write_total_dir_map_edgeon: self.total_dir_map_edgeon.saveto(self.total_dir_map_edgeon_path)
+            # Save
+            self.total_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -965,98 +2346,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_bulge_i1_map(self):
+    def bulge_earth_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_bulge_i1_luminosity_map and not self.has_bulge_i1_map
+        return self.bulge_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def bulge_i1_map(self):
+    def get_bulge_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.bulge_i1_luminosity_map
+        return fs.join(self.maps_bulge_earth_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def bulge_i1_map_path(self):
+    def has_bulge_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_earth_path, "bulge_i1.fits")
+        return fs.is_file(self.get_bulge_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_bulge_i1_map(self):
+    def load_bulge_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.bulge_i1_map_path)
+        return Frame.from_file(self.get_bulge_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_bulge_bol_map(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.model.has_bulge_bolometric_luminosity_map and not self.has_bulge_bol_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bulge_bol_map(self):
+    def remove_bulge_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.bulge_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bulge_bol_map_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return fs.join(self.maps_earth_path, "bulge_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_bulge_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.bulge_bol_map_path)
+        fs.remove_file(self.get_bulge_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1070,107 +2415,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the bulge maps in the earth projection ...")
 
-        # I1
-        if self.do_write_bulge_i1_map: self.bulge_i1_map.saveto(self.bulge_i1_map_path)
+        # Loop over the map names
+        for name in self.bulge_earth_map_names:
 
-        # Bol
-        if self.do_write_bulge_bol_map: self.bulge_bol_map.saveto(self.bulge_bol_map_path)
+            # Write?
+            if self.has_bulge_earth_map(name): continue
+
+            # Get path
+            path = self.get_bulge_earth_map_path(name)
+
+            # Save
+            self.bulge_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_bulge_i1_map_faceon(self):
+    def bulge_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_bulge_i1_luminosity_map_faceon and not self.has_bulge_i1_map_faceon
+        return self.bulge_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def bulge_i1_map_faceon(self):
+    def get_bulge_faceon_map_path(self, name):
+
+        """
+        Thisn function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_bulge_faceon_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_bulge_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.bulge_i1_luminosity_map_faceon
+        return fs.is_file(self.get_bulge_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def bulge_i1_map_faceon_path(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "bulge_i1.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_bulge_i1_map_faceon(self):
+    def load_bulge_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.bulge_i1_map_faceon_path)
+        return Frame.from_file(self.get_bulge_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_bulge_bol_map_faceon(self):
+    def remove_bulge_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_bulge_bolometric_luminosity_map_faceon and not self.has_bulge_bol_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bulge_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.bulge_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bulge_bol_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "bulge_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_bulge_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.bulge_bol_map_faceon_path)
+        fs.remove_file(self.get_bulge_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1184,107 +2499,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the bulge maps in the face-on projection ...")
 
-        # I1
-        if self.do_write_bulge_i1_map_faceon: self.bulge_i1_map_faceon.saveto(self.bulge_i1_map_faceon_path)
+        # Loop over the map names
+        for name in self.bulge_faceon_map_names:
 
-        # Bol
-        if self.do_write_bulge_bol_map_faceon: self.bulge_bol_map_faceon.saveto(self.bulge_bol_map_faceon_path)
+            # Write
+            if self.has_bulge_faceon_map(name): continue
+
+            # Get path
+            path = self.get_bulge_faceon_map_path(name)
+
+            # Save
+            self.bulge_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_bulge_i1_map_edgeon(self):
+    def bulge_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_bulge_i1_luminosity_map_edgeon and not self.has_bulge_i1_map_edgeon
+        return self.bulge_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def bulge_i1_map_edgeon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return self.model.bulge_i1_luminosity_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bulge_i1_map_edgeon_path(self):
+    def get_bulge_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "bulge_i1.fits")
+        return fs.join(self.maps_bulge_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_bulge_i1_map_edgeon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return fs.is_file(self.bulge_i1_map_edgeon_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_bulge_bol_map_edgeon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return self.model.has_bulge_bolometric_luminosity_map_edgeon and not self.has_bulge_bol_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bulge_bol_map_edgeon(self):
+    def has_bulge_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.bulge_bolometric_luminosity_map_edgeon
+        return fs.is_file(self.get_bulge_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def bulge_bol_map_edgeon_path(self):
+    def load_bulge_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "bulge_bol.fits")
+        return Frame.from_file(self.get_bulge_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_bulge_bol_map_edgeon(self):
+    def remove_bulge_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.bulge_bol_map_edgeon_path)
+        fs.remove_file(self.get_bulge_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1298,83 +2583,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the bulge maps in the edge-on projection ...")
 
-        # I1
-        if self.do_write_bulge_i1_map_edgeon: self.bulge_i1_map_edgeon.saveto(self.bulge_i1_map_edgeon_path)
+        # Loop over the the map names
+        for name in self.bulge_edgeon_map_names:
 
-        # Bol
-        if self.do_write_bulge_bol_map_edgeon: self.bulge_bol_map_edgeon.saveto(self.bulge_bol_map_edgeon_path)
+            # Write?
+            if self.has_bulge_edgeon_map(name): continue
 
-    # -----------------------------------------------------------------
+            # Get path
+            path = self.get_bulge_edgeon_map_path(name)
 
-    @property
-    def has_disk_i1_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.disk_i1_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_i1_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.old_disk_i1_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_i1_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_earth_path, "disk_i1.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_disk_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.disk_bol_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.old_disk_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_bol_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_path, "disk_bol.fits")
+            # Save
+            self.bulge_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1400,26 +2619,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_disk_i1_map(self):
+    def disk_earth_map_names(self):
 
         """
-        This function ...
+        Thisn function ...
         :return:
         """
 
-        return self.model.has_old_disk_i1_luminosity_map and not self.has_disk_i1_map
+        return self.disk_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_disk_bol_map(self):
+    def get_disk_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_old_disk_bolometric_luminosity_map and not self.has_disk_bol_map
+        return fs.join(self.maps_disk_earth_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_disk_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_disk_earth_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def load_disk_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return Frame.from_file(self.get_disk_earth_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def remove_disk_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        fs.remove_file(self.get_disk_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1433,107 +2688,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the disk maps in the earth projection ...")
 
-        # I1 lum
-        if self.do_write_disk_i1_map: self.disk_i1_map.saveto(self.disk_i1_map_path)
+        # Loop over the map names
+        for name in self.disk_earth_map_names:
 
-        # Bol lum
-        if self.do_write_disk_bol_map: self.disk_bol_map.saveto(self.disk_bol_map_path)
+            # Write?
+            if self.has_disk_earth_map(name): continue
+
+            # Get path
+            path = self.get_disk_earth_map_path(name)
+
+            # Save
+            self.disk_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_disk_i1_map_faceon(self):
+    def disk_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_old_disk_i1_luminosity_map and not self.has_disk_i1_map_faceon
+        return self.disk_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def disk_i1_map_faceon(self):
+    def get_disk_faceon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.old_disk_i1_luminosity_map_faceon
+        return fs.join(self.maps_disk_faceon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def disk_i1_map_faceon_path(self):
+    def has_disk_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_faceon_path, "disk_i1.fits")
+        return fs.is_file(self.get_disk_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_disk_i1_map_faceon(self):
+    def load_disk_faceon_map(self, name):
 
         """
-        This function ...
+        Thisn function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.disk_i1_map_faceon_path)
+        return Frame.from_file(self.get_disk_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_disk_bol_map_faceon(self):
+    def remove_disk_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_old_disk_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.disk_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_bol_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "disk_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_disk_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.disk_bol_map_faceon_path)
+        fs.remove_file(self.get_disk_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1547,107 +2772,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the disk maps in the faceon projection ...")
 
-        # I1 lum
-        if self.do_write_disk_i1_map_faceon: self.disk_i1_map_faceon.saveto(self.disk_i1_map_faceon_path)
+        # Loop over the map names
+        for name in self.disk_faceon_map_names:
 
-        # Bol lum
-        if self.do_write_disk_bol_map_faceon: self.disk_bol_map_faceon.saveto(self.disk_bol_map_faceon_path)
+            # Write?
+            if self.has_disk_faceon_map(name): continue
+
+            # Get path
+            path = self.get_disk_faceon_map_path(name)
+
+            # Save
+            self.disk_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_disk_i1_map_edgeon(self):
+    def disk_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_disk_i1_luminosity_map_edgeon and not self.has_disk_i1_map_edgeon
+        return self.disk_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def disk_i1_map_edgeon(self):
+    def get_disk_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.disk_i1_luminosity_map_edgeon
+        return fs.join(self.maps_disk_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def disk_i1_map_edgeon_path(self):
+    def has_disk_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "disk_i1.fits")
+        return fs.is_file(self.get_disk_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_disk_i1_map_edgeon(self):
+    def load_disk_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.disk_i1_map_edgeon_path)
+        return Frame.from_file(self.get_disk_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_disk_bol_map_edgeon(self):
+    def remove_disk_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_disk_bol_luminosity_map_edgeon and not self.has_disk_bol_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.disk_bol_luminosity_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def disk_bol_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "disk_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_disk_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.disk_bol_map_edgeon_path)
+        fs.remove_file(self.get_disk_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1661,11 +2856,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the disk maps in the edgeon projection ...")
 
-        # I1 lum
-        if self.do_write_disk_i1_map_edgeon: self.disk_i1_map_edgeon.saveto(self.disk_i1_map_edgeon_path)
+        # Loop over the map names
+        for name in self.disk_edgeon_map_names:
 
-        # Bol lum
-        if self.do_write_disk_bol_map_edgeon: self.disk_bol_map_edgeon.saveto(self.disk_bol_map_edgeon_path)
+            # Write?
+            if self.has_disk_edgeon_map(name): continue
+
+            # Get path
+            path = self.get_disk_edgeon_map_path(name)
+
+            # Save
+            self.disk_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1691,98 +2892,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_old_i1_map(self):
+    def old_earth_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_old_i1_luminosity_map and not self.has_old_i1_map
+        return self.old_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_i1_map(self):
+    def get_old_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.old_i1_luminosity_map
+        return fs.join(self.maps_old_earth_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_i1_map_path(self):
+    def has_old_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_earth_path, "old_i1.fits")
+        return fs.is_file(self.get_old_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_old_i1_map(self):
+    def load_old_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.old_i1_map_path)
+        return Frame.from_file(self.get_old_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_old_bol_map(self):
+    def remove_old_earth_map(self, name):
 
         """
-        This function ...
+        Thisn function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_old_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_bol_map(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.model.old_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_bol_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_earth_path, "old_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_old_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.old_bol_map_path)
+        fs.remove_file(self.get_old_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1796,107 +2961,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the old maps in the earth projection ...")
 
-        # I1
-        if self.do_write_old_i1_map: self.old_i1_map.saveto(self.old_i1_map_path)
+        # Loop over the map names
+        for name in self.old_earth_map_names:
 
-        # Bol
-        if self.do_write_old_bol_map: self.old_bol_map.saveto(self.old_bol_map_path)
+            # Write
+            if self.has_old_earth_map(name): continue
+
+            # Get path
+            path = self.get_old_earth_map_path(name)
+
+            # Save
+            self.old_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_old_i1_map_faceon(self):
+    def old_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_old_i1_luminosity_map_faceon
+        return self.old_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_i1_map_faceon(self):
+    def get_old_faceon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.old_i1_luminosity_map_faceon
+        return fs.join(self.maps_old_faceon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_i1_map_faceon_path(self):
+    def has_old_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_faceon_path, "old_i1.fits")
+        return fs.is_file(self.get_old_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_old_i1_map_faceon(self):
+    def load_old_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.old_i1_map_faceon_path)
+        return Frame.from_file(self.get_old_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_old_bol_map_faceon(self):
+    def remove_old_faceon_map(self, name):
 
         """
-        This function ...
+        Thisn function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_old_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.old_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_bol_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "old_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_old_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.old_bol_map_faceon_path)
+        fs.remove_file(self.get_old_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1910,107 +3045,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the old maps in the face-on projection ...")
 
-        # I1
-        if self.do_write_old_i1_map_faceon: self.old_i1_map_faceon.saveto(self.old_i1_map_faceon_path)
+        # Loop over the map names
+        for name in self.old_faceon_map_names:
 
-        # Bol
-        if self.do_write_old_bol_map_faceon: self.old_bol_map_faceon.saveto(self.old_bol_map_faceon_path)
+            # Write
+            if self.has_old_faceon_map(name): continue
+
+            # Get path
+            path = self.get_old_faceon_map_path(name)
+
+            # Save
+            self.old_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_old_i1_map_edgeon(self):
+    def old_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_old_i1_luminosity_map_edgeon
+        return self.old_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_i1_map_edgeon(self):
+    def get_old_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.old_i1_luminosity_map_edgeon
+        return fs.join(self.maps_old_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_i1_map_edgeon_path(self):
+    def has_old_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "old_i1.fits")
+        return fs.is_file(self.get_old_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_old_i1_map_edgeon(self):
+    def load_old_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.old_i1_map_edgeon_path)
+        return Frame.from_file(self.get_old_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_old_bol_map_edgeon(self):
+    def remove_old_edgeon_map(self, name):
 
         """
-        This function ...
+        Thisn function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_old_bolometric_luminosity_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.old_bolometric_luminosity_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_bol_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "old_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_old_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.old_bol_map_edgeon_path)
+        fs.remove_file(self.get_old_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -2024,11 +3129,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the old maps in the edge-on projection ...")
 
-        # I1
-        if self.do_write_old_i1_map_edgeon: self.old_i1_map_edgeon.saveto(self.old_i1_map_edgeon_path)
+        # Loop over the map names
+        for name in self.old_edgeon_map_names:
 
-        # Bol
-        if self.do_write_old_bol_map_edgeon: self.old_bol_map_edgeon.saveto(self.old_bol_map_edgeon_path)
+            # Write
+            if self.has_old_edgeon_map(name): continue
+
+            # Get path
+            path = self.get_old_edgeon_map_path(name)
+
+            # Save
+            self.old_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2038,9 +3149,6 @@ class PropertiesAnalyser(AnalysisComponent):
         This function ...
         :return:
         """
-
-        # Inform the user
-        log.info("Writing the young maps ...")
 
         # Earth
         if self.do_earth: self.write_young_maps_earth()
@@ -2054,98 +3162,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_young_fuv_map(self):
+    def young_earth_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_young_fuv_luminosity_map and not self.has_young_fuv_map
+        return self.young_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_fuv_map(self):
+    def get_young_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.young_fuv_luminosity_map
+        return fs.join(self.maps_young_earth_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_fuv_map_path(self):
+    def has_young_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_path, "young_fuv.fits")
+        return fs.is_file(self.get_young_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_young_fuv_map(self):
+    def load_young_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.young_fuv_map_path)
+        return Frame.from_file(self.get_young_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_young_bol_map(self):
+    def remove_young_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_young_bolometric_luminosity_map and not self.has_young_bol_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.young_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_bol_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_path, "young_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_young_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.young_bol_map_path)
+        fs.remove_file(self.get_young_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -2159,107 +3231,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the young maps in the earth projection ...")
 
-        # FUV lum
-        if self.do_write_young_fuv_map: self.young_fuv_map.saveto(self.young_fuv_map_path)
+        # Loop over the map names
+        for name in self.young_earth_map_names:
 
-        # Bol lum
-        if self.do_write_young_bol_map: self.young_bol_map.saveto(self.young_bol_map_path)
+            # Write?
+            if self.has_young_earth_map(name): continue
+
+            # Get the path
+            path = self.get_young_earth_map_path(name)
+
+            # Save
+            self.young_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_young_fuv_map_faceon(self):
+    def young_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_young_fuv_luminosity_map_faceon and not self.has_young_fuv_map_faceon
+        return self.young_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_fuv_map_faceon(self):
+    def get_young_faceon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.young_fuv_luminosity_map
+        return fs.join(self.maps_young_faceon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_fuv_map_faceon_path(self):
+    def has_young_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_faceon_path, "young_fuv.fits")
+        return fs.is_file(self.get_young_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_young_fuv_map_faceon(self):
+    def load_young_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.young_fuv_map_faceon_path)
+        return Frame.from_file(self.get_young_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_young_bol_map_faceon(self):
+    def remove_young_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_young_bolometric_luminosity_map_faceon and not self.has_young_bol_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.young_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_bol_map_faceon_path(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "young_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_young_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.young_bol_map_faceon_path)
+        fs.remove_file(self.get_young_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -2273,107 +3315,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the young maps in the faceon projection ...")
 
-        # FUV lum
-        if self.do_write_young_fuv_map_faceon: self.young_fuv_map_faceon.saveto(self.young_fuv_map_faceon_path)
+        # Loop over the map names
+        for name in self.young_faceon_map_names:
 
-        # Bol lum
-        if self.do_write_young_bol_map_faceon: self.young_bol_map_faceon.saveto(self.young_bol_map_faceon_path)
+            # Write?
+            if self.has_young_faceon_map(name): continue
+
+            # Get the path
+            path = self.get_young_faceon_map_path(name)
+
+            # Save
+            self.young_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_young_fuv_map_edgeon(self):
+    def young_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_young_fuv_luminosity_map_edgeon and not self.has_young_fuv_map_edgeon
+        return self.young_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_fuv_map_edgeon(self):
+    def get_young_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.young_fuv_luminosity_map_edgeon
+        return fs.join(self.maps_young_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def young_fuv_map_edgeon_path(self):
+    def has_young_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "young_fuv.fits")
+        return fs.is_file(self.get_young_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_young_fuv_map_edgeon(self):
+    def load_young_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.young_fuv_map_edgeon_path)
+        return Frame.from_file(self.get_young_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_young_bol_map_edgeon(self):
+    def remove_young_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_young_bolometric_luminosity_map_edgeon and not self.has_young_bol_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.young_bolometric_luminosity_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_bol_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "young_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_young_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.young_bol_map_edgeon_path)
+        fs.remove_file(self.get_young_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -2387,203 +3399,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the young maps in the edgeon projection ...")
 
-        # FUV lum
-        if self.do_write_young_fuv_map_edgeon: self.young_fuv_map_edgeon.saveto(self.young_fuv_map_edgeon_path)
+        # Loop over the map names
+        for name in self.young_edgeon_map_names:
 
-        # Bol lum
-        if self.do_write_young_bol_map_edgeon: self.young_bol_map_edgeon.saveto(self.young_bol_map_edgeon_path)
+            # Write?
+            if self.has_young_edgeon_map(name): continue
 
-    # -----------------------------------------------------------------
+            # Get the path
+            path = self.get_young_edgeon_map_path(name)
 
-    @property
-    def do_write_sfr_fuv_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_sfr_fuv_luminosity_map and not self.has_sfr_fuv_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_fuv_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_fuv_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_fuv_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_path, "sfr_fuv.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_fuv_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_fuv_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_sfr_bolometric_luminosity_map and not self.has_sfr_bol_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_bol_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_path, "sfr_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_bol_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_star_formation_rate_map and not self.has_sfr_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.star_formation_rate_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_path, "sfr.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_sfr_dust_mass_map and not self.has_sfr_dust_mass_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_dust_mass_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_dust_mass_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_earth_path, "sfr_dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_dust_mass_map_path)
+            # Save
+            self.young_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2608,6 +3434,66 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sfr_earth_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_maps[earth_name].keys()
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_earth_map_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_sfr_earth_path, name + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_sfr_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_sfr_earth_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return Frame.from_file(self.get_sfr_earth_map_path(name))
+
+    # -----------------------------------------------------------------
+
+    def remove_sfr_earth_map(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        fs.remove_file(self.get_sfr_earth_map_path(name))
+
+    # -----------------------------------------------------------------
+
     def write_sfr_maps_earth(self):
 
         """
@@ -2618,209 +3504,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the SFR maps in the earth projection ...")
 
-        # FUV lum
-        if self.do_write_sfr_fuv_map: self.sfr_fuv_map.saveto(self.sfr_fuv_map_path)
+        # Loop over the map names
+        for name in self.sfr_earth_map_names:
 
-        # Bol lum
-        if self.do_write_sfr_bol_map: self.sfr_bol_map.saveto(self.sfr_bol_map_path)
+            # Write?
+            if self.has_sfr_earth_map(name): continue
 
-        # Star formation rate
-        if self.do_write_sfr_map: self.sfr_map.saveto(self.sfr_map_path)
+            # Get path
+            path = self.get_sfr_earth_map_path(name)
 
-        # Dust mass
-        if self.do_write_sfr_dust_mass_map: self.sfr_dust_mass_map.saveto(self.sfr_dust_mass_map_path)
+            # Save
+            self.sfr_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_sfr_fuv_map_faceon(self):
+    def sfr_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_sfr_fuv_luminosity_map_faceon and not self.has_sfr_fuv_map_faceon
+        return self.sfr_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def sfr_fuv_map_faceon(self):
+    def get_sfr_faceon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.sfr_fuv_luminosity_map_faceon
+        return fs.join(self.maps_sfr_faceon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def sfr_fuv_map_faceon_path(self):
+    def has_sfr_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_faceon_path, "sfr_fuv.fits")
+        return fs.is_file(self.get_sfr_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_sfr_fuv_map_faceon(self):
+    def load_sfr_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.sfr_fuv_map_faceon_path)
+        return Frame.from_file(self.get_sfr_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_sfr_bol_map_faceon(self):
+    def remove_sfr_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_sfr_bolometric_luminosity_map_faceon and not self.has_sfr_bol_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_bol_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "sfr_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_bol_map_faceon_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_star_formation_rate_map_faceon and not self.has_sfr_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.star_formation_rate_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "sfr.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_map_faceon(self):
-
-        """
-        Thois function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_map_faceon_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_sfr_dust_mass_map_faceon and not self.has_sfr_dust_mass_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_dust_mass_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_dust_mass_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "sfr_dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_dust_mass_map_faceon_path)
+        fs.remove_file(self.get_sfr_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -2834,208 +3588,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the SFR maps in the faceon projection ...")
 
-        # FUV lum
-        if self.do_write_sfr_fuv_map_faceon: self.sfr_fuv_map_faceon.saveto(self.sfr_fuv_map_faceon_path)
+        # Loop over the map names
+        for name in self.sfr_faceon_map_names:
 
-        # Bol lum
-        if self.do_write_sfr_bol_map_faceon: self.sfr_bol_map_faceon.saveto(self.sfr_bol_map_faceon_path)
+            # Write?
+            if self.has_sfr_faceon_map(name): continue
 
-        # Star formation rate
-        if self.do_write_sfr_map_faceon: self.sfr_map_faceon.saveto(self.sfr_map_faceon_path)
+            # Get path
+            path = self.get_sfr_faceon_map_path(name)
 
-        # Dust mass
-        if self.do_write_sfr_dust_mass_map_faceon: self.sfr_dust_mass_map_faceon.saveto(self.sfr_dust_mass_map_faceon_path)
+            # Save
+            self.sfr_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_sfr_fuv_map_edgeon(self):
+    def sfr_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_sfr_fuv_luminosity_map_edgeon and not self.has_sfr_fuv_map_edgeon
+        return self.sfr_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def sfr_fuv_map_edgeon(self):
+    def get_sfr_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
-        return self.model.sfr_fuv_luminosity_map_edgeon
+
+        return fs.join(self.maps_sfr_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def sfr_fuv_map_edgeon_path(self):
+    def has_sfr_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "sfr_fuv.fits")
+        return fs.is_file(self.get_sfr_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_sfr_fuv_map_edgeon(self):
+    def load_sfr_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.sfr_fuv_map_edgeon_path)
+        return Frame.from_file(self.get_sfr_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_sfr_bol_map_edgeon(self):
+    def remove_sfr_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_sfr_bolometric_luminosity_map_edgeon and not self.has_sfr_bol_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_bolometric_luminosity_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_bol_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "sfr_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_bol_map_edgeon_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_star_formation_rate_map_edgeon and not self.has_sfr_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.star_formation_rate_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "sfr.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_map_edgeon_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_sfr_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.has_sfr_dust_mass_map_edgeon and not self.has_sfr_dust_mass_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.sfr_dust_mass_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_dust_mass_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "sfr_dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_sfr_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.sfr_dust_mass_map_edgeon_path)
+        fs.remove_file(self.get_sfr_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3049,17 +3672,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the SFR maps in the edgeon projection ...")
 
-        # FUV lum
-        if self.do_write_sfr_fuv_map_edgeon: self.sfr_fuv_map_edgeon.saveto(self.sfr_fuv_map_edgeon_path)
+        # Loop over the map names
+        for name in self.sfr_edgeon_map_names:
 
-        # Bol lum
-        if self.do_write_sfr_bol_map_edgeon: self.sfr_bol_map_edgeon.saveto(self.sfr_bol_map_edgeon_path)
+            # Write?
+            if self.has_sfr_edgeon_map(name): continue
 
-        # Star formation rate
-        if self.do_write_sfr_map_edgeon: self.sfr_map_edgeon.saveto(self.sfr_map_edgeon_path)
+            # Get path
+            path = self.get_sfr_edgeon_map_path(name)
 
-        # Dust mass
-        if self.do_write_sfr_dust_mass_map_edgeon: self.sfr_dust_mass_map_edgeon.saveto(self.sfr_dust_mass_map_edgeon_path)
+            # Save
+            self.sfr_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -3085,98 +3708,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_unevolved_fuv_map(self):
+    def unevolved_earth_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_unevolved_fuv_luminosity_map and not self.has_unevolved_fuv_map
+        return self.unevolved_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_fuv_map(self):
+    def get_unevolved_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.unevolved_fuv_luminosity_map
+        return fs.join(self.maps_unevolved_earth_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_fuv_map_path(self):
+    def has_unevolved_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_earth_path, "unevolved_fuv.fits")
+        return fs.is_file(self.get_unevolved_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_unevolved_fuv_map(self):
+    def load_unevolved_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.unevolved_fuv_map_path)
+        return Frame.from_file(self.get_unevolved_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_unevolved_bol_map(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.model.has_unevolved_bolometric_luminosity_map and not self.has_unevolved_bol_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_bol_map(self):
+    def remove_unevolved_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.unevolved_bolometric_luminosity_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_bol_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_earth_path, "unevolved_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_unevolved_bol_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.unevolved_bol_map_path)
+        fs.remove_file(self.get_unevolved_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3190,107 +3777,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the unevolved maps in the earth projection ...")
 
-        # FUV lum
-        if self.do_write_unevolved_fuv_map: self.unevolved_fuv_map.saveto(self.unevolved_fuv_map_path)
+        # Loop over the map names
+        for name in self.unevolved_earth_map_names:
 
-        # Bol lum
-        if self.do_write_unevolved_bol_map: self.unevolved_bol_map.saveto(self.unevolved_bol_map_path)
+            # Write?
+            if self.has_unevolved_earth_map(name): continue
+
+            # Get path
+            path = self.get_unevolved_earth_map_path(name)
+
+            # Save
+            self.unevolved_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_unevolved_fuv_map_faceon(self):
+    def unevolved_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_unevolved_fuv_luminosity_map_faceon and not self.has_unevolved_fuv_map_faceon
+        return self.unevolved_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_fuv_map_faceon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return self.model.unevolved_fuv_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_fuv_map_faceon_path(self):
+    def get_unevolved_faceon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_faceon_path, "unevolved_fuv.fits")
+        return fs.join(self.maps_unevolved_faceon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_unevolved_fuv_map_faceon(self):
+    def has_unevolved_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.unevolved_fuv_map_faceon_path)
+        return fs.is_file(self.get_unevolved_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_unevolved_bol_map_faceon(self):
+    def load_unevolved_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_unevolved_bolometric_luminosity_map_faceon and not self.has_unevolved_bol_map_faceon
+        return Frame.from_file(self.get_unevolved_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_bol_map_faceon(self):
+    def remove_unevolved_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.unevolved_bolometric_luminosity_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_bol_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "unevolved_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_unevolved_bol_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.unevolved_bol_map_faceon_path)
+        fs.remove_file(self.get_unevolved_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3304,107 +3861,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the unevolved maps in the faceon projection ...")
 
-        # FUV lum
-        if self.do_write_unevolved_fuv_map_faceon: self.unevolved_fuv_map_faceon.saveto(self.unevolved_fuv_map_faceon_path)
+        # Loop over the map names
+        for name in self.unevolved_faceon_map_names:
 
-        # Bol lum
-        if self.do_write_unevolved_bol_map_faceon: self.unevolved_bol_map_faceon.saveto(self.unevolved_bol_map_faceon_path)
+            # Write?
+            if self.has_unevolved_faceon_map(name): continue
+
+            # Get path
+            path = self.get_unevolved_faceon_map_path(name)
+
+            # Save
+            self.unevolved_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_unevolved_fuv_map_edgeon(self):
+    def unevolved_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_unevolved_fuv_luminosity_map_edgeon and not self.has_unevolved_fuv_map_edgeon
+        return self.unevolved_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_fuv_map_edgeon(self):
+    def get_unevolved_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.unevolved_fuv_luminosity_map_edgeon
+        return fs.join(self.maps_unevolved_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_fuv_map_edgeon_path(self):
+    def has_unevolved_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "unevolved_fuv.fits")
+        return fs.is_file(self.get_unevolved_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_unevolved_fuv_map_edgeon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return fs.is_file(self.unevolved_fuv_map_edgeon_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_unevolved_bol_map_edgeon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return self.model.has_unevolved_bolometric_luminosity_map_edgeon and not self.has_unevolved_bol_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_bol_map_edgeon(self):
+    def load_unevolved_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.unevolved_bolometric_luminosity_map_edgeon
+        return Frame.from_file(self.get_unevolved_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def unevolved_bol_map_edgeon_path(self):
+    def remove_unevolved_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_edgeon_path, "unevolved_bol.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_unevolved_bol_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.unevolved_bol_map_edgeon_path)
+        fs.remove_file(self.get_unevolved_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3418,11 +3945,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the unevolved maps in the edgeon projection ...")
 
-        # FUV lum
-        if self.do_write_unevolved_fuv_map_edgeon: self.unevolved_fuv_map_edgeon.saveto(self.unevolved_fuv_map_edgeon_path)
+        # Loop over the map names
+        for name in self.unevolved_edgeon_map_names:
 
-        # Bol lum
-        if self.do_write_unevolved_bol_map_edgeon: self.unevolved_bol_map_edgeon.saveto(self.unevolved_bol_map_edgeon_path)
+            # Write?
+            if self.has_unevolved_edgeon_map(name): continue
+
+            # Get path
+            path = self.get_unevolved_edgeon_map_path(name)
+
+            # Save
+            self.unevolved_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -3448,98 +3981,62 @@ class PropertiesAnalyser(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_dust_mass_map(self):
+    def dust_earth_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_dust_mass_map and not self.has_dust_mass_map
+        return self.dust_maps[earth_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_mass_map(self):
+    def get_dust_earth_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.dust_mass_map
+        return fs.join(self.maps_dust_earth_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_mass_map_path(self):
+    def has_dust_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_earth_path, "dust_mass.fits")
+        return fs.is_file(self.get_dust_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_dust_mass_map(self):
+    def load_dust_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.dust_mass_map_path)
+        return Frame.from_file(self.get_dust_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_total_dust_mass_map(self):
+    def remove_dust_earth_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_total_dust_mass_map and not self.has_total_dust_mass_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.total_dust_mass_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_mass_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_path, "total_dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_mass_map(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return fs.is_file(self.total_dust_mass_map_path)
+        fs.remove_file(self.get_dust_earth_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3553,107 +4050,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the dust maps in the earth projection ...")
 
-        # Dust mass
-        if self.do_write_dust_mass_map: self.dust_mass_map.saveto(self.dust_mass_map_path)
+        # Loop over the map names
+        for name in self.dust_earth_map_names:
 
-        # Total dust mass
-        if self.do_write_total_dust_mass_map: self.total_dust_mass_map.saveto(self.total_dust_mass_map_path)
+            # Write?
+            if self.has_dust_earth_map(name): continue
+
+            # Get path
+            path = self.get_dust_earth_map_path(name)
+
+            # Save
+            self.dust_maps[earth_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_dust_mass_map_faceon(self):
+    def dust_faceon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_dust_mass_map_faceon and not self.has_dust_mass_map_faceon
+        return self.dust_maps[faceon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_mass_map_faceon(self):
+    def get_dust_faceon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.dust_mass_map_faceon
+        return fs.join(self.maps_dust_faceon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_mass_map_faceon_path(self):
+    def has_dust_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.join(self.maps_faceon_path, "dust_mass_faceon.fits")
+        return fs.is_file(self.get_dust_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_dust_mass_map_faceon(self):
+    def load_dust_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.dust_mass_map_faceon_path)
+        return Frame.from_file(self.get_dust_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_total_dust_mass_map_faceon(self):
+    def remove_dust_faceon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_total_dust_mass_map_faceon and not self.has_total_dust_mass_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.model.total_dust_mass_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_mass_map_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_faceon_path, "total_dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.total_dust_mass_map_faceon_path)
+        fs.remove_file(self.get_dust_faceon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3667,107 +4134,77 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the dust maps in the faceon projection ...")
 
-        # Dust mass
-        if self.do_write_dust_mass_map_faceon: self.dust_mass_map_faceon.saveto(self.dust_mass_map_faceon_path)
+        # Loop over the map names
+        for name in self.dust_faceon_map_names:
 
-        # Total dust mass
-        if self.do_write_total_dust_mass_map_faceon: self.total_dust_mass_map_faceon.saveto(self.total_dust_mass_map_faceon_path)
+            # Write?
+            if self.has_dust_faceon_map(name): continue
+
+            # Get path
+            path = self.get_dust_faceon_map_path(name)
+
+            # Save
+            self.dust_maps[faceon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_dust_mass_map_edgeon(self):
+    def dust_edgeon_map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.model.has_dust_mass_map_edgeon and not self.has_dust_mass_map_edgeon
+        return self.dust_maps[edgeon_name].keys()
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_mass_map_edgeon(self):
+    def get_dust_edgeon_map_path(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.dust_mass_map_edgeon
+        return fs.join(self.maps_dust_edgeon_path, name + ".fits")
 
     # -----------------------------------------------------------------
 
-    @property
-    def dust_mass_map_edgeon_path(self):
-
-        """
-        This functino ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_dust_mass_map_edgeon(self):
+    def has_dust_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return fs.is_file(self.dust_mass_map_edgeon_path)
+        return fs.is_file(self.get_dust_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_write_total_dust_mass_map_edgeon(self):
+    def load_dust_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.has_total_dust_mass_map_edgeon and not self.has_total_dust_mass_map_edgeon
+        return Frame.from_file(self.get_dust_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
-    @property
-    def total_dust_mass_map_edgeon(self):
+    def remove_dust_edgeon_map(self, name):
 
         """
         This function ...
+        :param name:
         :return:
         """
 
-        return self.model.total_dust_mass_map_edgeon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_mass_map_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.maps_edgeon_path, "total_dust_mass.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.total_dust_mass_map_edgeon_path)
+        fs.remove_file(self.get_dust_edgeon_map_path(name))
 
     # -----------------------------------------------------------------
 
@@ -3781,11 +4218,17 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the dust maps in the edgeon projection ...")
 
-        # Dust mass
-        if self.do_write_dust_mass_map_edgeon: self.dust_mass_map_edgeon.saveto(self.dust_mass_map_edgeon_path)
+        # Loop over the map names
+        for name in self.dust_edgeon_map_names:
 
-        # Total dust mass
-        if self.do_write_total_dust_mass_map_edgeon: self.total_dust_mass_map_edgeon.saveto(self.total_dust_mass_map_edgeon_path)
+            # Write?
+            if self.has_dust_edgeon_map(name): continue
+
+            # Get path
+            path = self.get_dust_edgeon_map_path(name)
+
+            # Save
+            self.dust_maps[edgeon_name][name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -3849,6 +4292,8 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting the maps of the total model ...")
+
+
 
     # -----------------------------------------------------------------
 
