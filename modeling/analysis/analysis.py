@@ -43,35 +43,11 @@ from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
 from ...magic.tools.plotting import plot_frame, plot_frame_contours
 
-# -----------------------------------------------------------------
-
-bol_map_name = "bol"
-intr_stellar_map_name = "intr_stellar" # intrinsic stellar (bol) luminosity (transparent)
-obs_stellar_map_name = "obs_stellar" # observed stellar (bol) luminosity
-diffuse_dust_map_name = "diffuse_dust"
-dust_map_name = "dust" # dust (bol) luminosity
-#dust_with_internal_map_name = "dust_with_internal" # dust (bol) luminosity + internal dust (MAPPINGS)
-scattered_map_name = "scattered" # scattered stellar luminosity
-absorbed_diffuse_map_name = "absorbed_diffuse"
-#absorbed_map_name = "absorbed" # absorbed stellar luminosity
-#absorbed_with_internal_map_name = "absorbed_with_internal" # absorbed stellar luminosity + internal absorption (MAPPINGS)
-fabs_diffuse_map_name = "fabs_diffuse"
-fabs_map_name = "fabs"
-attenuated_map_name = "attenuated" # attenuated stellar luminosity
-direct_map_name = "direct" # direct stellar luminosity
-i1_map_name = "i1"
-intr_i1_map_name = "intr_i1"
-fuv_map_name = "fuv"
-intr_fuv_map_name = "intr_fuv"
-sfr_map_name = "sfr"
-dust_mass_map_name = "dust_mass"
-stellar_lum_map_name = "stellar_lum"
-dust_lum_map_name = "dust_lum"
-diffuse_mass_map_name = "diffuse_mass"
-mass_map_name = "mass"
-#total_mass_map_name = "total_mass"
-lum_map_name = "lum"
-total_lum_map_name = "total_lum"
+from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
+from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name
+from .properties import attenuated_map_name, direct_map_name, sfr_map_name, i1_map_name, intr_i1_map_name, fuv_map_name
+from .properties import intr_fuv_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name
+from .properties import diffuse_mass_map_name, mass_map_name, earth_name, faceon_name, edgeon_name
 
 # -----------------------------------------------------------------
 
@@ -285,9 +261,6 @@ subcommands[_energy_command_name] = energy_commands
 
 # -----------------------------------------------------------------
 
-earth_name = "earth"
-faceon_name = "faceon"
-edgeon_name = "edgeon"
 orientations = (earth_name, faceon_name, edgeon_name)
 default_orientations = (earth_name,)
 

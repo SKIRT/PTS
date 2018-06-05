@@ -376,12 +376,12 @@ class RTModel(object):
         :return:
         """
 
-        # Run simulation?
-        if not self.has_old_bulge_sed_simulation: self.run_old_bulge_sed_simulation()
+        # To run the simulation
+        sed = self.old_bulge_component_sed
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(bulge_simulation_name, observed=self.observed_bulge_output_path,
-                                                            intrinsic=self.old_bulge_sed_out_path, distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -393,12 +393,12 @@ class RTModel(object):
         :return:
         """
 
-        # Run simulation?
-        if not self.has_old_disk_sed_simulation: self.run_old_disk_sed_simulation()
+        # To run the simulation
+        sed = self.old_disk_component_sed
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(disk_simulation_name, observed=self.observed_disk_output_path,
-                                                            intrinsic=self.old_disk_sed_out_path, distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -445,12 +445,12 @@ class RTModel(object):
         :return:
         """
 
-        # Run simulation?
-        if not self.has_young_sed_simulation: self.run_young_sed_simulation()
+        # To run the simulation
+        sed = self.young_component_sed
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(young_simulation_name, observed=self.observed_young_output_path,
-                                                            distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -462,12 +462,12 @@ class RTModel(object):
         :return:
         """
 
-        # Run simulation?
-        if not self.has_sfr_sed_simulation: self.run_sfr_sed_simulation()
+        # To run the simulation
+        sed = self.sfr_component_sed
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(sfr_simulation_name, observed=self.observed_sfr_output_path,
-                                                            distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -6516,7 +6516,7 @@ class RTModel(object):
         :return:
         """
 
-        return salim_fuv_to_sfr()
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_earth)
 
     # -----------------------------------------------------------------
 
@@ -6528,7 +6528,7 @@ class RTModel(object):
         :return:
         """
 
-        return salim_fuv_to_sfr()
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_faceon)
 
     # -----------------------------------------------------------------
 
@@ -6540,7 +6540,7 @@ class RTModel(object):
         :return:
         """
 
-        return salim_fuv_to_sfr()
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -7790,7 +7790,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.old_bulge_component.sed_filepath
+        return self.old_bulge_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------

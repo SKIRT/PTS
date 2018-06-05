@@ -79,6 +79,7 @@ class MultiComponentSimulations(ComponentSimulations):
         observed = ObservedComponentSimulation.from_output_path(observed)
 
         # Load intrinsic SEDs
+        #print(intrinsic_sed_paths)
         if intrinsic_sed_paths is not None:
             intrinsic_seds = OrderedDict()
             for component_name in intrinsic_sed_paths: intrinsic_seds[component_name] = load_sed(intrinsic_sed_paths[component_name])

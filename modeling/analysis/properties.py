@@ -22,23 +22,43 @@ from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
 from ...core.tools.serialization import write_dict
 from ...core.basics.containers import DefaultOrderedDict
-from .analysis import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
-from .analysis import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name
-from .analysis import attenuated_map_name, direct_map_name, sfr_map_name, i1_map_name, intr_i1_map_name, fuv_map_name
-from .analysis import intr_fuv_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name
-from .analysis import diffuse_mass_map_name, mass_map_name, earth_name, faceon_name, edgeon_name
 from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
-total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name, scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, attenuated_map_name, direct_map_name, sfr_map_name)
-bulge_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
-disk_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
-old_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
-young_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name,)
-sfr_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name)
-unevolved_map_names = (bol_map_name, direct_map_name, fuv_map_name, intr_fuv_map_name, sfr_map_name,)
-dust_map_names = (diffuse_mass_map_name, mass_map_name,)
+bol_map_name = "bol"
+intr_stellar_map_name = "intr_stellar" # intrinsic stellar (bol) luminosity (transparent)
+obs_stellar_map_name = "obs_stellar" # observed stellar (bol) luminosity
+diffuse_dust_map_name = "diffuse_dust"
+dust_map_name = "dust" # dust (bol) luminosity
+#dust_with_internal_map_name = "dust_with_internal" # dust (bol) luminosity + internal dust (MAPPINGS)
+scattered_map_name = "scattered" # scattered stellar luminosity
+absorbed_diffuse_map_name = "absorbed_diffuse"
+#absorbed_map_name = "absorbed" # absorbed stellar luminosity
+#absorbed_with_internal_map_name = "absorbed_with_internal" # absorbed stellar luminosity + internal absorption (MAPPINGS)
+fabs_diffuse_map_name = "fabs_diffuse"
+fabs_map_name = "fabs"
+attenuated_map_name = "attenuated" # attenuated stellar luminosity
+direct_map_name = "direct" # direct stellar luminosity
+i1_map_name = "i1"
+intr_i1_map_name = "intr_i1"
+fuv_map_name = "fuv"
+intr_fuv_map_name = "intr_fuv"
+sfr_map_name = "sfr"
+dust_mass_map_name = "dust_mass"
+stellar_lum_map_name = "stellar_lum"
+dust_lum_map_name = "dust_lum"
+diffuse_mass_map_name = "diffuse_mass"
+mass_map_name = "mass"
+#total_mass_map_name = "total_mass"
+lum_map_name = "lum"
+total_lum_map_name = "total_lum"
+
+# -----------------------------------------------------------------
+
+earth_name = "earth"
+faceon_name = "faceon"
+edgeon_name = "edgeon"
 
 # -----------------------------------------------------------------
 
