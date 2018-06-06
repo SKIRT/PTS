@@ -40,7 +40,7 @@ definition.add_flag("minima", "add minima", None)
 definition.add_flag("maxima", "add maxima", None)
 definition.add_flag("hatches", "add hatches", False)
 definition.add_optional("y_label", "string", "label for vertical axes")
-definition.add_optional("x_labels", "string_list", "labels for the horizontal axes of the panels")
+#definition.add_optional("x_labels", "string_list", "labels for the horizontal axes of the panels")
 definition.add_flag("distribution_ticks", "use the distribution values as the horizontal axes ticks")
 definition.add_flag("y_ticks", "show the y ticks", True)
 

@@ -3566,7 +3566,8 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         most_prob = self.get_most_probable_parameter_values(generation_name)
         #print(best, most_prob)
 
-        plot_labels = []
+        #plot_labels = []
+        magnitudes_panels = dict()
 
         # Make distributions
         if labels is None: labels = self.parameter_labels
@@ -3582,6 +3583,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
             #print([numbers.order_of_magnitude(value) for value in distribution.values])
             magnitudes = [numbers.order_of_magnitude(value) for value in distribution.values]
             magnitude = sequences.most_present_value(magnitudes, multiple="first")
+            magnitudes_panels[label] = magnitude
             #print(label, magnitude)
 
             # Get parameter unit
@@ -3593,14 +3595,28 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
             #properties.vlines = {"best model": best[label].to(unit).value}
             #print(properties.vlines)
 
-            plot_label = parameter_descriptions_short[label] + " ($\\times 10^{" + str(magnitude) + "}$)"
-            plot_labels.append(plot_label)
+            #plot_label = parameter_descriptions_short[label] + " ($\\times 10^{" + str(magnitude) + "}$)"
+            #plot_labels.append(plot_label)
             #print(plot_label)
 
             # Add the distribution
             plotter.add_distribution(distribution, label, panel=label, properties=properties)
 
-        plotter.config.x_labels = plot_labels
+        # Set panel properties
+        for label in labels:
+
+            plot_label = parameter_descriptions_short[label]
+            magnitude = magnitudes_panels[label]
+
+            # Create properties
+            properties = Map()
+            properties.x_label = plot_label
+            properties.magnitude = magnitude
+
+            # Set
+            plotter.set_panel_properties(label, properties)
+
+        #plotter.config.x_labels = plot_labels
 
         # Run the plotter
         plotter.run(output=path)

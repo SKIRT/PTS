@@ -1607,12 +1607,13 @@ class MPLPlot(Plot):
 
     # -----------------------------------------------------------------
 
-    def set_xticks(self, ticks=None, fontsize=None, major_locator=None, minor_locator=None, major_formatter=None,
+    def set_xticks(self, ticks=None, tick_labels=None, fontsize=None, major_locator=None, minor_locator=None, major_formatter=None,
                    minor_formatter=None, log_subs=(1., 2., 5.), formatter=None, minor=True):
 
         """
         This function ...
         :param ticks:
+        :param tick_labels:
         :param fontsize:
         :param major_locator:
         :param minor_locator:
@@ -1623,35 +1624,6 @@ class MPLPlot(Plot):
         :param minor:
         :return:
         """
-
-        # Set the ticks
-        if ticks is not None:
-
-            # Check
-            if major_locator is not None: raise ValueError("Cannot specify ticks and pass major locator")
-            if minor_locator is not None: raise ValueError("Cannot specify ticks and pass minor locator")
-
-            # Set
-            self._plot.set_xticks(ticks)
-            self._plot.set_xticklabels(ticks)
-
-        else:
-
-            # Set locator automatically
-            if major_locator is None:
-                if self.log_xscale: major_locator = LogLocator(subs=log_subs)
-                elif self.linear_xscale: major_locator = LinearLocator()
-                else: raise ValueError("Unknown xscale")
-            if minor_locator is None:
-                if minor: # have minor ticks
-                    if self.log_xscale: minor_locator = None
-                    elif self.linear_xscale: minor_locator = AutoMinorLocator()
-                    else: raise ValueError("Unknown xscale")
-                else: minor_locator = NullLocator()
-
-            # Set the locators
-            self.xaxis.set_major_locator(major_locator)
-            if minor_locator is not None: self.xaxis.set_minor_locator(minor_locator)
 
         # Set major formatter automatically
         if major_formatter is None:
@@ -1679,7 +1651,47 @@ class MPLPlot(Plot):
         # Set minor formatter
         self.xaxis.set_minor_formatter(minor_formatter)
 
+        # Set the ticks
+        if ticks is not None:
+
+            # Check
+            if major_locator is not None: raise ValueError("Cannot specify ticks and pass major locator")
+            if minor_locator is not None: raise ValueError("Cannot specify ticks and pass minor locator")
+
+            # Set
+            if tick_labels is None: tick_labels = ticks
+            # print(tick_labels)
+            self._plot.set_xticks(ticks)
+            self._plot.set_xticklabels(tick_labels)
+            # return
+
+        else:
+
+            # Set locator automatically
+            if major_locator is None:
+                if self.log_xscale:
+                    major_locator = LogLocator(subs=log_subs)
+                elif self.linear_xscale:
+                    major_locator = LinearLocator()
+                else:
+                    raise ValueError("Unknown xscale")
+            if minor_locator is None:
+                if minor:  # have minor ticks
+                    if self.log_xscale:
+                        minor_locator = None
+                    elif self.linear_xscale:
+                        minor_locator = AutoMinorLocator()
+                    else:
+                        raise ValueError("Unknown xscale")
+                else:
+                    minor_locator = NullLocator()
+
+            # Set the locators
+            self.xaxis.set_major_locator(major_locator)
+            if minor_locator is not None: self.xaxis.set_minor_locator(minor_locator)
+
         # Set fontsize
+        #print(self.xticklabels)
         plt.setp(self.xticklabels, rotation='horizontal', fontsize=fontsize)
 
     # -----------------------------------------------------------------

@@ -540,6 +540,9 @@ class DistributionPlotter(Configurable):
         # The plotting properties for the distributions
         self.properties = DefaultOrderedDict(OrderedDict)
 
+        # Panel properties
+        self.panel_properties = OrderedDict()
+
         # Keep track of the minimal and maximal value and count encountered during the plotting
         self._min_value = None
         self._max_value = None
@@ -565,7 +568,6 @@ class DistributionPlotter(Configurable):
         self.add_statistics = False
         self.add_hatches = False
         self._ylabel = None
-        self._xlabels = None
 
         # Logscale
         self.logscale = False
@@ -602,6 +604,20 @@ class DistributionPlotter(Configurable):
 
         # Set properties
         if properties is not None: self.properties[panel][label] = properties
+
+    # -----------------------------------------------------------------
+
+    def set_panel_properties(self, label, properties):
+
+        """
+        This function ...
+        :param label:
+        :param properties:
+        :return:
+        """
+
+        if label in self.panel_properties: self.panel_properties[label].update(properties)
+        else: self.panel_properties[label] = properties
 
     # -----------------------------------------------------------------
 
@@ -840,7 +856,6 @@ class DistributionPlotter(Configurable):
         self.add_statistics = False
         self.add_hatches = False
         self._ylabel = None
-        self._xlabels = None
 
         self.figure = None
         self.main_plot = None
@@ -884,7 +899,6 @@ class DistributionPlotter(Configurable):
         self.add_statistics = kwargs.pop("add_statistics", self.config.statistics)
         self.add_hatches = kwargs.pop("add_hatches", self.config.hatches)
         self._ylabel = kwargs.pop("y_label", self.config.y_label)
-        self._xlabels = kwargs.pop("x_labels", self.config.x_labels)
 
         # Set the output path
         self.out_path = kwargs.pop("output", None)
@@ -1263,17 +1277,23 @@ class DistributionPlotter(Configurable):
         :return:
         """
 
-        if self._xlabels is not None: return self._xlabels
+        #if self._xlabels is not None: return self._xlabels
 
         from ..tools import sequences
 
         labels = []
         for panel in self.panels:
-            if self.has_single_distribution_panel(panel):
+
+            if panel in self.panel_properties and "x_label" in self.panel_properties[panel]:
+                label = self.panel_properties[panel].x_label
+
+            elif self.has_single_distribution_panel(panel):
+
                 distribution = self.get_single_distribution_panel(panel)
                 x_label = distribution.value_name
                 if distribution.unit is not None: x_label += " [" + str(distribution.unit) + "]"
                 label = x_label
+
             else:
                 distributions = self.get_distributions_panel(panel)
                 value_names = [distribution.value_name for distribution in distributions]
@@ -1287,6 +1307,11 @@ class DistributionPlotter(Configurable):
                 if not sequences.all_equal(value_units): raise ValueError("Value units are different")
                 value_unit = sequences.get_first_not_none_value(value_units)
                 if value_unit is not None: label += " [" + str(value_unit) + "]"
+
+            # Specify magnitude?
+            if panel in self.panel_properties and "magnitude" in self.panel_properties[panel]:
+                magnitude = self.panel_properties[panel].magnitude
+                label += " ($\\times 10^{" + str(magnitude) + "}$)"
 
             # Add label
             labels.append(label.replace("_", "\_"))
@@ -1558,6 +1583,7 @@ class DistributionPlotter(Configurable):
         :param legend_patches:
         :param x_ticks:
         :return:
+
         """
 
         # Debugging
@@ -1579,7 +1605,14 @@ class DistributionPlotter(Configurable):
             for panel in x_ticks:
                 plot = self.panel_plots[panel]
                 #print(x_ticks[panel])
-                plot.set_xticks(x_ticks[panel])
+                ticks = x_ticks[panel]
+                # Specify magnitude?
+                if panel in self.panel_properties and "magnitude" in self.panel_properties[panel]:
+                    magnitude = self.panel_properties[panel].magnitude
+                    tick_labels = [tick / 10**magnitude for tick in ticks]
+                    #print(panel, tick_labels)
+                else: tick_labels = ticks
+                plot.set_xticks(ticks, tick_labels=tick_labels)
 
         # Set y ticks
         if not self.config.y_ticks:
