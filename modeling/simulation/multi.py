@@ -249,6 +249,30 @@ class MultiComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @property
+    def has_intrinsic_sed_faceon(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.has_intrinsic_sed # INTRINSIC = ISOTROPIC
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_sed_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_sed # INTRINSIC = ISOTROPIC
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_intrinsic_cube(self):
 
         """

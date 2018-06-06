@@ -2216,11 +2216,12 @@ def most_present_values(values):
 
 # -----------------------------------------------------------------
 
-def most_present_value(values):
+def most_present_value(values, multiple="error"):
 
     """
     This function ...
     :param values:
+    :param multiple:
     :return:
     """
 
@@ -2229,7 +2230,11 @@ def most_present_value(values):
 
     if nvalues == 0: raise ValueError("No values")
     elif nvalues == 1: return values[0]
-    else: raise ValueError("Not one most present value")
+    else:
+
+        if multiple == "error": raise ValueError("Not one most present value")
+        elif multiple == "first": return values[0]
+        else: raise ValueError("Invalid value for 'multiple'")
 
 # -----------------------------------------------------------------
 

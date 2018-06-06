@@ -33,7 +33,7 @@ from ...core.tools import sequences
 from .refitter import show_best_simulations_impl
 from ...core.plot.sed import plot_seds
 from ...core.tools import formatting as fmt
-from ...core.plot.distribution import plot_distributions
+from ...core.plot.distribution import plot_distributions, DistributionPlotter
 from ...core.tools.stringify import tostr, yes_or_no
 from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import filesystem as fs
@@ -46,6 +46,9 @@ from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridP
 from ...core.filter.filter import parse_filter
 from ...magic.core.frame import Frame
 from ...magic.tools.headers import get_header, get_filter
+from .tables import ParameterProbabilitiesTable
+from ...core.basics.map import Map
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -72,6 +75,7 @@ _terms_command_name = "terms"
 _ranks_command_name = "ranks"
 _chisquared_command_name = "chisquared"
 _prob_command_name = "prob"
+_pdfs_command_name = "pdfs"
 _seds_command_name = "seds"
 _sed_command_name = "sed"
 _filters_command_name = "filters"
@@ -127,6 +131,7 @@ plot_commands[_terms_command_name] = ("plot_terms_command", True, "plot the chi 
 plot_commands[_ranks_command_name] = ("plot_ranks_command", True, "plot the chi squared as a function of rank", "generation")
 plot_commands[_chisquared_command_name] = ("plot_chi_squared_command", True, "plot the distribution of chi squared values", "generation")
 plot_commands[_prob_command_name] = ("plot_probabilities_command", True, "plot the distribution of probabilities", "generation")
+plot_commands[_pdfs_command_name] = ("plot_pdfs_command", True, "plot the probability density functions of the free parameters", "generation")
 
 # Plotting SEDs
 plot_commands[_seds_command_name] = ("plot_seds_command", True, "plot the simulation SEDs of a generation", "generation")
@@ -1805,6 +1810,89 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
     # -----------------------------------------------------------------
 
     @memoize_method
+    def get_parameter_probabilities_table_generation(self, generation_name):
+
+        """
+        Thisn function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Initialize dictionary for this generation
+        probabilities = dict()
+
+        # Get the unique parameter values for this generation
+        unique_values = self.get_unique_parameter_values(generation_name)
+        unique_values_scalar = self.get_unique_parameter_values_scalar(generation_name)
+
+        # Get the model probabilities table
+        model_probabilities = self.get_probabilities_table(generation_name)
+
+        # Loop over the free parameters
+        for label in self.parameter_labels:
+
+            # Create a set for the unique values
+            #unique_values = set()
+
+            # Initialize a ParameterProbabilitiesTable instance for this parameter
+            table = ParameterProbabilitiesTable()
+
+            # Loop over the values of this parameter for this generation, and expand the set accordingly
+            #for value in self.model_probabilities[generation_name][label]: unique_values.add(value)
+
+            # Get a (sorted) list of all the unique values for this parameter
+            #unique_values = sorted(list(unique_values))
+
+            # Add an entry for each unique parameter value that has been encountered
+            #for value in unique_values:
+            for value in unique_values_scalar[label]:
+
+                # Get an array of the probabilities of all the models that have this unique value
+                simulation_indices = model_probabilities[label] == value
+                # nsimulations_for_value = np.sum(simulation_indices)
+                # individual_probabilities += list(self.model_probabilities[generation_name]["Probability"][simulation_indices])
+                individual_probabilities = model_probabilities["Probability"][simulation_indices]
+
+                # Combine the individual probabilities
+                combined_probability = np.sum(np.asarray(individual_probabilities))
+
+                # Add an entry to the table
+                table.add_entry(value, combined_probability)
+
+            # Set the table
+            probabilities[label] = table
+
+        # Return the parameter probabilities table
+        return probabilities
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_parameter_probability_distributions_generation_for_parameter(self, generation_name, parameter_label):
+
+        """
+        Thisf unction ...
+        :param generation_name:
+        :param parameter_label:
+        :return:
+        """
+
+        # Get the parameter probabilites table
+        parameter_probabilities = self.get_parameter_probabilities_table_generation(generation_name)
+
+        # Make distributions
+        distributions = OrderedDict()
+
+        # Make distribution
+        distribution = Distribution.from_probabilities(parameter_label, parameter_probabilities[parameter_label]["Probability"], parameter_probabilities[parameter_label]["Value"])
+        distribution.normalize(method="sum")
+
+        # Return the distribution
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_probability_distribution(self, generation_name, nbins=50, clip_below=None):
 
         """
@@ -3396,6 +3484,129 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Plot the distribution
         plot_distribution(distribution, color="red", path=path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_pdfs_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("parameters", "string_list", "parameters for which to plot the PDF (in this order)", self.parameter_labels)
+        definition.add_optional("path", "string", "save the plot file")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_pdfs_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_pdfs_definition, **kwargs)
+
+        # Plot
+        self.plot_pdfs(generation_name, path=config.path, labels=config.parameters)
+
+    # -----------------------------------------------------------------
+
+    def plot_pdfs(self, generation_name, path=None, labels=None):
+
+        """
+        This function ...
+        :param generation_name:
+        :param path:
+        :param labels:
+        :return:
+        """
+
+        from ..config.parameters import parameter_descriptions_short
+
+        # Initialize plotter
+        plotter = DistributionPlotter()
+
+        # Set options
+        #plotter.config.smooth = smooth
+        #plotter.config.statistics = statistics
+        #plotter.config.extrema = extrema
+        plotter.config.maxima = True
+        #plotter.config.minima = minima
+        #plotter.config.edges = edges
+
+        #plotter.config.frequencies = True
+
+        #plotter.config.alpha = alpha
+
+        plotter.config.bar_width = 0.5
+        plotter.config.y_label = "Normalized probability [arbitrary scale]"
+
+        # Logscales
+        plotter.config.logscale = True
+        #plotter.config.logfrequency = logfrequency
+
+        plotter.config.distribution_ticks = True
+        plotter.config.y_ticks = False
+
+        # Get parameters of best simulation
+        best = self.get_best_simulation_parameters(generation_name)
+        most_prob = self.get_most_probable_parameter_values(generation_name)
+        #print(best, most_prob)
+
+        plot_labels = []
+
+        # Make distributions
+        if labels is None: labels = self.parameter_labels
+        for label in labels:
+
+            # Get the distribution
+            distribution = self.get_parameter_probability_distributions_generation_for_parameter(generation_name, label)
+
+            #print(best[label], most_prob[label])
+
+            #print(distribution.values)
+            #print(label)
+            #print([numbers.order_of_magnitude(value) for value in distribution.values])
+            magnitudes = [numbers.order_of_magnitude(value) for value in distribution.values]
+            magnitude = sequences.most_present_value(magnitudes, multiple="first")
+            #print(label, magnitude)
+
+            # Get parameter unit
+            unit = self.get_parameter_unit(label)
+
+            # Set properties
+            properties = Map()
+            properties.vlines = {"best model": best[label].to(unit).value, "most probable": most_prob[label]}
+            #properties.vlines = {"best model": best[label].to(unit).value}
+            #print(properties.vlines)
+
+            plot_label = parameter_descriptions_short[label] + " ($\\times 10^{" + str(magnitude) + "}$)"
+            plot_labels.append(plot_label)
+            #print(plot_label)
+
+            # Add the distribution
+            plotter.add_distribution(distribution, label, panel=label, properties=properties)
+
+        plotter.config.x_labels = plot_labels
+
+        # Run the plotter
+        plotter.run(output=path)
+
+        # Plot in different panels
+        #plot_distributions(distributions, panels=True, maxima=True, frequencies=True, path=path, logscale=True)
 
     # -----------------------------------------------------------------
 

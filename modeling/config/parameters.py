@@ -181,6 +181,26 @@ parameter_descriptions[inclination_name] = "inclination of the galactic plane"
 
 # -----------------------------------------------------------------
 
+# Short descriptions
+parameter_descriptions_short = dict()
+parameter_descriptions_short[distance_name] = "distance"
+parameter_descriptions_short[ionizing_scaleheight_name] = "ionizing stars scaleheight"
+parameter_descriptions_short[sfr_compactness_name] = "SFR compactness"
+parameter_descriptions_short[fuv_young_name] = "young stars FUV luminosity"
+parameter_descriptions_short[old_scaleheight_name] = "old stars scaleheight"
+parameter_descriptions_short[position_angle_name] = "position angle"
+parameter_descriptions_short[dust_mass_name] = "dust mass"
+parameter_descriptions_short[fuv_ionizing_name] = "ionizing stars FUV luminosity"
+parameter_descriptions_short[metallicity_name] = "metallicity"
+parameter_descriptions_short[young_scaleheight_name] = "young stars scaleheight"
+parameter_descriptions_short[sfr_covering_name] = "SFR covering factor"
+parameter_descriptions_short[dust_scaleheight_name] = "dust scaleheight"
+parameter_descriptions_short[i1_old_name] = "old stars I1 luminosity"
+parameter_descriptions_short[sfr_pressure_name] = "SFR pressure"
+parameter_descriptions_short[inclination_name] = "inclination"
+
+# -----------------------------------------------------------------
+
 types = dict()
 types[distance_name] = "length"
 types[ionizing_scaleheight_name] = "length"

@@ -1448,7 +1448,7 @@ class MPLPlot(Plot):
         """
 
         # Set linestyle and limit for axis2
-        self._plot.axhline(*args, **kwargs)
+        return self._plot.axhline(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1461,7 +1461,7 @@ class MPLPlot(Plot):
         :return:
         """
 
-        self._plot.axvline(*args, **kwargs)
+        return self._plot.axvline(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -1635,21 +1635,23 @@ class MPLPlot(Plot):
             self._plot.set_xticks(ticks)
             self._plot.set_xticklabels(ticks)
 
-        # Set locator automatically
-        if major_locator is None:
-            if self.log_xscale: major_locator = LogLocator(subs=log_subs)
-            elif self.linear_xscale: major_locator = LinearLocator()
-            else: raise ValueError("Unknown xscale")
-        if minor_locator is None:
-            if minor: # have minor ticks
-                if self.log_xscale: minor_locator = None
-                elif self.linear_xscale: minor_locator = AutoMinorLocator()
-                else: raise ValueError("Unknown xscale")
-            else: minor_locator = NullLocator()
+        else:
 
-        # Set the locators
-        self.xaxis.set_major_locator(major_locator)
-        if minor_locator is not None: self.xaxis.set_minor_locator(minor_locator)
+            # Set locator automatically
+            if major_locator is None:
+                if self.log_xscale: major_locator = LogLocator(subs=log_subs)
+                elif self.linear_xscale: major_locator = LinearLocator()
+                else: raise ValueError("Unknown xscale")
+            if minor_locator is None:
+                if minor: # have minor ticks
+                    if self.log_xscale: minor_locator = None
+                    elif self.linear_xscale: minor_locator = AutoMinorLocator()
+                    else: raise ValueError("Unknown xscale")
+                else: minor_locator = NullLocator()
+
+            # Set the locators
+            self.xaxis.set_major_locator(major_locator)
+            if minor_locator is not None: self.xaxis.set_minor_locator(minor_locator)
 
         # Set major formatter automatically
         if major_formatter is None:

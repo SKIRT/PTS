@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import numpy as np
+from collections import defaultdict
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from textwrap import wrap
@@ -36,6 +38,7 @@ from ..tools.stringify import tostr
 
 #patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.')
 patterns = ("/", "\\", '-', '+', 'x', "//", '*', 'o', 'O', '.')
+line_styles = ['-', '--', '-.', ':']
 
 # -----------------------------------------------------------------
 
@@ -258,8 +261,9 @@ def plot_distribution(distribution, path=None, logscale=False, logfrequency=Fals
 
 # -----------------------------------------------------------------
 
-def plot_distributions(distributions, panels=False, smooth=False, statistics=False, extrema=False, edges=False,
-                       frequencies=False, path=None, logscale=False, logfrequency=False, alpha=None):
+def plot_distributions(distributions, panels=False, smooth=False, statistics=False, extrema=False,
+                       maxima=None, minima=None, edges=False, frequencies=False, path=None, logscale=False,
+                       logfrequency=False, alpha=None):
 
     """
     This function ...
@@ -268,6 +272,8 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     :param smooth:
     :param statistics:
     :param extrema:
+    :param maxima:
+    :param minima:
     :param edges:
     :param frequencies:
     :param path:
@@ -288,6 +294,8 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
     plotter.config.smooth = smooth
     plotter.config.statistics = statistics
     plotter.config.extrema = extrema
+    plotter.config.maxima = maxima
+    plotter.config.minima = minima
     plotter.config.edges = edges
     plotter.config.frequencies = frequencies
     plotter.config.alpha = alpha
@@ -529,6 +537,9 @@ class DistributionPlotter(Configurable):
         # The different distributions
         self.distributions = DefaultOrderedDict(OrderedDict)
 
+        # The plotting properties for the distributions
+        self.properties = DefaultOrderedDict(OrderedDict)
+
         # Keep track of the minimal and maximal value and count encountered during the plotting
         self._min_value = None
         self._max_value = None
@@ -549,8 +560,12 @@ class DistributionPlotter(Configurable):
 
         # Add features
         self.add_smooth = False
-        self.add_extrema = False
+        self.add_minima = False
+        self.add_maxima = False
         self.add_statistics = False
+        self.add_hatches = False
+        self._ylabel = None
+        self._xlabels = None
 
         # Logscale
         self.logscale = False
@@ -571,17 +586,22 @@ class DistributionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_distribution(self, distribution, label, panel="standard"):
+    def add_distribution(self, distribution, label, panel="standard", properties=None):
 
         """
         This function ...
         :param distribution:
         :param label:
-        :param panel
+        :param panel:
+        :param properties:
         :return:
         """
 
+        # Set distribution
         self.distributions[panel][label] = distribution
+
+        # Set properties
+        if properties is not None: self.properties[panel][label] = properties
 
     # -----------------------------------------------------------------
 
@@ -815,8 +835,12 @@ class DistributionPlotter(Configurable):
 
         self.legend = True
         self.add_smooth = False
-        self.add_extrema = False
+        self.add_minima = False
+        self.add_maxima = False
         self.add_statistics = False
+        self.add_hatches = False
+        self._ylabel = None
+        self._xlabels = None
 
         self.figure = None
         self.main_plot = None
@@ -854,8 +878,13 @@ class DistributionPlotter(Configurable):
 
         # Features
         self.add_smooth = kwargs.pop("add_smooth", self.config.smooth)
-        self.add_extrema = kwargs.pop("add_extrema", self.config.extrema)
+        self.add_minima = kwargs.pop("add_minima", self.config.minima)
+        self.add_maxima = kwargs.pop("add_maxima", self.config.maxima)
+        if kwargs.get("add_extrema", None) is not None: self.add_minima = self.add_maxima = kwargs.pop("add_extrema")
         self.add_statistics = kwargs.pop("add_statistics", self.config.statistics)
+        self.add_hatches = kwargs.pop("add_hatches", self.config.hatches)
+        self._ylabel = kwargs.pop("y_label", self.config.y_label)
+        self._xlabels = kwargs.pop("x_labels", self.config.x_labels)
 
         # Set the output path
         self.out_path = kwargs.pop("output", None)
@@ -1033,6 +1062,9 @@ class DistributionPlotter(Configurable):
             # Get the distribution
             distribution = self.distributions[self.single_panel][label]
 
+            # Get the properties
+            properties = self.properties[self.single_panel][label] if self.single_panel in self.properties and label in self.properties[self.single_panel] else None
+
             # Plot the distribution as a histogram
             #alpha = None
             edgecolor = "black"
@@ -1049,11 +1081,21 @@ class DistributionPlotter(Configurable):
             #print(distribution.bin_widths_log)
 
             if self.logscale:
-                bars = self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
-                        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                #bars = self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
+                #        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                widths = np.array(distribution.bin_widths_log)
+                bars = self.main_plot.bar(distribution.edges_log[:-1], distribution.frequencies,
+                                          width=widths,
+                                          linewidth=linewidth_list, alpha=self.config.alpha, align="center", color=color,
+                                          edgecolor=edgecolor_list, label=label)
             else:
-                bars = self.main_plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
-                        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                #bars = self.main_plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
+                #        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                widths = np.array(distribution.bin_widths) * self.config.bar_width
+                bars = self.main_plot.bar(distribution.edges[:-1], distribution.frequencies,
+                                          width=widths,
+                                          linewidth=linewidth_list, alpha=self.config.alpha, align="center", color=color,
+                                          edgecolor=edgecolor_list, label=label)
             all_bars.append(bars)
 
             # Add frequencies
@@ -1089,16 +1131,19 @@ class DistributionPlotter(Configurable):
                     x_smooth, y_smooth = distribution.smooth_values(x_min=self._min_value, x_max=self._max_value)
                     self.main_plot.plot(x_smooth, y_smooth, color='red', linewidth=1)
 
-            # Add extrema
-            if self.add_extrema:
+            # Add maxima
+            if self.add_maxima:
 
                 # Local maxima
                 x, y = distribution.local_maxima
-                self.main_plot.plot(x, y, color='green', marker='^')
+                self.main_plot.scatter(x, y, color='green', marker='^', s=100)
+
+            # Add minima
+            if self.add_minima:
 
                 # Local minima
                 x, y = distribution.local_minima
-                self.main_plot.plot(x, y, color='red', marker='v')
+                self.main_plot.scatter(x, y, color='red', marker='v', s=100)
 
             # Add statistics
             if self.add_statistics:
@@ -1108,9 +1153,27 @@ class DistributionPlotter(Configurable):
                 median_line = plt.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
                 max_line = plt.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
 
+            # Add vlines?
+            if properties is not None and properties.vlines is not None:
+
+                # Sequence
+                if types.is_sequence(properties.vlines):
+                    styles = iter(line_styles)
+                    for value in properties.vlines:
+                        linestyle = styles.next()
+                        plt.axvline(value, color="black", linestyle=linestyle)
+
+                # Dictionary
+                elif types.is_dictionary(properties.vlines):
+                    styles = iter(line_styles)
+                    for line_label in properties.vlines:
+                        linestyle = styles.next()
+                        plt.axvline(properties.vlines[line_label], color="black", linestyle=linestyle, label=line_label)
+
         # Set hatches
-        for bars, pattern in zip(all_bars, patterns):
-            for bar in bars: bar.set_hatch(pattern)
+        if self.add_hatches:
+            for bars, pattern in zip(all_bars, patterns):
+                for bar in bars: bar.set_hatch(pattern)
 
         # Finish plot
         self.finish_main_plot()
@@ -1163,6 +1226,8 @@ class DistributionPlotter(Configurable):
         :return:
         """
 
+        if self._ylabel is not None: return self._ylabel
+
         from ..tools import sequences
 
         labels = []
@@ -1197,6 +1262,8 @@ class DistributionPlotter(Configurable):
         This function ...
         :return:
         """
+
+        if self._xlabels is not None: return self._xlabels
 
         from ..tools import sequences
 
@@ -1249,8 +1316,16 @@ class DistributionPlotter(Configurable):
 
         colors = iter(pretty_colours)
 
+        # Lines
+        lines = OrderedDict()
+
+        # Unique values for the x axes, for the different panels
+        unique_values = defaultdict(set)
+
         # Loop over the panels
         for panel in self.panels:
+
+            lines_panel = OrderedDict()
 
             all_bars = []
 
@@ -1262,6 +1337,9 @@ class DistributionPlotter(Configurable):
 
                 # Get the distribution
                 distribution = self.distributions[panel][label]
+
+                # Get the properties
+                properties = self.properties[panel][label] if panel in self.properties and label in self.properties[panel] else None
 
                 # Plot the distribution as a histogram
                 edgecolor = "black"
@@ -1277,12 +1355,22 @@ class DistributionPlotter(Configurable):
 
                 # Plot
                 if self.logscale:
-                    bars = plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
-                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                    #bars = plot.bar(distribution.edges_log[:-1], distribution.frequencies, width=distribution.bin_widths_log,
+                    #        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                    widths = np.array(distribution.bin_widths_log) * self.config.bar_width
+                    bars = plot.bar(distribution.values, distribution.frequencies,
+                                    width=widths,
+                                    linewidth=linewidth_list, alpha=self.config.alpha, align="center", color=color,
+                                    edgecolor=edgecolor_list, label=label)
                 else:
-                    bars = plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
-                            linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                    #bars = plot.bar(distribution.edges[:-1], distribution.frequencies, width=distribution.bin_widths,
+                    #        linewidth=linewidth_list, alpha=self.config.alpha, align="edge", color=color, edgecolor=edgecolor_list, label=label)
+                    widths = np.array(distribution.bin_widths)
+                    bars = plot.bar(distribution.values, distribution.frequencies, width=widths,
+                                    linewidth=linewidth_list, alpha=self.config.alpha, align="center", color=color,
+                                    edgecolor=edgecolor_list, label=label)
                 all_bars.append(bars)
+                for value in distribution.values: unique_values[panel].add(value)
 
                 # Add frequencies
                 if self.config.frequencies:
@@ -1317,16 +1405,19 @@ class DistributionPlotter(Configurable):
                         x_smooth, y_smooth = distribution.smooth_values(x_min=self.min_value, x_max=self.max_value)
                         plot.plot(x_smooth, y_smooth, color='red', linewidth=1)
 
-                # Add extrema
-                if self.add_extrema:
+                # Add maxima
+                if self.add_maxima:
 
                     # Local maxima
                     x, y = distribution.local_maxima
-                    plot.plot(x, y, color="green", marker='^')
+                    plot.scatter(x, y, color="green", marker='^', s=100)
+
+                # Add minima
+                if self.add_minima:
 
                     # Local minima
                     x, y = distribution.local_minima
-                    plot.plot(x, y, color="red", marker='v')
+                    plot.scatter(x, y, color="red", marker='v', s=100)
 
                 # Add statistics
                 if self.add_statistics:
@@ -1336,12 +1427,45 @@ class DistributionPlotter(Configurable):
                     median_line = plot.axvline(distribution.median, color="purple", linestyle="dashed", label="Median")
                     max_line = plot.axvline(distribution.most_frequent, color="orange", linestyle="dashed", label="Most frequent")
 
+                    lines_panel["mean"] = mean_line
+                    lines_panel["median"] = median_line
+                    lines_panel["max"] = max_line
+
+                # Add vlines?
+                if properties is not None and properties.vlines is not None:
+
+                    # Sequence
+                    if types.is_sequence(properties.vlines):
+                        styles = iter(line_styles)
+                        for value in properties.vlines:
+                            linestyle = styles.next()
+                            plot.axvline(value, color="black", linestyle=linestyle)
+
+                    # Dictionary
+                    elif types.is_dictionary(properties.vlines):
+                        styles = iter(line_styles)
+                        for line_label in properties.vlines:
+                            linestyle = styles.next()
+                            line = plot.axvline(properties.vlines[line_label], color="black", linestyle=linestyle, label=line_label)
+                            lines_panel[line_label] = line
+                    #plot.legend()
+
+            # Add lines
+            lines[panel] = lines_panel
+
             # Set hatches
-            for bars, pattern in zip(all_bars, patterns):
-                for bar in bars: bar.set_hatch(pattern)
+            if self.add_hatches:
+                for bars, pattern in zip(all_bars, patterns):
+                    for bar in bars: bar.set_hatch(pattern)
+
+        # Set x axes values
+        if self.config.distribution_ticks:
+            x_ticks = dict()
+            for panel in unique_values: x_ticks[panel] = list(sorted(unique_values[panel]))
+        else: x_ticks = None
 
         # Finish plot
-        self.finish_panels()
+        self.finish_panels(legend_patches=lines, x_ticks=x_ticks)
 
     # -----------------------------------------------------------------
 
@@ -1379,7 +1503,8 @@ class DistributionPlotter(Configurable):
 
         # Ticks
         self.main_plot.set_xticks(fontsize=self.config.plot.ticks_fontsize)
-        self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)
+        if self.config.y_ticks: self.main_plot.set_yticks(fontsize=self.config.plot.ticks_fontsize)
+        else: self.main_plot.hide_yticks()
 
         # Labels
         self.main_plot.set_xlabel(self.x_label, fontsize='small')
@@ -1426,10 +1551,12 @@ class DistributionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def finish_panels(self):
+    def finish_panels(self, legend_patches=None, x_ticks=None):
 
         """
         This function ...
+        :param legend_patches:
+        :param x_ticks:
         :return:
         """
 
@@ -1446,6 +1573,28 @@ class DistributionPlotter(Configurable):
         for panel in self.panels:
             plot = self.panel_plots[panel]
             plot.set_xlim((self.min_values[panel], self.max_values[panel]))
+
+        # Set x ticks
+        if x_ticks is not None:
+            for panel in x_ticks:
+                plot = self.panel_plots[panel]
+                #print(x_ticks[panel])
+                plot.set_xticks(x_ticks[panel])
+
+        # Set y ticks
+        if not self.config.y_ticks:
+            for panel in self.panels:
+                plot = self.panel_plots[panel]
+                plot.hide_yticks()
+
+        # Add legend?
+        if legend_patches is not None:
+            for panel in legend_patches:
+                plot = self.panel_plots[panel]
+                #print(legend_patches[panel].values())
+                #legend = plot.legend(legend_patches[panel].values()) #for_legend_parameters, **legend_properties)
+                legend = plot.legend(legend_patches[panel])
+                #legends.append(legend)
 
         # Set grid
         #self.figure.set_grid(self.config.plot, which="both")
@@ -1528,6 +1677,8 @@ class DistributionGridPlotter(object):
 
         """
         This function ...
+        :param distribution:
+        :param label:
         :return:
         """
 

@@ -715,8 +715,29 @@ def order_of_magnitude(number):
     :return: 
     """
 
-    string = str(float(number)).split(".")[0]
-    return len(string) - 1
+    # TODO: doesn't work yet with 0.0XXYY !
+
+    string = str(float(number))
+
+    if "e" in string:
+
+        power = int(string.split("e")[1])
+
+        splitted = string.split("e")[0].split(".")
+        first_string = splitted[0]
+
+        return len(first_string) - 1 + power
+
+    else:
+
+        splitted = string.split(".")
+        first_string = splitted[0]
+
+        if len(splitted) == 1: second_string = ""
+        elif len(splitted) == 2: second_string = splitted[1]
+        else: raise RuntimeError("Something went wrong")
+
+        return len(first_string) - 1
 
 # -----------------------------------------------------------------
 
