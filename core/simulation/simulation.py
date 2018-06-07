@@ -1177,10 +1177,14 @@ class RemoteSimulation(SkirtSimulation):
     This class ...
     """
 
-    def __init__(self, ski_path, input_path, output_path):
+    def __init__(self, ski_path, input_path, output_path, **kwargs):
 
         """
         The constructor ...
+        :param ski_path:
+        :param input_path:
+        :param output_path:
+        :param kwargs:
         :return:
         """
 
@@ -1196,7 +1200,8 @@ class RemoteSimulation(SkirtSimulation):
         for attr_name in default_remote_attributes:
 
             # Create a copy
-            value = copy.deepcopy(default_remote_attributes[attr_name])
+            if kwargs.get(attr_name, None) is not None: value = kwargs.pop(attr_name)
+            else: value = copy.deepcopy(default_remote_attributes[attr_name])
 
             # Set the attribute
             setattr(self, attr_name, value)

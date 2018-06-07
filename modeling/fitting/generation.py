@@ -33,7 +33,7 @@ from ...core.launch.batchlauncher import SimulationAssignmentTable
 from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host, get_simulation_path_for_host, is_invalid_or_unknown_status
 from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
-from ...core.simulation.simulation import SkirtSimulation
+from ...core.simulation.simulation import SkirtSimulation, RemoteSimulation
 from ...core.simulation.input import SimulationInput
 from ...core.data.sed import ObservedSED, SED
 from ...core.simulation.logfile import LogFile
@@ -1542,12 +1542,14 @@ class Generation(object):
         :return:
         """
 
+        # Get host ID and simulation ID
         host_id = self.get_host_id(name)
         simulation_id = self.get_simulation_id(name)
         #print(host_id, simulation_id)
 
+        # Create the simulation object (standard or remote)
         if has_simulation_for_host(host_id, simulation_id): simulation = get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
-        else: simulation = self.get_simulation_basic(name)
+        else: simulation = self.get_simulation_basic(name, host_id=host_id, simulation_id=simulation_id)
 
         # Load and return the simulation
         #simulation = get_simulation_for_host(self.get_host_id(name), self.get_simulation_id(name))
@@ -1809,11 +1811,13 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_basic(self, name):
+    def get_simulation_basic(self, name, host_id=None, simulation_id=None):
 
         """
         This function ...
         :param name:
+        :param host_id:
+        :param simulation_id:
         :return:
         """
 
@@ -1822,7 +1826,8 @@ class Generation(object):
         out_path = self.get_simulation_output_path(name)
 
         # Create the simulation object
-        simulation = SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
+        if host_id is not None or simulation_id is not None: simulation = RemoteSimulation(ski_path, self.simulation_input, out_path, host_id=host_id, id=simulation_id)
+        else: simulation = SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
 
         # Set the analysis paths
         simulation.extraction_path = self.get_simulation_extract_path(name)
@@ -1837,16 +1842,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    def get_simulation_or_basic(self, name):
+    def get_simulation_or_basic(self, name, host_id=None, simulation_id=None):
 
         """
         This function ...
         :param name:
+        :param host_id:
+        :param simulation_id:
         :return:
         """
 
         if self.has_simulation(name): return self.get_simulation(name)
-        else: return self.get_simulation_basic(name)
+        else: return self.get_simulation_basic(name, host_id=host_id, simulation_id=simulation_id)
 
     # -----------------------------------------------------------------
 

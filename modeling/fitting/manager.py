@@ -101,6 +101,7 @@ class GenerationManager(SimulationManager, FittingComponent):
         FittingComponent.setup(self, **kwargs)
         #SimulationManager.setup(self, **kwargs)
 
+        # Set options
         self.config.shared_input = True
         # manager.config.write_status = config.write_status
         self.config.write_moved = True
@@ -118,24 +119,7 @@ class GenerationManager(SimulationManager, FittingComponent):
         self.config.backup_assignment = True
 
         # Set caching options
-        if self.config.cache_volume is not None:
-
-            # Get volume path
-            volume_path = fs.get_volume_path(self.config.cache_volume)
-            cache_path = fs.join(volume_path, "RT Modeling", self.environment.galaxy_name)
-
-            # Set path and root
-            self.config.cache_path = cache_path
-            self.config.cache_root = self.environment.path  # set modeling path as cache root path
-
-            # Auto-caching
-            self.config.cache_output = self.config.cache_output
-            self.config.cache_datacubes = self.config.cache_datacubes
-            self.config.cache_misc = self.config.cache_misc
-            self.config.cache_images = self.config.cache_images
-
-            # Cache after analysis of simulation
-            self.config.cache_after_analysis = True
+        if self.config.cache_volume is not None: self.set_caching()
 
         # Set reference SEDs for plotting simulated SEDS
         reference_sed_paths = OrderedDict()
@@ -445,6 +429,32 @@ class GenerationManager(SimulationManager, FittingComponent):
 
         # Setup
         SimulationManager.setup(self, **input)
+
+    # -----------------------------------------------------------------
+
+    def set_caching(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get volume path
+        volume_path = fs.get_volume_path(self.config.cache_volume)
+        cache_path = fs.join(volume_path, "RT Modeling", self.environment.galaxy_name)
+
+        # Set path and root
+        self.config.cache_path = cache_path
+        self.config.cache_root = self.environment.path  # set modeling path as cache root path
+
+        # Auto-caching
+        self.config.cache_output = self.config.cache_output
+        self.config.cache_datacubes = self.config.cache_datacubes
+        self.config.cache_misc = self.config.cache_misc
+        self.config.cache_images = self.config.cache_images
+
+        # Cache after analysis of simulation
+        self.config.cache_after_analysis = True
 
     # -----------------------------------------------------------------
 
