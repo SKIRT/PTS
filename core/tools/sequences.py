@@ -1458,6 +1458,31 @@ def get_singleton(sequence):
 
 # -----------------------------------------------------------------
 
+def get_single(sequence, none="none", method="first"):
+
+    """
+    This function ...
+    :param sequence:
+    :param none:
+    :param method:
+    :return:
+    """
+
+    if len(sequence) == 0:
+        if none == "none": return None
+        elif none == "error": raise ValueError("Empty sequence")
+        else: raise ValueError("Invalid value for 'method'")
+    elif len(sequence) == 1: return sequence[0]
+    else:
+
+        if method == "first": return sequence[0]
+        elif method == "last": return sequence[-1]
+        elif method == "none": return None
+        elif method == "error": raise ValueError("Multiple items")
+        else: raise ValueError("Invalid value for 'method'")
+
+# -----------------------------------------------------------------
+
 def in_all(item, sequences):
 
     """

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configuration import prompt_yn
+from ...core.basics.configuration import prompt_yn, ConfigurationDefinition
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr, yes_or_no
 from ...core.remote.ensemble import SKIRTRemotesEnsemble
@@ -69,7 +69,7 @@ class GenerationManager(SimulationManager, FittingComponent):
 
         # Add command
         self._commands = self._commands.copy()  # so the dictionary in the core/launch/manager module is not adapted
-        self._commands[_simulations_command_name] = ("show_simulations", False, "show info on the simulation files/objects", None)
+        self._commands[_simulations_command_name] = ("show_simulations_command", True, "show info on the simulation files/objects", None)
         #self._commands[_assignment_command_name] = ("show_assignment", False, "show the assignment table", None)
 
     # -----------------------------------------------------------------
@@ -665,15 +665,58 @@ class GenerationManager(SimulationManager, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def show_simulations(self, **kwargs):
+    @lazyproperty
+    def show_simulations_definition(self):
 
         """
         This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.add_optional("move", "directory_path", "move the existing simulation files to this directory")
+        definition.add_optional("copy", "directory_path", "copy the existing simulation files to this directory")
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_simulations_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
         :param kwargs:
         :return:
         """
 
+        # Get the config
+        config = self.get_config_from_command(command, self.show_simulations_definition, **kwargs)
+
+        # Show
+        self.show_simulations(move_files_to=config.move, copy_files_to=config.copy)
+
+    # -----------------------------------------------------------------
+
+    def show_simulations(self, move_files_to=None, copy_files_to=None):
+
+        """
+        This function ...
+        :param move_files_to:
+        :param copy_files_to:
+        :return:
+        """
+
         #print("simulations")
+
+        has_assignment = self.generation.has_assignment_table
+
+        # Keep track of the simulation filepaths
+        filepaths = OrderedDict()
 
         # Print in columns
         with fmt.print_in_columns() as print_row:
@@ -684,8 +727,11 @@ class GenerationManager(SimulationManager, FittingComponent):
             header.append("Has file")
             header.append("In assignment")
             header.append("Has chi squared")
-            header.append("Host ID")
-            header.append("Cluster name")
+            header.append("Host ID (assignment)")
+            header.append("Host ID (jobscript)")
+            header.append("Host ID (logfile)")
+            header.append("Cluster name (assignment)")
+            header.append("Cluster name (logfile)")
             header.append("Simulation ID")
 
             # Print the header
@@ -711,14 +757,31 @@ class GenerationManager(SimulationManager, FittingComponent):
                 analysed = self.generation.is_analysed(simulation_name)
                 parts.append(yes_or_no(analysed))
 
-                # Get the host ID and simulation ID
-                try: host_id = self.generation.get_host_id(simulation_name)
-                except MissingSimulation: host_id = None
-                parts.append(host_id if host_id is not None else "--")
+                # Get the host ID (from assignment table)
+                if has_assignment: host_id_assignment = self.generation._get_host_id_from_assignment(simulation_name)
+                else: host_id_assignment = None
+                #except MissingSimulation: host_id = None
+                parts.append(host_id_assignment if host_id_assignment is not None else "--")
 
-                # Get the cluster name
-                cluster_name = self.generation.get_cluster_name(simulation_name)
-                parts.append(cluster_name if cluster_name is not None else "--")
+                # Get the host ID from job script
+                if self.generation.has_jobscript(simulation_name): host_id_job = self.generation._get_host_id_from_job_script(simulation_name)
+                else: host_id_job = None
+                parts.append(host_id_job if host_id_job is not None else "--")
+
+                # Get the host ID from logfile
+                if self.generation.has_logfile(simulation_name): host_id_log = self.generation._get_host_id_from_logfile(simulation_name)
+                else: host_id_log = None
+                parts.append(host_id_log if host_id_log is not None else "--")
+
+                # Get the cluster name (assignment)
+                if has_assignment: cluster_name_assignment = self.generation._get_cluster_name_from_assignment(simulation_name)
+                else: cluster_name_assignment = None
+                parts.append(cluster_name_assignment if cluster_name_assignment is not None else "--")
+
+                # Get the cluster name from logfile
+                if self.generation.has_logfile(simulation_name): cluster_name_log = self.generation._get_cluster_name_from_logfile(simulation_name)
+                else: cluster_name_log = None
+                parts.append(cluster_name_log if cluster_name_log is not None else "--")
 
                 # Get the simulation ID
                 try: simulation_id = self.generation.get_simulation_id(simulation_name)
@@ -734,6 +797,22 @@ class GenerationManager(SimulationManager, FittingComponent):
 
                 # Show the row
                 print_row(*parts, color=color)
+
+                # Get the simulation filepath
+                if has_simulation: filepaths[simulation_name] = self.generation.get_simulation_filepath(simulation_name)
+
+        nsimulations_with_file = len(filepaths)
+        nsimulations = self.generation.nsimulations
+
+        # Copy the simulation files?
+        if copy_files_to is not None:
+            log.debug("Copying the simulation files (" + str(nsimulations_with_file) + " out of " + str(nsimulations) + " simulations) to '" + copy_files_to + "' ...")
+            fs.copy_files(filepaths.values(), copy_files_to)
+
+        # Move the simulation files
+        if move_files_to is not None:
+            log.debug("Moving the simulation files (" + str(nsimulations_with_file) + " out of " + str(nsimulations) + " simulations) to '" + move_files_to + "' ...")
+            fs.move_files(filepaths.values(), move_files_to)
 
     # -----------------------------------------------------------------
 

@@ -106,16 +106,18 @@ def find_host_ids(schedulers=None, protocol="ssh"):
 
 # -----------------------------------------------------------------
 
-def find_hosts(schedulers=None, protocol="ssh"):
+def find_hosts(schedulers=None, protocol="ssh", as_dict=False):
 
     """
     This function ...
     :param schedulers:
     :param protocol:
+    :param as_dict:
     :return:
     """
 
-    return [load_host(host_id) for host_id in find_host_ids(schedulers=schedulers, protocol=protocol)]
+    if as_dict: return {host_id: load_host(host_id) for host_id in find_host_ids(schedulers=schedulers, protocol=protocol)}
+    else: return [load_host(host_id) for host_id in find_host_ids(schedulers=schedulers, protocol=protocol)]
 
 # -----------------------------------------------------------------
 

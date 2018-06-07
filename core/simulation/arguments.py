@@ -191,9 +191,14 @@ class SkirtArguments(object):
             if "-np" in command: nprocesses = int(command.split("-np")[1].split()[0])
             elif "-n" in command: nprocesses = int(command.split("-n")[1].split()[0])
             else: #raise ValueError("Unknown MPI command")
-                if "--hybrid" in command and nnodes is not None:
-                    nprocesses_per_node = int(command.split("--hybrid ")[1].split(" ")[0])
-                    nprocesses = nprocesses_per_node * nnodes
+                if "--hybrid" in command:
+                    #and nnodes is not None:
+                    if nnodes is not None:
+                        nprocesses_per_node = int(command.split("--hybrid ")[1].split(" ")[0])
+                        nprocesses = nprocesses_per_node * nnodes
+                    else:
+                        log.warning("Cannot determine the number of processes: number of nodes is not known")
+                        nprocesses = None
                 else:
                     log.warning("Unknown MPI command: '" + command.split(skirt_path)[0].strip() + "': cannot determine the number of processes")
                     nprocesses = None

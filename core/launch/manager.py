@@ -2160,10 +2160,12 @@ class SimulationManager(InteractiveConfigurable):
         simulation = self.get_simulation(simulation_name)
 
         # Get the remote
-        remote = self.get_remote(simulation.host_id)
+        #remote = self.get_remote(simulation.host_id)
 
         # The path to the simulation log file
         remote_log_file_path = simulation.remote_log_file_path
+
+        # Check whether log file exists remotely?
 
         # Return the filepath
         return remote_log_file_path

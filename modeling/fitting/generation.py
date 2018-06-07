@@ -48,6 +48,7 @@ from ...core.simulation.adapter import adapt_simulation, adapt_analysis
 from ...core.basics.configuration import prompt_yn, prompt_string
 from ...core.tools.stringify import tostr
 from ...core.launch.batchlauncher import MissingSimulation
+from ...core.simulation.jobscript import SKIRTJobScript, get_host_id_from_jobscript_file
 
 # -----------------------------------------------------------------
 
@@ -596,6 +597,31 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def has_simulation_logfile(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_simulation_logfile_path(name))
+
+    # -----------------------------------------------------------------
+
+    def has_logfile(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_simulation_logfile(name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
     def get_simulation_logfile(self, name):
 
         """
@@ -606,6 +632,57 @@ class Generation(object):
 
         path = self.get_simulation_logfile_path(name)
         return LogFile.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_jobscript_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return sequences.get_single(fs.files_in_path(self.get_simulation_path(name), extension="sh", startswith="job"), method="none")
+
+    # -----------------------------------------------------------------
+
+    def has_simulation_jobscript(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_simulation_jobscript_path(name) is not None
+
+    # -----------------------------------------------------------------
+
+    def has_jobscript(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.has_simulation_jobscript(name)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_simulation_jobscript(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        path = self.get_simulation_jobscript_path(name)
+        return SKIRTJobScript.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -634,6 +711,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_simulation_sed(self, name):
 
         """
@@ -672,6 +750,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
     def get_simulation_datacube(self, name):
 
         """
@@ -1478,6 +1557,23 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def get_simulation_filepath(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get host ID and simulation ID
+        host_id = self.get_host_id(name)
+        simulation_id = self.get_simulation_id(name)
+
+        # Return the path
+        return get_simulation_path_for_host(host_id, simulation_id)
+
+    # -----------------------------------------------------------------
+
     def get_simulations_basic_for_host(self, host_id):
 
         """
@@ -1511,8 +1607,99 @@ class Generation(object):
         :return:
         """
 
-        if not self.has_assignment_table: return None
+        #if not self.has_assignment_table: return None
+        #return self.assignment_table.get_host_id_for_simulation(name)
+
+        if self.has_assignment_table: return self._get_host_id_from_assignment(name)
+        elif self.has_jobscript(name): return self._get_host_id_from_job_script(name)
+        elif self.has_logfile(name): return self._get_host_id_from_logfile(name)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def _get_host_id_from_assignment(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
         return self.assignment_table.get_host_id_for_simulation(name)
+
+    # -----------------------------------------------------------------
+
+    def _get_host_id_from_job_script(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # TOO SLOW
+        # Get the jobscript
+        #jobscript = self.get_simulation_jobscript(name)
+        # Return the host ID
+        #return jobscript.host_id
+
+        # Get jobscript path
+        filepath = self.get_simulation_jobscript_path(name)
+        return get_host_id_from_jobscript_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_hosts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.remote.host import find_hosts
+        return find_hosts(as_dict=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_host_ids(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.all_hosts.keys()
+
+    # -----------------------------------------------------------------
+
+    def _get_host_id_from_logfile(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the logfile
+        logfile = self.get_simulation_logfile(name)
+
+        # Return the host ID
+        host_name = logfile.host
+        if host_name in self.all_host_ids: return host_name
+        else:
+
+            for host_id in self.all_host_ids:
+
+                host = self.all_hosts[host_id]
+                if not host.has_clusters: continue
+                if host_name in host.cluster_names: return host_id
+
+            # Not recognized
+            else:
+                log.warning("Could not recognized host name '" + host_name + "'")
+                return None
 
     # -----------------------------------------------------------------
 
@@ -1524,8 +1711,48 @@ class Generation(object):
         :return:
         """
 
-        if not self.has_assignment_table: return None
+        #if not self.has_assignment_table: return None
+        #return self.assignment_table.get_cluster_name_for_simulation(name)
+
+        if self.has_assignment_table: return self._get_cluster_name_from_assignment(name)
+        elif self.has_logfile(name): return self._get_cluster_name_from_logfile(name)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def _get_cluster_name_from_assignment(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
         return self.assignment_table.get_cluster_name_for_simulation(name)
+
+    # -----------------------------------------------------------------
+
+    def _get_cluster_name_from_logfile(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the logfile
+        logfile = self.get_simulation_logfile(name)
+
+        # Return the host ID
+        host_name = logfile.host
+        if host_name in self.all_host_ids:
+            return None
+            #host = self.all_hosts[host_name]
+            #if host.has_clusters: return None # cluster name not known
+            #else: return
+
+        # Must be a cluster name, not recognized as host ID
+        else: return host_name
 
     # -----------------------------------------------------------------
 

@@ -21,6 +21,7 @@ import warnings
 from ..remote.jobscript import JobScript, get_jobscript_properties
 from ..tools import filesystem as fs
 from ..tools import numbers, types
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -161,7 +162,7 @@ class SKIRTJobScript(JobScript):
     """
 
     def __init__(self, name, arguments, host_id, cluster, skirt_path, mpi_command, walltime, modules, mail=False,
-                 bind_to_cores=False, extra_header_lines=None, remote=None):
+                 bind_to_cores=False, extra_header_lines=None, remote=None, command=None):
 
         """
         The constructor ...
@@ -176,6 +177,7 @@ class SKIRTJobScript(JobScript):
         :param bind_to_cores:
         :param extra_header_lines:
         :param remote:
+        :param command:
         """
 
         # Determine the paths to the output and error files
@@ -255,15 +257,41 @@ class SKIRTJobScript(JobScript):
             warnings.warn("If the remote instance is not passed, the remote will be loaded for each separate job script, which is very inefficient")
             remote = host_id
 
-        # Write the command string to the job script
-        command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command,
-                                       bind_to_cores=bind_to_cores, to_string=True, report_bindings=False, remote=remote)
+        # Set host ID or remote
+        from ..remote.remote import Remote, Host
+        # Load remote host if only the host ID is passed
+        if types.is_string_type(remote): self.host_id = remote  #remote = Remote(host_id=remote)
+        elif isinstance(remote, Host): self.host_id = remote.id
+        elif isinstance(remote, Remote):
+            self.host_id = remote.host_id
+            self.remote = remote
+        else: raise ValueError("Invalid type for 'remote'")
+
+        if command is None:
+            # Write the command string to the job script
+            command = arguments.to_command(scheduler=True, skirt_path=skirt_path, mpirun_path=mpi_command,
+                                           bind_to_cores=bind_to_cores, to_string=True, report_bindings=False, remote=remote)
+        else: warnings.warn("The command for launching SKIRT is passed explicitly: '" + command + "'. Make sure that this is consistent with the other properties of the job script.")
 
         # Add the SKIRT command
         self.add_command(command, "Launch SKIRT")
 
         # Add modules to load
         for module in modules: self.import_module(module)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..remote.remote import Remote
+        if self.host_id is None: return None
+        else: return Remote(host_id=self.host_id)
 
     # -----------------------------------------------------------------
 
@@ -284,11 +312,6 @@ class SKIRTJobScript(JobScript):
         ncommands = len(commands)
         if ncommands != 1: raise RuntimeError("Something went wrong reading the SKIRT command")
         command = commands[0][0] # first is actual command, 1 is comment
-
-        from ..simulation.arguments import SkirtArguments
-
-        # Create arguments from SKIRT command
-        arguments = SkirtArguments.from_command(command)
 
         # Get the remote properties
         cluster = kwargs.pop("cluster", None)
@@ -336,9 +359,13 @@ class SKIRTJobScript(JobScript):
         # Bind to cores?
         bind_to_cores = "--bind-to core" in command
 
+        # Create arguments from SKIRT command
+        from ..simulation.arguments import SkirtArguments
+        arguments = SkirtArguments.from_command(command)
+
         # Create
         jobscript = cls(name, arguments, host_id, cluster, arguments.skirt_path, arguments.mpirun_path, walltime, modules, mail=mail,
-                        bind_to_cores=bind_to_cores, extra_header_lines=extra_header_lines, remote=remote)
+                        bind_to_cores=bind_to_cores, extra_header_lines=extra_header_lines, remote=remote, command=command)
 
         # Return
         return jobscript
@@ -404,5 +431,25 @@ def get_requirements(processors, cores_per_node, full_node=False):
 
     # Return the number of nodes and processors per node
     return nodes, ppn
+
+# -----------------------------------------------------------------
+
+def get_host_id_from_jobscript_file(filepath):
+
+    """
+    Thisf unction ...
+    :param filepath:
+    :return:
+    """
+
+    # raise ValueError("Host ID or remote must be specified")
+    for line in fs.read_lines(filepath):
+
+        if line.startswith("# pts set_postponed_job_id"):
+            host_id = line.split("set_postponed_job_id ")[1].split(" ")[0].strip()
+            return host_id
+
+    # Break is not encountered
+    else: return None #raise ValueError("Host ID or remote must be specified (not found in job script)")
 
 # -----------------------------------------------------------------
