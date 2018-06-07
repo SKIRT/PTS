@@ -20,6 +20,8 @@ from .simulations import ComponentSimulations
 from .simulation import ObservedComponentSimulation, IntrinsicComponentSimulation
 from .simulation import earth_name, faceon_name, edgeon_name, total_contribution
 from ...magic.core.frame import Frame
+from ...magic.core.datacube import DataCube
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -109,6 +111,42 @@ class SingleComponentSimulations(ComponentSimulations):
 
         # Create and return
         return cls(name, observed, intrinsic=intrinsic, distance=distance, map_earth=map_earth, map_faceon=map_faceon, map_edgeon=map_edgeon)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map_earth is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map_faceon is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map_edgeon is not None
 
     # -----------------------------------------------------------------
 
@@ -276,7 +314,7 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        return self.has_transparent_cube or self.has_cube_from_intrinsic_simulation
+        return self.has_transparent_cube or self.has_cube_from_intrinsic_simulation or (self.has_map_earth and self.has_intrinsic_sed)
 
     # -----------------------------------------------------------------
 
@@ -288,7 +326,7 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        return self.has_transparent_cube_faceon or self.has_faceon_cube_from_intrinsic_simulation
+        return self.has_transparent_cube_faceon or self.has_faceon_cube_from_intrinsic_simulation or (self.has_map_faceon and self.has_intrinsic_sed)
 
     # -----------------------------------------------------------------
 
@@ -300,7 +338,7 @@ class SingleComponentSimulations(ComponentSimulations):
         :return:
         """
 
-        return self.has_transparent_cube_edgeon or self.has_edgeon_cube_from_intrinsic_simulation
+        return self.has_transparent_cube_edgeon or self.has_edgeon_cube_from_intrinsic_simulation or (self.has_map_edgeon and self.has_intrinsic_sed)
 
     # -----------------------------------------------------------------
     # INTRINSIC SEDs
@@ -557,8 +595,23 @@ class SingleComponentSimulations(ComponentSimulations):
         # Has intrinsic simulation
         elif self.has_cube_from_intrinsic_simulation: return self.cube_from_intrinsic_simulation
 
+        # Has map and intrinsic SED
+        elif self.has_map_earth and self.has_intrinsic_sed: return self.cube_from_map_and_intrinsic_sed
+
         # Cannot be calculated
         else: raise ValueError("Intrinsic cube cannot be calculated")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cube_from_map_and_intrinsic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DataCube.from_sed_and_map(self.intrinsic_sed, self.map_earth)
 
     # -----------------------------------------------------------------
 
@@ -589,8 +642,23 @@ class SingleComponentSimulations(ComponentSimulations):
         # Has intrinsic simulation
         elif self.has_faceon_cube_from_intrinsic_simulation: return self.faceon_cube_from_intrinsic_simulation
 
+        # Has map and intrinsic SED
+        elif self.has_map_faceon and self.has_intrinsic_sed: return self.faceon_cube_from_map_and_intrinsic_sed
+
         # Cannot be calculated
         else: raise ValueError("Intrinsic cube cannot be calculated")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_cube_from_map_and_intrinsic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DataCube.from_sed_and_map(self.intrinsic_sed, self.map_faceon)
 
     # -----------------------------------------------------------------
 
@@ -621,7 +689,22 @@ class SingleComponentSimulations(ComponentSimulations):
         # Has intrinsic simulation
         elif self.has_edgeon_cube_from_intrinsic_simulation: return self.edgeon_cube_from_intrinsic_simulation
 
+        # Has map and intrinsic SED
+        elif self.has_map_edgeon and self.has_intrinsic_sed: return self.edgeon_cube_from_map_and_intrinsic_sed
+
         # Cannot be calculated
         else: raise ValueError("Intrinsic cube cannot be calculated")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_cube_from_map_and_intrinsic_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DataCube.from_sed_and_map(self.intrinsic_sed, self.map_edgeon)
 
 # -----------------------------------------------------------------

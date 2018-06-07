@@ -23,6 +23,7 @@ from ...core.tools.utils import lazyproperty
 from ...core.tools.serialization import write_dict
 from ...core.basics.containers import DefaultOrderedDict
 from ...magic.core.frame import Frame
+from ...magic.tools.plotting import plot_map
 
 # -----------------------------------------------------------------
 
@@ -4641,12 +4642,72 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_total_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_total_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_total_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_total_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
     def plot_total_maps_earth(self):
 
         """
         This function ...
         :return:
         """
+
+        # Loop over the map names
+        for name in self.total_earth_map_names:
+
+            # Needs plotting?
+            if self.has_total_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_total_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.total_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_total_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_total_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_total_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_total_faceon_map_plot_path(name))
 
     # -----------------------------------------------------------------
 
@@ -4657,6 +4718,42 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
+        # Loop over the map names
+        for name in self.total_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_total_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_total_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.total_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_total_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_total_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_total_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_total_edgeon_map_plot_path(name))
+
     # -----------------------------------------------------------------
 
     def plot_total_maps_edgeon(self):
@@ -4665,6 +4762,18 @@ class PropertiesAnalyser(AnalysisComponent):
         This function ...
         :return:
         """
+
+        # Loop over the map names
+        for name in self.total_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_total_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_total_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.total_edgeon_maps[name], path)
 
     # -----------------------------------------------------------------
 
@@ -4689,6 +4798,30 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_bulge_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_bulge_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_bulge_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_bulge_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
     def plot_bulge_maps_earth(self):
 
         """
@@ -4696,7 +4829,41 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        pass
+        # Loop over the map names
+        for name in self.bulge_earth_map_names:
+
+            # Needs plotting?
+            if self.has_bulge_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_bulge_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.bulge_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_bulge_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_bulge_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_bulge_faceon_map_plot_path(name))
 
     # -----------------------------------------------------------------
 
@@ -4707,7 +4874,41 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        pass
+        # Loop over the map names
+        for name in self.bulge_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_bulge_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_bulge_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.bulge_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_bulge_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_bulge_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_bulge_edgeon_map_plot_path(name))
 
     # -----------------------------------------------------------------
 
@@ -4718,7 +4919,17 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        pass
+        # Loop over the map names
+        for name in self.bulge_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_bulge_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_bulge_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.bulge_edgeon_maps[name], path)
 
     # -----------------------------------------------------------------
 
@@ -4743,6 +4954,141 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_disk_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_disk_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_disk_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_disk_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_disk_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.disk_earth_map_names:
+
+            # Needs plotting?
+            if self.has_disk_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_disk_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.disk_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_disk_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_disk_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_disk_faceon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_disk_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.disk_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_disk_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_disk_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.disk_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_disk_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_disk_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_disk_edgeon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_disk_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.disk_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_disk_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_disk_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.disk_edgeon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
     def plot_old_maps(self):
 
         """
@@ -4761,6 +5107,141 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Edgeon
         if self.do_edgeon: self.plot_old_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_old_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_old_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_old_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_old_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_old_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.old_earth_map_names:
+
+            # Needs plotting?
+            if self.has_old_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_old_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.old_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_old_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_old_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_old_faceon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_old_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.old_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_old_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_old_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.old_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_old_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_old_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_old_edgeon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_old_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.old_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_old_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_old_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.old_edgeon_maps[name], path)
 
     # -----------------------------------------------------------------
 
@@ -4785,6 +5266,141 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_young_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_young_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_young_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_young_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_young_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.young_earth_map_names:
+
+            # Needs plotting?
+            if self.has_young_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_young_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.young_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_young_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_young_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_young_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_young_faceon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_young_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.young_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_young_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_young_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.young_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_young_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_young_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_young_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_young_edgeon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_young_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the map names
+        for name in self.young_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_young_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_young_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.young_edgeon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
     def plot_sfr_maps(self):
 
         """
@@ -4803,6 +5419,141 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Edgeon
         if self.do_edgeon: self.plot_sfr_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_sfr_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_sfr_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_sfr_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.sfr_earth_map_names:
+
+            # Needs plotting?
+            if self.has_sfr_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_sfr_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.sfr_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_sfr_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_sfr_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_sfr_faceon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.sfr_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_sfr_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_sfr_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.sfr_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_sfr_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_sfr_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_sfr_edgeon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.sfr_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_sfr_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_sfr_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.sfr_edgeon_maps[name], path)
 
     # -----------------------------------------------------------------
 
@@ -4827,6 +5578,141 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_unevolved_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_unevolved_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_earth_map_plot(self, name):
+
+        """
+        This function ..
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_unevolved_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.unevolved_earth_map_names:
+
+            # Needs plotting?
+            if self.has_unevolved_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_unevolved_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.unevolved_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_unevolved_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_faceon_map_plot(self, name):
+
+        """
+        This function ..
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_unevolved_faceon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_maps_faceon(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.unevolved_faceon_map_names:
+
+            # Needs plotting?
+            if self.has_unevolved_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_unevolved_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.unevolved_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_unevolved_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_edgeon_map_plot(self, name):
+
+        """
+        This function ..
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_unevolved_edgeon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_unevolved_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        # Loop over the maps
+        for name in self.unevolved_edgeon_map_names:
+
+            # Needs plotting?
+            if self.has_unevolved_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_unevolved_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.unevolved_edgeon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
     def plot_dust_maps(self):
 
         """
@@ -4845,5 +5731,153 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Edgeon
         if self.do_edgeon: self.plot_dust_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def get_dust_earth_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_dust_earth_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_dust_earth_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_dust_earth_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_earth_map_names:
+
+            # Needs plotting
+            if self.has_dust_earth_map_plot(name): continue
+
+            # Get path
+            path = self.get_dust_earth_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.dust_earth_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_faceon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_dust_faceon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_dust_faceon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_dust_faceon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_faceon_map_names:
+
+            # Needs plotting
+            if self.has_dust_faceon_map_plot(name): continue
+
+            # Get path
+            path = self.get_dust_faceon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.dust_faceon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_edgeon_map_plot_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.maps_dust_edgeon_path, name + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_dust_edgeon_map_plot(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.is_file(self.get_dust_edgeon_map_plot_path(name))
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the maps
+        for name in self.dust_edgeon_map_names:
+
+            # Needs plotting
+            if self.has_dust_edgeon_map_plot(name): continue
+
+            # Get path
+            path = self.get_dust_edgeon_map_plot_path(name)
+
+            # Plot
+            self.plot_map(self.dust_edgeon_maps[name], path)
+
+    # -----------------------------------------------------------------
+
+    def plot_map(self, frame, path):
+
+        """
+        This function ...
+        :param frame:
+        :param path:
+        :return:
+        """
+
+        plot_map(frame, path=path, cmap="inferno")
 
 # -----------------------------------------------------------------

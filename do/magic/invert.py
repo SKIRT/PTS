@@ -13,7 +13,7 @@
 import imageio
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.rgbimage import invert_colors
+from pts.core.basics.rgbimage import invert_colors, invert_black_and_white, invert_greys
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
@@ -22,6 +22,8 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 # Create the definition
 definition = ConfigurationDefinition()
 definition.add_positional_optional("filenames", "filepath_list", "names of the input image file")
+definition.add_flag("bw", "only interchange black and white")
+definition.add_flag("greys", "only invert shades of grey (including black and white)")
 
 # Parse the command line arguments
 config = parse_arguments("invert", definition)
@@ -40,7 +42,9 @@ for filename in filenames:
     image = imageio.imread(filename)
 
     # Invert the colours
-    invert_colors(image)
+    if config.bw: invert_black_and_white(image)
+    elif config.greys: invert_greys(image)
+    else: invert_colors(image)
 
     # Determine output name
     name = fs.strip_extension(fs.name(filename))

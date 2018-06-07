@@ -565,3 +565,83 @@ def inverted_colors(image):
     return image_copy
 
 # -----------------------------------------------------------------
+
+def invert_black_and_white(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
+
+    nx = image.shape[1]
+    ny = image.shape[0]
+
+    for x in range(nx):
+        for y in range(ny):
+
+            red = image[y, x, 0]
+            green = image[y, x, 1]
+            blue = image[y, x, 2]
+
+            # White pixel
+            if red == 255 and green == 255 and blue == 255:
+                image[y, x, 0] = image[y, x, 1] = image[y, x, 2] = 0  # to black
+            elif red == 0 and green == 0 and blue == 0:
+                image[y, x, 0] = image[y, x, 1] = image[y, x, 2] = 255 # to white
+
+# -----------------------------------------------------------------
+
+def inverted_black_and_white(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
+
+    image_copy = copy.deepcopy(image)
+    invert_black_and_white(image_copy)
+    return image_copy
+
+# -----------------------------------------------------------------
+
+def invert_greys(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
+
+    nx = image.shape[1]
+    ny = image.shape[0]
+
+    for x in range(nx):
+        for y in range(ny):
+
+            red = image[y, x, 0]
+            green = image[y, x, 1]
+            blue = image[y, x, 2]
+
+            # Greyscale?
+            if red == green == blue:
+                value = red
+                new_value = 255 - value
+                image[y, x, 0] = image[y, x, 1] = image[y, x, 2] = new_value
+
+# -----------------------------------------------------------------
+
+def inverted_greys(image):
+
+    """
+    This function ...
+    :param image:
+    :return:
+    """
+
+    image_copy = copy.deepcopy(image)
+    invert_greys(image_copy)
+    return image_copy
+
+# -----------------------------------------------------------------
