@@ -1806,6 +1806,9 @@ class SimulationManager(InteractiveConfigurable):
         # Not enough input
         #else: raise ValueError("Not enough input to initialize simulations")
 
+        # Set remotes now that assignment is present and correct: TEMPORARY HACK?
+        self.config.remotes = self.host_ids
+
     # -----------------------------------------------------------------
 
     @lazyproperty

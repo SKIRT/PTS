@@ -178,10 +178,12 @@ class GenerationManager(SimulationManager, FittingComponent):
         # Get the assignment table
         if self.generation.has_assignment_table: assignment = self.generation.assignment_table
         else: assignment = None
+        #print(assignment is not None)
 
         # Create the simulations
         simulations = self.generation.simulations_or_basic
         for simulation in simulations:
+            #print(simulation.name)
             simulation_status = status.get_status(simulation.name)
             if is_analysed_status(simulation_status): simulation.analysed = True
 

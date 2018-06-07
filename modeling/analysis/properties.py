@@ -4679,10 +4679,46 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Plotting the maps of the old stellar bulge component ...")
 
         # Earth
+        if self.do_earth: self.plot_bulge_maps_earth()
 
         # Faceon
+        if self.do_faceon: self.plot_bulge_maps_faceon()
 
         # Edgeon
+        if self.do_edgeon: self.plot_bulge_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def plot_bulge_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot_bulge_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot_bulge_maps_edgeon(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -4697,10 +4733,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Plotting the maps of the old stellar disk component ...")
 
         # Earth
+        if self.do_earth: self.plot_disk_maps_earth()
 
         # Faceon
+        if self.do_faceon: self.plot_disk_maps_faceon()
 
         # Edgeon
+        if self.do_edgeon: self.plot_disk_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -4715,10 +4754,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Plotting the maps of the old stellar component ...")
 
         # Earth
+        if self.do_earth: self.plot_old_maps_earth()
 
         # Faceon
+        if self.do_faceon: self.plot_old_maps_faceon()
 
         # Edgeon
+        if self.do_edgeon: self.plot_old_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -4733,10 +4775,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Plotting the maps of the young stellar component ...")
 
         # Earth
+        if self.do_earth: self.plot_young_maps_earth()
 
         # Faceon
+        if self.do_faceon: self.plot_young_maps_faceon()
 
         # Edgeon
+        if self.do_edgeon: self.plot_young_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -4751,10 +4796,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Plotting the maps of the SFR component ...")
 
         # Earth
+        if self.do_earth: self.plot_sfr_maps_earth()
 
         # Faceon
+        if self.do_faceon: self.plot_sfr_maps_faceon()
 
         # Edgeon
+        if self.do_edgeon: self.plot_sfr_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -4769,10 +4817,13 @@ class PropertiesAnalyser(AnalysisComponent):
         log.info("Plotting the maps of the unevolved stellar component ...")
 
         # Earth
+        if self.do_earth: self.plot_unevolved_maps_earth()
 
         # Faceon
+        if self.do_faceon: self.plot_unevolved_maps_faceon()
 
         # Edgeon
+        if self.do_edgeon: self.plot_unevolved_maps_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -4785,5 +4836,14 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting the maps of the dust component ...")
+
+        # Earth
+        if self.do_earth: self.plot_dust_maps_earth()
+
+        # Faceon
+        if self.do_faceon: self.plot_dust_maps_faceon()
+
+        # Edgeon
+        if self.do_edgeon: self.plot_dust_maps_edgeon()
 
 # -----------------------------------------------------------------

@@ -2076,7 +2076,7 @@ class Generation(object):
         out_path = self.get_simulation_output_path(name)
 
         # Create the simulation object
-        if host_id is not None or simulation_id is not None: simulation = RemoteSimulation(ski_path, self.simulation_input, out_path, host_id=host_id, id=simulation_id)
+        if host_id is not None or simulation_id is not None: simulation = RemoteSimulation(ski_path, self.simulation_input, out_path, host_id=host_id, id=simulation_id, name=name)
         else: simulation = SkirtSimulation(inpath=self.simulation_input, outpath=out_path, ski_path=ski_path, name=name)
 
         # Set the analysis paths
@@ -2182,8 +2182,11 @@ class Generation(object):
                 simulations = self.get_simulations_for_host(host_id)
                 simulations.extend(simulations)
 
+        #else: print("no assignment")
+
         # Check number of simulations found through the assignment file
         nsimulations = len(simulations)
+        #print(nsimulations, self.nsimulations)
         if nsimulations == self.nsimulations: return simulations
         elif nsimulations > self.nsimulations:
             log.warning("The number of simulations in the generation info is lower than expected (" + str(self.nsimulations) + " instead of " + str(nsimulations) + ")")

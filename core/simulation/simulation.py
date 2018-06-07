@@ -1192,7 +1192,7 @@ class RemoteSimulation(SkirtSimulation):
         prefix = fs.strip_extension(fs.name(ski_path))
 
         # Call the constructor of the base class
-        super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path)
+        super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path, name=kwargs.pop("name", None))
 
         # -- Attributes --
 
