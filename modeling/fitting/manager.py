@@ -18,7 +18,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ...core.basics.configuration import prompt_yn
 from ...core.tools import formatting as fmt
-from ...core.tools.stringify import tostr
+from ...core.tools.stringify import tostr, yes_or_no
 from ...core.remote.ensemble import SKIRTRemotesEnsemble
 from ...core.tools import numbers
 from ...core.launch.manager import SimulationManager, extra_columns
@@ -30,6 +30,7 @@ from ...core.tools import sequences
 from .generation import check_simulation_paths, correct_simulation_and_analysis_paths
 from ...core.tools.utils import lazyproperty
 from .component import FittingComponent
+from ...core.launch.batchlauncher import MissingSimulation
 
 # -----------------------------------------------------------------
 
@@ -672,7 +673,67 @@ class GenerationManager(SimulationManager, FittingComponent):
         :return:
         """
 
-        print("simulations")
+        #print("simulations")
+
+        # Print in columns
+        with fmt.print_in_columns() as print_row:
+
+            # Show header
+            header = [""]
+            header.append("Name")
+            header.append("Has file")
+            header.append("In assignment")
+            header.append("Has chi squared")
+            header.append("Host ID")
+            header.append("Cluster name")
+            header.append("Simulation ID")
+
+            # Print the header
+            print_row(*header, bold=True)
+
+            # Loop over the simulations
+            for simulation_name in self.generation.simulation_names:
+
+                # Initialize the row strings
+                parts = []
+                parts.append("-")
+                parts.append(simulation_name)
+
+                # Has simulation file?
+                has_simulation = self.generation.has_simulation(simulation_name)
+                parts.append(yes_or_no(has_simulation))
+
+                # Is in assignment?
+                in_assignment = self.generation.has_assignment_table and self.generation.in_assignment(simulation_name)
+                parts.append(yes_or_no(in_assignment))
+
+                # Check whether chi-squared value is present (full analysis is completed for simulation)
+                analysed = self.generation.is_analysed(simulation_name)
+                parts.append(yes_or_no(analysed))
+
+                # Get the host ID and simulation ID
+                try: host_id = self.generation.get_host_id(simulation_name)
+                except MissingSimulation: host_id = None
+                parts.append(host_id if host_id is not None else "--")
+
+                # Get the cluster name
+                cluster_name = self.generation.get_cluster_name(simulation_name)
+                parts.append(cluster_name if cluster_name is not None else "--")
+
+                # Get the simulation ID
+                try: simulation_id = self.generation.get_simulation_id(simulation_name)
+                except MissingSimulation: simulation_id = None
+                parts.append(str(simulation_id) if simulation_id is not None else "--")
+
+                # Determine the color for the simulation
+                #color = "green" if has_simulation else "red"
+                if has_simulation and in_assignment: color = "green"
+                elif has_simulation: color = "yellow" # not in assignment
+                elif in_assignment: color = "magenta" # no simulation file
+                else: color = "red" # not in assignment nor in assignment
+
+                # Show the row
+                print_row(*parts, color=color)
 
     # -----------------------------------------------------------------
 

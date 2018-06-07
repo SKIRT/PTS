@@ -3473,6 +3473,70 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def find_simulation_for_assignment(self, simulation_name, find_remotes, remotes=None, produce_missing=False,
+                                       correct_paths=False, confirm_correction=False):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param find_remotes:
+        :param remotes:
+        :param produce_missing:
+        :param correct_paths:
+        :param confirm_correction:
+        :return:
+        """
+
+        # Give warning
+        log.warning("Looking for the simulation '" + simulation_name + "' on any remote host ...")
+        simulation = find_simulation(simulation_name, find_remotes)
+
+        # Simulation is not found
+        if simulation is None:
+
+            # Produce missing simulation file?
+            if produce_missing:
+
+                # Debugging
+                log.warning("Simulation was not found, producing simulation file ...")
+
+                # raise RuntimeError("Cannot produce missing simulations when ")
+                host_id = prompt_string("host_id", "string", "specify the remote host ID for simulation '" + simulation_name + "'")
+
+                # Produce
+                self.produce_missing_simulation_file(simulation_name, host_id=host_id, remotes=remotes,
+                                                     correct_paths=correct_paths,
+                                                     confirm_correction=confirm_correction)
+
+                # Set flag
+                load_simulation = True
+
+            # Don't produce: give error for missing simulation file
+            else: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
+
+            changed_assignment = False
+
+        # Simulation is found
+        else:
+
+            actual_host_id = simulation.host_id
+            actual_id = simulation.id
+            cluster_name = simulation.cluster_name
+            log.warning("Simulation identified as '" + str(actual_id) + "' for host '" + actual_host_id + "'")
+
+            # Add to assignment scheme
+            log.warning("Adding simulation to the assignment table ...")
+            self.add_simulation_to_assignment(simulation_name, host_id=actual_host_id, cluster_name=cluster_name,
+                                              simulation_id=actual_id)
+
+            changed_assignment = True
+            load_simulation = True
+
+        # Return flags
+        return changed_assignment, load_simulation
+
+    # -----------------------------------------------------------------
+
     def get_status(self, remotes=None, lazy=False, find_simulations=False, find_remotes=None, produce_missing=False,
                    retrieve=False, check_paths=False, correct_paths=False, confirm_correction=False, fix_success=True):
 
@@ -3514,47 +3578,11 @@ class Generation(object):
                 # Find simulation?
                 if find_simulations:
 
-                    # Can we find it?
-
-                    # Give warning
-                    log.warning("Looking for the simulation '" + simulation_name + "' on any remote host ...")
-                    simulation = find_simulation(simulation_name, find_remotes)
-
-                    # Simulation is not found
-                    if simulation is None:
-
-                        # Produce missing simulation file?
-                        if produce_missing:
-
-                            # Debugging
-                            log.warning("Simulation was not found, producing simulation file ...")
-
-                            #raise RuntimeError("Cannot produce missing simulations when ")
-                            host_id = prompt_string("host_id", "string", "specify the remote host ID for simulation '" + simulation_name + "'")
-
-                            # Produce
-                            self.produce_missing_simulation_file(simulation_name, host_id=host_id, remotes=remotes, correct_paths=correct_paths,
-                                                                 confirm_correction=confirm_correction)
-
-                            # Set flag
-                            load_simulation = True
-
-                        # Don't produce: give error for missing simulation file
-                        else: raise RuntimeError("Simulation '" + simulation_name + "' was not found")
-
-                    # Simulation is found
-                    else:
-
-                        actual_host_id = simulation.host_id
-                        actual_id = simulation.id
-                        cluster_name = simulation.cluster_name
-                        log.warning("Simulation identified as '" + str(actual_id) + "' for host '" + actual_host_id + "'")
-
-                        log.warning("Adding simulation to the assignment table ...")
-                        self.add_simulation_to_assignment(simulation_name, host_id=actual_host_id, cluster_name=cluster_name, simulation_id=actual_id)
-
-                        changed_assignment = True
-                        load_simulation = True
+                    changed_a, load_sim = self.find_simulation_for_assignment(simulation_name, find_remotes, remotes=remotes,
+                                                                              produce_missing=produce_missing, correct_paths=correct_paths,
+                                                                              confirm_correction=confirm_correction)
+                    changed_assignment |= changed_a
+                    load_simulation |= load_sim
 
                 # Don't find: don't load the simulation
                 else: load_simulation = False
@@ -3736,6 +3764,7 @@ class Generation(object):
                 if fix_success and not self.assignment_table.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
                     log.warning("Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")
                     self.assignment_table.set_success_for_simulation(simulation.name)
+                    changed_assignment = True
 
                 # Retrieve finished simulations?
                 if simulation_status == finished_name and retrieve:

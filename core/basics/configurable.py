@@ -621,6 +621,9 @@ class InteractiveConfigurable(Configurable):
                 self._run_developer_command(command)
                 continue
 
+            # REPEAT LAST COMMAND
+            if command == "last": command = self.last_command
+
             # Process command
             success = True
             try: self.process_command(command)
@@ -661,6 +664,30 @@ class InteractiveConfigurable(Configurable):
 
             # Add command, if succesful
             if success: self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nhistory_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.history)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_history_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nhistory_commands > 0
 
     # -----------------------------------------------------------------
 
@@ -1306,6 +1333,21 @@ class InteractiveConfigurable(Configurable):
 
         # Show history
         self.show_history(all=config.all, path=config.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_command(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_commands:
+            if not self.has_history_commands: return None
+            else: return self.history[-1]
+        else: return self.commands[-1]
 
     # -----------------------------------------------------------------
 

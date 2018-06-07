@@ -463,6 +463,7 @@ def print_columns(*columns, **kwargs):
     indent = kwargs.pop("indent", "")
     tostr_kwargs = kwargs.pop("tostr_kwargs", {})
     colors = kwargs.pop("colors", None)
+    bolds = kwargs.pop("bold", None)
 
     # Check sizes
     if not equal_sizes(*columns): raise ValueError("Columns must have equal lengths")
@@ -487,6 +488,7 @@ def print_columns(*columns, **kwargs):
     ncolumns = len(string_columns)
     nrows = len(columns[0])
     if colors is not None and len(colors) != nrows: raise ValueError("Colors must be defined per row")
+    if bolds is not None and len(bolds) != nrows: raise ValueError("Bold flag must be defined per row")
 
     # Loop over the rows and print them
     for i in range(nrows):
@@ -505,14 +507,17 @@ def print_columns(*columns, **kwargs):
 
                 row += spaces
 
-        # Print in specified color
+        string = indent + row
         if colors is not None:
             color = colors[i]
             color_code = get_color_code(color)
-            print(color_code + indent + row + reset)
+            string = color_code + string + reset
+        if bolds is not None:
+            bold_row = bolds[i]
+            if bold_row: string = bold + string + reset_bold
 
-        # Print
-        else: print(indent + row)
+        # Print row
+        print(string)
 
 # -----------------------------------------------------------------
 
@@ -537,6 +542,7 @@ class print_in_columns(object):
         if ncolumns is not None: self.initialize_columns(ncolumns)
 
         self.colors = []
+        self.bold = []
         self.delimiter = delimiter
         self.indent = indent
         self.tostr_kwargs = tostr_kwargs if tostr_kwargs is not None else {}
@@ -596,8 +602,11 @@ class print_in_columns(object):
             arg = args[index] if len(args) > index else ""
             self.columns[index].append(arg)
 
+        # Set row color and bold flag
         color = kwargs.pop("color", None)
+        bold = kwargs.pop("bold", False)
         self.colors.append(color)
+        self.bold.append(bold)
 
     # -----------------------------------------------------------------
 
@@ -618,7 +627,7 @@ class print_in_columns(object):
             return
 
         # Print
-        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent, tostr_kwargs=self.tostr_kwargs, colors=self.colors)
+        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent, tostr_kwargs=self.tostr_kwargs, colors=self.colors, bold=self.bold)
 
 # -----------------------------------------------------------------
 
