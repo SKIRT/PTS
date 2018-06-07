@@ -892,7 +892,7 @@ class ComponentProjections(object):
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
-        ski.add_instrument(earth_name, self.frame_instrument_edgeon)
+        ski.add_instrument(edgeon_name, self.frame_instrument_edgeon)
 
         # Set the number of photon packages
         ski.setpackages(self.npackages)
