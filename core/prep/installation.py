@@ -1209,6 +1209,8 @@ def build_skirt_local(skirt_repo_path, qmake_path, git_version):
 
     # Execute
     output = terminal.execute(make_make_command, show_output=log.is_debug, cwd=skirt_repo_path)
+    for line in output:
+        if "Error processing project file" in line: raise RuntimeError(line)
 
     # Overwrite the git version
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
@@ -1247,6 +1249,8 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
 
     # Configure
     output = remote.execute(make_make_command, show_output=log.is_debug, cwd=skirt_repo_path)
+    for line in output:
+        if "Error processing project file" in line: raise RuntimeError(line)
 
     # Overwrite the git version
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'

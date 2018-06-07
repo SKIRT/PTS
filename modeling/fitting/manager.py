@@ -159,23 +159,31 @@ class GenerationManager(SimulationManager, FittingComponent):
         status = self.get_generation_status(remotes)
 
         # Determine input: assignment table or simulation objects
-        if self.generation.has_assignment_table:
-
-            assignment = self.generation.assignment_table
-            simulations = None
-
-        else:
-
-            assignment = None
-            simulations = self.generation.simulations_basic  # basic because there will be no information about which host ID or simulation ID so simulation files cannot be located
-
-            # Fix simulation status
-            for simulation in simulations:
-                simulation_status = status.get_status(simulation.name)
-                if simulation_status == "analysed": simulation.analysed = True
+        # if self.generation.has_assignment_table:
+        #     assignment = self.generation.assignment_table
+        #     simulations = None
+        # else:
+        #     assignment = None
+        #     # basic because there will be no information about which host ID or simulation ID so simulation files cannot be located
+        #     # -> not entirely true, host ID information can be found, so RemoteSimulation objects can still be expected
+        #     simulations = self.generation.simulations_basic
+        #     # Fix simulation status
+        #     for simulation in simulations:
+        #         simulation_status = status.get_status(simulation.name)
+        #         if simulation_status == "analysed": simulation.analysed = True
 
         # Check the simulations, adapt status if necessary
         status = self.check_simulations(status)
+
+        # Get the assignment table
+        if self.generation.has_assignment_table: assignment = self.generation.assignment_table
+        else: assignment = None
+
+        # Create the simulations
+        simulations = self.generation.simulations_or_basic
+        for simulation in simulations:
+            simulation_status = status.get_status(simulation.name)
+            if is_analysed_status(simulation_status): simulation.analysed = True
 
         # Set input for base class
         input = dict()
@@ -732,7 +740,7 @@ class GenerationManager(SimulationManager, FittingComponent):
             header.append("Host ID (logfile)")
             header.append("Cluster name (assignment)")
             header.append("Cluster name (logfile)")
-            header.append("Simulation ID")
+            header.append("Simulation ID (assignment)")
 
             # Print the header
             print_row(*header, bold=True)

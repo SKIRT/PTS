@@ -686,6 +686,18 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @property
+    def has_assignment(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.assignment is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def ninfo(self):
 
         """
@@ -1702,37 +1714,97 @@ class SimulationManager(InteractiveConfigurable):
         # Debugging
         log.debug("Initializing simulations ...")
 
+        # Check passed arguments
+        #has_assignment = kwargs.get("assignment", None) is not None
+        #has_simulations = kwargs.get("simuations", None) is not None
+        #has_simulation_names = kwargs.get("simulation_names", None) is not None
+        #has_simulation_ids = kwargs.get("simulation_ids", None) is not None
+        #if has_simulations and has_simulation_names: raise ValueError("Cannot specify both simulations and simulation names")
+        # Set the assignment scheme if present
+        #if has_assignment: self.assignment = kwargs.pop("assignment")
+
+        # Get assignment table
+        assignment = kwargs.pop("assignment", None)
+        if self.config.assignment is not None:
+            if assignment is not None: raise ValueError("Assignment is passed as an argument: cannot specify assignment table path")
+            assignment = SimulationAssignmentTable.from_file(self.config.assignment)
+
+        # Get simulations
+        simulations = kwargs.pop("simulations", None)
+
+        # Get simulation names
+        simulation_names = kwargs.pop("simulation_names", None)
+        if self.config.simulation_names is not None:
+            if simulation_names is not None: raise ValueError("Simulation names are passed as an argument: cannot specify simulation names in configuration")
+            simulation_names = self.config.simulation_names
+
+        # Get simulation IDs
+        simulation_ids = kwargs.pop("simulation_ids", None)
+        if self.config.simulation_ids is not None:
+            if simulation_ids is not None: raise ValueError("Simulation IDs are passed as an argument: cannot specify simulation IDs in configuration")
+            simulation_ids = self.config.simulation_ids
+        if simulation_ids is not None:
+            # Check whether only one remote host is specified
+            if self.config.remotes is None: raise ValueError("Remote host is not specified")
+            nremotes = len(self.config.remotes)
+            if nremotes != 1: raise ValueError("Only one remote host can be specified when giving simulation IDs")
+
+        # CHECKS
+        if simulations is not None and simulation_names is not None: raise ValueError("Cannot give simulations and simulation names")
+        if simulations is not None and simulation_ids is not None: raise ValueError("Cannot give simulations and simulation IDs")
+        if simulation_names is not None and simulation_ids is not None: raise ValueError("Cannot give simulation names and simulation IDs")
+
+        # Set the assignment table
+        if assignment is not None: self.assignment = assignment
+
+        ## LOAD SIMULATIONS
+
+        # Load simulations
+        if simulations is not None: self.initialize_from_simulations(simulations)
+
+        # Load simulations from names
+        elif simulation_names is not None: self.initialize_from_simulation_names(simulation_names)
+
+        # Load simulations from IDs
+        elif simulation_ids is not None: self.initialize_from_simulation_ids(simulation_ids)
+
+        # Load simulations from directory names
+        elif self.config.from_directories: self.initialize_from_simulation_names(fs.directories_in_path(self.config.path, returns="name"))
+
+        # Load simulations from assignment scheme, POSSIBLE?
+        elif self.has_assignment: self.initialize_from_assignment()
+
+        # NOT POSSIBLE
+        else: raise ValueError("Not enough input to initialize simulations and/or assignment")
+
         # Load the simulation assignment scheme
-        if kwargs.get("assignment", None) is not None: self.initialize_from_assignment(kwargs.pop("assignment"))
+        #if has_assignment: self.initialize_from_assignment()
 
         # From simulations
-        elif kwargs.get("simulations", None) is not None: self.initialize_from_simulations(kwargs.pop("simulations"))
+        #elif has_simulations: self.initialize_from_simulations(kwargs.pop("simulations"))
 
         # From simulation names
-        elif kwargs.get("simulation_names", None) is not None: self.initialize_from_simulation_names(kwargs.pop("simulation_names"))
+        #elif has_simulation_names: self.initialize_from_simulation_names(kwargs.pop("simulation_names"))
 
         # From simulation IDs
-        elif kwargs.get("simulation_ids", None) is not None: self.initialize_from_simulation_ids(kwargs.pop("simulation_ids"))
+        #elif has_simulation_ids: self.initialize_from_simulation_ids(kwargs.pop("simulation_ids"))
 
         # From assignment
-        elif self.config.assignment is not None:
-
-            assignment = SimulationAssignmentTable.from_file(self.config.assignment)
-            self.initialize_from_assignment(assignment)
+        #elif self.config.assignment is not None: self.initialize_from_assignment(assignment)
 
         # From simulation names
-        elif self.config.simulation_names is not None: self.initialize_from_simulation_names(self.config.simulation_names)
+        #elif self.config.simulation_names is not None: self.initialize_from_simulation_names(self.config.simulation_names)
 
         # From simulation IDs
-        elif self.config.simulation_ids is not None: self.initialize_from_simulation_ids(self.config.simulation_ids)
+        #elif self.config.simulation_ids is not None: self.initialize_from_simulation_ids(self.config.simulation_ids)
 
         # From directories
-        elif self.config.from_directories:
-            names = fs.directories_in_path(self.config.path, returns="name")
-            self.initialize_from_simulation_names(names)
+        #elif self.config.from_directories:
+        #    names = fs.directories_in_path(self.config.path, returns="name")
+        #    self.initialize_from_simulation_names(names)
 
         # Not enough input
-        else: raise ValueError("Not enough input to initialize simulations")
+        #else: raise ValueError("Not enough input to initialize simulations")
 
     # -----------------------------------------------------------------
 
@@ -4042,16 +4114,12 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def initialize_from_assignment(self, assignment):
+    def initialize_from_assignment(self):
 
         """
         This function ...
-        :param assignment:
         :return:
         """
-
-        # Set the assignment scheme
-        self.assignment = assignment
 
         # Set remotes?
         if self.config.remotes is None: self.config.remotes = self.assignment.unique_host_ids
@@ -4127,9 +4195,10 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        # Initialize assignment table
-        self.assignment = SimulationAssignmentTable()
-        self._new_assignment = True
+        # Initialize assignment table?
+        if not self.has_assignment:
+            self.assignment = SimulationAssignmentTable()
+            self._new_assignment = True
 
         # Get list of simulations
         if types.is_dictionary(simulations): simulations = simulations.values()
@@ -4155,7 +4224,7 @@ class SimulationManager(InteractiveConfigurable):
             else: raise ValueError("Invalid type for simulation '" + simulation_name + "'")
 
             # Add to assignment
-            self.assignment.add_simulation(simulation_name, host_id=host_id, cluster_name=cluster_name,
+            if self._new_assignment: self.assignment.add_simulation(simulation_name, host_id=host_id, cluster_name=cluster_name,
                                            simulation_id=simulation_id, success=self.config.success)
 
             # Add the simulation
@@ -4222,10 +4291,7 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        # Check whether only one remote host is specified
-        if self.config.remotes is None: raise ValueError("Remote host is not specified")
-        nremotes = len(self.config.remotes)
-        if nremotes != 1: raise ValueError("Only one remote host can be specified when giving simulation IDs")
+        # Get the host ID
         host_id = self.config.remotes[0]
 
         # Initialize assignment table

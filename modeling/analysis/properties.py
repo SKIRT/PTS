@@ -214,6 +214,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def total_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_total_maps_earth(self):
 
         """
@@ -273,8 +285,24 @@ class PropertiesAnalyser(AnalysisComponent):
         else: self.total_maps[earth_name][sfr_map_name] = self.model.total_star_formation_rate_map_earth
 
         # Stellar mass
+        if self.has_total_earth_map(stellar_mass_map_name): self.total_maps[earth_name][stellar_mass_map_name] = self.load_total_earth_map(stellar_mass_map_name)
+        else: self.total_maps[earth_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_earth
 
         # Specific star formation rate
+        if self.has_total_earth_map(ssfr_map_name): self.total_maps[earth_name][ssfr_map_name] = self.load_total_earth_map(ssfr_map_name)
+        else: self.total_maps[earth_name][ssfr_map_name] = self.model.total_ssfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_faceon_maps(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.total_maps[faceon_name]
 
     # -----------------------------------------------------------------
 
@@ -336,6 +364,26 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_total_faceon_map(sfr_map_name): self.total_maps[faceon_name][sfr_map_name] = self.load_total_faceon_map(sfr_map_name)
         else: self.total_maps[faceon_name][sfr_map_name] = self.model.total_star_formation_rate_map_faceon
 
+        # Stellar mass
+        if self.has_total_faceon_map(stellar_mass_map_name): self.total_maps[faceon_name][stellar_mass_map_name] = self.load_total_faceon_map(stellar_mass_map_name)
+        else: self.total_maps[faceon_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_faceon
+
+        # Specific star formation rate
+        if self.has_total_faceon_map(ssfr_map_name): self.total_maps[faceon_name][ssfr_map_name] = self.load_total_faceon_map(ssfr_map_name)
+        else: self.total_maps[faceon_name][ssfr_map_name] = self.model.total_ssfr_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_maps[edgeon_name]
+
     # -----------------------------------------------------------------
 
     def get_total_maps_edgeon(self):
@@ -396,6 +444,14 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_total_edgeon_map(sfr_map_name): self.total_maps[edgeon_name][sfr_map_name] = self.load_total_edgeon_map(sfr_map_name)
         else: self.total_maps[edgeon_name][sfr_map_name] = self.model.total_star_formation_rate_map_edgeon
 
+        # Stellar mass
+        if self.has_total_edgeon_map(stellar_mass_map_name): self.total_maps[edgeon_name][stellar_mass_map_name] = self.load_total_edgeon_map(stellar_mass_map_name)
+        else: self.total_maps[edgeon_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_edgeon
+
+        # Specific star formation rate
+        if self.has_total_edgeon_map(ssfr_map_name): self.total_maps[edgeon_name][ssfr_map_name] = self.load_total_edgeon_map(ssfr_map_name)
+        else: self.total_maps[edgeon_name][ssfr_map_name] = self.model.total_ssfr_map_edgeon
+
     # -----------------------------------------------------------------
 
     def get_bulge_maps(self):
@@ -413,6 +469,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Edge-on
         if self.do_edgeon: self.get_bulge_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_maps[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -441,6 +509,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bulge_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_bulge_maps_faceon(self):
 
         """
@@ -463,6 +543,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_bulge_faceon_map(intr_i1_map_name): self.bulge_maps[faceon_name][intr_i1_map_name] = self.load_bulge_faceon_map(intr_i1_map_name)
         else: self.bulge_maps[faceon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.bulge_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -509,6 +601,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def disk_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_disk_maps_earth(self):
 
         """
@@ -534,6 +638,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def disk_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_disk_maps_faceon(self):
 
         """
@@ -556,6 +672,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_disk_faceon_map(intr_i1_map_name): self.disk_maps[faceon_name][intr_i1_map_name] = self.load_disk_faceon_map(intr_i1_map_name)
         else: self.disk_maps[faceon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -602,6 +730,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_old_maps_earth(self):
 
         """
@@ -627,6 +767,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_old_maps_faceon(self):
 
         """
@@ -649,6 +801,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_old_faceon_map(intr_i1_map_name): self.old_maps[faceon_name][intr_i1_map_name] = self.load_old_faceon_map(intr_i1_map_name)
         else: self.old_maps[faceon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -695,6 +859,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def young_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_young_maps_earth(self):
 
         """
@@ -720,6 +896,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def young_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_young_maps_faceon(self):
 
         """
@@ -742,6 +930,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic FUV
         if self.has_young_faceon_map(intr_fuv_map_name): self.young_maps[faceon_name][intr_fuv_map_name] = self.load_young_faceon_map(intr_fuv_map_name)
         else: self.young_maps[faceon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -788,6 +988,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sfr_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_sfr_maps_earth(self):
 
         """
@@ -829,6 +1041,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def sfr_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_sfr_maps_faceon(self):
 
         """
@@ -867,6 +1091,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # Dust bolometric luminosity
         if self.has_sfr_faceon_map(dust_lum_map_name): self.sfr_maps[faceon_name][dust_lum_map_name] = self.load_sfr_faceon_map(dust_lum_map_name)
         else: self.sfr_maps[faceon_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sfr_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -929,6 +1165,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unevolved_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_unevolved_maps_earth(self):
 
         """
@@ -958,6 +1206,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unevolved_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_unevolved_maps_faceon(self):
 
         """
@@ -984,6 +1244,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # SFR
         if self.has_unevolved_faceon_map(sfr_map_name): self.unevolved_maps[faceon_name][sfr_map_name] = self.load_unevolved_faceon_map(sfr_map_name)
         else: self.unevolved_maps[faceon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -1034,6 +1306,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def dust_earth_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_maps[earth_name]
+
+    # -----------------------------------------------------------------
+
     def get_dust_maps_earth(self):
 
         """
@@ -1051,6 +1335,18 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def dust_faceon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_maps[faceon_name]
+
+    # -----------------------------------------------------------------
+
     def get_dust_maps_faceon(self):
 
         """
@@ -1065,6 +1361,18 @@ class PropertiesAnalyser(AnalysisComponent):
         # Total dust mass
         if self.has_dust_faceon_map(mass_map_name): self.dust_maps[faceon_name][mass_map_name] = self.load_dust_faceon_map(mass_map_name)
         else: self.dust_maps[faceon_name][mass_map_name] = self.model.dust_mass_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_edgeon_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_maps[edgeon_name]
 
     # -----------------------------------------------------------------
 
@@ -4322,7 +4630,41 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Plotting the maps of the total model ...")
 
+        # Earth
+        if self.do_earth: self.plot_total_maps_earth()
 
+        # Faceon
+        if self.do_faceon: self.plot_total_maps_faceon()
+
+        # Edgeon
+        if self.do_edgeon: self.plot_total_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def plot_total_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_total_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_total_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -4336,6 +4678,12 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Plotting the maps of the old stellar bulge component ...")
 
+        # Earth
+
+        # Faceon
+
+        # Edgeon
+
     # -----------------------------------------------------------------
 
     def plot_disk_maps(self):
@@ -4347,6 +4695,12 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting the maps of the old stellar disk component ...")
+
+        # Earth
+
+        # Faceon
+
+        # Edgeon
 
     # -----------------------------------------------------------------
 
@@ -4360,6 +4714,12 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Plotting the maps of the old stellar component ...")
 
+        # Earth
+
+        # Faceon
+
+        # Edgeon
+
     # -----------------------------------------------------------------
 
     def plot_young_maps(self):
@@ -4371,6 +4731,12 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting the maps of the young stellar component ...")
+
+        # Earth
+
+        # Faceon
+
+        # Edgeon
 
     # -----------------------------------------------------------------
 
@@ -4384,6 +4750,12 @@ class PropertiesAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Plotting the maps of the SFR component ...")
 
+        # Earth
+
+        # Faceon
+
+        # Edgeon
+
     # -----------------------------------------------------------------
 
     def plot_unevolved_maps(self):
@@ -4395,6 +4767,12 @@ class PropertiesAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Plotting the maps of the unevolved stellar component ...")
+
+        # Earth
+
+        # Faceon
+
+        # Edgeon
 
     # -----------------------------------------------------------------
 

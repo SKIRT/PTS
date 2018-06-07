@@ -1764,7 +1764,22 @@ class Generation(object):
         :return:
         """
 
-        if not self.has_assignment_table: return None
+        #if not self.has_assignment_table: return None
+        #return self.assignment_table.get_simulation_id_for_simulation(name)
+
+        if self.has_assignment_table: return self._get_simulation_id_from_assignment(name)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def _get_simulation_id_from_assignment(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
         return self.assignment_table.get_simulation_id_for_simulation(name)
 
     # -----------------------------------------------------------------
@@ -2135,12 +2150,61 @@ class Generation(object):
             # Loop over all simulation names
             for simulation_name in self.simulation_names:
 
+                # Check whether host ID and simulation ID can be determined
+                host_id = self.get_host_id(simulation_name)
+                simulation_id = self.get_simulation_id(simulation_name)
+
                 # Create simulation and add it
-                simulation = self.get_simulation_basic(simulation_name)
+                simulation = self.get_simulation_basic(simulation_name, host_id=host_id, simulation_id=simulation_id)
                 simulations.append(simulation)
 
         # Return the simulation objects
         return simulations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulations_or_basic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        simulations = []
+
+        # assignment table present?
+        if self.has_assignment_table:
+
+            # Loop over the host IDs in the assignment tables
+            for host_id in self.host_ids:
+
+                simulations = self.get_simulations_for_host(host_id)
+                simulations.extend(simulations)
+
+        # Check number of simulations found through the assignment file
+        nsimulations = len(simulations)
+        if nsimulations == self.nsimulations: return simulations
+        elif nsimulations > self.nsimulations:
+            log.warning("The number of simulations in the generation info is lower than expected (" + str(self.nsimulations) + " instead of " + str(nsimulations) + ")")
+            return simulations
+        else: # less simulations found or none yet (no assignment)
+
+            simulations = []
+
+            # Loop over all simulation names
+            for simulation_name in self.simulation_names:
+
+                # Check whether host ID and simulation ID can be determined
+                host_id = self.get_host_id(simulation_name)
+                simulation_id = self.get_simulation_id(simulation_name)
+
+                # Create simulation and add it
+                simulation = self.get_simulation_basic(simulation_name, host_id=host_id, simulation_id=simulation_id)
+                simulations.append(simulation)
+
+            # Return the simulations
+            return simulations
 
     # -----------------------------------------------------------------
 
@@ -4005,7 +4069,6 @@ class Generation(object):
 
         # Save the assignment table if it has been adapted
         if changed_assignment:
-
             log.debug("Saving the changed assignment table for the generation ...")
             self.assignment_table.save()
 
