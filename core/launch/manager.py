@@ -1873,8 +1873,16 @@ class SimulationManager(InteractiveConfigurable):
         :param simulation_name:
         :return:
         """
+        
+        #return self.find_host_id_for_simulation(simulation_name)
 
-        return self.find_host_id_for_simulation(simulation_name)
+        # Loop over the simulations dictionary
+        for host_id in self.simulations:            
+            for name in self.simulations[host_id]:
+                if name == simulation_name: return host_id
+        
+        # Not found
+        return None
 
     # -----------------------------------------------------------------
 
@@ -12841,6 +12849,18 @@ class SimulationManager(InteractiveConfigurable):
 
         return len(self.simulation_names)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulations(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        return self.nsimulations > 0
+        
     # -----------------------------------------------------------------
 
     @lazyproperty

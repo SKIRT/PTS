@@ -1505,20 +1505,28 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    def get_simulations_for_host(self, host_id):
+    def get_simulations_for_host(self, host_id, as_dict=False):
 
         """
         This function ...
         :param host_id:
+        :param as_dict:
         :return:
         """
 
-        simulations = []
+        simulations = OrderedDict()
+
         simulation_ids = self.assignment_table.ids_for_remote(host_id)
+
+        # Loop over the simulation IDs
         for simulation_id in simulation_ids:
+
             simulation = get_simulation_for_host(host_id, simulation_id)
-            simulations.append(simulation)
-        return simulations
+            simulations[simulation.name] = simulation
+
+        # Return the simulations
+        if as_dict: return simulations
+        else: return simulations.values()
 
     # -----------------------------------------------------------------
 
@@ -2131,7 +2139,7 @@ class Generation(object):
         :return:
         """
 
-        simulations = []
+        all_simulations = []
 
         # DOESN'T WORK WELL WHEN ASSIGNMENT TABLE IS INCORRECT?
         # If there is an assignment table
@@ -2142,7 +2150,7 @@ class Generation(object):
 
                  # Create simulations and add them
                  simulations_host = self.get_simulations_basic_for_host(host_id)
-                 simulations.extend(simulations_host)
+                 all_simulations.extend(simulations_host)
 
         # No assignment tables
         else:
@@ -2156,10 +2164,10 @@ class Generation(object):
 
                 # Create simulation and add it
                 simulation = self.get_simulation_basic(simulation_name, host_id=host_id, simulation_id=simulation_id)
-                simulations.append(simulation)
+                all_simulations.append(simulation)
 
         # Return the simulation objects
-        return simulations
+        return all_simulations
 
     # -----------------------------------------------------------------
 
@@ -2171,16 +2179,16 @@ class Generation(object):
         :return:
         """
 
-        simulations = []
+        #simulations = []
+        simulations = OrderedDict()
 
         # assignment table present?
         if self.has_assignment_table:
 
             # Loop over the host IDs in the assignment tables
-            for host_id in self.host_ids:
-
-                simulations = self.get_simulations_for_host(host_id)
-                simulations.extend(simulations)
+            for host_id in self.host_ids: simulations.update(self.get_simulations_for_host(host_id, as_dict=True))
+                #simulations = self.get_simulations_for_host(host_id)
+                #simulations.extend(simulations)
 
         #else: print("no assignment")
 
@@ -2193,10 +2201,13 @@ class Generation(object):
             return simulations
         else: # less simulations found or none yet (no assignment)
 
-            simulations = []
+            if nsimulations > 0: log.warning("Only " + str(nsimulations) + " simulation objects were found, " + str(self.nsimulations) + " are expected. Creating additional simulation objects ...")
 
-            # Loop over all simulation names
+            #simulations = []
+
+            # Loop over all simulation names, add missing simulations
             for simulation_name in self.simulation_names:
+                if simulation_name in simulations: continue
 
                 # Check whether host ID and simulation ID can be determined
                 host_id = self.get_host_id(simulation_name)
@@ -2204,10 +2215,14 @@ class Generation(object):
 
                 # Create simulation and add it
                 simulation = self.get_simulation_basic(simulation_name, host_id=host_id, simulation_id=simulation_id)
-                simulations.append(simulation)
+                #simulations.append(simulation)
+                simulations[simulation_name] = simulation
 
             # Return the simulations
-            return simulations
+            #return simulations
+
+            # Return the simulation objects
+            return simulations.values()
 
     # -----------------------------------------------------------------
 
