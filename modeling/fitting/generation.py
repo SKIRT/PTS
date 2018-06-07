@@ -1486,11 +1486,19 @@ class Generation(object):
         :return:
         """
 
+        # Initialize list
         simulations = []
+
         simulation_names = self.assignment_table.simulations_for_remote(host_id)
         for simulation_name in simulation_names:
-            simulation = self.get_simulation_basic(simulation_name)
+
+            # Create the simulation object
+            simulation = self.get_simulation_basic(simulation_name, host_id=host_id)
+
+            # Add the simulation
             simulations.append(simulation)
+
+        # Return the simulation objects
         return simulations
 
     # -----------------------------------------------------------------
