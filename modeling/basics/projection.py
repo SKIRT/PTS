@@ -263,7 +263,7 @@ class GalaxyProjection(SimplePropertyComposite):
         pixelscale_y = self.field_y_physical / self.pixels_y
 
         # Create xy extent
-        return Extent(pixelscale_x, pixelscale_y)
+        return PhysicalPixelscale(pixelscale_x, pixelscale_y)
 
     # -----------------------------------------------------------------
 

@@ -7705,7 +7705,7 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(bulge_simulation_name, self.old_bulge_component, path=self.old_bulge_projections_path,
+        return ComponentProjections(bulge_simulation_name, self.old_bulge_model, path=self.old_bulge_projections_path,
                                     description="old bulge stellar component",
                                     projection=self.old_disk_projections.projection_earth,
                                     projection_faceon=self.old_disk_projections.projection_faceon,
@@ -7817,7 +7817,7 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(disk_simulation_name, self.old_disk_component, path=self.old_disk_projections_path,
+        return ComponentProjections(disk_simulation_name, self.old_disk_deprojection, path=self.old_disk_projections_path,
                                     earth=False, description="old disk stellar component",
                                     input_filepaths=[self.old_disk_map_path], center=self.center)
 
@@ -7903,7 +7903,7 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(young_simulation_name, self.young_component, path=self.young_projections_path,
+        return ComponentProjections(young_simulation_name, self.young_deprojection, path=self.young_projections_path,
                                     earth=False, description="young stellar component",
                                     input_filepaths=[self.young_map_path], center=self.center)
 
@@ -7989,7 +7989,7 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(sfr_simulation_name, self.sfr_component, path=self.sfr_projections_path,
+        return ComponentProjections(sfr_simulation_name, self.sfr_deprojection, path=self.sfr_projections_path,
                                     earth=False, description="SFR component", input_filepaths=[self.sfr_map_path],
                                     center=self.center)
 
@@ -8075,7 +8075,7 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentProjections(dust_simulation_name, self.dust_component, path=self.dust_projections_path,
+        return ComponentProjections(dust_simulation_name, self.dust_deprojection, path=self.dust_projections_path,
                                     earth=False, description="dust component", input_filepaths=[self.dust_map_path])
 
     # -----------------------------------------------------------------

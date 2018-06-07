@@ -103,6 +103,9 @@ class ComponentProjections(object):
         # Set the number of photon packages
         self.npackages = npackages
 
+        # Set the input filepaths
+        self.input_paths = input_filepaths
+
         # Get the earth simulation
         if earth: self.simulation_earth = self.get_simulation_earth()
         else: self.simulation_earth = None
@@ -114,9 +117,6 @@ class ComponentProjections(object):
         # Get the edge-on simulation
         if edgeon: self.simulation_edgeon = self.get_simulation_edgeon()
         else: self.simulation_edgeon = None
-
-        # Set the input filepaths
-        self.input_paths = input_filepaths
 
     # -----------------------------------------------------------------
 
@@ -294,6 +294,38 @@ class ComponentProjections(object):
         """
 
         return self.center is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_deprojection: return self.deprojection.scale_height
+        elif hasattr(self.model, "axial_scale"): return self.model.axial_scale
+        elif hasattr(self.model, "effective_radius"):
+            radius = self.model.effective_radius
+            if hasattr(self.model, "z_flattening"):
+                flattening = self.model.z_flattening
+                return radius * flattening
+            else: return radius
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scaleheight(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return self.scaleheight is not None
 
     # -----------------------------------------------------------------
 
@@ -795,7 +827,7 @@ class ComponentProjections(object):
 
         # Add the old stellar bulge component
         #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
-        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1. * u("W")])
+        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
         ski.add_instrument(earth_name, self.frame_instrument_earth)
@@ -804,7 +836,7 @@ class ComponentProjections(object):
         ski.setpackages(self.npackages)
 
         # Remove the dust system
-        #ski.remove_dust_system()
+        ski.remove_dust_system()
 
         # Save the skifile
         ski.saveto(self.ski_path_earth, fix=True)
@@ -826,7 +858,7 @@ class ComponentProjections(object):
 
         # Add the old stellar bulge component
         #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
-        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1. * u("W")])
+        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
         ski.add_instrument(faceon_name, self.frame_instrument_faceon)
@@ -835,7 +867,7 @@ class ComponentProjections(object):
         ski.setpackages(self.npackages)
 
         # Remove the dust system
-        # ski.remove_dust_system()
+        ski.remove_dust_system()
 
         # Save the skifile
         ski.saveto(self.ski_path_faceon, fix=True)
@@ -857,7 +889,7 @@ class ComponentProjections(object):
 
         # Add the old stellar bulge component
         #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
-        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1. * u("W")])
+        ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
         ski.add_instrument(earth_name, self.frame_instrument_edgeon)
@@ -866,7 +898,7 @@ class ComponentProjections(object):
         ski.setpackages(self.npackages)
 
         # Remove the dust system
-        # ski.remove_dust_system()
+        ski.remove_dust_system()
 
         # Save the skifile
         ski.saveto(self.ski_path_edgeon, fix=True)
@@ -997,7 +1029,8 @@ def create_faceon_projection_from_earth_projection(earth_projection, radial_fact
     radial_extent = max(earth_projection.field_x, earth_projection.field_y)
 
     # Get pixelscale
-    physical_pixelscale = earth_projection.physical_pixelscale
+    #physical_pixelscale = earth_projection.physical_pixelscale
+    physical_pixelscale = earth_projection.physical_pixelscale.average
 
     # Determine number of pixels
     npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
@@ -1018,7 +1051,8 @@ def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight
     """
 
     # Get pixelscale
-    physical_pixelscale = earth_projection.physical_pixelscale
+    #physical_pixelscale = earth_projection.physical_pixelscale
+    physical_pixelscale = earth_projection.physical_pixelscale.average
 
     # Determine extent in the radial and in the vertical direction
     radial_extent = max(earth_projection.field_x, earth_projection.field_y)
