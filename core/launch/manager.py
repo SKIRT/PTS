@@ -12660,7 +12660,10 @@ class SimulationManager(InteractiveConfigurable):
         log.info("Showing the assignment scheme ...")
 
         # Show
-        print(self.assignment)
+        #print(self.assignment)
+        print("")
+        fmt.print_table(self.assignment)
+        print("")
 
     # -----------------------------------------------------------------
 

@@ -3731,6 +3731,7 @@ class Generation(object):
                 # Unknown
                 else: simulation_status = "unknown"
 
+                #print(fix_success, self.assignment_table.is_launched(simulation.name), is_invalid_or_unknown_status(simulation_status))
                 # Check success flag in assignment
                 if fix_success and not self.assignment_table.is_launched(simulation.name) and not is_invalid_or_unknown_status(simulation_status):
                     log.warning("Settting the launch of simulation '" + simulation.name + "' as succesful in the assignment table as this was not yet done")

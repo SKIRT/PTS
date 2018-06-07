@@ -17,17 +17,17 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configuration import prompt_yn
-from pts.core.tools import formatting as fmt
-from pts.core.tools.stringify import tostr
-from pts.core.remote.ensemble import SKIRTRemotesEnsemble
-from pts.core.tools import numbers
-from pts.core.launch.manager import SimulationManager, extra_columns
-from pts.core.tools import filesystem as fs
-from pts.core.basics.log import log
-from pts.core.simulation.remote import is_analysed_status
-from pts.core.launch.batchlauncher import SimulationStatusTable
-from pts.core.tools import sequences
-from pts.modeling.fitting.generation import check_simulation_paths, correct_simulation_and_analysis_paths
+from ...core.tools import formatting as fmt
+from ...core.tools.stringify import tostr
+from ...core.remote.ensemble import SKIRTRemotesEnsemble
+from ...core.tools import numbers
+from ...core.launch.manager import SimulationManager, extra_columns
+from ...core.tools import filesystem as fs
+from ...core.basics.log import log
+from ...core.simulation.remote import is_analysed_status
+from ...core.launch.batchlauncher import SimulationStatusTable
+from ...core.tools import sequences
+from .generation import check_simulation_paths, correct_simulation_and_analysis_paths
 from ...core.tools.utils import lazyproperty
 from .component import FittingComponent
 
@@ -35,6 +35,11 @@ from .component import FittingComponent
 
 # Number of digits for parameter values
 parameters_ndigits = 3
+
+# -----------------------------------------------------------------
+
+_simulations_command_name = "simulations"
+#_assignment_command_name = "assignment"
 
 # -----------------------------------------------------------------
 
@@ -60,6 +65,11 @@ class GenerationManager(SimulationManager, FittingComponent):
         #super(GenerationManager, self).__init__(*args, **kwargs)
         FittingComponent.__init__(self, no_config=True)
         SimulationManager.__init__(self, *args, **kwargs)
+
+        # Add command
+        self._commands = self._commands.copy()  # so the dictionary in the core/launch/manager module is not adapted
+        self._commands[_simulations_command_name] = ("show_simulations", False, "show info on the simulation files/objects", None)
+        #self._commands[_assignment_command_name] = ("show_assignment", False, "show the assignment table", None)
 
     # -----------------------------------------------------------------
 
@@ -651,6 +661,18 @@ class GenerationManager(SimulationManager, FittingComponent):
         """
 
         return self.fitting_run.free_parameter_labels
+
+    # -----------------------------------------------------------------
+
+    def show_simulations(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        print("simulations")
 
     # -----------------------------------------------------------------
 

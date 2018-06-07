@@ -19,7 +19,7 @@ import traceback
 from . import stringify
 from . import filesystem as fs
 from ..basics.log import log
-from .sequences import equal_sizes, any_empty
+from .sequences import equal_sizes, any_empty, all_none
 from .strings import printed_length
 
 # -----------------------------------------------------------------
@@ -274,6 +274,71 @@ def print_dictionary(dictionary, bullet="-"):
     print("")
     for label in dictionary: print(" " + bullet + " " + bold + label + reset_bold + ": " + stringify.tostr(dictionary[label]))
     print("")
+
+# -----------------------------------------------------------------
+
+#def get_formatted_columns()
+
+def print_table(table, scientific=None, ndecimal_places=3):
+
+    """
+    This function ...
+    :param table:
+    :param scientific:
+    :param ndecimal_places:
+    :return:
+    """
+
+    from .stringify import tostr
+
+    # Get column names and units
+    names = table.colnames
+    units = [table[colname].unit for colname in names]
+    nrows = len(table)
+
+    # Print in columns
+    with print_in_columns() as print_row:
+
+        # Set the column names and units
+        column_names = []
+        column_units = []
+
+        # Get column names and units
+        for name in names: column_names.append(bold + name + reset_bold)
+        for unit in units: column_units.append("[" + unit + "]" if (unit is not None and unit != "") else "")
+
+        # Show the header
+        print_row(*column_names)
+        if not all_none(column_units): print_row(*column_units)
+
+        # Initialize columns
+        #if path is not None: columns = [[] for _ in column_names]
+        #else: columns = None
+
+        # Loop over the rows
+        for index in range(nrows):
+
+            # Set parts
+            parts = []
+            #parts.append(" - ")
+
+            # Add info
+            for name, unit in zip(names, units):
+
+                #info = self.get_info_for_simulation(simulation_name)
+
+                if hasattr(table[name], "mask") and table[name].mask[index]: string = "--"
+                else:
+
+                    value = table[name][index]
+                    #if unit is not None: value = value.to(unit).value
+                    string = tostr(value, scientific=scientific, decimal_places=ndecimal_places)
+
+                parts.append(string)
+
+            # Print the row
+            #print_row(*parts, color=color)
+            print_row(*parts)
 
 # -----------------------------------------------------------------
 

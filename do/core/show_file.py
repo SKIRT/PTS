@@ -134,7 +134,7 @@ def show_structure(structure, filetype):
     # Table
     if filetype == table:
         if config.interactive: structure.more()
-        else: print(structure)
+        else: fmt.print_table(structure)
 
     # Dictionary
     elif filetype == dictionary: fmt.print_dictionary(structure, bullet="-")

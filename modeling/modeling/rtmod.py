@@ -1583,6 +1583,9 @@ class RTMod(InteractiveConfigurable):
         # Import properties from the manage_generation definition
         definition.import_properties(manage_generation_definition, import_names)
 
+        # Change default
+        definition.flags["fix_success"].default = True
+
         # Return the definition
         return definition
 
@@ -2113,7 +2116,7 @@ class RTMod(InteractiveConfigurable):
         definition.add_flag("check_paths", "check simulation paths", False)
         definition.add_flag("correct_paths", "correct simulation paths instead of raising errors", False)
         definition.add_flag("confirm_correction", "confirm before correcting paths", False)
-        definition.add_flag("fix_success", "check success flags in assignment table")
+        definition.add_flag("fix_success", "check success flags in assignment table", True)
         definition.add_flag("check_analysis", "check analysis output", False)
 
         # Write the status table

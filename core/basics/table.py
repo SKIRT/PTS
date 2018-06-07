@@ -1606,7 +1606,7 @@ class SmartTable(Table):
         """
 
         # Masked? -> return None
-        if self[colname].mask[index]: value = None
+        if self[colname].mask[index]: return None
 
         # Get raw, scalar value
         value = self[colname][index]
