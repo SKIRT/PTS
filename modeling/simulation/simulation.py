@@ -144,7 +144,7 @@ class ComponentSimulation(SkirtSimulation):
         :return:
         """
 
-        return fs.is_empty(self.output_path)
+        return not fs.is_empty(self.output_path)
 
     # -----------------------------------------------------------------
 

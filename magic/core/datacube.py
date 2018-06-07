@@ -263,10 +263,10 @@ class DataCube(Image):
             photometry = sed.get_photometry(index)
 
             # Create scaled frame
-            frame = frame.normalized(to=photometry)
+            scaled_frame = frame.normalized(to=photometry)
 
             # Add the frame
-            frames.append(frame)
+            frames.append(scaled_frame)
 
         # Create the wavelength grid
         wavelength_grid = sed.wavelength_grid()
