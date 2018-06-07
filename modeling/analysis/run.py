@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from abc import ABCMeta, abstractproperty
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -52,6 +53,7 @@ from ...magic.core.datacube import DataCube
 from ...core.simulation.tree import get_nleaves
 from ..build.definition import ModelDefinition
 from ..basics.properties import GalaxyProperties
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -1414,17 +1416,21 @@ class AnalysisRun(AnalysisRunBase):
     This class ...
     """
 
-    def __init__(self, galaxy_name=None, info=None):
+    def __init__(self, galaxy_name=None, info=None, hubble_stage=None):
 
         """
         The constructor ...
         :param galaxy_name:
         :param info:
+        :param hubble_stage:
         """
 
-        # Set attributes
-        self.galaxy_name = galaxy_name
+        # Set the analysis run info
         self.info = info
+
+        # Set galaxy properties
+        self.galaxy_name = galaxy_name
+        self.hubble_stage = hubble_stage
 
         ## Create directories
 
@@ -1467,43 +1473,46 @@ class AnalysisRun(AnalysisRunBase):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_name(cls, modeling_path, name):
+    def from_name(cls, modeling_path, name, hubble_stage=None):
 
         """
         This function ...
         :param modeling_path:
         :param name:
+        :param hubble_stage:
         :return:
         """
 
         analysis_path = fs.join(modeling_path, "analysis")
         run_path = fs.join(analysis_path, name)
-        return cls.from_path(run_path)
+        return cls.from_path(run_path, hubble_stage=hubble_stage)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_path(cls, path):
+    def from_path(cls, path, hubble_stage=None):
 
         """
         This function ...
         :param path:
+        :param hubble_stage:
         :return:
         """
 
         # Determine the info path
         info_path = fs.join(path, info_filename)
         if not fs.is_file(info_path): raise IOError("Could not find the info file")
-        else: return cls.from_info(info_path)
+        else: return cls.from_info(info_path, hubble_stage=hubble_stage)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_info(cls, info_path):
+    def from_info(cls, info_path, hubble_stage=None):
 
         """
         This function ...
         :param info_path:
+        :param hubble_stage:
         :return:
         """
 
@@ -1511,7 +1520,7 @@ class AnalysisRun(AnalysisRunBase):
         info = AnalysisRunInfo.from_file(info_path)
 
         # Create the instance
-        run = cls(info=info)
+        run = cls(info=info, hubble_stage=hubble_stage)
 
         # Set galaxy name
         modeling_path = fs.directory_of(fs.directory_of(run.info.path))
@@ -3002,7 +3011,8 @@ class AnalysisRun(AnalysisRunBase):
                        observed_total_output_path=self.total_output_path, observed_bulge_output_path=self.bulge_output_path,
                        observed_disk_output_path=self.disk_output_path, observed_old_output_path=self.old_output_path,
                        observed_young_output_path=self.young_output_path, observed_sfr_output_path=self.ionizing_output_path,
-                       observed_unevolved_output_path=self.unevolved_output_path, center=self.galaxy_center)
+                       observed_unevolved_output_path=self.unevolved_output_path, center=self.galaxy_center,
+                       galaxy_name=self.galaxy_name, hubble_stage=self.hubble_stage)
 
     # -----------------------------------------------------------------
 
@@ -3773,7 +3783,77 @@ class AnalysisRuns(object):
         :param modeling_path:
         """
 
+        # Set the modeling path
         self.modeling_path = modeling_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_data_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.modeling_path, "data")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #  Set the path to the galaxy info file
+        return fs.join(self.modeling_data_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the info table
+        table = tables.from_file(self.galaxy_info_path)
+
+        # To ordered dict
+        info = OrderedDict()
+        for name in table.colnames: info[name] = table[name][0]
+
+        # Return the info
+        return info
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Type"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_stage(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Stage"]
 
     # -----------------------------------------------------------------
 
@@ -3894,7 +3974,7 @@ class AnalysisRuns(object):
 
         analysis_run_path = self.get_path(name)
         if not fs.is_directory(analysis_run_path): raise ValueError("Analysis run '" + name + "' does not exist")
-        return AnalysisRun.from_path(analysis_run_path)
+        return AnalysisRun.from_path(analysis_run_path, hubble_stage=self.hubble_stage)
 
     # -----------------------------------------------------------------
 
@@ -3906,7 +3986,7 @@ class AnalysisRuns(object):
         :return:
         """
 
-        return AnalysisRun.from_path(self.single_path)
+        return AnalysisRun.from_path(self.single_path, hubble_stage=self.hubble_stage)
 
     # -----------------------------------------------------------------
 

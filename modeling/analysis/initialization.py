@@ -316,7 +316,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Creating the analysis run ...")
 
         # Create the generation object
-        self.analysis_run = AnalysisRun(self.galaxy_name, self.analysis_run_info)
+        self.analysis_run = AnalysisRun(self.galaxy_name, self.analysis_run_info, hubble_stage=self.hubble_stage)
 
     # -----------------------------------------------------------------
 

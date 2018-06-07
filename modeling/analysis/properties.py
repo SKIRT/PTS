@@ -40,10 +40,15 @@ fabs_diffuse_map_name = "fabs_diffuse"
 fabs_map_name = "fabs"
 attenuated_map_name = "attenuated" # attenuated stellar luminosity
 direct_map_name = "direct" # direct stellar luminosity
+stellar_mass_map_name = "stellar_mass"  # stellar mass
+ssfr_map_name = "ssfr" # specific star formation rate
+
 i1_map_name = "i1"
 intr_i1_map_name = "intr_i1"
+
 fuv_map_name = "fuv"
 intr_fuv_map_name = "intr_fuv"
+
 sfr_map_name = "sfr"
 dust_mass_map_name = "dust_mass"
 stellar_lum_map_name = "stellar_lum"
@@ -266,6 +271,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # Star formation rate
         if self.has_total_earth_map(sfr_map_name): self.total_maps[earth_name][sfr_map_name] = self.load_total_earth_map(sfr_map_name)
         else: self.total_maps[earth_name][sfr_map_name] = self.model.total_star_formation_rate_map_earth
+
+        # Stellar mass
+
+        # Specific star formation rate
 
     # -----------------------------------------------------------------
 

@@ -44,7 +44,7 @@ from .energy.projected import ProjectedEnergyAnalyser
 from ...magic.tools.plotting import plot_frame, plot_frame_contours
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
-from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name
+from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
 from .properties import attenuated_map_name, direct_map_name, sfr_map_name, i1_map_name, intr_i1_map_name, fuv_map_name
 from .properties import intr_fuv_map_name, dust_mass_map_name, stellar_lum_map_name, dust_lum_map_name
 from .properties import diffuse_mass_map_name, mass_map_name, earth_name, faceon_name, edgeon_name
@@ -53,7 +53,7 @@ from .properties import diffuse_mass_map_name, mass_map_name, earth_name, faceon
 
 # Define names of maps to show
 #total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, dust_map_name, dust_with_internal_map_name, scattered_map_name, absorbed_map_name, absorbed_with_internal_map_name, attenuated_map_name, direct_map_name,)
-total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name, scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, attenuated_map_name, direct_map_name, sfr_map_name)
+total_map_names = (bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name, scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, attenuated_map_name, direct_map_name, sfr_map_name, stellar_mass_map_name,ssfr_map_name,)
 bulge_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
 disk_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
 old_map_names = (bol_map_name, direct_map_name, i1_map_name, intr_i1_map_name,)
@@ -2342,6 +2342,22 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             if orientation == earth_name: return self.model.total_star_formation_rate_map_earth
             elif orientation == faceon_name: return self.model.total_star_formation_rate_map_faceon
             elif orientation == edgeon_name: return self.model.total_star_formation_rate_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Stellar mass
+        elif which == stellar_mass_map_name:
+
+            if orientation == earth_name: return self.model.total_stellar_mass_map_earth
+            elif orientation == faceon_name: return self.model.total_stellar_mass_map_faceon
+            elif orientation == edgeon_name: return self.model.total_stellar_mass_map_edgeon
+            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+        # Specific star formation rate
+        elif which == ssfr_map_name:
+
+            if orientation == earth_name: return self.model.total_ssfr_map_earth
+            elif orientation == faceon_name: return self.model.total_ssfr_map_faceon
+            elif orientation == edgeon_name: return self.model.total_ssfr_map_edgeon
             else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
         # Invalid

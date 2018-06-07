@@ -19,6 +19,7 @@ from ...core.basics.log import log
 from .simulations import ComponentSimulations
 from .simulation import ObservedComponentSimulation, IntrinsicComponentSimulation
 from .simulation import earth_name, faceon_name, edgeon_name, total_contribution
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -28,7 +29,7 @@ class SingleComponentSimulations(ComponentSimulations):
     Objects of this class describe the simulation(s) of radiative transfer model of a certain stellar component.
     """
 
-    def __init__(self, name, observed, intrinsic=None, distance=None):
+    def __init__(self, name, observed, intrinsic=None, distance=None, map_earth=None, map_faceon=None, map_edgeon=None):
 
         """
         This function ...
@@ -36,6 +37,9 @@ class SingleComponentSimulations(ComponentSimulations):
         :param intrinsic:
         :param observed:
         :param distance:
+        :param map_earth:
+        :param map_faceon:
+        :param map_edgeon:
         """
 
         # Call the constructor of the base class
@@ -44,10 +48,16 @@ class SingleComponentSimulations(ComponentSimulations):
         # Set the intrinsic simulation
         self.intrinsic = intrinsic
 
+        # Set the maps
+        self.map_earth = map_earth
+        self.map_faceon = map_faceon
+        self.map_edgeon = map_edgeon
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_output_paths(cls, name, observed, intrinsic=None, distance=None):
+    def from_output_paths(cls, name, observed, intrinsic=None, distance=None, map_earth_path=None, map_earth=None,
+                          map_faceon_path=None, map_faceon=None, map_edgeon_path=None, map_edgeon=None):
 
         """
         This function ...
@@ -55,6 +65,12 @@ class SingleComponentSimulations(ComponentSimulations):
         :param observed:
         :param intrinsic:
         :param distance:
+        :param map_earth_path:
+        :param map_earth:
+        :param map_faceon_path:
+        :param map_faceon:
+        :param map_edgeon_path:
+        :param map_edgeon:
         :return:
         """
 
@@ -73,8 +89,26 @@ class SingleComponentSimulations(ComponentSimulations):
                 log.warning("Intrinsic simulation has not been performed: no output files")
                 intrinsic = None
 
+        # Load earth map
+        if map_earth is not None:
+            if map_earth_path is not None: raise ValueError("Cannot specify both map_earth and map_earth_path")
+        elif map_earth_path is not None: map_earth = Frame.from_file(map_earth_path)
+        else: map_earth = None
+
+        # Load faceon map
+        if map_faceon is not None:
+            if map_faceon_path is not None: raise ValueError("Cannot specify both map_faceon and map_faceon_path")
+        elif map_faceon_path is not None: map_faceon = Frame.from_file(map_faceon_path)
+        else: map_faceon = None
+
+        # Load edgeon map
+        if map_edgeon is not None:
+            if map_edgeon_path is not None: raise ValueError("Cannot specify both map_edgeon and map_edgeon_path")
+        elif map_edgeon_path is not None: map_edgeon = Frame.from_file(map_edgeon_path)
+        else: map_edgeon = None
+
         # Create and return
-        return cls(name, observed, intrinsic=intrinsic, distance=distance)
+        return cls(name, observed, intrinsic=intrinsic, distance=distance, map_earth=map_earth, map_faceon=map_faceon, map_edgeon=map_edgeon)
 
     # -----------------------------------------------------------------
 

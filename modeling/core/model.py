@@ -182,7 +182,7 @@ class RTModel(object):
                  free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
                  observed_bulge_output_path=None, observed_disk_output_path=None, observed_old_output_path=None,
                  observed_young_output_path=None, observed_sfr_output_path=None, observed_unevolved_output_path=None,
-                 parameters=None, center=None):
+                 parameters=None, center=None, galaxy_name=None, hubble_stage=None, redshift=None):
 
         """
         The constructor ...
@@ -201,6 +201,9 @@ class RTModel(object):
         :param observed_unevolved_output_path: output path of simulation with young stellar and SFR contribution + dust
         :param parameters:
         :param center: the galaxy center as a sky coordinate
+        :param galaxy_name: the name of the galaxy
+        :param hubble_stage: the Hubble stage classification of the galaxy
+        :param redshift: the redshift of the galaxy
         :return:
         """
 
@@ -249,8 +252,49 @@ class RTModel(object):
         # Set parameters
         if parameters is not None: self.set_parameters(**parameters)
 
-        # Set the center
+        # Set the center and other galaxy properties
         self.center = center
+        self.galaxy_name = galaxy_name
+        self.hubble_stage = hubble_stage
+        self.redshift = redshift
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_hubble_stage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.hubble_stage is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_type(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if not self.has_hubble_stage: return None
+        return hubble_stage_to_type(self.hubble_stage)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_subtype(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_hubble_stage: return None
+        return hubble_stage_to_type(self.hubble_stage, add_subtype=True)[1]
 
     # -----------------------------------------------------------------
 
@@ -354,6 +398,72 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_simulation_component_cubes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        cubes = OrderedDict()
+
+        # Add
+        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
+        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
+        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
+        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_component_cubes_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialie dictionary
+        cubes = OrderedDict()
+
+        # Add
+        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
+        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
+        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
+        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_component_cubes_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        cubes = OrderedDict()
+
+        # Add
+        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
+        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
+        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def total_simulations(self):
 
         """
@@ -364,7 +474,9 @@ class RTModel(object):
         # Load and return
         return MultiComponentSimulations.from_output_path(total_simulation_name, self.observed_total_output_path,
                                                           intrinsic_sed_paths=self.total_simulation_component_sed_paths,
-                                                          distance=self.distance)
+                                                          distance=self.distance, intrinsic_cubes=self.total_simulation_component_cubes,
+                                                          intrinsic_cubes_faceon=self.total_simulation_component_cubes_faceon,
+                                                          intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -381,7 +493,9 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(bulge_simulation_name, observed=self.observed_bulge_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance,
+                                                            map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon,
+                                                            map_edgeon=self.old_bulge_map_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -398,7 +512,9 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(disk_simulation_name, observed=self.observed_disk_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance,
+                                                            map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon,
+                                                            map_edgeon=self.old_disk_map_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -423,6 +539,66 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_simulation_component_cubes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the cubes
+        cubes = OrderedDict()
+
+        # Add
+        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
+        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_cubes_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the cubes
+        cubes = OrderedDict()
+
+        # Add
+        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
+        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_cubes_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the cubes
+        cubes = OrderedDict()
+
+        # Add
+        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
+        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_simulations(self):
 
         """
@@ -433,7 +609,9 @@ class RTModel(object):
         # Load and return
         return MultiComponentSimulations.from_output_path(old_simulation_name, self.observed_old_output_path,
                                                           intrinsic_sed_paths=self.old_simulation_component_sed_paths,
-                                                          distance=self.distance)
+                                                          distance=self.distance, intrinsic_cubes=self.old_simulation_component_cubes,
+                                                          intrinsic_cubes_faceon=self.old_simulation_component_cubes_faceon,
+                                                          intrinsic_cubes_edgeon=self.old_simulation_component_cubes_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -450,7 +628,9 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(young_simulation_name, observed=self.observed_young_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance,
+                                                            map_earth=self.young_map_earth, map_faceon=self.young_map_faceon,
+                                                            map_edgeon=self.young_map_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -467,7 +647,9 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output_paths(sfr_simulation_name, observed=self.observed_sfr_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance)
+                                                            intrinsic=sed.out_path, distance=self.distance,
+                                                            map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon,
+                                                            map_edgeon=self.sfr_map_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -492,6 +674,66 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def unevolved_simulation_component_cubes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        cubes = OrderedDict()
+
+        # Add
+        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
+        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cubes_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        cubes = OrderedDict()
+
+        # Add
+        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
+        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cubes_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        cubes = OrderedDict()
+
+        # Add
+        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
+        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Return
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_simulations(self):
 
         """
@@ -502,7 +744,9 @@ class RTModel(object):
         # Load and return
         return MultiComponentSimulations.from_output_path(unevolved_simulation_name, self.observed_unevolved_output_path,
                                                           intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths,
-                                                          distance=self.distance)
+                                                          distance=self.distance, intrinsic_cubes=self.unevolved_simulation_component_cubes,
+                                                          intrinsic_cubes_faceon=self.unevolved_simulation_component_cubes_faceon,
+                                                          intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -3745,6 +3989,24 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.bulge_simulations.intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.bulge_simulations.faceon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.bulge_simulations.edgeon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def bulge_observed_stellar_luminosity_cube_earth(self):
         return self.bulge_simulations.observed_stellar_cube
 
@@ -3797,6 +4059,24 @@ class RTModel(object):
     @property
     def disk_bolometric_luminosity_cube_edgeon(self):
         return self.disk_simulations.edgeon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.disk_simulations.intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.disk_simulations.faceon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.disk_simulations.edgeon_intrinsic_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -3913,6 +4193,24 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.young_simulations.intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.young_simulations.faceon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.young_simulations.edgeon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_observed_stellar_luminosity_cube_earth(self):
         return self.young_simulations.observed_stellar_cube
 
@@ -3965,6 +4263,24 @@ class RTModel(object):
     @property
     def sfr_bolometric_luminosity_cube_edgeon(self):
         return self.sfr_simulations.edgeon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.sfr_simulations.intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.sfr_simulations.faceon_intrinsic_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.sfr_simulations.edgeon_intrinsic_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -4352,6 +4668,8 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    # X. INTRINSIC FUV LUMINOSITY
+
     @property
     def intrinsic_fuv_luminosity_map(self):
         return self.intrinsic_fuv_luminosity_map_earth
@@ -4376,6 +4694,8 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    # 11. STAR FORMATION RATE
+
     @property
     def total_star_formation_rate_map(self):
         return self.total_star_formation_rate_map_earth
@@ -4397,6 +4717,84 @@ class RTModel(object):
     @lazyproperty
     def total_star_formation_rate_map_edgeon(self):
         return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon)
+
+    # -----------------------------------------------------------------
+
+    # Y. I1 LUMINOSITY
+
+    @property
+    def observed_i1_luminosity_map(self):
+        return self.observed_i1_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_i1_luminosity_map_earth(self):
+        return self.total_bolometric_luminosity_cube_earth.get_frame_for_wavelength(self.i1_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_i1_luminosity_map_faceon(self):
+        return self.total_bolometric_luminosity_cube_faceon.get_frame_for_wavelength(self.i1_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_i1_luminosity_map_edgeon(self):
+        return self.total_bolometric_luminosity_cube_edgeon.get_frame_for_wavelength(self.i1_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    # 12. STELLAR MASS
+
+    @property
+    def total_stellar_mass_map(self):
+        return self.total_stellar_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_stellar_mass_map_earth(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity_map_earth, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_stellar_mass_map_faceon(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity_map_faceon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_stellar_mass_map_edgeon(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity_map_edgeon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    # 13. SPECIFIC STAR FORMATION RATE
+
+    @property
+    def total_ssfr_map(self):
+        return self.total_ssfr_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_ssfr_map_earth(self):
+        return self.total_star_formation_rate_map_earth / self.total_stellar_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_ssfr_map_faceon(self):
+        return self.total_star_formation_rate_map_faceon / self.total_stellar_mass_map_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_ssfr_map_edgeon(self):
+        return self.total_star_formation_rate_map_edgeon / self.total_stellar_mass_map_edgeon
 
     # -----------------------------------------------------------------
     # BULGE MAPS
@@ -8614,5 +9012,199 @@ def salim_fuv_to_sfr(fuv_luminosity):
 
     # Photometric quantity
     else: return fuv_luminosity.to("erg/s/Hz") * salim * u("Msun/yr")
+
+# -----------------------------------------------------------------
+
+def hubble_stage_to_type(stage, add_subtype=False):
+
+    """
+    # SOURCE: https://en.wikipedia.org/wiki/Galaxy_morphological_classification
+    This function ...
+    :param stage:
+    :param add_subtype:
+    :return:
+    """
+
+    if stage < -3.5:
+
+        if add_subtype:
+
+            if stage < -5.5: subtype = "E-"
+            elif stage < -4.5: subtype = "E"
+            else: subtype = "E+"
+            return "E", subtype
+
+        else: return "E"
+
+    elif stage < -0.5:
+
+        if add_subtype:
+
+            if stage < -2.5: subtype = "S0-"
+            elif stage < -1.5: subtype = "S00"
+            else: subtype = "S0+"
+            return "S0", subtype
+
+        else: return "S0"
+
+    elif stage < 0.5:
+
+        if add_subtype: return "S0/a", None
+        else: return "S0/a"
+
+    elif stage < 1.5:
+
+        if add_subtype: return "Sa", None
+        else: return "Sa"
+
+    elif stage < 2.5:
+
+        if add_subtype: return "Sab", None
+        else: return "Sab"
+
+    elif stage < 3.5:
+
+        if add_subtype: return "Sb", None
+        else: return "Sb"
+
+    elif stage < 4.5:
+
+        if add_subtype: return "Sbc", None
+        else: return "Sbc"
+
+    elif stage < 7.5:
+
+        if add_subtype:
+            if stage < 5.5: subtype = "Sc"
+            elif stage < 6.5: subtype = "Scd"
+            else: subtype = "Sd"
+            return "Sc", subtype
+        else: return "Sc"
+
+    elif stage < 8.5:
+
+        if add_subtype: return "Sc/Irr", None
+        else: return "Sc/Irr"
+
+    else:
+
+        if add_subtype:
+            if stage < 9.5: subtype = "Sm"
+            elif stage < 10.5: subtype = "Im"
+            else: subtype = None
+            return "Irr", subtype
+        else: return "Irr"
+
+# -----------------------------------------------------------------
+
+def hubble_type_to_stage(hubble_class):
+
+    """
+    This function ...
+    # SOURCE: https://en.wikipedia.org/wiki/Galaxy_morphological_classification
+    :param hubble_class:
+    :return:
+    """
+
+    # E
+    if hubble_class == "E": return -5
+
+    # SUBDIVISION (VAUCOULEURS)
+    elif hubble_class == "cE": return -6
+    elif hubble_class == "E+": return -4
+
+    # S0
+    elif hubble_class == "S0": return -2
+
+    # SUBDIVISION (VAUCOULEURS)
+    elif hubble_class == "S0-": return -3
+    elif hubble_class == "S00": return -2
+    elif hubble_class == "S0+": return -1
+
+    # S0/a
+    elif hubble_class == "S0/a": return 0
+
+    # Sa
+    elif hubble_class == "Sa": return 1
+
+    # Sab
+    elif hubble_class == "Sab": return 2
+    # synonym
+    elif hubble_class == "Sa-b": return 2
+
+    # Sb
+    elif hubble_class == "Sb": return 3
+
+    # Sbc
+    elif hubble_class == "Sbc": return 4
+    elif hubble_class == "Sb-c": return 4
+
+    # Sc
+    elif hubble_class == "Sc": return 5.5
+    elif hubble_class == "Scd": return 6
+    elif hubble_class == "Sc-d": return 6
+    elif hubble_class == "Sd": return 7
+
+    # Sc/Irr
+    elif hubble_class == "Sc/Irr": return 8
+    elif hubble_class == "Sc-Irr": return 8
+    elif hubble_class == "Sdm": return 8
+
+    # Higher
+    elif hubble_class == "Sm": return 9
+    elif hubble_class == "Irr": return 9.5
+    elif hubble_class == "Im": return 10
+    elif hubble_class == "I": return 9.5
+
+    # Invalid
+    else: raise ValueError("Unknown hubble class: '" + hubble_class + "'")
+
+# -----------------------------------------------------------------
+
+# OLIVER 2010
+# (M∗/M⊙)/[νLν(3.6)/L⊙] to be 38.4, 40.8, 27.6, 35.3, 18.7 and 26.7, for types E, Sab, Sbc, Scd, Sdm and sb
+# measuring the 3.6 μm monochromatic luminosity in total solar units, not in units of the Sun’s monochromatic 3.6 μm lu- minosity
+
+oliver_stellar_mass_factors = OrderedDict()
+oliver_stellar_mass_factors["E"] = 38.4
+oliver_stellar_mass_factors["Sab"] = 40.8
+oliver_stellar_mass_factors["Sb"] = 26.7
+oliver_stellar_mass_factors["Sbc"] = 27.6
+oliver_stellar_mass_factors["Scd"] = 35.3
+oliver_stellar_mass_factors["Sdm"] = 18.7
+
+# -----------------------------------------------------------------
+
+def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
+
+    """
+    This function ...
+    :param i1_luminosity:
+    :param hubble_type:
+    :param hubble_subtype:
+    :return:
+    """
+
+    # Get the I1 wavelength
+    i1_wavelength = parse_filter("IRAC I1").wavelength
+
+    # Get the factor
+    if hubble_type not in oliver_stellar_mass_factors:
+        if hubble_subtype is not None:
+            if hubble_subtype not in oliver_stellar_mass_factors: raise ValueError("Hubble type '" + hubble_type + "' or '" + hubble_subtype + "' not supported")
+            else: factor = oliver_stellar_mass_factors[hubble_subtype]
+        else: raise ValueError("Hubble type '" + hubble_type + "' not supported")
+    else:  factor = oliver_stellar_mass_factors[hubble_type]
+
+    # Frame
+    if isinstance(i1_luminosity, Frame):
+
+        converted = i1_luminosity.converted_to("Lsun", wavelength=i1_wavelength)
+        converted *= factor
+        converted.unit = "Msun"
+        return converted
+
+    # Photometric quantity
+    else: return i1_luminosity.to("Lsun", wavelength=i1_wavelength).value * factor * u("Msun")
 
 # -----------------------------------------------------------------

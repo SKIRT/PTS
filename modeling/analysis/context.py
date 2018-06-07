@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools.utils import lazyproperty
@@ -21,6 +24,7 @@ from .run import AnalysisRuns
 from .run import AnalysisRunInfo, AnalysisRun, CachedAnalysisRun, CachedAnalysisRuns
 from .tables import CachedRunsTable
 from ...core.remote.remote import Remote
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -122,6 +126,75 @@ class AnalysisContext(object):
         """
 
         return fs.directory_of(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_data_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.modeling_path, "data")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #  Set the path to the galaxy info file
+        return fs.join(self.modeling_data_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the info table
+        table = tables.from_file(self.galaxy_info_path)
+
+        # To ordered dict
+        info = OrderedDict()
+        for name in table.colnames: info[name] = table[name][0]
+
+        # Return the info
+        return info
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Type"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_stage(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Stage"]
 
     # -----------------------------------------------------------------
 
@@ -305,7 +378,7 @@ class AnalysisContext(object):
         """
 
         info_path = fs.join(self.get_run_path(run_name), "info.dat")
-        return AnalysisRun.from_info(info_path)
+        return AnalysisRun.from_info(info_path, hubble_stage=self.hubble_stage)
 
     # -----------------------------------------------------------------
 

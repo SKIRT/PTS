@@ -60,17 +60,22 @@ class MultiComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_output_path(cls, name, observed, intrinsic_sed_paths=None, intrinsic_cube_paths=None,
-                         intrinsic_cube_faceon_paths=None, intrinsic_cube_edgeon_paths=None, distance=None):
+    def from_output_path(cls, name, observed, intrinsic_sed_paths=None, intrinsic_seds=None, intrinsic_cube_paths=None,
+                         intrinsic_cubes=None, intrinsic_cube_faceon_paths=None, intrinsic_cubes_faceon=None,
+                         intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None):
 
         """
         This function ...
         :param name:
         :param observed:
         :param intrinsic_sed_paths:
+        :param intrinsic_seds:
         :param intrinsic_cube_paths:
+        :param intrinsic_cubes:
         :param intrinsic_cube_faceon_paths:
+        :param intrinsic_cubes_faceon:
         :param intrinsic_cube_edgeon_paths:
+        :param intrinsic_cubes_edgeon:
         :param distance:
         :return:
         """
@@ -79,14 +84,17 @@ class MultiComponentSimulations(ComponentSimulations):
         observed = ObservedComponentSimulation.from_output_path(observed)
 
         # Load intrinsic SEDs
-        #print(intrinsic_sed_paths)
+        if intrinsic_seds is not None:
+            if intrinsic_sed_paths is not None: raise ValueError("Cannot specify both intrinsic SEDs and intrinsic SED paths")
         if intrinsic_sed_paths is not None:
             intrinsic_seds = OrderedDict()
             for component_name in intrinsic_sed_paths: intrinsic_seds[component_name] = load_sed(intrinsic_sed_paths[component_name])
         else: intrinsic_seds = None
 
         # Load intrinsic cubes
-        if intrinsic_cube_paths is not None:
+        if intrinsic_cubes is not None:
+            if intrinsic_cube_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
+        elif intrinsic_cube_paths is not None:
             if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
             intrinsic_cubes = OrderedDict()
             for component_name in intrinsic_cube_paths:
@@ -96,7 +104,9 @@ class MultiComponentSimulations(ComponentSimulations):
         else: intrinsic_cubes = None
 
         # Load intrinsic faceon cubes
-        if intrinsic_cube_faceon_paths is not None:
+        if intrinsic_cubes_faceon is not None:
+            if intrinsic_cube_faceon_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
+        elif intrinsic_cube_faceon_paths is not None:
             if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
             intrinsic_cubes_faceon = OrderedDict()
             for component_name in intrinsic_cube_faceon_paths:
@@ -106,7 +116,9 @@ class MultiComponentSimulations(ComponentSimulations):
         else: intrinsic_cubes_faceon = None
 
         # Load intrinsic edgeon cubes
-        if intrinsic_cube_edgeon_paths is not None:
+        if intrinsic_cubes_edgeon is not None:
+            if intrinsic_cube_edgeon_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
+        elif intrinsic_cube_edgeon_paths is not None:
             if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
             intrinsic_cubes_edgeon = OrderedDict()
             for component_name in intrinsic_cube_edgeon_paths:
