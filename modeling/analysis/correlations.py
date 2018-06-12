@@ -38,6 +38,9 @@ class CorrelationsAnalyser(DustHeatingAnalysisComponent):
 
         # -- Attributes --
 
+        # The analysis run
+        self.analysis_run = None
+
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -47,6 +50,9 @@ class CorrelationsAnalyser(DustHeatingAnalysisComponent):
         :param kwargs:
         :return:
         """
+
+        # Get the data points
+        self.get_data()
 
         # 4. Writing
         self.write()
@@ -66,6 +72,45 @@ class CorrelationsAnalyser(DustHeatingAnalysisComponent):
 
         # Call the setup function of the base class
         super(CorrelationsAnalyser, self).setup()
+
+        # Get the run
+        self.analysis_run = self.get_run(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.model
+
+    # -----------------------------------------------------------------
+
+    def get_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #
+        self.get_ssfr_funev()
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ssfr = self.model.total_ssfr_map_earth
+        funev =
 
     # -----------------------------------------------------------------
 
@@ -91,6 +136,6 @@ class CorrelationsAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        self.plot_sfr_funev()
+        self.plot_ssfr_funev()
 
 # -----------------------------------------------------------------

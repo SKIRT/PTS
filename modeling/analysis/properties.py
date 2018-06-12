@@ -53,7 +53,8 @@ intr_fuv_map_name = "intr_fuv"
 sfr_map_name = "sfr"
 dust_mass_map_name = "dust_mass"
 stellar_lum_map_name = "stellar_lum"
-dust_lum_map_name = "dust_lum"
+#dust_lum_map_name = "dust_lum"
+intr_dust_map_name = "intr_dust"
 diffuse_mass_map_name = "diffuse_mass"
 mass_map_name = "mass"
 #total_mass_map_name = "total_mass"
@@ -507,6 +508,9 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_bulge_earth_map(intr_i1_map_name): self.bulge_maps[earth_name][intr_i1_map_name] = self.load_bulge_earth_map(intr_i1_map_name)
         else: self.bulge_maps[earth_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_earth
+
+        # Dust luminosity
+        if self.has_bulge_earth_map(dust)
 
     # -----------------------------------------------------------------
 
@@ -1037,8 +1041,8 @@ class PropertiesAnalyser(AnalysisComponent):
         else: self.sfr_maps[earth_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_earth
 
         # Dust bolometric luminosity
-        if self.has_sfr_earth_map(dust_lum_map_name): self.sfr_maps[earth_name][dust_lum_map_name] = self.load_sfr_earth_map(dust_lum_map_name)
-        else: self.sfr_maps[earth_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_earth
+        if self.has_sfr_earth_map(dust_map_name): self.sfr_maps[earth_name][dust_map_name] = self.load_sfr_earth_map(dust_map_name)
+        else: self.sfr_maps[earth_name][dust_map_name] = self.model.sfr_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -1090,8 +1094,8 @@ class PropertiesAnalyser(AnalysisComponent):
         else: self.sfr_maps[faceon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_faceon
 
         # Dust bolometric luminosity
-        if self.has_sfr_faceon_map(dust_lum_map_name): self.sfr_maps[faceon_name][dust_lum_map_name] = self.load_sfr_faceon_map(dust_lum_map_name)
-        else: self.sfr_maps[faceon_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_faceon
+        if self.has_sfr_faceon_map(dust_map_name): self.sfr_maps[faceon_name][dust_map_name] = self.load_sfr_faceon_map(dust_map_name)
+        else: self.sfr_maps[faceon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -1143,8 +1147,8 @@ class PropertiesAnalyser(AnalysisComponent):
         else: self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_edgeon
 
         # Dust bolometric luminosity
-        if self.has_sfr_edgeon_map(dust_lum_map_name): self.sfr_maps[edgeon_name][dust_lum_map_name] = self.load_sfr_edgeon_map(dust_lum_map_name)
-        else: self.sfr_maps[edgeon_name][dust_lum_map_name] = self.model.sfr_dust_luminosity_map_edgeon
+        if self.has_sfr_edgeon_map(dust_map_name): self.sfr_maps[edgeon_name][dust_map_name] = self.load_sfr_edgeon_map(dust_map_name)
+        else: self.sfr_maps[edgeon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
