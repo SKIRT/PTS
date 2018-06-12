@@ -921,7 +921,8 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
+    def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False,
+               extra_info=None):
 
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
@@ -931,6 +932,7 @@ class Image(object):
         :param add_masks:
         :param add_segments:
         :param add_regions:
+        :param extra_info:
         :return:
         """
 
@@ -1026,6 +1028,11 @@ class Image(object):
             for key in self.metadata:
                 try: header[key] = self.metadata[key]
                 except ValueError: pass # Some values in the header gives errors in Astropy when adding them again to this new header ... (e.g. ValueError: Illegal value: = 'created by T.H. Jarrett'.)
+
+        # Add extra info
+        if extra_info is not None:
+            for key in extra_info:
+                header[key] = extra_info[key]
 
         # Set plane information
         if plane_index > 1:

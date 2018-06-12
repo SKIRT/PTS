@@ -386,7 +386,7 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, image_path, wavelength_grid, wavelength_range=None):
+    def from_file(cls, image_path, wavelength_grid=None, wavelength_range=None):
 
         """
         This function ...
@@ -397,13 +397,29 @@ class DataCube(Image):
         """
 
         # Get the indices for the given wavelength range
-        if wavelength_range is not None: indices = wavelength_grid.wavelength_indices(wavelength_range=wavelength_range)
+        if wavelength_range is not None:
+            if wavelength_grid is None: raise ValueError("Specifying wavelength range without passing the wavelength grid explicitly is not (yet) supported")
+            indices = wavelength_grid.wavelength_indices(wavelength_range=wavelength_range)
         else: indices = None
 
         # Call the corresponding base class function
         datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True,
                                                   density=True, density_strict=True, indices=indices,
                                                   absolute_index_names=False) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
+
+        # Get the wavelength grid from the metadata if needed
+        if wavelength_grid is None:
+
+            from ...core.tools.parsing import real_list, unit
+
+            # Check
+            if "wvlngths" not in datacube.metadata: raise ValueError("Wavelengths not specified in header")
+            if "wavunit" not in datacube.metadata: raise ValueError("Wavelength unit not specified in header")
+            wavelengths = real_list(datacube.metadata.pop("wvlngths"))
+            wavelength_unit = unit(datacube.metadata.pop("wavunit"))
+
+            # Create the wavelength grid
+            wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit=wavelength_unit)
 
         # Slice the wavelength grid
         if indices is not None: wavelength_grid = wavelength_grid[indices]
@@ -500,6 +516,34 @@ class DataCube(Image):
         """
 
         return self.wavelength_grid.wavelengths(unit=unit, asarray=asarray, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def wavelengths_string(self, unit=None, add_unit=True, delimiter=", "):
+
+        """
+        This function ...
+        :param unit:
+        :param add_unit:
+        :param delimiter:
+        :return:
+        """
+
+        # Set unit
+        if unit is None: unit = self.wavelength_unit
+
+        # Get scalar values
+        wavelengths = self.wavelengths(unit=unit, add_unit=False)
+        wavelength_strings = [tostr(wavelength, scientific=False) for wavelength in wavelengths]
+
+        # Create string
+        string = delimiter.join(wavelength_strings)
+
+        # Add unit?
+        if add_unit: string += " " + tostr(unit)
+
+        # Return the string
+        return string
 
     # -----------------------------------------------------------------
 
@@ -2745,6 +2789,54 @@ class DataCube(Image):
 
         # Create
         return self.converted_to(self.corresponding_neutral_density_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_unit(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.wavelength_grid.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_unit_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return tostr(self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
+
+        """
+        This function ...
+        :param path:
+        :param add_metadata:
+        :param origin:
+        :param add_masks:
+        :param add_segments:
+        :param add_regions:
+        :return:
+        """
+
+        # Set extra info
+        extra_info = dict()
+        extra_info["wavunit"] = self.wavelength_unit_string
+        extra_info["wvlngths"] = self.wavelengths_string(add_unit=False)
+
+        # Call the base class implementation
+        super(DataCube, self).saveto(path, add_metadata=add_metadata, origin=origin, add_masks=add_masks,
+                                     add_segments=add_segments, add_regions=add_regions, extra_info=extra_info)
 
 # -----------------------------------------------------------------
 
