@@ -3253,11 +3253,12 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def normalize(self, to=1.0):
+    def normalize(self, to=1.0, silent=False):
 
         """
         This function ...
         :param to:
+        :param silent:
         :return:
         """
 
@@ -3279,7 +3280,7 @@ class Frame(NDDataArray):
             unit = None
 
         # Debugging
-        log.debug("Multiplying the frame with a factor of " + tostr(factor) + " to normalize ...")
+        if not silent: log.debug("Multiplying the frame with a factor of " + tostr(factor) + " to normalize ...")
 
         # Multiply the frame with the conversion factor
         try: self.__imul__(factor)
@@ -3297,17 +3298,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def normalized(self, to=1., return_sum=False):
+    def normalized(self, to=1., return_sum=False, silent=False):
         
         """
         This function ...
         :param to:
         :param return_sum:
+        :param silent:
         :return: 
         """
 
         new = self.copy()
-        normalization_sum = new.normalize(to=to)
+        normalization_sum = new.normalize(to=to, silent=silent)
         if return_sum: return new, normalization_sum
         else: return new
 

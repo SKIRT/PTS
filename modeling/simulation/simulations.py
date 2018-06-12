@@ -109,7 +109,8 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed.output_path
+        if not self.has_observed: return None
+        else: return self.observed.output_path
 
     # -----------------------------------------------------------------
 
@@ -121,7 +122,8 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed.output
+        if not self.has_observed: return None
+        else: return self.observed.output
 
     # -----------------------------------------------------------------
 
@@ -133,7 +135,8 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.observed.data
+        if not self.has_observed: return None
+        else: return self.observed.data
 
     # -----------------------------------------------------------------
 
@@ -257,6 +260,18 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_faceon_intrinsic_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def has_intrinsic_cube_edgeon(self):
 
@@ -266,6 +281,18 @@ class ComponentSimulations(object):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_intrinsic_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -737,7 +764,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_other_observed_cube_contributions
+        return self.has_observed_data and self.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
@@ -749,7 +776,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_other_observed_cube_contributions_faceon
+        return self.has_observed_data and self.has_faceon_observed_cube and self.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
@@ -761,7 +788,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_other_observed_cube_contributions_edgeon
+        return self.has_observed_data and self.has_edgeon_observed_cube and self.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 

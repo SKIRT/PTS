@@ -8482,6 +8482,7 @@ class SimulationManager(InteractiveConfigurable):
         definition.add_flag("new_logging", "specify new logging options", False)
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
+        definition.add_flag("cancel", "cancel (or stop) the original simulations", True)
 
         # Return
         return definition
@@ -8537,11 +8538,11 @@ class SimulationManager(InteractiveConfigurable):
             if config.host == self.get_simulation(simulation_name).host: raise ValueError("Simulation '" + simulation_name + "' is already queued/running on host '" + tostr(config.host) + "'")
 
             # Move simulation
-            self.move_simulation(simulation_name, config.host, parallelization, logging_options, scheduling_options)
+            self.move_simulation(simulation_name, config.host, parallelization, logging_options, scheduling_options, cancel=config.cancel)
 
     # -----------------------------------------------------------------
 
-    def move_simulation(self, simulation_name, host, parallelization=None, logging_options=None, scheduling_options=None):
+    def move_simulation(self, simulation_name, host, parallelization=None, logging_options=None, scheduling_options=None, cancel=True):
 
         """
         This function ...
@@ -8550,6 +8551,7 @@ class SimulationManager(InteractiveConfigurable):
         :param parallelization:
         :param logging_options:
         :param scheduling_options:
+        :param cancel: cancel or stop the original simulation
         :return:
         """
 
@@ -8564,7 +8566,7 @@ class SimulationManager(InteractiveConfigurable):
         simulation = self.get_simulation(simulation_name)
 
         # Cancel or stop the simulation
-        self.cancel_or_stop_simulation(simulation_name)
+        if cancel: self.cancel_or_stop_simulation(simulation_name)
 
         # TODO: support different clusters
         host_id = host.id

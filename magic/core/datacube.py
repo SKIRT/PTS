@@ -263,7 +263,7 @@ class DataCube(Image):
             photometry = sed.get_photometry(index)
 
             # Create scaled frame
-            scaled_frame = frame.normalized(to=photometry)
+            scaled_frame = frame.normalized(to=photometry, silent=True)
 
             # Add the frame
             frames.append(scaled_frame)
@@ -486,7 +486,7 @@ class DataCube(Image):
 
             # Add the frame
             frame_name = "frame" + str(nframes)
-            datacube.add_frame(frames[index], frame_name)
+            datacube.add_frame(frames[index], frame_name, silent=True)
 
             # Add the wavelength
             if wavelength_grid is None: wavelengths.append(frames[index].wavelength_micron)
