@@ -3479,7 +3479,12 @@ class BatchLauncher(Configurable):
 
         # Get the memory usage
         else:
-            for name in self.local_simulation_names: memories[name] = self.memory
+            for name in self.local_simulation_names:
+                # TODO: what is supposed to be implemented here?
+                # Get the memory required estimated on previous local simulations?
+                # self.memory is a memory table for multiple simulations
+                #memories[name] = self.memory
+                pass
 
         # Return the memory usages
         return memories
@@ -4349,9 +4354,13 @@ class BatchLauncher(Configurable):
         # Get first simulation definition for this remote host
         definition = self.get_first_simulation_definition_for_host(host_id)
 
+        # Estimate the memory requirement
+        # TODO: use the self.memory table??
+        memory = estimate_memory(definition.ski_path, input_path=definition.input_path, ncells=self.ncells)
+
         # Determine parallelization
         parallelization_remote = determine_parallelization(definition.ski_path, definition.input_path,
-                                                    self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
+                                                    memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
                                                     prop.hyperthreading, prop.threads_per_core, ncells=ncells,
                                                     nwavelengths=nwavelengths)
 
@@ -4394,9 +4403,13 @@ class BatchLauncher(Configurable):
             # Get host properties
             prop = self.get_properties_for_host(host_id)
 
+            # Estimate the memory
+            # TODO: use the self.memory table??
+            memory = estimate_memory(definition.ski_path, input_path=definition.input_path, ncells=self.ncells)
+
             # ski_path, input_path, memory, nnodes, nsockets, ncores, host_memory, mpi, hyperthreading, threads_per_core, ncells=None
             parallelization_simulation = determine_parallelization(definition.ski_path, definition.input_path,
-                                                                self.memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
+                                                                memory, prop.nnodes, prop.nsockets, prop.ncores, prop.memory, prop.mpi,
                                                                 prop.hyperthreading, prop.threads_per_core, ncells=ncells,
                                                                 nwavelengths=nwavelengths)
 

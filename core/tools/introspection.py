@@ -1112,7 +1112,7 @@ def simulations_files_for_host(host_id):
     """
 
     # Determine the path to the SKIRT run subdirectory for the specified host
-    host_run_dir = fs.join(skirt_run_dir, host_id)
+    host_run_dir = fs.create_directory_in(skirt_run_dir, host_id)
 
     # Return the list of simulation file paths corresponding to the specified host
     return fs.files_in_path(host_run_dir, extension="sim")
@@ -1128,7 +1128,7 @@ def simulation_ids_for_host(host_id):
     """
 
     # Determine the path to the SKIRT run subdirectory for the specified host
-    host_run_dir = fs.join(skirt_run_dir, host_id)
+    host_run_dir = fs.create_directory_in(skirt_run_dir, host_id)
 
     # Return the list of simulation file paths corresponding to the specified host
     return fs.files_in_path(host_run_dir, extension="sim", returns="name", extensions=False, convert=int, sort=int)
