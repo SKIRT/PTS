@@ -1713,6 +1713,18 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def faceon_intrinsic_stellar_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_stellar_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def intrinsic_stellar_cube_edgeon(self):
 
         """
@@ -1721,6 +1733,18 @@ class ComponentSimulations(object):
         """
 
         return self.edgeon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_intrinsic_stellar_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.intrinsic_stellar_cube_edgeon
 
     # -----------------------------------------------------------------
 

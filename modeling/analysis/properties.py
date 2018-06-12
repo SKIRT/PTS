@@ -510,7 +510,8 @@ class PropertiesAnalyser(AnalysisComponent):
         else: self.bulge_maps[earth_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_earth
 
         # Dust luminosity
-        if self.has_bulge_earth_map(dust)
+        if self.has_bulge_earth_map(dust_map_name): self.bulge_maps[earth_name][dust_map_name] = self.load_bulge_earth_map(dust_map_name)
+        else: self.bulge_maps[earth_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -549,6 +550,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_bulge_faceon_map(intr_i1_map_name): self.bulge_maps[faceon_name][intr_i1_map_name] = self.load_bulge_faceon_map(intr_i1_map_name)
         else: self.bulge_maps[faceon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
 
+        # Dust luminosity
+        if self.has_bulge_faceon_map(dust_map_name): self.bulge_maps[faceon_name][dust_map_name] = self.load_bulge_faceon_map(dust_map_name)
+        else: self.bulge_maps[faceon_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -585,6 +590,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_bulge_edgeon_map(intr_i1_map_name): self.bulge_maps[edgeon_name][intr_i1_map_name] = self.load_bulge_edgeon_map(intr_i1_map_name)
         else: self.bulge_maps[edgeon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
+
+        # Dust luminosity
+        if self.has_bulge_edgeon_map(dust_map_name): self.bulge_maps[edgeon_name][dust_map_name] = self.load_bulge_edgeon_map(dust_map_name)
+        else: self.bulge_maps[edgeon_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -641,6 +650,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_disk_earth_map(intr_i1_map_name): self.disk_maps[earth_name][intr_i1_map_name] = self.load_disk_earth_map(intr_i1_map_name)
         else: self.disk_maps[earth_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_earth
 
+        # Dust luminosity
+        if self.has_disk_earth_map(dust_map_name): self.disk_maps[earth_name][dust_map_name] = self.load_disk_earth_map(dust_map_name)
+        else: self.disk_maps[earth_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_earth
+
     # -----------------------------------------------------------------
 
     @property
@@ -678,6 +691,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_disk_faceon_map(intr_i1_map_name): self.disk_maps[faceon_name][intr_i1_map_name] = self.load_disk_faceon_map(intr_i1_map_name)
         else: self.disk_maps[faceon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_faceon
 
+        # Dust luminosity
+        if self.has_disk_faceon_map(dust_map_name): self.disk_maps[faceon_name][dust_map_name] = self.load_disk_faceon_map(dust_map_name)
+        else: self.disk_maps[faceon_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -714,6 +731,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_disk_edgeon_map(intr_i1_map_name): self.disk_maps[edgeon_name][intr_i1_map_name] = self.load_disk_edgeon_map(intr_i1_map_name)
         else: self.disk_maps[edgeon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
+
+        # Dust luminosity
+        if self.has_disk_edgeon_map(dust_map_name): self.disk_maps[edgeon_name][dust_map_name] = self.load_disk_edgeon_map(dust_map_name)
+        else: self.disk_maps[edgeon_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -770,6 +791,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_old_earth_map(intr_i1_map_name): self.old_maps[earth_name][intr_i1_map_name] = self.load_old_earth_map(intr_i1_map_name)
         else: self.old_maps[earth_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_earth
 
+        # Dust luminosity
+        if self.has_old_earth_map(dust_map_name): self.old_maps[earth_name][dust_map_name] = self.load_old_earth_map(dust_map_name)
+        else: self.old_maps[earth_name][dust_map_name] = self.model.old_dust_luminosity_map_earth
+
     # -----------------------------------------------------------------
 
     @property
@@ -807,6 +832,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_old_faceon_map(intr_i1_map_name): self.old_maps[faceon_name][intr_i1_map_name] = self.load_old_faceon_map(intr_i1_map_name)
         else: self.old_maps[faceon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_faceon
 
+        # Dust luminosity
+        if self.has_old_faceon_map(dust_map_name): self.old_maps[faceon_name][dust_map_name] = self.load_old_faceon_map(dust_map_name)
+        else: self.old_maps[faceon_name][dust_map_name] = self.model.old_dust_luminosity_map_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -843,6 +872,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic I1
         if self.has_old_edgeon_map(intr_i1_map_name): self.old_maps[edgeon_name][intr_i1_map_name] = self.load_old_edgeon_map(intr_i1_map_name)
         else: self.old_maps[edgeon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_edgeon
+
+        # Dust luminosity
+        if self.has_old_edgeon_map(dust_map_name): self.old_maps[edgeon_name][dust_map_name] = self.load_old_edgeon_map(dust_map_name)
+        else: self.old_maps[edgeon_name][dust_map_name] = self.model.old_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -899,6 +932,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_young_earth_map(intr_fuv_map_name): self.young_maps[earth_name][intr_fuv_map_name] = self.load_young_earth_map(intr_fuv_map_name)
         else: self.young_maps[earth_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_earth
 
+        # Dust luminosity
+        if self.has_young_earth_map(dust_map_name): self.young_maps[earth_name][dust_map_name] = self.load_young_earth_map(dust_map_name)
+        else: self.young_maps[earth_name][dust_map_name] = self.model.young_dust_luminosity_map_earth
+
     # -----------------------------------------------------------------
 
     @property
@@ -936,6 +973,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_young_faceon_map(intr_fuv_map_name): self.young_maps[faceon_name][intr_fuv_map_name] = self.load_young_faceon_map(intr_fuv_map_name)
         else: self.young_maps[faceon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_faceon
 
+        # Dust luminosity
+        if self.has_young_faceon_map(dust_map_name): self.young_maps[faceon_name][dust_map_name] = self.load_young_faceon_map(dust_map_name)
+        else: self.young_maps[faceon_name][dust_map_name] = self.model.young_dust_luminosity_map_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -972,6 +1013,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # Intrinsic FUV
         if self.has_young_edgeon_map(intr_fuv_map_name): self.young_maps[edgeon_name][intr_fuv_map_name] = self.load_young_edgeon_map(intr_fuv_map_name)
         else: self.young_maps[edgeon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_edgeon
+
+        # Dust luminosity
+        if self.has_young_edgeon_map(dust_map_name): self.young_maps[edgeon_name][dust_map_name] = self.load_young_edgeon_map(dust_map_name)
+        else: self.young_maps[edgeon_name][dust_map_name] = self.model.young_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1040,6 +1085,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_sfr_earth_map(stellar_lum_map_name): self.sfr_maps[earth_name][stellar_lum_map_name] = self.load_sfr_earth_map(stellar_lum_map_name)
         else: self.sfr_maps[earth_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_earth
 
+        # Intrinsic dust luminosity
+        if self.has_sfr_earth_map(intr_dust_map_name): self.sfr_maps[earth_name][intr_dust_map_name] = self.load_sfr_earth_map(intr_dust_map_name)
+        else: self.sfr_maps[earth_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_earth
+
         # Dust bolometric luminosity
         if self.has_sfr_earth_map(dust_map_name): self.sfr_maps[earth_name][dust_map_name] = self.load_sfr_earth_map(dust_map_name)
         else: self.sfr_maps[earth_name][dust_map_name] = self.model.sfr_dust_luminosity_map_earth
@@ -1093,6 +1142,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_sfr_faceon_map(stellar_lum_map_name): self.sfr_maps[faceon_name][stellar_lum_map_name] = self.load_sfr_faceon_map(stellar_lum_map_name)
         else: self.sfr_maps[faceon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_faceon
 
+        # Intrinsic dust luminosity
+        if self.has_sfr_faceon_map(intr_dust_map_name): self.sfr_maps[faceon_name][intr_dust_map_name] = self.load_sfr_faceon_map(intr_dust_map_name)
+        else: self.sfr_maps[faceon_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_faceon
+
         # Dust bolometric luminosity
         if self.has_sfr_faceon_map(dust_map_name): self.sfr_maps[faceon_name][dust_map_name] = self.load_sfr_faceon_map(dust_map_name)
         else: self.sfr_maps[faceon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_faceon
@@ -1145,6 +1198,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # Stellar bolometric luminosity
         if self.has_sfr_edgeon_map(stellar_lum_map_name): self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.load_sfr_edgeon_map(stellar_lum_map_name)
         else: self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_edgeon
+
+        # Intrinsic dust luminosity
+        if self.has_sfr_edgeon_map(intr_dust_map_name): self.sfr_maps[edgeon_name][intr_dust_map_name] = self.load_sfr_edgeon_map(intr_dust_map_name)
+        else: self.sfr_maps[edgeon_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_edgeon
 
         # Dust bolometric luminosity
         if self.has_sfr_edgeon_map(dust_map_name): self.sfr_maps[edgeon_name][dust_map_name] = self.load_sfr_edgeon_map(dust_map_name)
@@ -1209,6 +1266,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_unevolved_earth_map(sfr_map_name): self.unevolved_maps[earth_name][sfr_map_name] = self.load_unevolved_earth_map(sfr_map_name)
         else: self.unevolved_maps[earth_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_earth
 
+        # Dust luminosity
+        if self.has_unevolved_earth_map(dust_map_name): self.unevolved_maps[earth_name][dust_map_name] = self.load_unevolved_earth_map(dust_map_name)
+        else: self.unevolved_maps[earth_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_earth
+
     # -----------------------------------------------------------------
 
     @property
@@ -1250,6 +1311,10 @@ class PropertiesAnalyser(AnalysisComponent):
         if self.has_unevolved_faceon_map(sfr_map_name): self.unevolved_maps[faceon_name][sfr_map_name] = self.load_unevolved_faceon_map(sfr_map_name)
         else: self.unevolved_maps[faceon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_faceon
 
+        # Dust luminosity
+        if self.has_unevolved_faceon_map(dust_map_name): self.unevolved_maps[faceon_name][dust_map_name] = self.load_unevolved_faceon_map(dust_map_name)
+        else: self.unevolved_maps[faceon_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -1290,6 +1355,10 @@ class PropertiesAnalyser(AnalysisComponent):
         # SFR
         if self.has_unevolved_edgeon_map(sfr_map_name): self.unevolved_maps[edgeon_name][sfr_map_name] = self.load_unevolved_edgeon_map(sfr_map_name)
         else: self.unevolved_maps[edgeon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_edgeon
+
+        # Dust luminosity
+        if self.has_unevolved_edgeon_map(dust_map_name): self.unevolved_maps[edgeon_name][dust_map_name] = self.load_unevolved_edgeon_map(dust_map_name)
+        else: self.unevolved_maps[edgeon_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 

@@ -2361,8 +2361,37 @@ def get_column_names(filepath):
     nlines = len(lines)
 
     # Only one line: return splitted first line
-    if nlines == 1: return lines[0].split()
+    if nlines == 1:
+
+        #splitted = lines[0].split()
+        splitted = strings.split_except_within_round_brackets(lines[0])
+        # Sanitize
+        names = []
+        for part in splitted:
+            #print(part)
+            if "[" in part and "]" in part:
+
+                if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
+                else: names.append(part.split("[")[0].strip())
+
+            elif strings.is_wrapped_by_squared_brackets(part): pass # this is just the unit of the previous column name
+            else: names.append(part)
+
+        # Check
+        final_names = []
+        for index in range(len(names)):
+            name = names[index]
+            print(name)
+            if strings.is_wrapped_by_round_brackets(name):
+                nname = name[1:-1]
+                if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
+                final_names[-1] += "(" + nname + ")"
+            else: final_names.append(name)
+
+        return final_names
+
     elif strings.any_startswith(lines, "column"):
+
         colnames = dict()
         for line in lines:
             if not line.startswith("column"): continue
@@ -2375,13 +2404,13 @@ def get_column_names(filepath):
         first_is_one = minno == 1
         if first_is_one: ncolumns = maxno
         else: ncolumns = maxno - 1
-        print(ncolumns)
+        #print(ncolumns)
         names = [None] * ncolumns
         #print(maxno)
         for colno in colnames:
             if first_is_one: new_colno = colno - 1
             else: new_colno = colno
-            print(new_colno, colnames[colno])
+            #print(new_colno, colnames[colno])
             names[new_colno] = colnames[colno]
         return names
 

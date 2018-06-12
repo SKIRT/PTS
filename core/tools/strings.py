@@ -543,20 +543,7 @@ def split_except_within_single_quotes(text, add_quotes=True):
     :return:
     """
 
-    parts = []
-
-    lst = text.split("'")
-
-    for i, item in enumerate(lst):
-
-        if i % 2:
-            if add_quotes: parts.append("'" + item + "'")
-            else: parts.append(item)
-        else:
-
-            for a in item.split(): parts.append(a)
-
-    return parts
+    return split_except_within(text, "'", add_pattern=add_quotes)
 
 # -----------------------------------------------------------------
 
@@ -569,19 +556,92 @@ def split_except_within_double_quotes(text, add_quotes=True):
     :return:
     """
 
+    return split_except_within(text, '"', add_pattern=add_quotes)
+
+# -----------------------------------------------------------------
+
+def split_except_within(text, pattern, add_pattern=True):
+
+    """
+    This function ...
+    :param text:
+    :param pattern:
+    :param add_pattern:
+    :return:
+    """
+
     parts = []
-
-    lst = text.split('"')
-
+    lst = text.split(pattern)
     for i, item in enumerate(lst):
-
         if i % 2:
-            if add_quotes: parts.append('"' + item + '"')
+            if add_pattern: parts.append(pattern + item + pattern)
             else: parts.append(item)
         else:
-
             for a in item.split(): parts.append(a)
+    return parts
 
+# -----------------------------------------------------------------
+
+def split_except_within_round_brackets(text, add_brackets=True):
+
+    """
+    This function ...
+    :param text:
+    :param add_pattern:
+    :return:
+    """
+
+    return split_except_within_left_right(text, "(", ")", add_pattern=add_brackets)
+
+# -----------------------------------------------------------------
+
+def split_except_within_curly_brackets(text, add_brackets=True):
+
+    """
+    This function ...
+    :param text:
+    :param add_brackets:
+    :return:
+    """
+
+    return split_except_within_left_right(text, "{", "}", add_pattern=add_brackets)
+
+# -----------------------------------------------------------------
+
+def split_except_within_square_brackets(text, add_brackets=True):
+
+    """
+    This function ...
+    :param text:
+    :param add_brackets:
+    :return:
+    """
+
+    return split_except_within_left_right(text, "[", "]", add_pattern=add_brackets)
+
+# -----------------------------------------------------------------
+
+def split_except_within_left_right(text, left, right, add_pattern=True):
+
+    """
+    This function ...
+    :param text:
+    :param left:
+    :param right:
+    :param add_pattern:
+    :return:
+    """
+
+    parts = []
+    #lst = re.split(left + '|' + right, text)
+    #print(lst)
+    lst = text.replace(left, right).split(right)
+    for i, item in enumerate(lst):
+        if i % 2:
+            if add_pattern: parts.append(left + item + right)
+            else: parts.append(item)
+        else:
+            for a in item.split(): parts.append(a)
     return parts
 
 # -----------------------------------------------------------------
@@ -1738,5 +1798,99 @@ def get_longest(strings):
     """
 
     return max(strings, key=len)
+
+# -----------------------------------------------------------------
+
+def is_empty(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return string == ""
+
+# -----------------------------------------------------------------
+
+def is_all_spaces(string):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    return string.isspace()
+
+# -----------------------------------------------------------------
+
+def is_wrapped_by(text, pattern):
+
+    """
+    This function ...
+    :param text:
+    :param pattern:
+    :return:
+    """
+
+    if is_empty: return False
+
+    # Pattern is a space
+    if pattern == " ": return text.startswith(" ") and text.endswith(" ")
+
+    # Other patterns
+    else:
+
+        text = text.strip()
+        return text.startswith(pattern) and text.endswith(pattern)
+
+# -----------------------------------------------------------------
+
+def is_wrapped_by_brackets(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    return is_wrapped_by_round_brackets(text) or is_wrapped_by_curly_brackets(text) or is_wrapped_by_squared_brackets(text)
+
+# -----------------------------------------------------------------
+
+def is_wrapped_by_round_brackets(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    return text.startswith("(") and text.endswith(")")
+
+# -----------------------------------------------------------------
+
+def is_wrapped_by_curly_brackets(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    return text.startswith("{") and text.endswith("}")
+
+# -----------------------------------------------------------------
+
+def is_wrapped_by_squared_brackets(text):
+
+    """
+    Thisn function ...
+    :param text:
+    :return:
+    """
+
+    return text.startswith("[") and text.endswith("]")
 
 # -----------------------------------------------------------------
