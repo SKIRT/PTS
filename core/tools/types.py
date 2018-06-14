@@ -374,8 +374,9 @@ def is_unit(value):
     :return:
     """
 
-    from astropy.units import Unit
-    return isinstance(value, Unit)
+    #from astropy.units import Unit
+    from astropy.units import UnitBase # also IrreducibleUnit etc.
+    return isinstance(value, UnitBase)
 
 # -----------------------------------------------------------------
 

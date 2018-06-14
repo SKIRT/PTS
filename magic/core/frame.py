@@ -575,43 +575,6 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def __mul__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.copy().__imul__(value)
-
-    # -----------------------------------------------------------------
-
-    def __rmul__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.__mul__(value)
-
-    # -----------------------------------------------------------------
-
-    def __imul__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        self._data *= value
-        return self
-
-    # -----------------------------------------------------------------
-
     def __add__(self, value):
 
         """
@@ -644,7 +607,33 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self._data += value
+        # Regular number
+        if types.is_real_type(value) or types.is_integer_type(value):
+            if self.has_unit: raise ValueError("Frame has a unit")
+            self._data += value
+
+        # Quantity
+        elif types.is_quantity(value):
+            if not self.has_unit: raise ValueError("Frame has no unit")
+            self._data += value.to(self.unit, wavelength=self.wavelength, pixelscale=self.pixelscale, distance=self.distance)
+
+        # Other frame
+        elif isinstance(value, Frame):
+
+            # With unit
+            if value.has_unit:
+                if not self.has_unit: raise ValueError("Frame doesn't have a unit")
+                self._data += value.converted_to(self.unit).data
+
+            # Without unit
+            else:
+                if self.has_unit: raise ValueError("Frame has a unit")
+                self._data += value.data
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+        # Return
         return self
 
     # -----------------------------------------------------------------
@@ -683,7 +672,70 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self._data -= value
+        # Regular number
+        if types.is_real_type(value) or types.is_integer_type(value):
+            if self.has_unit: raise ValueError("Frame has a unit")
+            self._data -= value
+
+        # Quantity
+        elif types.is_quantity(value):
+            if not self.has_unit: raise ValueError("Frame has no unit")
+            self._data -= value.to(self.unit, wavelength=self.wavelength, pixelscale=self.pixelscale, distance=self.distance)
+
+        # Other frame
+        elif isinstance(value, Frame):
+
+            # With unit
+            if value.has_unit:
+                if not self.has_unit: raise ValueError("Frame has a unit")
+                self._data -= value.converted_to(self.unit).data
+
+            # Without unit
+            else:
+                if self.has_unit: raise ValueError("Frame has no unit")
+                self._data -= value.data
+
+        # Else
+        else: raise ValueError("Invalid argument")
+
+        # Return
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.copy().__imul__(value)
+
+    # -----------------------------------------------------------------
+
+    def __rmul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__mul__(value)
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data *= value
         return self
 
     # -----------------------------------------------------------------
@@ -727,27 +779,11 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def __truediv__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.__div__(value)
+    __truediv__ = __div__
 
     # -----------------------------------------------------------------
 
-    def __itruediv__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.__idiv__(value)
+    __itruediv__ = __idiv__
 
     # -----------------------------------------------------------------
 

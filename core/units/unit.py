@@ -24,7 +24,6 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale, PhysicalPixelscale
-from .quantity import PhotometricQuantity
 from .utils import analyse_unit, divide_units_reverse, clean_unit_string, get_physical_type, interpret_physical_type
 from .parsing import parse_unit, parse_quantity
 from ..tools import types
@@ -138,6 +137,8 @@ class PhotometricUnit(CompositeUnit):
         :param brightness_strict: similar to density_strict
         """
 
+        from .quantity import PhotometricQuantity
+
         # Unit attributes
         self._base_unit = Unit("")
         self._wavelength_unit = Unit("")
@@ -145,6 +146,8 @@ class PhotometricUnit(CompositeUnit):
         self._distance_unit = Unit("")
         self._extent_unit = Unit("")
         self._solid_angle_unit = Unit("")
+
+        #print(unit, type(unit))
 
         # Already a photometric unit
         if isinstance(unit, PhotometricUnit):
@@ -221,6 +224,8 @@ class PhotometricUnit(CompositeUnit):
                 unit = clean_unit_string(unit)
             else: physical_type = None
 
+            #print("physical type:", physical_type)
+
             # Check whether physical type string is compatible with function arguments
             if physical_type is not None:
 
@@ -237,6 +242,7 @@ class PhotometricUnit(CompositeUnit):
                 density_strict = True
                 brightness_strict = True
 
+            # From string, possible tags specifying density and brightness flag are present
             elif original_string is not None:
 
                 if "#density" in original_string: found_density = True
@@ -596,6 +602,8 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
+        from .quantity import PhotometricQuantity
+
         # If other is a string
         if types.is_string_type(other): other = parse_unit(other)
 
@@ -667,6 +675,8 @@ class PhotometricUnit(CompositeUnit):
         :param other:
         :return:
         """
+
+        from .quantity import PhotometricQuantity
 
         # If the other is a string
         if types.is_string_type(other): other = parse_unit(other)
@@ -1605,6 +1615,89 @@ class PhotometricUnit(CompositeUnit):
         """
 
         return self.solid_angle_unit != ""
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.scale_factor != 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scale_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return repr(self.scale_factor)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reduced_root_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        string = str(self.base_unit)
+        if self.is_wavelength_density: string += " / " + str(self.wavelength_unit)
+        if self.is_frequency_density: string += " / " + str(self.frequency_unit)
+        if self.has_distance_unit: string += " / " + str(self.distance_unit)
+        if self.has_extent_unit: string += " / " + str(self.extent_unit)
+        if self.has_solid_angle_unit: string += " / " + str(self.solid_angle_unit)
+
+        # Return
+        return string
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reduced_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PhotometricUnit(self.reduced_root_string, density=self.density, density_strict=True, brightness=self.brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reduced_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Start with scale of the unit
+        if self.has_scale: return self.scale_string + self.reduced_root_string
+        else: return self.reduced_root_string
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reduced(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PhotometricUnit(self.reduced_string, density=self.density, density_strict=True, brightness=self.brightness, brightness_strict=True)
 
     # -----------------------------------------------------------------
 
@@ -2704,6 +2797,7 @@ def multiply_units(unit_a, unit_b, density=None, brightness=None):
 
         # Create composite unit
         unit = make_composite_multiplication(unit_a, unit_b)
+        #print(unit)
 
         ## SPECTRAL
 

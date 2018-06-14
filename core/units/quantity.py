@@ -20,6 +20,7 @@ from astropy.coordinates import Angle
 from ..tools import types
 from .parsing import parse_quantity, parse_unit, parse_photometric_unit
 from .stringify import represent_quantity
+from .unit import PhotometricUnit, divide_units, multiply_units
 
 # -----------------------------------------------------------------
 
@@ -176,25 +177,144 @@ class PhotometricQuantity(Quantity):
         :return:
         """
 
-        if isinstance(other, Quantity):
+        # Divide by regular value
+        if types.is_real_type(other) or types.is_integer_type(other):
+            super(PhotometricQuantity, self).__div__(other)
+
+        # Divide by unit
+        elif types.is_unit(other):
+
+            other = parse_unit(other)
+            new_unit = divide_units(self.unit, other)
+
+            # Photometric?
+            if isinstance(new_unit, PhotometricUnit):
+                if new_unit.has_scale:
+                    new_value = self.value * new_unit.scale_factor
+                    new_unit = new_unit.reduced_root # without scale
+                else:
+                    new_value = self.value
+                    new_unit = new_unit.reduced
+
+            # Not photometric
+            else:
+                new_value = self.value * new_unit.scale
+                new_unit._scale = 1
+
+            # Create new quantity
+            return parse_quantity(new_value * new_unit)
+
+        # Divide by quantity
+        elif types.is_quantity(other):
+
+            # Previous implementation
+            #other = parse_quantity(other)
+            # if isinstance(other, PhotometricQuantity):
+            #     #print(self, self.physical_type)
+            #     #print(other, other.physical_type)
+            #     other_value = other.value
+            #     other_unit = other.unit
+            #     new_value = self.value / other_value
+            #     new_unit = self.unit / other_unit
+            #     return new_value * new_unit
+            # # Let Astropy handle it ...
+            # else: return super(PhotometricQuantity, self).__div__(other)
 
             other = parse_quantity(other)
+            new_unit = divide_units(self.unit, other.unit)
 
-            if isinstance(other, PhotometricQuantity):
+            # Photometric?
+            if isinstance(new_unit, PhotometricUnit):
+                if new_unit.has_scale:
+                    new_value = self.value / other.value * new_unit.scale_factor
+                    new_unit = new_unit.reduced_root  # without scale
+                else:
+                    new_value = self.value / other.value
+                    new_unit = new_unit.reduced
 
-                #print(self, self.physical_type)
-                #print(other, other.physical_type)
+            # Not photometric
+            else:
+                new_value = self.value / other.value * new_unit.scale
+                new_unit._scale = 1
 
-                other_value = other.value
-                other_unit = other.unit
+            # Create new quantity
+            return parse_quantity(new_value * new_unit)
 
-                new_value = self.value / other_value
-                new_unit = self.unit / other_unit
-                return new_value * new_unit
+        # Invalid
+        else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
 
-            else: return super(PhotometricQuantity, self).__div__(other)
+    # -----------------------------------------------------------------
 
-        else: return super(PhotometricQuantity, self).__div__(other)
+    def __mul__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # if isinstance(other, Quantity):
+        #     other = parse_quantity(other)
+        #     if isinstance(other, PhotometricQuantity):
+        #         other_value = other.value
+        #         other_unit = other.unit
+
+        # Multiply by regular value
+        if types.is_real_type(other) or types.is_integer_type(other):
+            super(PhotometricQuantity, self).__div__(other)
+
+        # Multiply by unit
+        elif types.is_unit(other):
+
+            other = parse_unit(other)
+            new_unit = multiply_units(self.unit, other)
+            #print(new_unit)
+
+            # Photometric?
+            if isinstance(new_unit, PhotometricUnit):
+                if new_unit.has_scale:
+                    #print(new_unit.scale_factor)
+                    #print(new_unit.reduced_root)
+                    new_value = self.value * new_unit.scale_factor
+                    new_unit = new_unit.reduced_root  # without scale
+                else:
+                    new_value = self.value
+                    new_unit = new_unit.reduced
+
+            # Not photometric
+            else:
+                new_value = self.value * new_unit.scale
+                new_unit._scale = 1
+
+            # Create new quantity
+            return parse_quantity(new_value * new_unit)
+
+        # Multiply by quantity
+        elif types.is_quantity(other):
+
+            other = parse_quantity(other)
+            new_unit = multiply_units(self.unit, other.unit)
+            #print(new_unit)
+
+            # Photometric?
+            if isinstance(new_unit, PhotometricUnit):
+                if new_unit.has_scale:
+                    new_value = self.value * other.value * new_unit.scale_factor
+                    new_unit = new_unit.reduced_root  # without scale
+                else:
+                    new_value = self.value * other.value
+                    new_unit = new_unit.reduced
+
+            # Not photometric
+            else:
+                new_value = self.value * other.value * new_unit.scale
+                new_unit._scale = 1
+
+            # Create new quantity
+            return parse_quantity(new_value * new_unit)
+
+        # Invalid
+        else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
 
     # -----------------------------------------------------------------
 

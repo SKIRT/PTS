@@ -388,6 +388,8 @@ def reduce_unit(unit):
     :return: 
     """
 
+    #print("Reducing unit '" + str(unit) + "' ...")
+
     base_types = physical_base_types_units_and_powers_as_dict(unit, power=1)
 
     #print("BASE TYPES", base_types)
@@ -397,6 +399,8 @@ def reduce_unit(unit):
 
     # If we have a combination of a flux density and a frequency
     if "spectral flux density" in base_types and "frequency" in base_types:
+
+        #print("1")
 
         # If they occur more than once, we have something weird
         if len(base_types["spectral flux density"]) == 1 and len(base_types["frequency"]) == 1:
@@ -462,6 +466,8 @@ def reduce_unit(unit):
     # If we have a combination of a flux density and a length to the power of 2
     if "spectral flux density" in base_types and "length" in physical_base_types(unit, power=2):
 
+        print("2")
+
         # if they occur more than once, we have something weird
         if len(base_types["spectral flux density"]) == 1:
 
@@ -493,8 +499,10 @@ def analyse_unit(unit):
     :return:
     """
 
+    #print("Analysing unit '" + str(unit) + "' ...")
+
     # Initialize different parts of the unit
-    scale_factor = unit.scale
+    #scale_factor = unit.scale
     base_unit = Unit("")
     wavelength_unit = Unit("")
     frequency_unit = Unit("")
@@ -509,6 +517,7 @@ def analyse_unit(unit):
 
     # Reduce (for example, convert 'Jy * Hz' to '1e-26 W / m2')
     unit, cannot_be_intrinsic_brightness = reduce_unit(unit)
+    scale_factor = unit.scale
 
     #print(unit)
     #print("AFTER", unit)

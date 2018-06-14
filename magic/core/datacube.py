@@ -827,6 +827,48 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def __mul__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Regular number
+        if types.is_real_type(other) or types.is_integer_type(other):
+
+            # Create frames
+            frames = [self.frames[index] * other for index in range(self.nframes)]
+
+        # Quantity
+        elif types.is_quantity(other):
+
+            # Get the wavelengths
+            wavelengths = self.wavelengths()
+
+            # Create frames
+            frames = []
+            for index in range(self.nframes):
+                frame = self.frames[index]
+                new_frame = frame * other.to(frame)
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    __truediv__ = __div__
+
+    # -----------------------------------------------------------------
+
     def integrate(self):
 
         """

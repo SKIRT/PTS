@@ -1103,7 +1103,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.young_absorptions_earth + self.ionizing_absorptions_earth
+        #return self.young_absorptions_earth + self.ionizing_absorptions_earth
+        young, ionizing = convolve_rebin_and_convert(self.young_absorptions_earth, self.ionizing_absorptions_earth)
+        return young + ionizing
 
     # -----------------------------------------------------------------
 
@@ -1115,7 +1117,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.unevolved_absorptions_earth - self.internal_absorptions_earth
+        #return self.unevolved_absorptions_earth - self.internal_absorptions_earth
+        unevolved, internal = convolve_rebin_and_convert(self.unevolved_absorptions_earth, self.internal_absorptions_earth)
+        return unevolved - internal
 
     # -----------------------------------------------------------------
 
@@ -1127,7 +1131,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.total_absorptions_earth - self.internal_absorptions_earth
+        #return self.total_absorptions_earth - self.internal_absorptions_earth
+        total, internal = convolve_rebin_and_convert(self.total_absorptions_earth, self.internal_absorptions_earth)
+        return total - internal
 
     # -----------------------------------------------------------------
 
