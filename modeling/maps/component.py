@@ -32,7 +32,7 @@ from ...core.launch.pts import find_match
 from ...core.tools import introspection
 from .collection import MapsCollection, StaticMapsCollection
 from .selection import ComponentMapsSelection, StaticComponentMapsSelection
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ...core.basics.configuration import prompt_string_list
 from ...core.basics.containers import create_subdict
@@ -3127,332 +3127,13 @@ class MapMakerBase(GalaxyModelingComponent):
 
 # -----------------------------------------------------------------
 
-class MapsComponent(MapMakerBase):
-    
+class MapsComponent(GalaxyModelingComponent):
+
     """
-    This class...
+    This class ...
     """
 
     __metaclass__ = ABCMeta
-
-    # -----------------------------------------------------------------
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        The constructor ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(MapsComponent, self).__init__(*args, **kwargs)
-
-        # -- Attributes --
-
-        # The error maps
-        self.error_maps = dict()
-
-        # The paths to the maps
-        self.paths = dict()
-
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(MapsComponent, self).setup(**kwargs)
-
-        # Perform some checks to see whether previous output is present
-        if self.config.checks: self.perform_checks()
-
-    # -----------------------------------------------------------------
-
-    def type_for_map_path(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Determine map type (colour/sSFR/TIR/attenuation/old/young/ionizing/dust)
-        relative = fs.relative_to(path, self.maps_path)
-        map_type = fs.base_directory(relative)
-        return map_type
-
-    # -----------------------------------------------------------------
-
-    def method_for_map_path(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Get type
-        map_type = self.type_for_map_path(path)
-
-        map_directory = fs.directory_of(path)
-        map_directory_name = fs.name(map_directory)
-
-        if map_directory_name == map_type: return None
-        else: return map_directory_name
-
-    # -----------------------------------------------------------------
-
-    def method_or_type_for_map_path(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        method = self.method_for_map_path(path)
-
-        if method is None: return self.type_for_map_path(path)
-        else: return method
-
-    # -----------------------------------------------------------------
-
-    def perform_checks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Checking existing maps ...")
-
-        # Loop over the finished maps commands
-        for command_name in self.history.finished_maps_commmands:
-
-            # Get sub path for command
-            path = self.sub_path_for_command(command_name)
-            name = fs.name(path)
-
-            # Check whether the path is present and not empty
-            if not fs.is_directory(path):
-
-                # Warning
-                log.error("The '" + name + "' directory does not exist from the '" + command_name + "' output")
-
-                # Remove
-                self.remove_output_and_history_after_and_including(command_name)
-
-            # If the directory is empty
-            elif fs.is_empty(path):
-
-                # Warning
-                log.error("The '" + name + "' directory from the '" + command_name + "' output is empty")
-
-                # Remove
-                self.remove_output_and_history_after_and_including(command_name)
-
-            # Directory present and not empty, loop over the methods
-            else:
-
-                methods = self.methods_for_sub_name(name)
-                if methods is None: continue
-                for method in methods:
-
-                    # Determine the path
-                    method_path = fs.join(path, method)
-
-                    #print(method_path)
-
-                    # NO: WE DON'T DO ALL METHODS (E.G. DUST->BLACK-BODY)
-                    # Check if the path if present
-                    #if not fs.is_directory(method_path):
-                        # Warning
-                        #log.error("The '" + name + "/" + method + "' directory does not exist from the '" + command_name + "' output")
-                        # Remove
-                        #self.remove_output_and_history_after_and_including(command_name)
-
-                    # If the directory is empty
-                    #elif fs.is_empty(method_path):
-                    if fs.is_directory(method_path) and fs.is_empty(method_path):
-
-                        # Warning
-                        log.error("The '" + name + "/" + method + "' directory from the '" + command_name + "' output is empty")
-
-                        # Remove
-                        self.remove_output_and_history_after_and_including(command_name)
-
-    # -----------------------------------------------------------------
-
-    def remove_output_and_history_after_and_including(self, command_name):
-
-        """
-        This function ...
-        :param command_name:
-        :return:
-        """
-
-        log.warning("Removing the '" + command_name + "' and successive commands from the history ...")
-        commands = maps_commands_after_and_including(command_name)
-        existing_commands = [command for command in commands if command in self.history.commands]
-        yn = prompt_proceed("Remove the history and output of the following commands: " + tostr(existing_commands) + "?")
-        if yn:
-
-            # Remove from history
-            for command in existing_commands:
-
-                # Debugging
-                log.debug("Removing the '" + command + "' command from the modeling history ...")
-
-                # Remove
-                self.history.remove_entries(command)
-
-            self.history.save()
-
-            # Remove output
-            for command in existing_commands:
-
-                path = self.sub_path_for_command(command)
-
-                # Debugging
-                log.debug("Removing the output path [" + path + "] for the '" + command + "' command ...")
-
-                # Remove
-                fs.remove_directory(path)
-
-            # Exit
-            exit()
-
-        # User answered no
-        else: raise RuntimeError("Cannot proceed")
-
-    # -----------------------------------------------------------------
-
-    def sub_path_for_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        name = self.sub_name_for_command(command)
-        return fs.join(self.maps_raw_path, name)
-
-    # -----------------------------------------------------------------
-
-    def sub_name_for_command(self, command):
-
-        """
-        This function ...
-        :param command:
-        :return:
-        """
-
-        if command == "make_colours_maps": return self.maps_colours_name
-        elif command == "make_ssfr_maps": return self.maps_ssfr_name
-        elif command == "make_tir_maps": return self.maps_tir_name
-        elif command == "make_attenuation_maps": return self.maps_attenuation_name
-        elif command == "make_old_stellar_maps": return self.maps_old_name
-        elif command == "make_young_stellar_maps": return self.maps_young_name
-        elif command == "make_ionizing_stellar_maps": return self.maps_ionizing_name
-        elif command == "make_dust_map": return self.maps_dust_name
-        else: raise ValueError("Invalid commands: " + command)
-
-    # -----------------------------------------------------------------
-
-    def command_for_sub_name(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        if name == self.maps_colours_name: return "make_colours_maps"
-        elif name == self.maps_ssfr_name: return "make_ssfr_maps"
-        elif name == self.maps_tir_name: return "make_tir_maps"
-        elif name == self.maps_attenuation_name: return "make_attenuation_maps"
-        elif name == self.maps_old_name: return "make_old_stellar_maps"
-        elif name == self.maps_young_name: return "make_young_stellar_maps"
-        elif name == self.maps_ionizing_name: return "make_ionizing_stellar_maps"
-        elif name == self.maps_dust_name: return "make_dust_map"
-        else: raise ValueError("Invalid sub name: " + name)
-
-    # -----------------------------------------------------------------
-
-    def command_for_sub_path(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        name = fs.relative_to(path, self.maps_path).split("/")[0]
-        return self.command_for_sub_name(name)
-
-    # -----------------------------------------------------------------
-
-    def class_for_sub_name(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Get the command
-        command = self.command_for_sub_name(name)
-
-        # Resolve the PTS command
-        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(command)
-
-        # Return the class
-        cls = introspection.get_class(class_module_path, class_name)
-
-        # Return the class
-        return cls
-
-    # -----------------------------------------------------------------
-
-    def methods_for_sub_name(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        # Get the command
-        command = self.command_for_sub_name(name)
-
-        # Resolve the PTS command
-        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(command)
-
-        # Try to get the methods
-        methods = introspection.try_importing_variable(class_module_path, "methods")
-
-        # Return the methods
-        return methods
-
-    # -----------------------------------------------------------------
-
-    def has_methods_for_sub_name(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        return self.methods_for_sub_name(name) is not None
 
     # -----------------------------------------------------------------
 
@@ -4110,6 +3791,335 @@ class MapsComponent(MapMakerBase):
 
         return self.environment.dust_maps_html_page_path
 
+# -----------------------------------------------------------------
+
+class MapMakingComponent(MapMakerBase, MapsComponent):
+    
+    """
+    This class...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(MapMakingComponent, self).__init__(*args, **kwargs)
+
+        # -- Attributes --
+
+        # The error maps
+        self.error_maps = dict()
+
+        # The paths to the maps
+        self.paths = dict()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(MapMakingComponent, self).setup(**kwargs)
+
+        # Perform some checks to see whether previous output is present
+        if self.config.checks: self.perform_checks()
+
+    # -----------------------------------------------------------------
+
+    def type_for_map_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Determine map type (colour/sSFR/TIR/attenuation/old/young/ionizing/dust)
+        relative = fs.relative_to(path, self.maps_path)
+        map_type = fs.base_directory(relative)
+        return map_type
+
+    # -----------------------------------------------------------------
+
+    def method_for_map_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get type
+        map_type = self.type_for_map_path(path)
+
+        map_directory = fs.directory_of(path)
+        map_directory_name = fs.name(map_directory)
+
+        if map_directory_name == map_type: return None
+        else: return map_directory_name
+
+    # -----------------------------------------------------------------
+
+    def method_or_type_for_map_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        method = self.method_for_map_path(path)
+
+        if method is None: return self.type_for_map_path(path)
+        else: return method
+
+    # -----------------------------------------------------------------
+
+    def perform_checks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking existing maps ...")
+
+        # Loop over the finished maps commands
+        for command_name in self.history.finished_maps_commmands:
+
+            # Get sub path for command
+            path = self.sub_path_for_command(command_name)
+            name = fs.name(path)
+
+            # Check whether the path is present and not empty
+            if not fs.is_directory(path):
+
+                # Warning
+                log.error("The '" + name + "' directory does not exist from the '" + command_name + "' output")
+
+                # Remove
+                self.remove_output_and_history_after_and_including(command_name)
+
+            # If the directory is empty
+            elif fs.is_empty(path):
+
+                # Warning
+                log.error("The '" + name + "' directory from the '" + command_name + "' output is empty")
+
+                # Remove
+                self.remove_output_and_history_after_and_including(command_name)
+
+            # Directory present and not empty, loop over the methods
+            else:
+
+                methods = self.methods_for_sub_name(name)
+                if methods is None: continue
+                for method in methods:
+
+                    # Determine the path
+                    method_path = fs.join(path, method)
+
+                    #print(method_path)
+
+                    # NO: WE DON'T DO ALL METHODS (E.G. DUST->BLACK-BODY)
+                    # Check if the path if present
+                    #if not fs.is_directory(method_path):
+                        # Warning
+                        #log.error("The '" + name + "/" + method + "' directory does not exist from the '" + command_name + "' output")
+                        # Remove
+                        #self.remove_output_and_history_after_and_including(command_name)
+
+                    # If the directory is empty
+                    #elif fs.is_empty(method_path):
+                    if fs.is_directory(method_path) and fs.is_empty(method_path):
+
+                        # Warning
+                        log.error("The '" + name + "/" + method + "' directory from the '" + command_name + "' output is empty")
+
+                        # Remove
+                        self.remove_output_and_history_after_and_including(command_name)
+
+    # -----------------------------------------------------------------
+
+    def remove_output_and_history_after_and_including(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        log.warning("Removing the '" + command_name + "' and successive commands from the history ...")
+        commands = maps_commands_after_and_including(command_name)
+        existing_commands = [command for command in commands if command in self.history.commands]
+        yn = prompt_proceed("Remove the history and output of the following commands: " + tostr(existing_commands) + "?")
+        if yn:
+
+            # Remove from history
+            for command in existing_commands:
+
+                # Debugging
+                log.debug("Removing the '" + command + "' command from the modeling history ...")
+
+                # Remove
+                self.history.remove_entries(command)
+
+            self.history.save()
+
+            # Remove output
+            for command in existing_commands:
+
+                path = self.sub_path_for_command(command)
+
+                # Debugging
+                log.debug("Removing the output path [" + path + "] for the '" + command + "' command ...")
+
+                # Remove
+                fs.remove_directory(path)
+
+            # Exit
+            exit()
+
+        # User answered no
+        else: raise RuntimeError("Cannot proceed")
+
+    # -----------------------------------------------------------------
+
+    def sub_path_for_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        name = self.sub_name_for_command(command)
+        return fs.join(self.maps_raw_path, name)
+
+    # -----------------------------------------------------------------
+
+    def sub_name_for_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        if command == "make_colours_maps": return self.maps_colours_name
+        elif command == "make_ssfr_maps": return self.maps_ssfr_name
+        elif command == "make_tir_maps": return self.maps_tir_name
+        elif command == "make_attenuation_maps": return self.maps_attenuation_name
+        elif command == "make_old_stellar_maps": return self.maps_old_name
+        elif command == "make_young_stellar_maps": return self.maps_young_name
+        elif command == "make_ionizing_stellar_maps": return self.maps_ionizing_name
+        elif command == "make_dust_map": return self.maps_dust_name
+        else: raise ValueError("Invalid commands: " + command)
+
+    # -----------------------------------------------------------------
+
+    def command_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name == self.maps_colours_name: return "make_colours_maps"
+        elif name == self.maps_ssfr_name: return "make_ssfr_maps"
+        elif name == self.maps_tir_name: return "make_tir_maps"
+        elif name == self.maps_attenuation_name: return "make_attenuation_maps"
+        elif name == self.maps_old_name: return "make_old_stellar_maps"
+        elif name == self.maps_young_name: return "make_young_stellar_maps"
+        elif name == self.maps_ionizing_name: return "make_ionizing_stellar_maps"
+        elif name == self.maps_dust_name: return "make_dust_map"
+        else: raise ValueError("Invalid sub name: " + name)
+
+    # -----------------------------------------------------------------
+
+    def command_for_sub_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        name = fs.relative_to(path, self.maps_path).split("/")[0]
+        return self.command_for_sub_name(name)
+
+    # -----------------------------------------------------------------
+
+    def class_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the command
+        command = self.command_for_sub_name(name)
+
+        # Resolve the PTS command
+        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(command)
+
+        # Return the class
+        cls = introspection.get_class(class_module_path, class_name)
+
+        # Return the class
+        return cls
+
+    # -----------------------------------------------------------------
+
+    def methods_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the command
+        command = self.command_for_sub_name(name)
+
+        # Resolve the PTS command
+        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(command)
+
+        # Try to get the methods
+        methods = introspection.try_importing_variable(class_module_path, "methods")
+
+        # Return the methods
+        return methods
+
+    # -----------------------------------------------------------------
+
+    def has_methods_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.methods_for_sub_name(name) is not None
+
     # -----------------------------------------------------------------
 
     def get_origins_sub_name(self, name, flatten=False, method=None):
@@ -4271,8 +4281,8 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :param fltr: 
-        :return: 
+        :param fltr:
+        :return:
         """
 
         # OLD
@@ -4287,8 +4297,8 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :param fltr: 
-        :return: 
+        :param fltr:
+        :return:
         """
 
         # OLD
@@ -4303,7 +4313,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_tir_single_maps()
@@ -4314,7 +4324,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_tir_multi_maps()
@@ -4325,7 +4335,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_tir_single_origins()
@@ -4336,7 +4346,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_tir_multi_origins()
@@ -4347,7 +4357,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_buat_fuv_attenuation_maps()
@@ -4358,7 +4368,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_cortese_fuv_attenuation_maps()
@@ -4369,7 +4379,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_buat_fuv_attenuation_origins()
@@ -4391,7 +4401,7 @@ class MapsComponent(MapMakerBase):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
         return self.collection.get_cortese_fuv_attenuation_origins()

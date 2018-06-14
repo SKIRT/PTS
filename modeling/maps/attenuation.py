@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...magic.maps.attenuation.cortese import CorteseAttenuationMapsMaker
 from ...magic.maps.attenuation.buat import BuatAttenuationMapsMaker
 
@@ -24,7 +24,7 @@ methods = ["cortese", "buat"]
 
 # -----------------------------------------------------------------
 
-class AttenuationMapMaker(MapsComponent):
+class AttenuationMapMaker(MapMakingComponent):
 
     """
     This class...

@@ -2567,7 +2567,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
-                   brightness_strict=False, wavelength=None):
+                   brightness_strict=False, wavelength=None, silent=False):
 
         """
         This function ...
@@ -2578,6 +2578,7 @@ class Frame(NDDataArray):
         :param density_strict:
         :param brightness_strict:
         :param wavelength:
+        :param silent:
         :return:
         """
 
@@ -2589,13 +2590,13 @@ class Frame(NDDataArray):
         to_unit = parse_unit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
         # Debugging
-        log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
+        if not silent: log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
 
         # Get the conversion factor
         factor = self._get_conversion_factor(to_unit, distance=distance, wavelength=wavelength)
 
         # Debugging
-        log.debug("Conversion factor: " + str(factor))
+        if not silent: log.debug("Conversion factor: " + str(factor))
 
         # Convert
         self.convert_by_factor(factor, to_unit)
@@ -2644,7 +2645,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False, wavelength=None):
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
+                     brightness_strict=False, wavelength=None, silent=False):
 
         """
         This function ...
@@ -2655,11 +2657,13 @@ class Frame(NDDataArray):
         :param density_strict:
         :param brightness_strict:
         :param wavelength:
+        :param silent:
         :return:
         """
 
         new = self.copy()
-        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
+        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict,
+                       brightness_strict=brightness_strict, wavelength=wavelength, silent=silent)
         return new
 
     # -----------------------------------------------------------------

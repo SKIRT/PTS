@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ..component import MapsComponent
+from ..component import MapMakingComponent
 from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size, sortable_url, preview_url
 from ....core.tools import filesystem as fs
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
@@ -45,7 +45,7 @@ thumbnail_title = "Thumbnail"
 
 # -----------------------------------------------------------------
 
-class MapsSummaryPageGenerator(MapsComponent):
+class MapsSummaryPageGenerator(MapMakingComponent):
 
     """
     This class...

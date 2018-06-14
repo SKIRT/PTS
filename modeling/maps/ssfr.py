@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...magic.maps.ssfr.colours import ColoursSSFRMapsMaker, ssfr_colours
 
 # -----------------------------------------------------------------
@@ -23,7 +23,7 @@ methods = None
 
 # -----------------------------------------------------------------
 
-class SSFRMapMaker(MapsComponent):
+class SSFRMapMaker(MapMakingComponent):
 
     """
     This class...

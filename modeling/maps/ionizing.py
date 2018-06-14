@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...magic.maps.ionizingstars.ionizing import IonizingStellarMapsMaker
 from ...core.filter.filter import parse_filter
 
@@ -24,7 +24,7 @@ methods = None
 
 # -----------------------------------------------------------------
 
-class IonizingStellarMapMaker(MapsComponent):
+class IonizingStellarMapMaker(MapMakingComponent):
 
     """
     This class...

@@ -17,7 +17,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ..component import MapsComponent
+from ..component import MapMakingComponent
 from ...html.component import stylesheet_url, page_style
 from ...core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ....core.tools import filesystem as fs
@@ -50,7 +50,7 @@ intervals_filename = "intervals.dat"
 
 # -----------------------------------------------------------------
 
-class AllMapsPageGenerator(MapsComponent):
+class AllMapsPageGenerator(MapMakingComponent):
 
     """
     This class...

@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...core.basics.log import log
 from ...magic.maps.dust.blackbody import BlackBodyDustMapsMaker
 from ...magic.maps.dust.attenuation import AttenuationDustMapsMaker
@@ -34,7 +34,7 @@ default_methods = [attenuation, hot]
 
 # -----------------------------------------------------------------
 
-class DustMapMaker(MapsComponent):
+class DustMapMaker(MapMakingComponent):
 
     """
     This class...

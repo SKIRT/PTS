@@ -17,7 +17,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ..component import MapsComponent
+from ..component import MapMakingComponent
 
 # -----------------------------------------------------------------
 
@@ -36,7 +36,7 @@ intervals_filename = "intervals.dat"
 
 # -----------------------------------------------------------------
 
-class MapsSelectionPageGenerator(MapsComponent):
+class MapsSelectionPageGenerator(MapMakingComponent):
 
     """
     This class...

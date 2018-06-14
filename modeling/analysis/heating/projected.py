@@ -19,6 +19,7 @@ from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty
 from ....magic.core.frame import Frame
 from ....magic.core.datacube import DataCube
+from ....magic.core.list import convolve_and_rebin, convolve_rebin_and_convert
 
 # -----------------------------------------------------------------
 
@@ -1107,7 +1108,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    #def unevolved_absorptions_earth_with_internal(self):
     def unevolved_absorptions_earth_diffuse(self):
 
         """
@@ -1115,13 +1115,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        #return self.unevolved_absorptions_earth + self.internal_absorptions_earth
         return self.unevolved_absorptions_earth - self.internal_absorptions_earth
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    #def total_absorptions_earth_with_internal(self):
     def total_absorptions_earth_diffuse(self):
 
         """
@@ -1129,7 +1127,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        #return self.total_absorptions_earth + self.internal_absorptions_earth
         return self.total_absorptions_earth - self.internal_absorptions_earth
 
     # -----------------------------------------------------------------

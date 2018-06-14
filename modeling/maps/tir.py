@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...core.basics.log import log
 from ...magic.maps.tir.single import SingleBandTIRMapMaker
 from ...magic.maps.tir.multi import MultiBandTIRMapMaker
 from ...core.filter.filter import parse_filter
 from ...magic.core.list import FrameList
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -32,7 +32,7 @@ multiband_filter_names = ["MIPS 24mu", "Pacs blue", "Pacs green", "Pacs red", "S
 
 # -----------------------------------------------------------------
 
-class TIRMapMaker(MapsComponent):
+class TIRMapMaker(MapMakingComponent):
 
     """
     This class...

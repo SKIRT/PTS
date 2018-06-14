@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...magic.view.multi import MultiImageViewer
 
 # -----------------------------------------------------------------
@@ -27,7 +27,7 @@ key_color = "#4180d3"
 
 # -----------------------------------------------------------------
 
-class MapsViewer(MapsComponent):
+class MapsViewer(MapMakingComponent):
 
     """
     This class...

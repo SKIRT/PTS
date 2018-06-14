@@ -18,7 +18,7 @@ import copy
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...core.basics.log import log
 from ...magic.core.mask import intersection
 from ...magic.core.alpha import product
@@ -50,7 +50,7 @@ deprojected_skirt_plot_filename = "deprojected_skirt"
 
 # -----------------------------------------------------------------
 
-class MapsSelectionComponent(MapsComponent):
+class MapsSelectionComponent(MapMakingComponent):
 
     """
     This class ...

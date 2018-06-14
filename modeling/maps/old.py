@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import MapsComponent
+from .component import MapMakingComponent
 from ...magic.maps.oldstars.disk import DiskOldStellarMapMaker
 from ...magic.maps.oldstars.bulge import BulgeOldStellarMapMaker
 from ...magic.maps.oldstars.total import TotalOldStellarMapMaker
@@ -26,7 +26,7 @@ methods = ["disk", "bulge", "total"]
 
 # -----------------------------------------------------------------
 
-class OldStellarMapMaker(MapsComponent):
+class OldStellarMapMaker(MapMakingComponent):
 
     """
     This class...

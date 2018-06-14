@@ -33,7 +33,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..simulation.single import SingleComponentSimulations
 from ..simulation.multi import MultiComponentSimulations
 from ...magic.core.frame import Frame
-from ...magic.core.list import convolve_and_rebin
+from ...magic.core.list import convolve_and_rebin, convolve_rebin_and_convert
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..basics.projection import GalaxyProjection
 from ..basics.instruments import FrameInstrument, FullSEDInstrument
@@ -7311,7 +7311,8 @@ class RTModel(object):
         sfr = self.sfr_intrinsic_fuv_luminosity_map_earth
 
         # Uniformize
-        young, sfr = convolve_and_rebin(young, sfr)
+        #young, sfr = convolve_and_rebin(young, sfr)
+        young, sfr = convolve_rebin_and_convert(young, sfr)
 
         # Sum the contributions
         return young + sfr
@@ -7473,7 +7474,8 @@ class RTModel(object):
         sfr = self.sfr_bolometric_luminosity_map_earth
 
         # Unformize
-        young, sfr = convolve_and_rebin(young, sfr)
+        #young, sfr = convolve_and_rebin(young, sfr)
+        young, sfr = convolve_rebin_and_convert(young, sfr)
 
         # Sum the contributions
         return young + sfr
@@ -7876,7 +7878,8 @@ class RTModel(object):
         sfr = self.sfr_dust_mass_map_earth
 
         # Uniformize
-        diffuse, sfr = convolve_and_rebin(diffuse, sfr)
+        #diffuse, sfr = convolve_and_rebin(diffuse, sfr)
+        diffuse, sfr = convolve_rebin_and_convert(diffuse, sfr)
 
         # Sum the contributions
         return diffuse + sfr
