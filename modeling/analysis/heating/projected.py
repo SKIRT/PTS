@@ -135,7 +135,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.has_earth_cube_contributions_all
+        return self.has_earth_cube_all
+        #return self.has_earth_cube_contributions_all
 
     # -----------------------------------------------------------------
 

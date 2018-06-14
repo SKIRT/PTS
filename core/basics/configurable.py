@@ -675,7 +675,7 @@ class InteractiveConfigurable(Configurable):
         :return:
         """
 
-        return len(self.history)
+        return len(self._history)
 
     # -----------------------------------------------------------------
 
@@ -1280,7 +1280,7 @@ class InteractiveConfigurable(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def history(self):
+    def _history(self):
 
         """
         This function ...
@@ -1346,7 +1346,7 @@ class InteractiveConfigurable(Configurable):
 
         if not self.has_commands:
             if not self.has_history_commands: return None
-            else: return self.history[-1]
+            else: return self._history[-1]
         else: return self.commands[-1]
 
     # -----------------------------------------------------------------
@@ -1369,7 +1369,7 @@ class InteractiveConfigurable(Configurable):
         # Show all history?
         if all:
             print("")
-            for command in self.history:
+            for command in self._history:
                 print(command)
                 lines.append(command)
 
