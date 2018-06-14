@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..simulation.execute import SkirtExec
 from ..basics.log import log
 from ..basics.configurable import Configurable
-from ..launch.batchlauncher import BatchLauncher
+from ..launch.batch import BatchLauncher
 
 # -----------------------------------------------------------------
 

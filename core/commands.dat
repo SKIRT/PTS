@@ -22,7 +22,7 @@ tests | -- | test.pts.PTSTestSuite | arguments | Run PTS tests
 
 # LAUNCHING
 launch_simulation | -- | launch.launcher.SKIRTLauncher | arguments | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
-launch_batch | -- | launch.batchlauncher.BatchLauncher | interactive | Launch a batch of SKIRT simulations remotely on one or more remote hosts
+launch_batch | -- | launch.batch.BatchLauncher | interactive | Launch a batch of SKIRT simulations remotely on one or more remote hosts
 status | -- | launch.synchronizer.RemoteSynchronizer | arguments | Check the status of SKIRT simulations and PTS tasks running remotely
 estimate_memory | -- | advanced.memoryestimator.MemoryEstimator | arguments | Estimate the memory required for a certain ski file
 test_memory | -- | test.memory.MemoryTester | arguments | Test the memory estimation for a certain ski file with the actual memory consumption

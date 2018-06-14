@@ -19,6 +19,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from . import parsing, stringify
+from . import types
 from ..basics.map import Map
 
 # -----------------------------------------------------------------
@@ -342,16 +343,18 @@ def write_list_impl(listfile, lst, indent=""):
     :param listfile:
     :param lst:
     :param indent:
-    :param use_serialization:
     :return:
     """
 
     for element in lst:
 
         if isinstance(element, list) and contains_other_lists(element):
+
             print(indent + "[list]:", file=listfile)
             write_list_impl(listfile, element, indent=indent + "    ")
+
         else:
+
             ptype, string = stringify.stringify(element)
             listfile.write(indent + "[" + ptype + "] " + string + "\n")
 

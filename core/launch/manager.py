@@ -20,7 +20,7 @@ from ..basics.configurable import InteractiveConfigurable, InvalidCommandError
 from ..basics.configuration import ConfigurationDefinition, parse_arguments, prompt_choice, prompt_settings, prompt_yn
 from ..basics.log import log
 from ..tools.stringify import tostr
-from .batchlauncher import SimulationAssignmentTable, SimulationStatusTable
+from .tables import SimulationAssignmentTable, SimulationStatusTable
 from ..tools import formatting as fmt
 from .timing import TimingTable
 from .memory import MemoryTable
@@ -49,7 +49,7 @@ from ..config.show_simulation_settings import definition as show_simulation_defi
 from ..config.adapt_simulation_settings import definition as adapt_simulations_definition
 from ..config.show_analysis_options import definition as show_analysis_definition
 from ..config.adapt_analysis_options import definition as adapt_analysis_definition
-from .batchlauncher import BatchLauncher
+from .batch import BatchLauncher
 from ..basics.table import SmartTable
 from ..tools import tables
 from ..tools import time

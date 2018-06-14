@@ -20,7 +20,7 @@ from collections import OrderedDict
 from .component import FittingComponent
 from ...core.basics.log import log
 from ...core.tools import filesystem as fs
-from ...core.launch.batchlauncher import BatchLauncher
+from ...core.launch.batch import BatchLauncher
 from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from ...core.tools import time

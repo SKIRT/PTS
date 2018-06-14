@@ -22,7 +22,7 @@ from ..tools import time
 from ..tools import filesystem as fs
 from ..basics.log import log
 from ..launch.options import SchedulingOptions
-from ..launch.batchlauncher import BatchLauncher
+from ..launch.batch import BatchLauncher
 from ..launch.timing import TimingTable
 from ..launch.memory import MemoryTable
 from ..tools import tables

@@ -4323,6 +4323,7 @@ class Remote(object):
 
         # Construct the command string
         copy_command = "scp "
+        if self.host.port is not None: copy_command += "-P " + str(self.host.port) + " "
         if connect_timeout is not None: copy_command += "-o ConnectTimeout=" + str(connect_timeout) + " "
         if compress: copy_command += "-C "
 
@@ -4607,6 +4608,7 @@ class Remote(object):
 
         # Construct the command string
         copy_command = "scp "
+        if self.host.port is not None: copy_command += "-P " + str(self.host.port) + " "
         if connect_timeout is not None: copy_command += " -o ConnectTimeout=" + str(connect_timeout) + " "
         if compress: copy_command += "-C "
 

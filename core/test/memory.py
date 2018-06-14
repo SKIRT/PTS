@@ -22,7 +22,7 @@ from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
 from ..simulation.skifile import SkiFile
 from ..advanced.memoryestimator import MemoryEstimator
-from ..launch.batchlauncher import BatchLauncher
+from ..launch.batch import BatchLauncher
 from ..simulation.definition import SingleSimulationDefinition, create_definitions
 from ..config.launch_batch import definition
 from ..basics.configuration import InteractiveConfigurationSetter

@@ -25,12 +25,12 @@ from ...core.launch.manager import SimulationManager, extra_columns
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.simulation.remote import is_analysed_status
-from ...core.launch.batchlauncher import SimulationStatusTable
+from ...core.launch.tables import SimulationStatusTable
 from ...core.tools import sequences
 from .generation import check_simulation_paths, correct_simulation_and_analysis_paths
 from ...core.tools.utils import lazyproperty
 from .component import FittingComponent
-from ...core.launch.batchlauncher import MissingSimulation
+from ...core.launch.batch import MissingSimulation
 
 # -----------------------------------------------------------------
 
@@ -71,6 +71,18 @@ class GenerationManager(SimulationManager, FittingComponent):
         self._commands = self._commands.copy()  # so the dictionary in the core/launch/manager module is not adapted
         self._commands[_simulations_command_name] = ("show_simulations_command", True, "show info on the simulation files/objects", None)
         #self._commands[_assignment_command_name] = ("show_assignment", False, "show the assignment table", None)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.fitting_run.generations_path, self.generation.name)
 
     # -----------------------------------------------------------------
 
@@ -196,6 +208,9 @@ class GenerationManager(SimulationManager, FittingComponent):
         input["info_tables"] = [self.parameters_table, self.chi_squared_table]
         input["remotes"] = remotes
         input["simulations"] = simulations
+
+        # Set the output path
+        self.config.output = self.generation_path
 
         # Setup
         SimulationManager.setup(self, **input)

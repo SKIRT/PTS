@@ -15,9 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
-from ...core.launch.batchlauncher import BatchLauncher
+from ...core.launch.batch import BatchLauncher
 from ...core.simulation.definition import SingleSimulationDefinition
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
 from ..build.dustgrid import DustGridBuilder
 from .interface import ModelSimulationInterface, earth_name, faceon_name, edgeon_name
 from ...core.simulation.grids import load_grid, bintree, octtree

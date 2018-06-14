@@ -16,13 +16,13 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import numbers
-from pts.core.launch.manager import SimulationManager
-from pts.core.tools import filesystem as fs
-from pts.core.basics.log import log
+from ...core.tools import numbers
+from ...core.launch.manager import SimulationManager
+from ...core.tools import filesystem as fs
+from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
 from .component import AnalysisComponent
-from ...core.launch.batchlauncher import SimulationAssignmentTable
+from ...core.launch.tables import SimulationAssignmentTable
 
 # -----------------------------------------------------------------
 
@@ -142,6 +142,9 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
 
         # Interactive
         self.config.interactive = True
+
+        # Set the output path
+        self.config.output = self.analysis_run_path
 
         # Setup
         SimulationManager.setup(self, **input)

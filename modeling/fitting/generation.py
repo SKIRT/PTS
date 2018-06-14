@@ -29,7 +29,7 @@ from ...evolve.optimize.components import get_crossover, get_crossover_origins, 
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
 from ...core.tools.utils import lazyproperty, memoize_method
-from ...core.launch.batchlauncher import SimulationAssignmentTable
+from ...core.launch.tables import SimulationAssignmentTable
 from ...core.simulation.remote import get_simulation_for_host, has_simulation_for_host, get_simulation_path_for_host, is_invalid_or_unknown_status
 from ...core.remote.host import find_host_ids
 from ...core.simulation.screen import ScreenScript
@@ -43,11 +43,11 @@ from ...magic.core.frame import Frame
 from ...core.basics.log import log
 from ...core.simulation.remote import get_simulations_for_host
 from ...core.simulation.remote import finished_name
-from ...core.launch.batchlauncher import SimulationStatusTable
+from ...core.launch.tables import SimulationStatusTable
 from ...core.simulation.adapter import adapt_simulation, adapt_analysis
 from ...core.basics.configuration import prompt_yn, prompt_string
 from ...core.tools.stringify import tostr
-from ...core.launch.batchlauncher import MissingSimulation
+from ...core.launch.batch import MissingSimulation
 from ...core.simulation.jobscript import SKIRTJobScript, get_host_id_from_jobscript_file
 
 # -----------------------------------------------------------------
