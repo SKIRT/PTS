@@ -386,6 +386,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def has_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.distance is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def filter(self):
 
         """
@@ -2223,6 +2235,70 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def angular_pixelscale(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        if self.has_angular_pixelscale: return self.pixelscale
+        elif self.has_physical_pixelscale:
+            if not self.has_distance: raise ValueError("Distance is not defined to convert physical pixelscale into angular pixelscale")
+            return self.pixelscale.to_angular(distance=self.distance)
+
+        # No pixelscale
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_pixelscale(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        if self.has_physical_pixelscale: return self.pixelscale
+        elif self.has_angular_pixelscale:
+            if not self.has_distance: raise ValueError("Distance is not defined to convert angular pixelscale into physical pixelscale")
+            return self.pixelscale.to_physical(distance=self.distance)
+
+        # No pixelscale
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def average_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        angular = self.angular_pixelscale
+        if angular is None: return None
+        else: return angular.average
+
+    # -----------------------------------------------------------------
+
+    @property
+    def average_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        physical = self.physical_pixelscale
+        if physical is None: return None
+        else: return physical.average
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelarea(self):
 
         """
@@ -2249,6 +2325,56 @@ class Frame(NDDataArray):
             # NO UNITS? ASSUME IT'S IN DEGREES? IS THIS ANY GOOD? WHY WAS THIS DONE?
             deg = (self.pixelscale.x * self.pixelscale.y).value
             return (deg * u("deg")).to("sr")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def angular_pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: return None
+        return (self.angular_pixelscale.x * self.angular_pixelscale.y).to("sr")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_solid_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.angular_pixelarea
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_pixelscale: return None
+        return (self.physical_pixelscale.x * self.physical_pixelscale.y).to("pc2")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.physical_pixelarea
 
     # -----------------------------------------------------------------
 

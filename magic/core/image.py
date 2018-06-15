@@ -581,6 +581,20 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Set the pixelscale of all frames
+        for frame_name in self.frames: self.frames[frame_name].pixelscale = value
+
+    # -----------------------------------------------------------------
+
     @property
     def average_pixelscale(self):
 

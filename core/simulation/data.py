@@ -20,6 +20,7 @@ from .output import SimulationOutput
 from .table import SkirtTable, is_valid
 from ..tools.utils import lazyproperty, LazyDictionary
 from ..tools import filesystem as fs
+from .skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -115,6 +116,44 @@ class SimulationData(object):
         """
 
         return self.output.prefix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_skifile(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.output.has_single_parameters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def skifile(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.output.has_single_parameters: return SkiFile(self.output.single_parameters)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_instrument_distance(self, instrument_name):
+
+        """
+        Thisf unction ...
+        :param instrument_name:
+        :return:
+        """
+
+        if not self.has_skifile: return None
+        else: return self.skifile.get_instrument_distance(instrument_name)
 
     # -----------------------------------------------------------------
 
@@ -631,7 +670,8 @@ class SimulationData(object):
 
             # Initialize lazy dictionary for the datacubes of this instrument
             if instrument_name not in images_instruments:
-                images = LazyDictionary(DataCube.from_file, wavelength_grid=self.wavelength_grid)
+                distance = self.get_instrument_distance(instrument_name)
+                images = LazyDictionary(DataCube.from_file, wavelength_grid=self.wavelength_grid, distance=distance)
                 images_instruments[instrument_name] = images
 
             # Add to dictionary

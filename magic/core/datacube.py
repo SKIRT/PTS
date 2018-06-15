@@ -44,6 +44,25 @@ parallel_filter_convolution_dirname = "datacube-parallel-filter-convolution"
 
 # -----------------------------------------------------------------
 
+def get_parameters_path(output_path=None):
+
+    """
+    This function ...
+    :param output_path:
+    :return:
+    """
+
+    # Determine output path
+    if output_path is None: output_path = fs.cwd()
+
+    # Get parameters path
+    paths = fs.files_in_path(output_path, extension="xml", endswith="parameters")
+
+    # Return single
+    return sequences.get_single(paths, method="none")
+
+# -----------------------------------------------------------------
+
 def load_all_skirt_datacube_paths(output_path=None):
 
     """
@@ -190,10 +209,15 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, name="untitled"):
+    def __init__(self, name="untitled", distance=None, pixelscale=None, psf_filter=None, fwhm=None):
 
         """
         The constructor ...
+        :param name:
+        :param distance:
+        :param pixelscale:
+        :param psf_filter:
+        :param fwhm:
         """
 
         # Call the constructor of the base class
@@ -201,6 +225,12 @@ class DataCube(Image):
 
         # The wavelength grid
         self.wavelength_grid = None
+
+        # Set properties
+        if distance is not None: self.distance = distance
+        if pixelscale is not None: self.pixelscale = pixelscale
+        if psf_filter is not None: self.psf_filter = psf_filter
+        if fwhm is not None: self.fwhm = fwhm
 
     # -----------------------------------------------------------------
 
@@ -321,19 +351,28 @@ class DataCube(Image):
         # Get the SED path for the instrument
         sed_path = sed_paths_instruments[instrument_name]
 
+        # Get the parameters path
+        parameters_path = get_parameters_path(output_path=output_path)
+        if parameters_path is not None:
+            from ...core.simulation.skifile import SkiFile
+            skifile = SkiFile(parameters_path)
+            distance = skifile.get_instrument_distance(instrument_name)
+        else: distance = None
+
         # Return
-        return cls.from_file_and_sed_file(datacube_path, sed_path, wavelength_range=wavelength_range)
+        return cls.from_file_and_sed_file(datacube_path, sed_path, wavelength_range=wavelength_range, distance=distance)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file_and_sed_file(cls, image_path, sed_path, wavelength_range=None):
+    def from_file_and_sed_file(cls, image_path, sed_path, wavelength_range=None, distance=None):
 
         """
         This function ...
         :param image_path:
         :param sed_path:
         :param wavelength_range:
+        :param distance:
         :return:
         """
 
@@ -343,18 +382,19 @@ class DataCube(Image):
         sed = load_sed(sed_path)
 
         # Create
-        return cls.from_file_and_sed(image_path, sed, wavelength_range=wavelength_range)
+        return cls.from_file_and_sed(image_path, sed, wavelength_range=wavelength_range, distance=distance)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file_and_sed(cls, image_path, sed, wavelength_range=None):
+    def from_file_and_sed(cls, image_path, sed, wavelength_range=None, distance=None):
 
         """
         This function ...
         :param image_path:
         :param sed:
         :param wavelength_range:
+        :param distance:
         :return:
         """
 
@@ -362,18 +402,19 @@ class DataCube(Image):
         wavelength_grid = WavelengthGrid.from_sed(sed)
 
         # Create the datacube
-        return cls.from_file(image_path, wavelength_grid, wavelength_range=wavelength_range)
+        return cls.from_file(image_path, wavelength_grid, wavelength_range=wavelength_range, distance=distance)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file_and_wavelength_grid_file(cls, image_path, wavelengths_path, wavelength_range=None):
+    def from_file_and_wavelength_grid_file(cls, image_path, wavelengths_path, wavelength_range=None, distance=None):
 
         """
         This function ...
         :param image_path:
         :param wavelengths_path:
         :param wavelength_range:
+        :param distance:
         :return:
         """
 
@@ -381,18 +422,19 @@ class DataCube(Image):
         wavelength_grid = WavelengthGrid.from_file(wavelengths_path)
 
         # Create the datacube
-        return cls.from_file(image_path, wavelength_grid, wavelength_range=wavelength_range)
+        return cls.from_file(image_path, wavelength_grid, wavelength_range=wavelength_range, distance=distance)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, image_path, wavelength_grid=None, wavelength_range=None):
+    def from_file(cls, image_path, wavelength_grid=None, wavelength_range=None, distance=None):
 
         """
         This function ...
         :param image_path:
         :param wavelength_grid:
         :param wavelength_range:
+        :param distance:
         :return:
         """
 
@@ -406,6 +448,9 @@ class DataCube(Image):
         datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True,
                                                   density=True, density_strict=True, indices=indices,
                                                   absolute_index_names=False) # IMPORTANT: ASSUME THAT DATACUBES ARE ALWAYS DEFINED IN SPECTRAL DENSITY UNITS!
+
+        # Set the distance if specified
+        if distance is not None: datacube.distance = distance
 
         # Get the wavelength grid from the metadata if needed
         if wavelength_grid is None:
@@ -445,32 +490,34 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_files(cls, paths):
+    def from_files(cls, paths, **kwargs):
 
         """
         This function ...
         :param paths: paths of frames
+        :param kwargs:
         :return:
         """
 
         frames = [Frame.from_file(path) for path in paths]
-        return cls.from_frames(frames)
+        return cls.from_frames(frames, **kwargs)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_frames(cls, frames, wavelength_grid=None, is_sorted=False):
+    def from_frames(cls, frames, wavelength_grid=None, is_sorted=False, **kwargs):
 
         """
         This function ...
         :param frames:
         :param wavelength_grid:
         :param is_sorted:
+        :param kwargs:
         :return:
         """
 
         # Create a datacube instance
-        datacube = cls()
+        datacube = cls(**kwargs)
 
         # The indices of the frames, sorted on wavelength
         nframes = len(frames)
@@ -612,7 +659,7 @@ class DataCube(Image):
         else: frames = [self.frames[index] for index in indices]
 
         # Create new datacube
-        return self.__class__.from_frames(frames, wavelength_grid=wavelength_grid)
+        return self.__class__.from_frames(frames, wavelength_grid=wavelength_grid, distance=self.distance)
 
     # -----------------------------------------------------------------
 

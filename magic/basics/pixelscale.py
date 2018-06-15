@@ -432,6 +432,19 @@ class PhysicalPixelscale(PhysicalExtent):
 
         return self.x_extent() * self.y_extent()
 
+    # -----------------------------------------------------------------
+
+    def to_angular(self, distance, unit="arcsec"):
+
+        """
+        Thisn function ...
+        :param distance:
+        :param unit:
+        :return:
+        """
+
+        return Pixelscale.from_physical(self, distance, unit=unit)
+
 # -----------------------------------------------------------------
 
 def only_physical(quantity, unit=None):

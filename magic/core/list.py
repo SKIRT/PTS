@@ -2843,16 +2843,31 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
         if ignore is not None and names[index] in ignore: continue
 
         #wcs = frame.wcs
-        pixelscale = frame.average_pixelscale
+        #pixelscale = frame.average_pixelscale
         #if wcs is None:
-        if pixelscale is None:
+        #if pixelscale is None:
+        
+        # Angular pixelscale
+        #if frame.has_angular_pixelscale: pixelscale = frame.average_pixelscale
+
+        # Physical pixelscale
+        #elif frame.has_physical_pixelscale: pixelscale = frame.average_angular_pixelscale
+
+        if frame.has_pixelscale: pixelscale = frame.average_angular_pixelscale
+
+        # Pixelscale not defined
+        else:
 
             if no_pixelscale == "error":
                 if names is not None: raise ValueError("Pixelscale of the " + names[index] + " image is not defined")
                 else: raise ValueError("Pixelscale of the image is not defined")
             elif no_pixelscale == "skip": continue
             elif no_pixelscale == "return": return frames
-            elif no_pixelscale == "shape": _check_shapes = True
+            elif no_pixelscale == "shape":
+                _check_shapes = True
+                xsizes.append(frame.xsize)
+                ysizes.append(frame.ysize)
+                continue
             else: raise ValueError("Invalid value for 'no_pixelscale'")
 
         #print(highest_pixelscale)
@@ -2863,6 +2878,7 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
         xsizes.append(frame.xsize)
         ysizes.append(frame.ysize)
 
+        #print(highest_pixelscale, pixelscale)
         #if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
         if highest_pixelscale is None or pixelscale > highest_pixelscale:
 

@@ -36,7 +36,7 @@ from ...magic.core.frame import Frame
 from ...magic.core.list import convolve_and_rebin, convolve_rebin_and_convert
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..basics.projection import GalaxyProjection
-from ..basics.instruments import FrameInstrument, FullSEDInstrument
+from ..basics.instruments import FullSEDInstrument
 from ..simulation.projections import ComponentProjections
 from ..simulation.sed import ComponentSED
 from ...core.units.parsing import parse_unit as u
