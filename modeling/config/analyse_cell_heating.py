@@ -85,6 +85,7 @@ definition.add_flag("recreate_map_midplane", "recreate the map in the midplane")
 definition.add_flag("reinterpolate_maps", "recreate the interpolated maps")
 definition.add_flag("reinterpolate_map", "recreate the interpolated map")
 definition.add_flag("reinterpolate_map_midplane", "recreate the interpolated map in the midplane")
+definition.add_optional("not_nans_dilation_radius", "positive_real", "radius for dilating not-nans", 3)
 
 # Replot
 definition.add_flag("replot", "replot")

@@ -2306,6 +2306,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Get outside nans
         outside_nans = self.map_interpolated.nans.largest()
         #plotting.plot_mask(outside_nans, title="outside nans")
+        outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans.fits"))
+        not_nans = outside_nans.inverse()
+        not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
+        #not_nans.fill_holes()
+        not_nans.saveto(fs.join(self.cell_heating_path, "not_nans.fits"))
+        do_nans = not_nans.largest().inverse()
 
         # Get mask
         where = self.map_ncells.where_smaller_than(self.config.min_ncells)
@@ -2321,7 +2327,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Interpolate nans
         self.map_interpolated.interpolate_nans(sigma=2.)
-        self.map_interpolated.replace_by_nans(outside_nans)
+        self.map_interpolated.replace_by_nans(do_nans)
 
     # -----------------------------------------------------------------
 
@@ -2371,6 +2377,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Get outside nans
         outside_nans = self.map_midplane_interpolated.nans.largest()
         #plotting.plot_mask(outside_nans, title="outside nans")
+        outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans_midplane.fits"))
+        not_nans = outside_nans.inverse()
+        not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
+        #not_nans.fill_holes()
+        not_nans.saveto(fs.join(self.cell_heating_path, "not_nans_midplane.fits"))
+        do_nans = not_nans.largest().inverse()
 
         # Get mask
         where = self.map_midplane_ncells.where_smaller_than(self.config.min_ncells_midplane)
@@ -2380,7 +2392,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Interpolate nans
         self.map_midplane_interpolated.interpolate_nans(sigma=2.)
-        self.map_midplane_interpolated.replace_by_nans(outside_nans)
+        self.map_midplane_interpolated.replace_by_nans(do_nans)
 
     # -----------------------------------------------------------------
 
