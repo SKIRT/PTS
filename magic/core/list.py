@@ -2814,6 +2814,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     ignore = kwargs.pop("ignore", None)
     no_pixelscale = kwargs.pop("no_pixelscale", "error")
 
+    # Get distance
+    distance = kwargs.pop("distance", None)
+
     # Check
     if len(frames) == 1:
 
@@ -2852,6 +2855,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
         # Physical pixelscale
         #elif frame.has_physical_pixelscale: pixelscale = frame.average_angular_pixelscale
+
+        # Set frame distance if given
+        if distance is not None: frame.distance = distance
 
         if frame.has_pixelscale: pixelscale = frame.average_angular_pixelscale
 
@@ -3262,6 +3268,9 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
         # Debugging
         log.debug("Rebinning frame locally ...")
+
+        print(frame.name, frame.wcs)
+        print(wcs)
 
         if in_place:
             frame.rebin(wcs, convert=False) # should already be converted, or correction factor to be applied later

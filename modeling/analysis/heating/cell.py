@@ -109,25 +109,25 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # 2. Create the absorption table
+        # 1. Create the absorption table
         if self.needs_absorption_table: self.get_absorption_table()
 
-        # 3. Calculate the heating fraction of the unevolved stellar population
+        # 2. Calculate the heating fraction of the unevolved stellar population
         self.get_fractions()
 
-        # 4. Calculate the distribution of the heating fraction of the unevolved stellar population
+        # 3. Calculate the distribution of the heating fraction of the unevolved stellar population
         self.get_distributions()
 
-        # 5. Create the maps of the heating fraction
+        # 4. Create the maps of the heating fraction
         self.get_maps()
 
-        # 6. Interpolate the maps
+        # 5. Interpolate the maps
         self.interpolate_maps()
 
-        # 7. Writing
+        # 6. Writing
         self.write()
 
-        # 8. Plotting
+        # 7. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -142,6 +142,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(CellDustHeatingAnalyser, self).setup(**kwargs)
 
+        # Set flags
         if self.config.recreate_table: self.config.recalculate_fractions = True
         if self.config.recalculate_fractions: self.config.recalculate_distributions = True
 
@@ -157,9 +158,27 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             self.config.replot_radial_distribution = True
             self.config.replot_map = True
 
+        # Set replot maps flags
+        if self.config.replot_maps: self.config.replot_map = self.config.replot_map_midplane = True
+
+        # Set recreate maps
+        if self.config.recreate_maps: self.config.recreate_map = self.config.recreate_map_midplane = True
+
+        # Set reinterpolate maps
+        if self.config.reinterpolate_maps: self.config.reinterpolate_map = self.config.reinterpolate_map_midplane = True
+
+        # Set flags
         if self.config.recalculate_distribution or self.config.recalculate_distribution_diffuse: self.config.replot_distribution = True
         if self.config.recalculate_radial_distribution: self.config.replot_radial_distribution = True
+
+        # Set reinterpolate maps flags
+        if self.config.recreate_map: self.config.reinterpolate_map = True
+        if self.config.recreate_map_midplane: self.config.reinterpolate_map_midplane = True
+
+        # Set replot maps flags
         if self.config.recalculate_fractions: self.config.replot_map = True
+        if self.config.reinterpolate_map: self.config.replot_map = True
+        if self.config.reinterpolate_map_midplane: self.config.replot_map_midplane = True
 
         # Remove
         if self.config.recreate_table and self.has_absorptions: self.remove_absorptions()
@@ -170,6 +189,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         if self.config.recalculate_radial_distribution and self.has_radial_distribution: self.remove_radial_distribution()
         if self.config.recreate_map and self.has_map: self.remove_map()
         if self.config.recreate_map_midplane and self.has_map_midplane: self.remove_map_midplane()
+        if self.config.reinterpolate_map and self.has_map_interpolated: self.remove_map_interpolated()
+        if self.config.reinterpolate_map_midplane and self.has_map_midplane_interpolated: self.remove_map_midplane_interpolated()
         if self.config.replot_distribution and self.has_distribution_plot: self.remove_distribution_plot()
         if self.config.replot_radial_distribution and self.has_radial_distribution_plot: self.remove_radial_distribution_plot()
         if self.config.replot_map and self.has_map_plot: self.remove_map_plot()
@@ -1014,7 +1035,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_map or self.do_plot_map
+        return not self.has_map or not self.has_map_interpolated
 
     # -----------------------------------------------------------------
 
@@ -1026,7 +1047,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return not self.has_map_midplane or self.do_plot_map_midplane
+        return not self.has_map_midplane or not self.has_map_midplane_interpolated
 
     # -----------------------------------------------------------------
 
@@ -2197,6 +2218,30 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_map_interpolated(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return not self.has_map_interpolated or self.do_plot_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_map_midplane_interpolated(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_map_midplane_interpolated or self.do_plot_map_midplane
+
+    # -----------------------------------------------------------------
+
     def interpolate_maps(self):
 
         """
@@ -2208,10 +2253,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Getting the interpolated versions of the heating fraction maps ...")
 
         # Face-on
-        self.get_map_interpolated()
+        if self.needs_map_interpolated: self.get_map_interpolated()
 
         # Midplane
-        self.get_map_midplane_interpolated()
+        if self.needs_map_midplane_interpolated: self.get_map_midplane_interpolated()
 
     # -----------------------------------------------------------------
 
@@ -2258,14 +2303,25 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Copy
         self.map_interpolated = self.map.copy()
 
+        # Get outside nans
+        outside_nans = self.map_interpolated.nans.largest()
+        #plotting.plot_mask(outside_nans, title="outside nans")
+
         # Get mask
         where = self.map_ncells.where_smaller_than(self.config.min_ncells)
+
+        #plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
+        #plotting.plot_mask(self.map_interpolated.nans, title="nans")
 
         # Put pixels to NaN
         self.map_interpolated.replace_by_nans(where)
 
+        #plotting.plot_mask(self.map_interpolated.nans, title="nans")
+        #exit()
+
         # Interpolate nans
         self.map_interpolated.interpolate_nans(sigma=2.)
+        self.map_interpolated.replace_by_nans(outside_nans)
 
     # -----------------------------------------------------------------
 
@@ -2312,6 +2368,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Copy
         self.map_midplane_interpolated = self.map_midplane.copy()
 
+        # Get outside nans
+        outside_nans = self.map_midplane_interpolated.nans.largest()
+        #plotting.plot_mask(outside_nans, title="outside nans")
+
         # Get mask
         where = self.map_midplane_ncells.where_smaller_than(self.config.min_ncells_midplane)
 
@@ -2320,6 +2380,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Interpolate nans
         self.map_midplane_interpolated.interpolate_nans(sigma=2.)
+        self.map_midplane_interpolated.replace_by_nans(outside_nans)
 
     # -----------------------------------------------------------------
 
@@ -3492,11 +3553,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
 
         # Plot
-        plotting.plot_map(self.map_interpolated, path=self.map_plot_path, interval=(0.,1.), )
+        plotting.plot_map(self.map_interpolated, path=self.map_plot_path, interval=(0.,1.), contours=self.config.contours, ncontours=self.config.nlevels)
 
         # Plot
-        plotting.plot_frame_contours(self.map_interpolated, plot_data=True, single_colour="white",
-                                     path=self.map_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
+        #plotting.plot_frame_contours(self.map_interpolated, plot_data=True, single_colour="white",
+        #                             path=self.map_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
 
     # -----------------------------------------------------------------
 
@@ -3546,8 +3607,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting a map of the heating fraction in the midplane of the galaxy ...")
 
         # Plot
-        plotting.plot_frame_contours(self.map_midplane_interpolated, plot_data=True, single_colour="white",
-                                     path=self.map_midplane_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
+        plotting.plot_map(self.map_midplane_interpolated, path=self.map_midplane_plot_path, contours=self.config.contours, ncontours=self.config.nlevels, interval=(0.,1.))
+
+        # Plot
+        #plotting.plot_frame_contours(self.map_midplane_interpolated, plot_data=True, single_colour="white",
+        #                             path=self.map_midplane_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
 
     # -----------------------------------------------------------------
 

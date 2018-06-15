@@ -66,20 +66,33 @@ definition.add_flag("plot_map_midplane", "plot map of the midplane", True)
 
 # -----------------------------------------------------------------
 
-# Recreate
+# Recreate table
 definition.add_flag("recreate_table", "recreate the absorption table")
+
+# Recalculate fractions, distributions
 definition.add_flag("recalculate_fractions", "recalculate the heating fractions")
 definition.add_flag("recalculate_distributions", "recreate the heating distributions")
 definition.add_flag("recalculate_distribution", "recalculate")
 definition.add_flag("recalculate_distribution_diffuse", "recalculate")
 definition.add_flag("recalculate_radial_distribution", "recalculate")
+
+# Recreate maps
+definition.add_flag("recreate_maps", "recreate the map and the map in the midplane")
 definition.add_flag("recreate_map", "recreate the map")
 definition.add_flag("recreate_map_midplane", "recreate the map in the midplane")
+
+# Re-interpolate maps
+definition.add_flag("reinterpolate_maps", "recreate the interpolated maps")
+definition.add_flag("reinterpolate_map", "recreate the interpolated map")
+definition.add_flag("reinterpolate_map_midplane", "recreate the interpolated map in the midplane")
+
+# Replot
 definition.add_flag("replot", "replot")
 definition.add_flag("replot_distribution", "replot the distribution")
 definition.add_flag("replot_radial_distribution", "replot the radial distribution")
 definition.add_flag("replot_map", "replot the map")
 definition.add_flag("replot_map_midplane", "replot the map in the midplane")
+definition.add_flag("replot_maps", "replot the map and the map in the midplane")
 
 # -----------------------------------------------------------------
 
@@ -98,6 +111,7 @@ formats = ["png", "pdf"]
 definition.add_optional("radial_distribution_radii", "quantity_list", "radii at which to draw vertical lines on the radial distribution plot")
 definition.add_optional("plotting_format", "string", "plotting format", default_format, choices=formats)
 definition.add_optional("nlevels", "positive_integer", "number of levels for contour plots of the heating fraction maps", 5)
+definition.add_flag("contours", "add contours to the plots")
 
 # -----------------------------------------------------------------
 

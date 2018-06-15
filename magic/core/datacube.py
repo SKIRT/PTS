@@ -819,7 +819,7 @@ class DataCube(Image):
         else: raise ValueError("Invalid argument")
 
         # Return new datacube
-        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy(), distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -864,7 +864,7 @@ class DataCube(Image):
         else: raise ValueError("Invalid argument")
 
         # Create new datacube
-        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy(), distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -896,7 +896,7 @@ class DataCube(Image):
         else: raise ValueError("Invalid argument")
 
         # Create new datacube
-        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy(), distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -928,7 +928,7 @@ class DataCube(Image):
         else: raise ValueError("Invalid argument")
 
         # Create new datacube
-        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy(), distance=self.distance)
 
     # -----------------------------------------------------------------
 
