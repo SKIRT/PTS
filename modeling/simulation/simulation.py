@@ -58,17 +58,36 @@ class ComponentSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    def __init__(self, *args, **kwargs):
+
+        """
+        Thisf unction ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ComponentSimulation, self).__init__(*args, **kwargs)
+
+        # Set earth coordinate system attribute
+        self.earth_wcs = None
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def from_output_path(cls, path, name=None):
+    def from_output_path(cls, path, name=None, earth_wcs=None):
 
         """
         This function ...
         :param path:
         :param name:
+        :param earth_wcs:
         :return:
         """
 
-        return createsimulations(path, single=True, name=name, cls=cls)
+        sim = createsimulations(path, single=True, name=name, cls=cls)
+        if earth_wcs is not None: sim.earth_wcs = earth_wcs
+        return sim
 
     # -----------------------------------------------------------------
 
@@ -160,6 +179,20 @@ class ComponentSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    @property
+    def coordinate_systems(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        systems = dict()
+        if self.earth_wcs is not None: systems["earth"] = self.earth_wcs
+        return systems
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def data(self):
 
@@ -168,7 +201,7 @@ class ComponentSimulation(SkirtSimulation):
         :return:
         """
 
-        return SimulationData.from_output(self.output)
+        return SimulationData.from_output(self.output, coordinate_systems=self.coordinate_systems)
 
     # -----------------------------------------------------------------
 

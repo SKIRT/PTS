@@ -350,8 +350,8 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         self.projections[faceon_name] = self.representation.faceon_projection
         self.projections[edgeon_name] = self.representation.edgeon_projection
 
-        # Set reference deprojection
-        # TODO: how to obtain this?
+        # Set reference deprojection from representation
+        self.analysis_run_info.reference_deprojection = self.representation.reference_deprojection_name
 
     # -----------------------------------------------------------------
 

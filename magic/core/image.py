@@ -1273,7 +1273,8 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Setting the FWHM of the " + frame_name + " frame to " + str(fwhm) + " ...")
+            # TOO MUCH OUTPUT
+            #log.debug("Setting the FWHM of the " + frame_name + " frame to " + str(fwhm) + " ...")
 
             # Set the unit for this frame
             self.frames[frame_name].fwhm = fwhm
@@ -1293,7 +1294,8 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Setting the filter of the " + frame_name + " frame to " + str(fltr) + " ...")
+            # TOO MUCH OUTPUT
+            #log.debug("Setting the filter of the " + frame_name + " frame to " + str(fltr) + " ...")
 
             # Set the filter for this frame
             self.frames[frame_name].filter = fltr
@@ -1313,7 +1315,8 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Setting the coordinate system of the " + frame_name + " frame ...")
+            # TOO MUCH OUTPUT
+            #log.debug("Setting the coordinate system of the " + frame_name + " frame ...")
 
             # Set the wcs for this frame
             self.frames[frame_name].wcs = wcs

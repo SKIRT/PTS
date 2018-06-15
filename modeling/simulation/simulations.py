@@ -43,13 +43,14 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, name, observed, distance=None):
+    def __init__(self, name, observed, distance=None, earth_wcs=None):
 
         """
         The constructor ...
         :param name:
         :param observed:
         :param distance:
+        :param earth_wcs:
         """
 
         # Set the name
@@ -60,6 +61,21 @@ class ComponentSimulations(object):
 
         # Set the distance
         if distance is not None: self.distance = distance
+
+        # Set the coordinate system
+        self.earth_wcs = earth_wcs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.earth_wcs is not None
 
     # -----------------------------------------------------------------
 

@@ -149,7 +149,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.has_faceon_cube_contributions_all
+        return self.has_faceon_cube_all
+        #return self.has_faceon_cube_contributions_all
 
     # -----------------------------------------------------------------
 
@@ -161,7 +162,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return self.has_edgeon_cube_contributions_all
+        return self.has_edgeon_cube_all
+        #return self.has_edgeon_cube_contributions_all
 
     # -----------------------------------------------------------------
 

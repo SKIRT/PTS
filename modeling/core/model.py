@@ -186,7 +186,7 @@ class RTModel(object):
                  free_parameter_labels=None, free_parameter_values=None, observed_total_output_path=None,
                  observed_bulge_output_path=None, observed_disk_output_path=None, observed_old_output_path=None,
                  observed_young_output_path=None, observed_sfr_output_path=None, observed_unevolved_output_path=None,
-                 parameters=None, center=None, galaxy_name=None, hubble_stage=None, redshift=None):
+                 parameters=None, center=None, galaxy_name=None, hubble_stage=None, redshift=None, earth_wcs=None):
 
         """
         The constructor ...
@@ -208,6 +208,7 @@ class RTModel(object):
         :param galaxy_name: the name of the galaxy
         :param hubble_stage: the Hubble stage classification of the galaxy
         :param redshift: the redshift of the galaxy
+        :param earth_wcs: the celestial coordinate system of all simulated earth datacubes
         :return:
         """
 
@@ -261,6 +262,21 @@ class RTModel(object):
         self.galaxy_name = galaxy_name
         self.hubble_stage = hubble_stage
         self.redshift = redshift
+
+        # Set the earth coordinate system
+        self.earth_wcs = earth_wcs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.earth_wcs is not None
 
     # -----------------------------------------------------------------
 
@@ -558,7 +574,8 @@ class RTModel(object):
                                                           intrinsic_sed_paths=self.total_simulation_component_sed_paths,
                                                           distance=self.distance, intrinsic_cubes=self.total_simulation_component_cubes,
                                                           intrinsic_cubes_faceon=self.total_simulation_component_cubes_faceon,
-                                                          intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon)
+                                                          intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon,
+                                                          earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -577,7 +594,7 @@ class RTModel(object):
         return SingleComponentSimulations.from_output_paths(bulge_simulation_name, observed=self.observed_bulge_output_path,
                                                             intrinsic=sed.out_path, distance=self.distance,
                                                             map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon,
-                                                            map_edgeon=self.old_bulge_map_edgeon)
+                                                            map_edgeon=self.old_bulge_map_edgeon, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -596,7 +613,7 @@ class RTModel(object):
         return SingleComponentSimulations.from_output_paths(disk_simulation_name, observed=self.observed_disk_output_path,
                                                             intrinsic=sed.out_path, distance=self.distance,
                                                             map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon,
-                                                            map_edgeon=self.old_disk_map_edgeon)
+                                                            map_edgeon=self.old_disk_map_edgeon, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -693,7 +710,8 @@ class RTModel(object):
                                                           intrinsic_sed_paths=self.old_simulation_component_sed_paths,
                                                           distance=self.distance, intrinsic_cubes=self.old_simulation_component_cubes,
                                                           intrinsic_cubes_faceon=self.old_simulation_component_cubes_faceon,
-                                                          intrinsic_cubes_edgeon=self.old_simulation_component_cubes_edgeon)
+                                                          intrinsic_cubes_edgeon=self.old_simulation_component_cubes_edgeon,
+                                                          earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -712,7 +730,7 @@ class RTModel(object):
         return SingleComponentSimulations.from_output_paths(young_simulation_name, observed=self.observed_young_output_path,
                                                             intrinsic=sed.out_path, distance=self.distance,
                                                             map_earth=self.young_map_earth, map_faceon=self.young_map_faceon,
-                                                            map_edgeon=self.young_map_edgeon)
+                                                            map_edgeon=self.young_map_edgeon, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -731,7 +749,7 @@ class RTModel(object):
         return SingleComponentSimulations.from_output_paths(sfr_simulation_name, observed=self.observed_sfr_output_path,
                                                             intrinsic=sed.out_path, distance=self.distance,
                                                             map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon,
-                                                            map_edgeon=self.sfr_map_edgeon)
+                                                            map_edgeon=self.sfr_map_edgeon, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -828,7 +846,8 @@ class RTModel(object):
                                                           intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths,
                                                           distance=self.distance, intrinsic_cubes=self.unevolved_simulation_component_cubes,
                                                           intrinsic_cubes_faceon=self.unevolved_simulation_component_cubes_faceon,
-                                                          intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon)
+                                                          intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon,
+                                                          earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 

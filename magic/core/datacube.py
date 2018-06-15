@@ -427,7 +427,7 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, image_path, wavelength_grid=None, wavelength_range=None, distance=None):
+    def from_file(cls, image_path, wavelength_grid=None, wavelength_range=None, distance=None, wcs=None):
 
         """
         This function ...
@@ -435,6 +435,7 @@ class DataCube(Image):
         :param wavelength_grid:
         :param wavelength_range:
         :param distance:
+        :param wcs:
         :return:
         """
 
@@ -451,6 +452,9 @@ class DataCube(Image):
 
         # Set the distance if specified
         if distance is not None: datacube.distance = distance
+
+        # Set coordinate system if specified
+        if wcs is not None: datacube.wcs = wcs
 
         # Get the wavelength grid from the metadata if needed
         if wavelength_grid is None:

@@ -30,38 +30,44 @@ class SimulationData(object):
     This class ...
     """
 
-    def __init__(self, output):
+    def __init__(self, output, coordinate_systems=None):
 
         """
         The constructor ...
         :param output:
+        :param coordinate_systems:
         """
 
         # The simulation output
         self.output = output
 
+        # Set the coordinate systems for the instruments
+        self.coordinate_systems = coordinate_systems
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_output(cls, output):
+    def from_output(cls, output, coordinate_systems=None):
 
         """
         Thisnfunction ...
         :param output:
+        :param coordinate_systems:
         :return:
         """
 
-        return cls(output)
+        return cls(output, coordinate_systems=coordinate_systems)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path, prefix=None):
+    def from_directory(cls, path, prefix=None, coordinate_systems=None):
 
         """
         Thinsfunction ...
         :param path:
         :param prefix:
+        :param coordinate_systems:
         :return:
         """
 
@@ -69,16 +75,17 @@ class SimulationData(object):
         output = SimulationOutput.from_directory(path, prefix)
 
         # Create
-        return cls(output)
+        return cls(output, coordinate_systems=coordinate_systems)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_cwd(cls, prefix=None):
+    def from_cwd(cls, prefix=None, coordinate_systems=None):
 
         """
         This fucntion ...
         :param prefix:
+        :param coordinate_systems:
         :return:
         """
 
@@ -86,16 +93,17 @@ class SimulationData(object):
         output = SimulationOutput.from_cwd(prefix=prefix)
 
         # Create
-        return cls(output)
+        return cls(output, coordinate_systems=coordinate_systems)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_paths(cls, paths):
+    def from_paths(cls, paths, coordinate_systems=None):
 
         """
         This function ...
         :param paths:
+        :param coordinate_systems:
         :return:
         """
 
@@ -103,7 +111,7 @@ class SimulationData(object):
         output = SimulationOutput(*paths)
 
         # Create
-        return cls(output)
+        return cls(output, coordinate_systems=coordinate_systems)
 
     # -----------------------------------------------------------------
 
@@ -116,6 +124,55 @@ class SimulationData(object):
         """
 
         return self.output.prefix
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncoordinate_systems(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.coordinate_systems) if self.coordinate_systems is not None else 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_coordinate_systems(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.ncoordinate_systems > 0
+
+    # -----------------------------------------------------------------
+
+    def has_coordinate_system_for_instrument(self, instrument_name):
+
+        """
+        This function ...
+        :param instrument_name:
+        :return:
+        """
+
+        return self.has_coordinate_systems and instrument_name in self.coordinate_systems
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_for_instrument(self, instrument_name):
+
+        """
+        This function ...
+        :param instrument_name:
+        :return:
+        """
+
+        if not self.has_coordinate_system_for_instrument(instrument_name): return None
+        return self.coordinate_systems[instrument_name]
 
     # -----------------------------------------------------------------
 
@@ -671,7 +728,8 @@ class SimulationData(object):
             # Initialize lazy dictionary for the datacubes of this instrument
             if instrument_name not in images_instruments:
                 distance = self.get_instrument_distance(instrument_name)
-                images = LazyDictionary(DataCube.from_file, wavelength_grid=self.wavelength_grid, distance=distance)
+                wcs = self.get_coordinate_system_for_instrument(instrument_name)
+                images = LazyDictionary(DataCube.from_file, wavelength_grid=self.wavelength_grid, distance=distance, wcs=wcs)
                 images_instruments[instrument_name] = images
 
             # Add to dictionary

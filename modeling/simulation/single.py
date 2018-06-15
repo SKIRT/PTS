@@ -31,7 +31,8 @@ class SingleComponentSimulations(ComponentSimulations):
     Objects of this class describe the simulation(s) of radiative transfer model of a certain stellar component.
     """
 
-    def __init__(self, name, observed, intrinsic=None, distance=None, map_earth=None, map_faceon=None, map_edgeon=None):
+    def __init__(self, name, observed, intrinsic=None, distance=None, map_earth=None, map_faceon=None, map_edgeon=None,
+                 earth_wcs=None):
 
         """
         This function ...
@@ -42,10 +43,11 @@ class SingleComponentSimulations(ComponentSimulations):
         :param map_earth:
         :param map_faceon:
         :param map_edgeon:
+        :param earth_wcs:
         """
 
         # Call the constructor of the base class
-        super(SingleComponentSimulations, self).__init__(name, observed, distance=distance)
+        super(SingleComponentSimulations, self).__init__(name, observed, distance=distance, earth_wcs=earth_wcs)
 
         # Set the intrinsic simulation
         self.intrinsic = intrinsic
@@ -59,7 +61,7 @@ class SingleComponentSimulations(ComponentSimulations):
 
     @classmethod
     def from_output_paths(cls, name, observed, intrinsic=None, distance=None, map_earth_path=None, map_earth=None,
-                          map_faceon_path=None, map_faceon=None, map_edgeon_path=None, map_edgeon=None):
+                          map_faceon_path=None, map_faceon=None, map_edgeon_path=None, map_edgeon=None, earth_wcs=None):
 
         """
         This function ...
@@ -73,12 +75,13 @@ class SingleComponentSimulations(ComponentSimulations):
         :param map_faceon:
         :param map_edgeon_path:
         :param map_edgeon:
+        :param earth_wcs:
         :return:
         """
 
         # Load observed simulation
         if not fs.is_directory(observed): raise ValueError("Observed simulation directory does not exist")
-        if fs.has_files_in_path(observed): observed = ObservedComponentSimulation.from_output_path(observed)
+        if fs.has_files_in_path(observed): observed = ObservedComponentSimulation.from_output_path(observed, earth_wcs=earth_wcs)
         else:
             log.warning("Observed simulation has not been performed: no output files")
             observed = None
@@ -94,7 +97,7 @@ class SingleComponentSimulations(ComponentSimulations):
         # Load earth map
         if map_earth is not None:
             if map_earth_path is not None: raise ValueError("Cannot specify both map_earth and map_earth_path")
-        elif map_earth_path is not None: map_earth = Frame.from_file(map_earth_path)
+        elif map_earth_path is not None: map_earth = Frame.from_file(map_earth_path, wcs=earth_wcs)
         else: map_earth = None
 
         # Load faceon map
@@ -110,7 +113,8 @@ class SingleComponentSimulations(ComponentSimulations):
         else: map_edgeon = None
 
         # Create and return
-        return cls(name, observed, intrinsic=intrinsic, distance=distance, map_earth=map_earth, map_faceon=map_faceon, map_edgeon=map_edgeon)
+        return cls(name, observed, intrinsic=intrinsic, distance=distance, map_earth=map_earth, map_faceon=map_faceon,
+                   map_edgeon=map_edgeon, earth_wcs=earth_wcs)
 
     # -----------------------------------------------------------------
 

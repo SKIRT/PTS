@@ -33,7 +33,7 @@ class MultiComponentSimulations(ComponentSimulations):
     """
 
     def __init__(self, name, observed, intrinsic_seds=None, intrinsic_cubes=None, intrinsic_cubes_faceon=None,
-                 intrinsic_cubes_edgeon=None, distance=None):
+                 intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
 
         """
         This function ...
@@ -44,10 +44,11 @@ class MultiComponentSimulations(ComponentSimulations):
         :param intrinsic_cubes_faceon:
         :param intrinsic_cubes_edgeon:
         :param distance:
+        :param earth_wcs:
         """
 
         # Call the constructor of the base class
-        super(MultiComponentSimulations, self).__init__(name, observed, distance=distance)
+        super(MultiComponentSimulations, self).__init__(name, observed, distance=distance, earth_wcs=earth_wcs)
 
         # Set the SEDs of the components
         self.intrinsic_seds = intrinsic_seds
@@ -62,7 +63,7 @@ class MultiComponentSimulations(ComponentSimulations):
     @classmethod
     def from_output_path(cls, name, observed, intrinsic_sed_paths=None, intrinsic_seds=None, intrinsic_cube_paths=None,
                          intrinsic_cubes=None, intrinsic_cube_faceon_paths=None, intrinsic_cubes_faceon=None,
-                         intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None):
+                         intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
 
         """
         This function ...
@@ -77,11 +78,12 @@ class MultiComponentSimulations(ComponentSimulations):
         :param intrinsic_cube_edgeon_paths:
         :param intrinsic_cubes_edgeon:
         :param distance:
+        :param earth_wcs:
         :return:
         """
 
         # Load observed simulation
-        observed = ObservedComponentSimulation.from_output_path(observed)
+        observed = ObservedComponentSimulation.from_output_path(observed, earth_wcs=earth_wcs)
 
         # Load intrinsic SEDs
         if intrinsic_seds is not None:
@@ -91,7 +93,7 @@ class MultiComponentSimulations(ComponentSimulations):
             for component_name in intrinsic_sed_paths: intrinsic_seds[component_name] = load_sed(intrinsic_sed_paths[component_name])
         else: intrinsic_seds = None
 
-        # Load intrinsic cubes
+        # Load intrinsic cubes (EARTH)
         if intrinsic_cubes is not None:
             if intrinsic_cube_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
         elif intrinsic_cube_paths is not None:
@@ -100,7 +102,7 @@ class MultiComponentSimulations(ComponentSimulations):
             for component_name in intrinsic_cube_paths:
                 if component_name not in intrinsic_seds: raise ValueError("SED of component '" + component_name + "' is not loaded")
                 wavelength_grid = intrinsic_seds[component_name].wavelength_grid() # create wavelength grid from SED
-                intrinsic_cubes[component_name] = DataCube.from_file(intrinsic_cube_paths[component_name], wavelength_grid=wavelength_grid)
+                intrinsic_cubes[component_name] = DataCube.from_file(intrinsic_cube_paths[component_name], wavelength_grid=wavelength_grid, wcs=earth_wcs)
         else: intrinsic_cubes = None
 
         # Load intrinsic faceon cubes
@@ -130,7 +132,7 @@ class MultiComponentSimulations(ComponentSimulations):
         # Create and return
         return cls(name, observed, intrinsic_seds=intrinsic_seds, intrinsic_cubes=intrinsic_cubes,
                    intrinsic_cubes_faceon=intrinsic_cubes_faceon, intrinsic_cubes_edgeon=intrinsic_cubes_edgeon,
-                   distance=distance)
+                   distance=distance, earth_wcs=earth_wcs)
 
     # -----------------------------------------------------------------
 

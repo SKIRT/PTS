@@ -3269,8 +3269,8 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
         # Debugging
         log.debug("Rebinning frame locally ...")
 
-        print(frame.name, frame.wcs)
-        print(wcs)
+        #print(frame.name, frame.wcs)
+        #print(wcs)
 
         if in_place:
             frame.rebin(wcs, convert=False) # should already be converted, or correction factor to be applied later
