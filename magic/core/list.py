@@ -2692,6 +2692,14 @@ def convert_to_same_unit(*frames, **kwargs):
     # Get frame names
     names = kwargs.pop("names", None)
 
+    # Get options for conversion
+    distance = kwargs.pop("distance", None)
+    density = kwargs.pop("density", False)
+    brightness = kwargs.pop("brightness", False)
+    density_strict = kwargs.pop("density_strict", False)
+    brightness_strict = kwargs.pop("brightness_strict", False)
+    wavelength = kwargs.pop("wavelength", None)
+
     # Inform the user
     log.info("Converting frames to the same unit ...")
 
@@ -2715,14 +2723,14 @@ def convert_to_same_unit(*frames, **kwargs):
     for frame in frames:
 
         # Get frame name
-        name = names[index] if names is not None else ""
+        #name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
         # Debugging
         log.debug("Converting frame " + print_name + "with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
 
         # Create and set name
-        converted = frame.converted_to(unit, **kwargs)
+        converted = frame.converted_to(unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
         if names is not None: converted.name = names[index]
 
         # Add to the list of new frames
@@ -2804,6 +2812,7 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     # Ignore?
     ignore = kwargs.pop("ignore", None)
+    no_pixelscale = kwargs.pop("no_pixelscale", "error")
 
     # Check
     if len(frames) == 1:
@@ -2818,9 +2827,14 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     # Inform the user
     log.info("Rebinning frames to the coordinate system with the highest pixelscale ...")
 
+    all_pixelscales = []
     highest_pixelscale = None
     highest_pixelscale_wcs = None
     highest_pixelscale_index = None
+    xsizes = []
+    ysizes = []
+
+    _check_shapes = False
 
     # Loop over the frames
     for index, frame in enumerate(frames):
@@ -2828,20 +2842,42 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
         # Ignore?
         if ignore is not None and names[index] in ignore: continue
 
-        wcs = frame.wcs
-        if wcs is None:
+        #wcs = frame.wcs
+        pixelscale = frame.average_pixelscale
+        #if wcs is None:
+        if pixelscale is None:
 
-            if names is not None: raise ValueError("Coordinate system of the " + names[index] + " image is not defined")
-            else: raise ValueError("Coordinate system of the image is not defined")
+            if no_pixelscale == "error":
+                if names is not None: raise ValueError("Pixelscale of the " + names[index] + " image is not defined")
+                else: raise ValueError("Pixelscale of the image is not defined")
+            elif no_pixelscale == "skip": continue
+            elif no_pixelscale == "return": return frames
+            elif no_pixelscale == "shape": _check_shapes = True
+            else: raise ValueError("Invalid value for 'no_pixelscale'")
 
         #print(highest_pixelscale)
         #print(wcs.average_pixelscale)
 
-        if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
+        #all_pixelscales.append(wcs.average_pixelscale)
+        all_pixelscales.append(pixelscale)
+        xsizes.append(frame.xsize)
+        ysizes.append(frame.ysize)
 
-            highest_pixelscale = wcs.average_pixelscale
-            highest_pixelscale_wcs = wcs
+        #if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
+        if highest_pixelscale is None or pixelscale > highest_pixelscale:
+
+            #highest_pixelscale = wcs.average_pixelscale
+            highest_pixelscale = pixelscale
+            highest_pixelscale_wcs = frame.wcs
             highest_pixelscale_index = index
+
+    # Debugging
+    log.debug("All pixelscales: " + tostr(all_pixelscales))
+
+    # Check shapes?
+    if _check_shapes:
+        if sequences.all_equal(xsizes) and sequences.all_equal(ysizes): return frames
+        else: raise ValueError("Some pixelscales are undefined, and not all frames have the same shape")
 
     # Debugging
     if names is not None: log.debug("The frame with the highest pixelscale is the '" + names[highest_pixelscale_index] + "' frame ...")
@@ -3428,6 +3464,7 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
     # Get ignore
     ignore = kwargs.pop("ignore", None)
+    no_fwhm = kwargs.pop("no_fwhm", "error")
 
     # Check
     if len(frames) == 1:
@@ -3454,13 +3491,29 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
         # Search and set frame FWHM
         frame_fwhm = frame.fwhm
-        if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
+        if frame_fwhm is None:
+
+            if frame.psf_filter is None:
+
+                if no_fwhm == "error":
+                    if names is not None: raise ValueError("Neither FWHM nor filter of the " + names[index] + " image is defined")
+                    else: raise ValueError("Neither FWHM nor filter of the frame is defined")
+                elif no_fwhm == "skip": continue
+                elif no_fwhm == "return": return frames
+                else: raise ValueError("Invalid value for 'no_fwhm'")
+
+            frame_fwhm = get_fwhm(frame.psf_filter)
         frame.fwhm = frame_fwhm
 
         # Check again
         if frame.fwhm is None:
-            if names is not None: raise ValueError("FWHM of the " + names[index] + " image cannot be determined")
-            else: raise ValueError("FWHM of the image cannot be determined")
+
+            if no_fwhm == "error":
+                if names is not None: raise ValueError("FWHM of the " + names[index] + " image cannot be determined")
+                else: raise ValueError("FWHM of the image cannot be determined")
+            elif no_fwhm == "skip": continue
+            elif no_fwhm == "return": return frames
+            else: raise ValueError("Invalid value for 'no_fwhm'")
 
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 

@@ -1104,7 +1104,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.young_absorptions_earth + self.ionizing_absorptions_earth
-        young, ionizing = convolve_rebin_and_convert(self.young_absorptions_earth, self.ionizing_absorptions_earth)
+        young, ionizing = convolve_rebin_and_convert(self.young_absorptions_earth, self.ionizing_absorptions_earth, no_fwhm="return", no_pixelscale="shape")
         return young + ionizing
 
     # -----------------------------------------------------------------

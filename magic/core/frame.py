@@ -53,6 +53,7 @@ from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale, PhysicalPixelscale, angular_or_physical_pixelscale
 from ..basics.vector import Pixel
 from ..region.region import PixelRegion, SkyRegion
+from ...core.units.quantity import add_with_units, subtract_with_units, multiply_with_units, divide_with_units, get_value_and_unit
 
 # -----------------------------------------------------------------
 
@@ -575,6 +576,22 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def conversion_info(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        info = dict()
+        info["distance"] = self.distance
+        info["pixelscale"] = self.pixelscale
+        info["wavelength"] = self.wavelength
+        return info
+
+    # -----------------------------------------------------------------
+
     def __add__(self, value):
 
         """
@@ -599,39 +616,22 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def __iadd__(self, value):
+    def __iadd__(self, other):
 
         """
         This function ...
-        :param value:
+        :param other:
         :return:
         """
 
-        # Regular number
-        if types.is_real_type(value) or types.is_integer_type(value):
-            if self.has_unit: raise ValueError("Frame has a unit")
-            self._data += value
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
 
-        # Quantity
-        elif types.is_quantity(value):
-            if not self.has_unit: raise ValueError("Frame has no unit")
-            self._data += value.to(self.unit, wavelength=self.wavelength, pixelscale=self.pixelscale, distance=self.distance)
+        # Get new data
+        new_data = add_with_units(self.data, self.unit, other_value, other_unit=other_unit, conversion_info=self.conversion_info)
 
-        # Other frame
-        elif isinstance(value, Frame):
-
-            # With unit
-            if value.has_unit:
-                if not self.has_unit: raise ValueError("Frame doesn't have a unit")
-                self._data += value.converted_to(self.unit).data
-
-            # Without unit
-            else:
-                if self.has_unit: raise ValueError("Frame has a unit")
-                self._data += value.data
-
-        # Invalid
-        else: raise ValueError("Invalid argument")
+        # Replace the data
+        self._data = new_data
 
         # Return
         return self
@@ -664,7 +664,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def __isub__(self, value):
+    def __isub__(self, other):
 
         """
         This function ...
@@ -672,31 +672,14 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Regular number
-        if types.is_real_type(value) or types.is_integer_type(value):
-            if self.has_unit: raise ValueError("Frame has a unit")
-            self._data -= value
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
 
-        # Quantity
-        elif types.is_quantity(value):
-            if not self.has_unit: raise ValueError("Frame has no unit")
-            self._data -= value.to(self.unit, wavelength=self.wavelength, pixelscale=self.pixelscale, distance=self.distance)
+        # Get new data
+        new_data = subtract_with_units(self.data, self.unit, other_value, other_unit=other_unit, conversion_info=self.conversion_info)
 
-        # Other frame
-        elif isinstance(value, Frame):
-
-            # With unit
-            if value.has_unit:
-                if not self.has_unit: raise ValueError("Frame has a unit")
-                self._data -= value.converted_to(self.unit).data
-
-            # Without unit
-            else:
-                if self.has_unit: raise ValueError("Frame has no unit")
-                self._data -= value.data
-
-        # Else
-        else: raise ValueError("Invalid argument")
+        # Replace the data
+        self._data = new_data
 
         # Return
         return self
@@ -727,15 +710,27 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def __imul__(self, value):
+    def __imul__(self, other):
 
         """
         This function ...
-        :param value:
+        :param other:
         :return:
         """
 
-        self._data *= value
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
+
+        # Get new data
+        new_data, new_unit = multiply_with_units(self.data, self.unit, other_value, other_unit=other_unit)
+
+        # Replace the data
+        self._data = new_data
+
+        # Replace the unit
+        self._unit = new_unit
+
+        # Return
         return self
 
     # -----------------------------------------------------------------
@@ -766,7 +761,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def __idiv__(self, value):
+    def __idiv__(self, other):
 
         """
         This function ...
@@ -774,7 +769,19 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self._data /= value
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
+
+        # Get new data
+        new_data, new_unit = divide_with_units(self.data, self.unit, other_value, other_unit=other_unit)
+
+        # Replace the data
+        self._data = new_data
+
+        # Replace the unit
+        self._unit = new_unit
+
+        # Return
         return self
 
     # -----------------------------------------------------------------
@@ -2246,6 +2253,48 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def example(cls, min_value=0., max_value=1.):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generate a shape
+        xsize = np.random.randint(250, 1000)
+        ysize = np.random.randint(250, 1000)
+        shape = (ysize, xsize)
+
+        # Generate random
+        frame = cls.random(shape, min_value=min_value, max_value=max_value)
+
+        # Generate random unit
+        unit = np.random.choice(["Jy", "W/micron", "W/m2", "count/pix", "Lsun/pc2", "erg/s/micron/arcsec2"])
+
+        # Generate a random wavelength
+        wavelength_micron = np.random.uniform(0.1,1000)
+        wavelength = wavelength_micron * u("micron")
+
+        # Generate random pixelscale
+        pixelscale_arcsec = np.random.uniform(0.1,20.)
+        pixelscale = pixelscale_arcsec * u("arcsec")
+
+        # Generate a random FWHM
+        fwhm_arcsec = np.random.uniform(0.5*pixelscale_arcsec, 10.*pixelscale_arcsec)
+        fwhm = fwhm_arcsec * u("arcsec")
+
+        # Set the properties
+        frame.unit = unit
+        frame.wavelength = wavelength
+        frame.pixelscale = pixelscale
+        frame.fwhm = fwhm
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def random(cls, shape, min_value=0., max_value=1., **kwargs):
 
         """
@@ -2629,7 +2678,7 @@ class Frame(NDDataArray):
         if not silent: log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
 
         # Get the conversion factor
-        factor = self._get_conversion_factor(to_unit, distance=distance, wavelength=wavelength)
+        factor = self._get_conversion_factor(to_unit, distance=distance, wavelength=wavelength, silent=silent)
 
         # Debugging
         if not silent: log.debug("Conversion factor: " + str(factor))
@@ -2642,13 +2691,14 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def _get_conversion_factor(self, to_unit, distance=None, wavelength=None):
+    def _get_conversion_factor(self, to_unit, distance=None, wavelength=None, silent=False):
 
         """
         This function ...
         :param to_unit:
         :param distance:
         :param wavelength:
+        :param silent:
         :return:
         """
 
@@ -2659,13 +2709,15 @@ class Frame(NDDataArray):
             if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric")
 
             # Set the distance
-            if distance is None: distance = self.distance
-
+            #if distance is None: distance = self.distance
             # Set the wavelength
-            if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
+            #if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
+            conversion_info = self.conversion_info
+            if distance is not None: conversion_info["distance"] = distance
+            if wavelength is not None: conversion_info["wavelength"] = wavelength
 
             # Calculate the conversion factor
-            factor = self.unit.conversion_factor(to_unit, wavelength=wavelength, distance=distance, pixelscale=self.pixelscale)
+            factor = self.unit.conversion_factor(to_unit, silent=silent, **conversion_info)
 
         # This frame does not have a photometric unit
         else:
@@ -2674,7 +2726,7 @@ class Frame(NDDataArray):
             if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the unit of the frame is not")
 
             # Calculate the conversion factor
-            factor = self.unit.to(to_unit)
+            factor = self.unit.to(to_unit, silent=True)
 
         # Return
         return factor
@@ -3320,7 +3372,7 @@ class Frame(NDDataArray):
             unit = None
 
         # Debugging
-        if not silent: log.debug("Multiplying the frame with a factor of " + tostr(factor) + " to normalize ...")
+        if not silent: log.debug("Multiplying the frame with a factor of " + tostr(factor) + " to normalize to " + tostr(to) + " ...")
 
         # Multiply the frame with the conversion factor
         try: self.__imul__(factor)

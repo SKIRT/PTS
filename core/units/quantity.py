@@ -169,7 +169,7 @@ class PhotometricQuantity(Quantity):
 
     # -----------------------------------------------------------------
 
-    def __div__(self, other):
+    def __add__(self, other):
 
         """
         This function ...
@@ -177,71 +177,27 @@ class PhotometricQuantity(Quantity):
         :return:
         """
 
-        # Divide by regular value
-        if types.is_real_type(other) or types.is_integer_type(other):
-            super(PhotometricQuantity, self).__div__(other)
+        # Call the implementation
+        new_value = add_with_units(self.value, self.unit, other)
 
-        # Divide by unit
-        elif types.is_unit(other):
+        # Create new quantity
+        return PhotometricQuantity(new_value * self.unit)
 
-            other = parse_unit(other)
-            new_unit = divide_units(self.unit, other)
+    # -----------------------------------------------------------------
 
-            # Photometric?
-            if isinstance(new_unit, PhotometricUnit):
-                if new_unit.has_scale:
-                    new_value = self.value * new_unit.scale_factor
-                    new_unit = new_unit.reduced_root # without scale
-                else:
-                    new_value = self.value
-                    new_unit = new_unit.reduced
+    def __sub__(self, other):
 
-            # Not photometric
-            else:
-                new_value = self.value * new_unit.scale
-                new_unit._scale = 1
+        """
+        This function ...
+        :param other:
+        :return:
+        """
 
-            # Create new quantity
-            return parse_quantity(new_value * new_unit)
+        # Call the implementation
+        new_value = subtract_with_units(self.value, self.unit, other)
 
-        # Divide by quantity
-        elif types.is_quantity(other):
-
-            # Previous implementation
-            #other = parse_quantity(other)
-            # if isinstance(other, PhotometricQuantity):
-            #     #print(self, self.physical_type)
-            #     #print(other, other.physical_type)
-            #     other_value = other.value
-            #     other_unit = other.unit
-            #     new_value = self.value / other_value
-            #     new_unit = self.unit / other_unit
-            #     return new_value * new_unit
-            # # Let Astropy handle it ...
-            # else: return super(PhotometricQuantity, self).__div__(other)
-
-            other = parse_quantity(other)
-            new_unit = divide_units(self.unit, other.unit)
-
-            # Photometric?
-            if isinstance(new_unit, PhotometricUnit):
-                if new_unit.has_scale:
-                    new_value = self.value / other.value * new_unit.scale_factor
-                    new_unit = new_unit.reduced_root  # without scale
-                else:
-                    new_value = self.value / other.value
-                    new_unit = new_unit.reduced
-
-            # Not photometric
-            else:
-                new_value = self.value / other.value * new_unit.scale
-                new_unit._scale = 1
-
-            # Create new quantity
-            return parse_quantity(new_value * new_unit)
-
-        # Invalid
-        else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
+        # Create new quantity
+        return PhotometricQuantity(new_value * self.unit)
 
     # -----------------------------------------------------------------
 
@@ -253,68 +209,33 @@ class PhotometricQuantity(Quantity):
         :return:
         """
 
-        # if isinstance(other, Quantity):
-        #     other = parse_quantity(other)
-        #     if isinstance(other, PhotometricQuantity):
-        #         other_value = other.value
-        #         other_unit = other.unit
+        # Call the implementation
+        new_value, new_unit = multiply_with_units(self.value, self.unit, other)
+        if new_unit is None: new_unit = parse_unit("") # dimensionless
 
-        # Multiply by regular value
-        if types.is_real_type(other) or types.is_integer_type(other):
-            super(PhotometricQuantity, self).__div__(other)
+        # Create new quantity
+        return parse_quantity(new_value * new_unit)
 
-        # Multiply by unit
-        elif types.is_unit(other):
+    # -----------------------------------------------------------------
 
-            other = parse_unit(other)
-            new_unit = multiply_units(self.unit, other)
-            #print(new_unit)
+    def __div__(self, other):
 
-            # Photometric?
-            if isinstance(new_unit, PhotometricUnit):
-                if new_unit.has_scale:
-                    #print(new_unit.scale_factor)
-                    #print(new_unit.reduced_root)
-                    new_value = self.value * new_unit.scale_factor
-                    new_unit = new_unit.reduced_root  # without scale
-                else:
-                    new_value = self.value
-                    new_unit = new_unit.reduced
+        """
+        This function ...
+        :param other:
+        :return:
+        """
 
-            # Not photometric
-            else:
-                new_value = self.value * new_unit.scale
-                new_unit._scale = 1
+        # Call the implementation
+        new_value, new_unit = divide_with_units(self.value, self.unit, other)
+        if new_unit is None: new_unit = parse_unit("") # dimensionless
 
-            # Create new quantity
-            return parse_quantity(new_value * new_unit)
+        # Create new quantity
+        return parse_quantity(new_value * new_unit)
 
-        # Multiply by quantity
-        elif types.is_quantity(other):
+    # -----------------------------------------------------------------
 
-            other = parse_quantity(other)
-            new_unit = multiply_units(self.unit, other.unit)
-            #print(new_unit)
-
-            # Photometric?
-            if isinstance(new_unit, PhotometricUnit):
-                if new_unit.has_scale:
-                    new_value = self.value * other.value * new_unit.scale_factor
-                    new_unit = new_unit.reduced_root  # without scale
-                else:
-                    new_value = self.value * other.value
-                    new_unit = new_unit.reduced
-
-            # Not photometric
-            else:
-                new_value = self.value * other.value * new_unit.scale
-                new_unit._scale = 1
-
-            # Create new quantity
-            return parse_quantity(new_value * new_unit)
-
-        # Invalid
-        else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
+    __truediv__ = __div__
 
     # -----------------------------------------------------------------
 
@@ -566,6 +487,7 @@ class PhotometricQuantity(Quantity):
         solid_angle = kwargs.pop("solid_angle", None)
         fltr = kwargs.pop("fltr", kwargs.pop("filter", None))
         pixelscale = kwargs.pop("pixelscale", None)
+        silent = kwargs.pop("silent", False)
 
         # Equivalencies
         equivalencies = kwargs.pop("equivalencies", None)
@@ -583,7 +505,7 @@ class PhotometricQuantity(Quantity):
         unit = PhotometricUnit(unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
         # Determine conversion factor
-        factor = self.unit.conversion_factor(unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
+        factor = self.unit.conversion_factor(unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale, silent=silent)
 
         # Return new quantity
         return PhotometricQuantity(self.value * factor, unit)
@@ -613,5 +535,434 @@ def same_physical_type(qty_a, qty_b):
     """
 
     return qty_a.unit.physical_type == qty_b.unit.physical_type
+
+# -----------------------------------------------------------------
+
+def add_with_units(value, unit, other, other_unit=None, conversion_info=None):
+
+    """
+    THis function ...
+    :param value:
+    :param unit:
+    :param other:
+    :param other_unit:
+    :param conversion_info:
+    :return:
+    """
+
+    # Does the first value have a unit?
+    has_unit = unit is not None
+
+    # Initialize conversion info
+    if conversion_info is None: conversion_info = {}
+
+    # Regular number, but unit defined?
+    if types.is_real_or_integer(other) and other_unit is not None:
+        other = other * other_unit
+        other_unit = None
+
+    # Regular number
+    if types.is_real_or_integer(other):
+        if has_unit: raise ValueError("First value has a unit")
+        new_value = value + other
+
+    # Quantity
+    elif types.is_quantity(other):
+
+        if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
+        if not has_unit: raise ValueError("First value has no unit")
+        new_value = value + other.to(unit, **conversion_info)
+
+    # Frame
+    elif types.is_real_or_integer_array(other):
+
+        # With unit
+        if other_unit is not None:
+
+            if not has_unit: raise ValueError("First value has no unit")
+            conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            new_value = value + conversion_factor * other
+
+        # Without unit
+        else:
+            if has_unit: raise ValueError("First value has a unit")
+            new_value = value + other
+
+    # Else:
+    else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
+
+    # Return the new value
+    return new_value
+
+# -----------------------------------------------------------------
+
+def subtract_with_units(value, unit, other, other_unit=None, conversion_info=None):
+
+    """
+    This function ...
+    :param value:
+    :param unit:
+    :param other:
+    :param other_unit:
+    :param conversion_info:
+    :return:
+    """
+
+    # Does the first value have a unit?
+    has_unit = unit is not None
+
+    # Initialize conversion info
+    if conversion_info is None: conversion_info = {}
+
+    # Regular number, but unit defined?
+    if types.is_real_or_integer(other) and other_unit is not None:
+        other = other * other_unit # becomes quantity
+        other_unit = None
+
+    # Regular number
+    if types.is_real_or_integer(other):
+        if has_unit: raise ValueError("First value has a unit")
+        new_value = value - other
+
+    # Quantity
+    elif types.is_quantity(other):
+
+        if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
+        if not has_unit: raise ValueError("First value has no unit")
+        new_value = value - other.to(unit, **conversion_info)
+
+    # Frame
+    elif types.is_real_or_integer_array(other):
+
+        # With unit
+        if other_unit is not None:
+
+            if not has_unit: raise ValueError("First value has no unit")
+            #self._data -= value.converted_to(self.unit).data
+            conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            new_value = value - conversion_factor * other
+
+        # Without unit
+        else:
+            if has_unit: raise ValueError("First value has a unit")
+            #self._data -= value.data
+            new_value = value - other
+
+    # Else
+    else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
+
+    # Return the new value
+    return new_value
+
+# -----------------------------------------------------------------
+
+def multiply_with_units(value, unit, other, other_unit=None):
+
+    """
+    This function ...
+    :param value:
+    :param unit:
+    :param other:
+    :param other_unit:
+    :return:
+    """
+
+    has_unit = unit is not None
+
+    # Regular number, but unit defined?
+    if types.is_real_or_integer(other) and other_unit is not None:
+        other = other * other_unit  # becomes quantity
+        other_unit = None
+
+    # Multiply by regular value
+    if types.is_real_or_integer(other):
+
+        # Determine value and unit
+        new_value = value * float(other)
+        new_unit = unit
+
+    # Multiply by unit
+    elif types.is_unit(other):
+
+        other = parse_unit(other)
+        if has_unit: new_unit = multiply_units(unit, other)
+        else: new_unit = other
+
+        # Photometric unit?
+        if isinstance(new_unit, PhotometricUnit):
+
+            if new_unit.has_scale:
+                new_value = value * new_unit.scale_factor
+                new_unit = new_unit.reduced_root  # without scale
+            else:
+                new_value = value
+                new_unit = new_unit.reduced
+
+        # Not photometric unit
+        elif types.is_unit(new_unit):
+
+            new_value = value * new_unit.scale
+            new_unit._scale = 1
+
+        # NOT A UNIT: UNITS MULTIPLIED AWAY
+        elif types.is_real_or_integer(new_unit):
+
+            new_value = value * new_unit
+            new_unit = None
+
+        # Invalid
+        else: raise RuntimeError("Something went wrong")
+
+    # Multiply by quantity
+    elif types.is_quantity(other):
+
+        if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
+
+        other = parse_quantity(other)
+        if has_unit: new_unit = multiply_units(unit, other.unit)
+        else: new_unit = other.unit
+
+        # Photometric unit?
+        if isinstance(new_unit, PhotometricUnit):
+
+            if new_unit.has_scale:
+                new_value = value * other.value * new_unit.scale_factor
+                new_unit = new_unit.reduced_root  # without scale
+            else:
+                new_value = value * other.value
+                new_unit = new_unit.reduced
+
+        # Not photometric unit
+        elif types.is_unit(new_unit):
+
+            new_value = value * other.value * new_unit.scale
+            new_unit._scale = 1
+
+        # NOT A UNIT: UNITS MULTPLIED AWAY (FOR EXAMPLE Hz * s)
+        elif types.is_real_or_integer(new_unit):
+
+            new_value = value * other.value * new_unit
+            new_unit = None
+
+        # Invalid
+        else: raise RuntimeError("Something went wrong")
+
+    # Multiply by array
+    elif types.is_real_or_integer_array(other):
+
+        # Both with unit
+        if has_unit and other_unit is not None: new_unit = multiply_units(unit, other_unit)
+
+        # Only first
+        elif has_unit: new_unit = unit
+
+        # Only other
+        elif other_unit is not None: new_unit = other_unit
+
+        # None
+        else: new_unit = None
+
+        # Photometric unit?
+        if isinstance(new_unit, PhotometricUnit):
+
+            if new_unit.has_scale:
+                new_value = value * other * new_unit.scale_factor
+                new_unit = new_unit.reduced_root  # without scale
+            else:
+                new_value = value * other
+                new_unit = new_unit.reduced
+
+        # Not photometric unit
+        elif types.is_unit(new_unit):
+
+            new_value = value * other.value * new_unit.scale
+            new_unit._scale = 1
+
+        # NOT A UNIT: UNITS MULTIPLIED AWAY (FOR EXAMPLE HZ * s)
+        elif types.is_real_or_integer(new_unit):
+
+            new_value = value * other.value * new_unit
+            new_unit = None
+
+        # Invalid
+        else: raise RuntimeError("Something went wrong")
+
+    # Invalid
+    else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
+
+    # Return the new value and the new unit
+    return new_value, new_unit
+
+# -----------------------------------------------------------------
+
+def divide_with_units(value, unit, other, other_unit=None):
+
+    """
+    This function returns the result from dividing a 1D or higher-dimensional set of values, corresponding to a certain unit,
+    with anything else, where a unit can also be expected
+    :param value:
+    :param unit:
+    :param other:
+    :param other_unit:
+    :return:
+    """
+
+    has_unit = unit is not None
+
+    # Regular number, but unit defined?
+    if types.is_real_or_integer(other) and other_unit is not None:
+        other = other * other_unit  # becomes quantity
+        other_unit = None
+
+    # Divide by regular value
+    if types.is_real_or_integer(other):
+
+        # Determine value and unit
+        new_value = value / float(other)
+        new_unit = unit
+
+    # Divide by unit
+    elif types.is_unit(other):
+
+        other = parse_unit(other)
+        if has_unit: new_unit = divide_units(unit, other)
+        else: new_unit = 1./other
+
+        # Photometric unit?
+        if isinstance(new_unit, PhotometricUnit):
+
+            if new_unit.has_scale:
+                new_value = value * new_unit.scale_factor
+                new_unit = new_unit.reduced_root  # without scale
+            else:
+                new_value = value
+                new_unit = new_unit.reduced
+
+        # Not photometric unit
+        elif types.is_unit(new_unit):
+
+            new_value = value * new_unit.scale
+            new_unit._scale = 1
+
+        # NOT A UNIT: UNITS DIVIDED AWAY?
+        elif types.is_real_or_integer(new_unit):
+
+            new_value = value * new_unit
+            new_unit = None
+
+        # Invalid new unit
+        else: raise RuntimeError("Something went wrong")
+
+    # Divide by quantity
+    elif types.is_quantity(other):
+
+        if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
+
+        #print("OTHER", other)
+
+        other = parse_quantity(other)
+        if has_unit: new_unit = divide_units(unit, other.unit)
+        else: new_unit = 1./other.unit
+
+        #print("NU", new_unit)
+
+        # Photometric?
+        if isinstance(new_unit, PhotometricUnit):
+
+            if new_unit.has_scale:
+                new_value = value / other.value * new_unit.scale_factor
+                new_unit = new_unit.reduced_root  # without scale
+            else:
+                new_value = value / other.value
+                new_unit = new_unit.reduced
+
+        # Not photometric, but still unit
+        elif types.is_unit(new_unit):
+
+            new_value = value / other.value * new_unit.scale
+            new_unit._scale = 1
+
+        # NOT A UNIT: UNITS DIVIDED AWAY?
+        elif types.is_real_or_integer(new_unit):
+
+            new_value = value / other.value * new_unit
+            new_unit = None
+
+        # Invalid new unit
+        else: raise RuntimeError("Something went wrong")
+
+    # Divide by array
+    elif types.is_real_or_integer_array(other):
+
+        # Both with unit
+        if has_unit and other_unit is not None: new_unit = divide_units(unit, other_unit)
+
+        # Only first
+        elif has_unit: new_unit = unit
+
+        # Only other
+        elif other_unit is not None: new_unit = other_unit
+
+        # None
+        else: new_unit = None
+
+        # Photometric?
+        if isinstance(new_unit, PhotometricUnit):
+
+            if new_unit.has_scale:
+                new_value = value / other * new_unit.scale_factor
+                new_unit = new_unit.reduced_root  # without scale
+            else:
+                new_value = value / other
+                new_unit = new_unit.reduced
+
+        # Not photometric
+        elif types.is_unit(new_unit):
+
+            new_value = value / other * new_unit.scale
+            new_unit._scale = 1
+
+        # NOT A UNIT: UNITS DIVIDED AWAY?
+        elif types.is_real_or_integer(new_unit):
+
+            new_value = value / other * new_unit
+            new_unit = None
+
+        # Invalid new unit
+        else: raise RuntimeError("Something went wrong")
+
+    # Invalid
+    else: raise ValueError("Invalid argument of type '" + str(type(other)) + "'")
+
+    # Return the new value and the new unit
+    return new_value, new_unit
+
+# -----------------------------------------------------------------
+
+def get_value_and_unit(value):
+
+    """
+    This function splits a quantity or Frame into the actual data (or value) and the unit
+    For a scalar, it returns the value, and None for the unit
+    :param value:
+    :return:
+    """
+
+    # Has unit property?
+    if hasattr(value, "unit"):
+
+        # Get unit
+        unit = getattr(value, "unit")
+
+        # Get value
+        if hasattr(value, "value"): value = value.value
+        elif hasattr(value, "data"): value = value.data
+        else: pass  # assume using value is OK ...
+
+    # No unit
+    else: unit = None
+
+    # Return
+    return value, unit
 
 # -----------------------------------------------------------------

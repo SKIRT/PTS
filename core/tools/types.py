@@ -84,6 +84,18 @@ def is_real_type(value):
 
 # -----------------------------------------------------------------
 
+def is_real_or_integer(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_real_type(value) or is_integer_type(value)
+
+# -----------------------------------------------------------------
+
 if HAS_NP: string_types = [basestring, str, np.string_]
 else: string_types = [basestring, str]
 
@@ -222,6 +234,22 @@ def is_real_sequence(value):
 
 # -----------------------------------------------------------------
 
+def get_dtype_name(dtype):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    if dtype.name.startswith("string"): return "string"
+    elif dtype.name.startswith("float"): return "real"
+    elif dtype.name.startswith("int"): return "integer"
+    elif dtype.name.startswith("bool"): return "boolean"
+    else: raise ValueError("Unknown type: '" + dtype.name + "'")
+
+# -----------------------------------------------------------------
+
 def is_string_array(value):
 
     """
@@ -231,9 +259,13 @@ def is_string_array(value):
     """
 
     if not is_array_like(value): return False
-    for element in value:
-        if not is_string_type(element): return False
-    return True
+
+    # WRONG! loops over rows if 2D!
+    #for element in value:
+    #    if not is_string_type(element): return False
+    #return True
+
+    return get_dtype_name(value.dtype) == "string"
 
 # -----------------------------------------------------------------
 
@@ -246,9 +278,13 @@ def is_integer_array(value):
     """
 
     if not is_array_like(value): return False
-    for element in value:
-        if not is_integer_type(element): return False
-    return True
+
+    # WRONG! loops over rows if 2D!
+    #for element in value:
+    #    if not is_integer_type(element): return False
+    #return True
+
+    return get_dtype_name(value.dtype) == "integer"
 
 # -----------------------------------------------------------------
 
@@ -261,9 +297,39 @@ def is_real_array(value):
     """
 
     if not is_array_like(value): return False
-    for element in value:
-        if not is_real_type(element): return False
-    return True
+
+    # WRONG! loops over rows if 2D!
+    #for element in value:
+    #    if not is_real_type(element): return False
+    #return True
+
+    return get_dtype_name(value.dtype) == "real"
+
+# -----------------------------------------------------------------
+
+def is_real_or_integer_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_real_array(value) or is_integer_array(value)
+
+# -----------------------------------------------------------------
+
+def is_boolean_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_array_like(value): return False
+
+    return get_dtype_name(value.dtype) == "boolean"
 
 # -----------------------------------------------------------------
 

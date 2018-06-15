@@ -1949,7 +1949,7 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None,
-                          fltr=None, pixelscale=None, brightness=False, brightness_strict=False, density_strict=False):
+                          fltr=None, pixelscale=None, brightness=False, brightness_strict=False, density_strict=False, silent=False):
 
         """
         This function ...
@@ -1964,6 +1964,7 @@ class PhotometricUnit(CompositeUnit):
         :param brightness:
         :param brightness_strict:
         :param density_strict:
+        :param silent:
         :return:
         """
 
@@ -2025,7 +2026,7 @@ class PhotometricUnit(CompositeUnit):
             physical_pixelscale = pixelscale
             if distance is not None: pixelscale = Pixelscale.from_physical(physical_pixelscale, distance=distance)
             else:
-                log.warning("Pixelscale is given in physical length unit, but cannot convert to angular pixelscale without the distance being specified")
+                if not silent: log.warning("Pixelscale is given in physical length unit, but cannot convert to angular pixelscale without the distance being specified")
                 pixelscale = None
         else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
 

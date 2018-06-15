@@ -740,10 +740,7 @@ class DataCube(Image):
         """
 
         # Regular number
-        if types.is_real_type(other) or types.is_integer_type(other):
-
-            # Create frames
-            frames = [self.frames[index] + other for index in range(self.nframes)]
+        if types.is_real_or_integer(other): frames = [self.frames[index] + other for index in range(self.nframes)]
 
         # Quantity
         elif types.is_quantity(other):
@@ -764,8 +761,8 @@ class DataCube(Image):
             # Check the number of frames
             if self.nframes != other.nframes: raise ValueError("Datacubs must have an equal number of frames")
 
-            # TODO: units!
             # Create new frames
+            # Adding frames is implemented in frame class!
             frames = [self.frames[index] + other.frames[index] for index in range(self.nframes)]
 
         # Frame
@@ -788,10 +785,7 @@ class DataCube(Image):
         """
 
         # Regular number
-        if types.is_real_type(other) or types.is_integer_type(other):
-
-            # Create frames
-            frames = [self.frames[index] - other for index in range(self.nframes)]
+        if types.is_real_or_integer(other): frames = [self.frames[index] - other for index in range(self.nframes)]
 
         # Quantity
         elif types.is_quantity(other):
@@ -812,8 +806,8 @@ class DataCube(Image):
             # Check the number of frames
             if self.nframes != other.nframes: raise ValueError("Datacubes must have an equal number of frames")
 
-            # TODO: units!
             # Create new frames
+            # Subtracting frames is implemented in Frame class!
             frames = [self.frames[index] - other.frames[index] for index in range(self.nframes)]
 
         # Frame
@@ -835,23 +829,27 @@ class DataCube(Image):
         :return:
         """
 
-        # Regular number
-        if types.is_real_type(other) or types.is_integer_type(other):
+        # Regular number or quantity
+        if types.is_real_or_integer(other) or types.is_quantity(other): frames = [self.frames[index] * other for index in range(self.nframes)]
 
-            # Create frames
-            frames = [self.frames[index] * other for index in range(self.nframes)]
+        # Datacube
+        elif isinstance(other, DataCube):
 
-        # Quantity
-        elif types.is_quantity(other):
+            # Check the number of frames
+            if self.nframes != other.nframes: raise ValueError("Datacubes must have an equal number of frames")
 
-            # Get the wavelengths
-            wavelengths = self.wavelengths()
+            # Create new frames
+            # Multiplying frames is implemented in Frame class!
+            frames = [self.frames[index] * other.frames[index] for index in range(self.nframes)]
 
-            # Create frames
-            frames = []
-            for index in range(self.nframes):
-                frame = self.frames[index]
-                new_frame = frame * other.to(frame)
+        # Frame
+        elif isinstance(other, Frame): frames = [self.frames[index] * other for index in range(self.nframes)]
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+        # Create new datacube
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
 
     # -----------------------------------------------------------------
 
@@ -862,6 +860,28 @@ class DataCube(Image):
         :param other:
         :return:
         """
+
+        # Regular number or quantity
+        if types.is_real_or_integer(other) or types.is_quantity(other): frames = [self.frames[index] / other for index in range(self.nframes)]
+
+        # Datacube
+        elif isinstance(other, DataCube):
+
+            # Check the number of frames
+            if self.nframes != other.nframes: raise ValueError("Datacubes must have an equal number of frames")
+
+            # Create new frames
+            # Dividing frames is implemented in Frame class!
+            frames = [self.frames[index] / other.frames[index] for index in range(self.nframes)]
+
+        # Frame
+        elif isinstance(other, Frame): frames = [self.frames[index] / other for index in range(self.nframes)]
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+        # Create new datacube
+        return self.__class__.from_frames(frames, wavelength_grid=self.wavelength_grid.copy())
 
     # -----------------------------------------------------------------
 
