@@ -19,9 +19,7 @@ import numpy as np
 from .component import AnalysisComponent
 from ...core.basics.log import log
 from ...core.tools import filesystem as fs
-from ..fitting.tables import WeightsTable
 from ..fitting.modelanalyser import FluxDifferencesTable
-from ...magic.tools import wavelengths
 from ...core.tools.utils import lazyproperty
 from ...magic.core.list import FrameList
 from ...core.tools import sequences
@@ -56,14 +54,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # The analysis run
         self.analysis_run = None
 
-        # Create the table to contain the weights
-        self.weights = WeightsTable()
+        # The reference SED
+        self.reference_sed = None
 
         # Initialize the differences table
         self.differences = FluxDifferencesTable()
-
-        # The chi squared value
-        self.chi_squared = None
 
         # The simulated SED derived from the datacube
         self.simulated_datacube_sed = None
@@ -113,14 +108,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        # 1. Get the weights
-        self.get_weights()
+        # Get the observed SED
+        self.get_reference_sed()
 
         # 2. Get the differences
         self.get_differences()
-
-        # 3. Calculate chi squared
-        self.calculate_chi_squared()
 
         # 4. Get the simulated SED
         self.get_simulated_datacube_sed()
@@ -203,6 +195,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Get the run
         self.analysis_run = self.get_run(self.config.run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evaluation_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.analysis_run.evaluation_path
 
     # -----------------------------------------------------------------
 
@@ -295,117 +299,46 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def get_weights(self):
-
+    def get_reference_sed(self):
+        
         """
-        This function ...
-        :return:
+        Thisf unction ...
+        :return: 
         """
-
-        # 2. Calculate weight for each band
-        if not self.has_weights: self.calculate_weights()
-        else: self.load_weights()
+        
+        if self.has_reference_sed: self.load_reference_sed()
+        else: self.create_reference_sed()
 
     # -----------------------------------------------------------------
 
-    def calculate_weights(self):
+    def load_reference_sed(self):
 
         """
         This function ...
         :return:
+        """
+
+        # Load
+        self.reference_sed = ObservedSED.from_file(self.reference_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def create_reference_sed(self):
+
+        """
+        Thisf unction ...
+        :return: 
         """
 
         # Inform the user
-        log.info("Calculating the weight to give to each band ...")
+        log.info("Getting the reference observed SED ...")
 
-        # Initialize lists to contain the filters of the different wavelength ranges
-        uv_bands = []
-        optical_bands = []
-        nir_bands = []
-        mir_bands = []
-        fir_bands = []
-        submm_bands = []
+        # Load the appropriate observed SED
+        if self.config.not_clipped: self.reference_sed = self.truncated_sed.copy()
+        else: self.reference_sed = self.observed_sed.copy()
 
-        # Loop over the observed SED filters
-        for fltr in self.simulated_filters_no_iras_planck:
-
-            # Get the central wavelength
-            wavelength = fltr.center
-
-            # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
-            spectrum = wavelengths.name_in_spectrum(wavelength)
-
-            # Determine to which group
-            if spectrum[0] == "UV": uv_bands.append(fltr)
-            elif spectrum[0] == "Optical": optical_bands.append(fltr)
-            elif spectrum[0] == "Optical/IR": optical_bands.append(fltr)
-            elif spectrum[0] == "IR":
-                if spectrum[1] == "NIR": nir_bands.append(fltr)
-                elif spectrum[1] == "MIR": mir_bands.append(fltr)
-                elif spectrum[1] == "FIR": fir_bands.append(fltr)
-                else: raise RuntimeError("Unknown IR range")
-            elif spectrum[0] == "Submm": submm_bands.append(fltr)
-            else: raise RuntimeError("Unknown wavelength range")
-
-        # Set the number of groups
-        number_of_groups = 0
-
-        # Check which groups are present
-        has_uv = len(uv_bands) > 0
-        has_optical = len(optical_bands) > 0
-        has_nir = len(nir_bands) > 0
-        has_mir = len(mir_bands) > 0
-        has_fir = len(fir_bands) > 0
-        has_submm = len(submm_bands) > 0
-
-        if has_uv: number_of_groups += 1
-        if has_optical: number_of_groups += 1
-        if has_nir: number_of_groups += 1
-        if has_mir: number_of_groups += 1
-        if has_fir: number_of_groups += 1
-        if has_submm: number_of_groups += 1
-
-        # Detemrine total number of data points
-        number_of_data_points = len(self.simulated_filters_no_iras_planck)
-
-        # Determine the weight for each group of filters
-        uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points if has_uv else 0.0
-        optical_weight = 1. / (len(optical_bands) * number_of_groups) * number_of_data_points if has_optical else 0.0
-        nir_weight = 1. / (len(nir_bands) * number_of_groups) * number_of_data_points if has_nir else 0.0
-        mir_weight = 1. / (len(mir_bands) * number_of_groups) * number_of_data_points if has_mir else 0.0
-        fir_weight = 1. / (len(fir_bands) * number_of_groups) * number_of_data_points if has_fir else 0.0
-        submm_weight = 1. / (len(submm_bands) * number_of_groups) * number_of_data_points if has_submm else 0.0
-
-        # Debugging
-        if has_uv: log.debug("UV: number of bands = " + str(len(uv_bands)) + ", weight = " + str(uv_weight))
-        if has_optical: log.debug("Optical: number of bands = " + str(len(optical_bands)) + ", weight = " + str(optical_weight))
-        if has_nir: log.debug("NIR: number of bands = " + str(len(nir_bands)) + ", weight = " + str(nir_weight))
-        if has_mir: log.debug("MIR: number of bands = " + str(len(mir_bands)) + ", weight = " + str(mir_weight))
-        if has_fir: log.debug("FIR: number of bands = " + str(len(fir_bands)) + ", weight = " + str(fir_weight))
-        if has_submm: log.debug("Submm: number of bands = " + str(len(submm_bands)) + ", weight = " + str(submm_weight))
-
-        # Loop over the bands in each group and set the weight in the weights table
-        for fltr in uv_bands: self.weights.add_point(fltr, uv_weight)
-        for fltr in optical_bands: self.weights.add_point(fltr, optical_weight)
-        for fltr in nir_bands: self.weights.add_point(fltr, nir_weight)
-        for fltr in mir_bands: self.weights.add_point(fltr, mir_weight)
-        for fltr in fir_bands: self.weights.add_point(fltr, fir_weight)
-        for fltr in submm_bands: self.weights.add_point(fltr, submm_weight)
-
-    # -----------------------------------------------------------------
-
-    def load_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Give message
-        log.success("Loading the weights ...")
-
-        # Load the weights
-        self.weights = WeightsTable.from_file(self.weights_filepath)
+        # Add additional relative error?
+        if self.config.additional_error is not None: self.reference_sed.add_relative_error(self.config.additional_error)
 
     # -----------------------------------------------------------------
 
@@ -443,11 +376,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Find the corresponding flux in the SED derived from observation
             #observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy", add_unit=False)
-            observed_fluxdensity = self.observed_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
+            #observed_fluxdensity = self.observed_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
+            observed_fluxdensity = self.reference_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
 
             # Find the corresponding flux error in the SED derived from observation
             #observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
-            observed_fluxdensity_error = self.observed_sed.error_for_filter(fltr, unit="Jy", add_unit=False).average
+            #observed_fluxdensity_error = self.observed_sed.error_for_filter(fltr, unit="Jy", add_unit=False).average
 
             # If no match with (instrument, band) is found in the observed SED
             if observed_fluxdensity is None:
@@ -459,19 +393,19 @@ class AnalysisModelEvaluator(AnalysisComponent):
             relative_difference = difference / observed_fluxdensity
 
             # Find the index of the current band in the weights table
-            index = self.weights.index_for_filter(fltr, return_none=True)
-            if index is None:
-                log.warning("A weight is not calculated for the " + str(fltr) + " filter")
-                continue # Skip this band if a weight is not found
+            #index = self.weights.index_for_filter(fltr, return_none=True)
+            #if index is None:
+            #    log.warning("A weight is not calculated for the " + str(fltr) + " filter")
+            #    continue # Skip this band if a weight is not found
 
             # Get the weight
-            weight = self.weights["Weight"][index]
+            #weight = self.weights["Weight"][index]
 
             # Calculate the chi squared term
-            chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2
+            #chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2
 
             # Add an entry to the differences table
-            self.differences.add_entry(fltr.instrument, fltr.band, difference, relative_difference, chi_squared_term)
+            self.differences.add_entry(fltr.instrument, fltr.band, difference, relative_difference) #chi_squared_term)
 
     # -----------------------------------------------------------------
 
@@ -487,28 +421,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Load
         self.differences = FluxDifferencesTable.from_file(self.differences_filepath)
-
-    # -----------------------------------------------------------------
-
-    def calculate_chi_squared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the chi squared value for this model ...")
-
-        # Calculate the degrees of freedom
-        dof = len(self.differences) - 3. - 1.  # number of data points - number of fitted parameters - 1
-
-        # The (reduced) chi squared value is the sum of all the terms (for each band),
-        # divided by the number of degrees of freedom
-        self.chi_squared = np.sum(self.differences["Chi squared term"]) / dof
-
-        # Debugging
-        log.debug("The chi squared value is " + str(self.chi_squared))
 
     # -----------------------------------------------------------------
 
@@ -1139,7 +1051,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             flux = self.images_sed.get_photometry(i, unit="Jy", add_unit=False)
 
             # Get the observed flux
-            observed_flux = self.observed_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
+            #observed_flux = self.observed_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
+            observed_flux = self.reference_sed.photometry_for_filter(fltr, unit="Jy", add_unit=False)
 
             # Add to table
             self.sed_differences.add_from_filter_and_fluxes(fltr, flux, observed_flux)
@@ -1389,11 +1302,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        # Infomr the user
+        # Inform the user
         log.info("Writing ...")
 
-        # 1. Write the weights
-        if not self.has_weights: self.write_weights()
+        # Write the reference SED
+        if not self.has_reference_sed: self.write_reference_sed()
 
         # 2. Write the flux differences
         if not self.has_differences: self.write_differences()
@@ -1436,6 +1349,52 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def reference_sed_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.evaluation_path, "sed.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.reference_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_file(self.reference_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def write_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.reference_sed.saveto(self.reference_sed_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def fluxes_path(self):
 
@@ -1444,46 +1403,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.analysis_run.evaluation_path, "fluxes")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def weights_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.fluxes_path, "weights.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.weights_filepath)
-
-    # -----------------------------------------------------------------
-
-    def write_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the table with weights ...")
-
-        # Write the table with weights
-        self.weights.saveto(self.weights_filepath)
+        return fs.create_directory_in(self.evaluation_path, "fluxes")
 
     # -----------------------------------------------------------------
 
@@ -2285,7 +2205,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         #print(self.simulated_sed)
 
         # Add the SEDs
-        plotter.add_sed(self.observed_sed, "Observation (SED)")
+        #plotter.add_sed(self.observed_sed, "Observation (SED)")
+        plotter.add_sed(self.reference_sed, "Observation")
         plotter.add_sed(self.simulated_sed, "Simulation")
         plotter.format = "pdf"
 
@@ -2335,7 +2256,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Add the SEDs
-        plotter.add_sed(self.observed_sed, "Observation (SED)")
+        #plotter.add_sed(self.observed_sed, "Observation (SED)")
+        plotter.add_sed(self.reference_sed, "Observation")
         plotter.add_sed(self.simulated_datacube_sed, "Simulation")
         plotter.format = "pdf"
 
@@ -2385,7 +2307,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         plotter.config.ignore_filters = self.ignore_sed_plot_filters
 
         # Add the SEDs
-        plotter.add_sed(self.observed_sed, "Observation (SED)") # ObservedSED
+        #plotter.add_sed(self.observed_sed, "Observation (SED)") # ObservedSED
+        plotter.add_sed(self.reference_sed, "Observation (SED)")
         plotter.add_sed(self.simulated_fluxes, "Simulation (mock observations)") # ObservedSED
         plotter.add_sed(self.simulated_sed, "Simulation") # SED
         plotter.format = "pdf"
@@ -2810,7 +2733,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Add the SEDs
         plotter.add_sed(self.images_sed, "Observation (from images)")
-        plotter.add_sed(self.observed_sed, "Observation (SED)")
+        #plotter.add_sed(self.observed_sed, "Observation (SED)")
+        plotter.add_sed(self.reference_sed, "Observation (SED)")
         plotter.format = "pdf"
 
         # Plot

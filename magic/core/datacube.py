@@ -1642,6 +1642,22 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :param exact:
+        :param parallel:
+        :param convert:
+        :param add_footprint:
+        """
+
+        # Call the implementation of the base class
+        return super(DataCube, self).rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint)
+
+    # -----------------------------------------------------------------
+
     def _check_sampling_for_filter_convolution(self, fltr, wavelengths=None, ignore_bad=False,
                                      min_npoints=8, min_npoints_fwhm=5, skip_ignored_bad_convolution=True):
 
@@ -2402,12 +2418,13 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_by_factor(self, factor, new_unit):
+    def convert_by_factor(self, factor, new_unit, silent=True):
 
         """
         This function ...
         :param factor:
         :param new_unit:
+        :param silent:
         :return:
         """
 
@@ -2415,7 +2432,7 @@ class DataCube(Image):
         for i in range(self.nframes):
 
             # Debugging
-            log.debug("Converting frame " + str(i + 1) + " ...")
+            if not silent: log.debug("Converting frame " + str(i + 1) + " ...")
 
             # Convert
             self.frames[i].convert_by_factor(factor, new_unit)
@@ -2526,6 +2543,9 @@ class DataCube(Image):
 
         # Convert
         self.convert_by_factor(factor, unit)
+
+        # Return the factor
+        return factor
 
     # -----------------------------------------------------------------
 
@@ -2665,6 +2685,9 @@ class DataCube(Image):
         # Convert
         self.convert_by_factor(factor, unit)
 
+        # Return the conversion factor
+        return factor
+
     # -----------------------------------------------------------------
 
     def converted_to_corresponding_angular_or_intrinsic_area_unit(self):
@@ -2731,6 +2754,9 @@ class DataCube(Image):
         # Convert
         self.convert_by_factor(factor, unit)
 
+        # Return the factor
+        return factor
+
     # -----------------------------------------------------------------
 
     def converted_to_corresponding_non_angular_or_intrinsic_area_unit(self):
@@ -2793,6 +2819,9 @@ class DataCube(Image):
 
         # Convert by the factor
         self.convert_by_factor(factor, unit)
+
+        # Return the factor
+        return factor
 
     # -----------------------------------------------------------------
 
@@ -2860,6 +2889,9 @@ class DataCube(Image):
         # Convert
         self.convert_by_factor(factor, unit)
 
+        # Return the factor
+        return factor
+
     # -----------------------------------------------------------------
 
     def converted_to_corresponding_intrinsic_area_unit(self):
@@ -2907,6 +2939,9 @@ class DataCube(Image):
 
         # Convert
         self.convert_by_factor(factor, unit)
+
+        # Return the factor
+        return factor
 
     # -----------------------------------------------------------------
 
@@ -2984,6 +3019,9 @@ class DataCube(Image):
         # Set the distance
         if distance is None: distance = self.distance
 
+        # Keep list of conversion factors
+        factors = []
+
         # Loop over the frames
         for i in range(self.nframes):
 
@@ -2992,9 +3030,13 @@ class DataCube(Image):
 
             # Convert the frame
             factor = self.frames[i].convert_to_corresponding_wavelength_density_unit(wavelength=wavelength, distance=distance)
+            factors.append(factor)
 
             # Debugging
             log.debug("Conversion factor for frame " + str(i+1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+
+        # Return the factors
+        return factors
 
     # -----------------------------------------------------------------
 
@@ -3062,6 +3104,9 @@ class DataCube(Image):
         # Get the list of wavelengths
         wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
 
+        # Keep list of factors
+        factors = []
+
         # Loop over the frames
         for i in range(self.nframes):
 
@@ -3070,9 +3115,13 @@ class DataCube(Image):
 
             # Convert the frame
             factor = self.frames[i].convert_to_corresponding_frequency_density_unit(wavelength=wavelength)
+            factors.append(factor)
 
             # Debugging
             log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+
+        # Return the factors
+        return factors
 
     # -----------------------------------------------------------------
 
@@ -3140,6 +3189,9 @@ class DataCube(Image):
         # Get the list of wavelengths
         wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
 
+        # Keep list of conversion factors
+        factors = []
+
         # Loop over the frames
         for i in range(self.nframes):
 
@@ -3148,9 +3200,13 @@ class DataCube(Image):
 
             # Convert the frame
             factor = self.frames[i].convert_to_corresponding_neutral_density_unit(wavelength=wavelength)
+            factors.append(factor)
 
             # Debugging
             log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+
+        # Return the factors
+        return factors
 
     # -----------------------------------------------------------------
 

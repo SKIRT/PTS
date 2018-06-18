@@ -648,9 +648,17 @@ class RTModel(object):
         # Initialize dictionary for the cubes
         cubes = OrderedDict()
 
+        ## EVOLVED
+
+        # Bulge & disk?
+        if self.bulge_simulations.has_intrinsic_cube and self.disk_simulations.has_intrinsic_cube:
+
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
+
         # Add
-        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
-        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
+        #cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
+        #cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
 
         # Return
         return cubes
@@ -665,12 +673,31 @@ class RTModel(object):
         :return:
         """
 
-        # Initialize dictionary for the cubes
+        # Initialize dictionary
         cubes = OrderedDict()
 
+        ## EVOLVED
+
+        # Bulge & disk?
+        if self.bulge_simulations.has_intrinsic_cube_faceon and self.disk_simulations.has_intrinsic_cube_faceon:
+
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
+
+        # Old?
+        # elif self.old_simulations.has_intrinsic_cube_edgeon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Not enough data
+        else:
+            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent faceon cube will not be available")
+            return None
+
+        # Initialize dictionary for the cubes
+        #cubes = OrderedDict()
+
         # Add
-        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
-        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
+        #cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
+        #cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
 
         # Return
         return cubes
@@ -685,12 +712,31 @@ class RTModel(object):
         :return:
         """
 
-        # Initialize dictionary for the cubes
+        # Initialize dictionary
         cubes = OrderedDict()
 
+        ## EVOLVED
+
+        # Bulge & disk?
+        if self.bulge_simulations.has_intrinsic_cube_edgeon and self.disk_simulations.has_intrinsic_cube_edgeon:
+
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Old?
+        #elif self.old_simulations.has_intrinsic_cube_edgeon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Not enough data
+        else:
+            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent edgeon cube will not be available")
+            return None
+
+        # Initialize dictionary for the cubes
+        #cubes = OrderedDict()
+
         # Add
-        cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
-        cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+        #cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
+        #cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
 
         # Return
         return cubes
@@ -785,8 +831,21 @@ class RTModel(object):
         cubes = OrderedDict()
 
         # Add
-        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
-        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
+        #cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
+        #cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
+
+        ## UNEVOLVED
+
+        # Young & ionizing?
+        if self.young_simulations.has_intrinsic_cube and self.sfr_simulations.has_intrinsic_cube:
+
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
+
+        # Not enough data
+        else:
+            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent cube will not be available")
+            return None
 
         # Return
         return cubes
@@ -805,8 +864,21 @@ class RTModel(object):
         cubes = OrderedDict()
 
         # Add
-        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
-        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
+        #cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
+        #cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
+
+        ## UNEVOLVED
+
+        # Young & ionizing?
+        if self.young_simulations.has_intrinsic_cube_faceon and self.sfr_simulations.has_intrinsic_cube_faceon:
+
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
+
+        # Not enough data
+        else:
+            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent faceon cube will not be available")
+            return None
 
         # Return
         return cubes
@@ -825,8 +897,21 @@ class RTModel(object):
         cubes = OrderedDict()
 
         # Add
-        cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
-        cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+        #cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
+        #cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+
+        ## UNEVOLVED
+
+        # Young & ionizing?
+        if self.young_simulations.has_intrinsic_cube_edgeon and self.sfr_simulations.has_intrinsic_cube_edgeon:
+
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+
+        # Not enough data
+        else:
+            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent edgeon cube will not be available")
+            return None
 
         # Return
         return cubes

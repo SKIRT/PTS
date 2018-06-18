@@ -630,6 +630,30 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_earth_observed_cube_orientation(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return earth_name in self.observed_data.image_paths_instruments
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_observed_cube(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_earth_observed_cube_orientation
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_faceon_observed_cube_orientation(self):
 
         """
@@ -745,7 +769,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_observed_data and len(self.observed_data.images[earth_name]) > 1
+        return self.has_observed_data and self.has_earth_observed_cube and len(self.observed_data.images[earth_name]) > 1
 
     # -----------------------------------------------------------------
 
@@ -757,7 +781,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_observed_data and len(self.observed_data.images[faceon_name]) > 1
+        return self.has_observed_data and self.has_faceon_observed_cube and len(self.observed_data.images[faceon_name]) > 1
 
     # -----------------------------------------------------------------
 
@@ -769,7 +793,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_observed_data and len(self.observed_data.images[edgeon_name]) > 1
+        return self.has_observed_data and self.has_edgeon_observed_cube and len(self.observed_data.images[edgeon_name]) > 1
 
     # -----------------------------------------------------------------
 
@@ -781,7 +805,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.has_observed_data and self.has_other_observed_cube_contributions
+        return self.has_observed_data and self.has_earth_observed_cube and self.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 

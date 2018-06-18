@@ -30,6 +30,7 @@ from ...core.tools import introspection
 from ..core.environment import load_modeling_environment
 from ...core.plot.sed import plot_seds, SEDPlotter, plot_sed
 from ...core.config.plot_seds import definition as plot_seds_definition
+from ..config.evaluate_analysis import definition as evaluate_analysis_definition
 from ...core.plot.attenuation import plot_attenuation_curve, plot_attenuation_curves
 from ..config.analyse_cell_heating import definition as analyse_cell_heating_definition
 from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
@@ -46,6 +47,7 @@ from ...core.filter.filter import Filter, parse_filter
 from ...core.tools import types
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
+from .evaluation import AnalysisModelEvaluator
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -86,6 +88,9 @@ _map_command_name = "map"
 _images_command_name = "images"
 _cubes_command_name = "cubes"
 
+# Evaluate
+_evaluate_command_name = "evaluate"
+
 # Analysis
 _properties_command_name = "properties"
 _heating_command_name = "heating"
@@ -112,6 +117,9 @@ commands[_attenuation_command_name] = (None, None, "plot attenuation curves", No
 commands[_map_command_name] = (None, None, "plot a map", None)
 commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
 commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
+
+# Evaluate
+commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the analysis model", None)
 
 # Analysis
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
@@ -2248,7 +2256,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             # Get the filter
             name = fs.strip_extension(fs.name(filepath))
             fltr = parse_filter(name)
-            filters.append(fltr)
+            #filters.append(fltr)
             filter_name = str(fltr)
             if fltr not in filters: continue
 
@@ -2437,6 +2445,59 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         Thisn function ...
         :return:
         """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluate_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.import_settings(evaluate_analysis_definition)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def evaluate_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.evaluate_definition, **kwargs)
+
+        # Evaluate
+        self.evaluate(**config)
+
+    # -----------------------------------------------------------------
+
+    def evaluate(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Create evaluator
+        evaluator = AnalysisModelEvaluator(**kwargs)
+
+        # Set modeling path
+        evaluator.config.path = self.config.path
+
+        # Set analysis run name
+        evaluator.config.run = self.config.run
+
+        # Run
+        evaluator.run()
 
     # -----------------------------------------------------------------
 

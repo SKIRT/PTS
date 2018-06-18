@@ -38,6 +38,12 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 
 # -----------------------------------------------------------------
 
+# For reference SED
+definition.add_flag("not_clipped", "use the observed fluxes from the truncated (not clipped) images")
+definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points", 0.1)
+
+# -----------------------------------------------------------------
+
 definition.add_optional("nbins", "positive_integer", "number of bins for the distributions", 20)
 
 # -----------------------------------------------------------------

@@ -544,6 +544,19 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def is_photometric(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_frames: raise ValueError("No frames: no unit")
+        return self.primary.is_photometric
+
+    # -----------------------------------------------------------------
+
+    @property
     def distance(self):
 
         """
@@ -1548,13 +1561,31 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=False, parallel=True):
+    def convolved(self, kernel, allow_huge=True, fft=True):
+
+        """
+        This function ...
+        :param kernel:
+        :param allow_huge:
+        :param fft:
+        :return:
+        """
+
+        new = self.copy()
+        new.convolve(kernel, allow_huge=allow_huge, fft=fft)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=True):
 
         """
         This function ...
         :param reference_wcs:
         :param exact:
         :param parallel:
+        :param convert:
+        :param add_footprint:
         """
 
         # Check whether the image has a WCS
@@ -1572,7 +1603,7 @@ class Image(object):
             log.debug("Rebinning the '" + frame_name + "' frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
-            footprint = self.frames[frame_name].rebin(reference_wcs, exact=exact, parallel=parallel)
+            footprint = self.frames[frame_name].rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert)
 
         # Loop over the masks
         for mask_name in self.masks:
@@ -1592,14 +1623,35 @@ class Image(object):
             # Rebin
             self.segments[segments_name].rebin(reference_wcs)
 
-        # If there was any frame or mask, we have footprint
-        if footprint is not None:
+        # If there was any frame or mask, we have a footprint
+        if footprint is not None and add_footprint:
 
             # Add mask for padded pixels after rebinning
             # this mask now covers pixels added to the frame after rebinning plus more (radius 10 pixels)
             padded = Mask(footprint < 0.9, wcs=self.wcs, pixelscale=self.pixelscale)
             padded.disk_dilate(radius=10)
             self.add_mask(padded, "padded")
+
+        # Return the original WCS
+        return original_wcs
+
+    # -----------------------------------------------------------------
+
+    def rebinned(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :param exact:
+        :param parallel:
+        :param convert:
+        :param add_footprint:
+        :return:
+        """
+
+        new = self.copy()
+        new.rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint)
+        return new
 
     # -----------------------------------------------------------------
 

@@ -132,11 +132,11 @@ class ComponentSED(object):
         # Set the number of photon packages
         self.npackages = npackages
 
-        # Run the simulation?
-        self.simulation = self.get_simulation()
-
         # Set the input filepaths
         self.input_paths = input_filepaths
+
+        # Run the simulation?
+        self.simulation = self.get_simulation()
 
     # -----------------------------------------------------------------
 

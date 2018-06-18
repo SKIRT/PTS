@@ -31,6 +31,7 @@ from ...core.basics.distribution import Distribution
 from ...core.basics.plot import MPLFigure
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.basics.plot import normal_colormaps
+from ..core.list import uniformize
 
 # ------------------------------------------------------------------------------
 
@@ -1800,8 +1801,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Get the frames
-        observation = self.observations[name]
-        model = self.models[name]
+        #observation = self.observations[name]
+        #model = self.models[name]
+
+        # Uniformize
+        observation, model = uniformize(self.observations[name], self.models[name])
 
         # Error-weighed residuals
         if self.config.weighed:

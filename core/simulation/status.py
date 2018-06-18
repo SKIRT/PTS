@@ -1086,6 +1086,7 @@ class SpawnSimulationStatus(SimulationStatus):
         for line in reversed(self.log_lines):
 
             message = get_message(line)
+            print("MESS", message)
             if "Finished simulation" in message:
                 if show: log.success("Simulation finished")
                 self.status = "finished"

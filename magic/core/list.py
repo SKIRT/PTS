@@ -31,7 +31,7 @@ from ...core.basics.containers import NamedList, FilterBasedList
 from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
-from ..convolution.kernels import get_fwhm
+from ..convolution.kernels import get_fwhm, get_average_variable_fwhm, has_variable_fwhm
 from ...core.tools import sequences, types
 from ...core.launch.pts import execute_pts_remote
 from ...core.remote.remote import load_remote
@@ -3541,7 +3541,12 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
                 elif no_fwhm == "return": return frames
                 else: raise ValueError("Invalid value for 'no_fwhm'")
 
-            frame_fwhm = get_fwhm(frame.psf_filter)
+            #frame_fwhm = get_fwhm(frame.psf_filter)
+            if has_variable_fwhm(frame.psf_filter):
+                log.warning("Using average value for the FWHM for " + str(frame.psf_filter) + " images from Clark et al. (2017) to proceed ...")
+                frame_fwhm = get_average_variable_fwhm(frame.psf_filter)
+            else: frame_fwhm = get_fwhm(frame.psf_filter)
+
         frame.fwhm = frame_fwhm
 
         # Check again
