@@ -719,7 +719,18 @@ class PhotometricUnit(CompositeUnit):
         except ValueError: return False
 
         # Use implementation in base class
-        return super(PhotometricUnit, self).__eq__(other)
+        #return super(PhotometricUnit, self).__eq__(other)
+
+        same_scale = self.scale_factor == other.scale_factor
+        same_base = self.base_unit == other.base_unit
+        same_frequency = self.frequency_unit == other.frequency_unit
+        same_wavelength = self.wavelength_unit == other.wavelength_unit
+        same_distance = self.distance_unit == other.distance_unit
+        same_extent = self.extent_unit == other.extent_unit
+        same_solid_angle = self.solid_angle_unit == other.solid_angle_unit
+
+        # Return
+        return same_scale and same_base and same_frequency and same_wavelength and same_distance and same_extent and same_solid_angle
 
     # -----------------------------------------------------------------
 

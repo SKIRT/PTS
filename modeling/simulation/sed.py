@@ -121,6 +121,11 @@ class ComponentSED(object):
         # No wavelength grid (file) specified
         else: raise ValueError("Must specify either wavelength grid or wavelengths filename")
 
+        # Set properties
+        if distance is not None: self.distance = distance
+        if inclination is not None: self.inclination = inclination
+        if position_angle is not None: self.position_angle = position_angle
+
         # Set the component
         self.component = component
 
@@ -132,11 +137,6 @@ class ComponentSED(object):
 
         # Set the input filepaths
         self.input_paths = input_filepaths
-
-        # Set properties
-        if distance is not None: self.distance = distance
-        if inclination is not None: self.inclination = inclination
-        if position_angle is not None: self.position_angle = position_angle
 
     # -----------------------------------------------------------------
 

@@ -23,6 +23,7 @@ from ...core.data.sed import load_sed
 from ...magic.core.datacube import DataCube
 from .simulations import ComponentSimulations
 from .simulation import ObservedComponentSimulation
+from ...magic.core.list import uniformize
 
 # -----------------------------------------------------------------
 
@@ -348,6 +349,18 @@ class MultiComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def intrinsic_cubes_uniformized(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return uniformize(*self.intrinsic_cubes.values())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def intrinsic_cube(self):
 
         """
@@ -359,7 +372,7 @@ class MultiComponentSimulations(ComponentSimulations):
         if self.has_transparent_cube: return self.observed_cube_transparent
 
         # Has intrinsic cubes, add them
-        elif self.has_intrinsic_cubes: return sequences.sum(self.intrinsic_cubes.values())
+        elif self.has_intrinsic_cubes: return sequences.sum(self.intrinsic_cubes_uniformized) #return sequences.sum(self.intrinsic_cubes.values())
 
         # Cannot be calculated
         else: raise ValueError("Intrinsic datacube cannot be calculated")

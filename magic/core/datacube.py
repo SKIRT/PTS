@@ -2355,7 +2355,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False, silent=True):
 
         """
         This function ...
@@ -2365,6 +2365,7 @@ class DataCube(Image):
         :param brightness:
         :param density_strict:
         :param brightness_strict:
+        :param silent:
         :return:
         """
 
@@ -2384,7 +2385,7 @@ class DataCube(Image):
             # Create converted frame, passing the wavelength for (potential) use in the conversion
             frame = self.frames[index].converted_to(to_unit, distance=distance, density=density, brightness=brightness,
                                                     density_strict=density_strict, brightness_strict=brightness_strict,
-                                                    wavelength=wavelength)
+                                                    wavelength=wavelength, silent=silent)
 
             # Add the frame
             frame_name = "frame" + str(nframes)
@@ -2445,7 +2446,7 @@ class DataCube(Image):
 
             # Add the frame
             frame_name = "frame" + str(nframes)
-            new.add_frame(frame, frame_name)
+            new.add_frame(frame, frame_name, silent=True)
 
             # Increment the number of frames
             nframes += 1

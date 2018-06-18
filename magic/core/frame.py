@@ -2807,6 +2807,11 @@ class Frame(NDDataArray):
         #to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
         to_unit = parse_unit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
+        # Already in the correct unit
+        if to_unit == self.unit:
+            if not silent: log.debug("Frame is already in the desired unit")
+            return 1.
+
         # Debugging
         if not silent: log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
 

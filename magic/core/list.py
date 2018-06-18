@@ -2689,6 +2689,8 @@ def convert_to_same_unit(*frames, **kwargs):
     :return: 
     """
 
+    from .datacube import DataCube
+
     # Get frame names
     names = kwargs.pop("names", None)
 
@@ -2701,7 +2703,7 @@ def convert_to_same_unit(*frames, **kwargs):
     wavelength = kwargs.pop("wavelength", None)
 
     # Inform the user
-    log.info("Converting frames to the same unit ...")
+    log.info("Converting images to the same unit ...")
 
     # Check if the unit is defined
     if "unit" in kwargs and kwargs["unit"] is not None:
@@ -2713,7 +2715,7 @@ def convert_to_same_unit(*frames, **kwargs):
     if "unit" in kwargs: kwargs.pop("unit")
 
     # Debugging
-    log.debug("Converting frames to unit " + tostr(unit, add_physical_type=True) + " ...")
+    log.debug("Converting images to unit " + tostr(unit, add_physical_type=True) + " ...")
 
     # Initialize list for converted frames
     new_frames = []
@@ -2726,11 +2728,23 @@ def convert_to_same_unit(*frames, **kwargs):
         #name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
-        # Debugging
-        log.debug("Converting frame " + print_name + "with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
+        # Get type
+        if isinstance(frame, Frame): image_type = "frame"
+        elif isinstance(frame, DataCube): image_type = "datacube"
+        elif isinstance(frame, Image): image_type = "image"
+        else: raise ValueError("Invalid argument of type '" + str(type(frame)) + "'")
 
-        # Create and set name
-        converted = frame.converted_to(unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
+        # Debugging
+        log.debug("Converting " + image_type + " " + print_name + " with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
+
+        # Create converted version
+        if image_type == "frame": converted = frame.converted_to(unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
+        elif image_type == "datacube" or image_type == "image":
+            if wavelength is not None: raise ValueError("Wavelength cannot be specified when datacubes/images are passed")
+            converted = frame.converted_to(unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, silent=True)
+        else: raise ValueError("Invalid argument of type '" + str(type(frame)) + "'")
+
+        # Set name
         if names is not None: converted.name = names[index]
 
         # Add to the list of new frames

@@ -1588,7 +1588,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def unevolved_dust_absorption_cube_earth(self):
-        return self.young_dust_absorption_cube_earth + self.ionizing_dust_absorption_cube_earth
+        #return self.young_dust_absorption_cube_earth + self.ionizing_dust_absorption_cube_earth
+        return self.model.unevolved_absorbed_diffuse_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
