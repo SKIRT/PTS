@@ -79,6 +79,7 @@ _dustgrid_command_name = "grid"
 _sed_command_name = "sed"
 _attenuation_command_name = "attenuation"
 _map_command_name = "map"
+_images_command_name = "images"
 
 # Analysis
 _properties_command_name = "properties"
@@ -104,6 +105,7 @@ commands[_dustgrid_command_name] = ("plot_grid_command", True, "plot the dust gr
 commands[_sed_command_name] = (None, None, "plot SEDs", None)
 commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
 commands[_map_command_name] = (None, None, "plot a map", None)
+commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
 
 # Analysis
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
@@ -2073,6 +2075,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Plot
         plot_attenuation_curve(self.model.attenuation_curve_unevolved, unevolved)
+
+    # -----------------------------------------------------------------
+
+    def plot_images_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
 
     # -----------------------------------------------------------------
 

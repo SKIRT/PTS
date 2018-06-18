@@ -1098,6 +1098,22 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def uniformize_maps_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["no_fwhm"] = "return"
+        kwargs["no_pixelscale"] = "shape"
+        kwargs["distance"] = self.galaxy_distance
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_absorptions_earth(self):
 
         """
@@ -1106,7 +1122,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.young_absorptions_earth + self.ionizing_absorptions_earth
-        young, ionizing = convolve_rebin_and_convert(self.young_absorptions_earth, self.ionizing_absorptions_earth, no_fwhm="return", no_pixelscale="shape", distance=self.galaxy_distance)
+        young, ionizing = convolve_rebin_and_convert(self.young_absorptions_earth, self.ionizing_absorptions_earth, **self.uniformize_maps_kwargs)
         return young + ionizing
 
     # -----------------------------------------------------------------
@@ -1120,7 +1136,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.unevolved_absorptions_earth - self.internal_absorptions_earth
-        unevolved, internal = convolve_rebin_and_convert(self.unevolved_absorptions_earth, self.internal_absorptions_earth)
+        unevolved, internal = convolve_rebin_and_convert(self.unevolved_absorptions_earth, self.internal_absorptions_earth, **self.uniformize_maps_kwargs)
         return unevolved - internal
 
     # -----------------------------------------------------------------
@@ -1134,7 +1150,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.total_absorptions_earth - self.internal_absorptions_earth
-        total, internal = convolve_rebin_and_convert(self.total_absorptions_earth, self.internal_absorptions_earth)
+        total, internal = convolve_rebin_and_convert(self.total_absorptions_earth, self.internal_absorptions_earth, **self.uniformize_maps_kwargs)
         return total - internal
 
     # -----------------------------------------------------------------
