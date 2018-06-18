@@ -31,6 +31,11 @@ from ...core.plot.sed import SEDPlotter
 from ...magic.core.list import convert_to_same_unit
 from ...magic.tools import plotting
 from ...magic.core.list import rebin_to_highest_pixelscale
+from ...core.misc.fluxes import ObservedFluxCalculator
+
+# -----------------------------------------------------------------
+
+earth_name = "earth"
 
 # -----------------------------------------------------------------
 
@@ -56,6 +61,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # The reference SED
         self.reference_sed = None
+
+        # The mock fluxes
+        self.fluxes = None
 
         # Initialize the differences table
         self.differences = FluxDifferencesTable()
@@ -110,6 +118,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Get the observed SED
         self.get_reference_sed()
+
+        # Get the mock fluxes
+        self.get_fluxes()
 
         # 2. Get the differences
         self.get_differences()
@@ -226,39 +237,63 @@ class AnalysisModelEvaluator(AnalysisComponent):
     def simulated_fluxes(self):
 
         """
-        This function ..
+        Thisnfunction ...
         :return:
         """
 
-        return self.analysis_run.simulated_fluxes
+        return self.fluxes
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def simulated_filters(self):
+    @property
+    def simulated_flux_filters(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.simulated_fluxes.filters()
+        return self.observed_filter_names_in_range_without_iras
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def simulated_filters_no_iras_planck(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the filters
-        filters = [fltr for fltr in self.simulated_filters if fltr not in self.iras_and_planck_filters]
-
-        # Sort them
-        return list(sorted(filters, key=lambda fltr: fltr.wavelength.to("micron").value))
+    # @property
+    # def simulated_fluxes(self):
+    #
+    #     """
+    #     This function ..
+    #     :return:
+    #     """
+    #
+    #     return self.analysis_run.simulated_fluxes
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @lazyproperty
+    # def simulated_filters(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.simulated_fluxes.filters()
+    #
+    # # -----------------------------------------------------------------
+    #
+    # @lazyproperty
+    # def simulated_filters_no_iras_planck(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Get the filters
+    #     filters = [fltr for fltr in self.simulated_filters if fltr not in self.iras_and_planck_filters]
+    #
+    #     # Sort them
+    #     return list(sorted(filters, key=lambda fltr: fltr.wavelength.to("micron").value))
 
     # -----------------------------------------------------------------
 
@@ -339,6 +374,134 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Add additional relative error?
         if self.config.additional_error is not None: self.reference_sed.add_relative_error(self.config.additional_error)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filters_in_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = []
+        for fltr in self.observed_filters:
+            if not self.analysis_run.wavelength_grid.covers(fltr.wavelength):
+                log.warning("The '" + str(fltr) + "' filter is not covered by the wavelength range: not making observations for this filter")
+                continue
+            filters.append(fltr)
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filters_in_range_without_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr for fltr in self.observed_filters_in_range if fltr not in self.iras_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_in_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filters_in_range]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names_in_range_without_iras(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filters_in_range_without_iras]
+
+    # -----------------------------------------------------------------
+
+    def get_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_fluxes: self.load_fluxes()
+        else: self.create_fluxes()
+
+    # -----------------------------------------------------------------
+
+    def load_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fluxes = ObservedSED.from_file(self.fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_fluxes(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the observed fluxes ...")
+
+        # Create a ObservedFluxCalculator object
+        flux_calculator = ObservedFluxCalculator()
+
+        # Set spectral convolution flag
+        flux_calculator.config.spectral_convolution = True #self.misc_options.fluxes_spectral_convolution
+
+        # Set plot flags
+        flux_calculator.config.plot = False
+        flux_calculator.config.plot_seds = False
+        flux_calculator.config.plot_images = False
+
+        # EXTRA OPTIONS
+        flux_calculator.config.check_wavelengths = True #self.config.check_wavelengths
+        flux_calculator.config.ignore_bad = True #self.config.ignore_bad
+        flux_calculator.config.skip_ignored_bad_convolution = False #self.config.skip_ignored_bad_convolution
+        flux_calculator.config.skip_ignored_bad_closest = False #self.config.skip_ignored_bad_closest
+
+        # DEPLOYMENT
+        #self.flux_calculator.config.deploy_pts = self.config.deploy_pts
+        #self.flux_calculator.config.update_dependencies = self.config.update_dependencies
+
+        # Set input
+        input_dict = dict()
+        #input_dict["simulation"] = self.simulation
+        input_dict["simulation_output_path"] = self.analysis_run.total_output_path
+        #input_dict["output_path"] = self.fluxes_output_path
+        input_dict["filter_names"] = self.simulated_flux_filters #self.filters_for_fluxes
+        input_dict["instrument_names"] = [earth_name]
+        #input_dict["instrument_names"] = self.misc_options.observation_instruments
+        #input_dict["errors"] = self.misc_options.flux_errors
+        #input_dict["no_spectral_convolution_filters"] = self.misc_options.no_fluxes_spectral_convolution_filters
+        #input_dict["reference_seds"] = self.fluxes_reference_seds
+
+        # Run
+        flux_calculator.run(**input_dict)
+
+        # Get the SED
+        self.fluxes = flux_calculator.mock_seds[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -481,80 +644,115 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Making the mock observed images ...")
 
         # Loop over the filters for which we want to create images
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
-            # Present?
-            if self.has_image_for_filter(fltr):
+            # Make image
+            frame = self.make_image_for_filter(fltr)
+            self.images.append(frame)
 
-                # Needed?
-                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_image_fluxes and self.has_all_image_plots and self.has_all_relative_error_plots: continue
+            # Make error map
+            errors = self.make_errors_for_filter(fltr, frame)
+            self.errors.append(errors)
 
-                # Success
-                log.success("The '" + str(fltr) + "' image is already present: loading ...")
+    # -----------------------------------------------------------------
 
-                # Load the frame
-                frame = Frame.from_file(self.get_image_filepath_for_filter(fltr))
+    def make_image_for_filter(self, fltr):
 
-                # Add the frame
-                self.images.append(frame)
+        """
+        Thisn function ...
+        :param fltr:
+        :return:
+        """
 
-            # Not yet present
-            else:
+        # Present?
+        if self.has_image_for_filter(fltr):
 
-                # Debugging
-                log.debug("Making the mock observed '" + str(fltr) + "' image ...")
+            # Needed?
+            #if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_image_fluxes and self.has_all_image_plots and self.has_all_relative_error_plots: continue
 
-                # Get the appropriate simulated frame
-                frame = self.get_frame_for_filter(fltr, convolve=False)
+            # Success
+            log.success("The '" + str(fltr) + "' image is already present: loading ...")
 
-                # Print wavelengths to check
-                #print(fltr.wavelength, fltr.center, fltr.pivot, frame._wavelength)
+            # Load the frame
+            frame = Frame.from_file(self.get_image_filepath_for_filter(fltr))
 
-                # Give warning
-                rel_difference = (frame._wavelength - fltr.pivot) / fltr.pivot
-                if rel_difference > 0.05: log.warning("Wavelength of filter: " + str(fltr.pivot) + ", wavelength of frame: " + str(frame._wavelength))
+            # Add the frame
+            #self.images.append(frame)
 
-                # Print unit BEFORE
-                #print("UNIT BEFORE:", frame.unit)
+        # Not yet present
+        else:
 
-                # Convert to non-brightness
-                conversion_factor = frame.convert_to_corresponding_non_brightness_unit()
+            # Debugging
+            log.debug("Making the mock observed '" + str(fltr) + "' image ...")
 
-                #print("PIXELSCALE:", frame.average_pixelscale)
-                #print("CONVERSION FACTOR", conversion_factor)
+            # Get the appropriate simulated frame
+            frame = self.get_frame_for_filter(fltr, convolve=False)
 
-                # Print unit AFTER
-                #print("UNIT AFTER:", frame.unit)
+            # Print wavelengths to check
+            # print(fltr.wavelength, fltr.center, fltr.pivot, frame._wavelength)
 
-                # Add the frame
-                self.images.append(frame)
+            # Give warning
+            rel_difference = (frame.wavelength - fltr.pivot) / fltr.pivot
+            if rel_difference > 0.05: log.warning("Wavelength of filter: " + str(fltr.pivot) + ", wavelength of frame: " + str(frame._wavelength))
 
-            # Present?
-            if self.has_errors_for_filter(fltr):
+            # Print unit BEFORE
+            # print("UNIT BEFORE:", frame.unit)
 
-                # Needed?
-                if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_all_relative_error_plots: continue
+            # Convert to non-brightness
+            conversion_factor = frame.convert_to_corresponding_non_brightness_unit()
 
-                # Success
-                log.success("The '" + str(fltr) + "' image is already present: loading ...")
+            # print("PIXELSCALE:", frame.average_pixelscale)
+            # print("CONVERSION FACTOR", conversion_factor)
 
-                # Load the error frame
-                errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
+            # Print unit AFTER
+            # print("UNIT AFTER:", frame.unit)
 
-                # Add the errors frame
-                self.errors.append(errors)
+            # Add the frame
+            #self.images.append(frame)
 
-            # Not yet present
-            else:
+        # Return
+        return frame
 
-                # Debugging
-                log.debug("Making an approximate error map for the '" + str(fltr) + "' image ...")
+    # -----------------------------------------------------------------
 
-                # Create an approximate error frame
-                errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter, unit=frame.unit)
+    def make_errors_for_filter(self, fltr, frame):
 
-                # Add the errors frame
-                self.errors.append(errors)
+        """
+        This function ...
+        :param fltr:
+        :param frame:
+        :return:
+        """
+
+        # Present?
+        if self.has_errors_for_filter(fltr):
+
+            # Needed?
+            #if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_all_relative_error_plots: continue
+
+            # Success
+            log.success("The '" + str(fltr) + "' image is already present: loading ...")
+
+            # Load the error frame
+            errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
+
+            # Add the errors frame
+            #self.errors.append(errors)
+
+        # Not yet present
+        else:
+
+            # Debugging
+            log.debug("Making an approximate error map for the '" + str(fltr) + "' image ...")
+
+            # Create an approximate error frame
+            errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter, unit=frame.unit)
+
+            # Add the errors frame
+            #self.errors.append(errors)
+
+        # Return the error map
+        return errors
 
     # -----------------------------------------------------------------
 
@@ -569,7 +767,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Loading the proper mock observed images ...")
 
         # Loop over the filters for which we want to create images
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
             
             # Load the image
             frame = self.analysis_run.get_simulated_frame_for_filter(fltr)
@@ -590,8 +788,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Loading the observed images ...")
 
         # Loop over the appropriate observed images
-        image_names_for_filters = self.dataset.get_names_for_filters(self.simulated_filters_no_iras_planck)
-        for fltr, image_name in zip(self.simulated_filters_no_iras_planck, image_names_for_filters):
+        image_names_for_filters = self.dataset.get_names_for_filters(self.simulated_flux_filters)
+        for fltr, image_name in zip(self.simulated_flux_filters, image_names_for_filters):
 
             # Needs to be loaded?
             if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed: continue
@@ -637,7 +835,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Rebinning the images to the same pixelscale ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # All already present
             if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed and self.has_image_fluxes: continue
@@ -654,83 +852,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Rebin in-place
             names = ["simulated", "simulated_errors", "observed", "observed_errors"]
             rebin_to_highest_pixelscale(simulated, simulated_errors, observed, observed_errors, names=names, in_place=True)
-
-    # -----------------------------------------------------------------
-
-    # def rebin_images_old(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info('Rebinning the images to the same pixelscale ...')
-    #
-    #     # Loop over the filters
-    #     for fltr in self.simulated_filters_no_iras_planck:
-    #
-    #         # Debugging
-    #         log.debug("Rebinning the '" + str(fltr) + "' image if necessary ...")
-    #
-    #         # All already present
-    #         if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_images_sed and self.has_image_fluxes: continue
-    #
-    #         # Get the frames
-    #         simulated = self.images[fltr]
-    #         simulated_errors = self.errors[fltr]
-    #         observed = self.observed_images[fltr]
-    #         observed_errors = self.observed_errors[fltr]
-    #
-    #         # Check coordinate systems
-    #         if simulated.wcs != simulated_errors.wcs: raise ValueError("The coordinate system of the simulated frame and error map are not the same")
-    #         if observed.wcs != observed_errors.wcs: raise ValueError("The coordinate system of the observed frame and error map are not the same")
-    #
-    #         # Check whether the coordinate systems of the observed and simulated image match
-    #         if simulated.wcs == observed.wcs:
-    #             log.debug("The coordinate system of the simulated and observed image for the " + str(fltr) + " filter matches")
-    #
-    #         # The observed image has a smaller pixelscale as the simulated image -> rebin the observed image
-    #         elif observed.average_pixelscale < simulated.average_pixelscale:
-    #
-    #             # Debugging
-    #             log.debug("The observed '" + str(fltr) + "' image has a better resolution as the simulated image: rebinning the observed image ...")
-    #
-    #             # Rebin the observed images
-    #             observed.rebin(simulated.wcs)
-    #             observed_errors.rebin(simulated.wcs)
-    #
-    #             # Add
-    #             self.rebinned_observed.append(fltr)
-    #
-    #         # The simulated image has a smaller pixelscale as the observed image
-    #         elif simulated.average_pixelscale < observed.average_pixelscale:
-    #
-    #             # Debugging
-    #             log.debug("The simulated '" + str(fltr) + "' image has a better resolution as the observed image: rebinning the simulated image ...")
-    #
-    #             # Rebin the simulated images
-    #             simulated.rebin(observed.wcs)
-    #             simulated_errors.rebin(observed.wcs)
-    #
-    #             # Add
-    #             self.rebinned_simulated.append(fltr)
-    #
-    #         # Error
-    #         else: raise RuntimeError("Something unexpected happened")
-    #
-    #     # DEBUGGING
-    #     log.debug("")
-    #     log.debug("The following simulated images (and error maps) have been rebinned:")
-    #     log.debug("")
-    #     for fltr in self.rebinned_simulated: log.debug(" - " + str(fltr))
-    #     log.debug("")
-    #
-    #     # DEBUGGING
-    #     log.debug("The following observed images (and error maps) have been rebinned:")
-    #     log.debug("")
-    #     for fltr in self.rebinned_observed: log.debug(" - " + str(fltr))
-    #     log.debug("")
 
     # -----------------------------------------------------------------
 
@@ -758,7 +879,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Calculating the fluxes based on the mock observed images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Get the image
             image = self.images[fltr]
@@ -813,7 +934,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Calculating the fluxes based on the proper mock observed images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Get the image
             image = self.proper_images[fltr]
@@ -868,7 +989,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Calculating the fluxes based on the observed images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Get the frame
             frame = self.observed_images[fltr]
@@ -1085,7 +1206,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Calculating the residual images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # # Already have residuals
             # if self.has_residuals(filter_name):
@@ -1137,7 +1258,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Calculating the weighed residual images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # # Already have residuals
             # if self.has_weighed_residuals(filter_name):
@@ -1213,7 +1334,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Creating the residuals distributions ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # # Already have distribution
             # if self.has_residuals_distribution(filter_name):
@@ -1261,7 +1382,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             if self.has_weighed_distribution_for_filter(fltr): distribution = Distribution.from_file(self.get_weighed_distribution_filepath_for_filter(fltr))
             else:
@@ -1307,6 +1428,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Write the reference SED
         if not self.has_reference_sed: self.write_reference_sed()
+
+        # Write the mock fluxes
+        if not self.has_fluxes: self.write_fluxes()
 
         # 2. Write the flux differences
         if not self.has_differences: self.write_differences()
@@ -1404,6 +1528,45 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         return fs.create_directory_in(self.evaluation_path, "fluxes")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fluxes_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fluxes_path, "fluxes.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.fluxes_filepath)
+
+    # -----------------------------------------------------------------
+
+    def write_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the mock fluxes ...")
+
+        # Save
+        self.fluxes.saveto(self.fluxes_filepath)
 
     # -----------------------------------------------------------------
 
@@ -2022,7 +2185,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Writing the residuals distributions ...")
 
         # Loop over the distributions
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # check if already present
             if self.has_residuals_distribution_for_filter(fltr): continue
@@ -2073,7 +2236,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Writing the weighed distributions ...")
 
         # Loop over the distributions
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check if already present
             if self.has_weighed_distribution_for_filter(fltr): continue
@@ -2391,7 +2554,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         #print("FILTERS:", self.simulated_filters_no_iras_planck)
 
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
             #print(fltr, self.get_image_plot_filepath_for_filter(fltr), "has image plot:", self.has_image_plot_for_filter(fltr))
             if not self.has_image_plot_for_filter(fltr): return False
         return True
@@ -2409,7 +2572,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the mock observed images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check whether present
             if self.has_image_plot_for_filter(fltr): continue
@@ -2462,7 +2625,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         #print("FILTERS:", self.simulated_filters_no_iras_planck)
 
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
             #print(fltr, self.get_relative_errors_plot_filepath_for_filter(fltr), "has relative errors plot:", self.has_relative_errors_plot_for_filter(fltr))
             if not self.has_relative_errors_plot_for_filter(fltr): return False
         return True
@@ -2480,7 +2643,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the relative error maps of the mock observed images ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check whether present
             if self.has_relative_errors_plot_for_filter(fltr): continue
@@ -2968,7 +3131,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the residuals distributions ...")
 
         # Loop over the distributions
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check if already present
             if self.has_residuals_distribution_plot_for_filter(fltr): continue
@@ -3031,7 +3194,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the weighed residuals distributions ...")
 
         # Loop over the weighed distributions
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check if already present
             if self.has_weighed_distribution_plot_for_filter(fltr): continue
@@ -3106,7 +3269,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the residuals ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check whether present
             if self.has_residuals_plot_for_filter(fltr): continue
@@ -3190,7 +3353,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the residuals in absolute values ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Check whether present
             if self.has_residuals_absolute_plot_for_filter(fltr): continue
@@ -3244,7 +3407,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting the weighed residuals ...")
 
         # Loop over the filters
-        for fltr in self.simulated_filters_no_iras_planck:
+        for fltr in self.simulated_flux_filters:
 
             # Ceck whether present
             if self.has_weighed_plot_for_filter(fltr): continue

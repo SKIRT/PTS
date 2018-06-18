@@ -52,7 +52,8 @@ class ComponentProjections(object):
 
     def __init__(self, name, model, projection=None, projection_faceon=None, projection_edgeon=None,
                  path=None, earth=True, faceon=True, edgeon=True, npackages=default_npackages,
-                 description=None, input_filepaths=None, distance=None, wcs=None, center=None, radial_factor=1):
+                 description=None, input_filepaths=None, distance=None, wcs=None, center=None, radial_factor=1,
+                 earth_wcs=None):
 
         """
         This function ...
@@ -69,6 +70,7 @@ class ComponentProjections(object):
         :param wcs:
         :param center: galaxy center, as sky coordinate
         :param radial_factor:
+        :param earth_wcs:
         :param
         """
 
@@ -105,6 +107,9 @@ class ComponentProjections(object):
 
         # Set the input filepaths
         self.input_paths = input_filepaths
+
+        # Set the WCS for the earth map
+        self.earth_wcs = earth_wcs
 
         # Get the earth simulation
         if earth: self.simulation_earth = self.get_simulation_earth()
@@ -980,6 +985,18 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_earth_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.earth_wcs is not None
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def earth(self):
 
@@ -988,7 +1005,10 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_earth_map_path)
+        if self.has_wcs: wcs = self.wcs
+        elif self.has_earth_wcs: wcs = self.earth_wcs
+        else: raise ValueError("No WCS info for the earth map")
+        return Frame.from_file(self.old_bulge_earth_map_path, wcs=wcs)
 
     # -----------------------------------------------------------------
 

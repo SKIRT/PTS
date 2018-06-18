@@ -356,6 +356,9 @@ class MultiComponentSimulations(ComponentSimulations):
         :return:
         """
 
+        for key in self.intrinsic_cubes:
+            cube = self.intrinsic_cubes[key]
+            print(key, cube.wcs)
         return uniformize(*self.intrinsic_cubes.values())
 
     # -----------------------------------------------------------------

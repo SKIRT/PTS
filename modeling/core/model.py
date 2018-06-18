@@ -8143,7 +8143,8 @@ class RTModel(object):
                                     description="old bulge stellar component",
                                     projection=self.old_disk_projections.projection_earth,
                                     projection_faceon=self.old_disk_projections.projection_faceon,
-                                    projection_edgeon=self.old_disk_projections.projection_edgeon, center=self.center)
+                                    projection_edgeon=self.old_disk_projections.projection_edgeon, center=self.center,
+                                    earth_wcs=self.old_disk_map_wcs)
 
     # -----------------------------------------------------------------
 
@@ -8253,7 +8254,7 @@ class RTModel(object):
 
         return ComponentProjections(disk_simulation_name, self.old_disk_deprojection, path=self.old_disk_projections_path,
                                     earth=False, description="old disk stellar component",
-                                    input_filepaths=[self.old_disk_map_path], center=self.center)
+                                    input_filepaths=[self.old_disk_map_path], center=self.center, earth_wcs=self.old_disk_map_wcs)
 
     # -----------------------------------------------------------------
 
@@ -8339,7 +8340,7 @@ class RTModel(object):
 
         return ComponentProjections(young_simulation_name, self.young_deprojection, path=self.young_projections_path,
                                     earth=False, description="young stellar component",
-                                    input_filepaths=[self.young_map_path], center=self.center)
+                                    input_filepaths=[self.young_map_path], center=self.center, earth_wcs=self.young_map_wcs)
 
     # -----------------------------------------------------------------
 
@@ -8425,7 +8426,7 @@ class RTModel(object):
 
         return ComponentProjections(sfr_simulation_name, self.sfr_deprojection, path=self.sfr_projections_path,
                                     earth=False, description="SFR component", input_filepaths=[self.sfr_map_path],
-                                    center=self.center)
+                                    center=self.center, earth_wcs=self.sfr_map_wcs)
 
     # -----------------------------------------------------------------
 

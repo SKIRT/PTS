@@ -2709,6 +2709,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Get the subplot spec
         spec, row, col = self.get_observation_spec(index, return_row_col=True)
+        #print(spec)
 
         # Create the plot
         plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=spec)

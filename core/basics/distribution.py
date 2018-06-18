@@ -121,7 +121,7 @@ class Distribution(Curve):
             noriginal = len(values)
             sigma_level = kwargs.pop("sigma_level", 3.)
             values, nmasked = numbers.sigma_clip(values, sigma_level=sigma_level, return_nmasked=True)
-            log.debug("Masked " + str(nmasked) + " out of  " + str(noriginal) + " values by sigma-clipping")
+            log.debug("Masked " + str(nmasked) + " out of " + str(noriginal) + " values by sigma-clipping")
 
         # Create the distribution
         return cls.from_values(name, values, **kwargs)
