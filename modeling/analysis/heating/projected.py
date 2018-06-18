@@ -19,7 +19,7 @@ from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty
 from ....magic.core.frame import Frame
 from ....magic.core.datacube import DataCube
-from ....magic.core.list import convolve_and_rebin, convolve_rebin_and_convert
+from ....magic.core.list import uniformize
 
 # -----------------------------------------------------------------
 
@@ -1098,22 +1098,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def uniformize_maps_kwargs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        kwargs = dict()
-        kwargs["no_fwhm"] = "return"
-        kwargs["no_pixelscale"] = "shape"
-        kwargs["distance"] = self.galaxy_distance
-        return kwargs
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def unevolved_absorptions_earth(self):
 
         """
@@ -1122,7 +1106,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.young_absorptions_earth + self.ionizing_absorptions_earth
-        young, ionizing = convolve_rebin_and_convert(self.young_absorptions_earth, self.ionizing_absorptions_earth, **self.uniformize_maps_kwargs)
+        young, ionizing = uniformize(self.young_absorptions_earth, self.ionizing_absorptions_earth, distance=self.galaxy_distance)
         return young + ionizing
 
     # -----------------------------------------------------------------
@@ -1136,7 +1120,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.unevolved_absorptions_earth - self.internal_absorptions_earth
-        unevolved, internal = convolve_rebin_and_convert(self.unevolved_absorptions_earth, self.internal_absorptions_earth, **self.uniformize_maps_kwargs)
+        unevolved, internal = uniformize(self.unevolved_absorptions_earth, self.internal_absorptions_earth, distance=self.galaxy_distance)
         return unevolved - internal
 
     # -----------------------------------------------------------------
@@ -1150,7 +1134,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         #return self.total_absorptions_earth - self.internal_absorptions_earth
-        total, internal = convolve_rebin_and_convert(self.total_absorptions_earth, self.internal_absorptions_earth, **self.uniformize_maps_kwargs)
+        total, internal = uniformize(self.total_absorptions_earth, self.internal_absorptions_earth, distance=self.galaxy_distance)
         return total - internal
 
     # -----------------------------------------------------------------
@@ -1462,13 +1446,22 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Earth
-        if self.do_earth: self.get_cube_earth()
+        if self.do_earth:
+
+            self.get_cube_earth()
+            self.get_cube_earth_absorption()
 
         # Face-on
-        if self.do_faceon: self.get_cube_faceon()
+        if self.do_faceon:
+
+            self.get_cube_faceon()
+            self.get_cube_faceon_absorption()
 
         # Edge-on
-        if self.do_edgeon: self.get_cube_edgeon()
+        if self.do_edgeon:
+
+            self.get_cube_edgeon()
+            self.get_cube_edgeon_absorption()
 
     # -----------------------------------------------------------------
 

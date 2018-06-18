@@ -596,6 +596,68 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelscale is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_frames: raise ValueError("No frames: no pixelscale")
+        return self.primary.has_angular_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_frames: raise ValueError("No frames: no pixelscale")
+        return self.primary.has_physical_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.angular_pixelscale if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.physical_pixelscale if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def average_pixelscale(self):
 
         """
@@ -609,6 +671,30 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def average_angular_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.average_angular_pixelscale if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def average_physical_pixelscale(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.primary.average_physical_pixelscale if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelarea(self):
 
         """
@@ -618,6 +704,54 @@ class Image(object):
 
         # Return the pixelarea of the primary frame
         return self.primary.pixelarea if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def angular_pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.angular_pixelarea if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_solid_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.angular_pixelarea
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.physical_pixelarea if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.physical_pixelarea
 
     # -----------------------------------------------------------------
 

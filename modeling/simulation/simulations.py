@@ -26,6 +26,7 @@ from .simulation import earth_name, faceon_name, edgeon_name
 from .simulation import total_contribution, scattered_contribution, direct_contribution, transparent_contribution
 from .simulation import dust_contribution, dust_direct_contribution, dust_scattered_contribution
 from ...core.units.parsing import parse_unit as u
+from ...magic.core.list import uniformize
 
 # -----------------------------------------------------------------
 
@@ -960,7 +961,20 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_stellar_cube - self.observed_stellar_cube
+        # kwargs["no_fwhm"] = "return"
+        #         kwargs["no_pixelscale"] = "shape"
+        #         kwargs["distance"] = self.galaxy_distance
+
+        intrinsic = self.intrinsic_stellar_cube
+        observed = self.observed_stellar_cube
+        #return self.intrinsic_stellar_cube - self.observed_stellar_cube
+
+        #from ...magic.core.list import convolve_rebin_and_convert
+        #intrinsic, observed = convolve_rebin_and_convert(self.intrinsic_stellar_cube, self.observed_stellar_cube, no_fwhm="return", no_pixelscale="shape", distance=self.distance)
+        intrinsic, observed = uniformize(self.intrinsic_stellar_cube, self.observed_stellar_cube, distance=self.distance)
+
+        # Return
+        return intrinsic - observed
 
     # -----------------------------------------------------------------
 

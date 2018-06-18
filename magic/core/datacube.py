@@ -1163,7 +1163,10 @@ class DataCube(Image):
 
         # Check whether (wavelength) spectral density
         if not self.unit.is_spectral_density: raise ValueError("Datacube is not in spectral density units")
-        if not self.unit.is_wavelength_density: raise NotImplementedError("Integrating over frequencies is not yet implemented")
+
+        # Is implemented: data of frames is obtained in 'corresponding_wavelength_density_unit'
+        #if not self.unit.is_wavelength_density: raise NotImplementedError("Integrating over frequencies is not yet implemented")
+        #if self.is_wavelength_density:
 
         # Get the unit for the spectral photometry
         unit = self.corresponding_wavelength_density_unit

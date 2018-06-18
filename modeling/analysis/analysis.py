@@ -42,6 +42,10 @@ from ..config.analyse_projected_energy import definition as analyse_projected_en
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
 from ...magic.tools.plotting import plot_frame, plot_frame_contours
+from ...core.filter.filter import Filter, parse_filter
+from ...core.tools import types
+from ...magic.core.frame import Frame
+from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -80,6 +84,7 @@ _sed_command_name = "sed"
 _attenuation_command_name = "attenuation"
 _map_command_name = "map"
 _images_command_name = "images"
+_cubes_command_name = "cubes"
 
 # Analysis
 _properties_command_name = "properties"
@@ -106,6 +111,7 @@ commands[_sed_command_name] = (None, None, "plot SEDs", None)
 commands[_attenuation_command_name] = (None, None, "plot attenuation curves", None)
 commands[_map_command_name] = (None, None, "plot a map", None)
 commands[_images_command_name] = ("plot_images_command", True, "plot the simulated images", None)
+commands[_cubes_command_name] = ("plot_cubes_command", True, "plot the simulated datacubes", None)
 
 # Analysis
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
@@ -2078,12 +2084,357 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def plot_images_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("orientation", "string", "orientation of the images", earth_name, choices=orientations)
+        definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
+        definition.add_flag("residuals", "show residuals", True)
+        definition.add_flag("distributions", "show residual distributions", True)
+
+        # Return
+        return definition
+
+    # -----------------------------------------------------------------
+
     def plot_images_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
         :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_images_definition, **kwargs)
+
+        # Earth
+        if config.orientation == earth_name: self.plot_earth_images(config.filters)
+
+        # Face-on
+        elif config.orientation == faceon_name: self.plot_faceon_images(config.filters)
+
+        # Edge-on
+        elif config.orientation == edgeon_name: self.plot_edgeon_images(config.filters)
+
+        # Invalid
+        else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.total_bolometric_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.total_bolometric_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.total_bolometric_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_earth_image(self, filter_or_wavelength):
+
+        """
+        This function ...
+        :param filte_or_wavelength
+        :return:
+        """
+
+        # Filter?
+        if isinstance(filter_or_wavelength, Filter): return self.earth_cube.frame_for_filter(filter_or_wavelength, convolve=False)
+
+        # Wavelength
+        elif types.is_length_quantity(filter_or_wavelength): return self.earth_cube.get_frame_for_wavelength(filter_or_wavelength)
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_faceon_image(self, filter_or_wavelength):
+
+        """
+        This fnuction ...
+        :param filter_or_wavelength:
+        :return:
+        """
+
+        # Filter?
+        if isinstance(filter_or_wavelength, Filter): return self.faceon_cube.frame_for_filter(filter_or_wavelength, convolve=False)
+
+        # Wavelength
+        elif types.is_length_quantity(filter_or_wavelength): return self.faceon_cube.get_frame_for_wavelength(filter_or_wavelength)
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_edgeon_image(self, filter_or_wavelength):
+
+        """
+        This function ...
+        :param filter_or_wavelength:
+        :return:
+        """
+
+        # Filter?
+        if isinstance(filter_or_wavelength, Filter): return self.edgeon_cube.frame_for_filter(filter_or_wavelength, convolve=False)
+
+        # Wavelength
+        elif types.is_length_quantity(filter_or_wavelength): return self.edgeon_cube.get_frame_for_wavelength(filter_or_wavelength)
+
+        # Invalid
+        else: raise ValueError("Invalid argument")
+
+    # -----------------------------------------------------------------
+
+    def plot_earth_images(self, filters, **kwargs):
+
+        """
+        Thisf unction ...
+        :param filters:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Plotting the observed and model images in the earth projection ...")
+
+        # Create the plotter
+        plotter = ResidualImageGridPlotter(**kwargs)
+
+        # Loop over the observed image paths
+        for filepath in self.environment.photometry_image_paths:
+
+            # Get the filter
+            name = fs.strip_extension(fs.name(filepath))
+            fltr = parse_filter(name)
+            filters.append(fltr)
+            filter_name = str(fltr)
+            if fltr not in filters: continue
+
+            # Load the image
+            frame = Frame.from_file(filepath)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the frame to the plotter
+            plotter.add_observation(filter_name, frame)
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Get image name
+            #name = fs.strip_extension(fs.name(filepath))
+            filter_name = str(fltr)
+
+            # Get frame
+            frame = self.get_earth_image(fltr)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the mock image to the plotter
+            plotter.add_model(filter_name, frame)
+
+        # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    def plot_faceon_images(self, filters, **kwargs):
+
+        """
+        This function ...
+        :param filters:
+        :param kwargs:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the model images in the face-on projection ...")
+
+        # Create the plotter
+        plotter = StandardImageGridPlotter(**kwargs)
+
+        # Loop over the filters
+        for fltr in filters:
+
+            filter_name = str(fltr)
+
+            # Get frame
+            frame = self.get_faceon_image(fltr)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the mock image to the plotter
+            plotter.add_image(filter_name, frame)
+
+            # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    def plot_edgeon_images(self, filters, **kwargs):
+
+        """
+        This function ...
+        :param
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the model images in the edge-on projection ...")
+
+        # Create the plotter
+        plotter = StandardImageGridPlotter(**kwargs)
+
+        # Loop over the filters
+        for fltr in filters:
+
+            filter_name = str(fltr)
+
+            # Get frame
+            frame = self.get_edgeon_image(fltr)
+
+            # Replace zeroes and negatives
+            frame.replace_zeroes_by_nans()
+            frame.replace_negatives_by_nans()
+
+            # Add the mock image to the plotter
+            plotter.add_image(filter_name, frame)
+
+            # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_cubes_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add options
+        definition.add_positional_optional("orientation", "string", "orientation of the datacube")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_cubes_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_cubes_definition, **kwargs)
+
+        # Earth
+        if config.orientation == earth_name: self.plot_earth_cube()
+
+        # Face-on
+        elif config.orientation == faceon_name: self.plot_faceon_cube()
+
+        # Edge-on
+        elif config.orientation == edgeon_name: self.plot_edgeon_cube()
+
+        # Invalid
+        else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def plot_earth_cube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #from ...magic.tools import plotting
+        #from ...magic.core.datacube import DataCube
+
+        # Get simulation prefix
+        #prefix = self.get_simulation_prefix(simulation_name)
+
+        # Get the wavelength grid
+        #wavelength_grid = self.get_wavelength_grid(simulation_name)
+
+        # Load the datacube
+        #datacube = DataCube.from_file(path, wavelength_grid)
+
+        # Plot
+        plotting.plot_datacube(datacube, title=instr_name, share_normalization=share_normalization, show_axes=False)
+
+    # -----------------------------------------------------------------
+
+    def plot_faceon_cube(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_edgeon_cube(self):
+
+        """
+        Thisn function ...
         :return:
         """
 

@@ -3924,3 +3924,31 @@ def check_distance(*frames, **kwargs):
     return distance
 
 # -----------------------------------------------------------------
+
+def uniformize(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return: 
+    """
+
+    # Add flags
+    if "no_fwhm" not in kwargs: kwargs["no_fwhm"] = "return"
+    if "no_pixelscale" not in kwargs: kwargs["no_pixelscale"] = "shape"
+    #kwargs["distance"] = self.galaxy_distance
+
+    # Rebin?
+    if kwargs.pop("rebin", True): frames = rebin_to_highest_pixelscale(*frames, **kwargs)
+
+    # Convolve?
+    if kwargs.pop("convolve", True): frames = convolve_to_highest_fwhm(*frames, **kwargs)
+
+    # Convert?
+    if kwargs.pop("convert", True): frames = convert_to_same_unit(*frames, **kwargs)
+
+    # Return the frames
+    return frames
+
+# -----------------------------------------------------------------
