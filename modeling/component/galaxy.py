@@ -200,6 +200,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def photometry_dataset(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.environment.photometry_dataset
+
+    # -----------------------------------------------------------------
+
+    @property
     def photometry_image_names(self):
 
         """

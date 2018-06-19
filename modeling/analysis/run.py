@@ -379,6 +379,18 @@ class AnalysisRunBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def total_simulation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulation_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_output_path(self):
 
         """
@@ -470,7 +482,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.total_output_path, self.galaxy_name + "_log.txt")
+        return self.logfile_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
@@ -482,7 +494,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.contributions_path, total, extract_name)
+        return self.extraction_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
@@ -542,7 +554,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.contributions_path, total, plot_name)
+        return fs.create_directory_in(self.total_simulation_path, plot_name)
 
     # -----------------------------------------------------------------
 
@@ -554,7 +566,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.contributions_path, total, misc_name)
+        return fs.create_directory_in(self.total_simulation_path, misc_name)
 
     # -----------------------------------------------------------------
 
@@ -930,42 +942,6 @@ class AnalysisRunBase(object):
 
     # -----------------------------------------------------------------
 
-    # def heating_simulation_path_for_contribution(self, contribution):
-    #
-    #     """
-    #     This function ...
-    #     :param contribution:
-    #     :return:
-    #     """
-    #
-    #     return fs.create_directory_in(self.heating_path, contribution)
-    #
-    # # -----------------------------------------------------------------
-    #
-    # def heating_ski_path_for_contribution(self, contribution):
-    #
-    #     """
-    #     This function ...
-    #     :param contribution:
-    #     :return:
-    #     """
-    #
-    #     return fs.join(self.heating_simulation_path_for_contribution(contribution), self.galaxy_name + ".ski")
-    #
-    # # -----------------------------------------------------------------
-    #
-    # def heating_output_path_for_contribution(self, contribution):
-    #
-    #     """
-    #     This function ...
-    #     :param contribution:
-    #     :return:
-    #     """
-    #
-    #     return fs.join(self.heating_simulation_path_for_contribution(contribution), "out")
-
-    # -----------------------------------------------------------------
-
     def simulation_path_for_contribution(self, contribution):
 
         """
@@ -999,6 +975,29 @@ class AnalysisRunBase(object):
         """
 
         return fs.create_directory_in(self.simulation_path_for_contribution(contribution), "out")
+
+    # -----------------------------------------------------------------
+
+    def logfile_path_for_contribution(self, contribution):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.join(self.output_path_for_contribution(contribution), self.galaxy_name + "_log.txt")
+
+    # -----------------------------------------------------------------
+
+    def extraction_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return fs.join(self.contributions_path, contribution, extract_name)
 
     # -----------------------------------------------------------------
 
@@ -1346,7 +1345,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.output_path, self.simulation_prefix + "_earth_sed.dat")
+        return fs.join(self.total_output_path, self.simulation_prefix + "_earth_sed.dat")
 
     # -----------------------------------------------------------------
 
@@ -1370,7 +1369,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.misc_path, self.simulation_prefix + "_earth_fluxes.dat")
+        return fs.join(self.total_misc_path, self.simulation_prefix + "_earth_fluxes.dat")
 
     # -----------------------------------------------------------------
 
@@ -1406,7 +1405,7 @@ class AnalysisRunBase(object):
         :return:
         """
 
-        return fs.join(self.output_path, self.galaxy_name + "_earth_total.fits")
+        return fs.join(self.total_output_path, self.galaxy_name + "_earth_total.fits")
 
 # -----------------------------------------------------------------
 
@@ -1587,7 +1586,7 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return LogFile.from_file(self.logfile_path)
+        return LogFile.from_file(self.total_logfile_path)
 
     # -----------------------------------------------------------------
 
@@ -1599,7 +1598,7 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return fs.has_files_in_path(self.misc_path)
+        return fs.has_files_in_path(self.total_misc_path)
 
     # -----------------------------------------------------------------
 
@@ -1611,7 +1610,7 @@ class AnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return fs.has_files_in_path(self.extr_path)
+        return fs.has_files_in_path(self.total_extr_path)
 
     # -----------------------------------------------------------------
 
@@ -3306,19 +3305,6 @@ class AnalysisRun(AnalysisRunBase):
 
     # -----------------------------------------------------------------
 
-    # def get_simulated_frame_for_filter(self, fltr, convolve=False):
-    #
-    #     """
-    #     This function ...
-    #     :param fltr:
-    #     :param convolve:
-    #     :return:
-    #     """
-    #
-    #     return self.simulated_datacube.frame_for_filter(fltr, convolve=convolve)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def simulated_dataset(self):
 
@@ -3328,7 +3314,7 @@ class AnalysisRun(AnalysisRunBase):
         """
 
         get_name_function = lambda filename: filename.split("__")[1]
-        return DataSet.from_directory(self.misc_path, get_name=get_name_function)
+        return DataSet.from_directory(self.total_misc_path, get_name=get_name_function)
 
     # -----------------------------------------------------------------
 
@@ -4230,7 +4216,7 @@ class CachedAnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return LogFile.from_remote_file(self.logfile_path, self.remote)
+        return LogFile.from_remote_file(self.total_logfile_path, self.remote)
 
     # -----------------------------------------------------------------
 
@@ -4242,7 +4228,7 @@ class CachedAnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return self.remote.has_files_in_path(self.misc_path)
+        return self.remote.has_files_in_path(self.total_misc_path)
 
     # -----------------------------------------------------------------
 
@@ -4254,7 +4240,7 @@ class CachedAnalysisRun(AnalysisRunBase):
         :return:
         """
 
-        return self.remote.has_files_in_path(self.extr_path)
+        return self.remote.has_files_in_path(self.total_extr_path)
 
     # -----------------------------------------------------------------
 

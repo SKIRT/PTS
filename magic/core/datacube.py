@@ -2459,7 +2459,7 @@ class DataCube(Image):
         for index in range(self.nframes):
 
             # Create converted frame
-            frame = self.frames[index].converted_to_factor(factor, new_unit)
+            frame = self.frames[index].converted_by_factor(factor, new_unit)
 
             # Add the frame
             frame_name = "frame" + str(nframes)
@@ -2535,6 +2535,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding brightness unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the unit
         unit = self.corresponding_brightness_unit
 
@@ -2564,6 +2567,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding brightness unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Get the unit
         unit = self.corresponding_brightness_unit
@@ -2676,6 +2682,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding angular or intrinsic area unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the unit
         unit = self.corresponding_angular_or_intrinsic_area_unit
 
@@ -2705,6 +2714,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding angular or intrinsic area unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Get the unit
         unit = self.corresponding_angular_or_intrinsic_area_unit
@@ -2745,6 +2757,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding non- angular or intrinsic area unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the corresponding non angular or intrinsic area unit
         unit = self.corresponding_non_angular_or_intrinsic_area_unit
 
@@ -2771,6 +2786,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding non- angular or intrinsic area unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Get the unit
         unit = self.corresponding_non_angular_or_intrinsic_area_unit
@@ -2811,6 +2829,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding angular area unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the new unit
         unit = self.corresponding_angular_area_unit
 
@@ -2840,6 +2861,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding angular area unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Get the new unit
         unit = self.corresponding_angular_area_unit
@@ -2880,6 +2904,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding intrinsic area unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the corresponding intrinsic area unit
         unit = self.corresponding_intrinsic_area_unit
 
@@ -2910,6 +2937,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Creating a datacube in the corresponding intrinsic area unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Create
         return self.converted_to(self.corresponding_intrinsic_area_unit)
 
@@ -2930,6 +2960,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Converting the datacube to the corresponding non-brightness unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Get the new unit
         unit = self.corresponding_non_brightness_unit
@@ -2960,6 +2993,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding non-brightness unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Get the new unit
         unit = self.corresponding_non_brightness_unit
@@ -3013,6 +3049,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding wavelength density unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the list of wavelengths
         wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
 
@@ -3055,6 +3094,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding wavelength density unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Create
         return self.converted_to(self.corresponding_wavelength_density_unit)
@@ -3101,6 +3143,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding frequency density unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the list of wavelengths
         wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
 
@@ -3140,6 +3185,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding frequency density unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Create
         return self.converted_to(self.corresponding_frequency_density_unit)
@@ -3186,6 +3234,9 @@ class DataCube(Image):
         # Inform the user
         log.info("Converting the datacube to the corresponding neutral density unit ...")
 
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
+
         # Get the list of wavelengths
         wavelengths = self.wavelength_grid.wavelengths(unit="micron", add_unit=True)
 
@@ -3225,6 +3276,9 @@ class DataCube(Image):
 
         # Inform the user
         log.info("Creating a datacube in the corresponding neutral density unit ...")
+
+        # Show current unit
+        log.debug("Current unit: " + tostr(self.unit))
 
         # Create
         return self.converted_to(self.corresponding_neutral_density_unit)

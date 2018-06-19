@@ -1842,7 +1842,7 @@ class BasicAnalyser(Configurable):
         self.image_maker.config.write_kernels = self.misc_options.write_convolution_kernels
 
         # Plot
-        self.image_maker.config.plot_images = self.misc_options.plot_fluxes_images
+        self.image_maker.config.plot_images = self.misc_options.plot_images
 
         # Run
         self.image_maker.run(**self.observed_images_input)

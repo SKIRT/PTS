@@ -758,6 +758,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def photometry_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DataSet.from_directory(self.phot_images_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def photometry_image_names(self):
 
         """

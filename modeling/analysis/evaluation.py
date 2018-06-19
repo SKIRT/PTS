@@ -32,6 +32,8 @@ from ...magic.core.list import convert_to_same_unit
 from ...magic.tools import plotting
 from ...magic.core.list import rebin_to_highest_pixelscale
 from ...core.misc.fluxes import ObservedFluxCalculator
+from ...core.misc.images import ObservedImageMaker
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -75,6 +77,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.images = FrameList()
         self.errors = FrameList()
 
+        # The proper images
+        self.proper_images = FrameList()
+
         # Rebinned?
         self.rebinned_observed = []
         self.rebinned_simulated = []
@@ -116,6 +121,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
+        # FLUXES
+
         # Get the observed SED
         self.get_reference_sed()
 
@@ -128,17 +135,21 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 4. Get the simulated SED
         self.get_simulated_datacube_sed()
 
-        # 5. Make images
-        self.make_images()
+        # IMAGES
 
-        # 6. Load images created with convolution etc.
-        self.load_proper_images()
+        # 5. Get images
+        self.get_images()
+
+        # 6. Get images created with spatial/spectral convolution etc.
+        self.get_proper_images()
 
         # 7. Load observed images
         self.load_observed_images()
 
         # 8. Rebin the images to the same pixelscale
         self.rebin_images()
+
+        # FLUXES FROM IMAGES
 
         # 9. Get image fluxes
         self.get_image_fluxes()
@@ -157,6 +168,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Get SED differences
         self.get_sed_differences()
+
+        # RESIDUAL IMAGES
 
         # 16. Calculate the residual images
         self.calculate_residuals()
@@ -246,7 +259,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def simulated_flux_filters(self):
+    def simulated_flux_filter_names(self):
 
         """
         This function ...
@@ -257,43 +270,15 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    # @property
-    # def simulated_fluxes(self):
-    #
-    #     """
-    #     This function ..
-    #     :return:
-    #     """
-    #
-    #     return self.analysis_run.simulated_fluxes
-    #
-    # # -----------------------------------------------------------------
-    #
-    # @lazyproperty
-    # def simulated_filters(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.simulated_fluxes.filters()
-    #
-    # # -----------------------------------------------------------------
-    #
-    # @lazyproperty
-    # def simulated_filters_no_iras_planck(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Get the filters
-    #     filters = [fltr for fltr in self.simulated_filters if fltr not in self.iras_and_planck_filters]
-    #
-    #     # Sort them
-    #     return list(sorted(filters, key=lambda fltr: fltr.wavelength.to("micron").value))
+    @property
+    def simulated_flux_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_filters_in_range_without_iras
 
     # -----------------------------------------------------------------
 
@@ -633,7 +618,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def make_images(self):
+    def get_images(self):
 
         """
         This function ...
@@ -641,22 +626,40 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Making the mock observed images ...")
+        log.info("Getting the mock observed images ...")
 
         # Loop over the filters for which we want to create images
         for fltr in self.simulated_flux_filters:
 
             # Make image
-            frame = self.make_image_for_filter(fltr)
+            frame = self.get_image_for_filter(fltr)
             self.images.append(frame)
 
             # Make error map
-            errors = self.make_errors_for_filter(fltr, frame)
+            errors = self.get_errors_for_filter(fltr, frame)
             self.errors.append(errors)
+
+            # Save the image
+            if not self.has_image_for_filter(fltr):
+
+                # Determine the path
+                path = self.get_image_filepath_for_filter(frame.filter)
+
+                # Save the frame
+                frame.saveto(path)
+
+            # Save the error map
+            if not self.has_errors_for_filter(fltr):
+
+                # Determine the path
+                path = self.get_errors_filepath_for_filter(errors.filter)
+
+                # Save the error map
+                errors.saveto(path)
 
     # -----------------------------------------------------------------
 
-    def make_image_for_filter(self, fltr):
+    def get_image_for_filter(self, fltr):
 
         """
         Thisn function ...
@@ -715,7 +718,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def make_errors_for_filter(self, fltr, frame):
+    def get_errors_for_filter(self, fltr, frame):
 
         """
         This function ...
@@ -753,6 +756,134 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Return the error map
         return errors
+
+    # -----------------------------------------------------------------
+
+    def get_proper_images(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the proper mock observed images ...")
+
+        # Keep list of filters for which the image still has to be made
+        filters = []
+
+        # Loop over the filters for which we want to create images
+        for fltr in self.simulated_flux_filters:
+
+            # Has image?
+            if self.has_proper_image_for_filter(fltr):
+                frame = self.load_proper_image_for_filter(fltr)
+                self.proper_images.append(frame)
+            else: filters.append(fltr)
+
+        # Make the proper images
+        images = self.make_proper_images(filters)
+
+        # Add the images
+        for fltr in images: self.proper_images.append(images[fltr])
+
+    # -----------------------------------------------------------------
+
+    def load_proper_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_proper_image_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def make_proper_images(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        # Create the maker
+        maker = ObservedImageMaker()
+
+        # Set options
+        maker.config.spectral_convolution = True
+
+        # Write intermediate results
+        maker.config.write_intermediate = True # write_intermediate_images
+        maker.config.write_kernels = True # write_convolution_kernels
+
+        # Group the images per instrument (only when more instruments are being converted into images)
+        # NO: only do earth
+        #maker.config.group = True
+
+        # DON'T CREATE OBSERVED IMAGES FOR THE PLANCK FILTERS?
+        #self.analysis_options.misc.no_images_filters = self.planck_filters
+
+        # Set WCS path for the images
+        #self.analysis_options.misc.images_wcs = self.reference_wcs_path
+        #self.analysis_options.misc.wcs_instrument = earth_name
+
+        # Unit for the images
+        #self.analysis_options.misc.images_unit = self.config.images_unit
+        # CONVOLUTION
+        # Convolution kernels
+        # self.analysis_options.misc.images_kernels = kernel_paths
+        #self.analysis_options.misc.images_psfs_auto = True  # automatically determine the PSF for each filter
+        # FWHMS
+        #self.analysis_options.misc.fwhms_dataset = self.dataset_path
+
+        # REBINNING
+        # self.analysis_options.misc.rebin_wcs = # dictionary of FITS files per filter?
+        #self.analysis_options.misc.rebin_dataset = self.dataset_path  # much more convenient to specify
+        #self.analysis_options.misc.rebin_instrument = earth_name
+
+
+        # Set number of processes to one
+        maker.config.nprocesses_local = 1
+
+
+        # Set input
+        input_dict = dict()
+
+        # General things
+        #input_dict["simulation"] = self.simulation
+        input_dict["output_path"] = self.images_output_path
+
+        # Filters and instruments
+        input_dict["filters"] = filters
+        input_dict["instrument_names"] = [earth_name]
+
+        # Set coordinate system of the datacube
+        input_dict["wcs_path"] = self.analysis_run.reference_map_path
+        input_dict["wcs_instrument"] = earth_name
+
+        # Unit conversion
+        input_dict["unit"] = u("Jy") #self.misc_options.images_unit
+
+        # Convolution
+        input_dict["auto_psfs"] = True
+        #input_dict["kernel_paths"] = self.misc_options.images_kernels
+        input_dict["fwhms_dataset"] = self.photometry_dataset #self.misc_options.fwhms_dataset # path or dataset is possible
+
+        # Set dataset for rebinning
+        input_dict["rebin_dataset"] = self.photometry_dataset  # path or dataset is possible
+        input_dict["rebin_instrument"] = earth_name
+
+        # NO SPECTRAL CONVOLUTION FOR CERTAIN IMAGES?
+        input_dict["no_spectral_convolution_filters"] = self.planck_filters
+
+        # Run
+        maker.run(**input_dict)
+
+        # Return the images
+        return maker.images[earth_name]
 
     # -----------------------------------------------------------------
 
@@ -1416,6 +1547,186 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_reference_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_reference_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_fluxes(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return not self.has_fluxes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_differences(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return not self.has_differences
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_simulated_datacube_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_simulated_datacube_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_image_fluxes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_proper_image_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_proper_image_fluxes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_images_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_images_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_images_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_images_differences
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_fluxes_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_fluxes_differences
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_sed_differences(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return not self.has_sed_differences
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_weighed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1427,49 +1738,49 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Writing ...")
 
         # Write the reference SED
-        if not self.has_reference_sed: self.write_reference_sed()
+        if self.do_write_reference_sed: self.write_reference_sed()
 
         # Write the mock fluxes
-        if not self.has_fluxes: self.write_fluxes()
+        if self.do_write_fluxes: self.write_fluxes()
 
         # 2. Write the flux differences
-        if not self.has_differences: self.write_differences()
+        if self.do_write_differences: self.write_differences()
 
         # Write the simulated datacube SED
-        if not self.has_simulated_datacube_sed: self.write_simulated_datacube_sed()
+        if self.do_write_simulated_datacube_sed: self.write_simulated_datacube_sed()
 
         # 3. Write the image fluxes
-        if not self.has_image_fluxes: self.write_image_fluxes()
+        if self.do_write_image_fluxes: self.write_image_fluxes()
 
         # Write proper image fluxes
-        if not self.has_proper_image_fluxes: self.write_proper_image_fluxes()
+        if self.do_write_proper_image_fluxes: self.write_proper_image_fluxes()
 
         # 4. Write the image SED
-        if not self.has_images_sed: self.write_image_sed()
+        if self.do_write_images_sed: self.write_image_sed()
 
         # 5. Write the image flux differences
-        if not self.has_images_differences: self.write_image_differences()
+        if self.do_write_images_differences: self.write_image_differences()
 
         # 6. Write fluxes differences
-        if not self.has_fluxes_differences: self.write_fluxes_differences()
+        if self.do_write_fluxes_differences: self.write_fluxes_differences()
 
         # 7. Write SED differences
-        if not self.has_sed_differences: self.write_sed_differences()
+        if self.do_write_sed_differences: self.write_sed_differences()
 
         # 8. Write the images
-        self.write_images()
+        #if self.do_write_images: self.write_images()
 
         # 9. Write the residual frames
-        self.write_residuals()
+        if self.do_write_residuals: self.write_residuals()
 
         # 10. Write the weighed residual frames
-        self.write_weighed()
+        if self.do_write_weighed: self.write_weighed()
 
         # 11. Write the residual distributions
-        self.write_residuals_distributions()
+        if self.do_write_residuals_distributions: self.write_residuals_distributions()
 
         # 12. Write the weighed residual distributions
-        self.write_weighed_distributions()
+        if self.do_write_weighed_distributions: self.write_weighed_distributions()
 
     # -----------------------------------------------------------------
 
@@ -1958,27 +2269,63 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def write_images(self):
+    def remove_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        fs.remove_file(self.get_image_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def proper_images_path(self):
 
         """
         This function ...
         :return:
         """
 
-        # Infomr the user
-        log.info("Writing the images ...")
+        return fs.create_directory_in(self.evaluation_path, "proper_images")
 
-        # Loop over the images
-        for frame in self.images:
+    # -----------------------------------------------------------------
 
-            # Already present?
-            if self.has_image_for_filter(frame.filter): continue
+    def get_proper_image_filepath_for_filter(self, fltr):
 
-            # Determine the path
-            path = self.get_image_filepath_for_filter(frame.filter)
+        """
+        Thisf unction ....
+        :param fltr:
+        :return:
+        """
 
-            # Save the frame
-            frame.saveto(path)
+        return fs.join(self.proper_images_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_image_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def remove_proper_image_for_filter(self, fltr):
+
+        """
+        Thisf unction ..
+        :param fltr:
+        :return:
+        """
+
+        fs.remove_file(self.get_proper_image_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2006,27 +2353,15 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def write_errors(self):
+    def remove_errors_for_filter(self, fltr):
 
         """
-        Thisj function ...
+        This function ...
+        :param fltr:
         :return:
         """
 
-        # Inform the user
-        log.info("Writing the error maps ...")
-
-        # Loop over the error maps
-        for errors in self.errors:
-
-            # Already present?
-            if self.has_errors_for_filter(errors.filter): continue
-
-            # Determine the path
-            path = self.get_errors_filepath_for_filter(errors.filter)
-
-            # Save the error map
-            errors.saveto(path)
+        fs.remove_file(self.get_errors_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 

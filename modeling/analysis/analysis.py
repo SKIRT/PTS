@@ -2108,6 +2108,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
         definition.add_flag("residuals", "show residuals", True)
         definition.add_flag("distributions", "show residual distributions", True)
+        definition.add_flag("from_evaluation", "use the images created in the evaluation step", None)
+        definition.add_flag("spectral_convolution", "use spectral convolution to create images", False)
 
         # Return
         return definition
@@ -2127,13 +2129,13 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         config = self.get_config_from_command(command, self.plot_images_definition, **kwargs)
 
         # Earth
-        if config.orientation == earth_name: self.plot_earth_images(config.filters)
+        if config.orientation == earth_name: self.plot_earth_images(config.filters, residuals=config.residuals, distributions=config.distributions, from_evaluation=config.from_evaluation, spectral_convolution=config.spectral_convolution)
 
         # Face-on
-        elif config.orientation == faceon_name: self.plot_faceon_images(config.filters)
+        elif config.orientation == faceon_name: self.plot_faceon_images(config.filters, spectral_convolution=config.spectral_convolution)
 
         # Edge-on
-        elif config.orientation == edgeon_name: self.plot_edgeon_images(config.filters)
+        elif config.orientation == edgeon_name: self.plot_edgeon_images(config.filters, spectral_convolution=config.spectral_convolution)
 
         # Invalid
         else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
@@ -2177,16 +2179,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_earth_image(self, filter_or_wavelength):
+    def get_earth_image(self, filter_or_wavelength, spectral_convolution=False):
 
         """
         This function ...
-        :param filte_or_wavelength
+        :param filte_or_wavelength:
+        :param spectral_convolution:
         :return:
         """
 
         # Filter?
-        if isinstance(filter_or_wavelength, Filter): return self.earth_cube.frame_for_filter(filter_or_wavelength, convolve=False)
+        if isinstance(filter_or_wavelength, Filter): return self.earth_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
 
         # Wavelength
         elif types.is_length_quantity(filter_or_wavelength): return self.earth_cube.get_frame_for_wavelength(filter_or_wavelength)
@@ -2197,16 +2200,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_faceon_image(self, filter_or_wavelength):
+    def get_faceon_image(self, filter_or_wavelength, spectral_convolution=False):
 
         """
         This fnuction ...
         :param filter_or_wavelength:
+        :param spectral_convolution:
         :return:
         """
 
         # Filter?
-        if isinstance(filter_or_wavelength, Filter): return self.faceon_cube.frame_for_filter(filter_or_wavelength, convolve=False)
+        if isinstance(filter_or_wavelength, Filter): return self.faceon_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
 
         # Wavelength
         elif types.is_length_quantity(filter_or_wavelength): return self.faceon_cube.get_frame_for_wavelength(filter_or_wavelength)
@@ -2217,16 +2221,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_edgeon_image(self, filter_or_wavelength):
+    def get_edgeon_image(self, filter_or_wavelength, spectral_convolution=False):
 
         """
         This function ...
         :param filter_or_wavelength:
+        :param spectral_convolution:
         :return:
         """
 
         # Filter?
-        if isinstance(filter_or_wavelength, Filter): return self.edgeon_cube.frame_for_filter(filter_or_wavelength, convolve=False)
+        if isinstance(filter_or_wavelength, Filter): return self.edgeon_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
 
         # Wavelength
         elif types.is_length_quantity(filter_or_wavelength): return self.edgeon_cube.get_frame_for_wavelength(filter_or_wavelength)
@@ -2236,11 +2241,14 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_earth_images(self, filters, **kwargs):
+    def plot_earth_images(self, filters, residuals=True, distributions=True, from_evaluation=None, spectral_convolution=False):
 
         """
         Thisf unction ...
         :param filters:
+        :param residuals:
+        :param distributions:
+        :param from_evaluation:
         :return:
         """
 
@@ -2248,7 +2256,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         log.debug("Plotting the observed and model images in the earth projection ...")
 
         # Create the plotter
-        plotter = ResidualImageGridPlotter(**kwargs)
+        plotter = ResidualImageGridPlotter()
 
         # Loop over the observed image paths
         for filepath in self.environment.photometry_image_paths:
@@ -2292,12 +2300,12 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_faceon_images(self, filters, **kwargs):
+    def plot_faceon_images(self, filters, spectral_convolution=False):
 
         """
         This function ...
         :param filters:
-        :param kwargs:
+        :param spectral_convolution:
         :return:
         """
 
@@ -2305,7 +2313,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         log.info("Plotting the model images in the face-on projection ...")
 
         # Create the plotter
-        plotter = StandardImageGridPlotter(**kwargs)
+        plotter = StandardImageGridPlotter()
 
         # Loop over the filters
         for fltr in filters:
@@ -2327,11 +2335,12 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def plot_edgeon_images(self, filters, **kwargs):
+    def plot_edgeon_images(self, filters, spectral_convolution=False):
 
         """
         This function ...
-        :param
+        :param filters:
+        :param spectral_convolution:
         :return:
         """
 
