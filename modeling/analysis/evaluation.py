@@ -783,11 +783,15 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 self.proper_images.append(frame, fltr=fltr)
             else: filters.append(fltr)
 
-        # Make the proper images
-        images = self.make_proper_images(filters)
+        # Any filters yet to create images for?
+        nfilters = len(filters)
+        if nfilters > 0:
 
-        # Add the images
-        for fltr in images: self.proper_images.append(images[fltr], fltr=fltr)
+            # Make the proper images
+            images = self.make_proper_images(filters)
+
+            # Add the images
+            for fltr in images: self.proper_images.append(images[fltr], fltr=fltr)
 
     # -----------------------------------------------------------------
 

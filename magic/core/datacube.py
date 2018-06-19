@@ -2390,8 +2390,8 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_to2(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
-                   brightness_strict=False):
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
+                   brightness_strict=False, silent=True):
 
         """
         This function ...
@@ -2401,6 +2401,7 @@ class DataCube(Image):
         :param brightness:
         :param density_strict:
         :param brightness_strict:
+        :param silent:
         :return:
         """
 
@@ -2410,10 +2411,26 @@ class DataCube(Image):
 
         # Already in the correct unit
         if to_unit == self.unit:
-            log.debug("Image is already in the desired unit")
+            log.debug("Datacube is already in the desired unit")
             return 1.
 
+        # Get the wavelengths
+        wavelengths = self.wavelengths(unit="micron", add_unit=True)
 
+        # Set distance
+        if distance is None: distance = self.distance
+
+        # Convert the frames
+        for index in range(self.nframes):
+
+            # Debugging
+            if not silent: log.debug("Converting frame " + str(index+1) + " ...")
+
+            # Get the wavelength
+            wavelength = wavelengths[index]
+
+            # Convert the frame
+            self.frames[index].convert_to(to_unit, distance=distance, wavelength=wavelength, silent=silent)
 
     # -----------------------------------------------------------------
 
@@ -2438,8 +2455,10 @@ class DataCube(Image):
         # Get the wavelengths
         wavelengths = self.wavelengths(unit="micron", add_unit=True)
 
+        # Set distance
+        if distance is None: distance = self.distance
+
         # Add the frames
-        nframes = 0
         for index in range(self.nframes):
 
             # Get the wavelength
@@ -2451,11 +2470,8 @@ class DataCube(Image):
                                                     wavelength=wavelength, silent=silent)
 
             # Add the frame
-            frame_name = "frame" + str(nframes)
+            frame_name = "frame" + str(index)
             new.add_frame(frame, frame_name, silent=True)
-
-            # Increment the number of frames
-            nframes += 1
 
         # Create and set the wavelength grid
         new.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")

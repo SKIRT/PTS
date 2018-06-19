@@ -396,6 +396,18 @@ class MultiComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def faceon_intrinsic_cubes_uniformized(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return uniformize(*self.intrinsic_cubes_faceon.values())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def faceon_intrinsic_cube(self):
 
         """
@@ -404,12 +416,13 @@ class MultiComponentSimulations(ComponentSimulations):
         """
 
         # Transparent cube is written out
-        #if self.has_faceon_transparent_cube: return self.faceon_observed_cube_transparent
+        if self.has_transparent_cube_faceon: return self.faceon_observed_cube_transparent
+
+        # Has intrinsic cubes, add them
+        elif self.has_intrinsic_cubes_faceon: return sequences.sum(self.faceon_intrinsic_cubes_uniformized)
 
         # Cannot be calculated
-        #else: raise ValueError("Intrinsic datacube from face-on orientation cannot be calculated")
-
-        raise NotImplementedError("Not implemented")
+        else: raise ValueError("Intrinsic datacube from the face-on orientation cannot be calculated")
 
     # -----------------------------------------------------------------
 
@@ -427,6 +440,18 @@ class MultiComponentSimulations(ComponentSimulations):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def edgeon_intrinsic_cubes_uniformized(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return uniformize(*self.intrinsic_cubes_edgeon.values())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def edgeon_intrinsic_cube(self):
 
         """
@@ -435,11 +460,12 @@ class MultiComponentSimulations(ComponentSimulations):
         """
 
         # Transparent cube is written out
-        #if self.has_edgeon_transparent_cube: return self.edgeon_observed_cube_transparent
+        if self.has_transparent_cube_edgeon: return self.edgeon_observed_cube_transparent
+
+        # Has intrinsic cubes, add them
+        elif self.has_intrinsic_cubes_edgeon: return sequences.sum(self.edgeon_intrinsic_cubes_uniformized)
 
         # Cannot be calculated
-        #else: raise ValueError("Intrinsic datacube from edge-on orientation cannot be calculated")
-
-        raise NotImplementedError("Not implemented")
+        else: raise ValueError("Intrinsic datacube from the edge-on orientation cannot be calculated")
 
 # -----------------------------------------------------------------
