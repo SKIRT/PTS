@@ -62,3 +62,8 @@ definition.add_optional("alpha_method", "string", "alpha method", default_alpha_
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.5)
 
 # -----------------------------------------------------------------
+
+# Plot?
+definition.add_flag("plot", "do plotting", False)
+
+# -----------------------------------------------------------------

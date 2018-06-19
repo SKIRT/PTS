@@ -37,6 +37,7 @@ from ...core.tools import types
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr, get_list_string_max_nvalues
 from ...core.tools import sequences, numbers
+from ...core.units.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
@@ -1642,7 +1643,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False):
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False, silent=True):
 
         """
         This function ...
@@ -1654,7 +1655,25 @@ class DataCube(Image):
         """
 
         # Call the implementation of the base class
-        return super(DataCube, self).rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint)
+        return super(DataCube, self).rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint, silent=silent)
+
+    # -----------------------------------------------------------------
+
+    def rebinned(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False, silent=True):
+
+        """
+        This function ...
+        :param reference_wcs:
+        :param exact:
+        :param parallel:
+        :param convert:
+        :param add_footprint:
+        :param silent:
+        :return:
+        """
+
+        # Call the implementation of the base class
+        return super(DataCube, self).rebinned(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint, silent=silent)
 
     # -----------------------------------------------------------------
 
@@ -2371,7 +2390,35 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False, silent=True):
+    def convert_to2(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
+                   brightness_strict=False):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        :return:
+        """
+
+        # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict,
+                                  density_strict=density_strict)
+
+        # Already in the correct unit
+        if to_unit == self.unit:
+            log.debug("Image is already in the desired unit")
+            return 1.
+
+
+
+    # -----------------------------------------------------------------
+
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
+                     brightness_strict=False, silent=True):
 
         """
         This function ...
@@ -2405,7 +2452,7 @@ class DataCube(Image):
 
             # Add the frame
             frame_name = "frame" + str(nframes)
-            new.add_frame(frame, frame_name)
+            new.add_frame(frame, frame_name, silent=True)
 
             # Increment the number of frames
             nframes += 1

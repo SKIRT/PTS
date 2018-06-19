@@ -1516,6 +1516,11 @@ class Image(object):
         # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
         to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
+        # Already in the correct unit
+        if to_unit == self.unit:
+            log.debug("Image is already in the desired unit")
+            return 1.
+
         # Inform the user
         log.debug("Converting the unit of the image from " + tostr(self.unit, add_physical_type=True) + " to " + tostr(to_unit, add_physical_type=True) + " ...")
 
@@ -1577,7 +1582,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=True):
+    def rebin(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=True, silent=False):
 
         """
         This function ...
@@ -1586,6 +1591,7 @@ class Image(object):
         :param parallel:
         :param convert:
         :param add_footprint:
+        :param silent:
         """
 
         # Check whether the image has a WCS
@@ -1600,7 +1606,7 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Rebinning the '" + frame_name + "' frame ...")
+            if not silent: log.debug("Rebinning the '" + frame_name + "' frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
             footprint = self.frames[frame_name].rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert)
@@ -1609,7 +1615,7 @@ class Image(object):
         for mask_name in self.masks:
 
             # Inform the user
-            log.debug("Rebinning the '" + mask_name + "' mask ...")
+            if not silent: log.debug("Rebinning the '" + mask_name + "' mask ...")
 
             # Rebin
             self.masks[mask_name].rebin(reference_wcs)
@@ -1618,7 +1624,7 @@ class Image(object):
         for segments_name in self.segments:
 
             # Infomr the user
-            log.debug("Rebinning the '" + segments_name + "' segmentation map ...")
+            if not silent: log.debug("Rebinning the '" + segments_name + "' segmentation map ...")
 
             # Rebin
             self.segments[segments_name].rebin(reference_wcs)
@@ -1637,7 +1643,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rebinned(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False):
+    def rebinned(self, reference_wcs, exact=False, parallel=True, convert=None, add_footprint=False, silent=False):
 
         """
         This function ...
@@ -1646,11 +1652,12 @@ class Image(object):
         :param parallel:
         :param convert:
         :param add_footprint:
+        :param silent:
         :return:
         """
 
         new = self.copy()
-        new.rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint)
+        new.rebin(reference_wcs, exact=exact, parallel=parallel, convert=convert, add_footprint=add_footprint, silent=silent)
         return new
 
     # -----------------------------------------------------------------

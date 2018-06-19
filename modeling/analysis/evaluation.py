@@ -187,7 +187,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.write()
 
         # 21. Plotting
-        self.plot()
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -829,6 +829,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         maker.config.skip_ignored_bad_convolution = False
         maker.config.skip_ignored_bad_closest = False
 
+        # No plotting
+        maker.config.plot = False
+
         # Set input
         input_dict = dict()
 
@@ -865,7 +868,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         maker.run(**input_dict)
 
         # Return the images
-        return maker.images[earth_name]
+        return maker.images[earth_name] if earth_name in maker.images else {} # if all images were already made
 
     # -----------------------------------------------------------------
 
@@ -1049,7 +1052,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            print(self.proper_images.filters)
+            #print(self.proper_images.filters)
 
             # Get the image
             image = self.proper_images[fltr]
@@ -2571,6 +2574,258 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_simulated_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_simulated_sed_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_simulated_datacube_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_simulated_datacube_sed_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_simulated_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_simulated_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_differences_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_images(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return not self.has_all_image_plots
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_proper_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_all_proper_image_plots
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_relative_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_all_relative_error_plots
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_fluxes(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return not self.has_fluxes_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_fluxes_only_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_fluxes_only_images_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_fluxes_proper(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_fluxes_proper_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_fluxes_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_fluxes_differences_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_sed_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_seds_only_images(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        return not self.has_sed_only_images_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_sed_differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_sed_differences_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_seds_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return not self.has_seds_images_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_image_differences(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return not self.has_images_differences_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_residuals_absolute(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_weighed_residuals(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -2582,64 +2837,67 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.info("Plotting ...")
 
         # 1. Plot the simulated SED together with the observed SED
-        if not self.has_simulated_sed_plot: self.plot_simulated_sed()
+        if self.do_plot_simulated_sed: self.plot_simulated_sed()
 
         # Plot the simulated datacube SED together with the observed SED
-        if not self.has_simulated_datacube_sed_plot: self.plot_simulated_datacube_sed()
+        if self.do_plot_simulated_datacube_sed: self.plot_simulated_datacube_sed()
 
         # 2. Plot the simulated fluxes together with the observed SED
-        if not self.has_simulated_fluxes_plot: self.plot_simulated_fluxes()
+        if self.do_plot_simulated_fluxes: self.plot_simulated_fluxes()
 
         # Plot differences between observed and simulated fluxes
-        if not self.has_differences_plot: self.plot_differences()
+        if self.do_plot_differences: self.plot_differences()
 
         # Plot the images
-        if not self.has_all_image_plots: self.plot_images()
+        if self.do_plot_images: self.plot_images()
+
+        # Plot the proper images
+        if self.do_plot_proper_images: self.plot_proper_images()
 
         # Plot the relative error maps
-        if not self.has_all_relative_error_plots: self.plot_relative_errors()
+        if self.do_plot_relative_errors: self.plot_relative_errors()
 
         # Plot the comparison between the simulated fluxes (from SED and from images)
-        if not self.has_fluxes_plot: self.plot_fluxes()
+        if self.do_plot_fluxes: self.plot_fluxes()
 
         # Plot the SED of the simulated fluxes from images, and the simulated SED
-        if not self.has_fluxes_only_images_plot: self.plot_fluxes_only_images()
+        if self.do_plot_fluxes_only_images: self.plot_fluxes_only_images()
 
         # Proper
-        if not self.has_fluxes_proper_plot: self.plot_fluxes_proper()
+        if self.do_plot_fluxes_proper: self.plot_fluxes_proper()
 
         # Plot differences between simulated fluxes (SED and from images)
-        if not self.has_fluxes_differences_plot: self.plot_fluxes_differences()
+        if self.do_plot_fluxes_differences: self.plot_fluxes_differences()
 
         # Plot the comparison between the observed fluxes (from SED and from images)
-        if not self.has_sed_plot: self.plot_seds()
+        if self.do_plot_seds: self.plot_seds()
 
         # Plot the SED of the observed fluxes derived from images
-        if not self.has_sed_only_images_plot: self.plot_seds_only_images()
+        if self.do_plot_seds_only_images: self.plot_seds_only_images()
 
         # Plot differences between observed fluxes (SED and from images)
-        if not self.has_sed_differences_plot: self.plot_sed_differences()
+        if self.do_plot_sed_differences: self.plot_sed_differences()
 
         # Plot the comparison between simulated fluxes and observed fluxes, both from IMAGES, and the simulated SED
-        if not self.has_seds_images_plot: self.plot_seds_images()
+        if self.do_plot_seds_images: self.plot_seds_images()
 
         # Plot differences between simulated fluxes and observed fluxes, both from IMAGES
-        if not self.has_images_differences_plot: self.plot_image_differences()
+        if self.do_plot_image_differences: self.plot_image_differences()
 
         # Plot residuals distributions
-        self.plot_residuals_distributions()
+        if self.do_plot_residuals_distributions: self.plot_residuals_distributions()
 
         # Plot weighed distributions
-        self.plot_weighed_distributions()
+        if self.do_plot_weighed_distributions: self.plot_weighed_distributions()
 
         # Plot residual maps
-        self.plot_residuals()
+        if self.do_plot_residuals: self.plot_residuals()
 
         # Plot absolute residual maps
-        self.plot_residuals_absolute()
+        if self.do_plot_residuals_absolute: self.plot_residuals_absolute()
 
         # Plot weighed residual maps
-        self.plot_weighed_residuals()
+        if self.do_plot_weighed_residuals: self.plot_weighed_residuals()
 
     # -----------------------------------------------------------------
 
@@ -2907,6 +3165,73 @@ class AnalysisModelEvaluator(AnalysisComponent):
                                               interval=self.config.interval,
                                               scale=self.config.scale, alpha=self.config.alpha_method,
                                               peak_alpha=self.config.peak_alpha)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_image_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_images_path, str(fltr) + ".png")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_image_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_image_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_proper_image_plots(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        for fltr in self.simulated_flux_filters:
+            if not self.has_proper_image_plot_for_filter(fltr): return False
+        return True
+
+    # -----------------------------------------------------------------
+
+    def plot_proper_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the proper mock observed images ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Check whether present
+            if self.has_proper_image_plot_for_filter(fltr): continue
+
+            # Get the image
+            frame = self.proper_images[fltr]
+
+            # Determine the path
+            path = self.get_proper_image_plot_filepath_for_filter(fltr)
+
+            # Make plot
+            vmin, vmax = frame.saveto_png(path, colours=self.config.colours, interval=self.config.interval,
+                                          scale=self.config.scale, alpha=self.config.alpha_method,
+                                          peak_alpha=self.config.peak_alpha)
 
     # -----------------------------------------------------------------
 

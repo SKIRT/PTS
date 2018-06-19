@@ -2735,7 +2735,7 @@ def convert_to_same_unit(*frames, **kwargs):
         else: raise ValueError("Invalid argument of type '" + str(type(frame)) + "'")
 
         # Debugging
-        log.debug("Converting " + image_type + " " + print_name + " with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
+        log.debug("Converting " + image_type + " " + print_name + "with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
 
         # Create converted version
         if image_type == "frame": converted = frame.converted_to(unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, wavelength=wavelength)
