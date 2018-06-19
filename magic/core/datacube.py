@@ -3079,11 +3079,12 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_wavelength_density_unit(self, distance=None):
+    def convert_to_corresponding_wavelength_density_unit(self, distance=None, silent=False):
 
         """
         This function ...
         :param distance:
+        :param silent:
         :return:
         """
 
@@ -3119,7 +3120,7 @@ class DataCube(Image):
             factors.append(factor)
 
             # Debugging
-            log.debug("Conversion factor for frame " + str(i+1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+            if not silent: log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
         # Return the factors
         return factors
@@ -3174,10 +3175,11 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_frequency_density_unit(self):
+    def convert_to_corresponding_frequency_density_unit(self, silent=False):
 
         """
         This function ...
+        :param silent:
         :return:
         """
 
@@ -3210,7 +3212,7 @@ class DataCube(Image):
             factors.append(factor)
 
             # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+            if not silent: log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
         # Return the factors
         return factors
@@ -3265,10 +3267,11 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_to_corresponding_neutral_density_unit(self):
+    def convert_to_corresponding_neutral_density_unit(self, silent=False):
 
         """
         Thisf unction ...
+        :param silent:
         :return:
         """
 
@@ -3301,7 +3304,7 @@ class DataCube(Image):
             factors.append(factor)
 
             # Debugging
-            log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
+            if not silent: log.debug("Conversion factor for frame " + str(i + 1) + " (wavelength = " + tostr(self.get_wavelength(i)) + "): " + str(factor))
 
         # Return the factors
         return factors

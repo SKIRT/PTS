@@ -859,7 +859,8 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Setting the PSF filter of the " + frame_name + " frame ...")
+            # TOO MUCH OUTPUT
+            #log.debug("Setting the PSF filter of the " + frame_name + " frame ...")
 
             # Set the PSF filter for this frame
             self.frames[frame_name].psf_filter = value

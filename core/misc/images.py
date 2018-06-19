@@ -66,6 +66,9 @@ class ObservedImageMaker(DatacubesMiscMaker):
         # Filter names
         self.filter_names = default_filter_names
 
+        # Output paths
+        self.output_paths_instruments = None
+
         # The dictionary containing the different SKIRT output datacubes
         self.datacubes = dict()
 
@@ -525,6 +528,9 @@ class ObservedImageMaker(DatacubesMiscMaker):
 
         # Get filters for which not to perform spectral convolution
         self.no_spectral_convolution_filters = kwargs.pop("no_spectral_convolution_filters", [])
+
+        # Output paths for instruments
+        self.output_paths_instruments = kwargs.pop("output_paths_instruments", None)
 
         # Get filter names for which to create observed images
         self.get_filter_names(**kwargs)
@@ -2542,7 +2548,8 @@ class ObservedImageMaker(DatacubesMiscMaker):
         if self.config.group:
 
             # Determine path for instrument directory (and create)
-            instrument_path = self.output_path_directory(instr_name, create=True)
+            if self.output_paths_instruments is not None and instr_name in self.output_paths_instruments: instrument_path = self.output_paths_instruments[instr_name]
+            else: instrument_path = self.output_path_directory(instr_name, create=True)
 
             # Return the filepath
             return fs.join(instrument_path, filter_name + ".fits")

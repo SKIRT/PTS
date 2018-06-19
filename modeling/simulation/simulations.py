@@ -1597,7 +1597,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Has full instrument
+        # Has full instrument and diffuse dust cube
         # stellar = observed (=> BUT THIS IS WITH MAPPINGS INTERNAL DUST EM) - dust DIFFUSE
         # => GOOD, EMITTED MAPPINGS IS ALSO ABSORBED INTRINSIC MAPPINGS STELLAR [ENERGY BALANCE IN MAPPINGS])
         #         = direct + scattered
@@ -1607,8 +1607,20 @@ class ComponentSimulations(object):
         elif self.has_full_cube and self.has_observed_dust_cube: return self.observed_cube - self.observed_dust_cube + self.intrinsic_dust_cube
 
         # No full instrument data: get the stellar part of the total spectral cube
-        # + INTRINSIC INTERNAL DUST CUBE -> ASSUME NOT REPROCESSED
-        else: return self.get_stellar_part(self.observed_cube, full=True) + self.intrinsic_dust_cube
+        # + INTRINSIC INTERNAL DUST CUBE -> ASSUME THIS RADIATION IS NOT REPROCESSED
+        else: return self._get_observed_stellar_cube_from_stellar_part_and_intrinsic_dust()
+
+    # -----------------------------------------------------------------
+
+    def _get_observed_stellar_cube_from_stellar_part_and_intrinsic_dust(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        stellar, intrinsic_dust = uniformize(self.get_stellar_part(self.observed_cube, full=True), self.intrinsic_dust_cube)
+        return stellar + intrinsic_dust
 
     # -----------------------------------------------------------------
 
@@ -1632,11 +1644,26 @@ class ComponentSimulations(object):
         :return:
         """
 
+        # Has full instrument and diffuse dust cube
         if self.has_full_cube_faceon and self.has_faceon_observed_diffuse_dust_cube: return self.faceon_observed_cube - self.faceon_observed_diffuse_dust_cube
 
+        # Has full instrument
         elif self.has_full_cube_faceon and self.has_faceon_observed_dust_cube: return self.faceon_observed_cube - self.faceon_observed_dust_cube + self.faceon_intrinsic_dust_cube
 
-        else: return self.get_stellar_part(self.faceon_observed_cube, full=True) + self.faceon_intrinsic_dust_cube
+        # No full instrument data
+        else: return self._get_faceon_observed_stellar_cube_from_stellar_part_and_intrinsic_dust()
+
+    # -----------------------------------------------------------------
+
+    def _get_faceon_observed_stellar_cube_from_stellar_part_and_intrinsic_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        stellar, dust = uniformize(self.get_stellar_part(self.faceon_observed_cube, full=True), self.faceon_intrinsic_dust_cube)
+        return stellar + dust
 
     # -----------------------------------------------------------------
 
@@ -1660,11 +1687,26 @@ class ComponentSimulations(object):
         :return:
         """
 
+        # Has full instrument and diffuse dust cube
         if self.has_full_cube_edgeon and self.has_edgeon_observed_diffuse_dust_cube: return self.edgeon_observed_cube - self.edgeon_observed_diffuse_dust_cube
 
+        # Has full instrument
         elif self.has_full_cube_edgeon and self.has_edgeon_observed_dust_cube: return self.edgeon_observed_cube - self.edgeon_observed_dust_cube + self.edgeon_intrinsic_dust_cube
 
-        else: return self.get_stellar_part(self.edgeon_observed_cube, full=True) + self.edgeon_intrinsic_dust_cube
+        # No full instrument data
+        else: return self._get_edgeon_observed_stellar_cube_from_stellar_part_and_intrinsic_dust()
+
+    # -----------------------------------------------------------------
+
+    def _get_edgeon_observed_stellar_cube_from_stellar_part_and_intrinsic_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        stellar, dust = uniformize(self.get_stellar_part(self.edgeon_observed_cube, full=True), self.edgeon_intrinsic_dust_cube)
+        return stellar + dust
 
     # -----------------------------------------------------------------
 

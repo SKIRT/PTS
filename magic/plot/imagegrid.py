@@ -2641,6 +2641,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Return the grid spec
         if return_row_col: return self.grid[row, col], row, col
         else: return self.grid[row, col]
+        #if return_row_col: return self.grid[index], row, col
+        #else: return self.grid[index]
 
     # ------------------------------------------------------------------------------
 
@@ -2711,8 +2713,14 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         spec, row, col = self.get_observation_spec(index, return_row_col=True)
         #print(spec)
 
+        # Get coordinates of the subplot
+        #points = spec.get_position(self.figure.figure).get_points()
+        bbox = spec.get_position(self.figure.figure)
+        coordinates = [bbox.x0, bbox.y0, bbox.width, bbox.height]
+
         # Create the plot
-        plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=spec)
+        # needs [xmin, ymin, dx, dy]
+        plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=coordinates)
 
         # Add the plot
         self.plots[row][col] = plot

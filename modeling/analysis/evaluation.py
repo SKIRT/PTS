@@ -34,6 +34,7 @@ from ...magic.core.list import rebin_to_highest_pixelscale
 from ...core.misc.fluxes import ObservedFluxCalculator
 from ...core.misc.images import ObservedImageMaker
 from ...core.units.parsing import parse_unit as u
+from ...core.plot.distribution import plot_distribution
 
 # -----------------------------------------------------------------
 
@@ -832,6 +833,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # No plotting
         maker.config.plot = False
 
+        # Group, but write earth instrument output into
+        maker.config.group = True
+
         # Set input
         input_dict = dict()
 
@@ -840,6 +844,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # The output path for the images
         input_dict["output_path"] = self.proper_images_path
+        input_dict["output_paths_instruments"] = {earth_name: self.proper_images_path}
 
         # Filters and instruments
         input_dict["filters"] = filters
@@ -1033,8 +1038,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-        # 11. Calculate fluxes from the proper images
+        # Calculate
         if not self.has_proper_image_fluxes: self.calculate_proper_image_fluxes()
+
+        # Load
         else: self.load_proper_image_fluxes()
 
     # -----------------------------------------------------------------
@@ -1052,7 +1059,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            #print(self.proper_images.filters)
+            print(self.proper_images.filters)
 
             # Get the image
             image = self.proper_images[fltr]
@@ -3787,7 +3794,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_residuals_distribution_plot_filepath_for_filter(fltr)
 
             # Plot
-            distribution.plot(path=path, x_limits=self.distribution_x_limits)
+            #distribution.plot(path=path, x_limits=self.distribution_x_limits)
+            plot_distribution(distribution, path=path, x_limits=self.distribution_x_limits)
 
     # -----------------------------------------------------------------
 
@@ -3850,7 +3858,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_weighed_distribution_plot_filepath_for_filter(fltr)
 
             # Plot
-            distribution.plot(path=path, x_limits=self.weighed_distribution_x_limits)
+            #distribution.plot(path=path, x_limits=self.weighed_distribution_x_limits)
+            plot_distribution(distribution, path=path, x_limits=self.weighed_distribution_x_limits)
 
     # -----------------------------------------------------------------
 
