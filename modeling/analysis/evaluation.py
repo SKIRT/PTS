@@ -702,7 +702,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # print("UNIT BEFORE:", frame.unit)
 
             # Convert to non-brightness
-            conversion_factor = frame.convert_to_corresponding_non_brightness_unit()
+            #conversion_factor = frame.convert_to_corresponding_non_brightness_unit()
+            conversion_factor = frame.convert_to("Jy")
 
             # print("PIXELSCALE:", frame.average_pixelscale)
             # print("CONVERSION FACTOR", conversion_factor)
@@ -819,42 +820,15 @@ class AnalysisModelEvaluator(AnalysisComponent):
         maker.config.write_intermediate = True # write_intermediate_images
         maker.config.write_kernels = True # write_convolution_kernels
 
-        # Group the images per instrument (only when more instruments are being converted into images)
-        # NO: only do earth
-        #maker.config.group = True
-
-        # DON'T CREATE OBSERVED IMAGES FOR THE PLANCK FILTERS?
-        #self.analysis_options.misc.no_images_filters = self.planck_filters
-
-        # Set WCS path for the images
-        #self.analysis_options.misc.images_wcs = self.reference_wcs_path
-        #self.analysis_options.misc.wcs_instrument = earth_name
-
-        # Unit for the images
-        #self.analysis_options.misc.images_unit = self.config.images_unit
-        # CONVOLUTION
-        # Convolution kernels
-        # self.analysis_options.misc.images_kernels = kernel_paths
-        #self.analysis_options.misc.images_psfs_auto = True  # automatically determine the PSF for each filter
-        # FWHMS
-        #self.analysis_options.misc.fwhms_dataset = self.dataset_path
-
-        # REBINNING
-        # self.analysis_options.misc.rebin_wcs = # dictionary of FITS files per filter?
-        #self.analysis_options.misc.rebin_dataset = self.dataset_path  # much more convenient to specify
-        #self.analysis_options.misc.rebin_instrument = earth_name
-
-
         # Set number of processes to one
         maker.config.nprocesses_local = 1
-
 
         # Set input
         input_dict = dict()
 
         # General things
         #input_dict["simulation"] = self.simulation
-        input_dict["output_path"] = self.images_output_path
+        input_dict["output_path"] = self.proper_images_path
 
         # Filters and instruments
         input_dict["filters"] = filters
