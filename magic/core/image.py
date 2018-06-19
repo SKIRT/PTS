@@ -1589,7 +1589,7 @@ class Image(object):
         """
 
         # Check whether the image has a WCS
-        if self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Create a copy of the current wcs
         original_wcs = self.wcs.deepcopy()

@@ -730,8 +730,8 @@ class ObservedImageMaker(DatacubesMiscMaker):
         log.debug("Determining the PSF kernel automatically for each image filter ...")
 
         # Imports
-        from pts.magic.convolution.aniano import AnianoKernels
-        from pts.magic.convolution.kernels import get_fwhm, has_variable_fwhm, has_average_variable_fwhm, get_average_variable_fwhm
+        from ...magic.convolution.aniano import AnianoKernels
+        from ...magic.convolution.kernels import get_fwhm, has_variable_fwhm, has_average_variable_fwhm, get_average_variable_fwhm
 
         # Get Aniano kernels object
         aniano = AnianoKernels()

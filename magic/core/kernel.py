@@ -679,7 +679,7 @@ class ConvolutionKernel(Frame):
         #if new_shift_y_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new y shift = " + str(new_shift_y) + ", previous y shift = " + str(shift_y))
 
         # Recentering failed because required new shift is larger than 10% of a pixel
-        if new_shift_x_relative >= tolerance or new_shift_y_relative:
+        if new_shift_x_relative >= tolerance or new_shift_y_relative >= tolerance:
 
             # Give warnings
             if new_shift_x_relative >= tolerance: log.warning("The recentering of the kernel failed: new x shift = " + str(new_shift_x) + ", previous x shift = " + str(shift_x))

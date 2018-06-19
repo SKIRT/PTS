@@ -779,14 +779,14 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Has image?
             if self.has_proper_image_for_filter(fltr):
                 frame = self.load_proper_image_for_filter(fltr)
-                self.proper_images.append(frame)
+                self.proper_images.append(frame, fltr=fltr)
             else: filters.append(fltr)
 
         # Make the proper images
         images = self.make_proper_images(filters)
 
         # Add the images
-        for fltr in images: self.proper_images.append(images[fltr])
+        for fltr in images: self.proper_images.append(images[fltr], fltr=fltr)
 
     # -----------------------------------------------------------------
 
@@ -1048,6 +1048,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
+
+            print(self.proper_images.filters)
 
             # Get the image
             image = self.proper_images[fltr]

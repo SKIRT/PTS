@@ -3958,6 +3958,13 @@ def uniformize(*frames, **kwargs):
     if "no_pixelscale" not in kwargs: kwargs["no_pixelscale"] = "shape"
     #kwargs["distance"] = self.galaxy_distance
 
+    # Show frame info
+    #for frame in frames:
+    #    print(frame.name)
+    #    print(frame.unit)
+    #    #print(frame.wcs)
+    #    print(frame.pixelscale)
+
     # Rebin?
     if kwargs.pop("rebin", True): frames = rebin_to_highest_pixelscale(*frames, **kwargs)
 
