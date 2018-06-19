@@ -500,7 +500,9 @@ class Output(object):
         #print(cached_path)
 
         # Get the prefix
-        if get_prefix: prefix = sequences.most_present_value(prefixes)
+        if get_prefix:
+            try: prefix = sequences.most_present_value(prefixes)
+            except ValueError: raise IOError("Could not determine the simulation prefix from the output files. Are you sure this directory contains simulation output?")
         else: prefix = None
 
         # Load cached files and directories

@@ -735,7 +735,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #if self.has_residuals_for_filter(fltr) and self.has_weighed_for_filter(fltr) and self.has_all_relative_error_plots: continue
 
             # Success
-            log.success("The '" + str(fltr) + "' image is already present: loading ...")
+            log.success("The '" + str(fltr) + "' error map is already present: loading ...")
 
             # Load the error frame
             errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
@@ -826,8 +826,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Set input
         input_dict = dict()
 
-        # General things
-        #input_dict["simulation"] = self.simulation
+        # The output path of the simulation
+        input_dict["simulation_output_path"] = self.analysis_run.total_output_path
+
+        # The output path for the images
         input_dict["output_path"] = self.proper_images_path
 
         # Filters and instruments

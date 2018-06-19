@@ -495,8 +495,11 @@ class AnianoKernels(Kernels):
         psf_name = aniano_names[str(fltr)]
 
         # Determine the path to the PSF file
-        basename = "PSF_Original_" + psf_name
+        if aniano_psf_files_link == aniano_psf_files_link_2018: basename = "PSF_Original_" + psf_name
+        elif aniano_psf_files_link == aniano_psf_files_link_2012: basename = "PSF_" + psf_name
+        else: raise ValueError("Invalid aniano PSF files URL '" + aniano_psf_files_link + "'")
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
+        #print(psf_file_path)
 
         # Determine the (potential) compressed filepath
         compressed_psf_file_path = fs.join(self.kernels_path, basename + ".fits.gz")
@@ -506,6 +509,8 @@ class AnianoKernels(Kernels):
 
             # The compressed file is present
             if fs.is_file(compressed_psf_file_path):
+
+                #print(compressed_psf_file_path)
 
                 # Check whether the file is indeed compressed
                 if archive.is_compressed(compressed_psf_file_path):
@@ -701,7 +706,7 @@ class AnianoKernels(Kernels):
         kernel_link = link + kernel_gzname
 
         # NEW: Check whether the link exists!!
-        if not network.exists(kernel_link): raise ValueError("The '" + kernel_basename + "' does not exist!")
+        #if not network.exists(kernel_link): raise ValueError("The '" + kernel_basename + "' does not exist!")
 
         # Determine filepath
         gz_path = fs.join(self.kernels_path, kernel_gzname)
@@ -710,8 +715,29 @@ class AnianoKernels(Kernels):
         # Inform the user
         log.info("Downloading kernel " + kernel_basename + " from " + link + " ...")
 
-        # Download the kernel
-        #urllib.urlretrieve(kernel_link, gz_path)
+        # CHECK
+        if not network.is_available(kernel_link):
+
+            # Was 2018
+            if aniano_kernels_highres_link == aniano_kernels_highres_link_2018:
+
+                log.warning("The 2018 " + kernel_basename + " kernel file is not present, trying the 2012 version ...")
+                new_aniano_kernels_highres_link = aniano_kernels_highres_link_2012
+
+            # Was 2012
+            elif aniano_kernels_highres_link == aniano_kernels_highres_link_2012:
+
+                log.warning("The 2012 " + kernel_basename + " kernel file is not present, trying the 2018 version ...")
+                new_aniano_kernels_highres_link = aniano_kernels_highres_link_2018
+
+            # Invalid
+            else: raise ValueError("Unknown Aniano High-Res kernels URL '" + aniano_kernels_highres_link + "'")
+
+            # TRY AGAIN
+            kernel_link = new_aniano_kernels_highres_link + kernel_gzname
+
+            # CHECK AGAIN
+            if not network.is_available(kernel_link): raise ValueError("Cannot find the " + kernel_basename + " kernel file")
 
         # Download the kernel
         network.download_file(kernel_link, gz_path, progress_bar=log.is_debug)
@@ -719,11 +745,17 @@ class AnianoKernels(Kernels):
         # Inform the user
         log.info("Decompressing kernel file ...")
 
-        # Decompress the kernel FITS file
-        archive.decompress_gz(gz_path, fits_path)
+        # Decompress the PSF FITS file
+        if archive.is_compressed(gz_path):
 
-        # Remove the fits .gz file
-        fs.remove_file(gz_path)
+            # Decompress the kernel FITS file
+            archive.decompress_gz(gz_path, fits_path)
+
+            # Remove the fits .gz file
+            fs.remove_file(gz_path)
+
+        # Remove the gz extension
+        else: fs.remove_extension(gz_path)
 
     # -----------------------------------------------------------------
 
@@ -747,20 +779,52 @@ class AnianoKernels(Kernels):
         # Inform the user
         log.info("Downloading PSF file " + psf_basename + " from " + aniano_psf_files_link + " ...")
 
-        # Download the file
-        #urllib.urlretrieve(psf_link, gz_path)
+        # CHECK
+        #print(aniano_psf_files_link, network.is_available(aniano_psf_files_link))
+        #print(psf_link, network.is_available(psf_link))
+        if not network.is_available(psf_link):
+
+            # Was 2018
+            if aniano_psf_files_link == aniano_psf_files_link_2018:
+
+                log.warning("The 2018 " + psf_basename + " PSF file is not present, trying the 2012 version ...")
+                new_aniano_psf_files_link = aniano_psf_files_link_2012
+                new_psf_gzname = psf_gzname.replace("Original_", "")
+
+            # Was 2012
+            elif aniano_psf_files_link == aniano_psf_files_link_2012:
+
+                log.warning("The 2012 " + psf_basename + " PSF file is not present, trying the 2018 version ...")
+                new_aniano_psf_files_link = aniano_psf_files_link_2018
+                new_psf_gzname = psf_gzname.replace("PSF_", "PSF_Original_")
+
+            # Invalid
+            else: raise ValueError("Unknown Aniano PSF files URL '" + aniano_psf_files_link + "'")
+
+            # TRY AGAIN
+            psf_link = new_aniano_psf_files_link + new_psf_gzname
+            #print(psf_link)
+
+            # CHECK AGAIN
+            if not network.is_available(psf_link): raise ValueError("Cannot find the " + psf_basename + " PSF file")
 
         # Download the file
         network.download_file(psf_link, gz_path, progress_bar=log.is_debug)
 
         # Inform the user
-        log.info("Decompressing PSF file ...")
+        log.info("Decompressing PSF file if necessary ...")
 
         # Decompress the PSF FITS file
-        archive.decompress_gz(gz_path, fits_path)
+        if archive.is_compressed(gz_path):
 
-        # Remove the fits.gz file
-        fs.remove_file(gz_path)
+            # Make decompressed file
+            archive.decompress_gz(gz_path, fits_path)
+
+            # Remove the fits.gz file
+            fs.remove_file(gz_path)
+
+        # Remove the gz extension
+        else: fs.remove_extension(gz_path)
 
 # -----------------------------------------------------------------
 

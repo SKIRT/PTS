@@ -2110,6 +2110,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         definition.add_flag("distributions", "show residual distributions", True)
         definition.add_flag("from_evaluation", "use the images created in the evaluation step", None)
         definition.add_flag("spectral_convolution", "use spectral convolution to create images", False)
+        definition.add_flag("proper", "use the proper mock observed images if present", True)
 
         # Return
         return definition
@@ -2179,20 +2180,48 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     @memoize_method
-    def get_earth_image(self, filter_or_wavelength, spectral_convolution=False):
+    def get_earth_image(self, filter_or_wavelength, from_evaluation=None, spectral_convolution=False, proper=True):
 
         """
         This function ...
-        :param filte_or_wavelength:
+        :param filter_or_wavelength:
+        :param from_evaluation:
         :param spectral_convolution:
+        :param proper:
         :return:
         """
 
         # Filter?
-        if isinstance(filter_or_wavelength, Filter): return self.earth_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
+        if isinstance(filter_or_wavelength, Filter):
+
+            # From evaluation
+            if from_evaluation is None:
+
+                if proper:
+                    if self.analysis_run.has_evaluation_proper_image_for_filter(filter_or_wavelength): from_evaluation = True
+                    else: from_evaluation = False
+                else:
+                    if self.analysis_run.has_evaluation_image_for_filter(filter_or_wavelength): from_evaluation = True
+                    else: from_evaluation = False
+
+            # From evaluation
+            if from_evaluation:
+
+                if proper: return self.analysis_run.get_evaluation_proper_image_for_filter(filter_or_wavelength)
+                else: return self.analysis_run.get_evaluation_image_for_filter(filter_or_wavelength)
+
+            # Not from evaluation
+            else: return self.earth_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
 
         # Wavelength
-        elif types.is_length_quantity(filter_or_wavelength): return self.earth_cube.get_frame_for_wavelength(filter_or_wavelength)
+        elif types.is_length_quantity(filter_or_wavelength):
+
+            # Checks
+            if spectral_convolution: raise ValueError("Spectral convolution cannot be applied when a wavelength is passed")
+            if from_evaluation: raise ValueError("Cannot get image for a particular wavelength from evaluation output")
+
+            # Return the frame for this wavelength
+            return self.earth_cube.get_frame_for_wavelength(filter_or_wavelength)
 
         # Invalid
         else: raise ValueError("Invalid argument")
@@ -2213,7 +2242,9 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         if isinstance(filter_or_wavelength, Filter): return self.faceon_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
 
         # Wavelength
-        elif types.is_length_quantity(filter_or_wavelength): return self.faceon_cube.get_frame_for_wavelength(filter_or_wavelength)
+        elif types.is_length_quantity(filter_or_wavelength):
+            if spectral_convolution: raise ValueError("Spectral convolution cannot be applied when a wavelength is passed")
+            return self.faceon_cube.get_frame_for_wavelength(filter_or_wavelength)
 
         # Invalid
         else: raise ValueError("Invalid argument")
@@ -2234,14 +2265,17 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         if isinstance(filter_or_wavelength, Filter): return self.edgeon_cube.frame_for_filter(filter_or_wavelength, convolve=spectral_convolution)
 
         # Wavelength
-        elif types.is_length_quantity(filter_or_wavelength): return self.edgeon_cube.get_frame_for_wavelength(filter_or_wavelength)
+        elif types.is_length_quantity(filter_or_wavelength):
+            if spectral_convolution: raise ValueError("Spectral convolution cannot be applied when a wavelength is passed")
+            return self.edgeon_cube.get_frame_for_wavelength(filter_or_wavelength)
 
         # Invalid
         else: raise ValueError("Invalid argument")
 
     # -----------------------------------------------------------------
 
-    def plot_earth_images(self, filters, residuals=True, distributions=True, from_evaluation=None, spectral_convolution=False):
+    def plot_earth_images(self, filters, residuals=True, distributions=True, from_evaluation=None,
+                          spectral_convolution=False, proper=True):
 
         """
         Thisf unction ...
@@ -2249,6 +2283,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :param residuals:
         :param distributions:
         :param from_evaluation:
+        :param spectral_convolution:
+        :param proper:
         :return:
         """
 
@@ -2286,7 +2322,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             filter_name = str(fltr)
 
             # Get frame
-            frame = self.get_earth_image(fltr)
+            frame = self.get_earth_image(fltr, from_evaluation=from_evaluation, spectral_convolution=spectral_convolution, proper=proper)
 
             # Replace zeroes and negatives
             frame.replace_zeroes_by_nans()

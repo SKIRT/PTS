@@ -54,6 +54,7 @@ from ...core.simulation.tree import get_nleaves
 from ..build.definition import ModelDefinition
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -1406,6 +1407,162 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.total_output_path, self.galaxy_name + "_earth_total.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_fluxes_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.evaluation_path, "fluxes")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.evaluation_path, "images")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_image_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.evaluation_images_path, returns="name", extension="fits", not_contains="error")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_image_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in self.evaluation_image_names]
+
+    # -----------------------------------------------------------------
+
+    def has_evaluation_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fltr in self.evaluation_image_filters
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_image_path_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.evaluation_images_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_evaluation_image_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.evaluation_path, "proper_images")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_image_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.evaluation_proper_images_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_image_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in self.evaluation_proper_image_names]
+
+    # -----------------------------------------------------------------
+
+    def has_evaluation_proper_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fltr in self.evaluation_proper_image_filters
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_proper_image_path_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.evaluation_proper_images_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_proper_image_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_evaluation_proper_image_path_for_filter(fltr))
 
 # -----------------------------------------------------------------
 

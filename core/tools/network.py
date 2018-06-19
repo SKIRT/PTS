@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from subprocess import check_output
 import urllib
 import httplib
+from urllib2 import urlopen, HTTPError
 from . import filesystem as fs
 from ..basics.log import log
 from . import archive
@@ -40,6 +41,36 @@ def exists(url):
     conn.close()
     # alternative: return response.status == 200
     return resp.status < 400
+
+# -----------------------------------------------------------------
+
+def is_forbidden(url):
+
+    """
+    Thisf unction ...
+    :param url:
+    :return:
+    """
+
+    try:
+        data = urlopen(url)
+        return False
+    except HTTPError as e:
+        message = str(e)
+        if "403" in message: return True
+        else: raise ValueError("Unknown error: '" + message + "'")
+
+# -----------------------------------------------------------------
+
+def is_available(url):
+
+    """
+    This function ...
+    :param url:
+    :return:
+    """
+
+    return exists(url) and not is_forbidden(url)
 
 # -----------------------------------------------------------------
 
