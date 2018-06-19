@@ -823,6 +823,12 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Set number of processes to one
         maker.config.nprocesses_local = 1
 
+        # Settings for convolution
+        maker.config.check_wavelengths = True
+        maker.config.ignore_bad = True
+        maker.config.skip_ignored_bad_convolution = False
+        maker.config.skip_ignored_bad_closest = False
+
         # Set input
         input_dict = dict()
 
