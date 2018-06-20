@@ -3455,13 +3455,16 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Check
+        if self.has_unit and self.is_per_angular_or_intrinsic_area:
+            if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
+            elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
+
+        # Calculate
         result = np.nansum(self.data)
-        if add_unit and self.has_unit:
-            #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
-            if self.is_per_angular_or_intrinsic_area:
-                if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
-                elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
-            return result * self.unit
+
+        # Return
+        if add_unit and self.has_unit: return result * self.unit
         else: return result
 
     # -----------------------------------------------------------------
@@ -3474,6 +3477,9 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Check
+
+
         result = np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
         if add_unit and self.has_unit:
             #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
@@ -3481,6 +3487,75 @@ class Frame(NDDataArray):
                 if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
                 elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
             return result * self.unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def mean(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check?
+
+        # Calculate
+        result = np.nanmean(self.data)
+
+        # Return
+        if add_unit and self.has_unit: return result * self.unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def average(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        return self.mean(add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def median(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check?
+
+        # Calculate
+        result = np.nanmedian(self.data)
+
+        # Return
+        if add_unit and self.has_unit: return result * self.unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def stddev(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check?
+
+        # Calculate
+        result = np.nanstd(self.data)
+
+        # Return
+        if add_unit and self.has_unit: return result * self.unit
         else: return result
 
     # -----------------------------------------------------------------

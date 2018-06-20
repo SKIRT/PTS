@@ -23,6 +23,13 @@ from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
 from .component import AnalysisComponent
 from ...core.launch.tables import SimulationAssignmentTable
+from ...core.basics.configuration import ConfigurationDefinition
+
+# -----------------------------------------------------------------
+
+_add_instrument_command_name = "add_instrument" # add an instrument (orientation)
+#_add_contributions_command_name = "add_contributions"  # add more contributions (make full instrument) for an existing instrument
+_upgrade_instrument_command_name = "upgrade_instrument" # better name for command above?
 
 # -----------------------------------------------------------------
 
@@ -47,6 +54,10 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
         # Call the constructor of the base class
         AnalysisComponent.__init__(self, no_config=True)
         SimulationManager.__init__(self, *args, **kwargs)
+
+        # Add command
+        self._commands = self._commands.copy()  # so the dictionary in the core/launch/manager module is not adapted
+        self._commands[_add_instrument_command_name] = ("add_instrument_command", True, "simulate an additional orientation for one of the analysis simulations", None)
 
     # -----------------------------------------------------------------
 
@@ -220,6 +231,32 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
         """
 
         return self.analysis_context.memory_table
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def add_instrument_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def add_instrument_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+
 
     # -----------------------------------------------------------------
 

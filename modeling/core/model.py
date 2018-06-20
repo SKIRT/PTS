@@ -54,8 +54,16 @@ obs_total_bol_lum_name = "Observed total bolometric luminosity" # 1
 intr_total_bol_lum_name = "Intrinsic total bolometric luminosity" # 2 ; should be same as 1
 obs_total_stellar_bol_lum_name = "Observed total stellar bolometric luminosity" # 3
 intr_total_stellar_bol_lum_name = "Intrinsic total stellar bolometric luminosity" # 4 ; should be same as 2
+dust_lum_name = "Bolometric dust luminosity" #
+diffuse_dust_lum_name = "Bolometric diffuse dust luminosity"
+diffuse_abs_stellar_lum_name = "Absorbed stellar luminosity by diffuse dust"
+diffuse_fabs_name = "Fraction of absorbed stellar luminosity by diffuse dust"
+fabs_name = "Fraction of absorbed stellar luminosity"
 bol_attenuation_name = "Total bolometric attenuation" # 5
-total_dust_mass_name = "Total dust mass" # 6 with SFR dust mass
+direct_stellar_lum_name = "Direct stellar luminosity"
+sfr_name = "Star formation rate"
+stellar_mass_name = "Stellar mass"
+ssfr_name = "Specific star formation rate"
 
 ## Old bulge
 obs_bulge_spec_lum_name = "Observed old stellar bulge specific luminosity" # 7
@@ -98,7 +106,6 @@ obs_young_total_lum_name = "Young stellar bolometric total luminosity" # stellar
 obs_young_dust_lum_name = "Young stellar bolometric dust luminosity" #
 
 ## Ionizing stars (SFR)
-sfr_name = "Star formation rate"
 obs_sfr_spec_lum_name = "Observed SFR specific luminosity" #
 intr_sfr_spec_lum_name = "Intrinsic SFR specific luminosity" #
 obs_sfr_bol_lum_name = "Observed SFR bolometric luminosity" #
@@ -124,8 +131,8 @@ obs_unevolved_total_lum_name = "Unevolved stellar bolometric total luminosity" #
 obs_unevolved_dust_lum_name = "Unevolved stellar bolometric dust luminosity" #
 
 ## Dust
-dust_lum_name = "Bolometric dust luminosity" #
-diffuse_dust_lum_name = "Bolometric diffuse dust luminosity"
+total_dust_mass_name = "Total dust mass" # 6 with SFR dust mass
+diffuse_dust_mass_name = "Diffuse dust mass"
 
 # -----------------------------------------------------------------
 
@@ -4017,14 +4024,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_intrinsic_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.has_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_intrinsic_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_intrinsic_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.has_faceon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_intrinsic_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_intrinsic_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_edgeon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
@@ -4179,14 +4204,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_direct_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_direct_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_cube_direct
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_direct_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_direct_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_full_cube_edgeon
 
     # -----------------------------------------------------------------
     # BULGE CUBES
@@ -5130,9 +5173,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_absorbed_diffuse_stellar_luminosity_map(self):
+        return self.has_total_absorbed_diffuse_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_absorbed_diffuse_stellar_luminosity_map_earth(self):
         return self.total_absorbed_diffuse_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorbed_diffuse_stellar_luminosity_map_earth(self):
+        return self.has_total_absorbed_diffuse_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -5142,9 +5197,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_absorbed_diffuse_stellar_luminosity_map_faceon(self):
+        return self.has_total_absorbed_diffuse_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_absorbed_diffuse_stellar_luminosity_map_edgeon(self):
         return self.total_absorbed_diffuse_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorbed_diffuse_stellar_luminosity_map_edgeon(self):
+        return self.has_total_absorbed_diffuse_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5160,9 +5227,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_fabs_diffuse_map(self):
+        return self.has_total_fabs_diffuse_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_fabs_diffuse_map_earth(self):
         return self.total_diffuse_dust_luminosity_map_earth / self.total_intrinsic_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_fabs_diffuse_map_earth(self):
+        return self.has_total_diffuse_dust_luminosity_map_earth and self.has_total_intrinsic_stellar_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -5172,9 +5251,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_fabs_diffuse_map_faceon(self):
+        return self.has_total_diffuse_dust_luminosity_map_faceon and self.has_total_intrinsic_stellar_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_fabs_diffuse_map_edgeon(self):
         return self.total_diffuse_dust_luminosity_map_edgeon / self.total_intrinsic_stellar_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_fabs_diffuse_map_edgeon(self):
+        return self.has_total_diffuse_dust_luminosity_map_edgeon and self.has_total_intrinsic_stellar_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5186,9 +5277,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_fabs_map(self):
+        return self.has_total_fabs_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_fabs_map_earth(self):
         return self.total_dust_luminosity_map_earth / self.total_intrinsic_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_fabs_map_earth(self):
+        return self.has_total_dust_luminosity_map_earth and self.has_total_intrinsic_stellar_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -5198,9 +5301,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_fabs_map_faceon(self):
+        return self.has_total_dust_luminosity_map_faceon and self.has_total_intrinsic_stellar_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_fabs_map_edgeon(self):
         return self.total_dust_luminosity_map_edgeon / self.total_intrinsic_stellar_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_fabs_map_edgeon(self):
+        return self.has_total_dust_luminosity_map_edgeon and self.has_total_intrinsic_stellar_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5238,9 +5353,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_direct_stellar_luminosity_map(self):
+        return self.has_total_direct_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_direct_stellar_luminosity_map_earth(self):
         return self.total_direct_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_luminosity_map_earth(self):
+        return self.has_total_direct_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -5250,9 +5377,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_direct_stellar_luminosity_map_faceon(self):
+        return self.has_total_direct_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_direct_stellar_luminosity_map_edgeon(self):
         return self.total_direct_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_luminosity_map_edgeon(self):
+        return self.has_total_direct_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5264,9 +5403,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_intrinsic_fuv_luminosity_map(self):
+        return self.has_intrinsic_fuv_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def intrinsic_fuv_luminosity_map_earth(self):
         return self.total_intrinsic_stellar_luminosity_cube_earth.get_frame_for_wavelength(self.fuv_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_fuv_luminosity_map_earth(self):
+        return self.has_total_intrinsic_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -5276,9 +5427,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_intrinsic_fuv_luminosity_map_faceon(self):
+        return self.has_total_intrinsic_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def intrinsic_fuv_luminosity_map_edgeon(self):
         return self.total_intrinsic_stellar_luminosity_cube_edgeon.get_frame_for_wavelength(self.fuv_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_fuv_luminosity_map_edgeon(self):
+        return self.has_total_intrinsic_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5368,9 +5531,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_ssfr_map(self):
+        return self.has_total_ssfr_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_ssfr_map_earth(self):
         return self.total_star_formation_rate_map_earth / self.total_stellar_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_ssfr_map_earth(self):
+        return self.has_total_star_formation_rate_map_earth and self.has_total_stellar_mass_map_earth
 
     # -----------------------------------------------------------------
 
@@ -5380,9 +5555,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_total_ssfr_map_faceon(self):
+        return self.has_total_star_formation_rate_map_faceon and self.has_total_stellar_mass_map_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def total_ssfr_map_edgeon(self):
         return self.total_star_formation_rate_map_edgeon / self.total_stellar_mass_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_ssfr_map_edgeon(self):
+        return self.has_total_star_formation_rate_map_edgeon and self.has_total_stellar_mass_map_edgeon
 
     # -----------------------------------------------------------------
     # BULGE MAPS
@@ -8048,7 +8235,7 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def has_dust_mass(self):
+    def has_diffuse_dust_mass(self):
 
         """
         This function ...
@@ -8056,6 +8243,18 @@ class RTModel(object):
         """
 
         return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_diffuse_dust_mass and self.has_sfr_dust_mass
 
     # -----------------------------------------------------------------
 
@@ -8079,7 +8278,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_map_earth and self.has_dust_mass
+        return self.has_dust_map_earth and self.has_diffuse_dust_mass
 
     # -----------------------------------------------------------------
 
@@ -8091,7 +8290,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_map_edgeon and self.has_dust_mass
+        return self.has_dust_map_edgeon and self.has_diffuse_dust_mass
 
     # -----------------------------------------------------------------
 
@@ -8103,7 +8302,7 @@ class RTModel(object):
         :return:
         """
 
-        return self.has_dust_map_faceon and self.has_dust_mass
+        return self.has_dust_map_faceon and self.has_diffuse_dust_mass
 
     # -----------------------------------------------------------------
 
@@ -9021,6 +9220,114 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def absorbed_diffuse_stellar_luminosity(self):
+        return self.total_absorbed_diffuse_stellar_luminosity_map.sum(add_unit=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorbed_diffuse_stellar_luminosity(self):
+        return self.has_total_absorbed_diffuse_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def diffuse_fabs(self):
+        return self.total_fabs_diffuse_map.average()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_diffuse_fabs(self):
+        return self.has_total_fabs_diffuse_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fabs(self):
+        return self.total_fabs_map.average()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fabs(self):
+        return self.has_total_fabs_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def direct_stellar_luminosity(self):
+        return self.total_direct_stellar_luminosity_map.sum()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity(self):
+        return self.has_total_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_fuv_luminosity(self):
+        return self.intrinsic_fuv_luminosity_map.sum(add_unit=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_fuv_luminosity(self):
+        return self.has_intrinsic_fuv_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_star_formation_rate(self):
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate(self):
+        return self.has_intrinsic_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_i1_luminosity(self):
+        return self.observed_total_sed.photometry_at(self.i1_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_i1_luminosity(self):
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_stellar_mass(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_stellar_mass(self):
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_ssfr(self):
+        return self.total_ssfr_map.average(add_unit=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_ssfr(self):
+        return self.has_total_ssfr_map
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def derived_parameter_values_total(self):
 
@@ -9040,13 +9347,44 @@ class RTModel(object):
         if self.has_intrinsic_stellar_luminosity: values[intr_total_stellar_bol_lum_name] = self.intrinsic_stellar_luminosity
         if self.has_observed_stellar_luminosity: values[obs_total_stellar_bol_lum_name] = self.observed_stellar_luminosity
 
-        #
+        # Dust luminosity
+        if self.has_diffuse_dust_luminosity: values[diffuse_dust_lum_name] = self.diffuse_dust_luminosity
+        if self.has_dust_luminosity: values[dust_lum_name] = self.dust_luminosity
+
+        # Absorbed luminosity
+        if self.has_absorbed_diffuse_stellar_luminosity: values[diffuse_abs_stellar_lum_name] = self.absorbed_diffuse_stellar_luminosity
+
+        # Fabs
+        if self.has_diffuse_fabs: values[diffuse_fabs_name] = self.diffuse_fabs
+        if self.has_fabs: values[fabs_name] = self.fabs
 
         # Total attenuation
         if self.has_bolometric_attenuation: values[bol_attenuation_name] = self.bolometric_attenuation
 
+        # Direct stellar luminosity
+        if self.has_direct_stellar_luminosity: values[direct_stellar_lum_name] = self.direct_stellar_luminosity
+
+        # Star formation rate
+        if self.has_total_star_formation_rate: values[sfr_name] = self.total_star_formation_rate
+
+        # Stellar mass
+        if self.has_total_stellar_mass: values[stellar_mass_name] = self.total_stellar_mass
+
+        # Specific star formation rate
+        if self.has_total_ssfr: values[ssfr_name] = self.total_ssfr
+
         # Return
         return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def direct_stellar_luminosity_old_bulge(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity_old_bulge(self):
 
     # -----------------------------------------------------------------
 
@@ -9061,13 +9399,16 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # I1 specific luminosity
-        if self.has_observed_i1_luminosity_old_bulge: values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
-        if self.has_intrinsic_i1_luminosity_old_bulge: values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge # part of parameter set
-
-        # Bolometric luminosity
+        # Bolometric luminosity (2 values should be the same)
         if self.has_observed_bolometric_luminosity_old_bulge: values[obs_bulge_bol_lum_name] = self.observed_bolometric_luminosity_old_bulge
         if self.has_intrinsic_bolometric_luminosity_old_bulge: values[intr_bulge_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_bulge
+
+        # Direct stellar luminosity
+        if self.has_direct_stellar_luminosity_old_bulge: values[direct_stellar_lum_name] = self.direct_stellar_luminosity_old_bulge
+
+        # I1 specific luminosity
+        if self.has_observed_i1_luminosity_old_bulge: values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
+        if self.has_intrinsic_i1_luminosity_old_bulge: values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge  # part of parameter set
 
         # Attenuation
         if self.has_i1_attenuation_old_bulge: values[bulge_spec_attenuation_name] = self.i1_attenuation_old_bulge
@@ -9078,6 +9419,16 @@ class RTModel(object):
 
         # Return
         return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def direct_stellar_luminosity_old_disk(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity_old_disk(self):
 
     # -----------------------------------------------------------------
 
@@ -9092,13 +9443,16 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
+        # Bolometric luminosity (2 values should be the same)
+        if self.has_observed_bolometric_luminosity_old_disk: values[obs_disk_bol_lum_name] = self.observed_bolometric_luminosity_old_disk
+        if self.has_intrinsic_bolometric_luminosity_old_disk: values[intr_disk_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_disk
+
+        # Direct stellar luminosity
+        if self.has_direct_stellar_luminosity_old_disk: values[direct_stellar_lum_name] = self.direct_stellar_luminosity_old_disk
+
         # I1 specific luminosity
         if self.has_observed_i1_luminosity_old_disk: values[obs_disk_spec_lum_name] = self.observed_i1_luminosity_old_disk
         if self.has_intrinsic_i1_luminosity_old_disk: values[intr_disk_spec_lum_name] = self.intrinsic_i1_luminosity_old_disk # part of parameter set
-
-        # Bolometric luminosity
-        if self.has_observed_bolometric_luminosity_old_disk: values[obs_disk_bol_lum_name] = self.observed_bolometric_luminosity_old_disk
-        if self.has_intrinsic_bolometric_luminosity_old_disk: values[intr_disk_bol_lum_name] = self.intrinsic_bolometric_luminosity_old_disk
 
         # Attenuation
         if self.has_i1_attenuation_old_disk: values[disk_spec_attenuation_name] = self.i1_attenuation_old_disk
@@ -9109,6 +9463,16 @@ class RTModel(object):
 
         # Return
         return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def direct_stellar_luminosity_old(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity_old(self):
 
     # -----------------------------------------------------------------
 
@@ -9123,13 +9487,16 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
+        # Bolometric luminosity (2 values should be the same)
+        if self.has_observed_bolometric_luminosity_old: values[obs_old_bol_lum_name] = self.observed_bolometric_luminosity_old
+        if self.has_intrinsic_bolometric_luminosity_old: values[intr_old_bol_lum_name] = self.intrinsic_bolometric_luminosity_old
+
+        # Direct stellar luminosity
+        if self.has_direct_stellar_luminosity_old: values[direct_stellar_lum_name] = self.direct_stellar_luminosity_old
+
         # I1 specific luminosity
         if self.has_observed_i1_luminosity_old: values[obs_old_spec_lum_name] = self.observed_i1_luminosity_old
         if self.has_intrinsic_i1_luminosity_old: values[intr_old_spec_lum_name] = self.intrinsic_i1_luminosity_old
-
-        # Bolometric luminosity
-        if self.has_observed_bolometric_luminosity_old: values[obs_old_bol_lum_name] = self.observed_bolometric_luminosity_old
-        if self.has_intrinsic_bolometric_luminosity_old: values[intr_old_bol_lum_name] = self.intrinsic_bolometric_luminosity_old
 
         # Attenuation
         if self.has_i1_attenuation_old: values[old_spec_attenuation_name] = self.i1_attenuation_old
@@ -9140,6 +9507,16 @@ class RTModel(object):
 
         # Return
         return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def direct_stellar_luminosity_young(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity_young(self):
 
     # -----------------------------------------------------------------
 
@@ -9154,13 +9531,16 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
+        # Bolometric luminosity (2 values should be the same)
+        if self.has_observed_bolometric_luminosity_young: values[obs_young_bol_lum_name] = self.observed_bolometric_luminosity_young
+        if self.has_intrinsic_bolometric_luminosity_young: values[intr_young_bol_lum_name] = self.intrinsic_bolometric_luminosity_young
+
+        # Direct stellar luminosity
+        if self.has_direct_stellar_luminosity_young: values[direct_stellar_lum_name] = self.direct_stellar_luminosity_young
+
         # FUV specific luminosity
         if self.has_observed_fuv_luminosity_young: values[obs_young_spec_lum_name] = self.observed_fuv_luminosity_young
         if self.has_intrinsic_fuv_luminosity_young: values[intr_young_spec_lum_name] = self.intrinsic_fuv_luminosity_young # part of (free) parameter set
-
-        # Bolometric luminosity
-        if self.has_observed_bolometric_luminosity_young: values[obs_young_bol_lum_name] = self.observed_bolometric_luminosity_young
-        if self.has_intrinsic_bolometric_luminosity_young: values[intr_young_bol_lum_name] = self.intrinsic_bolometric_luminosity_young
 
         # Attenuation
         if self.has_fuv_attenuation_young: values[young_spec_attenuation_name] = self.fuv_attenuation_young
@@ -9171,6 +9551,16 @@ class RTModel(object):
 
         # Return
         return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def direct_stellar_luminosity_sfr(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity_sfr(self):
 
     # -----------------------------------------------------------------
 
@@ -9185,16 +9575,19 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # SFR
-        if self.has_sfr: values[sfr_name] = self.sfr
+        # Bolometric luminosity (2 values should be the same)
+        if self.has_observed_bolometric_luminosity_sfr: values[obs_sfr_bol_lum_name] = self.observed_bolometric_luminosity_sfr
+        if self.has_intrinsic_bolometric_luminosity_sfr: values[intr_sfr_bol_lum_name] = self.intrinsic_bolometric_luminosity_sfr
+
+        # Direct stellar luminosity
+        if self.has_direct_stellar_luminosity_sfr: values[direct_stellar_lum_name] = self.direct_stellar_luminosity_sfr
 
         # FUV specific luminosity
         if self.has_observed_fuv_luminosity_sfr: values[obs_sfr_spec_lum_name] = self.observed_fuv_luminosity_sfr
         if self.has_intrinsic_fuv_luminosity_sfr: values[intr_sfr_spec_lum_name] = self.intrinsic_fuv_luminosity_sfr # part of the (free) parameter set
 
-        # Bolometric luminosity
-        if self.has_observed_bolometric_luminosity_sfr: values[obs_sfr_bol_lum_name] = self.observed_bolometric_luminosity_sfr
-        if self.has_intrinsic_bolometric_luminosity_sfr: values[intr_sfr_bol_lum_name] = self.intrinsic_bolometric_luminosity_sfr
+        # SFR
+        if self.has_sfr: values[sfr_name] = self.sfr
 
         # Attenuation
         if self.has_fuv_attenuation_sfr: values[sfr_spec_attenuation_name] = self.fuv_attenuation_sfr
@@ -9215,6 +9608,26 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def direct_stellar_luminosity_unevolved(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_stellar_luminosity_unevolved(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_star_formation_rate(self):
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_star_formation_rate(self):
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def derived_parameter_values_unevolved(self):
 
@@ -9226,13 +9639,19 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
+        # Bolometric luminosity
+        if self.has_observed_bolometric_luminosity_unevolved: values[obs_unevolved_bol_lum_name] = self.observed_bolometric_luminosity_unevolved
+        if self.has_intrinsic_bolometric_luminosity_unevolved: values[intr_unevolved_bol_lum_name] = self.intrinsic_bolometric_luminosity_unevolved
+
+        # Direct
+        if self.has_direct_stellar_luminosity_unevolved: values[direct_stellar_lum_name] = self.direct_stellar_luminosity_unevolved
+
         # FUV specific luminosity
         if self.has_observed_fuv_luminosity_unevolved: values[obs_unevolved_spec_lum_name] = self.observed_fuv_luminosity_unevolved
         if self.has_intrinsic_fuv_luminosity_unevolved: values[intr_unevolved_spec_lum_name] = self.intrinsic_fuv_luminosity_unevolved
 
-        # Bolometric luminosity
-        if self.has_observed_bolometric_luminosity_unevolved: values[obs_unevolved_bol_lum_name] = self.observed_bolometric_luminosity_unevolved
-        if self.has_intrinsic_bolometric_luminosity_unevolved: values[intr_unevolved_bol_lum_name] = self.intrinsic_bolometric_luminosity_unevolved
+        # Star formation rate
+        if self.has_unevolved_star_formation_rate: values[sfr_name] = self.unevolved_star_formation_rate
 
         # Attenuation
         if self.has_fuv_attenuation_unevolved: values[unevolved_spec_attenuation_name] = self.fuv_attenuation_unevolved
@@ -9257,14 +9676,11 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # Luminosity
-        #if self.has_dust_luminosity: values[dust_lum_name] = self.dust_luminosity
-        #if self.has_diffuse_dust_luminosity: values[diffuse_dust_lum_name] = self.diffuse_dust_luminosity
-
         # Mass
         if self.has_total_dust_mass: values[total_dust_mass_name] = self.total_dust_mass # with SFR dust mass
 
-        #
+        # Diffuse mass
+        if self.has_diffuse_dust_mass: values[diffuse_dust_mass_name] = self.diffuse_dust_mass # ACTUALLY ONE OF THE INTRINSIC PARAMETERS
 
         # Return
         return values

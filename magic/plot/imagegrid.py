@@ -953,6 +953,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         self.grid = self.figure.create_gridspec(self.nrows, self.ncolumns)
 
         # Initialize structure to contain the plots
+        print("NCOLUMNS", self.ncolumns)
+        print("NROWS", self.nrows)
         self.plots = [[None for i in range(self.ncolumns)] for j in range(self.nrows)]
 
     # ------------------------------------------------------------------------------
@@ -2562,10 +2564,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Horizontal
-        if self.horizontal: return index, 0
+        #if self.horizontal: return index, 0
+        if self.horizontal: return 0, index
 
         # Vertical
-        elif self.vertical: return 0, index
+        #elif self.vertical: return 0, index
+        elif self.vertical: return index, 0
 
         # Invalid
         else: raise ValueError("Invalid direction")
@@ -2581,10 +2585,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Horizontal
-        if self.horizontal: return index, 1
+        #if self.horizontal: return index, 1
+        if self.horizontal: return 1, index
 
         # Vertical
-        elif self.vertical: return 1, index
+        #elif self.vertical: return 1, index
+        elif self.vertical: return index, 1
 
         # Invalid
         else: raise ValueError("Invalid direction")
@@ -2600,10 +2606,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Horizontal
-        if self.horizontal: return index, 2
+        #if self.horizontal: return index, 2
+        if self.horizontal: return 2, index
 
         # Vertical
-        elif self.vertical: return 2, index
+        #elif self.vertical: return 2, index
+        elif self.vertical: return index, 2
 
         # Invalid
         else: raise ValueError("Invalid direction")
@@ -2619,10 +2627,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         """
 
         # Horizontal
-        if self.horizontal: return index, 3
+        #if self.horizontal: return index, 3
+        if self.horizontal: return 3, index
 
         # Vertical
-        elif self.vertical: return 3, index
+        #elif self.vertical: return 3, index
+        elif self.vertical: return index, 3
 
         # Invalid
         else: raise ValueError("Invalid direction")
@@ -2641,11 +2651,21 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Get row and col
         row, col = self.get_observation_row_col(index)
 
+        #print(self.grid.get_geometry())
+        #print(self.grid.get_height_ratios())
+
         # Return the grid spec
-        if return_row_col: return self.grid[row, col], row, col
-        else: return self.grid[row, col]
+        #if return_row_col: return self.grid[row, col], row, col
+        #else: return self.grid[row, col]
         #if return_row_col: return self.grid[index], row, col
         #else: return self.grid[index]
+        # No, no, this was a mistake with 'get_observation_row_col'
+        #if return_row_col: return self.grid[col, row], row, col # WHY?
+        #else: return self.grid[col, row] # WHY?
+
+        # This was right after all
+        if return_row_col: return self.grid[row, col], row, col
+        else: return self.grid[row, col]
 
     # ------------------------------------------------------------------------------
 
@@ -2715,6 +2735,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Get the subplot spec
         spec, row, col = self.get_observation_spec(index, return_row_col=True)
         #print(spec)
+        #print("ROW", row, "COL", col)
 
         # Get coordinates of the subplot
         #points = spec.get_position(self.figure.figure).get_points()
@@ -2745,8 +2766,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Get the subplot spec
         spec, row, col = self.get_model_spec(index, return_row_col=True)
 
+        bbox = spec.get_position(self.figure.figure)
+        coordinates = [bbox.x0, bbox.y0, bbox.width, bbox.height]
+
         # Create the plot
-        plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=spec)
+        plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=coordinates)
 
         # Add the plot
         self.plots[row][col] = plot
@@ -2768,8 +2792,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Get the subplot spec
         spec, row, col = self.get_residuals_spec(index, return_row_col=True)
 
+        bbox = spec.get_position(self.figure.figure)
+        coordinates = [bbox.x0, bbox.y0, bbox.width, bbox.height]
+
         # Create the plot
-        plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=spec)
+        plot = aplpy.FITSFigure(frame.to_hdu(), figure=self.figure.figure, subplot=coordinates)
 
         # Add the plot
         self.plots[row][col] = plot
@@ -2942,6 +2969,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         :return:
         """
 
+        pass
+
     # ------------------------------------------------------------------------------
 
     def plot_observations(self):
@@ -2955,6 +2984,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         log.info("Plotting the observed image frames ...")
 
         # Loop over the names
+        #print(self.names)
+        #print(self.nimages)
+        #print(len(self.names))
         for index, name in enumerate(self.names):
 
             # Debugging
@@ -3042,7 +3074,8 @@ class ResidualImageGridPlotter(ImageGridPlotter):
             amplitude, soft_amplitude = self.get_residual_amplitude(name)
 
             # Plot
-            self._plot_residuals(frame, cmap, amplitude=amplitude, soft_amplitude=soft_amplitude)
+            # index, frame, cmap, amplitude=None, soft_amplitude=False
+            self._plot_residuals(index, frame, cmap, amplitude=amplitude, soft_amplitude=soft_amplitude)
 
     # ------------------------------------------------------------------------------
 
