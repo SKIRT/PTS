@@ -3447,115 +3447,212 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def sum(self, add_unit=False):
+    def sum(self, add_unit=False, per_area="warning"):
 
         """
         This function ...
-        :param add_unit
+        :param add_unit:
+        :param per_area:
         :return:
         """
 
         # Check
+        unit = conversion_factor = None
         if self.has_unit and self.is_per_angular_or_intrinsic_area:
-            if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
-            elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
+
+            # Set message
+            if self.is_per_angular_area: message = "Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit"
+            else: message = "Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit"
+
+            # Warning or error
+            if per_area == "warning": log.warning(message)
+            elif per_area == "error": raise ValueError(message)
+            elif per_area == "convert":
+                unit = self.corresponding_non_angular_or_intrinsic_area_unit
+                conversion_factor = self._get_conversion_factor(unit)
+            else: raise ValueError("Invalid option for 'per_area'")
 
         # Calculate
         result = np.nansum(self.data)
 
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
         # Return
-        if add_unit and self.has_unit: return result * self.unit
+        if add_unit and self.has_unit: return result * unit
         else: return result
 
     # -----------------------------------------------------------------
 
-    def quadratic_sum(self, add_unit=False):
+    def quadratic_sum(self, add_unit=False, per_area="warning"):
 
         """
         This function ...
         :param add_unit:
+        :param per_area:
         :return:
         """
 
         # Check
+        unit = conversion_factor = None
+        if self.has_unit and self.is_per_angular_or_intrinsic_area:
 
+            # Set message
+            if self.is_per_angular_area: message = "Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit"
+            else: message = "Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit"
 
+            # Warning or error
+            if per_area == "warning": log.warning(message)
+            elif per_area == "error": raise ValueError(message)
+            elif per_area == "convert":
+                unit = self.corresponding_non_angular_or_intrinsic_area_unit
+                conversion_factor = self._get_conversion_factor(unit)
+            else: raise ValueError("Invalid option for 'per_area'")
+
+        # Calculate
         result = np.sqrt(np.sum(self._data[self.nans.inverse()]**2))
-        if add_unit and self.has_unit:
-            #if self.unit.is_brightness: log.warning("Unit is a surface brightness: adding all pixel values may not be useful before a conversion to a non-brightness unit")
-            if self.is_per_angular_or_intrinsic_area:
-                if self.is_per_angular_area: log.warning("Unit is per angular area: the result of adding pixel values may not be useful before a conversion to a non-intensity or brightness unit")
-                elif self.is_per_intrinsic_area: log.warning("Unit is per physical area: the result of adding pixel values may not be useful before a conversion to a non-brightness unit")
-            return result * self.unit
+
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
+        # Return
+        if add_unit and self.has_unit: return result * unit
         else: return result
 
     # -----------------------------------------------------------------
 
-    def mean(self, add_unit=False):
+    def mean(self, add_unit=False, not_per_area="warning"):
 
         """
         This function ...
         :param add_unit:
+        :param not_per_area:
         :return:
         """
 
         # Check?
+        unit = conversion_factor = None
+        if self.is_photometric and not self.is_per_angular_or_intrinsic_area:
+
+            # Set message
+            message = "Unit is not per angular or intrinsic area: the result of taking the mean value may not be useful before a conversion to a pixelscale-independent unit (e.g. surface brightness)"
+
+            # Warning or error
+            if not_per_area == "warning": log.warning(message)
+            elif not_per_area == "error": raise ValueError(message)
+            elif not_per_area == "convert":
+                unit = self.corresponding_angular_or_intrinsic_area_unit
+                conversion_factor = self._get_conversion_factor(unit)
+            else: raise ValueError("Invalid option for 'per_area'")
 
         # Calculate
         result = np.nanmean(self.data)
 
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
         # Return
-        if add_unit and self.has_unit: return result * self.unit
+        if add_unit and self.has_unit: return result * unit
         else: return result
 
     # -----------------------------------------------------------------
 
-    def average(self, add_unit=False):
+    def average(self, add_unit=False, not_per_area="warning"):
 
         """
         This function ...
         :param add_unit:
+        :param not_per_area:
         :return:
         """
 
-        return self.mean(add_unit=add_unit)
+        return self.mean(add_unit=add_unit, not_per_area=not_per_area)
 
     # -----------------------------------------------------------------
 
-    def median(self, add_unit=False):
+    def median(self, add_unit=False, not_per_area="warning"):
 
         """
         This function ...
         :param add_unit:
+        :param not_per_area:
         :return:
         """
 
         # Check?
+        unit = conversion_factor = None
+        if self.is_photometric and not self.is_per_angular_or_intrinsic_area:
+
+            # Set message
+            message = "Unit is not per angular or intrinsic area: the result of taking the median value may not be useful before a conversion to a pixelscale-independent unit (e.g. surface brightness)"
+
+            # Warning or error
+            if not_per_area == "warning": log.warning(message)
+            elif not_per_area == "error": raise ValueError(message)
+            elif not_per_area == "convert":
+                unit = self.corresponding_angular_or_intrinsic_area_unit
+                conversion_factor = self._get_conversion_factor(unit)
+            else: raise ValueError("Invalid option for 'per_area'")
 
         # Calculate
         result = np.nanmedian(self.data)
 
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
         # Return
-        if add_unit and self.has_unit: return result * self.unit
+        if add_unit and self.has_unit: return result * unit
         else: return result
 
     # -----------------------------------------------------------------
 
-    def stddev(self, add_unit=False):
+    def stddev(self, add_unit=False, not_per_area="warning"):
 
         """
         This function ...
         :param add_unit:
+        :param not_per_area:
         :return:
         """
 
         # Check?
+        unit = conversion_factor = None
+        if self.is_photometric and not self.is_per_angular_or_intrinsic_area:
+
+            # Set message
+            message = "Unit is not per angular or intrinsic area: the result of taking the standard deviation may not be useful before a conversion to a pixelscale-independent unit (e.g. surface brightness)"
+
+            # Warning or error
+            if not_per_area == "warning": log.warning(message)
+            elif not_per_area == "error": raise ValueError(message)
+            elif not_per_area == "convert":
+                unit = self.corresponding_angular_or_intrinsic_area_unit
+                conversion_factor = self._get_conversion_factor(unit)
+            else: raise ValueError("Invalid option for 'per_area'")
 
         # Calculate
         result = np.nanstd(self.data)
 
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
         # Return
-        if add_unit and self.has_unit: return result * self.unit
+        if add_unit and self.has_unit: return result * unit
         else: return result
 
     # -----------------------------------------------------------------

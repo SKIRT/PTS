@@ -2370,3 +2370,29 @@ def divide(sequence):
     return reduce(operator.div, sequence)
 
 # -----------------------------------------------------------------
+
+def sorted_by_attribute(sequence, attr_name):
+
+    """
+    Thisf unction ...
+    :param sequence:
+    :param attr_name:
+    :return:
+    """
+
+    return list(sorted(sequence, key=lambda item: getattr(item, attr_name)))
+
+# -----------------------------------------------------------------
+
+def sorted_by_item(sequence, name):
+
+    """
+    This function ...
+    :param sequence:
+    :param name:
+    :return:
+    """
+
+    return list(sorted(sequence, key=lambda item: item[name]))
+
+# -----------------------------------------------------------------

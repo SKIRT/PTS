@@ -2113,6 +2113,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         definition.add_flag("spectral_convolution", "use spectral convolution to create images", False)
         definition.add_flag("proper", "use the proper mock observed images if present", True)
         definition.add_flag("only_from_evaluation", "only use filters for which an image was made in the evaluation")
+        definition.add_flag("sort_filters", "sort the filters on wavelength", True)
 
         # Return
         return definition
@@ -2137,6 +2138,9 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             if config.proper: filters = sequences.intersection(config.filters, self.analysis_run.evaluation_proper_image_filters)
             else: filters = sequences.intersection(config.filters, self.analysis_run.evaluation_image_filters)
         else: filters = config.filters
+
+        # Sort the filters on wavelength
+        if config.sort_filters: filters = sequences.sorted_by_attribute(filters, "wavelength")
 
         # Earth
         if config.orientation == earth_name: self.plot_earth_images(filters, residuals=config.residuals,
