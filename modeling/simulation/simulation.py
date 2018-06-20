@@ -188,8 +188,24 @@ class ComponentSimulation(SkirtSimulation):
         """
 
         systems = dict()
-        if self.earth_wcs is not None: systems["earth"] = self.earth_wcs
+        if self.earth_wcs is not None: systems[earth_name] = self.earth_wcs
         return systems
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distances(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        distances = dict()
+        distances[earth_name] = self.distance
+        distances[faceon_name] = self.distance
+        distances[edgeon_name] = self.distance
+        return distances
 
     # -----------------------------------------------------------------
 
@@ -201,7 +217,7 @@ class ComponentSimulation(SkirtSimulation):
         :return:
         """
 
-        return SimulationData.from_output(self.output, coordinate_systems=self.coordinate_systems)
+        return SimulationData.from_output(self.output, coordinate_systems=self.coordinate_systems, distances=self.distances)
 
     # -----------------------------------------------------------------
 

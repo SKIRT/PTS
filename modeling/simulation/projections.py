@@ -997,6 +997,42 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def pixelscale_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.projection_earth.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.projection_faceon.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.projection_edgeon.pixelscale
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def earth(self):
 
@@ -1005,10 +1041,13 @@ class ComponentProjections(object):
         :return:
         """
 
+        # Get the coordinate system
         if self.has_wcs: wcs = self.wcs
         elif self.has_earth_wcs: wcs = self.earth_wcs
         else: raise ValueError("No WCS info for the earth map")
-        return Frame.from_file(self.old_bulge_earth_map_path, wcs=wcs)
+
+        # Create the frame
+        return Frame.from_file(self.old_bulge_earth_map_path, wcs=wcs, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -1020,7 +1059,7 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_faceon_map_path)
+        return Frame.from_file(self.old_bulge_faceon_map_path, distance=self.distance, pixelscale=self.pixelscale_faceon)
 
     # -----------------------------------------------------------------
 
@@ -1032,7 +1071,7 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_edgeon_map_path)
+        return Frame.from_file(self.old_bulge_edgeon_map_path, distance=self.distance, pixelscale=self.pixelscale_edgeon)
 
 # -----------------------------------------------------------------
 

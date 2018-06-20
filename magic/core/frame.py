@@ -953,7 +953,7 @@ class Frame(NDDataArray):
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                   fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None, no_wcs=False, density=False,
-                  brightness=False, density_strict=False, brightness_strict=False, wcs=None):
+                  brightness=False, density_strict=False, brightness_strict=False, wcs=None, pixelscale=None):
 
         """
         This function ...
@@ -975,6 +975,7 @@ class Frame(NDDataArray):
         :param density_strict:
         :param brightness_strict:
         :param wcs:
+        :param pixelscale:
         :return:
         """
 
@@ -991,6 +992,7 @@ class Frame(NDDataArray):
 
         # Set
         if wcs is not None: frame.wcs = wcs
+        if pixelscale is not None: frame.pixelscale = pixelscale
 
         # Return the frame
         return frame

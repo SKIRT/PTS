@@ -30,12 +30,13 @@ class SimulationData(object):
     This class ...
     """
 
-    def __init__(self, output, coordinate_systems=None):
+    def __init__(self, output, coordinate_systems=None, distances=None):
 
         """
         The constructor ...
         :param output:
         :param coordinate_systems:
+        :param distances:
         """
 
         # The simulation output
@@ -44,30 +45,35 @@ class SimulationData(object):
         # Set the coordinate systems for the instruments
         self.coordinate_systems = coordinate_systems
 
+        # Set the distances for the instruments
+        self.distances = distances
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_output(cls, output, coordinate_systems=None):
+    def from_output(cls, output, coordinate_systems=None, distances=None):
 
         """
         Thisnfunction ...
         :param output:
         :param coordinate_systems:
+        :param distances:
         :return:
         """
 
-        return cls(output, coordinate_systems=coordinate_systems)
+        return cls(output, coordinate_systems=coordinate_systems, distances=distances)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path, prefix=None, coordinate_systems=None):
+    def from_directory(cls, path, prefix=None, coordinate_systems=None, distances=None):
 
         """
         Thinsfunction ...
         :param path:
         :param prefix:
         :param coordinate_systems:
+        :param distances:
         :return:
         """
 
@@ -75,17 +81,18 @@ class SimulationData(object):
         output = SimulationOutput.from_directory(path, prefix)
 
         # Create
-        return cls(output, coordinate_systems=coordinate_systems)
+        return cls(output, coordinate_systems=coordinate_systems, distances=distances)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_cwd(cls, prefix=None, coordinate_systems=None):
+    def from_cwd(cls, prefix=None, coordinate_systems=None, distances=None):
 
         """
         This fucntion ...
         :param prefix:
         :param coordinate_systems:
+        :param distances:
         :return:
         """
 
@@ -93,17 +100,18 @@ class SimulationData(object):
         output = SimulationOutput.from_cwd(prefix=prefix)
 
         # Create
-        return cls(output, coordinate_systems=coordinate_systems)
+        return cls(output, coordinate_systems=coordinate_systems, distances=distances)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_paths(cls, paths, coordinate_systems=None):
+    def from_paths(cls, paths, coordinate_systems=None, distances=None):
 
         """
         This function ...
         :param paths:
         :param coordinate_systems:
+        :param distances:
         :return:
         """
 
@@ -111,7 +119,7 @@ class SimulationData(object):
         output = SimulationOutput(*paths)
 
         # Create
-        return cls(output, coordinate_systems=coordinate_systems)
+        return cls(output, coordinate_systems=coordinate_systems, distances=distances)
 
     # -----------------------------------------------------------------
 
@@ -201,16 +209,41 @@ class SimulationData(object):
 
     # -----------------------------------------------------------------
 
-    def get_instrument_distance(self, instrument_name):
+    @property
+    def has_distances(self):
 
         """
-        Thisf unction ...
+        This function ...
+        :return:
+        """
+
+        return self.distances is not None
+
+    # -----------------------------------------------------------------
+
+    def has_distance_for_instrument(self, instrument_name):
+
+        """
+        This function ...
         :param instrument_name:
         :return:
         """
 
-        if not self.has_skifile: return None
-        else: return self.skifile.get_instrument_distance(instrument_name)
+        return self.has_distances and instrument_name in self.distances
+
+    # -----------------------------------------------------------------
+
+    def get_distance_for_instrument(self, instrument_name):
+
+        """
+        This function ...
+        :param instrument_name:
+        :return:
+        """
+
+        if self.has_distance_for_instrument(instrument_name): return self.distances[instrument_name]
+        elif self.has_skifile: return self.skifile.get_instrument_distance(instrument_name)
+        else: return None
 
     # -----------------------------------------------------------------
 
@@ -727,7 +760,7 @@ class SimulationData(object):
 
             # Initialize lazy dictionary for the datacubes of this instrument
             if instrument_name not in images_instruments:
-                distance = self.get_instrument_distance(instrument_name)
+                distance = self.get_distance_for_instrument(instrument_name)
                 wcs = self.get_coordinate_system_for_instrument(instrument_name)
                 images = LazyDictionary(DataCube.from_file, wavelength_grid=self.wavelength_grid, distance=distance, wcs=wcs)
                 images_instruments[instrument_name] = images

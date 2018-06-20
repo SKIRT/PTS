@@ -1223,6 +1223,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        #print(self.young_absorptions_faceon.distance)
+        #print(self.ionizing_absorptions_faceon.distance)
         return self.young_absorptions_faceon + self.ionizing_absorptions_faceon
 
     # -----------------------------------------------------------------
@@ -1235,6 +1237,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        #print(self.unevolved_absorptions_faceon.distance)
+        #print(self.internal_absorptions_faceon.distance)
         return self.unevolved_absorptions_faceon - self.internal_absorptions_faceon
 
     # -----------------------------------------------------------------
