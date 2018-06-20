@@ -3522,6 +3522,8 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     highest_fwhm_filter = None
     highest_fwhm_index = None
 
+    all_fwhms = []
+
     # Loop over the frames
     for index, frame in enumerate(frames):
 
@@ -3559,11 +3561,17 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
             elif no_fwhm == "return": return frames
             else: raise ValueError("Invalid value for 'no_fwhm'")
 
+        # Add to list
+        else: all_fwhms.append(frame_fwhm)
+
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 
             highest_fwhm = frame.fwhm
             highest_fwhm_filter = frame.psf_filter
             highest_fwhm_index = index
+
+    # Show all FWHMs
+    log.debug("All FWHMs: " + tostr(all_fwhms))
 
     # Debugging
     if names is not None: log.debug("The frame with the highest FWHM is the '" + names[highest_fwhm_index] + "' frame ...")

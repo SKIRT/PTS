@@ -48,6 +48,7 @@ from ...core.tools import types
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
 from .evaluation import AnalysisModelEvaluator
+from ...core.tools import sequences
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -2111,6 +2112,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         definition.add_flag("from_evaluation", "use the images created in the evaluation step", None)
         definition.add_flag("spectral_convolution", "use spectral convolution to create images", False)
         definition.add_flag("proper", "use the proper mock observed images if present", True)
+        definition.add_flag("only_from_evaluation", "only use filters for which an image was made in the evaluation")
 
         # Return
         return definition
@@ -2129,14 +2131,23 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_images_definition, **kwargs)
 
+        # Get list of filters
+        if config.only_from_evaluation:
+            config.from_evaluation = True
+            if config.proper: filters = sequences.intersection(config.filters, self.analysis_run.evaluation_proper_image_filters)
+            else: filters = sequences.intersection(config.filters, self.analysis_run.evaluation_image_filters)
+        else: filters = config.filters
+
         # Earth
-        if config.orientation == earth_name: self.plot_earth_images(config.filters, residuals=config.residuals, distributions=config.distributions, from_evaluation=config.from_evaluation, spectral_convolution=config.spectral_convolution)
+        if config.orientation == earth_name: self.plot_earth_images(filters, residuals=config.residuals,
+                                                                    distributions=config.distributions, from_evaluation=config.from_evaluation,
+                                                                    spectral_convolution=config.spectral_convolution, proper=config.proper)
 
         # Face-on
-        elif config.orientation == faceon_name: self.plot_faceon_images(config.filters, spectral_convolution=config.spectral_convolution)
+        elif config.orientation == faceon_name: self.plot_faceon_images(filters, spectral_convolution=config.spectral_convolution)
 
         # Edge-on
-        elif config.orientation == edgeon_name: self.plot_edgeon_images(config.filters, spectral_convolution=config.spectral_convolution)
+        elif config.orientation == edgeon_name: self.plot_edgeon_images(filters, spectral_convolution=config.spectral_convolution)
 
         # Invalid
         else: raise ValueError("Invalid orientation: '" + config.orientation + "'")

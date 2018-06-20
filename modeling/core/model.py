@@ -4071,14 +4071,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_luminosity_cube_earth(self):
+        return self.total_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_luminosity_cube_faceon(self):
+        return self.total_simulations.has_faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
@@ -4107,14 +4125,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.has_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
@@ -4455,8 +4491,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_luminosity_cube_earth(self):
+        return self.old_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_dust_luminosity_cube_faceon(self):
         return self.old_simulations.faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_dust_luminosity_cube_faceon(self):
+        return self.old_simulations.has_faceon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
@@ -4467,8 +4515,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_luminosity_cube_edgeon(self):
+        return self.old_simulations.has_edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.old_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.old_simulations.has_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
@@ -4479,8 +4539,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.old_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.old_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.old_simulations.has_edgeon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
     # YOUNG CUBES
@@ -4565,8 +4637,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_luminosity_cube_earth(self):
+        return self.young_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_luminosity_cube_faceon(self):
         return self.young_simulations.faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_dust_luminosity_cube_faceon(self):
+        return self.young_simulations.has_faceon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
@@ -4577,8 +4661,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_luminosity_cube_edgeon(self):
+        return self.young_simulations.has_edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.young_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.young_simulations.has_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
@@ -4589,8 +4685,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.young_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.young_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.young_simulations.has_edgeon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
     # SFR CUBES
@@ -4675,8 +4783,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_dust_luminosity_cube_earth(self):
+        return self.sfr_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_dust_luminosity_cube_faceon(self):
         return self.sfr_simulations.faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_dust_luminosity_cube_faceon(self):
+        return self.sfr_simulations.has_faceon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
@@ -4687,8 +4807,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_dust_luminosity_cube_edgeon(self):
+        return self.sfr_simulations.has_edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.sfr_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.sfr_simulations.has_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
@@ -4699,8 +4831,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.sfr_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.sfr_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.sfr_simulations.has_edgeon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
     # UNEVOLVED CUBES
@@ -4799,6 +4943,12 @@ class RTModel(object):
     @property
     def unevolved_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.unevolved_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_absorbed_diffuse_stellar_luminosity_cube_earth(self):
+        return self.unevolved_simulations.has_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
@@ -8882,15 +9032,17 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # Bolometric luminosity
+        # Bolometric luminosity (2 values should be the same)
         if self.has_observed_total_bolometric_luminosity: values[obs_total_bol_lum_name] = self.observed_total_bolometric_luminosity
         if self.has_intrinsic_total_bolometric_luminosity: values[intr_total_bol_lum_name] = self.intrinsic_total_bolometric_luminosity
 
         # Stellar luminosity
-        if self.has_observed_stellar_luminosity: values[obs_total_stellar_bol_lum_name] = self.observed_stellar_luminosity
         if self.has_intrinsic_stellar_luminosity: values[intr_total_stellar_bol_lum_name] = self.intrinsic_stellar_luminosity
+        if self.has_observed_stellar_luminosity: values[obs_total_stellar_bol_lum_name] = self.observed_stellar_luminosity
 
-        # Total luminosity
+        #
+
+        # Total attenuation
         if self.has_bolometric_attenuation: values[bol_attenuation_name] = self.bolometric_attenuation
 
         # Return
@@ -9106,11 +9258,13 @@ class RTModel(object):
         values = OrderedDict()
 
         # Luminosity
-        if self.has_dust_luminosity: values[dust_lum_name] = self.dust_luminosity
-        if self.has_diffuse_dust_luminosity: values[diffuse_dust_lum_name] = self.diffuse_dust_luminosity
+        #if self.has_dust_luminosity: values[dust_lum_name] = self.dust_luminosity
+        #if self.has_diffuse_dust_luminosity: values[diffuse_dust_lum_name] = self.diffuse_dust_luminosity
 
         # Mass
         if self.has_total_dust_mass: values[total_dust_mass_name] = self.total_dust_mass # with SFR dust mass
+
+        #
 
         # Return
         return values

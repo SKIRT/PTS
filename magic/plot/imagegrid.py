@@ -952,6 +952,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Create grid
         self.grid = self.figure.create_gridspec(self.nrows, self.ncolumns)
 
+        # Initialize structure to contain the plots
+        self.plots = [[None for i in range(self.ncolumns)] for j in range(self.nrows)]
+
     # ------------------------------------------------------------------------------
 
     @property

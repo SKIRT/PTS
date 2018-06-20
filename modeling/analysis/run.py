@@ -55,6 +55,7 @@ from ..build.definition import ModelDefinition
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...core.filter.filter import parse_filter
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 

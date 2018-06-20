@@ -511,31 +511,6 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
-    # @property
-    # def instrument_class(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     #return SimpleInstrument
-    #     return None
-    #
-    # # -----------------------------------------------------------------
-    #
-    # @property
-    # def earth_instrument_properties(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return dict()  # no specific properties
-
-    # -----------------------------------------------------------------
-
     def load_ski(self):
 
         """
@@ -795,8 +770,8 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             # Remove the existing instruments
             ski.remove_all_instruments()
 
-            # Total, young and ionizing contribution: full instruments for projected heating analysis
-            if contribution == total or contribution == young or contribution == ionizing:
+            # Total, young, ionizing, and evolved contribution: full instruments for projected heating analysis
+            if contribution == total or contribution == young or contribution == ionizing or contribution == old:
 
                 # Add instruments
                 ski.add_instrument(earth_name, self.full_earth_instrument)

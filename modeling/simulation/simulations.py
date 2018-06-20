@@ -989,8 +989,8 @@ class ComponentSimulations(object):
         #         kwargs["no_pixelscale"] = "shape"
         #         kwargs["distance"] = self.galaxy_distance
 
-        intrinsic = self.intrinsic_stellar_cube
-        observed = self.observed_stellar_cube
+        #intrinsic = self.intrinsic_stellar_cube
+        #observed = self.observed_stellar_cube
         #return self.intrinsic_stellar_cube - self.observed_stellar_cube
 
         #from ...magic.core.list import convolve_rebin_and_convert
@@ -999,6 +999,18 @@ class ComponentSimulations(object):
 
         # Return
         return intrinsic - observed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_cube_absorbed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube and self.has_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -1014,6 +1026,18 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_faceon_observed_cube_absorbed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube_faceon and self.has_faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def edgeon_observed_cube_absorbed(self):
 
@@ -1023,6 +1047,18 @@ class ComponentSimulations(object):
         """
 
         return self.intrinsic_stellar_cube_edgeon - self.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_cube_absorbed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube_edgeon and self.has_edgeon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -1836,6 +1872,18 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_intrinsic_stellar_cube_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def faceon_intrinsic_stellar_cube(self):
 
         """
@@ -1856,6 +1904,18 @@ class ComponentSimulations(object):
         """
 
         return self.edgeon_intrinsic_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_stellar_cube_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_edgeon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
