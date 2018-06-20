@@ -656,7 +656,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
         log.debug("Getting the target unit ...")
 
         # Get the unit
-        self.unit = kwargs.pop("unit", None)
+        self.unit = kwargs.pop("unit", self.config.unit)
 
     # -----------------------------------------------------------------
 

@@ -88,3 +88,8 @@ definition.add_flag("sky", "add artificial sky", False)
 definition.add_flag("stars", "add artificial stars", False)
 
 # -----------------------------------------------------------------
+
+# The target unit of the observed
+definition.add_optional("unit", "photometric_unit", "target unit of the images")
+
+# -----------------------------------------------------------------
