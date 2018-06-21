@@ -1565,6 +1565,150 @@ class AnalysisRunBase(object):
 
         return Frame.from_file(self.get_evaluation_proper_image_path_for_filter(fltr))
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.evaluation_path, "residuals")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_residuals_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.evaluation_residuals_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_residuals_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in self.evaluation_residuals_names]
+
+    # -----------------------------------------------------------------
+
+    def has_evaluation_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fltr in self.evaluation_residuals_filters
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_residuals_path_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.evaluation_residuals_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_residuals_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_evaluation_residuals_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.evaluation_path, "proper_residuals")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_residuals_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.evaluation_proper_residuals_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_residuals_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in self.evaluation_proper_residuals_names]
+
+    # -----------------------------------------------------------------
+
+    def has_evaluation_proper_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fltr in self.evaluation_proper_residuals_filters
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_proper_residuals_path_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.evaluation_proper_residuals_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_proper_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_evaluation_proper_residuals_path_for_filter(fltr))
+
 # -----------------------------------------------------------------
 
 class AnalysisRun(AnalysisRunBase):

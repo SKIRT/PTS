@@ -3691,7 +3691,7 @@ class Frame(NDDataArray):
         except TypeError:
             print(np.nanmax(self.data))
             from ..tools import plotting
-            plotting.plot_box(self)
+            plotting.plot_frame(self)
             exit()
 
         # Set the unit to None

@@ -256,7 +256,8 @@ class AnalysisManager(SimulationManager, AnalysisComponent):
         :return:
         """
 
-
+        # To be implemented
+        pass
 
     # -----------------------------------------------------------------
 

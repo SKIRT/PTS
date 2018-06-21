@@ -3172,7 +3172,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
         elif frame.wcs == highest_pixelscale_wcs:
 
             # Debugging
-            if names is not None: log.debug("Frame " + print_name + "has highest pixelscale of '" + tostr(highest_pixelscale) + "' and is not rebinned")
+            log.debug("Frame " + print_name + "has highest pixelscale of '" + tostr(highest_pixelscale) + "' and is not rebinned")
 
             # Not in place, create copy
             if not in_place:
@@ -3186,6 +3186,9 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
 
         # The frame has a lower pixelscale, has to be rebinned
         else:
+
+            # Debugging
+            log.debug("Frame " + print_name + "will be rebinned ...")
 
             # Unitless frame
             if unitless is not None: unitless_frame = name in unitless
@@ -3692,6 +3695,16 @@ def convolve_to_fwhm_local(*frames, **kwargs):
         name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
+        print(print_name, frame.psf_filter, frame.fwhm, highest_fwhm_filter, highest_fwhm)
+        frame_psf_filter_defined = frame.psf_filter is not None
+        highest_fwhm_filter_defined = highest_fwhm_filter is not None
+        same_psf_filter = frame_psf_filter_defined and highest_fwhm_filter_defined and frame.psf_filter == highest_fwhm_filter
+        frame_fwhm_defined = frame.fwhm is not None
+        highest_fwhm_defined = highest_fwhm is not None
+        same_fwhm = frame_fwhm_defined and highest_fwhm_defined and frame.fwhm == highest_fwhm
+        both_filters_defined = frame_psf_filter_defined and highest_fwhm_filter_defined
+        some_filters_undefined = not both_filters_defined
+
         # Ignore?
         if ignore is not None and name in ignore:
 
@@ -3706,7 +3719,21 @@ def convolve_to_fwhm_local(*frames, **kwargs):
             new_frames.append(new)
 
         # Doesn't need convolution
-        elif frame.psf_filter == highest_fwhm_filter:
+        #elif frame.psf_filter == highest_fwhm_filter:
+        elif same_psf_filter:
+
+            # Debugging
+            log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
+
+            # Make new frame and set the name
+            new = frame.copy()
+            if names is not None: new.name = names[index]
+
+            # Add a copy of the frame
+            new_frames.append(new)
+
+        # Same FWHM, and potentially the same filter?
+        elif same_fwhm and (some_filters_undefined or same_psf_filter):
 
             # Debugging
             log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
@@ -3722,7 +3749,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
         else:
 
             # Debugging
-            log.debug("Frame " + print_name + "will convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
+            log.debug("Frame " + print_name + "will be convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
 
             # Get the kernel, either from aniano or from matching kernels
             if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)

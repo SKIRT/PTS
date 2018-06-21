@@ -543,6 +543,14 @@ class DatacubesMiscMaker(Configurable):
             self.initialize_from_simulation(simulation)
         elif "simulation_output_path" in kwargs:
             self.initialize_from_output_path(kwargs.pop("simulation_output_path"))
+        elif "datacube_paths" in kwargs:
+            if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
+            self.datacube_paths = kwargs.pop("datacube_paths")
+            self.simulation_prefix = kwargs.pop("prefix")
+        elif "datacube_path" in kwargs:
+            if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
+            self.datacube_paths = [kwargs.pop("datacube_path")]
+            self.simulation_prefix = kwargs.pop("prefix")
         else: self.initialize_from_cwd()
 
         # Check whether we have datacubes

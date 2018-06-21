@@ -76,10 +76,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # The mock observed images and their errors
         self.images = FrameList()
-        self.errors = FrameList()
-
-        # The proper images
-        self.proper_images = FrameList()
+        #self.errors = FrameList()
 
         # Rebinned?
         self.rebinned_observed = []
@@ -107,6 +104,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # The residual and weighed residual frames
         self.residuals = FrameList()
         self.weighed = FrameList()
+
+        # The proper residual frames
+        self.proper_residuals = FrameList()
 
         # The distributions
         self.residuals_distributions = FilterBasedList()
@@ -172,11 +172,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
         # RESIDUAL IMAGES
 
-        # 16. Calculate the residual images
-        self.calculate_residuals()
+        # Get the residuals with the images
+        self.get_residuals()
+
+        # Get the residuals with the proper images
+        self.get_proper_residuals()
 
         # 17. Calculate the weighed residual images
-        self.calculate_weighed()
+        self.get_weighed()
+
+        # Calculate the weighed proper residual simages
+        self.get_proper_weighed()
 
         # 18. Create distributions of the residual values
         self.create_residuals_distributions()
@@ -1063,7 +1069,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            print(self.proper_images.filters)
+            #print(self.proper_images.filters)
 
             # Get the image
             image = self.proper_images[fltr]
@@ -1324,7 +1330,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_residuals(self):
+    def get_residuals(self):
 
         """
         This function ...
@@ -1332,51 +1338,120 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Calculating the residual images ...")
+        log.info("Getting the residual images ...")
 
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            # # Already have residuals
-            # if self.has_residuals(filter_name):
-            #     log.success("Residual frame was already created for the '" + filter_name + " filter': loading from file ...")
-            #     self.residuals[filter_name] = self.load_residuals(filter_name)
-            #     continue
+            # Load
+            if self.has_residuals_for_filter(fltr): residuals = self.load_residuals_for_filter(fltr)
 
-            if self.has_residuals_for_filter(fltr): residual = Frame.from_file(self.get_residuals_filepath_for_filter(fltr))
-            else:
-
-                # Debugging
-                log.debug("Creating the residual frame for the '" + str(fltr) + "' filter ...")
-
-                # Get the images in the same units
-                simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
-
-                # Calculate the residual image
-                residual = (simulated - observed) / observed
-
-                # Set the filter
-                residual.filter = fltr
-
-                # Replace infs
-                residual.replace_infs(0.0)
-
-                # Get the truncation mask
-                truncation_mask = self.get_truncation_mask(observed.wcs)
-
-                # Get the significance mask
-                significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
-
-                # MASK
-                residual[truncation_mask] = 0.0
-                residual[significance_mask] = 0.0
+            # Calculate
+            else: residuals = self.calculate_residuals_for_filter(fltr)
 
             # Add the residual image
-            self.residuals.append(residual)
+            self.residuals.append(residuals)
 
     # -----------------------------------------------------------------
 
-    def calculate_weighed(self):
+    def load_residuals_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_residuals_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def calculate_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the residual frame for the '" + str(fltr) + "' filter ...")
+
+        # Get the images in the same units
+        simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+
+        # Calculate the residual image
+        residual = (simulated - observed) / observed
+
+        # Set the filter
+        residual.filter = fltr
+
+        # Replace infs
+        residual.replace_infs(0.0)
+
+        # Get the truncation mask
+        truncation_mask = self.get_truncation_mask(observed.wcs)
+
+        # Get the significance mask
+        significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels,
+                                                       connectivity=self.config.connectivity)
+
+        # MASK
+        residual[truncation_mask] = 0.0
+        residual[significance_mask] = 0.0
+
+        # Return
+        return residual
+
+    # -----------------------------------------------------------------
+
+    def get_proper_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Getting the proper residual images ... ")
+        
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Load
+            if self.has_proper_residuals_for_filter(fltr): residuals = self.load_proper_residuals_for_filter(fltr)
+
+            # Calculate
+            else: residuals = self.calculate_proper_residuals_for_filter(fltr)
+
+            # Add the residuals image
+            self.proper_residuals.append(residuals)
+
+    # -----------------------------------------------------------------
+
+    def load_proper_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    def calculate_proper_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def get_weighed(self):
 
         """
         This ufnction ...
@@ -1384,47 +1459,102 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Calculating the weighed residual images ...")
+        log.info("Getting the weighed residual images ...")
 
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            # # Already have residuals
-            # if self.has_weighed_residuals(filter_name):
-            #     log.success("Weighed residual frame was already created for the '" + filter_name + "' filter: loading from file ...")
-            #     self.weighed[filter_name] = self.load_weighed_residuals(filter_name)
-            #     continue
+            # Load
+            if self.has_weighed_for_filter(fltr): residuals = self.load_weighed_residuals_for_filter(fltr)
 
-            if self.has_weighed_for_filter(fltr): residual = Frame.from_file(self.get_weighed_filepath_for_filter(fltr))
-            else:
-
-                # Debugging
-                log.debug("Creating the weighed residual frame for the '" + str(fltr) + "' filter ...")
-
-                # Get the images in the same units
-                simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
-
-                # Calculate the weighed residual image
-                residual = (simulated - observed) / errors
-
-                # Set the filter
-                residual.filter = fltr
-
-                # Replace infs
-                residual.replace_infs(0.0)
-
-                # Get the truncation mask
-                truncation_mask = self.get_truncation_mask(observed.wcs)
-
-                # Get the significance mask
-                significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels, connectivity=self.config.connectivity)
-
-                # MASK
-                residual[truncation_mask] = 0.0
-                residual[significance_mask] = 0.0
+            # Calculate
+            else: residuals = self.calculate_weighed_residuals_for_filter(fltr)
 
             # Add the weighed residual image
-            self.weighed.append(residual)
+            self.weighed.append(residuals)
+
+    # -----------------------------------------------------------------
+
+    def load_weighed_residuals_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_weighed_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def calculate_weighed_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the weighed residual frame for the '" + str(fltr) + "' filter ...")
+
+        # Get the images in the same units
+        simulated, observed, errors = convert_to_same_unit(self.images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+
+        # Calculate the weighed residual image
+        residual = (simulated - observed) / errors
+
+        # Set the filter
+        residual.filter = fltr
+
+        # Replace infs
+        residual.replace_infs(0.0)
+
+        # Get the truncation mask
+        truncation_mask = self.get_truncation_mask(observed.wcs)
+
+        # Get the significance mask
+        significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels,
+                                                       connectivity=self.config.connectivity)
+
+        # MASK
+        residual[truncation_mask] = 0.0
+        residual[significance_mask] = 0.0
+
+        # Return
+        return residual
+
+    # -----------------------------------------------------------------
+
+    def get_proper_weighed(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the proper weighed residual images ...")
+
+    # -----------------------------------------------------------------
+
+    def load_proper_weighed_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def calculate_proper_weighed_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
 
     # -----------------------------------------------------------------
 

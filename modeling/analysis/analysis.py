@@ -2106,7 +2106,8 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Add options
         definition.add_positional_optional("orientation", "string", "orientation of the images", earth_name, choices=orientations)
-        definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
+        #definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
+        definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="FUV,NUV,I1,24mu,Pacs160,SPIRE350", convert_default=True)
         definition.add_flag("residuals", "show residuals", True)
         definition.add_flag("distributions", "show residual distributions", True)
         definition.add_flag("from_evaluation", "use the images created in the evaluation step", None)
@@ -2243,6 +2244,34 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def has_residual_image_from_evaluation(self, fltr, proper=True):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :param proper:
+        :return:
+        """
+
+        if proper: return self.analysis_run.has_evaluation_proper_residuals_for_filter(fltr)
+        else: return self.analysis_run.has_evaluation_residuals_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_residual_image_from_evaluation(self, fltr, proper=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param proper:
+        :return:
+        """
+
+        if proper: return self.analysis_run.get_evaluation_proper_residuals_for_filter(fltr)
+        else: return self.analysis_run.get_evaluation_residuals_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_faceon_image(self, filter_or_wavelength, spectral_convolution=False):
 
@@ -2309,42 +2338,34 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Create the plotter
         plotter = ResidualImageGridPlotter()
 
-        # Loop over the observed image paths
-        for filepath in self.environment.photometry_image_paths:
-
-            # Get the filter
-            name = fs.strip_extension(fs.name(filepath))
-            fltr = parse_filter(name)
-            #filters.append(fltr)
-            filter_name = str(fltr)
-            if fltr not in filters: continue
-
-            # Load the image
-            frame = Frame.from_file(filepath)
-
-            # Replace zeroes and negatives
-            frame.replace_zeroes_by_nans()
-            frame.replace_negatives_by_nans()
-
-            # Add the frame to the plotter
-            plotter.add_observation(filter_name, frame)
-
         # Loop over the filters
         for fltr in filters:
 
-            # Get image name
-            #name = fs.strip_extension(fs.name(filepath))
-            filter_name = str(fltr)
+            # Define the image name
+            image_name = str(fltr)
 
-            # Get frame
-            frame = self.get_earth_image(fltr, from_evaluation=from_evaluation, spectral_convolution=spectral_convolution, proper=proper)
+            # Get the frame
+            observation = self.get_photometry_frame_for_filter(fltr)
 
             # Replace zeroes and negatives
-            frame.replace_zeroes_by_nans()
-            frame.replace_negatives_by_nans()
+            observation.replace_zeroes_by_nans()
+            observation.replace_negatives_by_nans()
+
+            # Add the frame to the plotter
+            plotter.add_observation(image_name, observation)
+
+            # Get modeled frame
+            modeled = self.get_earth_image(fltr, from_evaluation=from_evaluation, spectral_convolution=spectral_convolution, proper=proper)
+
+            # Replace zeroes and negatives
+            modeled.replace_zeroes_by_nans()
+            modeled.replace_negatives_by_nans()
 
             # Add the mock image to the plotter
-            plotter.add_model(filter_name, frame)
+            plotter.add_model(image_name, modeled)
+
+            # Add residuals if present
+
 
         # Run the plotter
         plotter.run()

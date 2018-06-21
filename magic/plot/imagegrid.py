@@ -950,11 +950,11 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         #self.plots = self.figure.create_grid(self.nrows, self.ncolumns, sharex=self.share_x, sharey=self.share_y)
 
         # Create grid
-        self.grid = self.figure.create_gridspec(self.nrows, self.ncolumns)
+        self.grid = self.figure.create_gridspec(self.nrows, self.ncolumns, hspace=0.0, wspace=0.0)
 
         # Initialize structure to contain the plots
-        print("NCOLUMNS", self.ncolumns)
-        print("NROWS", self.nrows)
+        #print("NCOLUMNS", self.ncolumns)
+        #print("NROWS", self.nrows)
         self.plots = [[None for i in range(self.ncolumns)] for j in range(self.nrows)]
 
     # ------------------------------------------------------------------------------
