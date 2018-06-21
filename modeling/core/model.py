@@ -4734,14 +4734,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_direct_stellar_luminosity_cube_earth(self):
+        return self.young_simulations.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_direct_stellar_luminosity_cube_faceon(self):
         return self.young_simulations.faceon_observed_cube_direct
 
     # -----------------------------------------------------------------
 
     @property
+    def has_young_direct_stellar_luminosity_cube_faceon(self):
+        return self.young_simulations.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_direct_stellar_luminosity_cube_edgeon(self):
         return self.young_simulations.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_luminosity_cube_edgeon(self):
+        return self.young_simulations.has_full_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -4880,14 +4898,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_direct_stellar_luminosity_cube_earth(self):
+        return self.sfr_simulations.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_direct_stellar_luminosity_cube_faceon(self):
         return self.sfr_simulations.faceon_observed_cube_direct
 
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_direct_stellar_luminosity_cube_faceon(self):
+        return self.sfr_simulations.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_direct_stellar_luminosity_cube_edgeon(self):
         return self.sfr_simulations.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_luminosity_cube_edgeon(self):
+        return self.sfr_simulations.has_full_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5044,14 +5080,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_direct_stellar_luminosity_cube_earth(self):
+        return self.unevolved_simulations.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_direct_stellar_luminosity_cube_faceon(self):
         return self.unevolved_simulations.faceon_observed_cube_direct
 
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_direct_stellar_luminosity_cube_faceon(self):
+        return self.unevolved_simulations.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_direct_stellar_luminosity_cube_edgeon(self):
         return self.unevolved_simulations.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_luminosity_cube_edgeon(self):
+        return self.unevolved_simulations.has_full_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -6627,6 +6681,7 @@ class RTModel(object):
 
     @property
     def has_old_direct_stellar_luminosity_map_earth(self):
+        return self.has_old_bulge_direct_stellar_luminosity_map_earth and self.has_old_disk_direct_stellar_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -6638,6 +6693,7 @@ class RTModel(object):
 
     @property
     def has_old_direct_stellar_luminosity_map_faceon(self):
+        return self.has_old_bulge_direct_stellar_luminosity_map_faceon and self.has_old_disk_direct_stellar_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -6649,6 +6705,7 @@ class RTModel(object):
 
     @property
     def has_old_direct_stellar_luminosity_map_edgeon(self):
+        return self.has_old_bulge_direct_stellar_luminosity_map_edgeon and self.has_old_disk_direct_stellar_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -7076,9 +7133,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_direct_stellar_luminosity_map(self):
+        return self.has_young_direct_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def young_direct_stellar_luminosity_map_earth(self):
         return self.young_direct_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_luminosity_map_earth(self):
+        return self.has_young_direct_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -7088,9 +7157,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_direct_stellar_luminosity_map_faceon(self):
+        return self.has_young_direct_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def young_direct_stellar_luminosity_map_edgeon(self):
         return self.young_direct_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_luminosity_map_edgeon(self):
+        return self.has_young_direct_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -7494,9 +7575,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_sfr_direct_stellar_luminosity_map(self):
+        return self.has_sfr_direct_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sfr_direct_stellar_luminosity_map_earth(self):
         return self.sfr_direct_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_luminosity_map_earth(self):
+        return self.has_sfr_direct_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -7506,9 +7599,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_sfr_direct_stellar_luminosity_map_faceon(self):
+        return self.has_sfr_direct_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sfr_direct_stellar_luminosity_map_edgeon(self):
         return self.sfr_direct_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_luminosity_map_edgeon(self):
+        return self.has_sfr_direct_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -8278,9 +8383,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_unevolved_direct_stellar_luminosity_map(self):
+        return self.has_unevolved_direct_stellar_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def unevolved_direct_stellar_luminosity_map_earth(self):
         return self.unevolved_direct_stellar_luminosity_cube_earth.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_luminosity_map_earth(self):
+        return self.has_unevolved_direct_stellar_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -8290,9 +8407,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_unevolved_direct_stellar_luminosity_map_faceon(self):
+        return self.has_unevolved_direct_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def unevolved_direct_stellar_luminosity_map_edgeon(self):
         return self.unevolved_direct_stellar_luminosity_cube_edgeon.integrate()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_luminosity_map_edgeon(self):
+        return self.has_unevolved_direct_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -9803,11 +9932,13 @@ class RTModel(object):
 
     @property
     def direct_stellar_luminosity_young(self):
+        return self.young_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_young(self):
+        return self.has_young_direct_stellar_luminosity_map
 
     # -----------------------------------------------------------------
 
@@ -9847,11 +9978,13 @@ class RTModel(object):
 
     @property
     def direct_stellar_luminosity_sfr(self):
+        return self.sfr_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_sfr(self):
+        return self.has_sfr_direct_stellar_luminosity_map
 
     # -----------------------------------------------------------------
 
@@ -9901,21 +10034,37 @@ class RTModel(object):
 
     @property
     def direct_stellar_luminosity_unevolved(self):
+        return self.unevolved_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_unevolved(self):
+        return self.has_unevolved_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_intrinsic_fuv_luminosity(self):
+        return self.intrinsic_fuv_luminosity_unevolved
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_intrinsic_fuv_luminosity(self):
+        return self.has_intrinsic_fuv_luminosity_unevolved
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_star_formation_rate(self):
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
 
     # -----------------------------------------------------------------
 
     @property
     def has_unevolved_star_formation_rate(self):
+        return self.has_unevolved_intrinsic_fuv_luminosity
 
     # -----------------------------------------------------------------
 
