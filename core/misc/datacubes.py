@@ -549,8 +549,17 @@ class DatacubesMiscMaker(Configurable):
             self.simulation_prefix = kwargs.pop("prefix")
         elif "datacube_path" in kwargs:
             if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
-            self.datacube_paths = [kwargs.pop("datacube_path")]
+            
             self.simulation_prefix = kwargs.pop("prefix")
+            self.datacube_paths = [kwargs.pop("datacube_path")]           
+            
+            from ..data.sed import load_sed
+            sed = load_sed(self.datacube_paths[0].replace('total.fits','sed.dat'))
+            grid = WavelengthGrid.from_sed(sed)
+            
+            self.wavelengths = grid.wavelengths(asarray=True, unit="micron")
+
+            
         else: self.initialize_from_cwd()
 
         # Check whether we have datacubes
@@ -741,7 +750,7 @@ class DatacubesMiscMaker(Configurable):
 
         # Inform the user
         log.info("Creating the wavelength grid ...")
-
+        
         # Construct the wavelength grid from the array of wavelengths
         self.wavelength_grid = WavelengthGrid.from_wavelengths(self.wavelengths, "micron")
 
