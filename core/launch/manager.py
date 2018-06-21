@@ -1910,6 +1910,19 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def is_remote_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        sim = self.get_simulation(simulation_name)
+        return isinstance(sim, RemoteSimulation)
+
+    # -----------------------------------------------------------------
+
     def get_simulations(self, names):
         
         """
@@ -2299,6 +2312,18 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         return self.get_simulation(simulation_name).handle
+
+    # -----------------------------------------------------------------
+
+    def has_execution_handle(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.is_remote_simulation(simulation_name) and self.get_execution_handle(simulation_name) is not None
 
     # -----------------------------------------------------------------
 
@@ -3962,14 +3987,20 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        # Screen
-        if self.is_screen_execution(simulation_name): options = self.get_logging_options_for_simulation_screen(simulation_name, return_none=True)
-            
-        # Job
-        elif self.is_job_execution(simulation_name): options = self.get_logging_options_for_simulation_job(simulation_name, return_none=True)
+        # Is an execution handle defined for the simulation?
+        if self.has_execution_handle(simulation_name):
+    
+            # Screen
+            if self.is_screen_execution(simulation_name): options = self.get_logging_options_for_simulation_screen(simulation_name, return_none=True)
 
-        # Not supported
-        else: raise NotImplementedError("Execution handle not supported")
+            # Job
+            elif self.is_job_execution(simulation_name): options = self.get_logging_options_for_simulation_job(simulation_name, return_none=True)
+
+            # Not supported
+            else: raise NotImplementedError("Execution handle not supported")
+
+        # Not defined
+        else: options = None
 
         # None?
         if options is None:
