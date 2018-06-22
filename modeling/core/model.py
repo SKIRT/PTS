@@ -10647,12 +10647,12 @@ def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
     # Frame
     if isinstance(i1_luminosity, Frame):
 
-        converted = i1_luminosity.converted_to("Lsun", wavelength=i1_wavelength)
+        converted = i1_luminosity.converted_to("Lsun", density=True, wavelength=i1_wavelength)
         converted *= factor
         converted.unit = "Msun"
         return converted
 
     # Photometric quantity
-    else: return i1_luminosity.to("Lsun", wavelength=i1_wavelength).value * factor * u("Msun")
+    else: return i1_luminosity.to("Lsun", density=True, wavelength=i1_wavelength).value * factor * u("Msun")
 
 # -----------------------------------------------------------------

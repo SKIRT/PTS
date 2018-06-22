@@ -2115,6 +2115,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         definition.add_flag("proper", "use the proper mock observed images if present", True)
         definition.add_flag("only_from_evaluation", "only use filters for which an image was made in the evaluation")
         definition.add_flag("sort_filters", "sort the filters on wavelength", True)
+        definition.add_optional("path", "string", "path for the plot file")
 
         # Return
         return definition
@@ -2146,13 +2147,13 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Earth
         if config.orientation == earth_name: self.plot_earth_images(filters, residuals=config.residuals,
                                                                     distributions=config.distributions, from_evaluation=config.from_evaluation,
-                                                                    spectral_convolution=config.spectral_convolution, proper=config.proper)
+                                                                    spectral_convolution=config.spectral_convolution, proper=config.proper, path=config.path)
 
         # Face-on
-        elif config.orientation == faceon_name: self.plot_faceon_images(filters, spectral_convolution=config.spectral_convolution)
+        elif config.orientation == faceon_name: self.plot_faceon_images(filters, spectral_convolution=config.spectral_convolution, path=config.path)
 
         # Edge-on
-        elif config.orientation == edgeon_name: self.plot_edgeon_images(filters, spectral_convolution=config.spectral_convolution)
+        elif config.orientation == edgeon_name: self.plot_edgeon_images(filters, spectral_convolution=config.spectral_convolution, path=config.path)
 
         # Invalid
         else: raise ValueError("Invalid orientation: '" + config.orientation + "'")
@@ -2272,6 +2273,34 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def has_residual_distribution_from_evaluation(self, fltr, proper=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param proper:
+        :return:
+        """
+
+        if proper: return self.analysis_run.has_evaluation_proper_residuals_distribution_for_filter(fltr)
+        else: return self.analysis_run.has_evaluation_residuals_distribution_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_residual_distribution_from_evaluation(self, fltr, proper=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param proper:
+        :return:
+        """
+
+        if proper: return self.analysis_run.get_evaluation_proper_residuals_distribution_for_filter(fltr)
+        else: return self.analysis_run.get_evaluation_residuals_distribution_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_faceon_image(self, filter_or_wavelength, spectral_convolution=False):
 
@@ -2319,7 +2348,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def plot_earth_images(self, filters, residuals=True, distributions=True, from_evaluation=None,
-                          spectral_convolution=False, proper=True):
+                          spectral_convolution=False, proper=True, path=None):
 
         """
         Thisf unction ...
@@ -2329,6 +2358,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         :param from_evaluation:
         :param spectral_convolution:
         :param proper:
+        :param path:
         :return:
         """
 
@@ -2337,6 +2367,12 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
 
         # Create the plotter
         plotter = ResidualImageGridPlotter()
+
+        # Set options
+        plotter.config.distributions = distributions
+
+        # Set the output filepath
+        plotter.config.path = path
 
         # Loop over the filters
         for fltr in filters:
@@ -2365,19 +2401,27 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             plotter.add_model(image_name, modeled)
 
             # Add residuals if present
+            if residuals and self.has_residual_image_from_evaluation(fltr, proper=proper):
+                residuals = self.get_residual_image_from_evaluation(fltr, proper=proper)
+                plotter.add_residuals(image_name, residuals)
 
+            # Add residuals distribution if present
+            if distributions and self.has_residual_distribution_from_evaluation(fltr, proper=proper):
+                distribution = self.get_residual_distribution_from_evaluation(fltr, proper=proper)
+                plotter.add_distribution(image_name, distribution)
 
         # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
 
-    def plot_faceon_images(self, filters, spectral_convolution=False):
+    def plot_faceon_images(self, filters, spectral_convolution=False, path=None):
 
         """
         This function ...
         :param filters:
         :param spectral_convolution:
+        :param path:
         :return:
         """
 
@@ -2387,10 +2431,14 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         # Create the plotter
         plotter = StandardImageGridPlotter()
 
+        # Set the output filepath
+        plotter.config.path = path
+
         # Loop over the filters
         for fltr in filters:
 
-            filter_name = str(fltr)
+            # Determine name
+            image_name = str(fltr)
 
             # Get frame
             frame = self.get_faceon_image(fltr)
@@ -2400,19 +2448,20 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             frame.replace_negatives_by_nans()
 
             # Add the mock image to the plotter
-            plotter.add_image(filter_name, frame)
+            plotter.add_image(image_name, frame)
 
             # Run the plotter
         plotter.run()
 
     # -----------------------------------------------------------------
 
-    def plot_edgeon_images(self, filters, spectral_convolution=False):
+    def plot_edgeon_images(self, filters, spectral_convolution=False, path=None):
 
         """
         This function ...
         :param filters:
         :param spectral_convolution:
+        :param path:
         :return:
         """
 
@@ -2420,12 +2469,16 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
         log.info("Plotting the model images in the edge-on projection ...")
 
         # Create the plotter
-        plotter = StandardImageGridPlotter(**kwargs)
+        plotter = StandardImageGridPlotter()
+
+        # Set the output filepath
+        plotter.config.path = path
 
         # Loop over the filters
         for fltr in filters:
 
-            filter_name = str(fltr)
+            # Determine name
+            image_name = str(fltr)
 
             # Get frame
             frame = self.get_edgeon_image(fltr)
@@ -2435,7 +2488,7 @@ class Analysis(AnalysisComponent, InteractiveConfigurable):
             frame.replace_negatives_by_nans()
 
             # Add the mock image to the plotter
-            plotter.add_image(filter_name, frame)
+            plotter.add_image(image_name, frame)
 
             # Run the plotter
         plotter.run()

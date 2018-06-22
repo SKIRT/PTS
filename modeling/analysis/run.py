@@ -56,6 +56,7 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...core.filter.filter import parse_filter
 from ...magic.core.frame import Frame
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -1708,6 +1709,126 @@ class AnalysisRunBase(object):
         """
 
         return Frame.from_file(self.get_evaluation_proper_residuals_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_residuals_distribution_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.evaluation_proper_residuals_path, returns="name", extension="dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_residuals_distributions_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name.split("_distribution")[0]) for name in self.evaluation_residuals_distribution_names]
+
+    # -----------------------------------------------------------------
+
+    def has_evaluation_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fltr in self.evaluation_residuals_distributions_filters
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_residuals_distribution_path_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.evaluation_proper_residuals_path, str(fltr) + "_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_evaluation_residuals_distribution_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_residuals_distribution_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.evaluation_proper_residuals_path, returns="name", extension="dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evaluation_proper_residuals_distribution_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name.split("_distribution")[0]) for name in self.evaluation_proper_residuals_distribution_names]
+
+    # -----------------------------------------------------------------
+
+    def has_evaluation_proper_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fltr in self.evaluation_proper_residuals_distribution_filters
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_proper_residuals_distribution_path_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.evaluation_proper_residuals_path, str(fltr) + "_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_evaluation_proper_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_evaluation_proper_residuals_distribution_path_for_filter(fltr))
 
 # -----------------------------------------------------------------
 

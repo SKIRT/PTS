@@ -105,12 +105,17 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.residuals = FrameList()
         self.weighed = FrameList()
 
-        # The proper residual frames
+        # The proper residual frames and weighed
         self.proper_residuals = FrameList()
+        self.proper_weighed = FrameList()
 
         # The distributions
         self.residuals_distributions = FilterBasedList()
         self.weighed_distributions = FilterBasedList()
+
+        # Proper distributions
+        self.proper_residuals_distributions = FilterBasedList()
+        self.proper_weighed_distributions = FilterBasedList()
 
     # -----------------------------------------------------------------
 
@@ -185,10 +190,16 @@ class AnalysisModelEvaluator(AnalysisComponent):
         self.get_proper_weighed()
 
         # 18. Create distributions of the residual values
-        self.create_residuals_distributions()
+        self.get_residuals_distributions()
+
+        # Create distributions of proper residual values
+        self.get_proper_residuals_distributions()
 
         # 19. Create distributions of the weighed residual values
-        self.create_weighed_distributions()
+        self.get_weighed_distributions()
+
+        # Create distributions of the proper weighed residual values
+        self.get_proper_weighed_distributions()
 
         # 20. Writing
         self.write()
@@ -643,8 +654,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             self.images.append(frame)
 
             # Make error map
-            errors = self.get_errors_for_filter(fltr, frame)
-            self.errors.append(errors)
+            #errors = self.get_errors_for_filter(fltr, frame)
+            #self.errors.append(errors)
 
             # Save the image
             if not self.has_image_for_filter(fltr):
@@ -656,13 +667,11 @@ class AnalysisModelEvaluator(AnalysisComponent):
                 frame.saveto(path)
 
             # Save the error map
-            if not self.has_errors_for_filter(fltr):
-
+            #if not self.has_errors_for_filter(fltr):
                 # Determine the path
-                path = self.get_errors_filepath_for_filter(errors.filter)
-
+                #path = self.get_errors_filepath_for_filter(errors.filter)
                 # Save the error map
-                errors.saveto(path)
+                #errors.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -685,9 +694,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Load the frame
             frame = Frame.from_file(self.get_image_filepath_for_filter(fltr))
-
-            # Add the frame
-            #self.images.append(frame)
 
         # Not yet present
         else:
@@ -718,9 +724,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Print unit AFTER
             # print("UNIT AFTER:", frame.unit)
 
-            # Add the frame
-            #self.images.append(frame)
-
         # Return
         return frame
 
@@ -747,9 +750,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Load the error frame
             errors = Frame.from_file(self.get_errors_filepath_for_filter(fltr))
 
-            # Add the errors frame
-            #self.errors.append(errors)
-
         # Not yet present
         else:
 
@@ -758,9 +758,6 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Create an approximate error frame
             errors = Frame(np.sqrt(frame.data), wcs=frame.wcs, filter=frame.filter, unit=frame.unit)
-
-            # Add the errors frame
-            #self.errors.append(errors)
 
         # Return the error map
         return errors
@@ -976,13 +973,14 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Get the frames
             simulated = self.images[fltr]
-            simulated_errors = self.errors[fltr]
+            #simulated_errors = self.errors[fltr]
             observed = self.observed_images[fltr]
             observed_errors = self.observed_errors[fltr]
 
             # Rebin in-place
             names = ["simulated", "simulated_errors", "observed", "observed_errors"]
-            rebin_to_highest_pixelscale(simulated, simulated_errors, observed, observed_errors, names=names, in_place=True)
+            #rebin_to_highest_pixelscale(simulated, simulated_errors, observed, observed_errors, names=names, in_place=True)
+            rebin_to_highest_pixelscale(simulated, observed, observed_errors, names=names, in_place=True)
 
     # -----------------------------------------------------------------
 
@@ -1437,7 +1435,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
-
+        return Frame.from_file(self.get_proper_residuals_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -1448,6 +1446,35 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :param fltr:
         :return:
         """
+
+        # Debugging
+        log.debug("Creating the proper residual frame for the '" + str(fltr) + "' filter ...")
+
+        # Get the images in the same units
+        simulated, observed, errors = convert_to_same_unit(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+
+        # Calculate the residual image
+        residual = (simulated - observed) / observed
+
+        # Set the filter
+        residual.filter = fltr
+
+        # Replace infs
+        residual.replace_infs(0.0)
+
+        # Get the truncation mask
+        truncation_mask = self.get_truncation_mask(observed.wcs)
+
+        # Get the significance mask
+        significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels,
+                                                       connectivity=self.config.connectivity)
+
+        # MASK
+        residual[truncation_mask] = 0.0
+        residual[significance_mask] = 0.0
+
+        # Return
+        return residual
 
     # -----------------------------------------------------------------
 
@@ -1536,6 +1563,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Inform the user
         log.info("Getting the proper weighed residual images ...")
 
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Load
+            if self.has_proper_weighed_for_filter(fltr): residuals = self.load_proper_weighed_residuals_for_filter(fltr)
+
+            # Calculate
+            else: residuals = self.calculate_proper_weighed_residuals_for_filter(fltr)
+
+            # Add the weighed residual image
+            self.proper_weighed.append(residuals)
+
     # -----------------------------------------------------------------
 
     def load_proper_weighed_residuals_for_filter(self, fltr):
@@ -1546,6 +1585,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :return:
         """
 
+        return Frame.from_file(self.get_proper_weighed_filepath_for_filter(fltr))
+
     # -----------------------------------------------------------------
 
     def calculate_proper_weighed_residuals_for_filter(self, fltr):
@@ -1555,6 +1596,35 @@ class AnalysisModelEvaluator(AnalysisComponent):
         :param fltr:
         :return:
         """
+
+        # Debugging
+        log.debug("Creating the proper weighed residual frame for the '" + str(fltr) + "' filter ...")
+
+        # Get the images in the same units
+        simulated, observed, errors = convert_to_same_unit(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+
+        # Calculate the weighed residual image
+        residual = (simulated - observed) / errors
+
+        # Set the filter
+        residual.filter = fltr
+
+        # Replace infs
+        residual.replace_infs(0.0)
+
+        # Get the truncation mask
+        truncation_mask = self.get_truncation_mask(observed.wcs)
+
+        # Get the significance mask
+        significance_mask = self.get_significance_mask(observed, errors, min_npixels=self.config.min_npixels,
+                                                       connectivity=self.config.connectivity)
+
+        # MASK
+        residual[truncation_mask] = 0.0
+        residual[significance_mask] = 0.0
+
+        # Return
+        return residual
 
     # -----------------------------------------------------------------
 
@@ -1582,7 +1652,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def create_residuals_distributions(self):
+    def get_residuals_distributions(self):
 
         """
         This function ...
@@ -1590,88 +1660,281 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Creating the residuals distributions ...")
+        log.info("Getting the residuals distributions ...")
 
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            # # Already have distribution
-            # if self.has_residuals_distribution(filter_name):
-            #     log.success("Residuals distribution was already created for the '" + filter_name + "' filter: loading from file ...")
-            #     self.residual_distributions[filter_name] = self.load_residuals_distribution(filter_name)
-            #     continue
+            # Load
+            if self.has_residuals_distribution_for_filter(fltr): distribution = self.load_residuals_distribution_for_filter(fltr)
 
-            if self.has_residuals_distribution_for_filter(fltr): distribution = Distribution.from_file(self.get_residuals_distribution_filepath_for_filter(fltr))
-            else:
-
-                # Debugging
-                log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
-
-                # Get the values within the truncation ellipse
-                values = self.residuals[fltr].values_in(self.truncation_ellipse)
-
-                # REMOVE EXACT ZEROES
-                indices = np.argwhere(values == 0)
-                values = np.delete(values, indices)
-
-                # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
-                indices = np.argwhere(values < self.distribution_x_min)
-                values = np.delete(values, indices)
-                indices = np.argwhere(values > self.distribution_x_max)
-                values = np.delete(values, indices)
-
-                # Check
-                if len(values) == 0 or sequences.all_equal(values):
-                    log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
-                    continue
-
-                # Create distribution
-                distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
+            # Create
+            else: distribution = self.create_residuals_distribution_for_filter(fltr)
 
             # Add the distribution
-            self.residuals_distributions.append(fltr, distribution)
+            if distribution is not None: self.residuals_distributions.append(fltr, distribution)
 
     # -----------------------------------------------------------------
 
-    def create_weighed_distributions(self):
+    def load_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_residuals_distribution_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def create_residuals_distribution_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
+
+        # Get the values within the truncation ellipse
+        values = self.residuals[fltr].values_in(self.truncation_ellipse)
+
+        # REMOVE EXACT ZEROES
+        indices = np.argwhere(values == 0)
+        values = np.delete(values, indices)
+
+        # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+        indices = np.argwhere(values < self.distribution_x_min)
+        values = np.delete(values, indices)
+        indices = np.argwhere(values > self.distribution_x_max)
+        values = np.delete(values, indices)
+
+        # Check
+        if len(values) == 0 or sequences.all_equal(values):
+            log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
+            return None
+
+        # Create distribution
+        distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
+
+        # Reutrn
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    def get_proper_residuals_distributions(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the proper residuals distributions ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Load
+            if self.has_proper_residuals_distribution_for_filter(fltr): distribution = self.load_proper_residuals_distribution_for_filter(fltr)
+
+            # Create
+            else: distribution = self.create_proper_residuals_distribution_for_filter(fltr)
+
+            # Add the distribution
+            if distribution is not None: self.proper_residuals_distributions.append(fltr, distribution)
+
+    # -----------------------------------------------------------------
+
+    def load_proper_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_proper_residuals_distribution_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def create_proper_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the proper residuals distribution for the '" + str(fltr) + "' filter ...")
+
+        # Get the values within the truncation ellipse
+        values = self.proper_residuals[fltr].values_in(self.truncation_ellipse)
+
+        # REMOVE EXACT ZEROES
+        indices = np.argwhere(values == 0)
+        values = np.delete(values, indices)
+
+        # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+        indices = np.argwhere(values < self.distribution_x_min)
+        values = np.delete(values, indices)
+        indices = np.argwhere(values > self.distribution_x_max)
+        values = np.delete(values, indices)
+
+        # Check
+        if len(values) == 0 or sequences.all_equal(values):
+            log.error("Cannot create proper distribution for the '" + str(fltr) + "' filter")
+            return None
+
+        # Create distribution
+        distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
+
+        # Reutrn
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    def get_weighed_distributions(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the weighed residuals distributions ...")
+
         # Loop over the filters
         for fltr in self.simulated_flux_filters:
 
-            if self.has_weighed_distribution_for_filter(fltr): distribution = Distribution.from_file(self.get_weighed_distribution_filepath_for_filter(fltr))
-            else:
+            # Load
+            if self.has_weighed_distribution_for_filter(fltr): distribution = self.load_weighed_distribution_for_filter(fltr)
 
-                # Debugging
-                log.debug("Creating the residuals distribution for the '" + str(fltr) + "' filter ...")
-
-                # Get the values within the truncation ellipse
-                values = self.weighed[fltr].values_in(self.truncation_ellipse)
-
-                # REMOVE EXACT ZEROES
-                indices = np.argwhere(values == 0)
-                values = np.delete(values, indices)
-
-                # # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
-                # indices = np.argwhere(values < self.distribution_x_min)
-                # values = np.delete(values, indices)
-                # indices = np.argwhere(values > self.distribution_x_max)
-                # values = np.delete(values, indices)
-
-                # Check
-                if len(values) == 0 or sequences.all_equal(values):
-                    log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
-                    continue
-
-                # Create distribution
-                distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
+            # Create
+            else: distribution = self.create_weighed_distribution_for_filter(fltr)
 
             # Add the distribution
-            self.weighed_distributions.append(fltr, distribution)
+            if distribution is not None: self.weighed_distributions.append(fltr, distribution)
+
+    # -----------------------------------------------------------------
+
+    def load_weighed_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_weighed_distribution_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def create_weighed_distribution_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the weighed residuals distribution for the '" + str(fltr) + "' filter ...")
+
+        # Get the values within the truncation ellipse
+        values = self.weighed[fltr].values_in(self.truncation_ellipse)
+
+        # REMOVE EXACT ZEROES
+        indices = np.argwhere(values == 0)
+        values = np.delete(values, indices)
+
+        # # REMOVE TOO LOW OR TOO HIGH (PROBABLY NOISE)
+        # indices = np.argwhere(values < self.distribution_x_min)
+        # values = np.delete(values, indices)
+        # indices = np.argwhere(values > self.distribution_x_max)
+        # values = np.delete(values, indices)
+
+        # Check
+        if len(values) == 0 or sequences.all_equal(values):
+            log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
+            return None
+
+        # Create distribution
+        distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
+
+        # Retunr the distribution
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    def get_proper_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the proper weighed residuals distributions ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Load
+            if self.has_proper_weighed_distribution_for_filter(fltr): distribution = self.load_proper_weighed_distribution_for_filter(fltr)
+
+            # Create
+            else: distribution = self.create_proper_weighed_distribution_for_filter(fltr)
+
+            # Add the distribution
+            if distribution is not None: self.proper_weighed_distributions.append(fltr, distribution)
+
+    # -----------------------------------------------------------------
+
+    def load_proper_weighed_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return Distribution.from_file(self.get_proper_weighed_distribution_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def create_proper_weighed_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the proper weighed residuals distribution for the '" + str(fltr) + "' filter ...")
+
+        # Get the values within the truncation ellipse
+        values = self.proper_weighed[fltr].values_in(self.truncation_ellipse)
+
+        # REMOVE EXACT ZEROES
+        indices = np.argwhere(values == 0)
+        values = np.delete(values, indices)
+
+        # Check
+        if len(values) == 0 or sequences.all_equal(values):
+            log.error("Cannot create distribution for the '" + str(fltr) + "' filter")
+            return None
+
+        # Create distribution
+        distribution = Distribution.from_values("Residual", values, nbins=self.config.nbins)
+
+        # Retunr the distribution
+        return distribution
 
     # -----------------------------------------------------------------
 
@@ -1820,7 +2083,31 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_write_weighed(self):
+    def do_write_proper_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_weighed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_proper_weighed_residuals(self):
 
         """
         This function ...
@@ -1844,7 +2131,31 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_proper_residuals_distributions(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_proper_weighed_distributions(self):
 
         """
         This function ...
@@ -1895,20 +2206,29 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # 7. Write SED differences
         if self.do_write_sed_differences: self.write_sed_differences()
 
-        # 8. Write the images
-        #if self.do_write_images: self.write_images()
-
         # 9. Write the residual frames
         if self.do_write_residuals: self.write_residuals()
 
+        # Write the proper residuals frames
+        if self.do_write_proper_residuals: self.write_proper_residuals()
+
         # 10. Write the weighed residual frames
-        if self.do_write_weighed: self.write_weighed()
+        if self.do_write_weighed_residuals: self.write_weighed_residuals()
+
+        # Write the proper weighed residual frames
+        if self.do_write_proper_weighed_residuals: self.write_proper_weighed_residuals()
 
         # 11. Write the residual distributions
         if self.do_write_residuals_distributions: self.write_residuals_distributions()
 
+        # Write the proper residual distributions
+        if self.do_write_proper_residuals_distributions: self.write_proper_residuals_distributions()
+
         # 12. Write the weighed residual distributions
         if self.do_write_weighed_distributions: self.write_weighed_distributions()
+
+        # Write the proper weighed residual distributions
+        if self.do_write_proper_weighed_distributions: self.write_proper_weighed_distributions()
 
     # -----------------------------------------------------------------
 
@@ -2457,39 +2777,39 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def get_errors_filepath_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
-        return fs.join(self.images_path, str(fltr) + "_errors.fits")
-
-    # -----------------------------------------------------------------
-
-    def has_errors_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
-        return fs.is_file(self.get_errors_filepath_for_filter(fltr))
-
-    # -----------------------------------------------------------------
-
-    def remove_errors_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
-        fs.remove_file(self.get_errors_filepath_for_filter(fltr))
+    # def get_errors_filepath_for_filter(self, fltr):
+    #
+    #     """
+    #     This function ...
+    #     :param fltr:
+    #     :return:
+    #     """
+    #
+    #     return fs.join(self.images_path, str(fltr) + "_errors.fits")
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def has_errors_for_filter(self, fltr):
+    #
+    #     """
+    #     This function ...
+    #     :param fltr:
+    #     :return:
+    #     """
+    #
+    #     return fs.is_file(self.get_errors_filepath_for_filter(fltr))
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def remove_errors_for_filter(self, fltr):
+    #
+    #     """
+    #     This function ...
+    #     :param fltr:
+    #     :return:
+    #     """
+    #
+    #     fs.remove_file(self.get_errors_filepath_for_filter(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2506,6 +2826,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def proper_residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.evaluation_path, "proper_residuals")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def weighed_path(self):
 
         """
@@ -2514,6 +2846,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
         """
 
         return fs.create_directory_in(self.analysis_run.evaluation_path, "weighed")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def proper_weighed_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.evaluation_path, "proper_weighed")
 
     # -----------------------------------------------------------------
 
@@ -2565,6 +2909,54 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_proper_residuals_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_residuals_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_residuals_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_residuals_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_proper_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the proper residuals ...")
+
+        # Loop over the proper residual maps
+        for residuals in self.proper_residuals:
+
+            # If already present
+            if self.has_proper_residuals_for_filter(residuals.filter): continue
+
+            # Determine the path
+            path = self.get_proper_residuals_filepath_for_filter(residuals.filter)
+
+            # Save
+            residuals.saveto(path)
+
+    # -----------------------------------------------------------------
+
     def get_weighed_filepath_for_filter(self, fltr):
 
         """
@@ -2589,7 +2981,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def write_weighed(self):
+    def write_weighed_residuals(self):
 
         """
         This function ...
@@ -2607,6 +2999,54 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Determine the path
             path = self.get_weighed_filepath_for_filter(residuals.filter)
+
+            # Save
+            residuals.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_weighed_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_weighed_path, str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_weighed_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_weighed_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_proper_weighed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the proper weighed residuals ...")
+
+        # Loop over the proper weighed residuals maps
+        for residuals in self.proper_weighed:
+
+            # If already present
+            if self.has_proper_weighed_for_filter(residuals.filter): continue
+
+            # Determine the path
+            path = self.get_proper_weighed_filepath_for_filter(residuals.filter)
 
             # Save
             residuals.saveto(path)
@@ -2650,7 +3090,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Loop over the distributions
         for fltr in self.simulated_flux_filters:
 
-            # check if already present
+            # Check if already present
             if self.has_residuals_distribution_for_filter(fltr): continue
 
             # Get the distribution
@@ -2658,6 +3098,57 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Determine the path
             path = self.get_residuals_distribution_filepath_for_filter(fltr)
+
+            # Save
+            distribution.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_residuals_distribution_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_residuals_path, str(fltr) + "_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_residuals_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_residuals_distribution_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_proper_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the proper residuals distributions ...")
+
+        # Loop over the distributions
+        for fltr in self.simulated_flux_filters:
+
+            # Check if already present
+            if self.has_proper_residuals_distribution_for_filter(fltr): continue
+
+            # Get the distribution
+            distribution = self.proper_residuals_distributions[fltr]
+
+            # Determine the path
+            path = self.get_proper_residuals_distribution_filepath_for_filter(fltr)
 
             # Save
             distribution.saveto(path)
@@ -2709,6 +3200,57 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Determine the path
             path = self.get_weighed_distribution_filepath_for_filter(fltr)
+
+            # Save
+            distribution.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_weighed_distribution_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_weighed_path, str(fltr) + "_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_weighed_distribution_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_weighed_distribution_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_proper_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the proper weighed distributions ...")
+
+        # Loop over the distributions
+        for fltr in self.simulated_flux_filters:
+
+            # Check if already present
+            if self.has_proper_weighed_distribution_for_filter(fltr): continue
+
+            # Get the distribution
+            distribution = self.proper_weighed_distributions[fltr]
+
+            # Determine the path
+            path = self.get_proper_weighed_distribution_filepath_for_filter(fltr)
 
             # Save
             distribution.saveto(path)
@@ -2920,7 +3462,31 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_plot_proper_residuals_distributions(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_plot_weighed_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_proper_weighed_distributions(self):
 
         """
         This function ...
@@ -2944,6 +3510,18 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_plot_proper_residuals(self):
+
+        """
+        Thisnf unction ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_plot_residuals_absolute(self):
 
         """
@@ -2956,7 +3534,31 @@ class AnalysisModelEvaluator(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_plot_proper_residuals_absolute(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_plot_weighed_residuals(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_proper_weighed_residuals(self):
 
         """
         Thisf unction ...
@@ -2996,7 +3598,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
         if self.do_plot_proper_images: self.plot_proper_images()
 
         # Plot the relative error maps
-        if self.do_plot_relative_errors: self.plot_relative_errors()
+        #if self.do_plot_relative_errors: self.plot_relative_errors()
 
         # Plot the comparison between the simulated fluxes (from SED and from images)
         if self.do_plot_fluxes: self.plot_fluxes()
@@ -3025,20 +3627,35 @@ class AnalysisModelEvaluator(AnalysisComponent):
         # Plot differences between simulated fluxes and observed fluxes, both from IMAGES
         if self.do_plot_image_differences: self.plot_image_differences()
 
-        # Plot residuals distributions
-        if self.do_plot_residuals_distributions: self.plot_residuals_distributions()
-
-        # Plot weighed distributions
-        if self.do_plot_weighed_distributions: self.plot_weighed_distributions()
-
         # Plot residual maps
         if self.do_plot_residuals: self.plot_residuals()
+
+        # Plot proper residual maps
+        if self.do_plot_proper_residuals: self.plot_proper_residuals()
 
         # Plot absolute residual maps
         if self.do_plot_residuals_absolute: self.plot_residuals_absolute()
 
+        # Plot proper absolute residual maps
+        if self.do_plot_proper_residuals_absolute: self.plot_proper_residuals_absolute()
+
         # Plot weighed residual maps
         if self.do_plot_weighed_residuals: self.plot_weighed_residuals()
+
+        # Plot proper weighed residual maps
+        if self.do_plot_proper_weighed_residuals: self.plot_proper_weighed_residuals()
+
+        # Plot residual distributions
+        if self.do_plot_residuals_distributions: self.plot_residuals_distributions()
+
+        # Plot proper residual distributions
+        if self.do_plot_proper_residuals_distributions: self.plot_proper_residuals_distributions()
+
+        # Plot weighed distributions
+        if self.do_plot_weighed_distributions: self.plot_weighed_distributions()
+
+        # Plot proper weighed distributions
+        if self.do_plot_proper_weighed_distributions: self.plot_proper_weighed_distributions()
 
     # -----------------------------------------------------------------
 
@@ -3417,32 +4034,32 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_relative_errors(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the relative error maps of the mock observed images ...")
-
-        # Loop over the filters
-        for fltr in self.simulated_flux_filters:
-
-            # Check whether present
-            if self.has_relative_errors_plot_for_filter(fltr): continue
-
-            # Get the image and error map
-            frame = self.images[fltr]
-            errors = self.errors[fltr]
-            relerrors = errors / frame
-
-            # Determine the path
-            path = self.get_relative_errors_plot_filepath_for_filter(fltr)
-
-            # Plot
-            plotting.plot_box(relerrors, path=path, colorbar=True, scale="linear")
+    # def plot_relative_errors(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Plotting the relative error maps of the mock observed images ...")
+    #
+    #     # Loop over the filters
+    #     for fltr in self.simulated_flux_filters:
+    #
+    #         # Check whether present
+    #         if self.has_relative_errors_plot_for_filter(fltr): continue
+    #
+    #         # Get the image and error map
+    #         frame = self.images[fltr]
+    #         errors = self.errors[fltr]
+    #         relerrors = errors / frame
+    #
+    #         # Determine the path
+    #         path = self.get_relative_errors_plot_filepath_for_filter(fltr)
+    #
+    #         # Plot
+    #         plotting.plot_box(relerrors, path=path, colorbar=True, scale="linear")
 
     # -----------------------------------------------------------------
 
@@ -3928,7 +4545,57 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_residuals_distribution_plot_filepath_for_filter(fltr)
 
             # Plot
-            #distribution.plot(path=path, x_limits=self.distribution_x_limits)
+            plot_distribution(distribution, path=path, x_limits=self.distribution_x_limits)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_residuals_distribution_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_residuals_path, str(fltr) + "_distribution.pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_residuals_distribution_plot_for_filter(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_residuals_distribution_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_proper_residuals_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the proper residuals distributions ...")
+
+        # Loop over the distributions
+        for fltr in self.simulated_flux_filters:
+
+            # Check if already present
+            if self.has_proper_residuals_distribution_plot_for_filter(fltr): continue
+
+            # Get the distribution
+            distribution = self.proper_residuals_distributions[fltr]
+
+            # Determine the plot path
+            path = self.get_proper_residuals_distribution_plot_filepath_for_filter(fltr)
+
+            # Plot
             plot_distribution(distribution, path=path, x_limits=self.distribution_x_limits)
 
     # -----------------------------------------------------------------
@@ -3992,7 +4659,58 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_weighed_distribution_plot_filepath_for_filter(fltr)
 
             # Plot
-            #distribution.plot(path=path, x_limits=self.weighed_distribution_x_limits)
+            plot_distribution(distribution, path=path, x_limits=self.weighed_distribution_x_limits)
+
+    # -----------------------------------------------------------------
+
+    def get_proper_weighed_distribution_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_weighed_path, str(fltr) + "_distribution.pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_weighed_distribution_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_weighed_distribution_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_proper_weighed_distributions(self, fltr):
+
+        """
+        Thisf unction ...
+        :param fltr:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the proper weighed residuals distributions ...")
+
+        # Loop over the weighed distributions
+        for fltr in self.simulated_flux_filters:
+
+            # Check if already present
+            if self.has_proper_weighed_distribution_plot_for_filter(fltr): continue
+
+            # Get the distribution
+            distribution = self.proper_weighed_distributions[fltr]
+
+            # Determine the plot path
+            path = self.get_proper_weighed_distribution_plot_filepath_for_filter(fltr)
+
+            # Plot
             plot_distribution(distribution, path=path, x_limits=self.weighed_distribution_x_limits)
 
     # -----------------------------------------------------------------
@@ -4081,6 +4799,60 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_proper_residuals_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_residuals_path, str(fltr) + ".png")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_residuals_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_residuals_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_proper_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the proper residuals ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Check whether present
+            if self.has_proper_residuals_plot_for_filter(fltr): continue
+
+            # Get the residual map
+            residuals = self.proper_residuals[fltr]
+
+            # Get residuals in percentage
+            residuals_percentage = residuals * 100
+
+            # Determine the path
+            path = self.get_proper_residuals_plot_filepath_for_filter(fltr)
+
+            # Plot
+            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True, around_zero=True, scale="linear", cmap=self.residuals_plot_cmap)
+
+    # -----------------------------------------------------------------
+
     def get_residuals_absolute_plot_filepath_for_filter(self, fltr):
 
         """
@@ -4159,6 +4931,61 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def get_proper_residuals_absolute_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_residuals_path, str(fltr) + "_absolute.png")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_residuals_absolute_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_residuals_absolute_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_proper_residuals_absolute(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the proper residuals in absolute values ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Check whether present
+            if self.has_proper_residuals_absolute_plot_for_filter(fltr): continue
+
+            # Get the absolute residual map
+            residuals = self.proper_residuals[fltr].absolute
+
+            # Get residuals in percentage
+            residuals_percentage = residuals * 100
+
+            # Determine the path
+            path = self.get_proper_residuals_absolute_plot_filepath_for_filter(fltr)
+
+            # Plot
+            plotting.plot_box(residuals_percentage, interval=self.residuals_absolute_plot_interval, path=path,
+                              colorbar=True, scale="linear", cmap=self.residuals_absolute_plot_cmap)
+
+    # -----------------------------------------------------------------
+
     def get_weighed_plot_filepath_for_filter(self, fltr):
 
         """
@@ -4213,6 +5040,57 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #                                   interval=self.config.interval,
             #                                   scale=self.config.scale, alpha=self.config.alpha_method,
             #                                   peak_alpha=self.config.peak_alpha)
+
+            # Plot
+            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")
+
+    # -----------------------------------------------------------------
+
+    def get_proper_weighed_plot_filepath_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.join(self.proper_weighed_path, str(fltr) + ".png")
+
+    # -----------------------------------------------------------------
+
+    def has_proper_weighed_plot_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return fs.is_file(self.get_proper_weighed_plot_filepath_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_proper_weighed_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the proper weighed residuals ...")
+
+        # Loop over the filters
+        for fltr in self.simulated_flux_filters:
+
+            # Ceck whether present
+            if self.has_proper_weighed_plot_for_filter(fltr): continue
+
+            # Get the weighed residual map
+            residuals = self.proper_weighed[fltr]
+
+            # Determine the path
+            path = self.get_proper_weighed_plot_filepath_for_filter(fltr)
 
             # Plot
             plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")

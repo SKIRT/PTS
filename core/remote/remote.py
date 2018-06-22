@@ -3688,6 +3688,7 @@ class Remote(object):
         output = self.execute(command, output=True, show_output=show_output)
         for line in output:
             if "cannot create directory" in line: raise IOError("Cannot create directory '" + path + "'")
+            elif "quota exceeded" in line: raise IOError("Cannot create directory '" + path + "': disk quota exceeded")
 
     # -----------------------------------------------------------------
 
@@ -3712,6 +3713,7 @@ class Remote(object):
             if "cannot create directory" in line:
                 which = line.split("cannot create directory ")[1].split(":")[0]
                 raise IOError("Cannot create directory " + which)
+            elif "quota exceeded" in line: raise IOError("Cannot create directories: disk quota exceeded")
 
     # -----------------------------------------------------------------
 

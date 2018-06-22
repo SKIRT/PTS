@@ -291,9 +291,9 @@ class FilterShower(Configurable):
 
                     print("")
 
-                    if wavelength is not None: print("     - Wavelength: " + represent_quantity(wavelength))
-                    if wavelength is not None: print("     - Frequency: " + represent_quantity(wavelength.to("GHz", equivalencies=spectral())))
-                    if wavelength_range is not None: print("    - Wavelength range: " + str(wavelength_range))
+                    if wavelength is not None: print("     - " + fmt.bold + "Wavelength: " + fmt.reset_bold + represent_quantity(wavelength))
+                    if wavelength is not None: print("     - " + fmt.bold + "Frequency: " + fmt.reset_bold + represent_quantity(wavelength.to("GHz", equivalencies=spectral())))
+                    if wavelength_range is not None: print("    - " + fmt.bold + "Wavelength range: " + fmt.reset_bold + str(wavelength_range))
 
                     print("")
 
@@ -332,15 +332,15 @@ class FilterShower(Configurable):
 
                     print("")
 
-                    print("    - Minimum wavelength: " + represent_quantity(fltr.min))
-                    print("    - Maximum wavelength: " + represent_quantity(fltr.max))
-                    if fltr.mean is not None: print("    - Mean wavelength: " + represent_quantity(fltr.mean))
-                    if fltr.peak is not None: print("    - Peak wavelength: " + represent_quantity(fltr.peak))
-                    print("    - Center wavelength: " + represent_quantity(fltr.center))
-                    if fltr.effective is not None: print("    - Effective wavelength: " + represent_quantity(fltr.effective))
-                    print("    - Pivot wavelength: " + represent_quantity(fltr.pivot))
-                    if fltr.bandwidth is not None: print("    - Effective bandwidth: " + represent_quantity(fltr.bandwidth))
-                    if fltr.mean is not None: print("    - Mean frequency: " + represent_quantity(fltr.mean.to("GHz", equivalencies=spectral())))
+                    print("    - " + fmt.bold + "Minimum wavelength: " + fmt.reset_bold + represent_quantity(fltr.min))
+                    print("    - " + fmt.bold + "Maximum wavelength: " + fmt.reset_bold + represent_quantity(fltr.max))
+                    if fltr.mean is not None: print("    - " + fmt.bold + "Mean wavelength: " + fmt.reset_bold + represent_quantity(fltr.mean))
+                    if fltr.peak is not None: print("    - " + fmt.bold + "Peak wavelength: " + fmt.reset_bold + represent_quantity(fltr.peak))
+                    print("    - " + fmt.bold + "Center wavelength: " + fmt.reset_bold + represent_quantity(fltr.center))
+                    if fltr.effective is not None: print("    - " + fmt.bold + "Effective wavelength: " + fmt.reset_bold + represent_quantity(fltr.effective))
+                    print("    - " + fmt.bold + "Pivot wavelength: " + fmt.reset_bold + represent_quantity(fltr.pivot))
+                    if fltr.bandwidth is not None: print("    - " + fmt.bold + "Effective bandwidth: " + fmt.reset_bold + represent_quantity(fltr.bandwidth))
+                    if fltr.mean is not None: print("    - " + fmt.bold + "Mean frequency: " + fmt.reset_bold + represent_quantity(fltr.mean.to("GHz", equivalencies=spectral())))
 
                     print("")
 

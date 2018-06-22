@@ -1405,6 +1405,20 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     # ------------------------------------------------------------------------------
 
+    def add_distribution(self, name, distribution):
+
+        """
+        This function ...
+        :param name:
+        :param distribution:
+        :return:
+        """
+
+        # Add
+        self.distributions[name] = distribution
+
+    # -----------------------------------------------------------------
+
     def add_settings(self, name, **settings):
 
         """
@@ -1881,6 +1895,9 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
         # Loop over the residual maps
         for name in self.residuals_names:
+
+            # Checks
+            if self.has_distribution(name): continue
 
             # Debugging
             log.debug("Creating distribution for the '" + name + "' residuals ...")
