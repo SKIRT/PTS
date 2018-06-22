@@ -534,36 +534,8 @@ class DatacubesMiscMaker(Configurable):
         # Call the setup function of the base class
         super(DatacubesMiscMaker, self).setup(**kwargs)
 
-        # Initialize datacube paths, simulation prefix and wavelengths
-        if "simulation" in kwargs:
-            simulation = kwargs.pop("simulation")
-            self.initialize_from_simulation(simulation)
-        elif "simulation_path" in kwargs:
-            simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
-            self.initialize_from_simulation(simulation)
-        elif "simulation_output_path" in kwargs:
-            self.initialize_from_output_path(kwargs.pop("simulation_output_path"))
-        elif "datacube_paths" in kwargs:
-            if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
-            self.datacube_paths = kwargs.pop("datacube_paths")
-            self.simulation_prefix = kwargs.pop("prefix")
-        elif "datacube_path" in kwargs:
-            if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
-            
-            self.simulation_prefix = kwargs.pop("prefix")
-            self.datacube_paths = [kwargs.pop("datacube_path")]           
-            
-            from ..data.sed import load_sed
-            sed = load_sed(self.datacube_paths[0].replace('total.fits','sed.dat'))
-            grid = WavelengthGrid.from_sed(sed)
-            
-            self.wavelengths = grid.wavelengths(asarray=True, unit="micron")
-
-            
-        else: self.initialize_from_cwd()
-
-        # Check whether we have datacubes
-        if self.datacube_paths is None or self.ndatacubes == 0: raise ValueError("No datacubes")
+        # Initialize (get the datacube paths and wavelengths)
+        self.initialize(**kwargs)
 
         # Get output directory
         output_path = kwargs.pop("output_path", None)
@@ -574,6 +546,85 @@ class DatacubesMiscMaker(Configurable):
 
         # Get the distances
         self.get_distances(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def initialize(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Initialize datacube paths, simulation prefix and wavelengths
+        if "simulation" in kwargs:
+            simulation = kwargs.pop("simulation")
+            self.initialize_from_simulation(simulation)
+
+        # Simulation directory is given
+        elif "simulation_path" in kwargs:
+            simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
+            self.initialize_from_simulation(simulation)
+
+        # Simulation output directory is given
+        elif "simulation_output_path" in kwargs:
+            self.initialize_from_output_path(kwargs.pop("simulation_output_path"))
+
+        # Multiple datacube paths are given
+        elif "datacube_paths" in kwargs:
+
+            # Check prefix
+            if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
+
+            # Get datacube paths and prefix
+            self.datacube_paths = kwargs.pop("datacube_paths")
+            self.simulation_prefix = kwargs.pop("prefix")
+
+            # Get wavelengths
+            if kwargs.get("wavelengths", None) is not None: self.wavelengths = kwargs.pop("wavelengths")
+            elif kwargs.get("wavelength_grid", None) is not None: self.wavelengths = kwargs.pop("wavelength_grid").wavelengths(asarray=True, unit="micron")
+            elif kwargs.get("sed", None) is not None: self.wavelengths = kwargs.pop("sed").wavelengths(asarray=True, unit="micron")
+            else:
+                for datacube_path in self.datacube_paths:
+                    if "total.fits" not in datacube_path: continue
+                    sed_filepath = datacube_path.replace('total.fits', 'sed.dat')
+                    if not fs.is_file(sed_filepath): continue
+                    from ..data.sed import load_sed
+                    sed = load_sed(sed_filepath)
+                    wavelength_grid = WavelengthGrid.from_sed(sed)
+                    self.wavelengths = wavelength_grid.wavelengths(asarray=True, unit="micron")
+                    break
+                else: raise IOError("Cannot find any SED file corresponding to the datacubes (for the wavelengths)") # no break encountered
+
+        # One datacube path is given
+        elif "datacube_path" in kwargs:
+
+            # Check prefix
+            if kwargs.get("prefix", None) is None: raise ValueError("Simulation prefix must be specified if datacube paths are passed explicitly")
+
+            # Get datacube path and prefix
+            filepath = kwargs.pop("datacube_path")
+            self.simulation_prefix = kwargs.pop("prefix")
+            self.datacube_paths = [filepath]
+
+            # Get wavelengths
+            if kwargs.get("wavelengths", None) is not None: self.wavelengths = kwargs.pop("wavelengths")
+            elif kwargs.get("wavelength_grid", None) is not None: self.wavelengths = kwargs.pop("wavelength_grid").wavelengths(asarray=True, unit="micron")
+            elif kwargs.get("sed", None) is not None: self.wavelengths = kwargs.pop("sed").wavelengths(asarray=True, unit="micron")
+            else:
+                sed_filepath = filepath.replace('total.fits', 'sed.dat')
+                if not fs.is_file(sed_filepath): raise IOError("Cannot find corresponding SED file (for the wavelengths)")
+                from ..data.sed import load_sed
+                sed = load_sed(sed_filepath)
+                wavelength_grid = WavelengthGrid.from_sed(sed)
+                self.wavelengths = wavelength_grid.wavelengths(asarray=True, unit="micron")
+
+        # Look in working directory
+        else: self.initialize_from_cwd()
+
+        # Check whether we have datacubes
+        if self.datacube_paths is None or self.ndatacubes == 0: raise ValueError("No datacubes")
 
     # -----------------------------------------------------------------
 
