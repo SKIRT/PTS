@@ -28,7 +28,7 @@ from ...core.basics.containers import FilterBasedList
 from ...core.data.sed import SED, ObservedSED
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
-from ...magic.core.list import convert_to_same_unit
+from ...magic.core.list import convert_to_same_unit, uniformize
 from ...magic.tools import plotting
 from ...magic.core.list import rebin_to_highest_pixelscale
 from ...core.misc.fluxes import ObservedFluxCalculator
@@ -1451,7 +1451,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.debug("Creating the proper residual frame for the '" + str(fltr) + "' filter ...")
 
         # Get the images in the same units
-        simulated, observed, errors = convert_to_same_unit(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+        #simulated, observed, errors = convert_to_same_unit(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+        simulated, observed, errors = uniformize(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr], convolve=False)
 
         # Calculate the residual image
         residual = (simulated - observed) / observed
