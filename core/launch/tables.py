@@ -19,13 +19,14 @@ from collections import OrderedDict
 from ..remote.host import load_host
 from ..tools import sequences
 from ..tools.utils import lazyproperty, memoize_method, memoize_method_reset
-from ..basics.table import SmartTable
+from ..basics.table import SmartTable, property_type_to_builtin
 from ..tools import tables
 from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status
 from ..simulation.remote import is_analysed_status, is_aborted_status, is_cancelled_status, is_crashed_status
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from .options import AnalysisOptions
 from ..simulation.definition import SingleSimulationDefinition
+from ..basics.configuration import parent_type
 
 # -----------------------------------------------------------------
 
@@ -93,6 +94,18 @@ class SimulationStatusTable(SmartTable):
         """
 
         return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    def has_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self.simulation_names
 
     # -----------------------------------------------------------------
 
@@ -631,7 +644,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return list(self["Simulation name"])
+        return self.get_column_values("Simulation name")
 
     # -----------------------------------------------------------------
 
@@ -647,6 +660,58 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def has_host_id(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_host_id_for_simulation(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    def set_host_id(self, simulation_name, host_id):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param host_id:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        self.set_value("Host ID", index, host_id)
+
+    # -----------------------------------------------------------------
+
+    def has_id(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_simulation_id_for_simulation(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    def set_id(self, simulation_name, id):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param id:
+        :return:
+        """
+
+        index = self.get_index_for_simulation(simulation_name)
+        self.set_value("ID", index, id)
+
+    # -----------------------------------------------------------------
+
     @property
     def ids(self):
 
@@ -655,7 +720,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return list(self["ID"])
+        return self.get_column_values("ID")
 
     # -----------------------------------------------------------------
 
@@ -667,7 +732,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return list(self["Host ID"])
+        return self.get_column_values("Host ID")
 
     # -----------------------------------------------------------------
 
@@ -679,7 +744,7 @@ class SimulationAssignmentTable(SmartTable):
         :return:
         """
 
-        return sequences.unique_values(self["Host ID"], ignore=[None])
+        return sequences.unique_values(self.host_ids, ignore_none=True)
 
     # -----------------------------------------------------------------
 
@@ -860,16 +925,32 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def update_simulation(self, simulation):
+    def update_simulation(self, simulation, success=None):
 
         """
         This function ...
         :param simulation:
+        :param success:
         :return:
         """
 
         # Set
         self.set_id_and_host_for_simulation(simulation.name, simulation.id, simulation.host_id, simulation.cluster_name)
+        if success is not None: self.set_success_for_simulation(simulation.name, success)
+
+    # -----------------------------------------------------------------
+
+    def add_or_update_simulation(self, simulation, success=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param success:
+        :return:
+        """
+
+        if self.has_simulation(simulation.name): self.update_simulation(simulation, success=success)
+        else: self.add_simulation_object(simulation, success=success)
 
     # -----------------------------------------------------------------
 
@@ -1240,6 +1321,32 @@ class SimulationAssignmentTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def names_and_ids_for_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        names = []
+        ids = []
+
+        for index in range(self.nsimulations):
+
+            if not self.is_remote(index): continue
+            if not self.is_remote_host(index, host_id): continue
+
+            name = self.get_name(index)
+            id = self.get_id(index)
+            names.append(name)
+            ids.append(id)
+
+        # Return the names and ids
+        return names, ids
+
+    # -----------------------------------------------------------------
+
     def ids_for_remote(self, host_id):
 
         """
@@ -1382,12 +1489,12 @@ class QueuedSimulationsTable(SmartTable):
 
         # Add properties of sections
         section_names = analysis.ordered_section_names
-        print(section_names)
+        #print(section_names)
         for section_name in section_names:
             section = analysis[section_name]
 
             for prop_name in section.ordered_property_names:
-                print(prop_name)
+                #print(prop_name)
 
                 ptype = section.get_ptype(prop_name)
                 unit = section.unit_for_property(prop_name)
@@ -1400,7 +1507,10 @@ class QueuedSimulationsTable(SmartTable):
 
         # Add column info for analysis properties
         for name, ptype, unit, description in zip(property_names, property_types, property_units, property_descriptions):
-            self.add_column_info(name, ptype, unit, description)
+
+            base_ptype = parent_type(ptype)
+            dtype, _ = property_type_to_builtin(base_ptype)
+            self.add_column_info(name, dtype, unit, description)
 
     # -----------------------------------------------------------------
 

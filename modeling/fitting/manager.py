@@ -193,11 +193,42 @@ class GenerationManager(SimulationManager, FittingComponent):
         #print(assignment is not None)
 
         # Create the simulations
+        _add_to_status = []
+        _adapted_assignment = False
         simulations = self.generation.simulations_or_basic
         for simulation in simulations:
+            #simulation = simulations[simulation_name]
+            #print(simulation)
+            simulation_name = simulation.name
             #print(simulation.name)
-            simulation_status = status.get_status(simulation.name)
-            if is_analysed_status(simulation_status): simulation.analysed = True
+
+            if status.has_simulation(simulation_name):
+                simulation_status = status.get_status(simulation_name)
+                if is_analysed_status(simulation_status): simulation.analysed = True
+            else: _add_to_status.append(simulation_name)
+
+            # Fix assignment scheme
+            if assignment is not None:
+                #print("here")
+                if not assignment.has_simulation(simulation_name):
+                    _adapted_assignment = True
+                    assignment.add_simulation_object(simulation)
+                if not assignment.has_host_id(simulation_name):
+                    _adapted_assignment = True
+                    assignment.set_host_id(simulation_name, simulation.host_id)
+                if not assignment.has_id(simulation_name):
+                    _adapted_assignment = True
+                    assignment.set_id(simulation_name, simulation.id)
+
+        # Add simulations to status table?
+        if len(_add_to_status) > 0:
+            status = SimulationStatusTable.from_previous(status, new_simulations=_add_to_status)
+            for simulation_name in _add_to_status:
+                simulation_status, _ = self.generation.get_simulation_status(simulation_name)
+                status.reset_for_simulation(simulation_name, simulation_status)
+
+        # Save the assignment scheme table
+        if _adapted_assignment: assignment.save()
 
         # Set input for base class
         input = dict()
