@@ -1424,11 +1424,22 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Writing the individuals table ...")
 
-        test_path = fs.join(self.generation_path, "individuals_new.dat")
-        self.individuals_table.saveto(test_path)
+        # Update the individuals table
+        if self.config.update_individuals:
 
-        # Save
-        #self.individuals_table.save()
+            # Backup the old individuals table
+            fs.backup_file(self.generation.individuals_table_path, suffix="old")
+            fs.remove_file(self.generation.individuals_table_path)
+
+            # Save
+            self.individuals_table.save()
+
+        # Write a new file
+        else:
+
+            # Write new file
+            test_path = fs.join(self.generation_path, "individuals_new.dat")
+            self.individuals_table.saveto(test_path)
 
     # -----------------------------------------------------------------
 
@@ -1442,11 +1453,22 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Writing the parameters table ...")
 
-        test_path = fs.join(self.generation_path, "parameters_new.dat")
-        self.parameters_table.saveto(test_path)
+        # Update the parameters table
+        if self.config.update_parameters:
 
-        # Save
-        #self.parameters_table.save()
+            # Backup the old parameters table
+            fs.backup_file(self.generation.parameters_table_path, suffix="old")
+            fs.remove_file(self.generation.parameters_table_path)
+
+            # Save
+            self.parameters_table.save()
+
+        # Write a new file
+        else:
+
+            # Write a new file
+            test_path = fs.join(self.generation_path, "parameters_new.dat")
+            self.parameters_table.saveto(test_path)
 
     # -----------------------------------------------------------------
 

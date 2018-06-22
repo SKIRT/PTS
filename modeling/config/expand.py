@@ -60,3 +60,8 @@ definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
 # -----------------------------------------------------------------
+
+definition.add_flag("update_individuals", "update the individuals table", True)
+definition.add_flag("update_parameters", "update the parameters table", True)
+
+# -----------------------------------------------------------------
