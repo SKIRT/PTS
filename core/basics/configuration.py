@@ -39,7 +39,7 @@ from ..tools import sequences
 subtypes = dict()
 subtypes["integer"] = ["positive_integer", "negative_integer"]
 subtypes["real"] = ["fraction", "positive_real", "negative_real"]
-subtypes["string"] = ["file_path"]
+subtypes["string"] = ["file_path", "directory_path"]
 subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity", "photometric_brightness_quantity", "time_quantity", "length_quantity", "temperature_quantity", "mass_quantity", "mass_density_quantity", "mass_surface_density_quantity", "data_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
 subtypes["filter"] = ["broad_band_filter", "narrow_band_filter"]

@@ -1910,6 +1910,18 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def add_simulation(self, simulation):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        self.simulations[simulation.host_id][simulation.name] = simulation
+
+    # -----------------------------------------------------------------
+
     def is_remote_simulation(self, simulation_name):
 
         """
@@ -10930,7 +10942,10 @@ class SimulationManager(InteractiveConfigurable):
         self.set_relaunched_simulation_ids()
 
         # Set new simulation IDs
-        self.set_new_simulation_ids()
+        if self.has_new_simulations: self.set_new_simulation_ids()
+
+        # Add the new simulations
+        if self.has_new_simulations: self.add_new_simulations()
 
         # Debugging
         log.debug("Creating backup of assignment scheme ...")
@@ -10942,14 +10957,53 @@ class SimulationManager(InteractiveConfigurable):
         log.debug("Updating the assignment scheme ...")
 
         # Change assignment
-        for simulation in self.launched_simulations: self.assignment.update_simulation(simulation)
+        for simulation in self.launched_simulations: self.assignment.add_or_update_simulation(simulation, success=True)
 
         # Set that the assignment has changed
         self._adapted_assignment = True
 
+        # Debugging
+        log.debug("Updating the simulation status table ...")
+
+        # Add the new simulation names to the status table
+        if self.has_new_simulations: self.add_new_simulations_to_status()
+
         # Reset status?
-        #if self.has_moved or self.has_relaunched: self.reset_status()
         for simulation in self.launched_simulations: self.reset_status_for_simulation(simulation.name)
+
+    # -----------------------------------------------------------------
+
+    def add_new_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding the new simulations to the set of simulations ...")
+
+        # Loop over only the new simulations
+        for simulation in self.launched_simulations:
+            if simulation.name not in self.new_simulation_names: continue
+
+            # Add the simulation
+            self.add_simulation(simulation)
+
+    # -----------------------------------------------------------------
+
+    def add_new_simulations_to_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Adding the new simulations to the status table ...")
+
+        # Create new status table
+        self.status = SimulationStatusTable.from_previous(self.status, new_simulations=self.new_simulation_names)
 
     # -----------------------------------------------------------------
 
@@ -11175,6 +11229,18 @@ class SimulationManager(InteractiveConfigurable):
         """
 
         return len(self.new_simulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_new_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nnew_simulations > 0
 
     # -----------------------------------------------------------------
 
