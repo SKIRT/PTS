@@ -2186,13 +2186,17 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def remove_frames_except(self, *names):
+    def remove_frames_except(self, *names, **kwargs):
 
         """
         This function ...
         :param names:
+        :param kwargs:
         :return:
         """
+
+        # Get options
+        silent = kwargs.pop("silent", False)
 
         # Loop over all frames
         for frame_name in list(self.frames.keys()):
@@ -2201,20 +2205,21 @@ class Image(object):
             if frame_name in names: continue
 
             # Remove all other frames
-            self.remove_frame(frame_name)
+            self.remove_frame(frame_name, silent=silent)
 
     # -----------------------------------------------------------------
 
-    def remove_frame(self, name):
+    def remove_frame(self, name, silent=False):
 
         """
         This function ...
         :param name:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.debug("Removing the '" + name + "' frame ...")
+        if not silent: log.debug("Removing the '" + name + "' frame ...")
 
         # Check whether a frame with this name exists
         if name not in self.frames: raise RuntimeError("A frame with this name does not exist")

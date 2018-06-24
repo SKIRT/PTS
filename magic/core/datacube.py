@@ -684,10 +684,12 @@ class DataCube(Image):
                                                                     include_min=True, include_max=True)
 
         # Determine the frame names
+        #print(indices)
         frame_names = ["frame" + str(index) for index in indices]
+        #print(frame_names)
 
         # Remove the frames
-        self.remove_frames_except(frame_names)
+        self.remove_frames_except(*frame_names, silent=True)
 
         # Set the new wavelength grid
         self.wavelength_grid = wavelength_grid
