@@ -24,7 +24,6 @@ from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import headers
-#from ..basics.mask import Mask
 from .frame import Frame
 from .segmentationmap import SegmentationMap
 from ...core.tools import strings
@@ -400,7 +399,17 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
         load_plane_impl(name, description, plane_type, frames, masks, segments, hdu.data, wcs, pixelscale, frame_properties=properties)
 
     # Add meta information
-    for key in original_header: metadata[key.lower()] = original_header[key]
+    for key in original_header:
+        if key.startswith("plane") and strings.is_integer(key.split("plane")[1]): continue
+
+        # SKIP MANY
+        if key in wcs_keywords: continue
+        if key.startswith("PLANE"): continue
+        if key in other_ignore_keywords: continue
+        if isinstance(original_header[key], fits.header._HeaderCommentaryCards): continue  # skip these weird things
+
+        # Add
+        metadata[key.lower()] = original_header[key]
 
     # Close the FITS file
     hdulist.close()

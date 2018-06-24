@@ -1187,6 +1187,52 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def replace_negatives_by_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for frame_name in self.frame_names: self.frames[frame_name].replace_negatives_by_nans()
+
+    # -----------------------------------------------------------------
+
+    def replace_infs_by_nans(self):
+
+        """
+        This fnuction ...
+        :return:
+        """
+
+        for frame_name in self.frame_names: self.frames[frame_name].replace_infs_by_nans()
+
+    # -----------------------------------------------------------------
+
+    def replace_by_nans_where_greater_than(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for frame_name in self.frame_names: self.frames[frame_name].replace_by_nans_where_greater_than(value)
+
+    # -----------------------------------------------------------------
+
+    def cutoff_greater(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for frame_name in self.frame_names: self.frames[frame_name].cutoff_greater(value)
+
+    # -----------------------------------------------------------------
+
     def integrate(self):
 
         """
@@ -3461,7 +3507,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
+    def saveto(self, path, add_metadata=True, origin=None, add_masks=True, add_segments=True, add_regions=False):
 
         """
         This function ...
@@ -3481,7 +3527,8 @@ class DataCube(Image):
 
         # Call the base class implementation
         super(DataCube, self).saveto(path, add_metadata=add_metadata, origin=origin, add_masks=add_masks,
-                                     add_segments=add_segments, add_regions=add_regions, extra_info=extra_info)
+                                     add_segments=add_segments, add_regions=add_regions, extra_info=extra_info,
+                                     add_plane_names=False, add_filter=False)
 
 # -----------------------------------------------------------------
 

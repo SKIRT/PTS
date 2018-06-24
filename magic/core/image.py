@@ -1084,7 +1084,7 @@ class Image(object):
     # -----------------------------------------------------------------
 
     def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False,
-               extra_info=None):
+               extra_info=None, add_plane_names=True, add_filter=True, add_psf_filter=True):
 
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
@@ -1095,6 +1095,8 @@ class Image(object):
         :param add_segments:
         :param add_regions:
         :param extra_info:
+        :param add_plane_names:
+        :param add_filter:
         :return:
         """
 
@@ -1129,7 +1131,7 @@ class Image(object):
             plane_names.append(plane_name)
 
             # Add the name of the frame to the header
-            header["PLANE" + str(plane_index)] = plane_name
+            if add_plane_names: header["PLANE" + str(plane_index)] = plane_name
 
             # Increment the plane index
             plane_index += 1
@@ -1151,7 +1153,7 @@ class Image(object):
                 plane_names.append(plane_name)
 
                 # Add the name of the mask to the header
-                header["PLANE" + str(plane_index)] = plane_name
+                if add_plane_names: header["PLANE" + str(plane_index)] = plane_name
 
                 # Increment the plane index
                 plane_index += 1
@@ -1173,7 +1175,7 @@ class Image(object):
                 plane_names.append(plane_name)
 
                 # Add the name of the segmentation map to the header
-                header["PLANE" + str(plane_index)] = plane_name
+                if add_plane_names: header["PLANE" + str(plane_index)] = plane_name
 
                 # Increment the plane index
                 plane_index += 1
@@ -1211,11 +1213,12 @@ class Image(object):
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
 
         # Set PSF FILTER
-        if self.psf_filter is not None: header.set("PSFFLTR", str(self.psf_filter), "Filter to which the PSF of the frame corresponds")
+        if add_psf_filter and self.psf_filter is not None: header.set("PSFFLTR", str(self.psf_filter), "Filter to which the PSF of the frame corresponds")
 
         # Set filter
-        if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
-        else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
+        if add_filter:
+            if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+            else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
 
         # Pixelscale
         if self.wcs is None and self.pixelscale is not None:

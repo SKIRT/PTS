@@ -28,3 +28,8 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run for which to analyse the projected heating", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("emission_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust emission", "W3,W4,24mu,Herschel", convert_default=True)
+definition.add_optional("absorption_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust absorption", "GALEX,SDSS", convert_default=True)
+
+# -----------------------------------------------------------------

@@ -1386,6 +1386,25 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
 
 # -----------------------------------------------------------------
 
+def plot_curve(curve, title=None, path=None):
+
+    """
+    This function ...
+    :param curve:
+    :param title:
+    :param path:
+    :return:
+    """
+
+    # Get the data
+    x = curve.get_x(asarray=True)
+    y = curve.get_y(asarray=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path)
+
+# -----------------------------------------------------------------
+
 def plot_xy(x, y, title=None, path=None, format=None, transparent=False):
 
     """

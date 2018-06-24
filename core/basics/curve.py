@@ -24,6 +24,7 @@ from astropy.units import spectral
 from .table import SmartTable
 from ..filter.filter import parse_filter
 from ..units.parsing import parse_unit as u
+from ..units.unit import get_common_unit
 from ..tools import arrays
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
@@ -900,6 +901,35 @@ class WavelengthCurve(Curve):
 
         # Call the constructor of the base class
         super(WavelengthCurve, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wavelengths_and_values(cls, name, wavelengths, values, wavelength_unit="micron", value_unit=None, description=None):
+
+        """
+        This function ...
+        :param name:
+        :param wavelengths:
+        :param values:
+        :param wavelength_unit:
+        :param value_unit:
+        :param description:
+        :return:
+        """
+
+        # Determine the units
+        if value_unit is None: value_unit = get_common_unit(values)
+
+        # Create the curve
+        curve = cls(y_name=name, y_unit=value_unit, y_description=description, wavelength_unit=wavelength_unit)
+
+        # Add the points
+        for wavelength, value in zip(wavelengths, values):
+            curve.add_point(wavelength, value)
+
+        # Return the curve
+        return curve
 
     # -----------------------------------------------------------------
 
