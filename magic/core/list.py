@@ -2738,7 +2738,7 @@ def convert_to_same_unit(*frames, **kwargs):
         if frame.unit == unit:
 
             # Debugging
-            log.debug("Frame " + print_name + "already has the target unit of '" + tostr(unit, add_physical_type=True) + "' and is not converted")
+            log.debug("Frame " + print_name + "already has the target unit of '" + tostr(unit, add_physical_type=True) + "' and will not be converted")
 
             # Create copy
             converted = frame.copy()

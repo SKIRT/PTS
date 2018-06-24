@@ -20,6 +20,12 @@ from ....core.tools.utils import lazyproperty
 from ....magic.core.frame import Frame
 from ....magic.core.datacube import DataCube
 from ....magic.core.list import uniformize
+from ....core.units.parsing import parse_quantity
+
+# -----------------------------------------------------------------
+
+max_wavelength_absorption = parse_quantity("5 micron")
+min_wavelength_emission = parse_quantity("10 micron")
 
 # -----------------------------------------------------------------
 
@@ -1709,6 +1715,21 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # LOOKING IN DUST EMISSION WAVELENGTHS
         self.cube_earth = 0.5 * (self.unevolved_dust_emission_cube_earth + (self.total_dust_emission_cube_earth - self.evolved_dust_emission_cube_earth)) / self.total_dust_emission_cube_earth
 
+        # Truncate
+        self.cube_earth.truncate(min_wavelength=min_wavelength_emission)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.cube_earth.global_curve("Funev_emission", measure="mean", description="Fraction of emitted energy by unevolved stars")
+
     # -----------------------------------------------------------------
 
     def get_cube_earth_absorption(self):
@@ -1835,6 +1856,21 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # LOOKING IN ABSORBED STELLAR WAVELENGTHS
         self.cube_earth_absorption = 0.5 * (self.unevolved_dust_absorption_cube_earth + (self.total_dust_absorption_cube_earth - self.evolved_dust_absorption_cube_earth)) / self.total_dust_absorption_cube_earth
 
+        # Truncate
+        self.cube_earth_absorption.truncate(max_wavelength=max_wavelength_absorption)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_absorption(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.cube_earth_absorption.global_curve("Funev_absorption", measure="mean", description="Fraction of absorbed energy by unevolved stars")
+
     # -----------------------------------------------------------------
 
     def get_cube_faceon(self):
@@ -1956,6 +1992,21 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # LOOKING IN DUST EMISSION WAVELENGTHS
         self.cube_faceon = 0.5 * (self.unevolved_dust_emission_cube_faceon + (self.total_dust_emission_cube_faceon - self.evolved_dust_emission_cube_faceon)) / self.total_dust_emission_cube_faceon
+
+        # Truncate
+        self.cube_faceon.truncate(min_wavelength=min_wavelength_emission)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.cube_faceon.global_curve("Funev_emission_faceon", measure="mean", description="Fraction of emitted energy by unevolved stars (face-on)")
 
     # -----------------------------------------------------------------
 
@@ -2082,6 +2133,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curve_faceon_absorption(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.cube_faceon_absorption.global_curve("Funev_absorption_faceon", measure="mean", description="Fraction of absorbed energy by unevolved stars (face-on)")
+
+    # -----------------------------------------------------------------
+
     def get_cube_edgeon(self):
 
         """
@@ -2201,6 +2264,21 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # LOOKING IN DUST EMISSION WAVELENGTHS
         self.cube_edgeon = 0.5 * (self.unevolved_dust_emission_cube_edgeon + (self.total_dust_emission_cube_edgeon - self.evolved_dust_emission_cube_edgeon)) / self.total_dust_emission_cube_edgeon
+
+        # Truncate
+        self.cube_edgeon.truncate(min_wavelength=min_wavelength_emission)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.cube_edgeon.global_curve("Funev_emission_edgeon", measure="mean", description="Fraction of emitted energy by unevolved stars (edge-on)")
 
     # -----------------------------------------------------------------
 
@@ -2328,6 +2406,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curve_edgeon_absorption(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.cube_edgeon_absorption.global_curve("Funev_absorption_edgeon", measure="mean", description="Fraction of absorbed energy by unevolved stars (edge-on)")
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -2358,6 +2448,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Write cubes
         self.write_cubes()
+
+        # Write the curves
+        self.write_curves()
 
     # -----------------------------------------------------------------
 
@@ -2394,6 +2487,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         return fs.create_directory_in(self.projected_heating_path, "cubes")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.projected_heating_path, "curves")
 
     # -----------------------------------------------------------------
 
@@ -3608,6 +3713,174 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Save
         self.cube_edgeon_absorption.saveto(self.cube_edgeon_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curves(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth:
+            if not self.has_curve_earth: self.write_curve_earth()
+            if not self.has_curve_earth_absorption: self.write_curve_earth_absorption()
+
+        # Face-on
+        if self.do_faceon:
+            if not self.has_curve_faceon: self.write_curve_faceon()
+            if not self.has_curve_faceon_absorption: self.write_curve_faceon_absorption()
+
+        # Edge-on
+        if self.do_edgeon:
+            if not self.has_curve_edgeon: self.write_curve_edgeon()
+            if not self.has_curve_edgeon_absorption: self.write_curve_edgeon_absorption()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_earth_path(self):
+        return fs.join(self.curves_path, "earth.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_earth(self):
+        return fs.is_file(self.curve_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.curve_earth.saveto(self.curve_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_earth_absorption_path(self):
+        return fs.join(self.curves_path, "earth_absorption.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_earth_absorption(self):
+        return fs.is_file(self.curve_earth_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_earth_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.curve_earth_absorption.saveto(self.curve_earth_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_faceon_path(self):
+        return fs.join(self.curves_path, "faceon.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_faceon(self):
+        return fs.is_file(self.curve_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_faceon(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        # Save
+        self.curve_faceon.saveto(self.curve_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_faceon_absorption_path(self):
+        return fs.join(self.curves_path, "faceon_absorption.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_faceon_absorption(self):
+        return fs.is_file(self.curve_faceon_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_faceon_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.curve_faceon_absorption.saveto(self.curve_faceon_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_edgeon_path(self):
+        return fs.join(self.curves_path, "edgeon.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_edgeon(self):
+        return fs.is_file(self.curve_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.curve_edgeon.saveto(self.curve_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_edgeon_absorption_path(self):
+        return fs.join(self.curves_path, "edgeon_absorption.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_edgeon_absorption(self):
+        return fs.is_file(self.curve_edgeon_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_edgeon_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.curve_edgeon_absorption.saveto(self.curve_edgeon_absorption_path)
 
     # -----------------------------------------------------------------
 

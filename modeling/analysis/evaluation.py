@@ -1602,7 +1602,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
         log.debug("Creating the proper weighed residual frame for the '" + str(fltr) + "' filter ...")
 
         # Get the images in the same units
-        simulated, observed, errors = convert_to_same_unit(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+        #simulated, observed, errors = convert_to_same_unit(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr])
+        simulated, observed, errors = uniformize(self.proper_images[fltr], self.observed_images[fltr], self.observed_errors[fltr], convolve=False)
 
         # Calculate the weighed residual image
         residual = (simulated - observed) / errors
@@ -4688,11 +4689,10 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_proper_weighed_distributions(self, fltr):
+    def plot_proper_weighed_distributions(self):
 
         """
         Thisf unction ...
-        :param fltr:
         :return:
         """
 
@@ -4780,6 +4780,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Check whether present
             if self.has_residuals_plot_for_filter(fltr): continue
 
+            # Debugging
+            log.debug("Plotting the residuals for the '" + str(fltr) + "' filter ...")
+
             # Get the residual map
             residuals = self.residuals[fltr]
 
@@ -4796,7 +4799,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #                                   peak_alpha=self.config.peak_alpha)
 
             # Plot
-            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True, around_zero=True, scale="linear", cmap=self.residuals_plot_cmap)
+            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True,
+                              around_zero=True, scale="linear", cmap=self.residuals_plot_cmap, check_around_zero=False)
 
     # -----------------------------------------------------------------
 
@@ -4840,6 +4844,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Check whether present
             if self.has_proper_residuals_plot_for_filter(fltr): continue
 
+            # Debugging
+            log.debug("Plotting the proper residuals for the '" + str(fltr) + "' filter ...")
+
             # Get the residual map
             residuals = self.proper_residuals[fltr]
 
@@ -4850,7 +4857,8 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_proper_residuals_plot_filepath_for_filter(fltr)
 
             # Plot
-            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True, around_zero=True, scale="linear", cmap=self.residuals_plot_cmap)
+            plotting.plot_box(residuals_percentage, interval=self.residuals_plot_interval, path=path, colorbar=True,
+                              around_zero=True, scale="linear", cmap=self.residuals_plot_cmap, check_around_zero=False)
 
     # -----------------------------------------------------------------
 
@@ -4918,6 +4926,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Check whether present
             if self.has_residuals_absolute_plot_for_filter(fltr): continue
 
+            # Debugging
+            log.debug("Plotting the residuals in absolute values for the '" + str(fltr) + "' filter ...")
+
             # Get the absolute residual map
             residuals = self.residuals[fltr].absolute
 
@@ -4971,6 +4982,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
 
             # Check whether present
             if self.has_proper_residuals_absolute_plot_for_filter(fltr): continue
+
+            # Debugging
+            log.debug("Plotting the proper residuals in absolute values for the '" + str(fltr) + "' filter ...")
 
             # Get the absolute residual map
             residuals = self.proper_residuals[fltr].absolute
@@ -5027,6 +5041,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Ceck whether present
             if self.has_weighed_plot_for_filter(fltr): continue
 
+            # Debugging
+            log.debug("Plotting the weighed residuals for the '" + str(fltr) + "' filter ...")
+
             # Get the weighed residual map
             residuals = self.weighed[fltr]
 
@@ -5043,7 +5060,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             #                                   peak_alpha=self.config.peak_alpha)
 
             # Plot
-            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")
+            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear", check_around_zero=False)
 
     # -----------------------------------------------------------------
 
@@ -5087,6 +5104,9 @@ class AnalysisModelEvaluator(AnalysisComponent):
             # Ceck whether present
             if self.has_proper_weighed_plot_for_filter(fltr): continue
 
+            # Debugging
+            log.debug("Plotting the proper weighed residuals for the '" + str(fltr) + "' filter ...")
+
             # Get the weighed residual map
             residuals = self.proper_weighed[fltr]
 
@@ -5094,7 +5114,7 @@ class AnalysisModelEvaluator(AnalysisComponent):
             path = self.get_proper_weighed_plot_filepath_for_filter(fltr)
 
             # Plot
-            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear")
+            plotting.plot_box(residuals, path=path, colorbar=True, around_zero=True, scale="linear", check_around_zero=False)
 
 # -----------------------------------------------------------------
 

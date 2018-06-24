@@ -23,6 +23,7 @@ from astropy.units import Unit
 from .image import Image
 from .frame import Frame
 from ...core.data.sed import SED, ObservedSED
+from ...core.basics.curve import WavelengthCurve
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.basics.log import log
 from ..basics.mask import Mask, MaskBase
@@ -665,6 +666,37 @@ class DataCube(Image):
 
         # Create new datacube
         return self.__class__.from_frames(frames, wavelength_grid=wavelength_grid, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    def truncate(self, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
+        # Get the indices
+        wavelength_grid, indices = self.wavelength_grid.get_subgrid(min_wavelength=min_wavelength,
+                                                                    max_wavelength=max_wavelength, return_indices=True,
+                                                                    include_min=True, include_max=True)
+
+        # Determine the frame names
+        frame_names = ["frame" + str(index) for index in indices]
+
+        # Remove the frames
+        self.remove_frames_except(frame_names)
+
+        # Set the new wavelength grid
+        self.wavelength_grid = wavelength_grid
+
+        # Rename the frames
+        for index in range(self.nframes):
+            current_name = self.frame_names[index]
+            new_name = "frame" + str(index)
+            self.rename_frame(current_name, new_name, keep_position=True)
 
     # -----------------------------------------------------------------
 
@@ -1525,9 +1557,6 @@ class DataCube(Image):
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
 
-            # Get the frame in the correct unit
-            #frame = self.frames[frame_name].converted_to(unit)
-
             # Calculate the total flux
             if inverse_mask is not None: total_flux = np.sum(self.frames[frame_name][inverse_mask]) * conversion_factor * unit
             else: total_flux = self.frames[frame_name].sum() * conversion_factor * unit
@@ -1535,11 +1564,68 @@ class DataCube(Image):
             # Add an entry to the SED
             sed.add_point(wavelength, total_flux)
 
-            # Increment the index
-            index += 1
-
         # Return the SED
         return sed
+
+    # -----------------------------------------------------------------
+
+    def global_curve(self, name, mask=None, min_wavelength=None, max_wavelength=None, measure="sum", description=None):
+
+        """
+        Thisf unction ...
+        :param name: name for the y variable
+        :param mask:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param measure:
+        :param description:
+        :return:
+        """
+
+        # Determine the mask
+        if types.is_string_type(mask): inverse_mask = self.masks[mask].inverse()
+        elif isinstance(mask, Mask): inverse_mask = mask.inverse()
+        elif mask is None: inverse_mask = None
+        else: raise ValueError("Mask must be string or Mask (or None) instead of " + str(type(mask)))
+
+        # Initialize the curve
+        curve = WavelengthCurve(y_name=name, y_unit=self.unit, y_description=description)
+
+        # Loop over the wavelengths
+        for index in self.wavelength_indices(min_wavelength, max_wavelength):
+
+            # Get the wavelength
+            wavelength = self.wavelength_grid[index]
+
+            # Determine the name of the frame in the datacube
+            frame_name = "frame" + str(index)
+
+            # Calculate the value
+            if measure == "sum":
+                if inverse_mask is not None: y_value = np.sum(self.frames[frame_name][inverse_mask])
+                else: y_value = self.frames[frame_name].sum()
+            elif measure == "mean":
+                if inverse_mask is not None: y_value = np.nanmean(self.frames[frame_name][inverse_mask])
+                else: y_value = self.frames[frame_name].mean()
+            elif measure == "median":
+                if inverse_mask is not None: y_value = np.nanmedian(self.frames[frame_name][inverse_mask])
+                else: y_value = self.frames[frame_name].median()
+            elif measure == "stddev":
+                if inverse_mask is not None: y_value = np.nanstd(self.frames[frame_name][inverse_mask])
+                else: y_value = self.frames[frame_name].stddev()
+            elif measure == "max":
+                if inverse_mask is not None: y_value = np.nanmax(self.frames[frame_name][inverse_mask])
+                else: y_value = self.frames[frame_name].max
+            elif measure == "min":
+                if inverse_mask is not None: y_value = np.nanmin(self.frames[frame_name][inverse_mask])
+                else: y_value = self.frames[frame_name].min
+            else: raise ValueError("Invalid value for 'measure'")
+
+            # Add an entry to the curve
+            curve.add_point(wavelength, y_value)
+
+        # Return the curve
+        return curve
 
     # -----------------------------------------------------------------
 

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
+from .component import AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
@@ -25,51 +25,15 @@ from ...core.basics.containers import DefaultOrderedDict
 from ...magic.core.frame import Frame
 from ...magic.tools.plotting import plot_map
 
-# -----------------------------------------------------------------
-
-bol_map_name = "bol"
-intr_stellar_map_name = "intr_stellar" # intrinsic stellar (bol) luminosity (transparent)
-obs_stellar_map_name = "obs_stellar" # observed stellar (bol) luminosity
-diffuse_dust_map_name = "diffuse_dust"
-dust_map_name = "dust" # dust (bol) luminosity
-#dust_with_internal_map_name = "dust_with_internal" # dust (bol) luminosity + internal dust (MAPPINGS)
-scattered_map_name = "scattered" # scattered stellar luminosity
-absorbed_diffuse_map_name = "absorbed_diffuse"
-#absorbed_map_name = "absorbed" # absorbed stellar luminosity
-#absorbed_with_internal_map_name = "absorbed_with_internal" # absorbed stellar luminosity + internal absorption (MAPPINGS)
-fabs_diffuse_map_name = "fabs_diffuse"
-fabs_map_name = "fabs"
-attenuated_map_name = "attenuated" # attenuated stellar luminosity
-direct_map_name = "direct" # direct stellar luminosity
-stellar_mass_map_name = "stellar_mass"  # stellar mass
-ssfr_map_name = "ssfr" # specific star formation rate
-
-i1_map_name = "i1"
-intr_i1_map_name = "intr_i1"
-
-fuv_map_name = "fuv"
-intr_fuv_map_name = "intr_fuv"
-
-sfr_map_name = "sfr"
-dust_mass_map_name = "dust_mass"
-stellar_lum_map_name = "stellar_lum"
-#dust_lum_map_name = "dust_lum"
-intr_dust_map_name = "intr_dust"
-diffuse_mass_map_name = "diffuse_mass"
-mass_map_name = "mass"
-#total_mass_map_name = "total_mass"
-lum_map_name = "lum"
-total_lum_map_name = "total_lum"
+from .component import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
+from .component import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
+from .component import attenuated_map_name, direct_map_name, sfr_map_name, i1_map_name, intr_i1_map_name, fuv_map_name
+from .component import intr_fuv_map_name, dust_mass_map_name, stellar_lum_map_name, intr_dust_map_name
+from .component import diffuse_mass_map_name, mass_map_name, earth_name, faceon_name, edgeon_name
 
 # -----------------------------------------------------------------
 
-earth_name = "earth"
-faceon_name = "faceon"
-edgeon_name = "edgeon"
-
-# -----------------------------------------------------------------
-
-class PropertiesAnalyser(AnalysisComponent):
+class PropertiesAnalyser(AnalysisRunComponent):
     
     """
     This class...
@@ -87,9 +51,6 @@ class PropertiesAnalyser(AnalysisComponent):
         super(PropertiesAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
-
-        # The analysis run
-        self.analysis_run = None
 
         # The maps
         self.total_maps = DefaultOrderedDict(OrderedDict)
@@ -133,9 +94,6 @@ class PropertiesAnalyser(AnalysisComponent):
         # Call the setup of the base class
         super(PropertiesAnalyser, self).setup(**kwargs)
 
-        # Get the run
-        self.analysis_run = self.get_run(self.config.run)
-
     # -----------------------------------------------------------------
 
     @property
@@ -147,18 +105,6 @@ class PropertiesAnalyser(AnalysisComponent):
         """
 
         return self.analysis_run.model
-
-    # -----------------------------------------------------------------
-
-    @property
-    def properties_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.properties_path
 
     # -----------------------------------------------------------------
 
@@ -1995,31 +1941,7 @@ class PropertiesAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.properties_path, "maps")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def maps_total_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "total")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_total_earth_path(self):
 
         """
@@ -2027,11 +1949,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_total_path, earth_name)
+        return self.properties_maps_total_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_total_faceon_path(self):
 
         """
@@ -2039,11 +1961,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_total_path, faceon_name)
+        return self.properties_maps_total_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_total_edgeon_path(self):
 
         """
@@ -2051,23 +1973,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_total_path, edgeon_name)
+        return self.properties_maps_total_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_bulge_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "bulge")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_bulge_earth_path(self):
 
         """
@@ -2075,11 +1985,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_bulge_path, earth_name)
+        return self.properties_maps_bulge_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_bulge_faceon_path(self):
 
         """
@@ -2087,11 +1997,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_bulge_path, faceon_name)
+        return self.properties_maps_bulge_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_bulge_edgeon_path(self):
 
         """
@@ -2099,23 +2009,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_bulge_path, edgeon_name)
+        return self.properties_maps_bulge_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_disk_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "disk")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_disk_earth_path(self):
 
         """
@@ -2123,11 +2021,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_disk_path, earth_name)
+        return self.properties_maps_disk_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_disk_faceon_path(self):
 
         """
@@ -2135,11 +2033,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_disk_path, faceon_name)
+        return self.properties_maps_disk_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_disk_edgeon_path(self):
 
         """
@@ -2147,23 +2045,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_disk_path, edgeon_name)
+        return self.properties_maps_disk_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_old_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "old")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_old_earth_path(self):
 
         """
@@ -2171,11 +2057,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_old_path, earth_name)
+        return self.properties_maps_old_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_old_faceon_path(self):
 
         """
@@ -2183,11 +2069,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_old_path, faceon_name)
+        return self.properties_maps_old_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_old_edgeon_path(self):
 
         """
@@ -2195,23 +2081,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_old_path, edgeon_name)
+        return self.properties_maps_old_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_young_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "young")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_young_earth_path(self):
 
         """
@@ -2219,11 +2093,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_young_path, earth_name)
+        return self.properties_maps_young_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_young_faceon_path(self):
 
         """
@@ -2231,11 +2105,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_young_path, faceon_name)
+        return self.properties_maps_young_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_young_edgeon_path(self):
 
         """
@@ -2243,23 +2117,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_young_path, edgeon_name)
+        return self.properties_maps_young_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_sfr_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "sfr")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_sfr_earth_path(self):
 
         """
@@ -2267,11 +2129,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_sfr_path, earth_name)
+        return self.properties_maps_sfr_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_sfr_faceon_path(self):
 
         """
@@ -2279,11 +2141,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_sfr_path, faceon_name)
+        return self.properties_maps_sfr_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_sfr_edgeon_path(self):
 
         """
@@ -2291,23 +2153,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_sfr_path, edgeon_name)
+        return self.properties_maps_sfr_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_unevolved_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "unevolved")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_unevolved_earth_path(self):
 
         """
@@ -2315,11 +2165,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_unevolved_path, earth_name)
+        return self.properties_maps_unevolved_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_unevolved_faceon_path(self):
 
         """
@@ -2327,11 +2177,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_unevolved_path, faceon_name)
+        return self.properties_maps_unevolved_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_unevolved_edgeon_path(self):
 
         """
@@ -2339,23 +2189,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_unevolved_path, edgeon_name)
+        return self.properties_maps_unevolved_edgeon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_dust_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.maps_path, "dust")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def maps_dust_earth_path(self):
 
         """
@@ -2363,11 +2201,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_dust_path, earth_name)
+        return self.properties_maps_dust_earth_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_dust_faceon_path(self):
 
         """
@@ -2375,11 +2213,11 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_dust_path, faceon_name)
+        return self.properties_maps_dust_faceon_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def maps_dust_edgeon_path(self):
 
         """
@@ -2387,7 +2225,7 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        return fs.create_directory_in(self.maps_dust_path, edgeon_name)
+        return self.properties_maps_dust_edgeon_path
 
     # -----------------------------------------------------------------
 
@@ -5951,6 +5789,6 @@ class PropertiesAnalyser(AnalysisComponent):
         :return:
         """
 
-        plot_map(frame, path=path, cmap="inferno")
+        plot_map(frame, path=path, cmap="inferno", colorbar=True)
 
 # -----------------------------------------------------------------
