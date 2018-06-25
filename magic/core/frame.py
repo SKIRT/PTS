@@ -4047,8 +4047,6 @@ class Frame(NDDataArray):
         :return:
         """
 
-        from ..tools import plotting
-
         # Determine sigma
         if sigma is None:
 
@@ -4075,6 +4073,26 @@ class Frame(NDDataArray):
         # We smooth with a Gaussian kernel with stddev passed by the user
         # Create the kernel
         kernel = Gaussian2DKernel(stddev=sigma)
+
+        # Interpolate
+        return self.interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
+                                                 not_converge=not_converge, min_max_in=min_max_in)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_nans_with_kernel(self, kernel, plot=False, max_iterations=10, not_converge="keep", min_max_in=None):
+
+        """
+        This function ...
+        :param kernel:
+        :param plot:
+        :param max_iterations:
+        :param not_converge:
+        :param min_max_in:
+        :return:
+        """
+
+        from ..tools import plotting
 
         # Get the current minimum and maximum of the frame
         if min_max_in is not None:

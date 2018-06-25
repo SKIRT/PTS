@@ -2057,13 +2057,14 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rename_frame(self, old_name, new_name, keep_position=False):
+    def rename_frame(self, old_name, new_name, keep_position=False, silent=False):
 
         """
         This function renames a frame
         :param old_name:
         :param new_name:
         :param keep_position:
+        :param silent:
         :return:
         """
 
@@ -2075,7 +2076,7 @@ class Image(object):
         self.frames[new_name] = self.frames.pop(old_name)
 
         # Move the frame to the original position
-        if keep_position: self.move_frame(new_name, current_position)
+        if keep_position: self.move_frame(new_name, current_position, silent=silent)
 
     # -----------------------------------------------------------------
 
@@ -2268,17 +2269,18 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def move_frame(self, name, position):
+    def move_frame(self, name, position, silent=False):
 
         """
         This function ...
         :param name:
         :param position:
+        :param silent:
         :return:
         """
 
         # Inform the user
-        log.debug("Moving frame '" + name + "' to position " + str(position) + " in the frame layers ...")
+        if not silent: log.debug("Moving frame '" + name + "' to position " + str(position) + " in the frame layers ...")
 
         # Check whether a frame with this name exists
         if name not in self.frames: raise RuntimeError("A frame with this name does not exist")

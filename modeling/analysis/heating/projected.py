@@ -1495,6 +1495,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         cube.replace_by_nans_where_greater_than(1.1)
         cube.cutoff_greater(1.)
 
+        # Interpolate nans
+        cube.interpolate_nans(sigma=3.)
+
         # Set flag
         cube.metadata["fixed"] = True
 
@@ -1518,6 +1521,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Replace
         cube.replace_by_nans_where_greater_than(1.1)
         cube.cutoff_greater(1.)
+
+        # Interpolate nans
+        cube.interpolate_nans(sigma=3.)
 
         # Set flag
         cube.metadata["fixed"] = True
@@ -2625,7 +2631,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        self.curve_earth_absorption = WavelengthCurve.from_file(self.curve_earth_absorption)
+        self.curve_earth_absorption = WavelengthCurve.from_file(self.curve_earth_absorption_path)
 
     # -----------------------------------------------------------------
 
@@ -2871,7 +2877,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        self.curve_edgeon_absorption = WavelengthCurve.from_file(self.curve_edgeon_absorption)
+        self.curve_edgeon_absorption = WavelengthCurve.from_file(self.curve_edgeon_absorption_path)
 
     # -----------------------------------------------------------------
 
@@ -4760,7 +4766,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return fs.join(self.cubes_path, "edgeon_absorption_" + str(fltr) + ".fits")
+        return fs.join(self.cubes_path, "edgeon_absorption_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 

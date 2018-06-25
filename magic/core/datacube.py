@@ -18,6 +18,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit
+from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
 from .image import Image
@@ -698,7 +699,7 @@ class DataCube(Image):
         for index in range(self.nframes):
             current_name = self.frame_names[index]
             new_name = "frame" + str(index)
-            self.rename_frame(current_name, new_name, keep_position=True)
+            self.rename_frame(current_name, new_name, keep_position=True, silent=True)
 
     # -----------------------------------------------------------------
 
@@ -1232,6 +1233,54 @@ class DataCube(Image):
         """
 
         for frame_name in self.frame_names: self.frames[frame_name].cutoff_greater(value)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
+                     smoothing_factor=None):
+
+        """
+        This function ...
+        :param sigma: 
+        :param max_iterations: 
+        :param plot: 
+        :param not_converge: 
+        :param min_max_in: 
+        :param smoothing_factor: 
+        :return: 
+        """
+
+        # Determine sigma
+        if sigma is None:
+
+            # Check whether we have the necessary information
+            if self.fwhm is None: raise ValueError("FWHM of the frame should be defined or sigma should be passed")
+            if self.pixelscale is None: raise ValueError("Pixelscale of the frame is not defined")
+
+            # Get the sigma in pixels
+            sigma = self.sigma_pix
+
+            # Smoothing factor
+            if smoothing_factor is not None:
+                if smoothing_factor < 1: raise ValueError("Smoothing factor cannot be smaller than one")
+                log.debug("Original sigma of the frame resolution is " + tostr(sigma) + " pixels")
+                log.debug("Interpolated regions will be smoother by a factor of " + str(smoothing_factor))
+                sigma = sigma * smoothing_factor
+
+        # Smoothing factor is passed but also sigma
+        elif smoothing_factor is not None: raise ValueError("Smoothing factor cannot be passed when sigma is passed: multiply the specified sigma with the desired smoothing factor")
+
+        # Debugging
+        log.debug("Creating a kernel with a sigma of " + tostr(sigma) + " pixels ...")
+
+        # We smooth with a Gaussian kernel with stddev passed by the user
+        # Create the kernel
+        kernel = Gaussian2DKernel(stddev=sigma)
+
+        # Interpolate each frame
+        for frame_name in self.frame_names:
+            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
+                                                                    not_converge=not_converge, min_max_in=min_max_in)
 
     # -----------------------------------------------------------------
 
