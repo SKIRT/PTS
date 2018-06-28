@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib.widgets import Slider
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.visualization.stretch import SqrtStretch, LogStretch, LinearStretch, HistEqStretch, AsinhStretch
@@ -27,6 +28,9 @@ from astropy.visualization.stretch import SquaredStretch, InvertedLogStretch, In
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import MinMaxInterval, ZScaleInterval
 from photutils import CircularAperture
+
+# Import the relevant PTS classes and modules
+from ...core.tools import types, sequences
 
 # -----------------------------------------------------------------
 
@@ -1386,46 +1390,178 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
 
 # -----------------------------------------------------------------
 
-def plot_curve(curve, title=None, path=None):
+def plot_curve(curve, title=None, path=None, x_scale="linear", y_scale="linear"):
 
     """
     This function ...
     :param curve:
     :param title:
     :param path:
+    :param x_scale:
+    :param y_scale:
     :return:
     """
 
+    # Get the units
+    x_unit = curve.x_unit
+    y_unit = curve.y_unit
+
     # Get the data
-    x = curve.get_x(asarray=True)
-    y = curve.get_y(asarray=True)
+    x = curve.get_x(asarray=True, unit=x_unit)
+    y = curve.get_y(asarray=True, unit=y_unit)
+
+    # Get the labels
+    x_label = curve.x_name
+    y_label = curve.y_name
+    if x_unit is not None: x_label += " [" + str(x_unit) + "]"
+    if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
     # Plot
-    plot_xy(x, y, title=title, path=path)
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale)
 
 # -----------------------------------------------------------------
 
-def plot_xy(x, y, title=None, path=None, format=None, transparent=False):
+def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear"):
 
     """
     This function ...
+    :param curves:
+    :param title:
+    :param path:
+    :param x_scale:
+    :param y_scale:
+    :return:
+    """
+
+    # Initialize dictionaries for x and y data
+    x = OrderedDict()
+    y = OrderedDict()
+
+    # Get curves and names
+    ncurves = len(curves)
+    if types.is_dictionary(curves):
+
+        names = curves.keys()
+        curves = curves.values()
+
+    elif types.is_sequence(curves):
+
+        # Determine curve names
+        y_labels = [curve.y_name for curve in curves]
+        if sequences.all_different(y_labels): names = y_labels
+        else: names = ["curve" + str(index) for index in range(ncurves)]
+
+    # Invalid
+    else: raise ValueError("Invalid argument")
+
+    # Get the labels
+    x_labels = [curve.x_name for curve in curves]
+    y_labels = [curve.y_name for curve in curves]
+    x_label = sequences.get_single(x_labels)
+    y_label = sequences.get_single(y_labels)
+
+    # Get the units
+    x_units = [curve.x_unit for curve in curves]
+    y_units = [curve.y_unit for curve in curves]
+    x_unit = sequences.get_single(x_units, method="first_not_none")
+    y_unit = sequences.get_single(y_units, method="first_not_none")
+
+    # Loop over the curves
+    for name, curve in zip(names, curves):
+
+        # Get the data
+        x_curve = curve.get_x(asarray=True, unit=x_unit)
+        y_curve = curve.get_y(asarray=True, unit=y_unit)
+
+        # Set to dictionary
+        x[name] = x_curve
+        y[name] = y_curve
+
+    # Add units to labels
+    if x_unit is not None: x_label += " [" + str(x_unit) + "]"
+    if y_unit is not None: y_label += " [" + str(y_unit) + "]"
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale)
+
+# -----------------------------------------------------------------
+
+def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, x_scale="linear",
+            y_scale="linear", vlines=None, hlines=None, plot_type="line", legend=True):
+
+    """
+    Low-level function, only scalar values (no units)
+    x and y as dictionaries or lists
     :param x:
     :param y:
     :param title:
     :param path:
     :param format:
-    :param transparent
+    :param transparent:
+    :param x_label:
+    :param y_label:
+    :param x_scale:
+    :param y_scale:
+    :param vlines:
+    :param hlines:
+    :param plot_type:
+    :param legend:
     :return:
     """
 
     # Create plot
     plt.figure()
-    plt.plot(x, y)
+
+    # Add the data
+    if types.is_dictionary(x):
+
+        # Checks
+        if not types.is_dictionary(y): raise ValueError("The type of x and y data must be equal")
+        if not sequences.same_contents(x.keys(), y.keys()): raise ValueError("The curve names must agree in x and y data")
+
+        # Loop over the curves
+        for name in x:
+            _x = x[name]
+            _y = y[name]
+            if plot_type == "line": plt.plot(_x, _y, label=name)
+            elif plot_type == "scatter": plt.scatter(_x, _y, label=name)
+            else: raise ValueError("Invalid plot type: '" + plot_type + "'")
+
+    # Sequence
+    elif types.is_sequence_or_array(x):
+
+        # Checks
+        if not types.is_sequence_or_array(y): raise ValueError("The type of x and y data must be equal")
+        if not sequences.equal_sizes(x, y): raise ValueError("The number of x and y points must agree")
+
+        # Plot
+        if plot_type == "line": plt.plot(x, y)
+        elif plot_type == "scatter": plt.scatter(x, y)
+        else: raise ValueError("Invalid plot type: '" + plot_type + "'")
+
+    # Invalid
+    else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
 
     # Add vertical lines
-    # for factor in self.ellipses[name]:
-    #     radius = self.ellipses[name][factor].major
-    #     plt.axvline(x=radius)
+    if vlines is not None:
+        for vline in vlines: plt.axvline(x=vline)
+    if hlines is not None:
+        for hline in hlines: plt.axhline(y=hline)
+
+    # Set scale
+    if x_scale == "linear": pass
+    elif x_scale == "log": plt.xscale("log")
+    else: raise ValueError("Invalid scale: '" + str(x_scale) + "'")
+    if y_scale == "linear": pass
+    elif y_scale == "log": plt.yscale("log")
+    else: raise ValueError("Invalid scale: '" + str(y_scale) + "'")
+
+    # Set labels
+    if x_label is not None: plt.ylabel(x_label.replace("_", "\_"))
+    if y_label is not None: plt.ylabel(y_label.replace("_", "\_"))
+
+    # Create legend
+    if legend: plt.legend()
 
     # Add title
     if title is not None: plt.title(title)

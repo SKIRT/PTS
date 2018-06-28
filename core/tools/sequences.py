@@ -602,6 +602,20 @@ def all_none(lst):
 
 # -----------------------------------------------------------------
 
+def all_different(lst, ignore_none=False, ignore=None):
+
+    """
+    This function ...
+    :param lst:
+    :param ignore_none:
+    :param ignore:
+    :return:
+    """
+
+    return len(unique_values(lst, ignore_none=ignore_none, ignore=ignore)) == len(lst)
+
+# -----------------------------------------------------------------
+
 def all_equal(lst, ignore_none=False, ignore=None):
 
     """
@@ -1476,6 +1490,7 @@ def get_single(sequence, none="none", method="first"):
     else:
 
         if method == "first": return sequence[0]
+        elif method == "first_not_none": return find_first_not_none(sequence, return_none=True)
         elif method == "last": return sequence[-1]
         elif method == "none": return None
         elif method == "error": raise ValueError("Multiple items")

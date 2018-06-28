@@ -541,3 +541,15 @@ def can_get_item(value):
         except IndexError: return False
 
 # -----------------------------------------------------------------
+
+def is_sequence_or_array(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_sequence(value) or is_array_like(value)
+
+# -----------------------------------------------------------------

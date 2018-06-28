@@ -108,28 +108,28 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # Get the absorption maps
+        # 1. Get the absorption maps
         self.get_absorptions()
 
-        # Get the maps of the heating fraction
+        # 2. Get the maps of the heating fraction
         self.get_maps()
 
-        # Get the cube of the heating fraction per wavelength
+        # 3. Get the cube of the heating fraction per wavelength
         self.get_cubes()
 
-        # Fix the cubes
+        # 4. Fix the cubes
         self.fix_cubes()
 
-        # Get the curves of the heating fraction per wavelength
+        # 5. Get the curves of the heating fraction per wavelength
         self.get_curves()
 
-        # Show
+        # 6. Show
         self.show()
 
-        # 4. Writing
+        # 7. Writing
         self.write()
 
-        # 5. Plotting
+        # 8. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -2449,18 +2449,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            self.fix_cube_earth()
-            self.fix_cube_earth_absorption()
+            if self.do_fix_cube_earth: self.fix_cube_earth()
+            if self.do_fix_cube_earth_absorption: self.fix_cube_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            self.fix_cube_faceon()
-            self.fix_cube_faceon_absorption()
+            if self.do_fix_cube_faceon: self.fix_cube_faceon()
+            if self.do_fix_cube_faceon_absorption: self.fix_cube_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            self.fix_cube_edgeon()
-            self.fix_cube_edgeon_absorption()
+            if self.do_fix_cube_edgeon: self.fix_cube_edgeon()
+            if self.do_fix_cube_edgeon_absorption: self.fix_cube_edgeon_absorption()
 
     # -----------------------------------------------------------------
 
@@ -2537,14 +2537,17 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Earth
         if self.do_earth:
             self.get_curve_earth()
             self.get_curve_earth_absorption()
 
+        # Face-on
         if self.do_faceon:
             self.get_curve_faceon()
             self.get_curve_faceon_absorption()
 
+        # Edge-on
         if self.do_edgeon:
             self.get_curve_edgeon()
             self.get_curve_edgeon_absorption()
@@ -2587,7 +2590,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_earth_wavelengths(self):
-        return self.curve_earth.wavelengths(asarray=True)
+        return self.curve_earth.wavelengths(asarray=True, unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2608,7 +2611,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return WavelengthCurve.from_wavelengths_and_values("Fev_emission",
                                                            self.curve_earth_wavelengths,
                                                            1. - self.curve_earth_values,
-                                                           description="Fraction of emitted energy by evolved stars")
+                                                           description="Fraction of emitted energy by evolved stars",
+                                                           wavelength_unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2649,7 +2653,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_earth_absorption_wavelengths(self):
-        return self.curve_earth_absorption.wavelengths(asarray=True)
+        return self.curve_earth_absorption.wavelengths(asarray=True, unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2661,6 +2665,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_earth_absorption_evolved(self):
+
         """
         This function ...
         :return:
@@ -2669,7 +2674,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return WavelengthCurve.from_wavelengths_and_values("Fev_absorption",
                                                            self.curve_earth_absorption_wavelengths,
                                                            1. - self.curve_earth_absorption_values,
-                                                           description="Fraction of absorbed energy by evolved stars")
+                                                           description="Fraction of absorbed energy by evolved stars",
+                                                           wavelength_unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2710,7 +2716,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_faceon_wavelengths(self):
-        return self.curve_faceon.wavelengths(asarray=True)
+        return self.curve_faceon.wavelengths(asarray=True, unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2731,7 +2737,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return WavelengthCurve.from_wavelengths_and_values("Fev_emission_faceon",
                                                            self.curve_faceon_wavelengths,
                                                            1. - self.curve_faceon_values,
-                                                           description="Fraction of emitted energy by evolved stars (face-on)")
+                                                           description="Fraction of emitted energy by evolved stars (face-on)",
+                                                           wavelength_unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2772,7 +2779,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_faceon_absorption_wavelengths(self):
-        return self.curve_faceon_absorption.wavelengths(asarray=True)
+        return self.curve_faceon_absorption.wavelengths(asarray=True, unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2793,7 +2800,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return WavelengthCurve.from_wavelengths_and_values("Fev_absorption_faceon",
                                                            self.curve_faceon_absorption_wavelengths,
                                                            1. - self.curve_faceon_absorption_values,
-                                                           description="Fraction of absorbed energy by evolved stars (face-on)")
+                                                           description="Fraction of absorbed energy by evolved stars (face-on)",
+                                                           wavelength_unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2834,7 +2842,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_edgeon_wavelengths(self):
-        return self.curve_edgeon.wavelengths(asarray=True)
+        return self.curve_edgeon.wavelengths(asarray=True, unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2854,7 +2862,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         return WavelengthCurve.from_wavelengths_and_values("Fev_emission_edgeon", self.curve_edgeon_wavelengths,
                                                            1. - self.curve_edgeon_values,
-                                                           description="Fraction of emitted energy by evolved stars (edge-on)")
+                                                           description="Fraction of emitted energy by evolved stars (edge-on)",
+                                                           wavelength_unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2895,7 +2904,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def curve_edgeon_absorption_wavelengths(self):
-        return self.curve_edgeon_absorption.wavelengths(asarray=True)
+        return self.curve_edgeon_absorption.wavelengths(asarray=True, unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -2916,7 +2925,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return WavelengthCurve.from_wavelengths_and_values("Fev_absorption_edgeon",
                                                            self.curve_edgeon_absorption_wavelengths,
                                                            1. - self.curve_edgeon_absorption_values,
-                                                           description="Fraction of absorbed energy by evolved stars (edge-on)")
+                                                           description="Fraction of absorbed energy by evolved stars (edge-on)",
+                                                           wavelength_unit="micron")
 
     # -----------------------------------------------------------------
 
@@ -3920,6 +3930,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_cube_earth(self):
+        return not self.has_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cube_earth_absorption(self):
+        return not self.has_cube_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cube_faceon(self):
+        return not self.has_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cube_faceon_absorption(self):
+        return not self.has_cube_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cube_edgeon(self):
+        return not self.has_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cube_edgeon_absorption(self):
+        return not self.has_cube_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def write_cubes(self):
 
         """
@@ -3930,20 +3976,20 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Earth
         if self.do_earth:
 
-            self.write_cube_earth()
-            self.write_cube_earth_absorption()
+            if self.do_write_cube_earth: self.write_cube_earth()
+            if self.do_write_cube_earth_absorption: self.write_cube_earth_absorption()
 
         # Face-on
         if self.do_faceon:
 
-            self.write_cube_faceon()
-            self.write_cube_faceon_absorption()
+            if self.do_write_cube_faceon: self.write_cube_faceon()
+            if self.do_write_cube_faceon_absorption: self.write_cube_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
 
-            self.write_cube_edgeon()
-            self.write_cube_edgeon_absorption()
+            if self.do_write_cube_edgeon: self.write_cube_edgeon()
+            if self.do_write_cube_edgeon_absorption: self.write_cube_edgeon_absorption()
 
     # -----------------------------------------------------------------
 
@@ -4396,11 +4442,332 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting ...")
 
+        # Maps of the absorbed energy
+        self.plot_absorption_maps()
+
+        # Maps of the total heating fraction
+        self.plot_maps()
+
         # Maps of spectral heating
         self.plot_spectral_maps()
 
         # Curves of spectral heating
         self.plot_curves()
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the total absorbed energy ...")
+
+        # Earth
+        if self.do_earth: self.plot_absorption_maps_earth()
+
+        # Faceon
+        if self.do_faceon: self.plot_absorption_maps_faceon()
+
+        # Edgeon
+        if self.do_edgeon: self.plot_absorption_maps_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_maps_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the total absorbed energy from the earth projection ...")
+
+        # Total
+        self.plot_absorption_map_earth_total()
+
+        # Young
+        self.plot_absorption_map_earth_young()
+
+        # Ionizing
+        self.plot_absorption_map_earth_ionizing()
+
+        # Internal
+        self.plot_absorption_map_earth_internal()
+
+        # Unevolved
+        self.plot_absorption_map_earth_unevolved()
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_earth_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_earth_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_earth_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_earth_internal(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_earth_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_maps_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the total absorbed energy from the face-on projection ...")
+
+        # Total
+        self.plot_absorption_map_faceon_total()
+
+        # Young
+        self.plot_absorption_map_faceon_young()
+
+        # Ionizing
+        self.plot_absorption_map_faceon_ionizing()
+
+        # Internal
+        self.plot_absorption_map_faceon_internal()
+
+        # Unevolved
+        self.plot_absorption_map_faceon_unevolved()
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_faceon_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_faceon_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_faceon_ionizing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_faceon_internal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_faceon_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_maps_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the total absorbed energy from the edge-on projection ...")
+
+        # Total
+        self.plot_absorption_map_edgeon_total()
+
+        # Young
+        self.plot_absorption_map_edgeon_young()
+
+        # Ionizing
+        self.plot_absorption_map_edgeon_ionizing()
+
+        # Internal
+        self.plot_absorption_map_edgeon_internal()
+
+        # Unevolved
+        self.plot_absorption_map_edgeon_unevolved()
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_edgeon_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_edgeon_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_edgeon_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_edgeon_internal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map_edgeon_unevolved(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_earth:
+            self.plot_map_earth()
+            self.plot_map_earth_diffuse()
+
+        # Face-on
+        if self.do_faceon:
+            self.plot_map_faceon()
+            self.plot_map_faceon_diffuse()
+
+        # Edge-on
+        if self.do_edgeon:
+            self.plot_map_edgeon()
+            self.plot_map_edgeon_diffuse()
+
+    # -----------------------------------------------------------------
+
+    def plot_map_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_map_earth_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_map_faceon_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def plot_map_edgeon_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -4411,14 +4778,17 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Earth
         if self.do_earth:
             self.plot_spectral_maps_emission_earth()
             self.plot_spectral_maps_absorption_earth()
 
+        # Face-on
         if self.do_faceon:
             self.plot_spectral_maps_emission_faceon()
             self.plot_spectral_maps_absorption_faceon()
 
+        # Edge-on
         if self.do_edgeon:
             self.plot_spectral_maps_emission_edgeon()
             self.plot_spectral_maps_absorption_edgeon()
@@ -4816,14 +5186,17 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Earth
         if self.do_earth:
             if not self.has_curve_earth_emission_plot: self.plot_curve_earth_emission()
             if not self.has_curve_earth_absorption_plot: self.plot_curve_earth_absorption()
 
+        # Face-on
         if self.do_faceon:
             if not self.has_curve_faceon_emission_plot: self.plot_curve_faceon_emission()
             if not self.has_curve_faceon_absorption_plot: self.plot_curve_faceon_absorption()
 
+        # Edge-on
         if self.do_edgeon:
             if not self.has_curve_edgeon_emission_plot: self.plot_curve_edgeon_emission()
             if not self.has_curve_edgeon_absorption_plot: self.plot_curve_edgeon_absorption()
@@ -4842,6 +5215,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curves_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return {"unevolved": self.curve_earth, "evolved": self.curve_earth_evolved}
+
+    # -----------------------------------------------------------------
+
     def plot_curve_earth_emission(self):
 
         """
@@ -4849,8 +5234,12 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust emission from the earth projection ...")
+
         # Plot
-        plotting.plot_curve(self.curve_earth, path=self.curve_earth_emission_plot_path)
+        #plotting.plot_curve(self.curve_earth, path=self.curve_earth_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_earth, path=self.curve_earth_emission_plot_path, x_scale="log")
 
     # -----------------------------------------------------------------
 
@@ -4866,6 +5255,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curves_earth_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return {"unevolved": self.curve_earth_absorption, "evolved": self.curve_earth_absorption_evolved}
+
+    # -----------------------------------------------------------------
+
     def plot_curve_earth_absorption(self):
 
         """
@@ -4873,8 +5274,12 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust absorption from the earth projection ...")
+
         # Plot
-        plotting.plot_curve(self.curve_earth_absorption, path=self.curve_earth_absorption_plot_path)
+        #plotting.plot_curve(self.curve_earth_absorption, path=self.curve_earth_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, x_scale="log")
 
     # -----------------------------------------------------------------
 
@@ -4890,6 +5295,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curves_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return {"unevolved": self.curve_faceon, "evolved": self.curve_faceon_evolved}
+
+    # -----------------------------------------------------------------
+
     def plot_curve_faceon_emission(self):
 
         """
@@ -4897,8 +5314,12 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust emission from the face-on projection ...")
+
         # Plot
-        plotting.plot_curve(self.curve_faceon, path=self.curve_faceon_emission_plot_path)
+        #plotting.plot_curve(self.curve_faceon, path=self.curve_faceon_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_faceon, path=self.curve_faceon_emission_plot_path, x_scale="log")
 
     # -----------------------------------------------------------------
 
@@ -4914,6 +5335,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curves_faceon_absorption(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return {"unevolved": self.curve_faceon_absorption, "evolved": self.curve_faceon_absorption_evolved}
+
+    # -----------------------------------------------------------------
+
     def plot_curve_faceon_absorption(self):
 
         """
@@ -4921,8 +5354,12 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust absorption from the face-on projection ...")
+
         # Plot
-        plotting.plot_curve(self.curve_faceon_absorption, path=self.curve_faceon_absorption_plot_path)
+        #plotting.plot_curve(self.curve_faceon_absorption, path=self.curve_faceon_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, x_scale="log")
 
     # -----------------------------------------------------------------
 
@@ -4938,6 +5375,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curves_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return {"unevolved": self.curve_edgeon, "evolved": self.curve_edgeon_evolved}
+
+    # -----------------------------------------------------------------
+
     def plot_curve_edgeon_emission(self):
 
         """
@@ -4945,8 +5394,12 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust emission from the edge-on projection ...")
+
         # Plot
-        plotting.plot_curve(self.curve_edgeon, path=self.curve_edgeon_emission_plot_path)
+        #plotting.plot_curve(self.curve_edgeon, path=self.curve_edgeon_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_edgeon, path=self.curve_edgeon_emission_plot_path, x_scale="log")
 
     # -----------------------------------------------------------------
 
@@ -4962,6 +5415,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def curves_edgeon_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return {"unevolved": self.curve_edgeon_absorption, "evolved": self.curve_edgeon_absorption_evolved}
+
+    # -----------------------------------------------------------------
+
     def plot_curve_edgeon_absorption(self):
 
         """
@@ -4969,7 +5434,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust absorption from the edge-on projection ...")
+
         # Plot
-        plotting.plot_curve(self.curve_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path)
+        #plotting.plot_curve(self.curve_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, x_scale="log")
 
 # -----------------------------------------------------------------
