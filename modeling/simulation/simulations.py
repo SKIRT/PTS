@@ -976,6 +976,20 @@ class ComponentSimulations(object):
         return self.edgeon_observed_cube_scattered.integrate()
 
     # -----------------------------------------------------------------
+    # ABSORPTION EARTH
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_cube(self):
+        return self.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_cube(self):
+        return self.has_full_cube
+
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def absorbed_scattering_correction_factor(self):
@@ -991,18 +1005,6 @@ class ComponentSimulations(object):
 
         # Return the correction factor
         return 1. + scattered / transparent
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_scattered_cube(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return self.has_full_cube
 
     # -----------------------------------------------------------------
 
@@ -1031,18 +1033,6 @@ class ComponentSimulations(object):
 
         # Return
         return intrinsic - direct - scattered
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_direct_cube(self):
-
-        """
-        This fnuction ...
-        :return:
-        """
-
-        return self.has_full_cube
 
     # -----------------------------------------------------------------
 
@@ -1169,6 +1159,79 @@ class ComponentSimulations(object):
         return self.has_observed_cube_absorbed_alternative_uncorrected and self.has_absorbed_scattering_correction_term and self.has_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
+    # ABSORPTION FACE-ON
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_cube_faceon(self):
+        return self.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_cube_faceon(self):
+        return self.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_absorbed_scattering_correction_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        scattered = self.faceon_observed_cube_scattered
+        transparent = self.intrinsic_stellar_cube_faceon
+
+        # Return the correction factor
+        return 1. + scattered / transparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_absorbed_scattering_correction_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_scattered_cube_faceon and self.has_intrinsic_stellar_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_cube_absorbed_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        intrinsic = self.intrinsic_stellar_cube_faceon
+        direct = self.faceon_observed_cube_direct
+        scattered = self.faceon_observed_cube_scattered
+
+        # Return
+        return intrinsic - direct - scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_observed_cube_absorbed_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube_faceon and self.has_direct_cube_faceon and self.has_scattered_cube_faceon
+
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_observed_cube_absorbed(self):
@@ -1178,12 +1241,46 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_stellar_cube_faceon - self.faceon_observed_stellar_cube
+        # Get
+        absorbed = self.faceon_observed_cube_absorbed_uncorrected
+        correction = self.faceon_absorbed_scattering_correction_factor
+
+        # Return
+        return absorbed * correction
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_cube_absorbed(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_faceon_observed_cube_absorbed_uncorrected and self.has_faceon_absorbed_scattering_correction_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_cube_absorbed_alternative_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        transparent = self.intrinsic_stellar_cube_faceon
+        observed = self.faceon_observed_stellar_cube
+
+        # Return
+        return transparent - observed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_observed_cube_absorbed_alternative_uncorrected(self):
 
         """
         This function ...
@@ -1195,6 +1292,139 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def faceon_absorbed_scattering_correction_term(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Uniformize
+        transparent = self.intrinsic_stellar_cube_faceon
+        direct = self.faceon_observed_cube_direct
+        scattered = self.faceon_observed_cube_scattered
+
+        # Return
+        return (scattered / transparent) * (transparent - direct)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_absorbed_scattering_correction_term(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube_faceon and self.has_direct_cube_faceon and self.has_scattered_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_cube_absorbed_alternative(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        absorbed = self.faceon_observed_cube_absorbed_alternative_uncorrected
+        correction_term = self.faceon_absorbed_scattering_correction_term
+        correction_factor = self.faceon_absorbed_scattering_correction_factor
+
+        # Return
+        return (absorbed - correction_term) * correction_factor
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_observed_cube_absorbed_alternative(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_faceon_observed_cube_absorbed_alternative_uncorrected and self.has_faceon_absorbed_scattering_correction_term and self.has_faceon_absorbed_scattering_correction_factor
+
+    # -----------------------------------------------------------------
+    # ABSORPTION EDGE-ON
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_cube_edgeon(self):
+        return self.has_full_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_cube_edgeon(self):
+        return self.has_full_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_absorbed_scattering_correction_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        scattered = self.edgeon_observed_cube_scattered
+        transparent = self.intrinsic_stellar_cube_edgeon
+
+        # Return the correction factor
+        return 1. + scattered / transparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_absorbed_scattering_correction_factor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_scattered_cube_edgeon and self.has_intrinsic_stellar_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_cube_absorbed_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        intrinsic = self.intrinsic_stellar_cube_edgeon
+        direct = self.edgeon_observed_cube_direct
+        scattered = self.edgeon_observed_cube_scattered
+
+        # Return
+        return intrinsic - direct - scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_cube_absorbed_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube_edgeon and self.has_direct_cube_edgeon and self.has_scattered_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def edgeon_observed_cube_absorbed(self):
 
         """
@@ -1202,12 +1432,46 @@ class ComponentSimulations(object):
         :return:
         """
 
-        return self.intrinsic_stellar_cube_edgeon - self.edgeon_observed_stellar_cube
+        # Get
+        absorbed = self.edgeon_observed_cube_absorbed_uncorrected
+        correction = self.edgeon_absorbed_scattering_correction_factor
+
+        # Return
+        return absorbed * correction
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_cube_absorbed(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_edgeon_observed_cube_absorbed_uncorrected and self.has_edgeon_absorbed_scattering_correction_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_cube_absorbed_alternative_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        transparent = self.intrinsic_stellar_cube_edgeon
+        observed = self.edgeon_observed_stellar_cube
+
+        # Return
+        return transparent - observed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_cube_absorbed_alternative_uncorrected(self):
 
         """
         This function ...
@@ -1216,6 +1480,67 @@ class ComponentSimulations(object):
 
         return self.has_intrinsic_stellar_cube_edgeon and self.has_edgeon_observed_stellar_cube
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_absorbed_scattering_correction_term(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Uniformize
+        transparent = self.intrinsic_stellar_cube_edgeon
+        direct = self.edgeon_observed_cube_direct
+        scattered = self.edgeon_observed_cube_scattered
+
+        # Return
+        return (scattered / transparent) * (transparent - direct)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_absorbed_scattering_correction_term(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube_edgeon and self.has_direct_cube_edgeon and self.has_scattered_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_cube_absorbed_alternative(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get
+        absorbed = self.edgeon_observed_cube_absorbed_alternative_uncorrected
+        correction_term = self.edgeon_absorbed_scattering_correction_term
+        correction_factor = self.edgeon_absorbed_scattering_correction_factor
+
+        # Return
+        return (absorbed - correction_term) * correction_factor
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_cube_absorbed_alternative(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_edgeon_observed_cube_absorbed_alternative_uncorrected and self.has_edgeon_absorbed_scattering_correction_term and self.has_edgeon_absorbed_scattering_correction_factor
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @lazyproperty
