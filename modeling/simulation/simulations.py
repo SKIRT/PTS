@@ -978,6 +978,87 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def absorbed_scattering_correction_factor(self):
+
+        """
+        Thisf unction returns a frame to be applied to the directly absorbed radiation, in order to correct it for
+        absorbed radiation from incoming scattered radiation
+        :return:
+        """
+
+        # Uniformize
+        scattered, transparent = uniformize(self.observed_cube_scattered, self.intrinsic_stellar_cube)
+
+        # Return the correction factor
+        return 1. + scattered / transparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_cube(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorbed_scattering_correction_factor(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube and self.has_scattered_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_cube_absorbed_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Uniformize
+        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct, self.observed_cube_scattered)
+
+        # Return
+        return intrinsic - direct - scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_direct_cube(self):
+
+        """
+        This fnuction ...
+        :return:
+        """
+
+        return self.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_cube_absorbed_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube and self.has_direct_cube and self.has_scattered_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_cube_absorbed(self):
 
         """
@@ -985,20 +1066,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # kwargs["no_fwhm"] = "return"
-        #         kwargs["no_pixelscale"] = "shape"
-        #         kwargs["distance"] = self.galaxy_distance
-
-        #intrinsic = self.intrinsic_stellar_cube
-        #observed = self.observed_stellar_cube
-        #return self.intrinsic_stellar_cube - self.observed_stellar_cube
-
-        #from ...magic.core.list import convolve_rebin_and_convert
-        #intrinsic, observed = convolve_rebin_and_convert(self.intrinsic_stellar_cube, self.observed_stellar_cube, no_fwhm="return", no_pixelscale="shape", distance=self.distance)
-        intrinsic, observed = uniformize(self.intrinsic_stellar_cube, self.observed_stellar_cube, distance=self.distance)
+        # Uniformize
+        absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor)
 
         # Return
-        return intrinsic - observed
+        return absorbed * correction
 
     # -----------------------------------------------------------------
 
@@ -1010,7 +1082,91 @@ class ComponentSimulations(object):
         :return:
         """
 
+        return self.has_observed_cube_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absorbed_scattering_correction_term(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Uniformize
+        transparent, direct, scattered = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct, self.observed_cube_scattered)
+
+        # Return
+        return (scattered / transparent) * (transparent - direct)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_absorbed_scattering_correction_term(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return self.has_intrinsic_stellar_cube and self.has_direct_cube and self.has_scattered_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_cube_absorbed_alternative_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Uniformize
+        intrinsic, observed = uniformize(self.intrinsic_stellar_cube, self.observed_stellar_cube, distance=self.distance)
+
+        # Return
+        return intrinsic - observed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_cube_absorbed_alternative_uncorrected(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
         return self.has_intrinsic_stellar_cube and self.has_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_cube_absorbed_alternative(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Uniformize
+        absorbed, correction_term, correction_factor = uniformize(self.observed_cube_absorbed_alternative_uncorrected, self.absorbed_scattering_correction_term, self.absorbed_scattering_correction_factor)
+
+        # Return
+        return (absorbed - correction_term) * correction_factor
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_cube_absorbed_alternative(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_observed_cube_absorbed_alternative_uncorrected and self.has_absorbed_scattering_correction_term and self.has_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
 
