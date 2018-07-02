@@ -17,6 +17,7 @@ from ..component.galaxy import GalaxyModelingComponent
 from .context import AnalysisContext
 from ...core.tools.utils import lazyproperty
 from ...core.tools import filesystem as fs
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -656,6 +657,335 @@ class AnalysisRunComponent(AnalysisComponent):
         return fs.create_directory_in(self.properties_maps_dust_path, edgeon_name)
 
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+    # TOTAL MAPS
+    # -----------------------------------------------------------------
+
+    def has_total_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_total_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_total_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_total_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_total_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation: 
+        :return: 
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_total_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_total_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_total_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation  + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL BOL
+    # -----------------------------------------------------------------
+
+    def has_total_bol_map(self, orientation=earth_name):
+        return self.has_total_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_bol_map(self, orientation=earth_name):
+        return self.load_total_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_bol_map(self, orientation=earth_name):
+        if self.has_total_bol_map(orientation): return self.load_total_bol_map(orientation)
+        if orientation == earth_name: return self.model.total_bolometric_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL INTR STELLAR
+    # -----------------------------------------------------------------
+
+    def has_total_intr_stellar_map(self, orientation=earth_name):
+        return self.has_total_map(intr_stellar_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_intr_stellar_map(self, orientation=earth_name):
+        return self.load_total_map(intr_stellar_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_intr_stellar_map(self, orientation=earth_name):
+        if self.has_total_intr_stellar_map(orientation): return self.load_total_intr_stellar_map(orientation)
+        if orientation == earth_name: return self.model.total_intrinsic_stellar_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_intrinsic_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_intrinsic_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL OBS STELLAR
+    # -----------------------------------------------------------------
+
+    def has_total_obs_stellar_map(self, orientation=earth_name):
+        return self.has_total_map(obs_stellar_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_obs_stellar_map(self, orientation=earth_name):
+        return self.load_total_map(obs_stellar_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_obs_stellar_map(self, orientation=earth_name):
+        if self.has_total_obs_stellar_map(orientation): return self.load_total_obs_stellar_map(orientation)
+        if orientation == earth_name: return self.model.total_observed_stellar_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_observed_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_observed_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL DIFFUSE DUST
+    # -----------------------------------------------------------------
+
+    def has_total_diffuse_dust_map(self, orientation=earth_name):
+        return self.has_total_map(diffuse_dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_diffuse_dust_map(self, orientation=earth_name):
+        return self.load_total_map(diffuse_dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_diffuse_dust_map(self, orientation=earth_name):
+        if self.has_total_diffuse_dust_map(orientation): return self.load_total_diffuse_dust_map(orientation)
+        if orientation == earth_name: return self.model.total_diffuse_dust_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_diffuse_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_diffuse_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL DUST
+    # -----------------------------------------------------------------
+
+    def has_total_dust_map(self, orientation=earth_name):
+        return self.has_total_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_dust_map(self, orientation=earth_name):
+        return self.load_total_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_dust_map(self, orientation=earth_name):
+        if self.has_total_dust_map(orientation): return self.load_total_dust_map(orientation)
+        if orientation == earth_name: return self.model.total_dust_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL SCATTERED
+    # -----------------------------------------------------------------
+
+    def has_total_scattered_map(self, orientation=earth_name):
+        return self.has_total_map(scattered_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_scattered_map(self, orientation=earth_name):
+        return self.load_total_map(scattered_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_scattered_map(self, orientation=earth_name):
+        if self.has_total_scattered_map(orientation): return self.load_total_scattered_map(orientation)
+        if orientation == earth_name: return self.model.total_scattered_stellar_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_scattered_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_scattered_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL ABSORBED DIFFUSE
+    # -----------------------------------------------------------------
+
+    def has_total_absorbed_diffuse_map(self, orientation=earth_name):
+        return self.has_total_map(absorbed_diffuse_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_absorbed_diffuse_map(self, orientation=earth_name):
+        return self.load_total_map(absorbed_diffuse_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_absorbed_diffuse_map(self, orientation=earth_name):
+        if self.has_total_absorbed_diffuse_map(orientation): return self.load_total_absorbed_diffuse_map(orientation)
+        if orientation == earth_name: return self.model.total_absorbed_diffuse_stellar_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_absorbed_diffuse_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_absorbed_diffuse_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL FABS DIFFUSE
+    # -----------------------------------------------------------------
+
+    def has_total_fabs_diffuse_map(self, orientation=earth_name):
+        return self.has_total_map(fabs_diffuse_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_fabs_diffuse_map(self, orientation=earth_name):
+        return self.load_total_map(fabs_diffuse_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_fabs_diffuse_map(self, orientation=earth_name):
+        if self.has_total_fabs_diffuse_map(orientation): return self.load_total_fabs_diffuse_map(orientation)
+        if orientation == earth_name: return self.model.total_fabs_diffuse_map_earth
+        elif orientation == faceon_name: return self.model.total_fabs_diffuse_map_faceon
+        elif orientation == edgeon_name: return self.model.total_fabs_diffuse_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL FABS
+    # -----------------------------------------------------------------
+
+    def has_total_fabs_map(self, orientation=earth_name):
+        return self.has_total_map(fabs_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_fabs_map(self, orientation=earth_name):
+        return self.load_total_map(fabs_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_fabs_map(self, orientation=earth_name):
+        if self.has_total_fabs_map(orientation): return self.load_total_fabs_map(orientation)
+        if orientation == earth_name: return self.model.total_fabs_map_earth
+        elif orientation == faceon_name: return self.model.total_fabs_map_faceon
+        elif orientation == edgeon_name: return self.model.total_fabs_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL ATTENUATION
+    # -----------------------------------------------------------------
+
+    def has_total_attenuated_map(self, orientation=earth_name):
+        return self.has_total_map(attenuated_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_attenuated_map(self, orientation=earth_name):
+        return self.load_total_map(attenuated_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_attenuated_map(self, orientation=earth_name):
+        if self.has_total_attenuated_map(orientation): return self.load_total_attenuated_map(orientation)
+        if orientation == earth_name: return self.model.total_attenuated_stellar_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_attenuated_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_attenuated_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL DIRECT
+    # -----------------------------------------------------------------
+
+    def has_total_direct_map(self, orientation=earth_name):
+        return self.has_total_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_direct_map(self, orientation=earth_name):
+        return self.load_total_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_direct_map(self, orientation=earth_name):
+        if self.has_total_direct_map(orientation): return self.load_total_direct_map(orientation)
+        if orientation == earth_name: return self.model.total_direct_stellar_luminosity_map_earth
+        elif orientation == faceon_name: return self.model.total_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.total_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL SFR
+    # -----------------------------------------------------------------
+
+    def has_total_sfr_map(self, orientation=earth_name):
+        return self.has_total_map(sfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_sfr_map(self, orientation=earth_name):
+        return self.load_total_map(sfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_sfr_map(self, orientation=earth_name):
+        if self.has_total_sfr_map(orientation): return self.load_total_sfr_map(orientation)
+        if orientation == earth_name: return self.model.total_star_formation_rate_map_earth
+        elif orientation == faceon_name: return self.model.total_star_formation_rate_map_faceon
+        elif orientation == edgeon_name: return self.model.total_star_formation_rate_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL STELLAR MASS
+    # -----------------------------------------------------------------
+
+    def has_total_stellar_mass_map(self, orientation=earth_name):
+        return self.has_total_map(stellar_mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_stellar_mass_map(self, orientation=earth_name):
+        return self.load_total_map(stellar_mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_stellar_mass_map(self, orientation=earth_name):
+        if self.has_total_stellar_mass_map(orientation): return self.load_total_stellar_mass_map(orientation)
+        if orientation == earth_name: return self.model.total_stellar_mass_map_earth
+        elif orientation == faceon_name: return self.model.total_stellar_mass_map_faceon
+        elif orientation == edgeon_name: return self.model.total_stellar_mass_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # TOTAL SSFR
+    # -----------------------------------------------------------------
+
+    def has_total_ssfr_map(self, orientation=earth_name):
+        return self.has_total_map(ssfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_total_ssfr_map(self, orientation=earth_name):
+        return self.load_total_map(ssfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_total_ssfr_map(self, orientation=earth_name):
+        if self.has_total_ssfr_map(orientation): return self.load_total_ssfr_map(orientation)
+        if orientation == earth_name: return self.model.total_ssfr_map_earth
+        elif orientation == faceon_name: return self.model.total_ssfr_map_faceon
+        elif orientation == edgeon_name: return self.model.total_ssfr_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
 
     def get_total_map(self, which, orientation=earth_name):
 
@@ -667,124 +997,194 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric luminosity
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.total_bolometric_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_total_bol_map(orientation)
 
         # Intrinsic stellar luminosity (transparent luminosity)
-        if which == intr_stellar_map_name:
-
-            if orientation == earth_name: return self.model.total_intrinsic_stellar_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_intrinsic_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_intrinsic_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == intr_stellar_map_name: return self.get_total_intr_stellar_map(orientation)
 
         # Observed stellar luminosity
-        elif which == obs_stellar_map_name:
-
-            if orientation == earth_name: return self.model.total_observed_stellar_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_observed_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_observed_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == obs_stellar_map_name: return self.get_total_obs_stellar_map(orientation)
 
         # Diffuse dust emission luminosity
-        elif which == diffuse_dust_map_name:
-
-            if orientation == earth_name: return self.model.total_diffuse_dust_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_diffuse_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_diffuse_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == diffuse_dust_map_name: return self.get_total_diffuse_dust_map(orientation)
 
         # Dust emission luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.total_dust_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_total_dust_map(orientation)
 
         # Scattered stellar luminosity
-        elif which == scattered_map_name:
-
-            if orientation == earth_name: return self.model.total_scattered_stellar_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_scattered_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_scattered_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == scattered_map_name: return self.get_total_scattered_map(orientation)
 
         # Absorbed stellar luminosity (by diffuse dust) (extinction)
         # absorbed = transparent - observed stellar (= observed - dust = direct + scattered)
-        elif which == absorbed_diffuse_map_name:
-
-            if orientation == earth_name: return self.model.total_absorbed_diffuse_stellar_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_absorbed_diffuse_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_absorbed_diffuse_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == absorbed_diffuse_map_name: return self.get_total_absorbed_diffuse_map(orientation)
 
         # Absorbed stellar luminosity (extinction)
         # CUBE INFORMATION IS NOT AVAILABLE, SO MAP IS NOT USEFUL (IS JUST THE SAME AS DUST EMISSION MAP)
         #elif which == absorbed_map_name:
 
         # Fraction of energy absorbed by DIFFUSE dust
-        elif which == fabs_diffuse_map_name:
-
-            if orientation == earth_name: return self.model.total_fabs_diffuse_map_earth
-            elif orientation == faceon_name: return self.model.total_fabs_diffuse_map_faceon
-            elif orientation == edgeon_name: return self.model.total_fabs_diffuse_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == fabs_diffuse_map_name: return self.get_total_fabs_diffuse_map(orientation)
 
         # Fraction of energy absorbed by dust
-        elif which == fabs_map_name:
-
-            if orientation == earth_name: return self.model.total_fabs_map_earth
-            elif orientation == faceon_name: return self.model.total_fabs_map_faceon
-            elif orientation == edgeon_name: return self.model.total_fabs_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == fabs_map_name: return self.get_total_fabs_map(orientation)
 
         # Attenuated stellar luminosity (attenuation)
-        elif which == attenuated_map_name: # attenuated = transparent - direct stellar
-
-            if orientation == earth_name: return self.model.total_attenuated_stellar_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_attenuated_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_attenuated_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == attenuated_map_name: return self.get_total_attenuated_map(orientation) # attenuated = transparent - direct stellar
 
         # Direct luminosity
-        elif which == direct_map_name:
-
-            if orientation == earth_name: return self.model.total_direct_stellar_luminosity_map_earth
-            elif orientation == faceon_name: return self.model.total_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.total_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == direct_map_name: return self.get_total_direct_map(orientation)
 
         # Star formation rate
-        elif which == sfr_map_name:
-
-            if orientation == earth_name: return self.model.total_star_formation_rate_map_earth
-            elif orientation == faceon_name: return self.model.total_star_formation_rate_map_faceon
-            elif orientation == edgeon_name: return self.model.total_star_formation_rate_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == sfr_map_name: return self.get_total_sfr_map(orientation)
 
         # Stellar mass
-        elif which == stellar_mass_map_name:
-
-            if orientation == earth_name: return self.model.total_stellar_mass_map_earth
-            elif orientation == faceon_name: return self.model.total_stellar_mass_map_faceon
-            elif orientation == edgeon_name: return self.model.total_stellar_mass_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == stellar_mass_map_name: return self.get_total_stellar_mass_map(orientation)
 
         # Specific star formation rate
-        elif which == ssfr_map_name:
-
-            if orientation == earth_name: return self.model.total_ssfr_map_earth
-            elif orientation == faceon_name: return self.model.total_ssfr_map_faceon
-            elif orientation == edgeon_name: return self.model.total_ssfr_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == ssfr_map_name: return self.get_total_ssfr_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # BULGE MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_bulge_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_bulge_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_bulge_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_bulge_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_bulge_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_bulge_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_bulge_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # BULGE BOL
+    # -----------------------------------------------------------------
+
+    def has_bulge_bol_map(self, orientation=earth_name):
+        return self.has_bulge_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_bol_map(self, orientation=earth_name):
+        return self.load_bulge_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_bol_map(self, orientation=earth_name):
+        if self.has_bulge_bol_map(orientation): return self.load_bulge_bol_map(orientation)
+        if orientation == earth_name: return self.model.old_bulge_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bulge_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bulge_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # BULGE DIRECT
+    # -----------------------------------------------------------------
+
+    def has_bulge_direct_map(self, orientation=earth_name):
+        return self.has_bulge_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_direct_map(self, orientation=earth_name):
+        return self.load_bulge_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_direct_map(self, orientation=earth_name):
+        if self.has_bulge_direct_map(orientation): return self.load_bulge_direct_map(orientation)
+        if orientation == earth_name: return self.model.old_bulge_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bulge_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bulge_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation +"'")
+
+    # -----------------------------------------------------------------
+    # BULGE I1
+    # -----------------------------------------------------------------
+
+    def has_bulge_i1_map(self, orientation=earth_name):
+        return self.has_bulge_map(i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_i1_map(self, orientation=earth_name):
+        return self.load_bulge_map(i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_i1_map(self, orientation=earth_name):
+        if self.has_bulge_i1_map(orientation): return self.load_bulge_i1_map(orientation)
+        if orientation == earth_name: return self.model.old_bulge_i1_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bulge_i1_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bulge_i1_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # BULGE INTR I1
+    # -----------------------------------------------------------------
+
+    def has_bulge_intr_i1_map(self, orientation=earth_name):
+        return self.has_bulge_map(intr_i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_intr_i1_map(self, orientation=earth_name):
+        return self.load_bulge_map(intr_i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_intr_i1_map(self, orientation=earth_name):
+        if self.has_bulge_intr_i1_map(orientation): return self.load_bulge_intr_i1_map(orientation)
+        if orientation == earth_name: return self.model.old_bulge_intrinsic_i1_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # BULGE DUST
+    # -----------------------------------------------------------------
+
+    def has_bulge_dust_map(self, orientation=earth_name):
+        return self.has_bulge_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_dust_map(self, orientation=earth_name):
+        return self.load_bulge_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_dust_map(self, orientation=earth_name):
+        if self.has_bulge_dust_map(orientation): return self.load_bulge_dust_map(orientation)
+        if orientation == earth_name: return self.model.old_bulge_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bulge_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bulge_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
     # -----------------------------------------------------------------
 
@@ -798,47 +1198,162 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric luminosity
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.old_bulge_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bulge_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bulge_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_bulge_bol_map(orientation)
 
         # Direct
-        elif which == direct_map_name:
-
-            if orientation == earth_name: return self.model.old_bulge_direct_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bulge_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bulge_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation +"'")
+        elif which == direct_map_name: return self.get_bulge_direct_map(orientation)
 
         # (observed) I1 lum
-        elif which == i1_map_name:
-
-            if orientation == earth_name: return self.model.old_bulge_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bulge_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bulge_i1_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == i1_map_name: return self.get_bulge_i1_map(orientation)
 
         # Intrinsic I1
-        elif which == intr_i1_map_name:
-
-            if orientation == earth_name: return self.model.old_bulge_intrinsic_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_i1_map_name: return self.get_bulge_intr_i1_map(orientation)
 
         # Dust luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.old_bulge_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bulge_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bulge_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_bulge_dust_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # DISK MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_disk_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_disk_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_disk_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_disk_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_disk_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_disk_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_disk_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_disk_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DISK BOL
+    # -----------------------------------------------------------------
+
+    def has_disk_bol_map(self, orientation=earth_name):
+        return self.has_disk_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_disk_bol_map(self, orientation=earth_name):
+        return self.load_disk_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_bol_map(self, orientation=earth_name):
+        if self.has_disk_bol_map(orientation): return self.load_disk_bol_map(orientation)
+        if orientation == earth_name: return self.model.old_disk_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.old_disk_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_disk_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DISK DIRECT
+    # -----------------------------------------------------------------
+
+    def has_disk_direct_map(self, orientation=earth_name):
+        return self.has_disk_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_disk_direct_map(self, orientation=earth_name):
+        return self.load_disk_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_direct_map(self, orientation=earth_name):
+        if self.has_disk_direct_map(orientation): return self.load_disk_direct_map(orientation)
+        if orientation == earth_name: return self.model.old_disk_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.old_disk_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_disk_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DISK I1
+    # -----------------------------------------------------------------
+
+    def has_disk_i1_map(self, orientation=earth_name):
+        return self.has_disk_map(i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_disk_i1_map(self, orientation=earth_name):
+        return self.load_disk_map(i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_i1_map(self, orientation=earth_name):
+        if self.has_disk_i1_map(orientation): return self.load_disk_i1_map(orientation)
+        if orientation == earth_name: return self.model.old_disk_i1_luminosity_map
+        elif orientation == faceon_name: return self.model.old_disk_i1_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_disk_i1_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DISK INTRINSIC I1
+    # -----------------------------------------------------------------
+
+    def has_disk_intr_i1_map(self, orientation=earth_name):
+        return self.has_disk_map(intr_i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_disk_intr_i1_map(self, orientation=earth_name):
+        return self.load_disk_map(intr_i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_intr_i1_map(self, orientation=earth_name):
+        if self.has_disk_intr_i1_map(orientation): return self.load_disk_intr_i1_map(orientation)
+        if orientation == earth_name: return self.model.old_disk_intrinsic_i1_luminosity_map
+        elif orientation == faceon_name: return self.model.old_disk_intrinsic_i1_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DISK DUST
+    # -----------------------------------------------------------------
+
+    def has_disk_dust_map(self, orientation=earth_name):
+        return self.has_disk_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_disk_dust_map(self, orientation=earth_name):
+        return self.load_disk_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_disk_dust_map(self, orientation=earth_name):
+        if self.has_disk_dust_map(orientation): return self.load_disk_dust_map(orientation)
+        if orientation == earth_name: return self.model.old_disk_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.old_disk_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_disk_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
     # -----------------------------------------------------------------
 
@@ -852,47 +1367,162 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.old_disk_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.old_disk_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_disk_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_disk_bol_map(orientation)
 
         # Direct
-        if which == direct_map_name:
-
-            if orientation == earth_name: return self.model.old_disk_direct_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.old_disk_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_disk_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == direct_map_name: return self.get_disk_direct_map(orientation)
 
         # (observed) I1
-        elif which == i1_map_name:
-
-            if orientation == earth_name: return self.model.old_disk_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.old_disk_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_disk_i1_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == i1_map_name: return self.get_disk_i1_map(orientation)
 
         # Intrinsic I1
-        elif which == intr_i1_map_name:
-
-            if orientation == earth_name: return self.model.old_disk_intrinsic_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.old_disk_intrinsic_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_i1_map_name: return self.get_disk_intr_i1_map(orientation)
 
         # Dust luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.old_disk_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.old_disk_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_disk_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_disk_dust_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # OLD MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_old_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_old_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_old_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_old_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_old_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_old_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_old_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_old_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # OLD BOL
+    # -----------------------------------------------------------------
+
+    def has_old_bol_map(self, orientation=earth_name):
+        return self.has_old_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_old_bol_map(self, orientation=earth_name):
+        return self.load_old_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_old_bol_map(self, orientation=earth_name):
+        if self.has_old_bol_map(orientation): return self.load_old_bol_map(orientation)
+        if orientation == earth_name: return self.model.old_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # OLD DIRECT
+    # -----------------------------------------------------------------
+
+    def has_old_direct_map(self, orientation=earth_name):
+        return self.has_old_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_old_direct_map(self, orientation=earth_name):
+        return self.load_old_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_old_direct_map(self, orientation=earth_name):
+        if self.has_old_direct_map(orientation): return self.load_old_direct_map(orientation)
+        if orientation == earth_name: return self.model.old_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.old_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # OLD I1
+    # -----------------------------------------------------------------
+
+    def has_old_i1_map(self, orientation=earth_name):
+        return self.has_old_map(i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_old_i1_map(self, orientation=earth_name):
+        return self.load_old_map(i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_old_i1_map(self, orientation=earth_name):
+        if self.has_old_i1_map(orientation): return self.load_old_i1_map(orientation)
+        if orientation == earth_name: return self.model.old_i1_luminosity_map
+        elif orientation == faceon_name: return self.model.old_i1_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_i1_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # OLD INTRINSIC I1
+    # -----------------------------------------------------------------
+
+    def has_old_intr_i1_map(self, orientation=earth_name):
+        return self.has_old_map(intr_i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_old_intr_i1_map(self, orientation=earth_name):
+        return self.load_old_map(intr_i1_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_old_intr_i1_map(self, orientation=earth_name):
+        if self.has_old_intr_i1_map(orientation): return self.load_old_intr_i1_map(orientation)
+        if orientation == earth_name: return self.model.old_intrinsic_i1_luminosity_map
+        elif orientation == faceon_name: return self.model.old_intrinsic_i1_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_intrinsic_i1_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # OLD DUST
+    # -----------------------------------------------------------------
+
+    def has_old_dust_map(self, orientation=earth_name):
+        return self.has_old_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_old_dust_map(self, orientation=earth_name):
+        return self.load_old_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_old_dust_map(self, orientation=earth_name):
+        if self.has_old_dust_map(orientation): return self.load_old_dust_map(orientation)
+        if orientation == earth_name: return self.model.old_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.old_bulge_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.old_bulge_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
     # -----------------------------------------------------------------
 
@@ -906,47 +1536,164 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.old_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_old_bol_map(orientation)
 
         # Direct
-        if which == direct_map_name:
-
-            if orientation == earth_name: return self.model.old_direct_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.old_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == direct_map_name: return self.get_old_direct_map(orientation)
 
         # (observed) I1
-        elif which == i1_map_name:
-
-            if orientation == earth_name: return self.model.old_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.old_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_i1_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == i1_map_name: return self.get_old_i1_map(orientation)
 
         # Intrinsic I1
-        elif which == intr_i1_map_name:
-
-            if orientation == earth_name: return self.model.old_intrinsic_i1_luminosity_map
-            elif orientation == faceon_name: return self.model.old_intrinsic_i1_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_intrinsic_i1_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_i1_map_name: return self.get_old_intr_i1_map(orientation)
 
         # Dust luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.old_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.old_bulge_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.old_bulge_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_old_dust_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # YOUNG MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_young_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :parma map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_young_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_young_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_young_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_young_map(self, map_name, orientation=earth_name):
+
+        """
+        Thisf unction ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_young_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_young_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_young_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # YOUNG BOL
+    # -----------------------------------------------------------------
+
+    def has_young_bol_map(self, orientation=earth_name):
+        return self.has_young_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_young_bol_map(self, orientation=earth_name):
+        return self.load_young_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_young_bol_map(self, orientation=earth_name):
+        if self.has_young_bol_map(orientation): return self.load_young_bol_map(orientation)
+        if orientation == earth_name: return self.model.young_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.young_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.young_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # YOUNG DIRECT
+    # -----------------------------------------------------------------
+
+    def has_young_direct_map(self, orientation=earth_name):
+        return self.has_young_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_young_direct_map(self, orientation=earth_name):
+        return self.load_young_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_young_direct_map(self, orientation=earth_name):
+        if self.has_young_direct_map(orientation): return self.load_young_direct_map(orientation)
+        if orientation == earth_name: return self.model.young_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.young_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.young_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # YOUNG FUV
+    # -----------------------------------------------------------------
+
+    def has_young_fuv_map(self, orientation=earth_name):
+        return self.has_young_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_young_fuv_map(self, orientation=earth_name):
+        return self.load_young_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_young_fuv_map(self, orientation=earth_name):
+        if self.has_young_fuv_map(orientation): return self.load_young_fuv_map(orientation)
+        if orientation == earth_name: return self.model.young_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.young_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.young_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # YOUNG INTRINSIC FUV
+    # -----------------------------------------------------------------
+
+    def has_young_intr_fuv_map(self, orientation=earth_name):
+        return self.has_young_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_young_intr_fuv_map(self, orientation=earth_name):
+        return self.load_young_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_young_intr_fuv_map(self, orientation=earth_name):
+        if self.has_young_intr_fuv_map(orientation): return self.load_young_intr_fuv_map(orientation)
+        if orientation == earth_name: return self.model.young_intrinsic_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.young_intrinsic_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.young_intrinsic_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # YOUNG DUST
+    # -----------------------------------------------------------------
+
+    def has_young_dust_map(self, orientation=earth_name):
+        return self.has_young_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_young_dust_map(self, orientation=earth_name):
+        return self.load_young_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_young_dust_map(self, orientation=earth_name):
+        if self.has_young_dust_map(orientation): return self.load_young_dust_map(orientation)
+        if orientation == earth_name: return self.model.young_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.young_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.young_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
 
     def get_young_map(self, which, orientation=earth_name):
 
@@ -958,47 +1705,246 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.young_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.young_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.young_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_young_bol_map(orientation)
 
         # Direct
-        elif which == direct_map_name:
-
-            if orientation == earth_name: return self.model.young_direct_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.young_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.young_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == direct_map_name: return self.get_young_direct_map(orientation)
 
         # (observed) FUV
-        elif which == fuv_map_name:
-
-            if orientation == earth_name: return self.model.young_fuv_luminosity_map
-            elif orientation == faceon_name: return self.model.young_fuv_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.young_fuv_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == fuv_map_name: return self.get_young_fuv_map(orientation)
 
         # Intrinsic FUV
-        elif which == intr_fuv_map_name:
-
-            if orientation == earth_name: return self.model.young_intrinsic_fuv_luminosity_map
-            elif orientation == faceon_name: return self.model.young_intrinsic_fuv_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.young_intrinsic_fuv_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_fuv_map_name: return self.get_young_intr_fuv_map(orientation)
 
         # Dust luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.young_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.young_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.young_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_young_dust_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # SFR MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_sfr_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_sfr_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_sfr_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_sfr_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_sfr_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_sfr_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_sfr_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR BOL
+    # -----------------------------------------------------------------
+
+    def has_sfr_bol_map(self, orientation=earth_name):
+        return self.has_sfr_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_bol_map(self, orientation=earth_name):
+        return self.load_sfr_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_bol_map(self, orientation=earth_name):
+        if self.has_sfr_bol_map(orientation): return self.load_sfr_bol_map(orientation)
+        if orientation == earth_name: return self.model.sfr_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR DIRECT
+    # -----------------------------------------------------------------
+
+    def has_sfr_direct_map(self, orientation=earth_name):
+        return self.has_sfr_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_direct_map(self, orientation=earth_name):
+        return self.load_sfr_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_direct_map(self, orientation=earth_name):
+        if self.has_sfr_direct_map(orientation): return self.load_sfr_direct_map(orientation)
+        if orientation == earth_name: return self.model.sfr_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR FUV
+    # -----------------------------------------------------------------
+
+    def has_sfr_fuv_map(self, orientation=earth_name):
+        return self.has_sfr_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_fuv_map(self, orientation=earth_name):
+        return self.load_sfr_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_fuv_map(self, orientation=earth_name):
+        if self.has_sfr_fuv_map(orientation): return self.load_sfr_fuv_map(orientation)
+        if orientation == earth_name: return self.model.sfr_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR INTRINSIC FUV
+    # -----------------------------------------------------------------
+
+    def has_sfr_intr_fuv_map(self, orientation=earth_name):
+        return self.has_sfr_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_intr_fuv_map(self, orientation=earth_name):
+        return self.load_sfr_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_intr_fuv_map(self, orientation=earth_name):
+        if self.has_sfr_intr_fuv_map(orientation): return self.load_sfr_intr_fuv_map(orientation)
+        if orientation == earth_name: return self.model.sfr_intrinsic_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_intrinsic_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_intrinsic_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR SFR
+    # -----------------------------------------------------------------
+
+    def has_sfr_sfr_map(self, orientation=earth_name):
+        return self.has_sfr_map(sfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_sfr_map(self, orientation=earth_name):
+        return self.load_sfr_map(sfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_sfr_map(self, orientation=earth_name):
+        if self.has_sfr_sfr_map(orientation): return self.load_sfr_sfr_map(orientation)
+        if orientation == earth_name: return self.model.star_formation_rate_map
+        elif orientation == faceon_name: return self.model.star_formation_rate_map_faceon
+        elif orientation == edgeon_name: return self.model.star_formation_rate_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR DUST MASS
+    # -----------------------------------------------------------------
+
+    def has_sfr_dust_mass_map(self, orientation=earth_name):
+        return self.has_sfr_map(dust_mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_dust_mass_map(self, orientation=earth_name):
+        return self.load_sfr_map(dust_mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_dust_mass_map(self, orientation=earth_name):
+        if self.has_sfr_dust_mass_map(orientation): return self.load_sfr_dust_mass_map(orientation)
+        if orientation == earth_name: return self.model.sfr_dust_mass_map
+        elif orientation == faceon_name: return self.model.sfr_dust_mass_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_dust_mass_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR STELLAR LUM
+    # -----------------------------------------------------------------
+
+    def has_sfr_stellar_lum_map(self, orientation=earth_name):
+        return self.has_sfr_map(stellar_lum_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_stellar_lum_map(self, orientation=earth_name):
+        return self.load_sfr_map(stellar_lum_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_stellar_lum_map(self, orientation=earth_name):
+        if self.has_sfr_stellar_lum_map(orientation): return self.load_sfr_stellar_lum_map(orientation)
+        if orientation == earth_name: return self.model.sfr_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR INTRINSIC DUST
+    # -----------------------------------------------------------------
+
+    def has_sfr_intr_dust_map(self, orientation=earth_name):
+        return self.has_sfr_map(intr_dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_intr_dust_map(self, orientation=earth_name):
+        return self.load_sfr_map(intr_dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_intr_dust_map(self, orientation=earth_name):
+        if self.has_sfr_intr_dust_map(orientation): return self.load_sfr_intr_dust_map(orientation)
+        if orientation == earth_name: return self.model.sfr_intrinsic_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_intrinsic_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_intrinsic_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # SFR DUST
+    # -----------------------------------------------------------------
+
+    def has_sfr_dust_map(self, orientation=earth_name):
+        return self.has_sfr_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_sfr_dust_map(self, orientation=earth_name):
+        return self.load_sfr_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_sfr_dust_map(self, orientation=earth_name):
+        if self.has_sfr_dust_map(orientation): return self.load_sfr_dust_map(orientation)
+        if orientation == earth_name: return self.model.sfr_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.sfr_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.sfr_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
     # -----------------------------------------------------------------
 
@@ -1012,79 +1958,195 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.sfr_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_sfr_bol_map(orientation)
 
         # Direct
-        elif which == direct_map_name:
-
-            if orientation == earth_name: return self.model.sfr_direct_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == direct_map_name: return self.get_sfr_direct_map(orientation)
 
         # (observed) FUV
-        elif which == fuv_map_name:
-
-            if orientation == earth_name: return self.model.sfr_fuv_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_fuv_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_fuv_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == fuv_map_name: return self.get_sfr_fuv_map(orientation)
 
         # Intrinsic FUV
-        elif which == intr_fuv_map_name:
-
-            if orientation == earth_name: return self.model.sfr_intrinsic_fuv_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_intrinsic_fuv_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_intrinsic_fuv_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_fuv_map_name: return self.get_sfr_intr_fuv_map(orientation)
 
         # SFR
-        elif which == sfr_map_name:
-
-            if orientation == earth_name: return self.model.star_formation_rate_map
-            elif orientation == faceon_name: return self.model.star_formation_rate_map_faceon
-            elif orientation == edgeon_name: return self.model.star_formation_rate_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == sfr_map_name: return self.get_sfr_sfr_map(orientation)
 
         # Dust mass
-        elif which == dust_mass_map_name:
-
-            if orientation == earth_name: return self.model.sfr_dust_mass_map
-            elif orientation == faceon_name: return self.model.sfr_dust_mass_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_dust_mass_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_mass_map_name: return self.get_sfr_dust_mass_map(orientation)
 
         # Stellar bolometric luminosity
-        elif which == stellar_lum_map_name:
-
-            if orientation == earth_name: return self.model.sfr_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == stellar_lum_map_name: return self.get_sfr_stellar_lum_map(orientation)
 
         # Intrinsic dust luminosity
-        elif which == intr_dust_map_name:
-
-            if orientation == earth_name: return self.model.sfr_intrinsic_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_intrinsic_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_intrinsic_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_dust_map_name: return self.get_sfr_intr_dust_map(orientation)
 
         # Dust bolometric luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.sfr_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.sfr_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.sfr_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_sfr_dust_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_unevolved_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_unevolved_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_unevolved_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_unevolved_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_map(self, map_name, orientation=earth_name):
+
+        """
+        Thisn function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_unevolved_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_unevolved_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_unevolved_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED BOL
+    # -----------------------------------------------------------------
+
+    def has_unevolved_bol_map(self, orientation=earth_name):
+        return self.has_unevolved_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_bol_map(self, orientation=earth_name):
+        return self.load_unevolved_map(bol_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_bol_map(self, orientation=earth_name):
+        if self.has_unevolved_bol_map(orientation): return self.load_unevolved_bol_map(orientation)
+        if orientation == earth_name: return self.model.unevolved_bolometric_luminosity_map
+        elif orientation == faceon_name: return self.model.unevolved_bolometric_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.unevolved_bolometric_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED DIRECT
+    # -----------------------------------------------------------------
+
+    def has_unevolved_direct_map(self, orientation=earth_name):
+        return self.has_unevolved_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_direct_map(self, orientation=earth_name):
+        return self.load_unevolved_map(direct_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_direct_map(self, orientation=earth_name):
+        if self.has_unevolved_direct_map(orientation): return self.load_unevolved_direct_map(orientation)
+        if orientation == earth_name: return self.model.unevolved_direct_stellar_luminosity_map
+        elif orientation == faceon_name: return self.model.unevolved_direct_stellar_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.unevolved_direct_stellar_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED FUV
+    # -----------------------------------------------------------------
+
+    def has_unevolved_fuv_map(self, orientation=earth_name):
+        return self.has_unevolved_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_fuv_map(self, orientation=earth_name):
+        return self.load_unevolved_map(fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_fuv_map(self, orientation=earth_name):
+        if self.has_unevolved_fuv_map(orientation): return self.load_unevolved_fuv_map(orientation)
+        if orientation == earth_name: return self.model.unevolved_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.unevolved_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.unevolved_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED INTRINSIC FUV
+    # -----------------------------------------------------------------
+
+    def has_unevolved_intr_fuv_map(self, orientation=earth_name):
+        return self.has_unevolved_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_intr_fuv_map(self, orientation=earth_name):
+        return self.load_unevolved_map(intr_fuv_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_intr_fuv_map(self, orientation=earth_name):
+        if self.has_unevolved_intr_fuv_map(orientation): return self.load_unevolved_intr_fuv_map(orientation)
+        if orientation == earth_name: return self.model.unevolved_intrinsic_fuv_luminosity_map
+        elif orientation == faceon_name: return self.model.unevolved_intrinsic_fuv_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.unevolved_intrinsic_fuv_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED SFR
+    # -----------------------------------------------------------------
+
+    def has_unevolved_sfr_map(self, orientation=earth_name):
+        return self.has_unevolved_map(sfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_sfr_map(self, orientation=earth_name):
+        return self.load_unevolved_map(sfr_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_sfr_map(self, orientation=earth_name):
+        if self.has_unevolved_sfr_map(orientation): return self.load_unevolved_sfr_map(orientation)
+        if orientation == earth_name: return self.model.unevolved_star_formation_rate_map
+        elif orientation == faceon_name: return self.model.unevolved_star_formation_rate_map_faceon
+        elif orientation == edgeon_name: return self.model.unevolved_star_formation_rate_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED DUST
+    # -----------------------------------------------------------------
+
+    def has_unevolved_dust_map(self, orientation=earth_name):
+        return self.has_unevolved_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_unevolved_dust_map(self, orientation=earth_name):
+        return self.load_unevolved_map(dust_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_dust_map(self, orientation=earth_name):
+        if self.has_unevolved_dust_map(orientation): return self.load_unevolved_dust_map(orientation)
+        if orientation == earth_name: return self.model.unevolved_dust_luminosity_map
+        elif orientation == faceon_name: return self.model.unevolved_dust_luminosity_map_faceon
+        elif orientation == edgeon_name: return self.model.unevolved_dust_luminosity_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
     # -----------------------------------------------------------------
 
@@ -1098,55 +2160,102 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Bolometric
-        if which == bol_map_name:
-
-            if orientation == earth_name: return self.model.unevolved_bolometric_luminosity_map
-            elif orientation == faceon_name: return self.model.unevolved_bolometric_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.unevolved_bolometric_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == bol_map_name: return self.get_unevolved_bol_map(orientation)
 
         # Direct
-        elif which == direct_map_name:
-
-            if orientation == earth_name: return self.model.unevolved_direct_stellar_luminosity_map
-            elif orientation == faceon_name: return self.model.unevolved_direct_stellar_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.unevolved_direct_stellar_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == direct_map_name: return self.get_unevolved_direct_map(orientation)
 
         # FUV
-        elif which == fuv_map_name:
-
-            if orientation == earth_name: return self.model.unevolved_fuv_luminosity_map
-            elif orientation == faceon_name: return self.model.unevolved_fuv_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.unevolved_fuv_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == fuv_map_name: return self.get_unevolved_fuv_map(orientation)
 
         # Intrinsic FUV
-        elif which == intr_fuv_map_name:
-
-            if orientation == earth_name: return self.model.unevolved_intrinsic_fuv_luminosity_map
-            elif orientation == faceon_name: return self.model.unevolved_intrinsic_fuv_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.unevolved_intrinsic_fuv_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == intr_fuv_map_name: return self.get_unevolved_intr_fuv_map(orientation)
 
         # SFR
-        elif which == sfr_map_name:
-
-            if orientation == earth_name: return self.model.unevolved_star_formation_rate_map
-            elif orientation == faceon_name: return self.model.unevolved_star_formation_rate_map_faceon
-            elif orientation == edgeon_name: return self.model.unevolved_star_formation_rate_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == sfr_map_name: return self.get_unevolved_sfr_map(orientation)
 
         # Dust luminosity
-        elif which == dust_map_name:
-
-            if orientation == earth_name: return self.model.unevolved_dust_luminosity_map
-            elif orientation == faceon_name: return self.model.unevolved_dust_luminosity_map_faceon
-            elif orientation == edgeon_name: return self.model.unevolved_dust_luminosity_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == dust_map_name: return self.get_unevolved_dust_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")
+
+    # -----------------------------------------------------------------
+    # DUST MAPS
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def has_dust_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return fs.has_file(self.properties_maps_dust_earth_path, map_name, "fits")
+        elif orientation == faceon_name: return fs.has_file(self.properties_maps_dust_faceon_path, map_name, "fits")
+        elif orientation == edgeon_name: return fs.has_file(self.properties_maps_dust_edgeon_path, map_name, "fits")
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+
+    def load_dust_map(self, map_name, orientation=earth_name):
+
+        """
+        This function ...
+        :param map_name:
+        :param orientation:
+        :return:
+        """
+
+        if orientation == earth_name: return Frame.from_file(fs.join(self.properties_maps_dust_earth_path, map_name + ".fits"))
+        elif orientation == faceon_name: return Frame.from_file(fs.join(self.properties_maps_dust_faceon_path, map_name + ".fits"))
+        elif orientation == edgeon_name: return Frame.from_file(fs.join(self.properties_maps_dust_edgeon_path, map_name + ".fits"))
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DUST DIFFUSE MASS
+    # -----------------------------------------------------------------
+
+    def has_dust_diffuse_mass_map(self, orientation=earth_name):
+        return self.has_dust_map(diffuse_mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_diffuse_mass_map(self, orientation=earth_name):
+        return self.load_dust_map(diffuse_mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_diffuse_mass_map(self, orientation=earth_name):
+        if self.has_dust_diffuse_mass_map(orientation): return self.load_dust_diffuse_mass_map(orientation)
+        if orientation == earth_name: return self.model.diffuse_dust_mass_map
+        elif orientation == faceon_name: return self.model.diffuse_dust_mass_map_faceon
+        elif orientation == edgeon_name: return self.model.diffuse_dust_mass_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
+
+    # -----------------------------------------------------------------
+    # DUST MASS
+    # -----------------------------------------------------------------
+
+    def has_dust_mass_map(self, orientation=earth_name):
+        return self.has_dust_map(mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_mass_map(self, orientation=earth_name):
+        return self.load_dust_map(mass_map_name, orientation)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_mass_map(self, orientation=earth_name):
+        if self.has_dust_mass_map(orientation): return self.load_dust_mass_map(orientation)
+        if orientation == earth_name: return self.model.dust_mass_map
+        elif orientation == faceon_name: return self.model.dust_mass_map_faceon
+        elif orientation == edgeon_name: return self.model.dust_mass_map_edgeon
+        else: raise ValueError("Invalid orientation: '" + orientation + "'")
 
     # -----------------------------------------------------------------
 
@@ -1160,20 +2269,10 @@ class AnalysisRunComponent(AnalysisComponent):
         """
 
         # Dust mass
-        if which == diffuse_mass_map_name:
-
-            if orientation == earth_name: return self.model.diffuse_dust_mass_map
-            elif orientation == faceon_name: return self.model.diffuse_dust_mass_map_faceon
-            elif orientation == edgeon_name: return self.model.diffuse_dust_mass_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        if which == diffuse_mass_map_name: return self.get_dust_diffuse_mass_map(orientation)
 
         # Total dust mass
-        elif which == mass_map_name:
-
-            if orientation == earth_name: return self.model.dust_mass_map
-            elif orientation == faceon_name: return self.model.dust_mass_map_faceon
-            elif orientation == edgeon_name: return self.model.dust_mass_map_edgeon
-            else: raise ValueError("Invalid orientation: '" + orientation + "'")
+        elif which == mass_map_name: return self.get_dust_mass_map(orientation)
 
         # Invalid
         else: raise ValueError("Invalid argument: '" + which + "'")

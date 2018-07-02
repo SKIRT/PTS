@@ -488,15 +488,17 @@ def is_file(path):
 
 # -----------------------------------------------------------------
 
-def has_file(directory, filename):
+def has_file(directory, filename, extension=None):
 
     """
     This function ...
     :param directory:
     :param filename:
+    :param extension:
     :return:
     """
 
+    if extension is not None: filename += "." + extension
     return is_file(join(directory, filename))
 
 # -----------------------------------------------------------------
