@@ -29,6 +29,7 @@ from ...core.remote.remote import Remote
 from .initialization import wavelengths_filename, dustgridtree_filename
 from ...core.launch.options import AnalysisOptions
 from .run import old, young, ionizing, unevolved, total, bulge, disk, contributions
+from ...core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -94,6 +95,9 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         # The parallelization scheme (or the number of processes)
         self.parallelization = None
         self.nprocesses = None
+
+        # The SKIRT smile schema creator
+        self.smile = SKIRTSmileSchema()
 
     # -----------------------------------------------------------------
 
@@ -594,6 +598,24 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def local_skirt_version(self):
+        return introspection.skirt_main_version()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt7(self):
+        return self.local_skirt_version == 7
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt8(self):
+        return self.local_skirt_version == 8
+
+    # -----------------------------------------------------------------
+
     def set_writing_options(self):
 
         """
@@ -606,11 +628,6 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
         # Set dust system writing options
         self.ski.set_write_convergence()
-        self.ski.set_write_density()
-        # self.ski.set_write_depth_map()
-        # self.ski.set_write_quality()
-        self.ski.set_write_cell_properties()
-        # self.ski.set_write_cells_crossed()
 
         # EXTRA OUTPUT
         if self.config.temperatures: self.ski.set_write_temperature()
@@ -618,11 +635,14 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         if self.config.isrf: self.ski.set_write_isrf()
 
         # Write absorption
-        local_skirt_version = introspection.skirt_main_version()
-        if local_skirt_version == 7: self.ski.set_write_absorption()
-        elif local_skirt_version == 8: self.ski.set_write_isrf()
-        else: raise ValueError("Invalid version")
-        #self.ski.set_write_grid()
+        if not self.smile.supports_writing_absorption: raise RuntimeError("Writing absorption luminosities is not supported in your version of SKIRT")
+        if self.skirt7: self.ski.set_write_absorption()
+        elif self.skirt8: self.ski.set_write_isrf()
+        else: raise ValueError("Invalid SKIRT version: " + str(self.local_skirt_version))
+
+        # Write spectral absorption
+        if self.smile.supports_writing_spectral_absorption: self.ski.set_write_spectral_absorption()
+        else: log.warning("Writing absorption spectra is not supported in your version of SKIRT")
 
     # -----------------------------------------------------------------
 
@@ -646,7 +666,14 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             ski = self.ski.copy()
 
             # WRITE THE GRID FOR THE TOTAL CONTRIBUTION
-            if contribution == total: ski.set_write_grid()
+            # and write the number of cells crossed by photons
+            if contribution == total:
+                ski.set_write_grid()
+                ski.set_write_density()
+                ski.set_write_quality()
+                ski.set_write_cell_properties()
+                ski.set_write_cells_crossed()
+                ski.set_write_depth_map()
 
             # Remove other stellar components, except for the contribution of the total stellar population
             if contribution != total: ski.remove_stellar_components_except(component_names[contribution])

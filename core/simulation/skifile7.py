@@ -839,6 +839,14 @@ class SkiFile7:
         # Set the 'writeAbsorption' setting to true
         self.set_value(dust_system, "writeAbsorption", str_from_bool(value, lower=True))
 
+    def set_write_spectral_absorption(self, value=True):
+
+        # Get the dust system
+        dust_system = self.get_dust_system()
+
+        # Set the 'writeSpectralAbsorption' setting to true
+        self.set_value(dust_system, "writeSpectralAbsorption", str_from_bool(value, lower=True))
+
     def set_write_grid(self, value=True):
 
         # Get the dust grid

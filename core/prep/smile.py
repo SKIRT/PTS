@@ -1187,6 +1187,18 @@ class SKIRTSmileSchema(object):
 
         return self.has_property("PanDustSystem", "writeAbsorption")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def supports_writing_spectral_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_property("PanDustSystem", "writeSpectralAbsorption")
+
 # -----------------------------------------------------------------
 
 def get_ptype(tag):
