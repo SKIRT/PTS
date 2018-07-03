@@ -21,6 +21,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.tools import introspection
 from ...core.tools.utils import lazyproperty
+from ...core.basics.scatter import Scatter2D
 
 # -----------------------------------------------------------------
 

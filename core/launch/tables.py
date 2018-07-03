@@ -85,6 +85,58 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_previous(cls, table, new_statuses=None, remove_simulations=None, new_simulations=None):
+
+        """
+        This function ...
+        :param table:
+        :param new_statuses:
+        :param remove_simulations:
+        :param new_simulations:
+        :return:
+        """
+
+        # Create lists
+        simulation_names = []
+        status_list = []
+
+        # Loop over the existing simulations
+        for simulation_name in table.simulation_names:
+
+            # Remove simulation?
+            if remove_simulations is not None and simulation_name in remove_simulations: continue
+
+            # Get the correct status
+            if new_statuses is not None and simulation_name in new_statuses:
+                status = new_statuses[simulation_name]
+            else:
+                status = table.get_status(simulation_name)
+
+            # Add to columns
+            simulation_names.append(simulation_name)
+            status_list.append(status)
+
+        # Loop over the new simulations
+        for simulation_name in new_simulations:
+
+            # Get the status
+            if isinstance(new_simulations, dict):
+                status = new_simulations[simulation_name]
+            elif new_statuses is not None and simulation_name in new_statuses:
+                status = new_statuses[simulation_name]
+            else:
+                status = None
+
+            # Add to columns
+            simulation_names.append(simulation_name)
+            status_list.append(status)
+
+        # Create new status table (because status table class is full with lazyproperties and memoized methods)
+        return cls.from_columns(simulation_names, status_list)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def simulation_names(self):
 

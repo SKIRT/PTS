@@ -1390,15 +1390,12 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
 
 # -----------------------------------------------------------------
 
-def plot_curve(curve, title=None, path=None, x_scale="linear", y_scale="linear"):
+def get_xy(curve, return_labels=False):
 
     """
     This function ...
     :param curve:
-    :param title:
-    :param path:
-    :param x_scale:
-    :param y_scale:
+    :param return_labels:
     :return:
     """
 
@@ -1416,20 +1413,38 @@ def plot_curve(curve, title=None, path=None, x_scale="linear", y_scale="linear")
     if x_unit is not None: x_label += " [" + str(x_unit) + "]"
     if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
-    # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale)
+    # Return
+    if return_labels: return x, y, x_label, y_label
+    else: return x, y
 
 # -----------------------------------------------------------------
 
-def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear"):
+def plot_curve(curve, title=None, path=None, x_scale="linear", y_scale="linear"):
 
     """
     This function ...
-    :param curves:
+    :param curve:
     :param title:
     :param path:
     :param x_scale:
     :param y_scale:
+    :return:
+    """
+
+    # Get x, y and labels
+    x, y, x_label, y_label = get_xy(curve, return_labels=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="line")
+
+# -----------------------------------------------------------------
+
+def get_multiple_xy(curves, return_labels=False):
+
+    """
+    Thisf unction ...
+    :param curves:
+    :param return_labels:
     :return:
     """
 
@@ -1481,8 +1496,69 @@ def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear
     if x_unit is not None: x_label += " [" + str(x_unit) + "]"
     if y_unit is not None: y_label += " [" + str(y_unit) + "]"
 
+    # Return
+    if return_labels: return x, y, x_label, y_label
+    else: return x, y
+
+# -----------------------------------------------------------------
+
+def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear"):
+
+    """
+    This function ...
+    :param curves:
+    :param title:
+    :param path:
+    :param x_scale:
+    :param y_scale:
+    :return:
+    """
+
+    # Get data
+    x, y, x_label, y_label = get_multiple_xy(curves, return_labels=True)
+
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale)
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="line")
+
+# -----------------------------------------------------------------
+
+def plot_scatter(scatter, title=None, path=None, x_scale="linear", y_scale="linear"):
+
+    """
+    This function ...
+    :param scatter:
+    :param title:
+    :param path:
+    :param x_scale:
+    :param y_scale:
+    :return:
+    """
+
+    # Get x, y and labels
+    x, y, x_label, y_label = get_xy(scatter, return_labels=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="scatter")
+
+# -----------------------------------------------------------------
+
+def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="linear"):
+
+    """
+    This function ...
+    :param scatters:
+    :param title:
+    :param path:
+    :param x_scale:
+    :param y_scale:
+    :return:
+    """
+
+    # Get data
+    x, y, x_label, y_label = get_multiple_xy(scatters, return_labels=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="scatter")
 
 # -----------------------------------------------------------------
 

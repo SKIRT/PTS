@@ -20,6 +20,15 @@ from .table import SmartTable
 from ..tools.strings import alphabet
 from .range import RealRange
 from ..tools import tables, arrays
+from .relation import Relation
+
+# -----------------------------------------------------------------
+
+class Scatter2D(Relation):
+
+    """
+    This class ...
+    """
 
 # -----------------------------------------------------------------
 

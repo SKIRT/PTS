@@ -35,6 +35,7 @@ from ..basics.errorbar import ErrorBar
 from ..tools import numbers
 from ..tools.utils import lazyproperty
 from ..tools import introspection
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -81,6 +82,10 @@ def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pd
     # Create a new SEDPlotter instance
     plotter = SEDPlotter()
 
+    # Set units
+    plotter.config.wavelength_unit = sed.wavelength_unit
+    plotter.config.unit = sed.unit
+
     # Determine label
     if label is None:
         if isinstance(sed, ObservedSED): label = "observation"
@@ -121,6 +126,14 @@ def plot_seds(seds, **kwargs):
 
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
+
+    # Get the units
+    wavelength_units = [seds[label].wavelength_unit for label in seds]
+    units = [seds[label].unit for label in seds]
+
+    # Set units
+    plotter.config.wavelength_unit = sequences.get_single(wavelength_units)
+    plotter.config.unit = sequences.get_single(units)
 
     # Add SEDs
     plotter.add_seds(seds, residuals=residuals, ghost=ghost)

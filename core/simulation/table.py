@@ -16,10 +16,11 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..basics.table import SmartTable
+from ..basics.table import SmartTable, initialize_table
 from ..units.unit import parse_unit
-from ..tools.utils import memoize_method
+from ..tools.utils import memoize_method, lazyproperty
 from ..tools import numbers
+from .wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -134,67 +135,8 @@ class SkirtTable(SmartTable):
         :return:
         """
 
-        # Get the column data
-        columns = np.loadtxt(path, unpack=True, ndmin=2)
-
-        # Get number of columns and number of rows
-        number_of_columns = len(columns)
-        number_of_rows = len(columns[0])
-
-        # THIS WAS BEFORE I DISCOVERED THE NDMIN PARAMETER
-        # try: number_of_rows = len(columns[0])
-        # except TypeError: # object of type 'numpy.float64' has no len()
-        #     raise TruncatedSKIRTTableError("The file only contains one line", path=path)
-
-        if number_of_rows == 1: raise TruncatedSKIRTTableError("The file only contains one line", path=path)
-
-        # Check expected number of rows
-        if expected_nrows is not None and number_of_rows != expected_nrows:
-            raise IOError("Expected " + str(expected_nrows) + " rows but only found " + str(number_of_rows))
-
-        data = []
-        names = []
-        units = dict()
-
-        # Get names and units
-        with open(path) as table_file:
-
-            for i in range(number_of_columns):
-
-                line = table_file.next()
-                column_number = i + 1
-
-                if "column " + str(column_number) not in line:
-
-                    if i != 0: raise IOError("Column name and unit of column " + str(i+1) + " not found in file header")
-                    else:
-
-                        # Determine offset
-                        while "column" not in line: line = table_file.next()
-
-                name_and_unit = line.split(": ")[1].split("\n")[0]
-                if "(" in name_and_unit and ")" in name_and_unit:
-                    name = name_and_unit.split(" (")[0].capitalize() + name_and_unit.split(" (")[1].split(")")[1]
-                    unit = name_and_unit.split(" (")[1].split(")")[0]
-                    if "dimensionless" in unit: unit = None
-                else:
-                    name = name_and_unit.capitalize()
-                    unit = None
-
-                if ", i.e." in name: name = name.split(", i.e.")[0]
-
-                #print(name)
-
-                data.append(columns[i])
-                names.append(name)
-
-                if unit is not None: units[name] = unit
-
-        # Construct the table
-        #table = tables.new(data, names)
-
-        # All other
-        #table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
+        # Get the data
+        data, names, units = get_skirt_data(path, expected_nrows=expected_nrows)
 
         # Create a new table from the data
         table = cls(data=data, names=names, masked=True)
@@ -207,6 +149,9 @@ class SkirtTable(SmartTable):
         # Set the column units
         for column_name in units:
             table[column_name].unit = parse_unit(units[column_name])
+
+        # Initialize
+        initialize_table(table)
 
         # Return the table
         return table
@@ -295,6 +240,209 @@ class SkirtTable(SmartTable):
 
         # Not weighed
         else: return np.nanstd(values)
+
+# -----------------------------------------------------------------
+
+class AbsorptionSpectraTable(SkirtTable):
+    
+    """
+    This class ...
+    """
+
+    @classmethod
+    def from_file(cls, path, ncells=None):
+
+        """
+        This function ...
+        :param path:
+        :param ncells: if the number of dust cells is known, pass this to check with the number of rows in the file (to check whether it was not truncated)
+        :return:
+        """
+
+        # Get the data
+        data, full_names, units = get_skirt_data(path, expected_nrows=ncells)
+
+        # Set new column names
+        nwavelengths = len(full_names)
+        names = ["Luminosity" + str(index) for index in range(nwavelengths)]
+        new_names = dict(zip(full_names, names)) # mapping from old names to new names
+
+        # Create a new table from the data
+        table = cls(data=data, names=names, masked=True)
+
+        # Parse the wavelengths
+        from ..units.parsing import parse_quantity
+        wavelengths = [parse_quantity(name.split("lambda = ")[1]) for name in full_names]
+        table.meta["wavelengths"] = wavelengths
+
+        # SET THE DATA
+        # Set mask for each column from None values
+        for column_index in range(len(names)): table[names[column_index]].mask = [value is None for value in data[column_index]]
+
+        # Set the column units
+        for column_name in units: table[new_names[column_name]].unit = parse_unit(units[column_name])
+
+        # Initialize
+        initialize_table(table)
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncells(self):
+        return self.nrows
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelengths(self):
+        return self.meta["wavelengths"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nwavelengths(self):
+        return len(self.wavelengths)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid(self):
+        return WavelengthGrid.from_wavelengths(self.wavelengths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+        return self.wavelengths[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+        return self.wavelengths[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_unit(self):
+        return self.wavelength_grid.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_array(self):
+        return np.asarray(self.wavelength_grid.table["Wavelength"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def _column_units(self):
+        return [self.get_column_unit(name) for name in self.colnames]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def luminosity_unit(self):
+        from ..tools import sequences
+        return sequences.get_all_equal_value(self._column_units)
+
+    # -----------------------------------------------------------------
+
+    def get_luminosities(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_row(index, as_list=True)
+
+    # -----------------------------------------------------------------
+
+    def get_luminosity_array(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return np.array(self.get_row(index, as_list=True, unit=self.luminosity_unit, add_unit=False))
+
+    # -----------------------------------------------------------------
+
+    def get_sed(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Get the values
+        luminosities = self.get_luminosity_array(index)
+
+        from ..data.sed import SED
+        return SED.from_arrays(self.wavelength_array, luminosities, self.wavelength_unit, self.luminosity_unit)
+
+    # -----------------------------------------------------------------
+
+    def get_luminosities_for_wavelength_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        colname = "Luminosity" + str(index)
+        return self.get_column_values(colname, unit=self.luminosity_unit)
+
+    # -----------------------------------------------------------------
+
+    def get_luminosity_array_for_wavelength_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        colname = "Luminosity" + str(index)
+        return self.get_column_array(colname, unit=self.luminosity_unit)
+
+    # -----------------------------------------------------------------
+
+    def get_average_luminosity_for_wavelength_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return np.nanmean(self.get_luminosity_array_for_wavelength_index(index))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def average_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate average luminosities
+        luminosities = [self.get_average_luminosity_for_wavelength_index(index) for index in range(self.nwavelengths)]
+
+        # Create and return
+        from ..data.sed import SED
+        return SED.from_arrays(self.wavelength_array, luminosities, self.wavelength_unit, self.luminosity_unit)
 
 # -----------------------------------------------------------------
 
@@ -409,5 +557,76 @@ class SkirtTable(SmartTable):
 #
 #     # Return the list of luminosities
 #     return lum_cells
+
+# -----------------------------------------------------------------
+
+def get_skirt_data(path, expected_nrows=None):
+
+    """
+    This function ...
+    :param path:
+    :param expected_nrows:
+    :return:
+    """
+
+    # Get the column data
+    columns = np.loadtxt(path, unpack=True, ndmin=2)
+
+    # Get number of columns and number of rows
+    number_of_columns = len(columns)
+    number_of_rows = len(columns[0])
+
+    # THIS WAS BEFORE I DISCOVERED THE NDMIN PARAMETER
+    # try: number_of_rows = len(columns[0])
+    # except TypeError: # object of type 'numpy.float64' has no len()
+    #     raise TruncatedSKIRTTableError("The file only contains one line", path=path)
+
+    if number_of_rows == 1: raise TruncatedSKIRTTableError("The file only contains one line", path=path)
+
+    # Check expected number of rows
+    if expected_nrows is not None and number_of_rows != expected_nrows:
+        raise IOError("Expected " + str(expected_nrows) + " rows but only found " + str(number_of_rows))
+
+    data = []
+    names = []
+    units = dict()
+
+    # Get names and units
+    with open(path) as table_file:
+
+        for i in range(number_of_columns):
+
+            line = table_file.next()
+            column_number = i + 1
+
+            if "column " + str(column_number) not in line:
+
+                if i != 0:
+                    raise IOError("Column name and unit of column " + str(i + 1) + " not found in file header")
+                else:
+
+                    # Determine offset
+                    while "column" not in line: line = table_file.next()
+
+            name_and_unit = line.split(": ")[1].split("\n")[0]
+            if "(" in name_and_unit and ")" in name_and_unit:
+                name = name_and_unit.split(" (")[0].capitalize() + name_and_unit.split(" (")[1].split(")")[1]
+                unit = name_and_unit.split(" (")[1].split(")")[0]
+                if "dimensionless" in unit: unit = None
+            else:
+                name = name_and_unit.capitalize()
+                unit = None
+
+            if ", i.e." in name: name = name.split(", i.e.")[0]
+
+            # print(name)
+
+            data.append(columns[i])
+            names.append(name)
+
+            if unit is not None: units[name] = unit
+
+    # Return
+    return data, names, units
 
 # -----------------------------------------------------------------

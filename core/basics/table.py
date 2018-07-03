@@ -495,53 +495,6 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_previous(cls, table, new_statuses=None, remove_simulations=None, new_simulations=None):
-
-        """
-        This function ...
-        :param table:
-        :param new_statuses:
-        :param remove_simulations:
-        :param new_simulations:
-        :return:
-        """
-
-        # Create lists
-        simulation_names = []
-        status_list = []
-
-        # Loop over the existing simulations
-        for simulation_name in table.simulation_names:
-
-            # Remove simulation?
-            if remove_simulations is not None and simulation_name in remove_simulations: continue
-
-            # Get the correct status
-            if new_statuses is not None and simulation_name in new_statuses: status = new_statuses[simulation_name]
-            else: status = table.get_status(simulation_name)
-
-            # Add to columns
-            simulation_names.append(simulation_name)
-            status_list.append(status)
-
-        # Loop over the new simulations
-        for simulation_name in new_simulations:
-
-            # Get the status
-            if isinstance(new_simulations, dict): status = new_simulations[simulation_name]
-            elif new_statuses is not None and simulation_name in new_statuses: status = new_statuses[simulation_name]
-            else: status = None
-
-            # Add to columns
-            simulation_names.append(simulation_name)
-            status_list.append(status)
-
-        # Create new status table (because status table class is full with lazyproperties and memoized methods)
-        return cls.from_columns(simulation_names, status_list)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
     def from_dictionary(cls, dictionary, key_label="Property", value_label="Value", tostr_kwargs=None,
                         key_description="property name", value_description="property value"):
 
@@ -1689,6 +1642,31 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def get_column_array(self, colname, unit):
+
+        """
+        This function ...
+        :param colname:
+        :param unit:
+        :return:
+        """
+
+        # SLOW!
+        #values = []
+        #for index in range(self.nrows):
+        #    value = self.get_value(colname, index, add_unit=False, unit=unit)
+        #    if value is None: value = float("nan")
+        #    values.append(value)
+        #return np.array(values)
+
+        # Get conversion factor
+        conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
+
+        # Return
+        return self[colname].data * conversion_factor
+
+    # -----------------------------------------------------------------
+
     def get_values(self, colnames, index, add_unit=True, as_dict=False):
 
         """
@@ -1767,22 +1745,31 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_row(self, index, add_units=True, as_list=False):
+    def get_row(self, index, add_units=True, as_list=False, unit=None, add_unit=True):
 
         """
         This function ...
         :param index:
         :param add_units:
         :param as_list:
+        :param unit:
+        :param add_unit:
         :return:
         """
 
+        # Check
+        if not add_unit and unit is None: raise ValueError("You cannot know in which unit the values are going to be")
+
+        # Initialize
         row = OrderedDict()
 
+        # Loop over the columns
         for name in self.colnames:
 
             # Get the value
             value = self.get_value(name, index, add_unit=add_units)
+            if unit is not None: value = value.to(unit)
+            if not add_unit and hasattr(value, "unit"): value = value.value
 
             # Add the value
             row[name] = value
