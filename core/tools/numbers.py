@@ -151,6 +151,11 @@ def is_close(value, other_value, rtol=1.e-5, atol=1.e-8):
 
 # -----------------------------------------------------------------
 
+def is_close_to_zero(value, atol=1.e-8):
+    return is_close(value, 0., atol=atol)
+
+# -----------------------------------------------------------------
+
 def is_even(integer):
 
     """

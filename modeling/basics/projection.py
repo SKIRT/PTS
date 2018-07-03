@@ -308,7 +308,7 @@ class GalaxyProjection(SimplePropertyComposite):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_deprojection(cls, deprojection, distance, azimuth):
+    def from_deprojection(cls, deprojection, distance=None, azimuth=0.0):
 
         """
         This function ...
@@ -346,6 +346,9 @@ class GalaxyProjection(SimplePropertyComposite):
 
         inclination = deprojection.inclination
         position_angle = deprojection.position_angle
+
+        # Get distance
+        if distance is None: distance = deprojection.galaxy_distance
 
         # Create and return a new class instance
         return cls(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle,

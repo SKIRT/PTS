@@ -1558,6 +1558,30 @@ class DeprojectionModel3D(Model3D):
     # -----------------------------------------------------------------
 
     @property
+    def has_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.distance is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_distance or (self.has_map and self.map.distance is not None)
+
+    # -----------------------------------------------------------------
+
+    @property
     def angular_pixelscale(self):
 
         """
@@ -1566,7 +1590,7 @@ class DeprojectionModel3D(Model3D):
         """
 
         # Check whether the distance is defined
-        if self.galaxy_distance is None: raise ValueError("Distance of the map is not defined")
+        if not self.has_galaxy_distance: raise ValueError("Distance of the map is not defined")
 
         # Calculate the pixelscale in degrees
         pixelscale = self.pixelscale / self.galaxy_distance * u("rad")
@@ -1583,7 +1607,7 @@ class DeprojectionModel3D(Model3D):
         """
 
         # Check whether the distance is defined
-        if self.galaxy_distance is None: raise ValueError("Distance of the map is not defined")
+        if not self.has_galaxy_distance: raise ValueError("Distance of the map is not defined")
 
         azimuth = 0.0
 

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ...core.simulation.simulation import createsimulations
 from ...core.tools.utils import lazyproperty
@@ -22,11 +25,16 @@ from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.simulation.execute import run_simulation
 from ...core.prep.smile import get_oligochromatic_template
 from ...core.tools import introspection
-from ..basics.projection import GalaxyProjection
+from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
 from ..basics.instruments import FrameInstrument, FullInstrument
 from ..build.representations.galaxy import create_faceon_projection, create_edgeon_projection, create_projection_from_deprojection
 from ..basics.models import DeprojectionModel3D
 from ...core.units.parsing import parse_unit as u
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ..basics.instruments import Instrument
+from ...magic.basics.vector import PixelShape
+from ...core.tools import numbers
+from ...core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -41,6 +49,160 @@ edgeon_name = "edgeon"
 # -----------------------------------------------------------------
 
 default_scale_heights = 15. # number of times to take the scale height as the vertical radius of the model
+
+# -----------------------------------------------------------------
+
+def project_model(name, model, projection=None, description=None, path=None, center=None, wcs=None, distance=None):
+
+    """
+    This function ...
+    :param name:
+    :param model:
+    :param projection:
+    :param description:
+    :param path:
+    :param center:
+    :param wcs:
+    :param distance:
+    :return:
+    """
+
+    # Create the projections object
+    projections = ComponentProjections(name, model, path=path, description=description,
+                                projection=projection, center=center,
+                                earth_wcs=wcs, distance=distance, earth=True, faceon=False, edgeon=False)
+
+    # Return the projected map
+    return projections.earth
+
+# -----------------------------------------------------------------
+
+def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projection, length_unit, unit=None,
+               return_stddev=False, return_ncells=False, weights=None):
+
+    """
+    This function projects 3D data into a 2D map
+    :param name: name of the kind of data
+    :param x_coordinates:
+    :param y_coordinates:
+    :param z_coordinates:
+    :param values:
+    :param projection:
+    :param length_unit:
+    :param unit:
+    :param return_stddev:
+    :param return_ncells:
+    :param weights:
+    :return:
+    """
+
+    # Get the projection
+    #projection = get_projection(projection)
+    #projection = get_faceon_projection(projection, strict=True)
+    if is_faceon(projection): projection = get_faceon_projection(projection, strict=True)
+    elif is_edgeon(projection): projection = get_edgeon_projection(projection, strict=True)
+    else: raise ValueError("Projection must be face-on or edge-on")
+
+    # Get the shape of the map
+    nx, ny = projection.pixels_x, projection.pixels_y
+    shape = PixelShape.from_xy(nx, ny)
+
+    # Initialize maps
+    frame = Frame.initialize_nans(shape, unit=unit)
+    stddev_frame = Frame.initialize_nans(shape, unit=unit)
+    ncells_frame = Frame.initialize_nans(shape)
+
+    # Set boundaries
+    x_min = projection.center_x - 0.5 * projection.field_x
+    x_max = projection.center_x + 0.5 * projection.field_y
+    y_min = projection.center_y - 0.5 * projection.field_y
+    y_max = projection.center_y + 0.5 * projection.field_y
+    x_min = x_min.to(length_unit)
+    x_max = x_max.to(length_unit)
+    y_min = y_min.to(length_unit)
+    y_max = y_max.to(length_unit)
+
+    # Get pixelscale
+    pixelscale = projection.physical_pixelscale
+    x_pixelscale = pixelscale.x.to(length_unit).value
+    y_pixelscale = pixelscale.y.to(length_unit).value
+    half_x_pixelscale = 0.5 * x_pixelscale
+    half_y_pixelscale = 0.5 * y_pixelscale
+
+    # Set the pixelscale and the coordinate info
+    frame.pixelscale = pixelscale
+    frame.distance = projection.distance
+    frame.set_meta("x_min", repr(x_min.value) + " " + length_unit)
+    frame.set_meta("x_max", repr(x_max.value) + " " + length_unit)
+    frame.set_meta("y_min", repr(y_min.value) + " " + length_unit)
+    frame.set_meta("y_max", repr(y_max.value) + " " + length_unit)
+
+    # Mask invalid values
+    values_nans = np.isnan(values)
+    values_infs = np.isinf(values)
+    values_mask = values_nans + values_infs #+ values_unphysical
+    valid_x_coordinates = np.ma.MaskedArray(x_coordinates, mask=values_mask).compressed()
+    valid_y_coordinates = np.ma.MaskedArray(y_coordinates, mask=values_mask).compressed()
+    valid_values = np.ma.MaskedArray(values, mask=values_mask).compressed()
+    valid_weights = np.ma.MaskedArray(weights, mask=values_mask).compressed() if weights is not None else None
+
+    # Loop over the pixels
+    x = x_min
+    y = y_min
+    for i in range(nx):
+        for j in range(ny):
+
+            # Determine range of x and y
+            x_range = RealRange(x - half_x_pixelscale, x + half_x_pixelscale)
+            y_range = RealRange(y - half_y_pixelscale, y + half_y_pixelscale)
+
+            # Show
+            #if index % 100 == 0: log.debug("Calculating heating fraction in the pixel " + str(index) + " of " + str(self.map_npixels) + " (" + tostr(float(index) / self.map_npixels * 100, decimal_places=1, round=True) + "%) ...")
+
+            x_mask = (x_range.min < valid_x_coordinates) * (valid_x_coordinates <= x_range.max)
+            y_mask = (y_range.min < valid_y_coordinates) * (valid_y_coordinates <= y_range.max)
+
+            #x_mask = self.get_coordinate_mask_x_for_map(x_range)
+            #y_mask = self.get_coordinate_mask_y_for_map(y_range)
+            #return x_mask * y_mask
+            mask = x_mask * y_mask
+
+            # Get the indices
+            #indices = self.get_coordinate_indices_in_column_for_map(x_range, y_range)
+            #mask = get_coordinate_mask_for_map(x_range, y_range)
+            indices = np.where(mask)[0]
+            nindices = indices.shape[0]
+
+            # Set number of cells
+            ncells_frame[j, i] = nindices
+
+            # If any cells
+            if nindices > 0:
+
+                # Calculate the heating fraction
+                #fractions = self.valid_heating_fractions[indices]
+                #weights = self.valid_cell_weights[indices]
+                vals = valid_values[indices]
+                wghts = valid_weights[indices] if valid_weights is not None else None
+
+                # Calculate the mean heating fraction
+                fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
+                fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
+
+                # Set fraction
+                frame[j, i] = fraction
+                stddev_frame[j, i] = fraction_stddev
+
+            # Increment the x and y coordinate
+            x += x_pixelscale
+            y += y_pixelscale
+
+    # Return
+    if return_stddev:
+        if return_ncells: return frame, stddev_frame, ncells_frame
+        else: return frame, stddev_frame
+    elif return_ncells: return frame, ncells_frame
+    else: return frame
 
 # -----------------------------------------------------------------
 
@@ -59,7 +221,7 @@ class ComponentProjections(object):
         This function ...
         :param name: name of the component
         :param model: the geometric model of the component
-        :param projection:
+        :param projection: can be created from deprojection model (if model IS), or from wcs if given
         :param path: path for the projections, if none is given a temporary directory is created
         :param earth: perform earth projection
         :param faceon: perform faceon projection
@@ -1075,6 +1237,95 @@ class ComponentProjections(object):
 
 # -----------------------------------------------------------------
 
+def get_faceon_projection(argument, distance=None, center=None, radial_factor=1, strict=False):
+
+    """
+    This function ...
+    :param argument:
+    :param distance:
+    :param center:
+    :param radial_factor:
+    :param strict:
+    :return:
+    """
+
+    # Already a projection
+    #if isinstance(argument, GalaxyProjection) and not isinstance(argument, FaceOnProjection): raise ValueError("Not a face-on projection")
+
+    # Is already face-on?
+    if is_faceon(argument):
+        if is_projection(argument): return FaceOnProjection.from_projection(argument)
+        elif is_instrument(argument): return FaceOnProjection.from_instrument(argument)
+        else: raise RuntimeError("Something went wrong")
+    elif strict: raise ValueError("Not face-on")
+
+    # Create projection
+    projection = get_projection(argument, distance=distance, center=center)
+
+    # Convert into face-on
+    return create_faceon_projection_from_earth_projection(projection, radial_factor=radial_factor)
+
+# -----------------------------------------------------------------
+
+def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None, radial_factor=1, strict=False):
+
+    """
+    This function ...
+    :param argument:
+    :param distance:
+    :param center:
+    :param scaleheight:
+    :param radial_factor:
+    :param strict:
+    :return:
+    """
+
+    # Is already edge-on?
+    if is_edgeon(argument):
+        if is_projection(argument): return EdgeOnProjection.from_projection(argument)
+        elif is_instrument(argument): return EdgeOnProjection.from_instrument(argument)
+        else: raise RuntimeError("Something went wrong")
+    elif strict: raise ValueError("Not edge-on")
+
+    # Create projection
+    projection = get_projection(argument, distance=distance, center=center)
+
+    # Convert into edge-on
+    if scaleheight is None: raise ValueError("Scaleheight must be passed for conversion into edge-on projection")
+    return create_edgeon_projection_from_earth_projection(projection, scaleheight, radial_factor=radial_factor)
+
+# -----------------------------------------------------------------
+
+def get_projection(argument, distance=None, center=None, inclination=None, position_angle=None, azimuth=0.0):
+
+    """
+    This function returns a galaxy projection object from various kinds of input
+    :param argument:
+    :param distance:
+    :param center:
+    :param inclination:
+    :param position_angle:
+    :param azimuth:
+    :return:
+    """
+
+    # Already a projection
+    if is_projection(argument): return argument
+
+    # Deprojection
+    elif is_deprojection(argument): return GalaxyProjection.from_deprojection(argument, distance=distance, azimuth=azimuth)
+
+    # Coordinate system
+    elif is_coordinate_system(argument): return GalaxyProjection.from_wcs(argument, center, distance, inclination, azimuth, position_angle)
+
+    # Instrument
+    elif is_instrument(argument): return GalaxyProjection.from_instrument(argument)
+
+    # Invalid
+    else: raise ValueError("Invalid argument of type '" + str(type(argument)) + "'")
+
+# -----------------------------------------------------------------
+
 def create_faceon_projection_from_earth_projection(earth_projection, radial_factor=1):
 
     """
@@ -1125,5 +1376,63 @@ def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight
 
     # Create and return
     return create_edgeon_projection(nx, nz, physical_pixelscale, earth_projection.distance)
+
+# -----------------------------------------------------------------
+
+def is_projection(argument):
+    return isinstance(argument, GalaxyProjection)
+
+# -----------------------------------------------------------------
+
+def is_faceon_projection(argument):
+    return isinstance(argument, FaceOnProjection)
+
+# -----------------------------------------------------------------
+
+def is_edgeon_projection(argument):
+    return isinstance(argument, EdgeOnProjection)
+
+# -----------------------------------------------------------------
+
+def is_instrument(argument):
+    return isinstance(argument, Instrument)
+
+# -----------------------------------------------------------------
+
+def is_faceon(argument):
+    if is_projection(argument):
+        if is_faceon_projection(argument): return True
+        else: return has_faceon_angles(argument)
+    elif is_instrument(argument): return has_faceon_angles(argument)
+    else: return False
+
+# -----------------------------------------------------------------
+
+def is_edgeon(argument):
+    if is_projection(argument):
+        if is_edgeon_projection(argument): return True
+        else: return has_edgeon_angles(argument)
+    elif is_instrument(argument): return has_edgeon_angles(argument)
+    else: return False
+
+# -----------------------------------------------------------------
+
+def is_coordinate_system(argument):
+    return isinstance(argument, CoordinateSystem)
+
+# -----------------------------------------------------------------
+
+def is_deprojection(argument):
+    return isinstance(argument, DeprojectionModel3D)
+
+# -----------------------------------------------------------------
+
+def has_faceon_angles(argument):
+    return numbers.is_close_to_zero(argument.inclination.to("deg").value) and numbers.is_close_to_zero(argument.azimuth.to("deg").value) and numbers.is_close(argument.position_angle.to("deg").value, 90)
+
+# -----------------------------------------------------------------
+
+def has_edgeon_angles(argument):
+    return numbers.is_close(argument.inclination.to("deg").value, 90) and numbers.is_close_to_zero(argument.azimuth.to("deg").value) and numbers.is_close_to_zero(argument.position_angle.to("deg").value)
 
 # -----------------------------------------------------------------
