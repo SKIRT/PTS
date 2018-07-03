@@ -403,6 +403,30 @@ class SimulationData(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_spectral_absorption(self):
+        return self.output.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_absorption_path(self):
+        return self.output.single_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def valid_spectral_absorption(self):
+        return is_valid(self.spectral_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_absorption(self):
+        return SkirtTable.from_file(self.spectral_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_wavelengths(self):
 
         """

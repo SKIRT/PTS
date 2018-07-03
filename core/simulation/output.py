@@ -215,6 +215,7 @@ def get_misc(path, ignore=None):
 output_types = Map()
 output_types.isrf = "isrf"
 output_types.absorption = "abs"
+output_types.spectral_absorption = "specabs"
 output_types.temperature = "temp"
 output_types.seds = "sed"
 output_types.images = "image"
@@ -247,6 +248,7 @@ output_types.parameters = "parameters"
 output_type_choices = dict()
 output_type_choices[output_types.isrf] = "interstellar radiation field strength"
 output_type_choices[output_types.absorption] = "absorption luminosities"
+output_type_choices[output_types.spectral_absorption] = "absorption spectra"
 output_type_choices[output_types.temperature] = "temperature"
 output_type_choices[output_types.seds] = "all SEDs"
 output_type_choices[output_types.images] = "all datacubes"
@@ -291,6 +293,9 @@ def get_output_type(filename):
 
     ## Absorption
     elif filename.endswith("_ds_abs.dat"): return output_types.absorption
+
+    ## Spectral absorption
+    elif filename.endswith("_ds_specabs.dat"): return output_types.spectral_absorption
 
     ## Temperature
     elif "_ds_temp" in filename and filename.endswith(".fits"): return output_types.temperature
@@ -1577,6 +1582,36 @@ class SimulationOutput(Output):
         """
 
         return self.get_single_file(self._output_types.absorption)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nspectral_absorption(self):
+        return self.get_nfiles(self._output_types.spectral_absorption)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_spectral_absorption(self):
+        return self.has_files(self._output_types.spectral_absorption)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_spectral_absorption(self):
+        return self.has_single_file(self._output_types.spectral_absorption)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_absorption(self):
+        return self.get_files(self._output_types.spectral_absorption)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_spectral_absorption(self):
+        return self.get_single_file(self._output_types.spectral_absorption)
 
     # -----------------------------------------------------------------
 
