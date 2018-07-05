@@ -1898,7 +1898,7 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         log.info("Launching the simulations ...")
 
         # Set the path for storing the batch scripts for manual inspection
-        self.launcher.set_script_path(self.remote_host_id, self.analysis_path)
+        self.launcher.set_script_path(self.remote_host_id, self.analysis_run_path)
 
         # Enable screen output for remotes without a scheduling system for jobs
         if not self.uses_scheduler: self.launcher.enable_screen_output(self.remote_host_id)
