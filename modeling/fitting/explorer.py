@@ -993,7 +993,7 @@ class ParameterExplorer(FittingComponent):
         # To create the extr, plot, misc directories relative in the simulation directory
         self.launcher.config.relative_analysis_paths = True
 
-        # Set the path to the modeling directory to the simulation object
+        # Set the path to the modeling directory
         self.launcher.config.analysis.modeling_path = self.config.path
 
         # Set analyser classes

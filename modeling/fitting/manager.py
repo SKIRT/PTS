@@ -31,6 +31,8 @@ from .generation import check_simulation_paths, correct_simulation_and_analysis_
 from ...core.tools.utils import lazyproperty
 from .component import FittingComponent
 from ...core.launch.batch import MissingSimulation
+from ...core.launch.options import AnalysisOptions
+from ..config.explore_analysis import definition as analysis_definition
 
 # -----------------------------------------------------------------
 
@@ -40,7 +42,7 @@ parameters_ndigits = 3
 # -----------------------------------------------------------------
 
 _simulations_command_name = "simulations"
-#_assignment_command_name = "assignment"
+_set_analysis_command_name = "set_analysis"
 
 # -----------------------------------------------------------------
 
@@ -70,7 +72,7 @@ class GenerationManager(SimulationManager, FittingComponent):
         # Add command
         self._commands = self._commands.copy()  # so the dictionary in the core/launch/manager module is not adapted
         self._commands[_simulations_command_name] = ("show_simulations_command", True, "show info on the simulation files/objects", None)
-        #self._commands[_assignment_command_name] = ("show_assignment", False, "show the assignment table", None)
+        self._commands[_set_analysis_command_name] = ("set_analysis_command", True, "set the analysis options for one or multiple simulations", "simulations")
 
     # -----------------------------------------------------------------
 
@@ -461,102 +463,16 @@ class GenerationManager(SimulationManager, FittingComponent):
         for simulation_name in self.generation.simulation_names:
 
             # Has simulation object?
-            if not self.generation.has_simulation(simulation_name): continue
-
-            # Check different analysis output
-            has_misc = self.generation.has_misc_output(simulation_name)
-            has_plotting = self.generation.has_plotting_output(simulation_name)
-            has_extraction = self.generation.has_extraction_output(simulation_name)
-            has_timing = self.generation.has_timing(simulation_name)
-            has_memory = self.generation.has_memory(simulation_name)
-            has_chi_squared = self.generation.is_analysed(simulation_name)
+            if not self.generation.has_simulation(simulation_name):
+                log.warning("Cannot check analysis options for simulation '" + simulation_name + "': simulation file not found")
+                continue
 
             # Load the simulation
             simulation = self.generation.get_simulation(simulation_name)
 
-            # Check extraction
-            if not has_extraction and simulation.analysed_any_extraction:
-
-                # Show warning
-                log.warning("Simulation '" + simulation_name + "' appears to have no extraction output but extraction is supposed to be (partly) executed")
-
-                # Unset analysed flag
-                if simulation.analysed: simulation.set_analysed(False)
-                simulation.unset_analysed_extraction()
-                reset_status.append(simulation_name)
-
-            # Check plotting
-            if not has_plotting and simulation.analysed_any_plotting:
-
-                # Show warning
-                log.warning("Simulation '" + simulation_name + "' appears to have no plotting output but plotting is supposed to be (partly) executed")
-
-                # Unset analysed flag
-                if simulation.analysed: simulation.set_analysed(False)
-                simulation.unset_analysed_plotting()
-                reset_status.append(simulation_name)
-
-            # Check misc
-            if not has_misc and simulation.analysed_any_misc:
-
-                # Show warning
-                log.warning("Simulation '" + simulation_name + "' appears to have no miscellaneous output but miscellaneous analysis is supposed to be (partly) executed")
-
-                # Unset analysed flag
-                if simulation.analysed: simulation.set_analysed(False)
-                simulation.unset_analysed_misc()
-                reset_status.append(simulation_name)
-
-            # Check batch
-            if not (has_timing or has_memory) and simulation.analysed_batch:
-
-                # Show warning
-                log.warning("Simulation '" + simulation_name + "' appears to have no timing or memory entry but batch analysis is supposed to be (partly) executed")
-
-                # Unset analysed flag
-                if simulation.analysed: simulation.set_analysed(False)
-                simulation.unset_analysed_batch()
-                reset_status.append(simulation_name)
-
-            # Check extra
-            if not has_chi_squared and simulation.analysed_all_extra:
-
-                # Show warning
-                log.warning("Simulation '" + simulation_name + "' appears to have no chi squared value but extra analysis is supposed to be executed")
-
-                # Unset analysed flag
-                if simulation.analysed: simulation.set_analysed(False)
-                simulation.unset_analysed_extra()
-                reset_status.append(simulation_name)
-
-            # Check
-            # if has_chi_squared and not (has_extraction and has_plotting and has_misc and (has_timing or has_memory)):
-            if has_chi_squared and not (has_extraction and has_plotting and has_misc):  # sometimes timing and memory entries are missing but that is not actually a problem
-
-                # Show warning
-                log.warning("Simulation '" + simulation_name + "' has a chi squared value but other analysis output seems to be missing")
-
-                # Get the chi squared value
-                chisq = self.chi_squared_table.chi_squared_for(simulation_name)
-
-                # Remove from chi squared table and re-analyse?
-                if prompt_yn("reanalyse", "remove the chi squared value of " + str(chisq) + " for simulation '" + simulation_name + "' and re-analyse this simulation?"):
-                    # Debugging
-                    log.debug("Removing simulation '" + simulation_name + "' simulation from the chi squared table ...")
-
-                    # Remove from the chi squared table
-                    self.chi_squared_table.remove_simulation(simulation_name)
-                    self.chi_squared_table.save()
-
-                    # Debugging
-                    log.debug("Adding re-analyse command for simulation '" + simulation_name + "' ...")
-
-                    # Add re-analyse command
-                    reanalyse_command = "reanalyse '" + simulation_name + "' --analysis/basic/local --analysis/basic/ignore_missing_data --analysis/ignore_missing_data --analysis/basic/ignore_bad --analysis/basic/not_skip_ignored_bad_convolution"
-                    self.config.commands.append(reanalyse_command)
-
-            # Save the simulation
-            simulation.save()
+            # Check the analysis for this simulation
+            adapted = self.check_analysis_for_simulation(simulation)
+            if adapted: reset_status.append(simulation_name)
 
         # Reset status
         for simulation_name in reset_status:
@@ -569,6 +485,127 @@ class GenerationManager(SimulationManager, FittingComponent):
 
         # Return the status (although at this point we don't really create a new one, we just adapt it [is this good enough?])
         return status
+
+    # -----------------------------------------------------------------
+
+    def check_analysis_for_simulation(self, simulation, save=True):
+
+        """
+        This function ...
+        :param simulation:
+        :param save:
+        :return:
+        """
+
+        # Get the simulation name
+        simulation_name = simulation.name
+
+        # Debugging
+        log.debug("Checking analysis options for simulation '" + simulation_name + "' ...")
+
+        # Initialize flag
+        _adapted = False
+
+        # Check different analysis output
+        has_misc = self.generation.has_misc_output(simulation_name)
+        has_plotting = self.generation.has_plotting_output(simulation_name)
+        has_extraction = self.generation.has_extraction_output(simulation_name)
+        has_timing = self.generation.has_timing(simulation_name)
+        has_memory = self.generation.has_memory(simulation_name)
+        has_chi_squared = self.generation.is_analysed(simulation_name)
+
+        # Check extraction
+        if not has_extraction and simulation.analysed_any_extraction:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no extraction output but extraction is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_extraction()
+            #reset_status.append(simulation_name)
+            _adapted = True
+
+        # Check plotting
+        if not has_plotting and simulation.analysed_any_plotting:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no plotting output but plotting is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_plotting()
+            #reset_status.append(simulation_name)
+            _adapted = True
+
+        # Check misc
+        if not has_misc and simulation.analysed_any_misc:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no miscellaneous output but miscellaneous analysis is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_misc()
+            #reset_status.append(simulation_name)
+            _adapted = True
+
+        # Check batch
+        if not (has_timing or has_memory) and simulation.analysed_batch:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no timing or memory entry but batch analysis is supposed to be (partly) executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_batch()
+            #reset_status.append(simulation_name)
+            _adapted = True
+
+        # Check extra
+        if not has_chi_squared and simulation.analysed_all_extra:
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' appears to have no chi squared value but extra analysis is supposed to be executed")
+
+            # Unset analysed flag
+            if simulation.analysed: simulation.set_analysed(False)
+            simulation.unset_analysed_extra()
+            #reset_status.append(simulation_name)
+            _adapted = True
+
+        # Check
+        # if has_chi_squared and not (has_extraction and has_plotting and has_misc and (has_timing or has_memory)):
+        if has_chi_squared and not (has_extraction and has_plotting and has_misc):  # sometimes timing and memory entries are missing but that is not actually a problem
+
+            # Show warning
+            log.warning("Simulation '" + simulation_name + "' has a chi squared value but other analysis output seems to be missing")
+
+            # Get the chi squared value
+            chisq = self.chi_squared_table.chi_squared_for(simulation_name)
+
+            # Remove from chi squared table and re-analyse?
+            if prompt_yn("reanalyse", "remove the chi squared value of " + str(chisq) + " for simulation '" + simulation_name + "' and re-analyse this simulation?"):
+
+                # Debugging
+                log.debug("Removing simulation '" + simulation_name + "' simulation from the chi squared table ...")
+
+                # Remove from the chi squared table
+                self.chi_squared_table.remove_simulation(simulation_name)
+                self.chi_squared_table.save()
+
+                # Debugging
+                log.debug("Adding re-analyse command for simulation '" + simulation_name + "' ...")
+
+                # Add re-analyse command
+                reanalyse_command = "reanalyse '" + simulation_name + "' --analysis/basic/local --analysis/basic/ignore_missing_data --analysis/ignore_missing_data --analysis/basic/ignore_bad --analysis/basic/not_skip_ignored_bad_convolution"
+                self.config.commands.append(reanalyse_command)
+
+        # Save the simulation if necessary
+        if save and _adapted: simulation.save()
+
+        # Return the flag
+        return _adapted
 
     # -----------------------------------------------------------------
 
@@ -869,6 +906,403 @@ class GenerationManager(SimulationManager, FittingComponent):
         if move_files_to is not None:
             log.debug("Moving the simulation files (" + str(nsimulations_with_file) + " out of " + str(nsimulations) + " simulations) to '" + move_files_to + "' ...")
             fs.move_files(filepaths.values(), move_files_to)
+
+    # -----------------------------------------------------------------
+
+    def create_analysis_options(self, config):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analysis options
+        analysis = AnalysisOptions()
+
+        # Add general options
+        self.add_general_analysis_options(analysis, config)
+
+        # Add extraction options
+        self.add_extraction_analysis_options(analysis, config)
+
+        # Add plotting options
+        self.add_plotting_analysis_options(analysis, config)
+
+        # Add misc options
+        self.add_misc_analysis_options(analysis, config)
+
+        # Return
+        return analysis
+
+    # -----------------------------------------------------------------
+
+    def add_general_analysis_options(self, analysis, config):
+
+        """
+        This function ...
+        :param analysis:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting general analysis options ...")
+
+        # Set the path to the modeling directory
+        analysis.modeling_path = self.config.path
+
+        # Set analyser classes
+        if self.is_images_modeling: analysis.analyser_paths = ["pts.modeling.fitting.modelanalyser.ImagesFitModelAnalyser"]
+        else: analysis.analyser_paths = ["pts.modeling.fitting.modelanalyser.SEDFitModelAnalyser"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def record_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+        #if self.config.record_timing: return True
+        #elif len(self.remote_host_ids) > 0:
+        #    log.warning("Record timing will be enabled because remote execution is used")
+        #    return True
+        #else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def record_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+        #if self.config.record_memory: return True
+        #elif len(self.remote_host_ids) > 0:
+        #    log.warning("Record memory will be enabled because remote execution is used")
+        #    return True
+        #else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extract_timeline(self):
+
+        """
+        This
+        :return:
+        """
+
+        return self.record_timing or self.config.extract_timeline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extract_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.record_memory or self.config.extract_memory
+
+    # -----------------------------------------------------------------
+
+    def add_extraction_analysis_options(self, analysis, config):
+
+        """
+        This function ...
+        :param analysis:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting extraction options ...")
+
+        # Set
+        analysis.extraction.progress = config.extract_progress  # extract progress information
+        analysis.extraction.timeline = self.extract_timeline  # extract the simulation timeline
+        analysis.extraction.memory = self.extract_memory  # extract memory information
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.is_galaxy_modeling: return [self.observed_sed_path, self.truncated_sed_path]
+        elif self.is_sed_modeling: return [self.observed_sed_path]
+        else: raise ValueError("Observed SED not defined for modeling types other than 'galaxy' or 'sed'")
+
+    # -----------------------------------------------------------------
+
+    def add_plotting_analysis_options(self, analysis, config):
+
+        """
+        This function ...
+        :param analysis:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting plotting options ...")
+
+        # Set
+        analysis.plotting.seds = config.plot_seds  # Plot the output SEDs
+        analysis.plotting.reference_seds = self.observed_sed_paths  # the path to the reference SED (for plotting the simulated SED against the reference points)
+        analysis.plotting.format = config.plotting_format  # plot format
+        analysis.plotting.progress = config.plot_progress
+        analysis.plotting.timeline = config.plot_timeline
+        analysis.plotting.memory = config.plot_memory
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation(self):
+        return self.generation.model_representation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_map_path(self):
+        return self.representation.reference_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reference_wcs_path(self):
+        return self.reference_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.fitting_filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.fitting_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def photometry_image_paths_for_fitting_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create new dictionary
+        paths = OrderedDict()
+
+        # Loop over the paths
+        for filter_name in self.environment.photometry_image_paths_for_filter_names:
+
+            # Skip filters that are not in the fitting filters list
+            if filter_name not in self.fitting_filter_names: continue
+
+            # Add the path
+            path = self.environment.photometry_image_paths_for_filter_names[filter_name]
+            paths[filter_name] = path
+
+        # Return
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_sed_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        paths = OrderedDict()
+
+        # Set the SED paths
+        paths["Observed clipped fluxes"] = self.observed_sed_path
+        paths["Observed truncated fluxes"] = self.truncated_sed_path
+
+        # Return the dictionary
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def add_misc_analysis_options(self, analysis, config):
+
+        """
+        This function ...
+        :param analysis:
+        :param config:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting miscellaneous analysis options ...")
+
+        # From images
+        if self.generation.use_images:
+
+            # Calculate observed fluxes from images
+            analysis.misc.fluxes_from_images = True
+            analysis.misc.fluxes = False
+            analysis.misc.images = False
+
+            # Set instrument and coordinate system path
+            analysis.misc.fluxes_from_images_instrument = self.earth_instrument_name
+            analysis.misc.fluxes_from_images_wcs = self.reference_wcs_path
+
+            # Set mask paths
+            analysis.misc.fluxes_from_images_masks = self.photometry_image_paths_for_fitting_filter_names
+            analysis.misc.fluxes_from_images_mask_from_nans = True
+
+            # Write the fluxes images
+            analysis.misc.write_fluxes_images = True
+
+            # Plot fluxes
+            analysis.misc.plot_fluxes_from_images = True
+            analysis.misc.plot_fluxes_from_images_reference_seds = self.plot_sed_paths  # self.fit_sed_path
+
+            # Set remote for creating images from datacubes
+            #analysis.misc.fluxes_from_images_remote = self.other_host_id
+            analysis.misc.fluxes_from_images_remote_spectral_convolution = True
+
+            # Make a plot of the images
+            analysis.misc.plot_fluxes_images = True
+
+        # From SEDs
+        else:
+
+            # Calculate observed fluxes from SEDs
+            analysis.misc.fluxes_from_images = False
+            analysis.misc.fluxes = True
+            analysis.misc.images = False
+
+            # Plot fluxes
+            analysis.misc.plot_fluxes = True
+            analysis.misc.plot_fluxes_reference_seds = self.plot_sed_paths
+
+        # Observation filters and observation instruments
+        analysis.misc.observation_filters = self.fitting_filter_names
+        analysis.misc.observation_instruments = [self.earth_instrument_name]
+
+        # Set spectral convolution flag
+        #analysis.misc.fluxes_spectral_convolution = self.spectral_convolution
+        analysis.misc.fluxes_spectral_convolution = self.generation.spectral_convolution
+        #analysis.misc.fluxes_from_images_spectral_convolution = self.spectral_convolution
+        analysis.misc.fluxes_from_images_spectral_convolution = self.generation.spectral_convolution
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def set_analysis_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Load settings
+        definition.import_settings(analysis_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the simulation names
+        simulation_names, config = self.get_simulation_names_and_config_from_command(command, self.set_analysis_definition, **kwargs)
+
+        # Create the analysis options
+        analysis = self.create_analysis_options(config)
+
+        # Loop over the simulations
+        for simulation_name in simulation_names:
+
+            # Copy the general analysis options
+            options = analysis.copy()
+
+            ## Set simulation-specific options
+
+            # Extraction path
+            options.extraction.path = self.get_simulation_extraction_path(simulation_name)
+
+            # Plotting path
+            options.plotting.path = self.get_simulation_plotting_path(simulation_name)
+
+            # Misc path
+            options.misc.path = self.get_simulation_misc_path(simulation_name)
+
+            # Set analysis for this simulation
+            self.set_analysis(simulation_name, options)
+
+    # -----------------------------------------------------------------
+
+    def set_analysis(self, simulation_name, analysis_options):
+
+        """
+        This function sets the analysis options for a particular simulation
+        :param simulation_name:
+        :param analysis_options:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting analysis options for simulation '" + simulation_name + "' ...")
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Set the analysis
+        simulation.set_analysis_options(analysis_options)
+
+        # Unset the analysed flag
+        #simulation.set_analysed(False, all=True)
+        adapted = self.check_analysis_for_simulation(simulation, save=False)
+        if adapted: log.debug("Adapted analysis status of the simulation")
+
+        # Save the simulation
+        simulation.save()
 
     # -----------------------------------------------------------------
 
