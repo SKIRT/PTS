@@ -513,6 +513,8 @@ class GenerationManager(SimulationManager, FittingComponent):
         has_timing = self.generation.has_timing(simulation_name)
         has_memory = self.generation.has_memory(simulation_name)
         has_chi_squared = self.generation.is_analysed(simulation_name)
+        #print(has_misc, has_plotting, has_extraction, has_timing, has_memory, has_chi_squared)
+        #print(simulation.analysed_any_extraction, simulation.analysed_any_plotting, simulation.analysed_any_misc, simulation.analysed_batch, simulation.analysed_all_extra)
 
         # Check extraction
         if not has_extraction and simulation.analysed_any_extraction:
@@ -1235,6 +1237,7 @@ class GenerationManager(SimulationManager, FittingComponent):
 
         # Load settings
         definition.import_settings(analysis_definition)
+        definition.add_flag("analysed", "set the analysed flag for the simulations", None)
 
         # Return the definition
         return definition
@@ -1274,16 +1277,17 @@ class GenerationManager(SimulationManager, FittingComponent):
             options.misc.path = self.get_simulation_misc_path(simulation_name)
 
             # Set analysis for this simulation
-            self.set_analysis(simulation_name, options)
+            self.set_analysis(simulation_name, options, analysed=config.analysed)
 
     # -----------------------------------------------------------------
 
-    def set_analysis(self, simulation_name, analysis_options):
+    def set_analysis(self, simulation_name, analysis_options, analysed=None):
 
         """
         This function sets the analysis options for a particular simulation
         :param simulation_name:
         :param analysis_options:
+        :param analysed:
         :return:
         """
 
@@ -1296,10 +1300,12 @@ class GenerationManager(SimulationManager, FittingComponent):
         # Set the analysis
         simulation.set_analysis_options(analysis_options)
 
-        # Unset the analysed flag
-        #simulation.set_analysed(False, all=True)
+        # Check analyse flags
         adapted = self.check_analysis_for_simulation(simulation, save=False)
         if adapted: log.debug("Adapted analysis status of the simulation")
+
+        # Unset the analysed flag
+        if analysed is not None: simulation.set_analysed(analysed, all=True)
 
         # Save the simulation
         simulation.save()
