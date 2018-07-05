@@ -310,7 +310,7 @@ class ModelCreator(Configurable):
         # Inform the user
         log.info("Projecting the model ...")
 
-        from ...magic.misc.project import project
+        from ...modeling.projection.projector import project
 
         # Create projections
         self.create_projections()

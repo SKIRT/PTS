@@ -142,6 +142,7 @@ generate_ionizing_maps_page | generate_component_maps_page | maps.html.ionizing.
 generate_dust_maps_page | generate_component_maps_page | maps.html.dust.DustMapsPageGenerator | arguments | Generate the dust maps page
 generate_clip_maps_page | -- | maps.html.clip.ClipMapsPageGenerator | arguments | Generate the clip maps page
 generate_maps_selection_page | -- | maps.html.selection.MapsSelectionPageGenerator | arguments | Generate the maps selection page
+examine | -- | misc.examination.ModelExamination | arguments | Examine a radiative transfer model
 
 # HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages
@@ -162,3 +163,6 @@ generate_attenuation_page | -- | html.attenuation.AttenuationPageGenerator | arg
 generate_colours_page | -- | html.colours.ColoursPageGenerator | arguments | Generate the colours page
 generate_heating_page | -- | html.heating.HeatingPageGenerator | arguments | Generate the heating page
 publish | -- | html.publish.Publisher | arguments | Publish the pages
+
+# PROJECTION
+project | project2 | projection.projector.Projector | arguments | Project a model with SKIRT

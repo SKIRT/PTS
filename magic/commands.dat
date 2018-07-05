@@ -18,7 +18,6 @@ multiview | -- | view.multi.MultiImageViewer | arguments | View multiple images 
 summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
 find_unit | -- | misc.unit.UnitFinder | arguments | Find the units of an image based on published photometry
 interpolate | -- | misc.interpolator.Interpolator | arguments | Interpolate a frame within certain regions
-project | -- | misc.project.Projector | arguments | Project a model with SKIRT
 deproject_pts | -- | misc.deproject.PTSDeprojector | arguments | Deproject a map with PTS
 deproject_skirt | -- | misc.deproject.SKIRTDeprojector | arguments | Deproject a map with SKIRT
 

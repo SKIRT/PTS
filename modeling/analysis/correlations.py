@@ -242,7 +242,7 @@ class CorrelationsAnalyser(AnalysisComponent):
         """
 
         ssfr = self.model.total_ssfr_map_earth
-        funev =
+        #funev =
 
     # -----------------------------------------------------------------
 

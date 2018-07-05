@@ -21,13 +21,17 @@ from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.launch.launcher import SKIRTLauncher
-from ..core.frame import Frame
+from ...magic.core.frame import Frame
 from ...modeling.basics.models import DeprojectionModel3D
 from ...core.tools import introspection
 
 # -----------------------------------------------------------------
 
 map_filename = "map.fits"
+
+# -----------------------------------------------------------------
+
+# TODO: class should be connected to the ComponentProjections class in the other module
 
 # -----------------------------------------------------------------
 
