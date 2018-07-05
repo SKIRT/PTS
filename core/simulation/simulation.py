@@ -33,6 +33,7 @@ from .input import SimulationInput
 from .output import SimulationOutput, ExtractionOutput, PlottingOutput, MiscOutput
 from ..tools import types
 from ..tools.stringify import tostr
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -1028,6 +1029,15 @@ class SkirtSimulation(object):
 
         # Set the path of the simulation file
         simulation.path = path
+
+        # Check the ID
+        filename = fs.strip_extension(fs.name(path))
+        if strings.is_integer(filename):
+            simulation_id = int(filename)
+            if simulation_id != simulation.id:
+                warnings.warn("The ID of the simulation object doesn't match the ID in the filename, fixing ...")
+                simulation.id = simulation_id
+                simulation.save()
 
         # Loop over the attribute names, check if defined
         for attr_name in default_attributes:
