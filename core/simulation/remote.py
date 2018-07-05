@@ -2124,7 +2124,7 @@ class SKIRTRemote(Remote):
                 else: copy_paths.append(remote_filepath)
 
             # If the files have all been download already
-            if len(copy_paths) == 0: log.success("All output files have already been retrieved succesfully")
+            if len(copy_paths) == 0: log.success("All output files of simulation '" + simulation.name + "' have already been retrieved succesfully")
             else:
 
                 # Debugging

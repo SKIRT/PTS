@@ -55,6 +55,8 @@ subcommands = OrderedDict()
 
 all_name = "all"
 intrinsic_name = "intrinsic"
+free_name = "free"
+other_name = "other"
 derived_name = "derived"
 stellar_name = "stellar"
 bulge_name = "bulge"
@@ -64,7 +66,7 @@ young_name = "young"
 sfr_name = "sfr"
 unevolved_name = "unevolved"
 dust_name = "dust"
-parameter_categories = [all_name, intrinsic_name, derived_name, stellar_name, bulge_name, disk_name, old_name, young_name, sfr_name, unevolved_name, dust_name]
+parameter_categories = [all_name, intrinsic_name, free_name, other_name, derived_name, stellar_name, bulge_name, disk_name, old_name, young_name, sfr_name, unevolved_name, dust_name]
 
 # -----------------------------------------------------------------
 
@@ -174,7 +176,7 @@ class ModelExamination(InteractiveConfigurable):
 
         """
         Thisf unction ...
-        :return: 
+        :return:
         """
 
         definition = ConfigurationDefinition(write_config=False)
@@ -219,11 +221,20 @@ class ModelExamination(InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.show_parameters_definition, **kwargs)
 
+        # Empty line
+        print("")
+
         # All parameters
         if config.category == all_name: self.show_all_parameters()
 
         # Intrinsic
         elif config.category == intrinsic_name: self.show_intrinsic_parameters()
+
+        # Free
+        elif config.category == free_name: self.show_free_parameters()
+
+        # Other
+        elif config.category == other_name: self.show_other_parameters()
 
         # Derived
         elif config.category == derived_name: self.show_derived_parameters()
