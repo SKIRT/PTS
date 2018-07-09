@@ -67,7 +67,7 @@ def project_model(name, model, projection=None, description=None, path=None, cen
 
 # -----------------------------------------------------------------
 
-default_scale_heights = 2.5
+default_scale_heights = 15.
 
 # -----------------------------------------------------------------
 

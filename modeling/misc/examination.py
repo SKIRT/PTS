@@ -695,7 +695,7 @@ class ModelExamination(InteractiveConfigurable):
         definition.add_optional("wcs_component", "string", "name of the component from which to take the coordinate system (must be defined as deprojection model)")
 
         # Vertical extent of the total model
-        definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 2.5)
+        definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15)
         definition.add_flag("from_projection", "create the projections for the other orientations from the earth projection (instead of from the deprojection model)", True)
         definition.add_optional("z_extent", "length_quantity", "vertical extent for the component projection")
         definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections", 1.5)

@@ -35,7 +35,7 @@ from ....core.tools import numbers
 
 # -----------------------------------------------------------------
 
-default_scale_heights = 2.5 # number of times to take the scale height as the vertical radius of the model
+default_scale_heights = 15. # number of times to take the scale height as the vertical radius of the model
 
 # -----------------------------------------------------------------
 
