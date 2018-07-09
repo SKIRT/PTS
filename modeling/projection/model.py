@@ -113,16 +113,16 @@ class ComponentProjections(object):
         if wcs is not None: self.wcs = wcs
         if center is not None: self.center = center
 
-        # Set the earth projection
-        if projection is None: projection = self.create_projection_earth()
+        # Set the earth projection (if necessary)
+        if projection is None and earth: projection = self.create_projection_earth()
         self.projection_earth = projection
 
-        # Set the face-on projection
-        if projection_faceon is None: projection_faceon = self.create_projection_faceon(radial_factor=radial_factor)
+        # Set the face-on projection (if necessary)
+        if projection_faceon is None and faceon: projection_faceon = self.create_projection_faceon(radial_factor=radial_factor)
         self.projection_faceon = projection_faceon
 
-        # Set the edge-on projection
-        if projection_edgeon is None: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor)
+        # Set the edge-on projection (if necessary)
+        if projection_edgeon is None and edgeon: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor)
         self.projection_edgeon = projection_edgeon
 
         # Set the path
@@ -858,7 +858,6 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
@@ -889,7 +888,6 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
@@ -920,7 +918,6 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
@@ -941,7 +938,7 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_earth_projection_output(self):
+    def earth_projection_output(self):
 
         """
         This function ...
@@ -953,7 +950,7 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_faceon_projection_output(self):
+    def faceon_projection_output(self):
 
         """
         This function ...
@@ -965,7 +962,7 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_edgeon_projection_output(self):
+    def edgeon_projection_output(self):
 
         """
         This function ...
@@ -977,38 +974,38 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_earth_map_path(self):
+    def earth_map_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_earth_projection_output.single_total_images
+        return self.earth_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_faceon_map_path(self):
+    def faceon_map_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_faceon_projection_output.single_total_images
+        return self.faceon_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_edgeon_map_path(self):
+    def edgeon_map_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_edgeon_projection_output.single_total_images
+        return self.edgeon_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
@@ -1074,7 +1071,7 @@ class ComponentProjections(object):
         else: raise ValueError("No WCS info for the earth map")
 
         # Create the frame
-        return Frame.from_file(self.old_bulge_earth_map_path, wcs=wcs, distance=self.distance)
+        return Frame.from_file(self.earth_map_path, wcs=wcs, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -1086,7 +1083,7 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_faceon_map_path, distance=self.distance, pixelscale=self.pixelscale_faceon)
+        return Frame.from_file(self.faceon_map_path, distance=self.distance, pixelscale=self.pixelscale_faceon)
 
     # -----------------------------------------------------------------
 
@@ -1098,7 +1095,7 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_edgeon_map_path, distance=self.distance, pixelscale=self.pixelscale_edgeon)
+        return Frame.from_file(self.edgeon_map_path, distance=self.distance, pixelscale=self.pixelscale_edgeon)
 
 # -----------------------------------------------------------------
 

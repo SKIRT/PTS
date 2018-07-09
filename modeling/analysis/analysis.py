@@ -50,6 +50,7 @@ from .evaluation import AnalysisModelEvaluator
 from ...core.tools import sequences
 from .correlations import CorrelationsAnalyser
 from ..misc.examination import ModelExamination
+from ..config.analyse_correlations import definition as analyse_correlations_definition
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -3629,12 +3630,48 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def analyse_correlations_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_correlations_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
     def analyse_correlations_command(self, command, **kwargs):
 
         """
         This function ...
         :param command:
         :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_correlations_definition, **kwargs)
+
+        # Analyse
+        self.analyse_correlations(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_correlations(self, config=None):
+
+        """
+        This function ...
+        :param config:
         :return:
         """
 

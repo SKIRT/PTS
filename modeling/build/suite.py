@@ -12,8 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
+from ...core.tools.utils import lazyproperty
 from .tables import ModelsTable, RepresentationsTable, ModelMapsTable
 from ...core.basics.map import Map
 from ...core.basics.configuration import open_mapping
@@ -25,6 +29,7 @@ from .representation import Representation
 from ...core.basics.log import log
 from .construct import add_stellar_component, add_dust_component
 from ...core.tools.utils import create_lazified_class
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -136,6 +141,127 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def galaxy_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_properties_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..core.environment import properties_name, data_name
+        return fs.join(self.modeling_path, data_name, properties_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the properties
+        from ..basics.properties import GalaxyProperties
+        return GalaxyProperties.from_file(self.galaxy_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.center
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #  Set the path to the galaxy info file
+        modeling_data_path = fs.join(self.modeling_path, "data")
+        return fs.join(modeling_data_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the info table
+        table = tables.from_file(self.galaxy_info_path)
+
+        # To ordered dict
+        info = OrderedDict()
+        for name in table.colnames: info[name] = table[name][0]
+
+        # Return the info
+        return info
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Type"]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_stage(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.galaxy_info["Hubble Stage"]
+
+    # -----------------------------------------------------------------
+
     def get_model_definition(self, model_name):
 
         """
@@ -161,6 +287,35 @@ class ModelSuite(object):
 
         # Create the model definition and return
         return ModelDefinition(model_name, path, stellar_paths=stellar_paths, dust_paths=dust_paths)
+
+    # -----------------------------------------------------------------
+
+    def get_model(self, model_name, representation_name=None):
+
+        """
+        This function ...
+        :param model_name:
+        :param representation_name:
+        :return:
+        """
+
+        from ..core.model import RTModel
+
+        # Get the definition
+        definition = self.get_model_definition(model_name)
+
+        # Get the representation
+        if representation_name is not None: representation = self.get_model_representation(representation_name)
+        else: representation = None
+
+        # Get representation information
+        if representation is not None:
+            reference_wcs = representation.reference_map_wcs
+        else: reference_wcs = None
+
+        # Create the RTModel
+        return RTModel(definition, simulation_name=model_name, center=self.galaxy_center,
+                       galaxy_name=self.galaxy_name, hubble_stage=self.hubble_stage, earth_wcs=reference_wcs)
 
     # -----------------------------------------------------------------
 

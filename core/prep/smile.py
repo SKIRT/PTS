@@ -122,13 +122,13 @@ def get_panchromatic_template():
     return get_pan_template()
 
     # Create SMILE schema
-    smile = SKIRTSmileSchema()
+    #smile = SKIRTSmileSchema()
 
     # Create
-    ski = smile.create_panchromatic_template()
+    #ski = smile.create_panchromatic_template()
 
     # Return the ski file
-    return ski
+    #return ski
 
 # -----------------------------------------------------------------
 
@@ -151,20 +151,25 @@ class SKIRTSmileSchema(object):
         original_smile_path = fs.join(temp_path, "skirt.smile")
         if fs.is_file(original_smile_path): fs.remove_file(original_smile_path)
 
-        # Create the command
-        command = [introspection.skirt_path, "-x"]
-
-        # Run SKIRT
-        if log.is_debug: subprocess.call(command, cwd=temp_path)
-        else: subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'), cwd=temp_path)
-
         # Get the SKIRT version
         self.skirt_version = introspection.skirt_version_number() + " " + introspection.skirt_git_version()
 
-        # Load the smile scheme
-        filename = "skirt " + self.skirt_version + ".smile"
-        fs.rename_file_path(original_smile_path, filename)
+        # Desired filename
+        filename = "skirt " + self.skirt_version.replace(".", "_") + ".smile"
         smile_path = fs.join(temp_path, filename)
+
+        # SMILE for this SKIRT version has not been created
+        if not fs.is_file(smile_path):
+
+            # Create the command
+            command = [introspection.skirt_path, "-x"]
+
+            # Run SKIRT
+            if log.is_debug: subprocess.call(command, cwd=temp_path)
+            else: subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'), cwd=temp_path)
+
+            # Rename the smile scheme file
+            fs.rename_file_path(original_smile_path, filename)
 
         # Load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
         self.tree = etree.parse(smile_path, parser=etree.XMLParser(remove_blank_text=True))
