@@ -35,6 +35,10 @@ from ....core.tools import numbers
 
 # -----------------------------------------------------------------
 
+default_scale_heights = 2.5 # number of times to take the scale height as the vertical radius of the model
+
+# -----------------------------------------------------------------
+
 class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
     
     """
@@ -397,9 +401,9 @@ def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclina
 
 # -----------------------------------------------------------------
 
-def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights,
+def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth, scale_heights=default_scale_heights,
                                           return_deprojection_name=False, scale_heights_reference=None,
-                                          reference_deprojection_name=None, radial_factor=1):
+                                          reference_deprojection_name=None, radial_factor=1, from_projection=True):
 
     """
     This function ...
@@ -411,6 +415,7 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :param scale_heights_reference:
     :param reference_deprojection_name:
     :param radial_factor:
+    :param from_projection:
     :return:
     """
 
@@ -421,11 +426,12 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     # Reference deprojection name is given
     else: reference_deprojection, deprojection_name = get_deprojection(deprojections, reference_deprojection_name), reference_deprojection_name
 
-    # Create the 'earth' projection system
+    # CREATE EARTH PROJECTION
     earth_projection = create_projection_from_deprojection(reference_deprojection, galaxy_distance, azimuth)
 
-    # Create the face-on projection system
-    faceon_projection = create_faceon_projection_from_deprojection(reference_deprojection, radial_factor=radial_factor)
+    # CREATE FACEON PROJECTION
+    if from_projection: faceon_projection = create_faceon_projection_from_earth_projection(earth_projection, radial_factor=radial_factor)
+    else: faceon_projection = create_faceon_projection_from_deprojection(reference_deprojection, radial_factor=radial_factor)
 
     # Determine the reference scale height for determining the physical z scale
     if scale_heights_reference is not None:
@@ -436,8 +442,9 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     # Determine the z extent of the model based on the given number of scale heights
     z_extent = 2. * scale_height * scale_heights
 
-    # Create the edge-on projection system
-    edgeon_projection = create_edgeon_projection_from_deprojection(reference_deprojection, z_extent, radial_factor=radial_factor)
+    # CREATE EDGEON PROJECTION
+    if from_projection: edgeon_projection = create_edgeon_projection_from_earth_projection(earth_projection, z_extent, radial_factor=radial_factor)
+    else: edgeon_projection = create_edgeon_projection_from_deprojection(reference_deprojection, z_extent, radial_factor=radial_factor)
 
     # Return the projections
     if return_deprojection_name: return earth_projection, faceon_projection, edgeon_projection, deprojection_name
@@ -504,6 +511,30 @@ def create_faceon_projection_from_deprojection(deprojection, radial_factor=1):
 
 # -----------------------------------------------------------------
 
+def create_faceon_projection_from_earth_projection(earth_projection, radial_factor=1):
+
+    """
+    This function ...
+    :param earth_projection:
+    :param radial_factor:
+    :return:
+    """
+
+    # Determine extent in the radial direction
+    radial_extent = max(earth_projection.field_x, earth_projection.field_y)
+
+    # Get pixelscale
+    #physical_pixelscale = earth_projection.physical_pixelscale
+    physical_pixelscale = earth_projection.physical_pixelscale.average
+
+    # Determine number of pixels
+    npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
+
+    # Create and return
+    return create_faceon_projection(npixels, physical_pixelscale, earth_projection.distance)
+
+# -----------------------------------------------------------------
+
 def create_faceon_projection(npixels, physical_pixelscale, distance):
 
     """
@@ -560,6 +591,35 @@ def create_edgeon_projection_from_deprojection(deprojection, z_extent, radial_fa
 
     # Create and return
     return create_edgeon_projection(nx, nz, physical_pixelscale, distance)
+
+# -----------------------------------------------------------------
+
+def create_edgeon_projection_from_earth_projection(earth_projection, z_extent, radial_factor=1):
+
+    """
+    This function ...
+    :param earth_projection:
+    :param z_extent:
+    :param radial_factor:
+    :return:
+    """
+
+    # Get pixelscale
+    #physical_pixelscale = earth_projection.physical_pixelscale
+    physical_pixelscale = earth_projection.physical_pixelscale.average
+
+    # Determine extent in the radial and in the vertical direction
+    radial_extent = max(earth_projection.field_x, earth_projection.field_y)
+
+    # Determine the z extent
+    #z_extent = 2. * scaleheight * scale_heights
+
+    # Determine number of pixels
+    nx = int(round(radial_extent / physical_pixelscale)) * radial_factor
+    nz = int(round(z_extent / physical_pixelscale))
+
+    # Create and return
+    return create_edgeon_projection(nx, nz, physical_pixelscale, earth_projection.distance)
 
 # -----------------------------------------------------------------
 

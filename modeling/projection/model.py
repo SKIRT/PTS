@@ -24,7 +24,7 @@ from ...core.prep.smile import get_oligochromatic_template
 from ...core.tools import introspection
 from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
 from ..basics.instruments import FrameInstrument, FullInstrument
-from ..build.representations.galaxy import create_faceon_projection, create_edgeon_projection, create_projection_from_deprojection
+from ..build.representations.galaxy import create_projection_from_deprojection, create_faceon_projection_from_earth_projection, create_edgeon_projection_from_earth_projection
 from ..basics.models import DeprojectionModel3D
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..basics.instruments import Instrument
@@ -39,10 +39,6 @@ default_npackages = 5e7
 earth_name = "earth"
 faceon_name = "faceon"
 edgeon_name = "edgeon"
-
-# -----------------------------------------------------------------
-
-default_scale_heights = 15. # number of times to take the scale height as the vertical radius of the model
 
 # -----------------------------------------------------------------
 
@@ -71,6 +67,10 @@ def project_model(name, model, projection=None, description=None, path=None, cen
 
 # -----------------------------------------------------------------
 
+default_scale_heights = 2.5
+
+# -----------------------------------------------------------------
+
 class ComponentProjections(object):
 
     """
@@ -80,7 +80,7 @@ class ComponentProjections(object):
     def __init__(self, name, model, projection=None, projection_faceon=None, projection_edgeon=None,
                  path=None, earth=True, faceon=True, edgeon=True, npackages=default_npackages,
                  description=None, input_filepaths=None, distance=None, wcs=None, center=None, radial_factor=1,
-                 earth_wcs=None):
+                 earth_wcs=None, scale_heights=default_scale_heights):
 
         """
         This function ...
@@ -122,7 +122,7 @@ class ComponentProjections(object):
         self.projection_faceon = projection_faceon
 
         # Set the edge-on projection (if necessary)
-        if projection_edgeon is None and edgeon: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor)
+        if projection_edgeon is None and edgeon: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor, scale_heights=scale_heights)
         self.projection_edgeon = projection_edgeon
 
         # Set the path
@@ -396,15 +396,17 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
-    def create_projection_edgeon(self, radial_factor=1):
+    def create_projection_edgeon(self, radial_factor=1, scale_heights=default_scale_heights):
 
         """
         This function ...
         :param radial_factor:
+        :param scale_heights:
         :return:
         """
 
-        return create_edgeon_projection_from_earth_projection(self.projection_earth, self.scaleheight, radial_factor=radial_factor)
+        z_extent = 2. * self.scaleheight * scale_heights
+        return create_edgeon_projection_from_earth_projection(self.projection_earth, z_extent, radial_factor=radial_factor)
 
     # -----------------------------------------------------------------
 
@@ -1129,7 +1131,8 @@ def get_faceon_projection(argument, distance=None, center=None, radial_factor=1,
 
 # -----------------------------------------------------------------
 
-def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None, radial_factor=1, strict=False):
+def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None, radial_factor=1,
+                          scale_heights=default_scale_heights, strict=False):
 
     """
     This function ...
@@ -1138,6 +1141,7 @@ def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None
     :param center:
     :param scaleheight:
     :param radial_factor:
+    :param scale_heights:
     :param strict:
     :return:
     """
@@ -1154,7 +1158,8 @@ def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None
 
     # Convert into edge-on
     if scaleheight is None: raise ValueError("Scaleheight must be passed for conversion into edge-on projection")
-    return create_edgeon_projection_from_earth_projection(projection, scaleheight, radial_factor=radial_factor)
+    z_extent = 2. * scaleheight * scale_heights
+    return create_edgeon_projection_from_earth_projection(projection, z_extent, radial_factor=radial_factor)
 
 # -----------------------------------------------------------------
 
@@ -1185,59 +1190,6 @@ def get_projection(argument, distance=None, center=None, inclination=None, posit
 
     # Invalid
     else: raise ValueError("Invalid argument of type '" + str(type(argument)) + "'")
-
-# -----------------------------------------------------------------
-
-def create_faceon_projection_from_earth_projection(earth_projection, radial_factor=1):
-
-    """
-    This function ...
-    :param earth_projection:
-    :param radial_factor:
-    :return:
-    """
-
-    # Determine extent in the radial direction
-    radial_extent = max(earth_projection.field_x, earth_projection.field_y)
-
-    # Get pixelscale
-    #physical_pixelscale = earth_projection.physical_pixelscale
-    physical_pixelscale = earth_projection.physical_pixelscale.average
-
-    # Determine number of pixels
-    npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
-
-    # Create and return
-    return create_faceon_projection(npixels, physical_pixelscale, earth_projection.distance)
-
-# -----------------------------------------------------------------
-
-def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight, radial_factor=1):
-
-    """
-    This function ...
-    :param earth_projection:
-    :param scaleheight:
-    :param radial_factor:
-    :return:
-    """
-
-    # Get pixelscale
-    #physical_pixelscale = earth_projection.physical_pixelscale
-    physical_pixelscale = earth_projection.physical_pixelscale.average
-
-    # Determine extent in the radial and in the vertical direction
-    radial_extent = max(earth_projection.field_x, earth_projection.field_y)
-
-    # Determine the z extent
-    z_extent = 2. * scaleheight * default_scale_heights
-
-    # Determine number of pixels
-    nx = int(round(radial_extent / physical_pixelscale)) * radial_factor
-    nz = int(round(z_extent / physical_pixelscale))
-
-    # Create and return
-    return create_edgeon_projection(nx, nz, physical_pixelscale, earth_projection.distance)
 
 # -----------------------------------------------------------------
 

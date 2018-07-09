@@ -696,7 +696,8 @@ class ModelExamination(InteractiveConfigurable):
 
         # Vertical extent of the total model
         definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 2.5)
-        definition.add_optional("scale_height", "length_quantity", "scale height for the component")
+        definition.add_flag("from_projection", "create the projections for the other orientations from the earth projection (instead of from the deprojection model)", True)
+        definition.add_optional("z_extent", "length_quantity", "vertical extent for the component projection")
         definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections", 1.5)
 
         # Flags
@@ -746,15 +747,23 @@ class ModelExamination(InteractiveConfigurable):
         # Create other projections if necessary
         projections = OrderedDict()
         if earth_name in config.orientations: projections[earth_name] = earth_projection
+
+        # Make faceon projection
         if faceon_name in config.orientations:
-            faceon_projection = create_faceon_projection_from_earth_projection(earth_projection, radial_factor=config.radial_factor)
+
+            if config.from_projection: faceon_projection = create_faceon_projection_from_earth_projection(earth_projection, radial_factor=config.radial_factor)
+            else: raise NotImplementedError("Creating face-on projection from deprojection is not implemented yet")
             projections[faceon_name] = faceon_projection
+
+        # Make edgeon projection
         if edgeon_name in config.orientations:
 
-            if config.scale_height is not None: scale_height = config.scale_height
-            else: scale_height = config.old_scale_heights * self.old_component_scaleheight
+            # Get the scale height
+            if config.z_extent is not None: z_extent = config.z_extent
+            else: z_extent = 2. * config.old_scale_heights * self.old_component_scaleheight
 
-            edgeon_projection = create_edgeon_projection_from_earth_projection(earth_projection, scale_height, radial_factor=config.radial_factor)
+            if config.from_projection: edgeon_projection = create_edgeon_projection_from_earth_projection(earth_projection, z_extent, radial_factor=config.radial_factor)
+            else: raise NotImplementedError("Creating edge-on projection from deprojection is not implemented yet")
             projections[edgeon_name] = edgeon_projection
 
         # Projection

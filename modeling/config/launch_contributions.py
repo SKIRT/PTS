@@ -139,3 +139,10 @@ definition.add_optional("walltime", "real", "the preferred walltime per job (for
 #definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 
 # -----------------------------------------------------------------
+
+# Vertical extent of the total model
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 2.5)
+definition.add_flag("from_projection", "create the projections for the other orientations from the earth projection (instead of from the deprojection model)", True)
+definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections", 1.5)
+
+# -----------------------------------------------------------------

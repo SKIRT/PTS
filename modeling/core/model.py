@@ -43,10 +43,6 @@ from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
-default_scale_heights = 15. # number of times to take the old stellar scale height as the vertical radius of the model
-
-# -----------------------------------------------------------------
-
 # Names of derived model properties
 
 ## Total

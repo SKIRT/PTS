@@ -366,7 +366,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Creating the projections ...")
 
         # Create projections
-        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True, radial_factor=self.config.radial_factor)
+        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True)
 
         # Set the deprojection name in the analysis info
         self.analysis_run_info.reference_deprojection = deprojection_name
