@@ -161,6 +161,12 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_unit(self):
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def zero(cls):
 
@@ -206,7 +212,9 @@ class ErrorBar(object):
         :return:
         """
 
-        return 0.5 * (abs(self.lower_scalar) + self.upper_scalar)
+        value = 0.5 * (abs(self.lower_scalar) + self.upper_scalar)
+        if self.has_unit: return value * self.unit
+        else: return value
 
     # -----------------------------------------------------------------
 
