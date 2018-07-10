@@ -106,12 +106,6 @@ class ErrorBar(object):
 
     @property
     def unit_lower(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if hasattr(self.lower, "unit"): return self.lower.unit
         else: return None
 
@@ -119,14 +113,34 @@ class ErrorBar(object):
 
     @property
     def unit_upper(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if hasattr(self.upper, "unit"): return self.upper.unit
         else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lower_has_unit(self):
+        return self.unit_lower is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def upper_has_unit(self):
+        return self.unit_upper is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lower_scalar(self):
+        if self.lower_has_unit: return self.lower.value
+        else: return self.lower
+
+    # -----------------------------------------------------------------
+
+    @property
+    def upper_scalar(self):
+        if self.upper_has_unit: return self.upper.value
+        else: return self.upper
 
     # -----------------------------------------------------------------
 
@@ -171,14 +185,16 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
-    def as_tuple(self):
+    def as_tuple(self, scalar=False):
 
         """
         This function ...
+        :param scalar:
         :return:
         """
 
-        return (self.lower, self.upper)
+        if scalar: return (self.lower_scalar, self.upper_scalar,)
+        else: return (self.lower, self.upper,)
 
     # -----------------------------------------------------------------
 
@@ -190,7 +206,7 @@ class ErrorBar(object):
         :return:
         """
 
-        return 0.5 * (abs(self.lower) + self.upper)
+        return 0.5 * (abs(self.lower_scalar) + self.upper_scalar)
 
     # -----------------------------------------------------------------
 

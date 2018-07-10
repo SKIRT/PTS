@@ -928,6 +928,9 @@ def divide_with_units(value, unit, other, other_unit=None):
             new_value = value / other * new_unit
             new_unit = None
 
+        # No unit
+        elif new_unit is None: new_value = value / other
+
         # Invalid new unit
         else: raise RuntimeError("Something went wrong")
 
