@@ -97,7 +97,9 @@ analyse_young_maps | -- | analysis.maps.young.YoungMapsAnalyser | arguments | An
 analyse_ionizing_maps | -- | analysis.maps.ionizing.IonizingMapsAnalyser | arguments | Analyse ionizing stellar maps derived from the simulated images
 analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
-analyse_heating_correlations | -- | analysis.heating.correlations.HeatingCorrelationsAnalyser | arguments | Analyse heating correlations
+analyse_cell_energy | -- | analysis.energy.cell.CellEnergyAnalyser | arguments | Analyse the dust cell energy balance
+analyse_projected_energy | -- | analysis.energy.projected.ProjectedEnergyAnalyser | arguments | Analyse the projected energy balance
+analyse_correlations | -- | analysis.correlations.CorrelationsAnalyser | arguments | Analyse correlations
 analyse_temperature | -- | analysis.temperature.TemperatureAnalyser | arguments | Analyse the dust temperature
 cache_analysis_run | -- | analysis.cache.AnalysisRunCacher | arguments | Cache a certain analysis run to a remote host
 analysis | -- | analysis.analysis.Analysis | arguments | Run
@@ -142,6 +144,7 @@ generate_ionizing_maps_page | generate_component_maps_page | maps.html.ionizing.
 generate_dust_maps_page | generate_component_maps_page | maps.html.dust.DustMapsPageGenerator | arguments | Generate the dust maps page
 generate_clip_maps_page | -- | maps.html.clip.ClipMapsPageGenerator | arguments | Generate the clip maps page
 generate_maps_selection_page | -- | maps.html.selection.MapsSelectionPageGenerator | arguments | Generate the maps selection page
+examine | -- | misc.examination.ModelExamination | arguments | Examine a radiative transfer model
 
 # HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages
@@ -162,3 +165,6 @@ generate_attenuation_page | -- | html.attenuation.AttenuationPageGenerator | arg
 generate_colours_page | -- | html.colours.ColoursPageGenerator | arguments | Generate the colours page
 generate_heating_page | -- | html.heating.HeatingPageGenerator | arguments | Generate the heating page
 publish | -- | html.publish.Publisher | arguments | Publish the pages
+
+# PROJECTION
+project | project2 | projection.projector.Projector | arguments | Project a model with SKIRT

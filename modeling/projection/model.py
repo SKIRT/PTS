@@ -5,15 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.simulation.projections Contains the ComponentProjections class.
+## \package pts.modeling.projection.model Contains the ComponentProjections class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
-
-# Import standard modules
-import numpy as np
 
 # Import the relevant PTS classes and modules
 from ...core.simulation.simulation import createsimulations
@@ -27,14 +24,11 @@ from ...core.prep.smile import get_oligochromatic_template
 from ...core.tools import introspection
 from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
 from ..basics.instruments import FrameInstrument, FullInstrument
-from ..build.representations.galaxy import create_faceon_projection, create_edgeon_projection, create_projection_from_deprojection
+from ..build.representations.galaxy import create_projection_from_deprojection, create_faceon_projection_from_earth_projection, create_edgeon_projection_from_earth_projection
 from ..basics.models import DeprojectionModel3D
-from ...core.units.parsing import parse_unit as u
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..basics.instruments import Instrument
-from ...magic.basics.vector import PixelShape
 from ...core.tools import numbers
-from ...core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -45,10 +39,6 @@ default_npackages = 5e7
 earth_name = "earth"
 faceon_name = "faceon"
 edgeon_name = "edgeon"
-
-# -----------------------------------------------------------------
-
-default_scale_heights = 15. # number of times to take the scale height as the vertical radius of the model
 
 # -----------------------------------------------------------------
 
@@ -77,132 +67,7 @@ def project_model(name, model, projection=None, description=None, path=None, cen
 
 # -----------------------------------------------------------------
 
-def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projection, length_unit, unit=None,
-               return_stddev=False, return_ncells=False, weights=None):
-
-    """
-    This function projects 3D data into a 2D map
-    :param name: name of the kind of data
-    :param x_coordinates:
-    :param y_coordinates:
-    :param z_coordinates:
-    :param values:
-    :param projection:
-    :param length_unit:
-    :param unit:
-    :param return_stddev:
-    :param return_ncells:
-    :param weights:
-    :return:
-    """
-
-    # Get the projection
-    #projection = get_projection(projection)
-    #projection = get_faceon_projection(projection, strict=True)
-    if is_faceon(projection): projection = get_faceon_projection(projection, strict=True)
-    elif is_edgeon(projection): projection = get_edgeon_projection(projection, strict=True)
-    else: raise ValueError("Projection must be face-on or edge-on")
-
-    # Get the shape of the map
-    nx, ny = projection.pixels_x, projection.pixels_y
-    shape = PixelShape.from_xy(nx, ny)
-
-    # Initialize maps
-    frame = Frame.initialize_nans(shape, unit=unit)
-    stddev_frame = Frame.initialize_nans(shape, unit=unit)
-    ncells_frame = Frame.initialize_nans(shape)
-
-    # Set boundaries
-    x_min = projection.center_x - 0.5 * projection.field_x
-    x_max = projection.center_x + 0.5 * projection.field_y
-    y_min = projection.center_y - 0.5 * projection.field_y
-    y_max = projection.center_y + 0.5 * projection.field_y
-    x_min = x_min.to(length_unit)
-    x_max = x_max.to(length_unit)
-    y_min = y_min.to(length_unit)
-    y_max = y_max.to(length_unit)
-
-    # Get pixelscale
-    pixelscale = projection.physical_pixelscale
-    x_pixelscale = pixelscale.x.to(length_unit).value
-    y_pixelscale = pixelscale.y.to(length_unit).value
-    half_x_pixelscale = 0.5 * x_pixelscale
-    half_y_pixelscale = 0.5 * y_pixelscale
-
-    # Set the pixelscale and the coordinate info
-    frame.pixelscale = pixelscale
-    frame.distance = projection.distance
-    frame.set_meta("x_min", repr(x_min.value) + " " + length_unit)
-    frame.set_meta("x_max", repr(x_max.value) + " " + length_unit)
-    frame.set_meta("y_min", repr(y_min.value) + " " + length_unit)
-    frame.set_meta("y_max", repr(y_max.value) + " " + length_unit)
-
-    # Mask invalid values
-    values_nans = np.isnan(values)
-    values_infs = np.isinf(values)
-    values_mask = values_nans + values_infs #+ values_unphysical
-    valid_x_coordinates = np.ma.MaskedArray(x_coordinates, mask=values_mask).compressed()
-    valid_y_coordinates = np.ma.MaskedArray(y_coordinates, mask=values_mask).compressed()
-    valid_values = np.ma.MaskedArray(values, mask=values_mask).compressed()
-    valid_weights = np.ma.MaskedArray(weights, mask=values_mask).compressed() if weights is not None else None
-
-    # Loop over the pixels
-    x = x_min
-    y = y_min
-    for i in range(nx):
-        for j in range(ny):
-
-            # Determine range of x and y
-            x_range = RealRange(x - half_x_pixelscale, x + half_x_pixelscale)
-            y_range = RealRange(y - half_y_pixelscale, y + half_y_pixelscale)
-
-            # Show
-            #if index % 100 == 0: log.debug("Calculating heating fraction in the pixel " + str(index) + " of " + str(self.map_npixels) + " (" + tostr(float(index) / self.map_npixels * 100, decimal_places=1, round=True) + "%) ...")
-
-            x_mask = (x_range.min < valid_x_coordinates) * (valid_x_coordinates <= x_range.max)
-            y_mask = (y_range.min < valid_y_coordinates) * (valid_y_coordinates <= y_range.max)
-
-            #x_mask = self.get_coordinate_mask_x_for_map(x_range)
-            #y_mask = self.get_coordinate_mask_y_for_map(y_range)
-            #return x_mask * y_mask
-            mask = x_mask * y_mask
-
-            # Get the indices
-            #indices = self.get_coordinate_indices_in_column_for_map(x_range, y_range)
-            #mask = get_coordinate_mask_for_map(x_range, y_range)
-            indices = np.where(mask)[0]
-            nindices = indices.shape[0]
-
-            # Set number of cells
-            ncells_frame[j, i] = nindices
-
-            # If any cells
-            if nindices > 0:
-
-                # Calculate the heating fraction
-                #fractions = self.valid_heating_fractions[indices]
-                #weights = self.valid_cell_weights[indices]
-                vals = valid_values[indices]
-                wghts = valid_weights[indices] if valid_weights is not None else None
-
-                # Calculate the mean heating fraction
-                fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
-                fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
-
-                # Set fraction
-                frame[j, i] = fraction
-                stddev_frame[j, i] = fraction_stddev
-
-            # Increment the x and y coordinate
-            x += x_pixelscale
-            y += y_pixelscale
-
-    # Return
-    if return_stddev:
-        if return_ncells: return frame, stddev_frame, ncells_frame
-        else: return frame, stddev_frame
-    elif return_ncells: return frame, ncells_frame
-    else: return frame
+default_scale_heights = 15.
 
 # -----------------------------------------------------------------
 
@@ -215,7 +80,7 @@ class ComponentProjections(object):
     def __init__(self, name, model, projection=None, projection_faceon=None, projection_edgeon=None,
                  path=None, earth=True, faceon=True, edgeon=True, npackages=default_npackages,
                  description=None, input_filepaths=None, distance=None, wcs=None, center=None, radial_factor=1,
-                 earth_wcs=None):
+                 earth_wcs=None, scale_heights=default_scale_heights):
 
         """
         This function ...
@@ -248,16 +113,16 @@ class ComponentProjections(object):
         if wcs is not None: self.wcs = wcs
         if center is not None: self.center = center
 
-        # Set the earth projection
-        if projection is None: projection = self.create_projection_earth()
+        # Set the earth projection (if necessary)
+        if projection is None and earth: projection = self.create_projection_earth()
         self.projection_earth = projection
 
-        # Set the face-on projection
-        if projection_faceon is None: projection_faceon = self.create_projection_faceon(radial_factor=radial_factor)
+        # Set the face-on projection (if necessary)
+        if projection_faceon is None and faceon: projection_faceon = self.create_projection_faceon(radial_factor=radial_factor)
         self.projection_faceon = projection_faceon
 
-        # Set the edge-on projection
-        if projection_edgeon is None: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor)
+        # Set the edge-on projection (if necessary)
+        if projection_edgeon is None and edgeon: projection_edgeon = self.create_projection_edgeon(radial_factor=radial_factor, scale_heights=scale_heights)
         self.projection_edgeon = projection_edgeon
 
         # Set the path
@@ -531,15 +396,17 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
-    def create_projection_edgeon(self, radial_factor=1):
+    def create_projection_edgeon(self, radial_factor=1, scale_heights=default_scale_heights):
 
         """
         This function ...
         :param radial_factor:
+        :param scale_heights:
         :return:
         """
 
-        return create_edgeon_projection_from_earth_projection(self.projection_earth, self.scaleheight, radial_factor=radial_factor)
+        z_extent = 2. * self.scaleheight * scale_heights
+        return create_edgeon_projection_from_earth_projection(self.projection_earth, z_extent, radial_factor=radial_factor)
 
     # -----------------------------------------------------------------
 
@@ -993,7 +860,6 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
@@ -1024,7 +890,6 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
@@ -1055,7 +920,6 @@ class ComponentProjections(object):
         ski = get_oligochromatic_template()
 
         # Add the old stellar bulge component
-        #add_new_stellar_component(ski, bulge_component_name, self.old_bulge_component)
         ski.create_new_stellar_component(component_id=self.name, geometry=self.model, luminosities=[1])
 
         # Add the instrument
@@ -1076,7 +940,7 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_earth_projection_output(self):
+    def earth_projection_output(self):
 
         """
         This function ...
@@ -1088,7 +952,7 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_faceon_projection_output(self):
+    def faceon_projection_output(self):
 
         """
         This function ...
@@ -1100,7 +964,7 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_edgeon_projection_output(self):
+    def edgeon_projection_output(self):
 
         """
         This function ...
@@ -1112,38 +976,38 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_earth_map_path(self):
+    def earth_map_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_earth_projection_output.single_total_images
+        return self.earth_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_faceon_map_path(self):
+    def faceon_map_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_faceon_projection_output.single_total_images
+        return self.faceon_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def old_bulge_edgeon_map_path(self):
+    def edgeon_map_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.old_bulge_edgeon_projection_output.single_total_images
+        return self.edgeon_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
@@ -1209,7 +1073,7 @@ class ComponentProjections(object):
         else: raise ValueError("No WCS info for the earth map")
 
         # Create the frame
-        return Frame.from_file(self.old_bulge_earth_map_path, wcs=wcs, distance=self.distance)
+        return Frame.from_file(self.earth_map_path, wcs=wcs, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -1221,7 +1085,7 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_faceon_map_path, distance=self.distance, pixelscale=self.pixelscale_faceon)
+        return Frame.from_file(self.faceon_map_path, distance=self.distance, pixelscale=self.pixelscale_faceon)
 
     # -----------------------------------------------------------------
 
@@ -1233,7 +1097,7 @@ class ComponentProjections(object):
         :return:
         """
 
-        return Frame.from_file(self.old_bulge_edgeon_map_path, distance=self.distance, pixelscale=self.pixelscale_edgeon)
+        return Frame.from_file(self.edgeon_map_path, distance=self.distance, pixelscale=self.pixelscale_edgeon)
 
 # -----------------------------------------------------------------
 
@@ -1267,7 +1131,8 @@ def get_faceon_projection(argument, distance=None, center=None, radial_factor=1,
 
 # -----------------------------------------------------------------
 
-def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None, radial_factor=1, strict=False):
+def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None, radial_factor=1,
+                          scale_heights=default_scale_heights, strict=False):
 
     """
     This function ...
@@ -1276,6 +1141,7 @@ def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None
     :param center:
     :param scaleheight:
     :param radial_factor:
+    :param scale_heights:
     :param strict:
     :return:
     """
@@ -1292,7 +1158,8 @@ def get_edgeon_projection(argument, distance=None, center=None, scaleheight=None
 
     # Convert into edge-on
     if scaleheight is None: raise ValueError("Scaleheight must be passed for conversion into edge-on projection")
-    return create_edgeon_projection_from_earth_projection(projection, scaleheight, radial_factor=radial_factor)
+    z_extent = 2. * scaleheight * scale_heights
+    return create_edgeon_projection_from_earth_projection(projection, z_extent, radial_factor=radial_factor)
 
 # -----------------------------------------------------------------
 
@@ -1323,59 +1190,6 @@ def get_projection(argument, distance=None, center=None, inclination=None, posit
 
     # Invalid
     else: raise ValueError("Invalid argument of type '" + str(type(argument)) + "'")
-
-# -----------------------------------------------------------------
-
-def create_faceon_projection_from_earth_projection(earth_projection, radial_factor=1):
-
-    """
-    This function ...
-    :param earth_projection:
-    :param radial_factor:
-    :return:
-    """
-
-    # Determine extent in the radial direction
-    radial_extent = max(earth_projection.field_x, earth_projection.field_y)
-
-    # Get pixelscale
-    #physical_pixelscale = earth_projection.physical_pixelscale
-    physical_pixelscale = earth_projection.physical_pixelscale.average
-
-    # Determine number of pixels
-    npixels = int(round(radial_extent / physical_pixelscale)) * radial_factor
-
-    # Create and return
-    return create_faceon_projection(npixels, physical_pixelscale, earth_projection.distance)
-
-# -----------------------------------------------------------------
-
-def create_edgeon_projection_from_earth_projection(earth_projection, scaleheight, radial_factor=1):
-
-    """
-    This function ...
-    :param earth_projection:
-    :param scaleheight:
-    :param radial_factor:
-    :return:
-    """
-
-    # Get pixelscale
-    #physical_pixelscale = earth_projection.physical_pixelscale
-    physical_pixelscale = earth_projection.physical_pixelscale.average
-
-    # Determine extent in the radial and in the vertical direction
-    radial_extent = max(earth_projection.field_x, earth_projection.field_y)
-
-    # Determine the z extent
-    z_extent = 2. * scaleheight * default_scale_heights
-
-    # Determine number of pixels
-    nx = int(round(radial_extent / physical_pixelscale)) * radial_factor
-    nz = int(round(z_extent / physical_pixelscale))
-
-    # Create and return
-    return create_edgeon_projection(nx, nz, physical_pixelscale, earth_projection.distance)
 
 # -----------------------------------------------------------------
 

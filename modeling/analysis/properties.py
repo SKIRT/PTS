@@ -186,59 +186,59 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric luminosity
         if self.has_total_earth_map(bol_map_name): self.total_maps[earth_name][bol_map_name] = self.load_total_earth_map(bol_map_name)
-        else: self.total_maps[earth_name][bol_map_name] = self.model.total_bolometric_luminosity_map_earth
+        elif self.model.has_total_bolometric_luminosity_map_earth: self.total_maps[earth_name][bol_map_name] = self.model.total_bolometric_luminosity_map_earth
 
         # Intrinsic stellar luminosity (transparent luminosity)
         if self.has_total_earth_map(intr_stellar_map_name): self.total_maps[earth_name][intr_stellar_map_name] = self.load_total_earth_map(intr_stellar_map_name)
-        else: self.total_maps[earth_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_earth
+        elif self.model.has_total_intrinsic_stellar_luminosity_map_earth: self.total_maps[earth_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_earth
 
         # Observed stellar luminosity
         if self.has_total_earth_map(obs_stellar_map_name): self.total_maps[earth_name][obs_stellar_map_name] = self.load_total_earth_map(obs_stellar_map_name)
-        else: self.total_maps[earth_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_earth
+        elif self.model.has_total_observed_stellar_luminosity_map_earth: self.total_maps[earth_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_earth
 
         # Diffuse dust emission luminosity
         if self.has_total_earth_map(diffuse_dust_map_name): self.total_maps[earth_name][diffuse_dust_map_name] = self.load_total_earth_map(diffuse_dust_map_name)
-        else: self.total_maps[earth_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_earth
+        elif self.model.has_total_diffuse_dust_luminosity_map_earth: self.total_maps[earth_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_earth
 
         # Dust emission luminosity
         if self.has_total_earth_map(dust_map_name): self.total_maps[earth_name][dust_map_name] = self.load_total_earth_map(dust_map_name)
-        else: self.total_maps[earth_name][dust_map_name] = self.model.total_dust_luminosity_map_earth
+        elif self.model.has_total_dust_luminosity_map_earth: self.total_maps[earth_name][dust_map_name] = self.model.total_dust_luminosity_map_earth
 
         # Scattered stellar luminosity
         if self.has_total_earth_map(scattered_map_name): self.total_maps[earth_name][scattered_map_name] = self.load_total_earth_map(scattered_map_name)
-        else: self.total_maps[earth_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_earth
+        elif self.model.has_total_scattered_stellar_luminosity_map_earth: self.total_maps[earth_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_earth
 
         # Absorbed stellar luminosity (by diffuse dust) (extinction)
         if self.has_total_earth_map(absorbed_diffuse_map_name): self.total_maps[earth_name][absorbed_diffuse_map_name] = self.load_total_earth_map(absorbed_diffuse_map_name)
-        else: self.total_maps[earth_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_earth
+        elif self.model.has_total_absorbed_diffuse_stellar_luminosity_map_earth: self.total_maps[earth_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_earth
 
         # Fraction of energy absorbed by DIFFUSE dust
         if self.has_total_earth_map(fabs_diffuse_map_name): self.total_maps[earth_name][fabs_diffuse_map_name] = self.load_total_earth_map(fabs_diffuse_map_name)
-        else: self.total_maps[earth_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_earth
+        elif self.model.has_total_fabs_diffuse_map_earth: self.total_maps[earth_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_earth
 
         # Fraction of energy absorbed by dust
         if self.has_total_earth_map(fabs_map_name): self.total_maps[earth_name][fabs_map_name] = self.load_total_earth_map(fabs_map_name)
-        else: self.total_maps[earth_name][fabs_map_name] = self.model.total_fabs_map_earth
+        elif self.model.has_total_fabs_map_earth: self.total_maps[earth_name][fabs_map_name] = self.model.total_fabs_map_earth
 
         # Attenuated stellar luminosity (attenuation)
         if self.has_total_earth_map(attenuated_map_name): self.total_maps[earth_name][attenuated_map_name] = self.load_total_earth_map(attenuated_map_name)
-        else: self.total_maps[earth_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_earth
+        elif self.model.has_total_attenuated_stellar_luminosity_map_earth: self.total_maps[earth_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_earth
 
         # Direct luminosity
         if self.has_total_earth_map(direct_map_name): self.total_maps[earth_name][direct_map_name] = self.load_total_earth_map(direct_map_name)
-        else: self.total_maps[earth_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_earth
+        elif self.model.has_total_direct_stellar_luminosity_map_earth: self.total_maps[earth_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_earth
 
         # Star formation rate
         if self.has_total_earth_map(sfr_map_name): self.total_maps[earth_name][sfr_map_name] = self.load_total_earth_map(sfr_map_name)
-        else: self.total_maps[earth_name][sfr_map_name] = self.model.total_star_formation_rate_map_earth
+        elif self.model.has_total_star_formation_rate_map_earth: self.total_maps[earth_name][sfr_map_name] = self.model.total_star_formation_rate_map_earth
 
         # Stellar mass
         if self.has_total_earth_map(stellar_mass_map_name): self.total_maps[earth_name][stellar_mass_map_name] = self.load_total_earth_map(stellar_mass_map_name)
-        else: self.total_maps[earth_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_earth
+        elif self.model.has_total_stellar_mass_map_earth: self.total_maps[earth_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_earth
 
         # Specific star formation rate
         if self.has_total_earth_map(ssfr_map_name): self.total_maps[earth_name][ssfr_map_name] = self.load_total_earth_map(ssfr_map_name)
-        else: self.total_maps[earth_name][ssfr_map_name] = self.model.total_ssfr_map_earth
+        elif self.model.has_total_ssfr_map_earth: self.total_maps[earth_name][ssfr_map_name] = self.model.total_ssfr_map_earth
 
     # -----------------------------------------------------------------
 
@@ -266,59 +266,59 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric luminosity
         if self.has_total_faceon_map(bol_map_name): self.total_maps[faceon_name][bol_map_name] = self.load_total_faceon_map(bol_map_name)
-        else: self.total_maps[faceon_name][bol_map_name] = self.model.total_bolometric_luminosity_map_faceon
+        elif self.model.has_total_bolometric_luminosity_map_faceon: self.total_maps[faceon_name][bol_map_name] = self.model.total_bolometric_luminosity_map_faceon
 
         # Intrinsic stellar luminosity (transparent luminosity)
         if self.has_total_faceon_map(intr_stellar_map_name): self.total_maps[faceon_name][intr_stellar_map_name] = self.load_total_faceon_map(intr_stellar_map_name)
-        else: self.total_maps[faceon_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_faceon
+        elif self.model.has_total_intrinsic_stellar_luminosity_map_faceon: self.total_maps[faceon_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_faceon
 
         # Observed stellar luminosity
         if self.has_total_faceon_map(obs_stellar_map_name): self.total_maps[faceon_name][obs_stellar_map_name] = self.load_total_faceon_map(obs_stellar_map_name)
-        else: self.total_maps[faceon_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_faceon
+        elif self.model.has_total_observed_stellar_luminosity_map_faceon: self.total_maps[faceon_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_faceon
 
         # Diffuse dust emission luminosity
         if self.has_total_faceon_map(diffuse_dust_map_name): self.total_maps[faceon_name][diffuse_dust_map_name] = self.load_total_faceon_map(diffuse_dust_map_name)
-        else: self.total_maps[faceon_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_faceon
+        elif self.model.has_total_diffuse_dust_luminosity_map_faceon: self.total_maps[faceon_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_faceon
 
         # Dust emission luminosity
         if self.has_total_faceon_map(dust_map_name): self.total_maps[faceon_name][dust_map_name] = self.load_total_faceon_map(dust_map_name)
-        else: self.total_maps[faceon_name][dust_map_name] = self.model.total_dust_luminosity_map_faceon
+        elif self.model.has_total_dust_luminosity_map_faceon: self.total_maps[faceon_name][dust_map_name] = self.model.total_dust_luminosity_map_faceon
 
         # Scattered stellar luminosity
         if self.has_total_faceon_map(scattered_map_name): self.total_maps[faceon_name][scattered_map_name] = self.load_total_faceon_map(scattered_map_name)
-        else: self.total_maps[faceon_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_faceon
+        elif self.model.has_total_scattered_stellar_luminosity_map_faceon: self.total_maps[faceon_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_faceon
 
         # Absorbed stellar luminosity (by diffuse dust) (extinction)
         if self.has_total_faceon_map(absorbed_diffuse_map_name): self.total_maps[faceon_name][absorbed_diffuse_map_name] = self.load_total_faceon_map(absorbed_diffuse_map_name)
-        else: self.total_maps[faceon_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_faceon
+        elif self.model.has_total_absorbed_diffuse_stellar_luminosity_map_faceon: self.total_maps[faceon_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_faceon
 
         # Fraction of energy absorbed by DIFFUSE dust
         if self.has_total_faceon_map(fabs_diffuse_map_name): self.total_maps[faceon_name][fabs_diffuse_map_name] = self.load_total_faceon_map(fabs_diffuse_map_name)
-        else: self.total_maps[faceon_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_faceon
+        elif self.model.has_total_fabs_diffuse_map_faceon: self.total_maps[faceon_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_faceon
 
         # Fraction of energy absorbed by dust
         if self.has_total_faceon_map(fabs_map_name): self.total_maps[faceon_name][fabs_map_name] = self.load_total_faceon_map(fabs_map_name)
-        else: self.total_maps[faceon_name][fabs_map_name] = self.model.total_fabs_map_faceon
+        elif self.model.has_total_fabs_map_faceon: self.total_maps[faceon_name][fabs_map_name] = self.model.total_fabs_map_faceon
 
         # Attenuated stellar luminosity (attenuation)
         if self.has_total_faceon_map(attenuated_map_name): self.total_maps[faceon_name][attenuated_map_name] = self.load_total_faceon_map(attenuated_map_name)
-        else: self.total_maps[faceon_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_faceon
+        elif self.model.has_total_attenuated_stellar_luminosity_map_faceon: self.total_maps[faceon_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_faceon
 
         # Direct luminosity
         if self.has_total_faceon_map(direct_map_name): self.total_maps[faceon_name][direct_map_name] = self.load_total_faceon_map(direct_map_name)
-        else: self.total_maps[faceon_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_faceon
+        elif self.model.has_total_direct_stellar_luminosity_map_faceon: self.total_maps[faceon_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_faceon
 
         # Star formation rate
         if self.has_total_faceon_map(sfr_map_name): self.total_maps[faceon_name][sfr_map_name] = self.load_total_faceon_map(sfr_map_name)
-        else: self.total_maps[faceon_name][sfr_map_name] = self.model.total_star_formation_rate_map_faceon
+        elif self.model.has_total_star_formation_rate_map_faceon: self.total_maps[faceon_name][sfr_map_name] = self.model.total_star_formation_rate_map_faceon
 
         # Stellar mass
         if self.has_total_faceon_map(stellar_mass_map_name): self.total_maps[faceon_name][stellar_mass_map_name] = self.load_total_faceon_map(stellar_mass_map_name)
-        else: self.total_maps[faceon_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_faceon
+        elif self.model.has_total_stellar_mass_map_faceon: self.total_maps[faceon_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_faceon
 
         # Specific star formation rate
         if self.has_total_faceon_map(ssfr_map_name): self.total_maps[faceon_name][ssfr_map_name] = self.load_total_faceon_map(ssfr_map_name)
-        else: self.total_maps[faceon_name][ssfr_map_name] = self.model.total_ssfr_map_faceon
+        elif self.model.has_total_ssfr_map_faceon: self.total_maps[faceon_name][ssfr_map_name] = self.model.total_ssfr_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -346,59 +346,59 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric luminosity
         if self.has_total_edgeon_map(bol_map_name): self.total_maps[edgeon_name][bol_map_name] = self.load_total_edgeon_map(bol_map_name)
-        else: self.total_maps[edgeon_name][bol_map_name] = self.model.total_bolometric_luminosity_map_edgeon
+        elif self.model.has_total_bolometric_luminosity_map_edgeon: self.total_maps[edgeon_name][bol_map_name] = self.model.total_bolometric_luminosity_map_edgeon
 
         # Intrinsic stellar luminosity (transparent luminosity)
         if self.has_total_edgeon_map(intr_stellar_map_name): self.total_maps[edgeon_name][intr_stellar_map_name] = self.load_total_edgeon_map(intr_stellar_map_name)
-        else: self.total_maps[edgeon_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_edgeon
+        elif self.model.has_total_intrinsic_stellar_luminosity_map_edgeon: self.total_maps[edgeon_name][intr_stellar_map_name] = self.model.total_intrinsic_stellar_luminosity_map_edgeon
 
         # Observed stellar luminosity
         if self.has_total_edgeon_map(obs_stellar_map_name): self.total_maps[edgeon_name][obs_stellar_map_name] = self.load_total_edgeon_map(obs_stellar_map_name)
-        else: self.total_maps[edgeon_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_edgeon
+        elif self.model.has_total_observed_stellar_luminosity_map_edgeon: self.total_maps[edgeon_name][obs_stellar_map_name] = self.model.total_observed_stellar_luminosity_map_edgeon
 
         # Diffuse dust emission luminosity
         if self.has_total_edgeon_map(diffuse_dust_map_name): self.total_maps[edgeon_name][diffuse_dust_map_name] = self.load_total_edgeon_map(diffuse_dust_map_name)
-        else: self.total_maps[edgeon_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_edgeon
+        elif self.model.has_total_diffuse_dust_luminosity_map_edgeon: self.total_maps[edgeon_name][diffuse_dust_map_name] = self.model.total_diffuse_dust_luminosity_map_edgeon
 
         # Dust emission luminosity
         if self.has_total_edgeon_map(dust_map_name): self.total_maps[edgeon_name][dust_map_name] = self.load_total_edgeon_map(dust_map_name)
-        else: self.total_maps[edgeon_name][dust_map_name] = self.model.total_dust_luminosity_map_edgeon
+        elif self.model.has_total_dust_luminosity_map_edgeon: self.total_maps[edgeon_name][dust_map_name] = self.model.total_dust_luminosity_map_edgeon
 
         # Scattered stellar luminosity
         if self.has_total_edgeon_map(scattered_map_name): self.total_maps[edgeon_name][scattered_map_name] = self.load_total_edgeon_map(scattered_map_name)
-        else: self.total_maps[edgeon_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_edgeon
+        elif self.model.has_total_scattered_stellar_luminosity_map_edgeon: self.total_maps[edgeon_name][scattered_map_name] = self.model.total_scattered_stellar_luminosity_map_edgeon
 
         # Absorbed stellar luminosity (by diffuse dust) (extinction)
         if self.has_total_edgeon_map(absorbed_diffuse_map_name): self.total_maps[edgeon_name][absorbed_diffuse_map_name] = self.load_total_edgeon_map(absorbed_diffuse_map_name)
-        else: self.total_maps[edgeon_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_edgeon
+        elif self.model.has_total_absorbed_diffuse_stellar_luminosity_map_edgeon: self.total_maps[edgeon_name][absorbed_diffuse_map_name] = self.model.total_absorbed_diffuse_stellar_luminosity_map_edgeon
 
         # Fraction of energy absorbed by DIFFUSE dust
         if self.has_total_edgeon_map(fabs_diffuse_map_name): self.total_maps[edgeon_name][fabs_diffuse_map_name] = self.load_total_edgeon_map(fabs_diffuse_map_name)
-        else: self.total_maps[edgeon_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_edgeon
+        elif self.model.has_total_fabs_diffuse_map_edgeon: self.total_maps[edgeon_name][fabs_diffuse_map_name] = self.model.total_fabs_diffuse_map_edgeon
 
         # Fraction of energy absorbed by dust
         if self.has_total_edgeon_map(fabs_map_name): self.total_maps[edgeon_name][fabs_map_name] = self.load_total_edgeon_map(fabs_map_name)
-        else: self.total_maps[edgeon_name][fabs_map_name] = self.model.total_fabs_map_edgeon
+        elif self.model.has_total_fabs_map_edgeon: self.total_maps[edgeon_name][fabs_map_name] = self.model.total_fabs_map_edgeon
 
         # Attenuated stellar luminosity (attenuation)
         if self.has_total_edgeon_map(attenuated_map_name): self.total_maps[edgeon_name][attenuated_map_name] = self.load_total_edgeon_map(attenuated_map_name)
-        else: self.total_maps[edgeon_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_edgeon
+        elif self.model.has_total_attenuated_stellar_luminosity_map_edgeon: self.total_maps[edgeon_name][attenuated_map_name] = self.model.total_attenuated_stellar_luminosity_map_edgeon
 
         # Direct luminosity
         if self.has_total_edgeon_map(direct_map_name): self.total_maps[edgeon_name][direct_map_name] = self.load_total_edgeon_map(direct_map_name)
-        else: self.total_maps[edgeon_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_total_direct_stellar_luminosity_map_edgeon: self.total_maps[edgeon_name][direct_map_name] = self.model.total_direct_stellar_luminosity_map_edgeon
 
         # Star formation rate
         if self.has_total_edgeon_map(sfr_map_name): self.total_maps[edgeon_name][sfr_map_name] = self.load_total_edgeon_map(sfr_map_name)
-        else: self.total_maps[edgeon_name][sfr_map_name] = self.model.total_star_formation_rate_map_edgeon
+        elif self.model.has_total_star_formation_rate_map_edgeon: self.total_maps[edgeon_name][sfr_map_name] = self.model.total_star_formation_rate_map_edgeon
 
         # Stellar mass
         if self.has_total_edgeon_map(stellar_mass_map_name): self.total_maps[edgeon_name][stellar_mass_map_name] = self.load_total_edgeon_map(stellar_mass_map_name)
-        else: self.total_maps[edgeon_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_edgeon
+        elif self.model.has_total_stellar_mass_map_edgeon: self.total_maps[edgeon_name][stellar_mass_map_name] = self.model.total_stellar_mass_map_edgeon
 
         # Specific star formation rate
         if self.has_total_edgeon_map(ssfr_map_name): self.total_maps[edgeon_name][ssfr_map_name] = self.load_total_edgeon_map(ssfr_map_name)
-        else: self.total_maps[edgeon_name][ssfr_map_name] = self.model.total_ssfr_map_edgeon
+        elif self.model.has_total_ssfr_map_edgeon: self.total_maps[edgeon_name][ssfr_map_name] = self.model.total_ssfr_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -441,23 +441,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric luminosity
         if self.has_bulge_earth_map(bol_map_name): self.bulge_maps[earth_name][bol_map_name] = self.load_bulge_earth_map(bol_map_name)
-        else: self.bulge_maps[earth_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_earth
+        elif self.model.has_old_bulge_bolometric_luminosity_map_earth: self.bulge_maps[earth_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_earth
 
         # Direct
         if self.has_bulge_earth_map(direct_map_name): self.bulge_maps[earth_name][direct_map_name] = self.load_bulge_earth_map(direct_map_name)
-        else: self.bulge_maps[earth_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_earth
+        elif self.model.has_old_bulge_direct_stellar_luminosity_map_earth: self.bulge_maps[earth_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_earth
 
         # (observed) I1 lum
         if self.has_bulge_earth_map(i1_map_name): self.bulge_maps[earth_name][i1_map_name] = self.load_bulge_earth_map(i1_map_name)
-        else: self.bulge_maps[earth_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_earth
+        elif self.model.has_old_bulge_i1_luminosity_map_earth: self.bulge_maps[earth_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_earth
 
         # Intrinsic I1
         if self.has_bulge_earth_map(intr_i1_map_name): self.bulge_maps[earth_name][intr_i1_map_name] = self.load_bulge_earth_map(intr_i1_map_name)
-        else: self.bulge_maps[earth_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_earth
+        elif self.model.has_old_bulge_intrinsic_i1_luminosity_map_earth: self.bulge_maps[earth_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_earth
 
         # Dust luminosity
         if self.has_bulge_earth_map(dust_map_name): self.bulge_maps[earth_name][dust_map_name] = self.load_bulge_earth_map(dust_map_name)
-        else: self.bulge_maps[earth_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_earth
+        elif self.model.has_old_bulge_dust_luminosity_map_earth: self.bulge_maps[earth_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -482,23 +482,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric luminosity
         if self.has_bulge_faceon_map(bol_map_name): self.bulge_maps[faceon_name][bol_map_name] = self.load_bulge_faceon_map(bol_map_name)
-        else: self.bulge_maps[faceon_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_faceon
+        elif self.model.has_old_bulge_bolometric_luminosity_map_faceon: self.bulge_maps[faceon_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_faceon
 
         # Direct
         if self.has_bulge_faceon_map(direct_map_name): self.bulge_maps[faceon_name][direct_map_name] = self.load_bulge_faceon_map(direct_map_name)
-        else: self.bulge_maps[faceon_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_faceon
+        elif self.model.has_old_bulge_direct_stellar_luminosity_map_faceon: self.bulge_maps[faceon_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_faceon
 
         # (observed) I1 lum
         if self.has_bulge_faceon_map(i1_map_name): self.bulge_maps[faceon_name][i1_map_name] = self.load_bulge_faceon_map(i1_map_name)
-        else: self.bulge_maps[faceon_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_faceon
+        elif self.model.has_old_bulge_i1_luminosity_map_faceon: self.bulge_maps[faceon_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_faceon
 
         # Intrinsic I1
         if self.has_bulge_faceon_map(intr_i1_map_name): self.bulge_maps[faceon_name][intr_i1_map_name] = self.load_bulge_faceon_map(intr_i1_map_name)
-        else: self.bulge_maps[faceon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
+        elif self.model.has_old_bulge_intrinsic_i1_luminosity_map_faceon: self.bulge_maps[faceon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_faceon
 
         # Dust luminosity
         if self.has_bulge_faceon_map(dust_map_name): self.bulge_maps[faceon_name][dust_map_name] = self.load_bulge_faceon_map(dust_map_name)
-        else: self.bulge_maps[faceon_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_faceon
+        elif self.model.has_old_bulge_dust_luminosity_map_faceon: self.bulge_maps[faceon_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -523,23 +523,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric luminosity
         if self.has_bulge_edgeon_map(bol_map_name): self.bulge_maps[edgeon_name][bol_map_name] = self.load_bulge_edgeon_map(bol_map_name)
-        else: self.bulge_maps[edgeon_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_edgeon
+        elif self.model.has_old_bulge_bolometric_luminosity_map_edgeon: self.bulge_maps[edgeon_name][bol_map_name] = self.model.old_bulge_bolometric_luminosity_map_edgeon
 
         # Direct
         if self.has_bulge_edgeon_map(direct_map_name): self.bulge_maps[edgeon_name][direct_map_name] = self.load_bulge_edgeon_map(direct_map_name)
-        else: self.bulge_maps[edgeon_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_old_bulge_direct_stellar_luminosity_map_edgeon: self.bulge_maps[edgeon_name][direct_map_name] = self.model.old_bulge_direct_stellar_luminosity_map_edgeon
 
         # (observed) I1 lum
         if self.has_bulge_edgeon_map(i1_map_name): self.bulge_maps[edgeon_name][i1_map_name] = self.load_bulge_edgeon_map(i1_map_name)
-        else: self.bulge_maps[edgeon_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_edgeon
+        elif self.model.has_old_bulge_i1_luminosity_map_edgeon: self.bulge_maps[edgeon_name][i1_map_name] = self.model.old_bulge_i1_luminosity_map_edgeon
 
         # Intrinsic I1
         if self.has_bulge_edgeon_map(intr_i1_map_name): self.bulge_maps[edgeon_name][intr_i1_map_name] = self.load_bulge_edgeon_map(intr_i1_map_name)
-        else: self.bulge_maps[edgeon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
+        elif self.model.has_old_bulge_intrinsic_i1_luminosity_map_edgeon: self.bulge_maps[edgeon_name][intr_i1_map_name] = self.model.old_bulge_intrinsic_i1_luminosity_map_edgeon
 
         # Dust luminosity
         if self.has_bulge_edgeon_map(dust_map_name): self.bulge_maps[edgeon_name][dust_map_name] = self.load_bulge_edgeon_map(dust_map_name)
-        else: self.bulge_maps[edgeon_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_edgeon
+        elif self.model.has_old_bulge_dust_luminosity_map_edgeon: self.bulge_maps[edgeon_name][dust_map_name] = self.model.old_bulge_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -582,23 +582,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_disk_earth_map(bol_map_name): self.disk_maps[earth_name][bol_map_name] = self.load_disk_earth_map(bol_map_name)
-        else: self.disk_maps[earth_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_earth
+        elif self.model.has_old_disk_bolometric_luminosity_map_earth: self.disk_maps[earth_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_earth
 
         # Direct
         if self.has_disk_earth_map(direct_map_name): self.disk_maps[earth_name][direct_map_name] = self.load_disk_earth_map(direct_map_name)
-        else: self.disk_maps[earth_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_earth
+        elif self.model.has_old_disk_direct_stellar_luminosity_map_earth: self.disk_maps[earth_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_earth
 
         # (observed) I1
         if self.has_disk_earth_map(i1_map_name): self.disk_maps[earth_name][i1_map_name] = self.load_disk_earth_map(i1_map_name)
-        else: self.disk_maps[earth_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_earth
+        elif self.model.has_old_disk_i1_luminosity_map_earth: self.disk_maps[earth_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_earth
 
         # Intrinsic I1
         if self.has_disk_earth_map(intr_i1_map_name): self.disk_maps[earth_name][intr_i1_map_name] = self.load_disk_earth_map(intr_i1_map_name)
-        else: self.disk_maps[earth_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_earth
+        elif self.model.has_old_disk_intrinsic_i1_luminosity_map_earth: self.disk_maps[earth_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_earth
 
         # Dust luminosity
         if self.has_disk_earth_map(dust_map_name): self.disk_maps[earth_name][dust_map_name] = self.load_disk_earth_map(dust_map_name)
-        else: self.disk_maps[earth_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_earth
+        elif self.model.has_old_disk_dust_luminosity_map_earth: self.disk_maps[earth_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -623,23 +623,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_disk_faceon_map(bol_map_name): self.disk_maps[faceon_name][bol_map_name] = self.load_disk_faceon_map(bol_map_name)
-        else: self.disk_maps[faceon_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_faceon
+        elif self.model.has_old_disk_bolometric_luminosity_map_faceon: self.disk_maps[faceon_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_faceon
 
         # Direct
         if self.has_disk_faceon_map(direct_map_name): self.disk_maps[faceon_name][direct_map_name] = self.load_disk_faceon_map(direct_map_name)
-        else: self.disk_maps[faceon_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_faceon
+        elif self.model.has_old_disk_direct_stellar_luminosity_map_faceon: self.disk_maps[faceon_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_faceon
 
         # (observed) I1
         if self.has_disk_faceon_map(i1_map_name): self.disk_maps[faceon_name][i1_map_name] = self.load_disk_faceon_map(i1_map_name)
-        else: self.disk_maps[faceon_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_faceon
+        elif self.model.has_old_disk_i1_luminosity_map_faceon: self.disk_maps[faceon_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_faceon
 
         # Intrinsic I1
         if self.has_disk_faceon_map(intr_i1_map_name): self.disk_maps[faceon_name][intr_i1_map_name] = self.load_disk_faceon_map(intr_i1_map_name)
-        else: self.disk_maps[faceon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_faceon
+        elif self.model.has_old_disk_intrinsic_i1_luminosity_map_faceon: self.disk_maps[faceon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_faceon
 
         # Dust luminosity
         if self.has_disk_faceon_map(dust_map_name): self.disk_maps[faceon_name][dust_map_name] = self.load_disk_faceon_map(dust_map_name)
-        else: self.disk_maps[faceon_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_faceon
+        elif self.model.has_old_disk_dust_luminosity_map_faceon: self.disk_maps[faceon_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -664,23 +664,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_disk_edgeon_map(bol_map_name): self.disk_maps[edgeon_name][bol_map_name] = self.load_disk_edgeon_map(bol_map_name)
-        else: self.disk_maps[edgeon_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_edgeon
+        elif self.model.has_old_disk_bolometric_luminosity_map_edgeon: self.disk_maps[edgeon_name][bol_map_name] = self.model.old_disk_bolometric_luminosity_map_edgeon
 
         # Direct
         if self.has_disk_edgeon_map(direct_map_name): self.disk_maps[edgeon_name][direct_map_name] = self.load_disk_edgeon_map(direct_map_name)
-        else: self.disk_maps[edgeon_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_old_disk_direct_stellar_luminosity_map_edgeon: self.disk_maps[edgeon_name][direct_map_name] = self.model.old_disk_direct_stellar_luminosity_map_edgeon
 
         # (observed) I1
         if self.has_disk_edgeon_map(i1_map_name): self.disk_maps[edgeon_name][i1_map_name] = self.load_disk_edgeon_map(i1_map_name)
-        else: self.disk_maps[edgeon_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_edgeon
+        elif self.model.has_old_disk_i1_luminosity_map_edgeon: self.disk_maps[edgeon_name][i1_map_name] = self.model.old_disk_i1_luminosity_map_edgeon
 
         # Intrinsic I1
         if self.has_disk_edgeon_map(intr_i1_map_name): self.disk_maps[edgeon_name][intr_i1_map_name] = self.load_disk_edgeon_map(intr_i1_map_name)
-        else: self.disk_maps[edgeon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
+        elif self.model.has_old_disk_intrinsic_i1_luminosity_map_edgeon: self.disk_maps[edgeon_name][intr_i1_map_name] = self.model.old_disk_intrinsic_i1_luminosity_map_edgeon
 
         # Dust luminosity
         if self.has_disk_edgeon_map(dust_map_name): self.disk_maps[edgeon_name][dust_map_name] = self.load_disk_edgeon_map(dust_map_name)
-        else: self.disk_maps[edgeon_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_edgeon
+        elif self.model.has_old_disk_dust_luminosity_map_edgeon: self.disk_maps[edgeon_name][dust_map_name] = self.model.old_disk_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -723,23 +723,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_old_earth_map(bol_map_name): self.old_maps[earth_name][bol_map_name] = self.load_old_earth_map(bol_map_name)
-        else: self.old_maps[earth_name][bol_map_name] = self.model.old_bolometric_luminosity_map_earth
+        elif self.model.has_old_bolometric_luminosity_map_earth: self.old_maps[earth_name][bol_map_name] = self.model.old_bolometric_luminosity_map_earth
 
         # Direct
         if self.has_old_earth_map(direct_map_name): self.old_maps[earth_name][direct_map_name] = self.load_old_earth_map(direct_map_name)
-        else: self.old_maps[earth_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_earth
+        elif self.model.has_old_direct_stellar_luminosity_map_earth: self.old_maps[earth_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_earth
 
         # (observed) I1
         if self.has_old_earth_map(i1_map_name): self.old_maps[earth_name][i1_map_name] = self.load_old_earth_map(i1_map_name)
-        else: self.old_maps[earth_name][i1_map_name] = self.model.old_i1_luminosity_map_earth
+        elif self.model.has_old_i1_luminosity_map_earth: self.old_maps[earth_name][i1_map_name] = self.model.old_i1_luminosity_map_earth
 
         # Intrinsic I1
         if self.has_old_earth_map(intr_i1_map_name): self.old_maps[earth_name][intr_i1_map_name] = self.load_old_earth_map(intr_i1_map_name)
-        else: self.old_maps[earth_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_earth
+        elif self.model.has_old_intrinsic_i1_luminosity_map_earth: self.old_maps[earth_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_earth
 
         # Dust luminosity
         if self.has_old_earth_map(dust_map_name): self.old_maps[earth_name][dust_map_name] = self.load_old_earth_map(dust_map_name)
-        else: self.old_maps[earth_name][dust_map_name] = self.model.old_dust_luminosity_map_earth
+        elif self.model.has_old_dust_luminosity_map_earth: self.old_maps[earth_name][dust_map_name] = self.model.old_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -764,23 +764,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_old_faceon_map(bol_map_name): self.old_maps[faceon_name][bol_map_name] = self.load_old_faceon_map(bol_map_name)
-        else: self.old_maps[faceon_name][bol_map_name] = self.model.old_bolometric_luminosity_map_faceon
+        elif self.model.has_old_bolometric_luminosity_map_faceon: self.old_maps[faceon_name][bol_map_name] = self.model.old_bolometric_luminosity_map_faceon
 
         # Direct
         if self.has_old_faceon_map(direct_map_name): self.old_maps[faceon_name][direct_map_name] = self.load_old_faceon_map(direct_map_name)
-        else: self.old_maps[faceon_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_faceon
+        elif self.model.has_old_direct_stellar_luminosity_map_faceon: self.old_maps[faceon_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_faceon
 
         # (observed) I1
         if self.has_old_faceon_map(i1_map_name): self.old_maps[faceon_name][i1_map_name] = self.load_old_faceon_map(i1_map_name)
-        else: self.old_maps[faceon_name][i1_map_name] = self.model.old_i1_luminosity_map_faceon
+        elif self.model.has_old_i1_luminosity_map_faceon: self.old_maps[faceon_name][i1_map_name] = self.model.old_i1_luminosity_map_faceon
 
         # Intrinsic I1
         if self.has_old_faceon_map(intr_i1_map_name): self.old_maps[faceon_name][intr_i1_map_name] = self.load_old_faceon_map(intr_i1_map_name)
-        else: self.old_maps[faceon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_faceon
+        elif self.model.has_old_intrinsic_i1_luminosity_map_faceon: self.old_maps[faceon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_faceon
 
         # Dust luminosity
         if self.has_old_faceon_map(dust_map_name): self.old_maps[faceon_name][dust_map_name] = self.load_old_faceon_map(dust_map_name)
-        else: self.old_maps[faceon_name][dust_map_name] = self.model.old_dust_luminosity_map_faceon
+        elif self.model.has_old_dust_luminosity_map_faceon: self.old_maps[faceon_name][dust_map_name] = self.model.old_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -805,23 +805,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_old_edgeon_map(bol_map_name): self.old_maps[edgeon_name][bol_map_name] = self.load_old_edgeon_map(bol_map_name)
-        else: self.old_maps[edgeon_name][bol_map_name] = self.model.old_bolometric_luminosity_map_edgeon
+        elif self.model.has_old_bolometric_luminosity_map_edgeon: self.old_maps[edgeon_name][bol_map_name] = self.model.old_bolometric_luminosity_map_edgeon
 
         # Direct
         if self.has_old_edgeon_map(direct_map_name): self.old_maps[edgeon_name][direct_map_name] = self.load_old_edgeon_map(direct_map_name)
-        else: self.old_maps[edgeon_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_old_direct_stellar_luminosity_map_edgeon: self.old_maps[edgeon_name][direct_map_name] = self.model.old_direct_stellar_luminosity_map_edgeon
 
         # (observed) I1
         if self.has_old_edgeon_map(i1_map_name): self.old_maps[edgeon_name][i1_map_name] = self.load_old_edgeon_map(i1_map_name)
-        else: self.old_maps[edgeon_name][i1_map_name] = self.model.old_i1_luminosity_map_edgeon
+        elif self.model.has_old_i1_luminosity_map_edgeon: self.old_maps[edgeon_name][i1_map_name] = self.model.old_i1_luminosity_map_edgeon
 
         # Intrinsic I1
         if self.has_old_edgeon_map(intr_i1_map_name): self.old_maps[edgeon_name][intr_i1_map_name] = self.load_old_edgeon_map(intr_i1_map_name)
-        else: self.old_maps[edgeon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_edgeon
+        elif self.model.has_old_intrinsic_i1_luminosity_map_edgeon: self.old_maps[edgeon_name][intr_i1_map_name] = self.model.old_intrinsic_i1_luminosity_map_edgeon
 
         # Dust luminosity
         if self.has_old_edgeon_map(dust_map_name): self.old_maps[edgeon_name][dust_map_name] = self.load_old_edgeon_map(dust_map_name)
-        else: self.old_maps[edgeon_name][dust_map_name] = self.model.old_dust_luminosity_map_edgeon
+        elif self.model.has_old_dust_luminosity_map_edgeon: self.old_maps[edgeon_name][dust_map_name] = self.model.old_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -864,23 +864,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_young_earth_map(bol_map_name): self.young_maps[earth_name][bol_map_name] = self.load_young_earth_map(bol_map_name)
-        else: self.young_maps[earth_name][bol_map_name] = self.model.young_bolometric_luminosity_map_earth
+        elif self.model.has_young_bolometric_luminosity_map_earth: self.young_maps[earth_name][bol_map_name] = self.model.young_bolometric_luminosity_map_earth
 
         # Direct
         if self.has_young_earth_map(direct_map_name): self.young_maps[earth_name][direct_map_name] = self.load_young_earth_map(direct_map_name)
-        else: self.young_maps[earth_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_earth
+        elif self.model.has_young_direct_stellar_luminosity_map_earth: self.young_maps[earth_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_earth
 
         # (observed) FUV
         if self.has_young_earth_map(fuv_map_name): self.young_maps[earth_name][fuv_map_name] = self.load_young_earth_map(fuv_map_name)
-        else: self.young_maps[earth_name][fuv_map_name] = self.model.young_fuv_luminosity_map_earth
+        elif self.model.has_young_fuv_luminosity_map_earth: self.young_maps[earth_name][fuv_map_name] = self.model.young_fuv_luminosity_map_earth
 
         # Intrinsic FUV
         if self.has_young_earth_map(intr_fuv_map_name): self.young_maps[earth_name][intr_fuv_map_name] = self.load_young_earth_map(intr_fuv_map_name)
-        else: self.young_maps[earth_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_earth
+        elif self.model.has_young_intrinsic_fuv_luminosity_map_earth: self.young_maps[earth_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_earth
 
         # Dust luminosity
         if self.has_young_earth_map(dust_map_name): self.young_maps[earth_name][dust_map_name] = self.load_young_earth_map(dust_map_name)
-        else: self.young_maps[earth_name][dust_map_name] = self.model.young_dust_luminosity_map_earth
+        elif self.model.has_young_dust_luminosity_map_earth: self.young_maps[earth_name][dust_map_name] = self.model.young_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -905,23 +905,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_young_faceon_map(bol_map_name): self.young_maps[faceon_name][bol_map_name] = self.load_young_faceon_map(bol_map_name)
-        else: self.young_maps[faceon_name][bol_map_name] = self.model.young_bolometric_luminosity_map_faceon
+        elif self.model.has_young_bolometric_luminosity_map_faceon: self.young_maps[faceon_name][bol_map_name] = self.model.young_bolometric_luminosity_map_faceon
 
         # Direct
         if self.has_young_faceon_map(direct_map_name): self.young_maps[faceon_name][direct_map_name] = self.load_young_faceon_map(direct_map_name)
-        else: self.young_maps[faceon_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_faceon
+        elif self.model.has_young_direct_stellar_luminosity_map_faceon: self.young_maps[faceon_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_faceon
 
         # (observed) FUV
         if self.has_young_faceon_map(fuv_map_name): self.young_maps[faceon_name][fuv_map_name] = self.load_young_faceon_map(fuv_map_name)
-        else: self.young_maps[faceon_name][fuv_map_name] = self.model.young_fuv_luminosity_map_faceon
+        elif self.model.has_young_fuv_luminosity_map_faceon: self.young_maps[faceon_name][fuv_map_name] = self.model.young_fuv_luminosity_map_faceon
 
         # Intrinsic FUV
         if self.has_young_faceon_map(intr_fuv_map_name): self.young_maps[faceon_name][intr_fuv_map_name] = self.load_young_faceon_map(intr_fuv_map_name)
-        else: self.young_maps[faceon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_faceon
+        elif self.model.has_young_intrinsic_fuv_luminosity_map_faceon: self.young_maps[faceon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_faceon
 
         # Dust luminosity
         if self.has_young_faceon_map(dust_map_name): self.young_maps[faceon_name][dust_map_name] = self.load_young_faceon_map(dust_map_name)
-        else: self.young_maps[faceon_name][dust_map_name] = self.model.young_dust_luminosity_map_faceon
+        elif self.model.has_young_dust_luminosity_map_faceon: self.young_maps[faceon_name][dust_map_name] = self.model.young_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -946,23 +946,23 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_young_edgeon_map(bol_map_name): self.young_maps[edgeon_name][bol_map_name] = self.load_young_edgeon_map(bol_map_name)
-        else: self.young_maps[edgeon_name][bol_map_name] = self.model.young_bolometric_luminosity_map_edgeon
+        elif self.model.has_young_bolometric_luminosity_map_edgeon: self.young_maps[edgeon_name][bol_map_name] = self.model.young_bolometric_luminosity_map_edgeon
 
         # Direct
         if self.has_young_edgeon_map(direct_map_name): self.young_maps[edgeon_name][direct_map_name] = self.load_young_edgeon_map(direct_map_name)
-        else: self.young_maps[edgeon_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_young_direct_stellar_luminosity_map_edgeon: self.young_maps[edgeon_name][direct_map_name] = self.model.young_direct_stellar_luminosity_map_edgeon
 
         # (observed) FUV
         if self.has_young_edgeon_map(fuv_map_name): self.young_maps[edgeon_name][fuv_map_name] = self.load_young_edgeon_map(fuv_map_name)
-        else: self.young_maps[edgeon_name][fuv_map_name] = self.model.young_fuv_luminosity_map_edgeon
+        elif self.model.has_young_fuv_luminosity_map_edgeon: self.young_maps[edgeon_name][fuv_map_name] = self.model.young_fuv_luminosity_map_edgeon
 
         # Intrinsic FUV
         if self.has_young_edgeon_map(intr_fuv_map_name): self.young_maps[edgeon_name][intr_fuv_map_name] = self.load_young_edgeon_map(intr_fuv_map_name)
-        else: self.young_maps[edgeon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_edgeon
+        elif self.model.has_young_intrinsic_fuv_luminosity_map_edgeon: self.young_maps[edgeon_name][intr_fuv_map_name] = self.model.young_intrinsic_fuv_luminosity_map_edgeon
 
         # Dust luminosity
         if self.has_young_edgeon_map(dust_map_name): self.young_maps[edgeon_name][dust_map_name] = self.load_young_edgeon_map(dust_map_name)
-        else: self.young_maps[edgeon_name][dust_map_name] = self.model.young_dust_luminosity_map_edgeon
+        elif self.model.has_young_dust_luminosity_map_edgeon: self.young_maps[edgeon_name][dust_map_name] = self.model.young_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1005,39 +1005,39 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_sfr_earth_map(bol_map_name): self.sfr_maps[earth_name][bol_map_name] = self.load_sfr_earth_map(bol_map_name)
-        else: self.sfr_maps[earth_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_earth
+        elif self.model.has_sfr_bolometric_luminosity_map_earth: self.sfr_maps[earth_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_earth
 
         # Direct
         if self.has_sfr_earth_map(direct_map_name): self.sfr_maps[earth_name][direct_map_name] = self.load_sfr_earth_map(direct_map_name)
-        else: self.sfr_maps[earth_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_earth
+        elif self.model.has_sfr_direct_stellar_luminosity_map_earth: self.sfr_maps[earth_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_earth
 
         # (observed) FUV
         if self.has_sfr_earth_map(fuv_map_name): self.sfr_maps[earth_name][fuv_map_name] = self.load_sfr_earth_map(fuv_map_name)
-        else: self.sfr_maps[earth_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_earth
+        elif self.model.has_sfr_fuv_luminosity_map_earth: self.sfr_maps[earth_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_earth
 
         # Intrinsic FUV
         if self.has_sfr_earth_map(intr_fuv_map_name): self.sfr_maps[earth_name][intr_fuv_map_name] = self.load_sfr_earth_map(intr_fuv_map_name)
-        else: self.sfr_maps[earth_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_earth
+        elif self.model.has_sfr_intrinsic_fuv_luminosity_map_earth: self.sfr_maps[earth_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_earth
 
         # SFR
         if self.has_sfr_earth_map(sfr_map_name): self.sfr_maps[earth_name][sfr_map_name] = self.load_sfr_earth_map(sfr_map_name)
-        else: self.sfr_maps[earth_name][sfr_map_name] = self.model.star_formation_rate_map_earth
+        elif self.model.has_star_formation_rate_map_earth: self.sfr_maps[earth_name][sfr_map_name] = self.model.star_formation_rate_map_earth
 
         # Dust mass
         if self.has_sfr_earth_map(dust_mass_map_name): self.sfr_maps[earth_name][dust_mass_map_name] = self.load_sfr_earth_map(dust_mass_map_name)
-        else: self.sfr_maps[earth_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_earth
+        elif self.model.has_sfr_dust_mass_map_earth: self.sfr_maps[earth_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_earth
 
         # Stellar bolometric luminosity
         if self.has_sfr_earth_map(stellar_lum_map_name): self.sfr_maps[earth_name][stellar_lum_map_name] = self.load_sfr_earth_map(stellar_lum_map_name)
-        else: self.sfr_maps[earth_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_earth
+        elif self.model.has_sfr_stellar_luminosity_map_earth: self.sfr_maps[earth_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_earth
 
         # Intrinsic dust luminosity
         if self.has_sfr_earth_map(intr_dust_map_name): self.sfr_maps[earth_name][intr_dust_map_name] = self.load_sfr_earth_map(intr_dust_map_name)
-        else: self.sfr_maps[earth_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_earth
+        elif self.model.has_sfr_intrinsic_dust_luminosity_map_earth: self.sfr_maps[earth_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_earth
 
         # Dust bolometric luminosity
         if self.has_sfr_earth_map(dust_map_name): self.sfr_maps[earth_name][dust_map_name] = self.load_sfr_earth_map(dust_map_name)
-        else: self.sfr_maps[earth_name][dust_map_name] = self.model.sfr_dust_luminosity_map_earth
+        elif self.model.has_sfr_dust_luminosity_map_earth: self.sfr_maps[earth_name][dust_map_name] = self.model.sfr_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -1062,39 +1062,39 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_sfr_faceon_map(bol_map_name): self.sfr_maps[faceon_name][bol_map_name] = self.load_sfr_faceon_map(bol_map_name)
-        else: self.sfr_maps[faceon_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_faceon
+        elif self.model.has_sfr_bolometric_luminosity_map_faceon: self.sfr_maps[faceon_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_faceon
 
         # Direct
         if self.has_sfr_faceon_map(direct_map_name): self.sfr_maps[faceon_name][direct_map_name] = self.load_sfr_faceon_map(direct_map_name)
-        else: self.sfr_maps[faceon_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_faceon
+        elif self.model.has_sfr_direct_stellar_luminosity_map_faceon: self.sfr_maps[faceon_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_faceon
 
         # (observed) FUV
         if self.has_sfr_faceon_map(fuv_map_name): self.sfr_maps[faceon_name][fuv_map_name] = self.load_sfr_faceon_map(fuv_map_name)
-        else: self.sfr_maps[faceon_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_faceon
+        elif self.model.has_sfr_fuv_luminosity_map_faceon: self.sfr_maps[faceon_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_faceon
 
         # Intrinsic FUV
         if self.has_sfr_faceon_map(intr_fuv_map_name): self.sfr_maps[faceon_name][intr_fuv_map_name] = self.load_sfr_faceon_map(intr_fuv_map_name)
-        else: self.sfr_maps[faceon_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_faceon
+        elif self.model.has_sfr_intrinsic_fuv_luminosity_map_faceon: self.sfr_maps[faceon_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_faceon
 
         # SFR
         if self.has_sfr_faceon_map(sfr_map_name): self.sfr_maps[faceon_name][sfr_map_name] = self.load_sfr_faceon_map(sfr_map_name)
-        else: self.sfr_maps[faceon_name][sfr_map_name] = self.model.star_formation_rate_map_faceon
+        elif self.model.has_star_formation_rate_map_faceon: self.sfr_maps[faceon_name][sfr_map_name] = self.model.star_formation_rate_map_faceon
 
         # Dust mass
         if self.has_sfr_faceon_map(dust_mass_map_name): self.sfr_maps[faceon_name][dust_mass_map_name] = self.load_sfr_faceon_map(dust_mass_map_name)
-        else: self.sfr_maps[faceon_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_faceon
+        elif self.model.has_sfr_dust_mass_map_faceon: self.sfr_maps[faceon_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_faceon
 
         # Stellar bolometric luminosity
         if self.has_sfr_faceon_map(stellar_lum_map_name): self.sfr_maps[faceon_name][stellar_lum_map_name] = self.load_sfr_faceon_map(stellar_lum_map_name)
-        else: self.sfr_maps[faceon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_faceon
+        elif self.model.has_sfr_stellar_luminosity_map_faceon: self.sfr_maps[faceon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_faceon
 
         # Intrinsic dust luminosity
         if self.has_sfr_faceon_map(intr_dust_map_name): self.sfr_maps[faceon_name][intr_dust_map_name] = self.load_sfr_faceon_map(intr_dust_map_name)
-        else: self.sfr_maps[faceon_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_faceon
+        elif self.model.has_sfr_intrinsic_dust_luminosity_map_faceon: self.sfr_maps[faceon_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_faceon
 
         # Dust bolometric luminosity
         if self.has_sfr_faceon_map(dust_map_name): self.sfr_maps[faceon_name][dust_map_name] = self.load_sfr_faceon_map(dust_map_name)
-        else: self.sfr_maps[faceon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_faceon
+        elif self.model.has_sfr_dust_luminosity_map_faceon: self.sfr_maps[faceon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -1119,39 +1119,39 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_sfr_edgeon_map(bol_map_name): self.sfr_maps[edgeon_name][bol_map_name] = self.load_sfr_edgeon_map(bol_map_name)
-        else: self.sfr_maps[edgeon_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_edgeon
+        elif self.model.has_sfr_bolometric_luminosity_map_edgeon: self.sfr_maps[edgeon_name][bol_map_name] = self.model.sfr_bolometric_luminosity_map_edgeon
 
         # Direct
         if self.has_sfr_edgeon_map(direct_map_name): self.sfr_maps[edgeon_name][direct_map_name] = self.load_sfr_edgeon_map(direct_map_name)
-        else: self.sfr_maps[edgeon_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_sfr_direct_stellar_luminosity_map_edgeon: self.sfr_maps[edgeon_name][direct_map_name] = self.model.sfr_direct_stellar_luminosity_map_edgeon
 
         # (observed) FUV
         if self.has_sfr_edgeon_map(fuv_map_name): self.sfr_maps[edgeon_name][fuv_map_name] = self.load_sfr_edgeon_map(fuv_map_name)
-        else: self.sfr_maps[edgeon_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_edgeon
+        elif self.model.has_sfr_fuv_luminosity_map_edgeon: self.sfr_maps[edgeon_name][fuv_map_name] = self.model.sfr_fuv_luminosity_map_edgeon
 
         # Intrinsic FUV
         if self.has_sfr_edgeon_map(intr_fuv_map_name): self.sfr_maps[edgeon_name][intr_fuv_map_name] = self.load_sfr_edgeon_map(intr_fuv_map_name)
-        else: self.sfr_maps[edgeon_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_edgeon
+        elif self.model.has_sfr_intrinsic_fuv_luminosity_map_edgeon: self.sfr_maps[edgeon_name][intr_fuv_map_name] = self.model.sfr_intrinsic_fuv_luminosity_map_edgeon
 
         # SFR
         if self.has_sfr_edgeon_map(sfr_map_name): self.sfr_maps[edgeon_name][sfr_map_name] = self.load_sfr_edgeon_map(sfr_map_name)
-        else: self.sfr_maps[edgeon_name][sfr_map_name] = self.model.star_formation_rate_map_edgeon
+        elif self.model.has_star_formation_rate_map_edgeon: self.sfr_maps[edgeon_name][sfr_map_name] = self.model.star_formation_rate_map_edgeon
 
         # Dust mass
         if self.has_sfr_edgeon_map(dust_mass_map_name): self.sfr_maps[edgeon_name][dust_mass_map_name] = self.load_sfr_edgeon_map(dust_mass_map_name)
-        else: self.sfr_maps[edgeon_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_edgeon
+        elif self.model.has_sfr_dust_mass_map_edgeon: self.sfr_maps[edgeon_name][dust_mass_map_name] = self.model.sfr_dust_mass_map_edgeon
 
         # Stellar bolometric luminosity
         if self.has_sfr_edgeon_map(stellar_lum_map_name): self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.load_sfr_edgeon_map(stellar_lum_map_name)
-        else: self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_edgeon
+        elif self.model.has_sfr_stellar_luminosity_map_edgeon: self.sfr_maps[edgeon_name][stellar_lum_map_name] = self.model.sfr_stellar_luminosity_map_edgeon
 
         # Intrinsic dust luminosity
         if self.has_sfr_edgeon_map(intr_dust_map_name): self.sfr_maps[edgeon_name][intr_dust_map_name] = self.load_sfr_edgeon_map(intr_dust_map_name)
-        else: self.sfr_maps[edgeon_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_edgeon
+        elif self.model.has_sfr_intrinsic_dust_luminosity_map_edgeon: self.sfr_maps[edgeon_name][intr_dust_map_name] = self.model.sfr_intrinsic_dust_luminosity_map_edgeon
 
         # Dust bolometric luminosity
         if self.has_sfr_edgeon_map(dust_map_name): self.sfr_maps[edgeon_name][dust_map_name] = self.load_sfr_edgeon_map(dust_map_name)
-        else: self.sfr_maps[edgeon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_edgeon
+        elif self.model.has_sfr_dust_luminosity_map_edgeon: self.sfr_maps[edgeon_name][dust_map_name] = self.model.sfr_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1194,27 +1194,27 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_unevolved_earth_map(bol_map_name): self.unevolved_maps[earth_name][bol_map_name] = self.load_unevolved_earth_map(bol_map_name)
-        else: self.unevolved_maps[earth_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_earth
+        elif self.model.has_unevolved_bolometric_luminosity_map_earth: self.unevolved_maps[earth_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_earth
 
         # Direct
         if self.has_unevolved_earth_map(direct_map_name): self.unevolved_maps[earth_name][direct_map_name] = self.load_unevolved_earth_map(direct_map_name)
-        else: self.unevolved_maps[earth_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_earth
+        elif self.model.has_unevolved_direct_stellar_luminosity_map_earth: self.unevolved_maps[earth_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_earth
 
         # FUV
         if self.has_unevolved_earth_map(fuv_map_name): self.unevolved_maps[earth_name][fuv_map_name] = self.load_unevolved_earth_map(direct_map_name)
-        else: self.unevolved_maps[earth_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_earth
+        elif self.model.has_unevolved_fuv_luminosity_map_earth: self.unevolved_maps[earth_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_earth
 
         # Intrinsic FUV
         if self.has_unevolved_earth_map(intr_fuv_map_name): self.unevolved_maps[earth_name][intr_fuv_map_name] = self.load_unevolved_earth_map(intr_fuv_map_name)
-        else: self.unevolved_maps[earth_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_earth
+        elif self.model.has_unevolved_intrinsic_fuv_luminosity_map_earth: self.unevolved_maps[earth_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_earth
 
         # SFR
         if self.has_unevolved_earth_map(sfr_map_name): self.unevolved_maps[earth_name][sfr_map_name] = self.load_unevolved_earth_map(sfr_map_name)
-        else: self.unevolved_maps[earth_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_earth
+        elif self.model.has_unevolved_star_formation_rate_map_earth: self.unevolved_maps[earth_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_earth
 
         # Dust luminosity
         if self.has_unevolved_earth_map(dust_map_name): self.unevolved_maps[earth_name][dust_map_name] = self.load_unevolved_earth_map(dust_map_name)
-        else: self.unevolved_maps[earth_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_earth
+        elif self.model.has_unevolved_dust_luminosity_map_earth: self.unevolved_maps[earth_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
@@ -1239,27 +1239,27 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_unevolved_faceon_map(bol_map_name): self.unevolved_maps[faceon_name][bol_map_name] = self.load_unevolved_faceon_map(bol_map_name)
-        else: self.unevolved_maps[faceon_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_faceon
+        elif self.model.has_unevolved_bolometric_luminosity_map_faceon: self.unevolved_maps[faceon_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_faceon
 
         # Direct
         if self.has_unevolved_faceon_map(direct_map_name): self.unevolved_maps[faceon_name][direct_map_name] = self.load_unevolved_faceon_map(direct_map_name)
-        else: self.unevolved_maps[faceon_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_faceon
+        elif self.model.has_unevolved_direct_stellar_luminosity_map_faceon: self.unevolved_maps[faceon_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_faceon
 
         # FUV
         if self.has_unevolved_faceon_map(fuv_map_name): self.unevolved_maps[faceon_name][fuv_map_name] = self.load_unevolved_faceon_map(direct_map_name)
-        else: self.unevolved_maps[faceon_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_faceon
+        elif self.model.has_unevolved_fuv_luminosity_map_faceon: self.unevolved_maps[faceon_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_faceon
 
         # Intrinsic FUV
         if self.has_unevolved_faceon_map(intr_fuv_map_name): self.unevolved_maps[faceon_name][intr_fuv_map_name] = self.load_unevolved_faceon_map(intr_fuv_map_name)
-        else: self.unevolved_maps[faceon_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_faceon
+        elif self.model.has_unevolved_intrinsic_fuv_luminosity_map_faceon: self.unevolved_maps[faceon_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_faceon
 
         # SFR
         if self.has_unevolved_faceon_map(sfr_map_name): self.unevolved_maps[faceon_name][sfr_map_name] = self.load_unevolved_faceon_map(sfr_map_name)
-        else: self.unevolved_maps[faceon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_faceon
+        elif self.model.has_unevolved_star_formation_rate_map_faceon: self.unevolved_maps[faceon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_faceon
 
         # Dust luminosity
         if self.has_unevolved_faceon_map(dust_map_name): self.unevolved_maps[faceon_name][dust_map_name] = self.load_unevolved_faceon_map(dust_map_name)
-        else: self.unevolved_maps[faceon_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_faceon
+        elif self.model.has_unevolved_dust_luminosity_map_faceon: self.unevolved_maps[faceon_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -1284,27 +1284,27 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Bolometric
         if self.has_unevolved_edgeon_map(bol_map_name): self.unevolved_maps[edgeon_name][bol_map_name] = self.load_unevolved_edgeon_map(bol_map_name)
-        else: self.unevolved_maps[edgeon_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_edgeon
+        elif self.model.has_unevolved_bolometric_luminosity_map_edgeon: self.unevolved_maps[edgeon_name][bol_map_name] = self.model.unevolved_bolometric_luminosity_map_edgeon
 
         # Direct
         if self.has_unevolved_edgeon_map(direct_map_name): self.unevolved_maps[edgeon_name][direct_map_name] = self.load_unevolved_edgeon_map(direct_map_name)
-        else: self.unevolved_maps[edgeon_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_edgeon
+        elif self.model.has_unevolved_direct_stellar_luminosity_map_edgeon: self.unevolved_maps[edgeon_name][direct_map_name] = self.model.unevolved_direct_stellar_luminosity_map_edgeon
 
         # FUV
         if self.has_unevolved_edgeon_map(fuv_map_name): self.unevolved_maps[edgeon_name][fuv_map_name] = self.load_unevolved_edgeon_map(direct_map_name)
-        else: self.unevolved_maps[edgeon_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_edgeon
+        elif self.model.has_unevolved_fuv_luminosity_map_edgeon: self.unevolved_maps[edgeon_name][fuv_map_name] = self.model.unevolved_fuv_luminosity_map_edgeon
 
         # Intrinsic FUV
         if self.has_unevolved_edgeon_map(intr_fuv_map_name): self.unevolved_maps[edgeon_name][intr_fuv_map_name] = self.load_unevolved_edgeon_map(intr_fuv_map_name)
-        else: self.unevolved_maps[edgeon_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_edgeon
+        elif self.model.has_unevolved_intrinsic_fuv_luminosity_map_edgeon: self.unevolved_maps[edgeon_name][intr_fuv_map_name] = self.model.unevolved_intrinsic_fuv_luminosity_map_edgeon
 
         # SFR
         if self.has_unevolved_edgeon_map(sfr_map_name): self.unevolved_maps[edgeon_name][sfr_map_name] = self.load_unevolved_edgeon_map(sfr_map_name)
-        else: self.unevolved_maps[edgeon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_edgeon
+        elif self.model.has_unevolved_star_formation_rate_map_edgeon: self.unevolved_maps[edgeon_name][sfr_map_name] = self.model.unevolved_star_formation_rate_map_edgeon
 
         # Dust luminosity
         if self.has_unevolved_edgeon_map(dust_map_name): self.unevolved_maps[edgeon_name][dust_map_name] = self.load_unevolved_edgeon_map(dust_map_name)
-        else: self.unevolved_maps[edgeon_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_edgeon
+        elif self.model.has_unevolved_dust_luminosity_map_edgeon: self.unevolved_maps[edgeon_name][dust_map_name] = self.model.unevolved_dust_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1347,11 +1347,11 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Dust mass
         if self.has_dust_earth_map(diffuse_mass_map_name): self.dust_maps[earth_name][diffuse_mass_map_name] = self.load_dust_earth_map(diffuse_mass_map_name)
-        else: self.dust_maps[earth_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_earth
+        elif self.model.has_diffuse_dust_mass_map_earth: self.dust_maps[earth_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_earth
 
         # Total dust mass
         if self.has_dust_earth_map(mass_map_name): self.dust_maps[earth_name][mass_map_name] = self.load_dust_earth_map(mass_map_name)
-        else: self.dust_maps[earth_name][mass_map_name] = self.model.dust_mass_map_earth
+        elif self.model.has_dust_mass_map_earth: self.dust_maps[earth_name][mass_map_name] = self.model.dust_mass_map_earth
 
     # -----------------------------------------------------------------
 
@@ -1376,11 +1376,11 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Dust mass
         if self.has_dust_faceon_map(diffuse_mass_map_name): self.dust_maps[faceon_name][diffuse_mass_map_name] = self.load_dust_faceon_map(diffuse_mass_map_name)
-        else: self.dust_maps[faceon_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_faceon
+        elif self.model.has_diffuse_dust_mass_map_faceon: self.dust_maps[faceon_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_faceon
 
         # Total dust mass
         if self.has_dust_faceon_map(mass_map_name): self.dust_maps[faceon_name][mass_map_name] = self.load_dust_faceon_map(mass_map_name)
-        else: self.dust_maps[faceon_name][mass_map_name] = self.model.dust_mass_map_faceon
+        elif self.model.has_dust_mass_map_faceon: self.dust_maps[faceon_name][mass_map_name] = self.model.dust_mass_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -1405,11 +1405,11 @@ class PropertiesAnalyser(AnalysisRunComponent):
 
         # Dust mass
         if self.has_dust_edgeon_map(diffuse_mass_map_name): self.dust_maps[edgeon_name][diffuse_mass_map_name] = self.load_dust_edgeon_map(diffuse_mass_map_name)
-        else: self.dust_maps[edgeon_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_edgeon
+        elif self.model.has_diffuse_dust_mass_map_edgeon: self.dust_maps[edgeon_name][diffuse_mass_map_name] = self.model.diffuse_dust_mass_map_edgeon
 
         # Total dust mass
         if self.has_dust_edgeon_map(mass_map_name): self.dust_maps[edgeon_name][mass_map_name] = self.load_dust_edgeon_map(mass_map_name)
-        else: self.dust_maps[edgeon_name][mass_map_name] = self.model.dust_mass_map_edgeon
+        elif self.model.has_dust_mass_map_edgeon: self.dust_maps[edgeon_name][mass_map_name] = self.model.dust_mass_map_edgeon
 
     # -----------------------------------------------------------------
 

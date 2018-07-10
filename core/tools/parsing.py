@@ -706,7 +706,9 @@ def directory_path(argument):
     :return:
     """
 
+    from . import strings
     path = fs.absolute_path(argument)
+    path = strings.unquote(path)
     if not fs.is_directory(path): raise ValueError("Is not a directory: " + path)
     return path
 
@@ -758,7 +760,9 @@ def file_path(argument):
     :return:
     """
 
+    from . import strings
     path = fs.absolute_path(argument)
+    path = strings.unquote(path)
     if not fs.is_file(path): raise ValueError("Is not a file: " + path)
     return path
 

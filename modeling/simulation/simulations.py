@@ -1545,38 +1545,38 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def observed_cube_attenuated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # attenuated = transparent - direct stellar
         return self.intrinsic_stellar_cube - self.observed_cube_direct
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_observed_cube_attenuated(self):
+        return self.has_intrinsic_stellar_cube and self.has_direct_cube
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def faceon_observed_cube_attenuated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_stellar_cube_faceon - self.faceon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_observed_cube_attenuated(self):
+        return self.has_intrinsic_stellar_cube_faceon and self.has_direct_cube_faceon
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_observed_cube_attenuated(self):
-
-        """
-        Thsi function ...
-        :return:
-        """
-
         return self.intrinsic_stellar_cube_edgeon - self.edgeon_observed_cube_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_cube_attenuated(self):
+        return self.has_intrinsic_stellar_cube_edgeon and self.has_direct_cube_edgeon
 
     # -----------------------------------------------------------------
 

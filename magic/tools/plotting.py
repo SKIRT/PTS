@@ -140,7 +140,41 @@ def get_stretch(name, data=None, parameter=None):
     :return:
     """
 
-    if name == "log":
+    if name == "auto":
+
+        if data is None: raise ValueError("Data must be passed when scale = 'auto'")
+
+        #from ...core.basics.distribution import Distribution
+        #from ...core.plot.distribution import plot_distribution
+
+        #distr = Distribution.from_data("linear", data)
+        #plot_distribution(distr, title="linear")
+
+        mean = np.nanmean(data)
+        median = np.nanmedian(data)
+        stddev = np.nanstd(data)
+        if mean == 0 or median == 0: reldiff = 1
+        else: reldiff = abs(mean - median) / abs(mean)
+
+        logdata = np.log(data)
+        #logdistr = Distribution.from_data("log", logdata)
+        #plot_distribution(logdistr, title="log")
+
+        isvalid = np.isfinite(logdata)
+        logmean = np.nanmean(logdata[isvalid])
+        logmedian = np.nanmedian(logdata[isvalid])
+        logstddev = np.nanstd(logdata[isvalid])
+        if logmean == 0 or logmedian == 0: logreldiff = 1
+        else: logreldiff = abs(logmean - logmedian) / abs(logmean)
+
+        #print(mean, median, stddev, reldiff)
+        #print(logmean, logmedian, logstddev, logreldiff)
+
+        # Log or linear?
+        if logreldiff < reldiff: return LogStretch()
+        else: return LinearStretch()
+
+    elif name == "log":
         if parameter is not None: stretch = LogStretch(a=parameter)
         else: stretch = LogStretch() # default
     elif name == "sqrt": stretch = SqrtStretch()

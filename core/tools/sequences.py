@@ -1412,6 +1412,21 @@ def same_contents(sequence_a, sequence_b):
 
 # -----------------------------------------------------------------
 
+def all_different_contents(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    for item in sequence_a:
+        if item in sequence_b: return False
+    return True
+
+# -----------------------------------------------------------------
+
 def find_differences(sequence_a, sequence_b):
 
     """

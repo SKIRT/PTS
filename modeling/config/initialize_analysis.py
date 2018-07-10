@@ -48,6 +48,11 @@ definition.sections["wg"].add_optional("range", "quantity_range", "range of wave
 
 # Representation from model building
 definition.add_optional("representation", "string", "representation name")
+definition.add_flag("grid_from_representation", "use representation for dust grid", True)
+definition.add_flag("projections_from_representation", "use representation for projection systems", True)
+definition.add_optional("projections_reference", "string", "name of the component of which to use the input map as reference for the projection systems (ONLY used when representation is not used)")
+
+# -----------------------------------------------------------------
 
 # Dust grid properties
 definition.add_section("dg", "settings for the dust grid")
@@ -61,8 +66,9 @@ definition.sections["dg"].add_optional("scale_heights", "real", "number of times
 # -----------------------------------------------------------------
 
 # Vertical extent of the total model
-definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 25.)
-definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections", 1.7)
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model (UNLESS representation is used)", 15)
+definition.add_flag("from_projection", "create the projections for the other orientations from the earth projection (instead of from the deprojection model) (UNLESS representation is used)", True)
+definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections (UNLESS representation is used)", 1.5)
 
 # -----------------------------------------------------------------
 

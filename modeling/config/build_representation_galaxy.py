@@ -49,6 +49,8 @@ definition.add_flag("check_dust_grid_quality", "check the quality of the dust gr
 # -----------------------------------------------------------------
 
 # Vertical extent of the total model
-definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15.)
+definition.add_optional("old_scale_heights", "real", "number of times to take the old stellar scale height as the vertical radius of the model", 15)
+definition.add_flag("from_projection", "create the projections for the other orientations from the earth projection (instead of from the deprojection model)", True)
+definition.add_optional("radial_factor", "real", "factor with which to multiply the radial extent of the projections", 1.5)
 
 # -----------------------------------------------------------------

@@ -48,6 +48,9 @@ from ...core.tools import types
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
 from .evaluation import AnalysisModelEvaluator
 from ...core.tools import sequences
+from .correlations import CorrelationsAnalyser
+from ..misc.examination import ModelExamination
+from ..config.analyse_correlations import definition as analyse_correlations_definition
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -77,6 +80,8 @@ _history_command_name = "history"
 _status_command_name = "status"
 
 # Other commands
+_show_command_name = "show"
+_properties_command_name = "properties"
 _model_command_name = "model"
 
 # Plot commands
@@ -92,9 +97,10 @@ _cubes_command_name = "cubes"
 _evaluate_command_name = "evaluate"
 
 # Analysis
-_properties_command_name = "properties"
+#_properties_command_name = "properties"
 _heating_command_name = "heating"
 _energy_command_name = "energy"
+_correlations_command_name = "correlations"
 
 # -----------------------------------------------------------------
 
@@ -107,7 +113,10 @@ commands[_history_command_name] = ("show_history_command", True, "show history o
 commands[_status_command_name] = ("show_status_command", True, "show analysis status", None)
 
 # Show stuff
-commands[_model_command_name] = ("show_model", False, "show the model properties", None)
+commands[_show_command_name] = (None, None, "show analysis results", None)
+
+# Examine the model
+commands[_model_command_name] = ("examine_model", False, "examine the radiative transfer model", None)
 
 # Plot stuff
 commands[_wavelengths_command_name] = ("plot_wavelengths_command", True, "plot the wavelength grid", None)
@@ -125,6 +134,7 @@ commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the anal
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
 commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
 commands[_energy_command_name] = (None, None, "analyse the energy budget in the galaxy", None)
+commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
 
 # -----------------------------------------------------------------
 
@@ -147,6 +157,14 @@ _dust_name = "dust"
 
 _contributions_name = "contributions"
 _components_name = "components"
+
+# -----------------------------------------------------------------
+
+# Show subcommands
+show_commands = OrderedDict()
+
+# Properties
+show_commands[_properties_command_name] = ("show_properties", False, "show the model properties", None)
 
 # -----------------------------------------------------------------
 
@@ -269,6 +287,7 @@ energy_commands[_projected_name] = ("analyse_projected_energy_command", True, "a
 
 # Set subcommands
 subcommands = OrderedDict()
+subcommands[_show_command_name] = show_commands
 subcommands[_sed_command_name] = sed_commands
 subcommands[_attenuation_command_name] = attenuation_commands
 subcommands[_map_command_name] = map_commands
@@ -702,7 +721,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def show_model(self, **kwargs):
+    def show_properties(self, **kwargs):
 
         """
         This function ...
@@ -3608,6 +3627,81 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Run
         analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_correlations_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_correlations_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_correlations_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_correlations_definition, **kwargs)
+
+        # Analyse
+        self.analyse_correlations(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_correlations(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Create the analyser
+        analyser = CorrelationsAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    def examine_model(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Initialize
+        examination = ModelExamination()
+
+        # Run
+        examination.run(model=self.model)
 
     # -----------------------------------------------------------------
 

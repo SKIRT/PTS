@@ -1777,35 +1777,6 @@ class SimulationManager(InteractiveConfigurable):
         # NOT POSSIBLE
         else: raise ValueError("Not enough input to initialize simulations and/or assignment")
 
-        # Load the simulation assignment scheme
-        #if has_assignment: self.initialize_from_assignment()
-
-        # From simulations
-        #elif has_simulations: self.initialize_from_simulations(kwargs.pop("simulations"))
-
-        # From simulation names
-        #elif has_simulation_names: self.initialize_from_simulation_names(kwargs.pop("simulation_names"))
-
-        # From simulation IDs
-        #elif has_simulation_ids: self.initialize_from_simulation_ids(kwargs.pop("simulation_ids"))
-
-        # From assignment
-        #elif self.config.assignment is not None: self.initialize_from_assignment(assignment)
-
-        # From simulation names
-        #elif self.config.simulation_names is not None: self.initialize_from_simulation_names(self.config.simulation_names)
-
-        # From simulation IDs
-        #elif self.config.simulation_ids is not None: self.initialize_from_simulation_ids(self.config.simulation_ids)
-
-        # From directories
-        #elif self.config.from_directories:
-        #    names = fs.directories_in_path(self.config.path, returns="name")
-        #    self.initialize_from_simulation_names(names)
-
-        # Not enough input
-        #else: raise ValueError("Not enough input to initialize simulations")
-
         # Set remotes now that assignment is present and correct: TEMPORARY HACK?
         self.config.remotes = self.host_ids
 

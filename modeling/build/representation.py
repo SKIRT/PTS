@@ -24,6 +24,7 @@ from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
 from ...core.tools.utils import lazyproperty
 from ...core.simulation.tree import DustGridTreeDistribution
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -536,5 +537,17 @@ class Representation(object):
         """
 
         return self.reference_deprojection.filepath
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_map_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.reference_map_path)
 
 # -----------------------------------------------------------------
