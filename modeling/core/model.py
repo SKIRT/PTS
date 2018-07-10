@@ -4074,14 +4074,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_observed_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.has_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_observed_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_observed_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.has_faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_observed_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_observed_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -4164,14 +4182,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_scattered_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_scattered_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_cube_scattered
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_scattered_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_scattered_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_cube_scattered
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_scattered_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_full_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -4218,14 +4254,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_attenuated_stellar_luminosity_cube_earth(self):
+        return self.total_simulations.has_observed_cube_attenuated
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_attenuated_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_cube_attenuated
 
     # -----------------------------------------------------------------
 
     @property
+    def has_total_attenuated_stellar_luminosity_cube_faceon(self):
+        return self.total_simulations.has_faceon_observed_cube_attenuated
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_attenuated_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_cube_attenuated
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_attenuated_stellar_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_cube_attenuated
 
     # -----------------------------------------------------------------
 
@@ -4474,14 +4528,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_disk_observed_stellar_luminosity_cube_earth(self):
+        return self.disk_simulations.has_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def disk_observed_stellar_luminosity_cube_faceon(self):
         return self.disk_simulations.faceon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_disk_observed_stellar_luminosity_cube_faceon(self):
+        return self.disk_simulations.has_faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def disk_observed_stellar_luminosity_cube_edgeon(self):
         return self.disk_simulations.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_observed_stellar_luminosity_cube_edgeon(self):
+        return self.disk_simulations.has_edgeon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -4528,14 +4600,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_disk_dust_luminosity_cube_earth(self):
+        return self.disk_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def disk_dust_luminosity_cube_faceon(self):
         return self.disk_simulations.faceon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_disk_dust_luminosity_cube_faceon(self):
+        return self.disk_simulations.has_faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def disk_dust_luminosity_cube_edgeon(self):
         return self.disk_simulations.edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_dust_luminosity_cube_edgeon(self):
+        return self.disk_simulations.has_edgeon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
@@ -4748,14 +4838,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_observed_stellar_luminosity_cube_earth(self):
+        return self.young_simulations.has_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_observed_stellar_luminosity_cube_faceon(self):
         return self.young_simulations.faceon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_young_observed_stellar_luminosity_cube_faceon(self):
+        return self.young_simulations.has_faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_observed_stellar_luminosity_cube_edgeon(self):
         return self.young_simulations.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_observed_stellar_luminosity_cube_edgeon(self):
+        return self.young_simulations.has_edgeon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -4912,14 +5020,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_observed_stellar_luminosity_cube_earth(self):
+        return self.sfr_simulations.has_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_observed_stellar_luminosity_cube_faceon(self):
         return self.sfr_simulations.faceon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_sfr_observed_stellar_luminosity_cube_faceon(self):
+        return self.sfr_simulations.has_faceon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_observed_stellar_luminosity_cube_edgeon(self):
         return self.sfr_simulations.edgeon_observed_stellar_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_observed_stellar_luminosity_cube_edgeon(self):
+        return self.sfr_simulations.has_edgeon_observed_stellar_cube
 
     # -----------------------------------------------------------------
 
@@ -5148,14 +5274,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_luminosity_cube_earth(self):
+        return self.unevolved_simulations.has_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_dust_luminosity_cube_faceon(self):
         return self.unevolved_simulations.faceon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_luminosity_cube_faceon(self):
+        return self.unevolved_simulations.has_faceon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_dust_luminosity_cube_edgeon(self):
         return self.unevolved_simulations.edgeon_observed_dust_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_dust_luminosity_cube_edgeon(self):
+        return self.unevolved_simulations.has_edgeon_observed_dust_cube
 
     # -----------------------------------------------------------------
 
