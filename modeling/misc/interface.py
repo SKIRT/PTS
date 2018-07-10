@@ -339,12 +339,15 @@ class ModelSimulationInterface(GalaxyModelingComponent):
         :return:
         """
 
-        # Inform the user
-        #log.info("Creating the projection systems ...")
+        # Debugging
+        log.debug("Creating the projection systems ...")
 
         azimuth = 0.0
 
         # Use grid resolution?
+        if reference_name is not None:
+            if use_grid is None: use_grid = False
+            elif use_grid: raise ValueError("Cannot use '" + reference_name + "' as reference for the projection systems when 'use_grid' is enabled")
         if use_grid is None: use_grid = prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?", default=False)
 
         # Use grid?

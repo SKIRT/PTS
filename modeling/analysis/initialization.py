@@ -88,7 +88,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        return not self.from_representation or not self.representation.has_dust_grid_tree
+        return not self.grid_from_representation or not self.representation.has_dust_grid_tree
 
     # -----------------------------------------------------------------
 
@@ -100,37 +100,37 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        # 2. Get the model
+        # 1. Get the model
         self.get_model()
 
-        # 3. Create the analysis run
+        # 2. Create the analysis run
         self.create_analysis_run()
 
-        # 4. Get the wavelength grid
+        # 3. Get the wavelength grid
         self.get_wavelength_grid()
 
-        # 5. Get the dust grid
+        # 4. Get the dust grid
         self.get_dust_grid()
 
-        # 6. Load the deprojections
+        # 5. Load the deprojections
         self.load_deprojections()
 
-        # 7. Get the projections
+        # 6. Get the projections
         self.get_projections()
 
-        # 8. Get the instruments
+        # 7. Get the instruments
         self.create_instruments()
 
-        # 9. Adapt ski file
+        # 8. Adapt ski file
         self.adapt_ski()
 
-        # 10. Build the dust grid
+        # 9. Build the dust grid
         if self.do_build_dust_grid: self.build_dust_grid()
 
-        # 11. Set the input
+        # 10. Set the input
         self.set_input()
 
-        # 12. Write
+        # 11. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -328,7 +328,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         """
 
         # Load from representaiton
-        if self.from_representation: self.load_projections()
+        if self.projections_from_representation: self.load_projections()
 
         # Create new projections
         else: self.create_projections()
@@ -366,7 +366,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         log.info("Creating the projections ...")
 
         # Create projections
-        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True)
+        deprojection_name = self.create_projection_systems(make_faceon=True, make_edgeon=True, reference_name=self.config.projections_reference)
 
         # Set the deprojection name in the analysis info
         self.analysis_run_info.reference_deprojection = deprojection_name
@@ -538,7 +538,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         """
 
         # Load from representation
-        if self.from_representation: self.load_dust_grid()
+        if self.grid_from_representation: self.load_dust_grid()
 
         # Create new
         else: self.create_dust_grid()
@@ -546,14 +546,20 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
     # -----------------------------------------------------------------
 
     @property
-    def from_representation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
+    def has_representation(self):
         return self.config.representation is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_from_representation(self):
+        return self.has_representation and self.config.grid_from_representation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projections_from_representation(self):
+        return self.has_representation and self.config.projections_from_representation
 
     # -----------------------------------------------------------------
 
@@ -565,7 +571,7 @@ class AnalysisInitializer(AnalysisComponent, ModelSimulationInterface):
         :return:
         """
 
-        if not self.from_representation: raise RuntimeError("Representation name not specified")
+        if not self.has_representation: raise RuntimeError("Representation name not specified")
         return self.model_suite.get_representation(self.config.representation)
 
     # -----------------------------------------------------------------

@@ -629,10 +629,10 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         # Set dust system writing options
         self.ski.set_write_convergence()
 
-        # EXTRA OUTPUT
-        if self.config.temperatures: self.ski.set_write_temperature()
-        if self.config.emissivities: self.ski.set_write_emissivity()
-        if self.config.isrf: self.ski.set_write_isrf()
+        # EXTRA OUTPUT: ONLY for total simulation
+        #if self.config.temperatures: self.ski.set_write_temperature()
+        #if self.config.emissivities: self.ski.set_write_emissivity()
+        #if self.config.isrf: self.ski.set_write_isrf()
 
         # Write absorption
         if not self.smile.supports_writing_absorption: raise RuntimeError("Writing absorption luminosities is not supported in your version of SKIRT")
@@ -668,12 +668,19 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
             # WRITE THE GRID FOR THE TOTAL CONTRIBUTION
             # and write the number of cells crossed by photons
             if contribution == total:
+
+                # Grid
                 ski.set_write_grid()
                 ski.set_write_density()
                 ski.set_write_quality()
                 ski.set_write_cell_properties()
                 ski.set_write_cells_crossed()
                 ski.set_write_depth_map()
+
+                # Other
+                if self.config.temperatures: ski.set_write_temperature()
+                if self.config.emissivities: ski.set_write_emissivity()
+                if self.config.isrf: ski.set_write_isrf()
 
             # Remove other stellar components, except for the contribution of the total stellar population
             if contribution != total: ski.remove_stellar_components_except(component_names[contribution])

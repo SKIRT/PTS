@@ -419,6 +419,8 @@ def create_projections_from_deprojections(deprojections, galaxy_distance, azimut
     :return:
     """
 
+    #print(scale_heights, scale_heights_reference, radial_factor, from_projection)
+
     # Reference deprojection name not given
     # Get the desired deprojection to base the instruments on
     if reference_deprojection_name is None: reference_deprojection, deprojection_name = prompt_deprojection(deprojections, return_name=True)
