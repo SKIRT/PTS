@@ -1236,6 +1236,25 @@ class SmartTable(Table):
 
                 else: break
 
+            # Get the META info
+            from ..tools import parsing
+            meta = OrderedDict()
+            old_header = header[:]
+            header = []
+            for line in old_header:
+                if line.startswith("META"):
+                    spec = line.split("META: ")[1]
+                    key = spec.split(" [")[0]
+                    ptype = spec.split("[")[1].split("]")[0]
+                    if ptype == "None": meta[key] = None
+                    else:
+                        string = spec.split("] ")[1]
+                        parsing_function = getattr(parsing, ptype)
+                        value = parsing_function(string)
+                        meta[key] = value
+                else: header.append(line)
+            #print(meta)
+
             # Contains type line
             if index == len(header) - 2:
 
@@ -1276,6 +1295,9 @@ class SmartTable(Table):
             # Set density and brightness meta
             if density is not None: table.meta["density"] = density
             if brightness is not None: table.meta["brightness"] = brightness
+
+            # Set other metadata
+            for key in meta: table.meta[key] = meta[key]
 
             # FIX BOOLEAN COLUMNS
             # and also check column types
@@ -1974,9 +1996,6 @@ class SmartTable(Table):
         :return:
         """
 
-        # Import tostr function
-        from ..tools.stringify import tostr
-
         # Setup if necessary
         if len(self.colnames) == 0: self._setup()
 
@@ -1984,73 +2003,10 @@ class SmartTable(Table):
         if fs.is_file(path): fs.remove_file(path)
 
         # PTS format
-        if format == "pts":
-
-            # Create string buffer
-            import StringIO
-            output = StringIO.StringIO()
-
-            # Write to buffer, get the lines
-            self.write(output, format="ascii.commented_header")
-            data_lines = output.getvalue().split("\n")
-
-            # Get masks
-            #masks = self.get_masks()
-
-            # Create header
-            header = []
-            header.append("PTS data format")
-            #for name in masks: header.append(name + " mask: " + tostr(masks[name])) # WILL BE READ FROM THE QUOTE CHARACTERS in the data lines
-
-            # Set density and brightness lists
-            if "density" in self.meta and len(self.meta["density"]) > 0: header.append("density: " + tostr(self.meta["density"]))
-            if "brightness" in self.meta and len(self.meta["brightness"]) > 0: header.append("brightness: " + tostr(self.meta["brightness"]))
-
-            # Set type string line for the header
-            type_string = ""
-            for name in self.column_names:
-                dtype = self.column_type(name)
-                type_string += " " + str(dtype)
-            header.append(type_string.strip())
-
-            # Set unit string line for the header
-            unit_string = ""
-            for name in self.column_names:
-                unit = self.column_unit(name)
-                if unit is None: unit_string += ' ""'
-                else: unit_string += " " + tostr(unit)
-            header.append(unit_string.strip())
-
-            # Create lines
-            lines = []
-            for line in header: lines.append("# " + line)
-            #lines.append("# " + data_lines[0]) # add line with the column names
-            #for line in data_lines[1:]:
-            for line in data_lines:
-                if not line: continue # empty line at the end
-                lines.append(line)
-
-            # Write the lines
-            fs.write_lines(path, lines)
+        if format == "pts": self.saveto_pts(path)
 
         # ECSV format (with masks and units in the meta info)
-        elif format == "ecsv":
-
-            # Get masks
-            masks = self.get_masks_int()
-
-            # Set masks in meta
-            for name in masks: self.meta[name + " mask"] = masks[name]
-
-            # Replace masked values (not masked anymore)
-            self.replace_masked_values()
-
-            # Save
-            self.write(path, format="ascii.ecsv")
-
-            # Set the masks back (because they were set to False by replace_masked_values, necessary to avoid writing out
-            # '""' (empty string) for each masked value, which is unreadable by Astropy afterwards)
-            self.set_masks(masks)
+        elif format == "ecsv": self.saveto_ecsv(path)
 
         # Write the table in the desired format (by Astropy)
         elif format == "csv": self.write(path, format="ascii.csv")
@@ -2066,6 +2022,76 @@ class SmartTable(Table):
 
         # Set the path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_pts(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Import tostr function
+        from ..tools.stringify import tostr, stringify
+
+        # Create string buffer
+        import StringIO
+        output = StringIO.StringIO()
+
+        # Write to buffer, get the lines
+        self.write(output, format="ascii.commented_header")
+        data_lines = output.getvalue().split("\n")
+
+        # Get masks
+        # masks = self.get_masks()
+
+        # Create header
+        header = []
+        header.append("PTS data format")
+        # for name in masks: header.append(name + " mask: " + tostr(masks[name])) # WILL BE READ FROM THE QUOTE CHARACTERS in the data lines
+
+        # Set density and brightness lists
+        if "density" in self.meta and len(self.meta["density"]) > 0: header.append("density: " + tostr(self.meta["density"]))
+        if "brightness" in self.meta and len(self.meta["brightness"]) > 0: header.append("brightness: " + tostr(self.meta["brightness"]))
+
+        # Set type string line for the header
+        type_string = ""
+        for name in self.column_names:
+            dtype = self.column_type(name)
+            type_string += " " + str(dtype)
+        header.append(type_string.strip())
+
+        # Set unit string line for the header
+        unit_string = ""
+        for name in self.column_names:
+            unit = self.column_unit(name)
+            if unit is None: unit_string += ' ""'
+            else: unit_string += " " + tostr(unit)
+        header.append(unit_string.strip())
+
+        # SET META
+        for key in self.meta:
+            if key == "density": continue
+            if key == "brightness": continue
+            if not types.is_string_type(key): raise ValueError("Keys must be strings")
+            value = self.meta[key]
+            ptype, string = stringify(value)
+            line = "META: " + key + " [" + ptype + "] " + string
+            header.append(line)
+
+        # Create lines
+        lines = []
+        for line in header: lines.append("# " + line)
+        # lines.append("# " + data_lines[0]) # add line with the column names
+        # for line in data_lines[1:]:
+        for line in data_lines:
+            if not line: continue  # empty line at the end
+            lines.append(line)
+
+        # Write the lines
+        fs.write_lines(path, lines)
 
     # -----------------------------------------------------------------
 
@@ -2095,13 +2121,29 @@ class SmartTable(Table):
         :return:
         """
 
-        # Check or add extension
-        if fs.has_extension(path):
-            if fs.get_extension(path) != "ecsv": warnings.warn("The extension is not 'ecsv'")
-        else: path = path + ".ecsv"
+        # Get masks
+        masks = self.get_masks_int()
+
+        # Set masks in meta
+        for name in masks: self.meta[name + " mask"] = masks[name]
+
+        # Replace masked values (not masked anymore)
+        self.replace_masked_values()
 
         # Save
-        self.saveto(path, format="ecsv")
+        self.write(path, format="ascii.ecsv")
+
+        # Set the masks back (because they were set to False by replace_masked_values, necessary to avoid writing out
+        # '""' (empty string) for each masked value, which is unreadable by Astropy afterwards)
+        self.set_masks(masks)
+
+        # Check or add extension
+        #if fs.has_extension(path):
+        #    if fs.get_extension(path) != "ecsv": warnings.warn("The extension is not 'ecsv'")
+        #else: path = path + ".ecsv"
+
+        # Save
+        #self.saveto(path, format="ecsv")
 
     # -----------------------------------------------------------------
 
@@ -2177,21 +2219,21 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def saveto_pts(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Check or add extension
-        if fs.has_extension(path):
-            if fs.get_extension(path) != "dat": warnings.warn("The extension is not 'dat'")
-        else: path = path + ".dat"
-
-        # Save
-        self.saveto(path, format="pts")
+    # def saveto_pts(self, path):
+    #
+    #     """
+    #     This function ...
+    #     :param path:
+    #     :return:
+    #     """
+    #
+    #     # Check or add extension
+    #     if fs.has_extension(path):
+    #         if fs.get_extension(path) != "dat": warnings.warn("The extension is not 'dat'")
+    #     else: path = path + ".dat"
+    #
+    #     # Save
+    #     self.saveto(path, format="pts")
 
     # -----------------------------------------------------------------
 

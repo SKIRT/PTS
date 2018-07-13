@@ -2846,12 +2846,9 @@ class Frame(NDDataArray):
         if self.is_photometric:
 
             # Check that the target unit is also photometric
-            if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric")
+            if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the frame is")
 
-            # Set the distance
-            #if distance is None: distance = self.distance
-            # Set the wavelength
-            #if wavelength is None: wavelength = self.pivot_wavelength_or_wavelength
+            # Set the conversion info
             conversion_info = self.conversion_info
             if distance is not None: conversion_info["distance"] = distance
             if wavelength is not None: conversion_info["wavelength"] = wavelength
@@ -2863,7 +2860,7 @@ class Frame(NDDataArray):
         else:
 
             # Check whether target unit is also not photometric
-            if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the unit of the frame is not")
+            if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the frame is not")
 
             # Calculate the conversion factor
             factor = self.unit.to(to_unit, silent=True)
@@ -3694,7 +3691,7 @@ class Frame(NDDataArray):
             plotting.plot_frame(self)
             exit()
 
-        # Set the unit to None
+        # Set the unit
         self.unit = unit
 
         # Return the sum

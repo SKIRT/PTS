@@ -931,6 +931,21 @@ def get_other(seq, test):
 
 # -----------------------------------------------------------------
 
+def get_single_other(seq, test, none="none", method="first"):
+
+    """
+    This function ...
+    :param seq:
+    :param test:
+    :param none:
+    :param method:
+    :return:
+    """
+
+    return get_single(get_other(seq, test), none=none, method=method)
+
+# -----------------------------------------------------------------
+
 def equal_sequences(*sequences):
 
     """
@@ -2424,5 +2439,19 @@ def sorted_by_item(sequence, name):
     """
 
     return list(sorted(sequence, key=lambda item: item[name]))
+
+# -----------------------------------------------------------------
+
+def multirange(*dimensions):
+
+    """
+    This function ...
+    :param dimensions:
+    :return:
+    """
+
+    import numpy as np
+    shape = tuple(dimensions)
+    return np.ndindex(shape)
 
 # -----------------------------------------------------------------
