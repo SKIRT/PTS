@@ -317,7 +317,9 @@ class ComponentSimulation(SkirtSimulation):
         :return:
         """
 
-        return np.asarray(self.cell_properties["X coordinate of cell center"])
+        if "X coordinate of cell center" in self.cell_properties_columns: return np.asarray(self.cell_properties["X coordinate of cell center"]) # SKIRT 8
+        elif "X coordinate of cell center" in self.cell_absorptions_columns: return np.asarray(self.cell_absorptions["X coordinate of cell center"]) # SKIRT 7
+        else: raise IOError("")
 
     # -----------------------------------------------------------------
 
@@ -329,7 +331,9 @@ class ComponentSimulation(SkirtSimulation):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Y coordinate of cell center"])
+        if "Y coordinate of cell center" in self.cell_properties_columns: return np.asarray(self.cell_properties["Y coordinate of cell center"]) # SKIRT 8
+        elif "Y coordinate of cell center" in self.cell_absorptions_columns: return np.asarray(self.cell_absorptions["Y coordinate of cell center"]) # SKIRT 7
+        else: raise IOError("")
 
     # -----------------------------------------------------------------
 
@@ -341,7 +345,9 @@ class ComponentSimulation(SkirtSimulation):
         :return:
         """
 
-        return np.asarray(self.cell_properties["Z coordinate of cell center"])
+        if "Z coordinate of cell center" in self.cell_properties_columns: return np.asarray(self.cell_properties["Z coordinate of cell center"]) # SKIRT 8
+        elif "Z coordinate of cell center" in self.cell_absorptions_columns: return np.asarray(self.cell_absorptions["Z coordinate of cell center"]) # SKIRT 7
+        else: raise IOError("")
 
     # -----------------------------------------------------------------
 
@@ -438,6 +444,42 @@ class ComponentSimulation(SkirtSimulation):
         """
 
         return np.asarray(self.data.stellar_density["Stellar density"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.data.has_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.data.absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_absorptions_columns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cell_absorptions.colnames
 
 # -----------------------------------------------------------------
 

@@ -140,6 +140,8 @@ residuals_name = "residuals"
 maps_name = "maps"
 heating_name = "heating"
 energy_name = "energy"
+sfr_name = "sfr"
+correlations_name = "correlations"
 
 # Projection filenames
 earth_projection_filename = "earth.proj"
@@ -918,6 +920,30 @@ class AnalysisRunBase(object):
         """
 
         return fs.join(self.path, energy_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, sfr_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def correlations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, correlations_name)
 
     # -----------------------------------------------------------------
 
@@ -1881,6 +1907,8 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.maps_path): fs.create_directory(self.maps_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
         if not fs.is_directory(self.energy_path): fs.create_directory(self.energy_path)
+        if not fs.is_directory(self.sfr_path): fs.create_directory(self.sfr_path)
+        if not fs.is_directory(self.correlations_path): fs.create_directory(self.correlations_path)
 
         # Maps subdirectories
         if not fs.is_directory(self.colour_maps_path): fs.create_directory(self.colour_maps_path)

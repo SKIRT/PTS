@@ -51,6 +51,8 @@ from ...core.tools import sequences
 from .correlations import CorrelationsAnalyser
 from ..misc.examination import ModelExamination
 from ..config.analyse_correlations import definition as analyse_correlations_definition
+from ..config.analyse_sfr import definition as analyse_sfr_definition
+from .sfr import SFRAnalyser
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -100,6 +102,7 @@ _evaluate_command_name = "evaluate"
 #_properties_command_name = "properties"
 _heating_command_name = "heating"
 _energy_command_name = "energy"
+_sfr_command_name = "sfr"
 _correlations_command_name = "correlations"
 
 # -----------------------------------------------------------------
@@ -134,6 +137,7 @@ commands[_evaluate_command_name] = ("evaluate_command", True, "evaluate the anal
 commands[_properties_command_name] = ("analyse_properties_command", True, "analyse the model properties", None)
 commands[_heating_command_name] = (None, None, "analyse dust heating contributions", None)
 commands[_energy_command_name] = (None, None, "analyse the energy budget in the galaxy", None)
+commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
 commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
 
 # -----------------------------------------------------------------
@@ -3374,6 +3378,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Analysing the model properties ...")
+
         # Create the analyser
         analyser = PropertiesAnalyser(config=config)
 
@@ -3435,6 +3442,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param config:
         :return:
         """
+
+        # Inform the user
+        log.info("Analysing the dust cell heating ...")
 
         # Create the analyser
         analyser = CellDustHeatingAnalyser(config=config)
@@ -3498,6 +3508,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Analysing the projected heating ...")
+
         # Create the analyser
         analyser = ProjectedDustHeatingAnalyser(config=config)
 
@@ -3556,6 +3569,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param config:
         :return:
         """
+
+        # Inform the user
+        log.info("Analysing the cell energy balance ...")
 
         # Create the analyser
         analyser = CellEnergyAnalyser(config=config)
@@ -3616,8 +3632,73 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Analysing the projected energy balance ...")
+
         # Create the analyser
         analyser = ProjectedEnergyAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_sfr_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_sfr_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_sfr_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_sfr_definition, **kwargs)
+
+        # Analyse
+        self.analyse_sfr(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_sfr(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the star formation rates ...")
+
+        # Create the analyser
+        analyser = SFRAnalyser(config=config)
 
         # Set the modeling path
         analyser.config.path = self.config.path
@@ -3674,6 +3755,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param config:
         :return:
         """
+
+        # Inform the user
+        log.info("Analysing the correlations ...")
 
         # Create the analyser
         analyser = CorrelationsAnalyser(config=config)

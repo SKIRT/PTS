@@ -95,8 +95,8 @@ class Data3D(object):
         self.weights = weights
 
         # Set units
-        self.length_unit = length_unit
-        self.unit = unit
+        self.length_unit = parse_unit(length_unit)
+        self.unit = parse_unit(unit)
 
         # Set conversion info
         self.distance = distance
@@ -132,7 +132,7 @@ class Data3D(object):
 
         # Get the units
         if length_unit is None: length_unit = table.get_column_unit(x_coordinate_name.capitalize())
-        if unit is None:
+        if unit is None: unit = table.get_column_unit(column_name)
 
         # Get the data
         x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit)

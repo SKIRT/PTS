@@ -1304,6 +1304,32 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def hubble_stage_type(self):
+
+        """
+        This function returns the Hubble type, determined from the stage number
+        :return:
+        """
+
+        from ..core.model import hubble_stage_to_type
+        return hubble_stage_to_type(self.hubble_stage)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hubble_stage_subtype(self):
+
+        """
+        This function returns the Hubble subtype, determined from the stage number
+        :return:
+        """
+
+        from ..core.model import hubble_stage_to_type
+        return hubble_stage_to_type(self.hubble_stage, add_subtype=True)[1]
+
+    # -----------------------------------------------------------------
+
     @property
     def galaxy_ellipse(self): # from properties
 
