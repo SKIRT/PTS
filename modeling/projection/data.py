@@ -22,7 +22,7 @@ from ...magic.basics.vector import PixelShape
 from ...core.tools import numbers
 from ...core.basics.range import RealRange
 from .general import default_scale_heights, is_faceon, is_edgeon, get_faceon_projection, get_edgeon_projection
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, ForbiddenOperation
 from ...core.tools import sequences
 from ...core.basics.log import log
 from ...core.basics.table import SmartTable
@@ -31,6 +31,10 @@ from ...magic.basics.pixelscale import PhysicalPixelscale
 from ...magic.basics.vector import Extent
 from ...core.tools.stringify import tostr
 from ...core.tools.progress import Bar, BAR_EMPTY_CHAR, BAR_FILLED_CHAR
+from ...core.units.unit import PhotometricUnit
+from ...core.units.parsing import parse_unit
+from ...magic.core.frame import AllZeroError
+from ...core.units.quantity import get_value_and_unit, add_with_units, subtract_with_units, multiply_with_units, divide_with_units
 
 # -----------------------------------------------------------------
 
@@ -57,7 +61,8 @@ class Data3D(object):
     This class represents 3D data THAT IS STATIC! (not like a table, which is modifiable)
     """
 
-    def __init__(self, name, x, y, z, values, weights=None, length_unit=None, unit=None, description=None):
+    def __init__(self, name, x, y, z, values, weights=None, length_unit=None, unit=None, description=None, distance=None,
+                 wavelength=None, solid_angle=None):
 
         """
         The constructor ...
@@ -69,6 +74,9 @@ class Data3D(object):
         :param length_unit:
         :param unit:
         :param description:
+        :param distance:
+        :param wavelength:
+        :param solid_angle:
         """
 
         # Set the name and description for the data
@@ -89,6 +97,11 @@ class Data3D(object):
         # Set units
         self.length_unit = length_unit
         self.unit = unit
+
+        # Set conversion info
+        self.distance = distance
+        self.wavelength = wavelength
+        self.solid_angle = solid_angle
 
         # Check sizes?
         self.check()
@@ -131,8 +144,14 @@ class Data3D(object):
         # Get the description
         description = table.meta["description"] if "description" in table.meta else None
 
+        # Get the conversion info
+        distance = table.meta["distance"] if "distance" in table.meta else None
+        wavelength = table.meta["wavelength"] if "wavelength" in table.meta else None
+        solid_angle = table.meta["solid_angle"] if "solid_angle" in table.meta else None
+
         # Create and return
-        return cls(name, x, y, z, values, weights=weights, length_unit=length_unit, unit=unit, description=description)
+        return cls(name, x, y, z, values, weights=weights, length_unit=length_unit, unit=unit, description=description,
+                   distance=distance, wavelength=wavelength, solid_angle=solid_angle)
 
     # -----------------------------------------------------------------
 
@@ -304,6 +323,363 @@ class Data3D(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_distance(self):
+        return self.distance is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wavelength(self):
+        return self.wavelength is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_solid_angle(self):
+        return self.solid_angle is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def conversion_info(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        info = dict()
+        if self.has_distance: info["distance"] = self.distance
+        if self.has_wavelength: info["wavelength"] = self.wavelength
+        if self.has_solid_angle: info["solid_angle"] = self.solid_angle
+        return info
+
+    # -----------------------------------------------------------------
+
+    def sum(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check
+        unit = conversion_factor = None
+
+        # Calculate
+        result = np.nansum(self.values)
+
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
+        # Return
+        if add_unit and self.has_unit: return result * unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, other):
+
+        """
+        This fucntion ...
+        :param other:
+        :return:
+        """
+
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
+
+        # Get new data
+        new_values = add_with_units(self.values, self.unit, other_value, other_unit=other_unit, conversion_info=self.conversion_info)
+
+        # Copy weights
+        weights = np.copy(self.weights) if self.has_weights else None
+
+        # Return the resulting data
+        return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
+                              unit=self.unit, description=self.description, distance=self.distance,
+                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, other):
+        # STATIC!
+        raise ForbiddenOperation(self.__class__, "addition")
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
+
+        # Get new data
+        new_values = subtract_with_units(self.values, self.unit, other_value, other_unit=other_unit, conversion_info=self.conversion_info)
+
+        # Copy weights
+        weights = np.copy(self.weights) if self.has_weights else None
+
+        # Return the resulting data
+        return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
+                              unit=self.unit, description=self.description, distance=self.distance,
+                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def __isub__(self, other):
+        # STATIC!
+        raise ForbiddenOperation(self.__class__, "subtraction")
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
+
+        # Get new data
+        new_values, new_unit = multiply_with_units(self.values, self.unit, other_value, other_unit=other_unit)
+
+        # Copy weights
+        weights = np.copy(self.weights) if self.has_weights else None
+
+        # Return the resulting data
+        return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
+                              unit=new_unit, description=self.description, distance=self.distance,
+                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, other):
+        # STATIC!
+        raise ForbiddenOperation(self.__class__, "multiplication")
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        # Get data and unit of other
+        other_value, other_unit = get_value_and_unit(other)
+
+        # Get new data
+        new_values, new_unit = divide_with_units(self.values, self.unit, other_value, other_unit=other_unit)
+
+        # Copy weights
+        weights = np.copy(self.weights) if self.has_weights else None
+
+        # Return the resulting data
+        return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
+                              unit=new_unit, description=self.description, distance=self.distance,
+                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, other):
+        # STATIC!
+        raise ForbiddenOperation(self.__class__, "division")
+
+    # -----------------------------------------------------------------
+
+    __truediv__ = __div__
+
+    # -----------------------------------------------------------------
+
+    __itruediv__ = __idiv__
+
+    # -----------------------------------------------------------------
+
+    def copy(self, copy_coordinates=False):
+
+        """
+        This function ...
+        :param copy_coordinates:
+        :return:
+        """
+
+        # Make copies of the data
+        values = np.copy(self.values)
+        weights = np.copy(self.weights) if self.has_weights else None
+        x = np.copy(self.x) if copy_coordinates else self.x
+        y = np.copy(self.y) if copy_coordinates else self.y
+        z = np.copy(self.z) if copy_coordinates else self.z
+
+        # Return the new copy
+        return self.__class__(self.name, x, y, z, values, weights=weights, length_unit=self.length_unit, unit=self.unit,
+                              description=self.description, distance=self.distance, wavelength=self.wavelength,
+                              solid_angle=self.solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def normalized(self, to=1., return_sum=False, silent=False):
+
+        """
+        This function ...
+        :param to:
+        :param return_sum:
+        :param silent:
+        :return:
+        """
+
+        # Get the sum
+        sum = self.sum()
+
+        # Check whether the sum is nonnegative
+        if sum < 0: raise RuntimeError("The sum of the data is negative")
+
+        # Check if the sum is not zero
+        if sum == 0: raise AllZeroError("The data cannot be normalized")
+
+        # Calculate the conversion factor
+        if hasattr(to, "unit"):  # quantity
+            factor = to.value / sum
+            unit = to.unit
+        else:
+            factor = to / sum
+            unit = None
+
+        # Debugging
+        if not silent: log.debug("Multiplying the data with a factor of " + tostr(factor) + " to normalize to " + tostr(to) + " ...")
+
+        # Create the normalized data and return
+        new = self.converted_by_factor(factor, unit)
+        if return_sum: return new, sum
+        else: return new
+
+    # -----------------------------------------------------------------
+
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,
+                     brightness_strict=False, wavelength=None, solid_angle=None, silent=False):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        :param wavelength:
+        :param solid_angle:
+        :param silent:
+        :return:
+        """
+
+        # Check the unit of the data is defined
+        if not self.has_unit: raise ValueError("The unit of the data is not defined")
+
+        # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
+        to_unit = parse_unit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
+
+        # Already in the correct unit
+        if to_unit == self.unit:
+            if not silent: log.debug("Data is already in the desired unit")
+            return self.copy()
+
+        # Debugging
+        if not silent: log.debug("Converting the data from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
+
+        # Get the conversion factor
+        factor = self._get_conversion_factor(to_unit, distance=distance, wavelength=wavelength, solid_angle=solid_angle, silent=silent)
+
+        # Debugging
+        if not silent: log.debug("Conversion factor: " + str(factor))
+
+        # Return converted data
+        return self.converted_by_factor(factor, to_unit)
+
+    # -----------------------------------------------------------------
+
+    def converted_by_factor(self, factor, new_unit):
+
+        """
+        This function ...
+        :param factor:
+        :param new_unit:
+        :return:
+        """
+
+        # Create multiplicated data
+        new = self * factor
+
+        # Set the new unit
+        new.unit = new_unit
+
+        # Return the new data instance
+        return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_photometric(self):
+        return self.has_unit and isinstance(self.unit, PhotometricUnit)
+
+    # -----------------------------------------------------------------
+
+    def _get_conversion_factor(self, to_unit, distance=None, wavelength=None, solid_angle=None, silent=False):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param wavelength:
+        :param solid_angle:
+        :param silent:
+        :return:
+        """
+
+        # The data has a photometric unit
+        if self.is_photometric:
+
+            # Check that the target unit is also photometric
+            if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the data is")
+
+            # Set the conversion info
+            #conversion_info = dict()
+            conversion_info = self.conversion_info
+            if distance is not None: conversion_info["distance"] = distance
+            if wavelength is not None: conversion_info["wavelength"] = wavelength
+            if solid_angle is not None: conversion_info["solid_angle"] = solid_angle
+
+            # Calculate the conversion factor
+            factor = self.unit.conversion_factor(to_unit, silent=silent, **conversion_info)
+
+        # The data does not have a photometric unit
+        else:
+
+            # Check whether target unit is also not photometric
+            if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the data is not")
+
+            # Calculate the conversion factor
+            factor = self.unit.to(to_unit, silent=True)
+
+        # Return
+        return factor
+
+    # -----------------------------------------------------------------
+
     def saveto(self, path):
 
         """
@@ -326,12 +702,6 @@ class Data3D(object):
         names = [name.capitalize() for name in names]
 
         # Set units
-        #units = []
-        #if self.has_length_unit:
-        #units[x_coordinate_name] = self.length_unit
-        #units[y_coordinate_name] = self.length_unit
-        #units[z_coordinate_name] = self.length_unit
-        #if self.has_unit: units[self.name] = self.unit
         units = [self.length_unit, self.length_unit, self.length_unit, self.unit]
         if self.has_weights: units.append(None)
 
@@ -340,6 +710,11 @@ class Data3D(object):
 
         # Set the description
         if self.has_description: table.meta["description"] = self.description
+
+        # Set the conversion info
+        if self.has_distance: table.meta["distance"] = self.distance
+        if self.has_wavelength: table.meta["wavelength"] = self.wavelength
+        if self.has_solid_angle: table.meta["solid_angle"] = self.solid_angle
 
         # Save the table
         table.saveto(path)

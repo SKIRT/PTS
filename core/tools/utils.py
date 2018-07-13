@@ -505,6 +505,33 @@ class UserIntervention(Exception):
 
 # -----------------------------------------------------------------
 
+class ForbiddenOperation(Exception):
+
+    """
+    This exception ...
+    """
+
+    def __init__(self, cls, operation):
+
+        """
+        The constructor ...
+        :param cls:
+        :param operation:
+        """
+
+        # Set the class and operation name
+        self.cls = cls
+        self.operation = operation
+
+        # Set the message
+        message = "The " + operation + " operation of class '" + str(type(cls)) + "' is forbidden"
+        self.message = message
+
+        # Call the constructor of the base class
+        super(ForbiddenOperation, self).__init__(message)
+
+# -----------------------------------------------------------------
+
 class DefaultScope(object):
 
     """
