@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent, AnalysisRunComponent
 from ...core.tools import filesystem as fs
@@ -20,6 +23,7 @@ from ...magic.core.frame import Frame
 from ...core.tools.utils import lazyproperty
 from ..projection.data import Data3D
 from ..core.model import oliver_stellar_mass, salim_fuv_to_sfr
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -331,14 +335,64 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_volumes(self):
+        return self.model.cell_volumes # is array
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_cell_stellar_density(self):
         return self.model.young_cell_stellar_density # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_cell_normalized_mass(self):
+        values = self.young_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
 
     # -----------------------------------------------------------------
 
     @property
     def sfr_cell_stellar_density(self):
         return self.model.sfr_cell_stellar_density # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_cell_normalized_mass(self):
+        values = self.sfr_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_cell_stellar_density(self):
+        return self.model.old_bulge_cell_stellar_density # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_normalized_mass(self):
+        values = self.bulge_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_cell_stellar_density(self):
+        return self.model.old_disk_cell_stellar_density # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_normalized_mass(self):
+        values = self.disk_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
 
     # -----------------------------------------------------------------
 
@@ -355,8 +409,44 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_intrinsic_i1_luminosity(self):
+        return self.model.intrinsic_i1_luminosity_old_bulge
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_intrinsic_i1_luminosity(self):
+        return self.model.intrinsic_i1_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_i1_luminosity(self):
         return self.model.observed_i1_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_luminosity_unit(self):
+        return u("W/micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_cell_fuv_luminosities(self):
+        return self.young_cell_normalized_mass * self.young_intrinsic_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_cell_fuv_luminosities(self):
+        return self.sfr_cell_normalized_mass * self.sfr_intrinsic_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_cell_fuv_luminosities(self):
+        return self.young_cell_fuv_luminosities + self.sfr_cell_fuv_luminosities
 
     # -----------------------------------------------------------------
 
@@ -370,10 +460,32 @@ class SFRAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Getting the cell FUV luminosity ...")
 
-        # Calculate the luminosities
-
         # Create the data
-        self.fuv_data = Data3D("FUV", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, luminosities, length_unit="pc", unit=None, description="Intrinsic FUV luminosity of unevolved stars", distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+        self.fuv_data = Data3D("FUV", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.unevolved_cell_fuv_luminosities, length_unit="pc", unit=self.fuv_luminosity_unit, description="Intrinsic FUV luminosity of unevolved stars", distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def i1_luminosity_unit(self):
+        return u("W/micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_i1_luminosities(self):
+        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_i1_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_i1_luminosities(self):
+        return self.disk_cell_normalized_mass * self.disk_intrinsic_i1_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_cell_i1_luminosities(self):
+        return self.bulge_cell_i1_luminosities + self.disk_cell_i1_luminosities
 
     # -----------------------------------------------------------------
 
@@ -387,10 +499,8 @@ class SFRAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Getting the cell I1 luminosity ...")
 
-        # Calculate the luminosities
-
         # Create the data
-        self.i1_data = Data3D("I1", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, luminosities, length_unit="pc", unit=None, description="Intrinsic I1 luminosity of evolved stars", distance=self.galaxy_distance, wavelength=self.i1_wavelength)
+        self.i1_data = Data3D("I1", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.old_cell_i1_luminosities, length_unit="pc", unit=self.i1_luminosity_unit, description="Intrinsic I1 luminosity of evolved stars", distance=self.galaxy_distance, wavelength=self.i1_wavelength)
 
     # -----------------------------------------------------------------
 
