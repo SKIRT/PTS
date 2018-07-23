@@ -3333,3 +3333,50 @@ def get_volume_path(volname):
     else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
 
 # -----------------------------------------------------------------
+
+def file_nbytes(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from .introspection import is_linux, is_macos
+    #from .terminal import execute
+    from subprocess import check_output
+
+    # Mac
+    if is_macos():
+
+        command = "cat '" + path + "' | wc -c"
+        #print(command)
+        output = check_output(command, shell=True)
+        #output = execute(command)
+        #print(output)
+        return int(output)
+
+    # Linux
+    elif is_linux():
+
+        command = "du -b '" + path + "' | awk '{ print $1}' | bc"
+        output = check_output(command, shell=True)
+        #print(output)
+        return int(output)
+
+    # Not supported
+    else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
+
+# -----------------------------------------------------------------
+
+def file_nbits(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return file_nbytes(path) * 8
+
+# -----------------------------------------------------------------
