@@ -706,7 +706,7 @@ class Data3D(object):
         if self.has_weights: units.append(None)
 
         # Create table
-        table = SmartTable.from_columns(columns, names=names, units=units)
+        table = SmartTable.from_columns(*columns, names=names, units=units, as_columns=True)
 
         # Set the description
         if self.has_description: table.meta["description"] = self.description

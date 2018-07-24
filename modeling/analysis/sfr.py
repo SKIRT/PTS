@@ -285,7 +285,7 @@ class SFRAnalyser(AnalysisRunComponent):
         if self.has_projected_ssfr_faceon: self.ssfr_faceon_map = Frame.from_file(self.projected_ssfr_faceon_path)
 
         # Calculate
-        else: self.ssfr_earth_map = self.model.total_ssfr_map_faceon
+        else: self.ssfr_faceon_map = self.model.total_ssfr_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -402,9 +402,21 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def young_intrinsic_fuv_luminosity_scalar(self):
+        return self.young_intrinsic_fuv_luminosity.to(self.fuv_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
     @property
     def sfr_intrinsic_fuv_luminosity(self):
         return self.model.intrinsic_fuv_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_intrinsic_fuv_luminosity_scalar(self):
+        return self.sfr_intrinsic_fuv_luminosity.to(self.fuv_luminosity_unit).value
 
     # -----------------------------------------------------------------
 
@@ -414,15 +426,21 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def bulge_intrinsic_i1_luminosity_scalar(self):
+        return self.bulge_intrinsic_i1_luminosity.to(self.i1_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
     @property
     def disk_intrinsic_i1_luminosity(self):
         return self.model.intrinsic_i1_luminosity_old_disk
 
     # -----------------------------------------------------------------
 
-    @property
-    def total_i1_luminosity(self):
-        return self.model.observed_i1_luminosity
+    @lazyproperty
+    def disk_intrinsic_i1_luminosity_scalar(self):
+        return self.disk_intrinsic_i1_luminosity.to(self.i1_luminosity_unit).value
 
     # -----------------------------------------------------------------
 
@@ -434,13 +452,13 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_cell_fuv_luminosities(self):
-        return self.young_cell_normalized_mass * self.young_intrinsic_fuv_luminosity
+        return self.young_cell_normalized_mass * self.young_intrinsic_fuv_luminosity_scalar
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_cell_fuv_luminosities(self):
-        return self.sfr_cell_normalized_mass * self.sfr_intrinsic_fuv_luminosity
+        return self.sfr_cell_normalized_mass * self.sfr_intrinsic_fuv_luminosity_scalar
 
     # -----------------------------------------------------------------
 
@@ -473,13 +491,13 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_cell_i1_luminosities(self):
-        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_i1_luminosity
+        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_i1_luminosity_scalar
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def disk_cell_i1_luminosities(self):
-        return self.disk_cell_normalized_mass * self.disk_intrinsic_i1_luminosity
+        return self.disk_cell_normalized_mass * self.disk_intrinsic_i1_luminosity_scalar
 
     # -----------------------------------------------------------------
 

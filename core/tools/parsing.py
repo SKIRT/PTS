@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
+import ast
 import warnings
 from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
@@ -1227,10 +1228,11 @@ def ordered_dictionary(argument):
     :return:
     """
 
-    if argument == "": return OrderedDict()
-    else:
-        d = eval("OrderedDict([(" + argument.replace(",", "), (").replace(":", ", ") + ")])")
-        return d
+    #if argument == "": return OrderedDict()
+    #else:
+    #    d = eval("OrderedDict([(" + argument.replace(",", "), (").replace(":", ", ") + ")])")
+    #    return d
+    return dictionary(argument) # now also ordered
 
 # -----------------------------------------------------------------
 
@@ -1242,13 +1244,23 @@ def dictionary(argument):
     :return:
     """
 
-    if argument == "": return dict()
+    class DictParser(ast.NodeVisitor):
+        def visit_Dict(self, node):
+            keys, values = node.keys, node.values
+            keys = [n.s for n in node.keys]
+            values = [n.s for n in node.values]
+            self.od = OrderedDict(zip(keys, values))
+
+    if argument == "": return OrderedDict()
     else:
         eval_string = "{" + argument + "}"
         #print(eval_string)
-        d = eval(eval_string)
-        if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
-        return d
+        #d = eval(eval_string)
+        dp = DictParser()
+        dp.visit(ast.parse(eval_string))
+        ordered_dict = dp.od
+        #if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
+        return ordered_dict
 
 # -----------------------------------------------------------------
 
@@ -1460,6 +1472,19 @@ def filepath_or_string_filepath_dictionary(argument):
 
     try: return string_filepath_dictionary(argument)
     except (ValueError, SyntaxError) as e: return file_path(argument)
+
+# -----------------------------------------------------------------
+
+def filepath_list_or_string_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_filepath_dictionary(argument)
+    except (ValueError, SyntaxError) as e: return filepath_list(argument)
 
 # -----------------------------------------------------------------
 

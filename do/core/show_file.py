@@ -45,6 +45,8 @@ definition.add_optional("sort", "string", "sort the entries on this column")
 definition.add_flag("plot", "make a plot")
 definition.add_optional("plot_path", "string", "plot output path")
 definition.add_optional("plotting", "dictionary", "plotting options", dict())
+definition.add_flag("round", "round the table values")
+definition.add_optional("ndecimal_places", "positive_integer", "number of decimal places when rounding")
 config = parse_arguments("show_file", definition, add_logging=False, add_cwd=False)
 
 # -----------------------------------------------------------------
@@ -134,7 +136,7 @@ def show_structure(structure, filetype):
     # Table
     if filetype == table:
         if config.interactive: structure.more()
-        else: fmt.print_table(structure)
+        else: fmt.print_table(structure, ndecimal_places=config.ndecimal_places, round=config.round)
 
     # Dictionary
     elif filetype == dictionary: fmt.print_dictionary(structure, bullet="-")
@@ -198,7 +200,7 @@ if config.sort is not None: tab.sort(config.sort)
 # Latex representation
 if config.latex:
     if tab is None: raise ValueError("Not supported")
-    tab.print_latex()
+    tab.print_latex(round=config.round, ndecimal_places=config.ndecimal_places)
 
 # Regular representation
 else: show_structure(structure, config.filetype)

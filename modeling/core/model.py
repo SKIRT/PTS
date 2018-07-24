@@ -11025,12 +11025,15 @@ def kennicutt_fuv_to_sfr(fuv_luminosity):
     :return:
     """
 
+    # Get the FUV wavelength
+    fuv_wavelength = parse_filter("GALEX FUV").wavelength
+
     from ..projection.data import Data3D
 
     # Frame
     if isinstance(fuv_luminosity, Frame):
 
-        converted = fuv_luminosity.converted_to("erg/s/Hz")
+        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength)
         converted *= kennicutt
         converted.unit = "Msun/yr"
         return converted
@@ -11038,7 +11041,7 @@ def kennicutt_fuv_to_sfr(fuv_luminosity):
     # 3D data
     if isinstance(fuv_luminosity, Data3D):
 
-        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz")
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
         factor *= kennicutt
         return fuv_luminosity.converted_by_factor(factor, "Msun/yr")
 
@@ -11055,12 +11058,15 @@ def salim_fuv_to_sfr(fuv_luminosity):
     :return:
     """
 
+    # Get the FUV wavelength
+    fuv_wavelength = parse_filter("GALEX FUV").wavelength
+
     from ..projection.data import Data3D
 
     # Frame
     if isinstance(fuv_luminosity, Frame):
 
-        converted = fuv_luminosity.converted_to("erg/s/Hz")
+        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength)
         converted *= salim
         converted.unit = "Msun/yr"
         return converted
@@ -11068,7 +11074,7 @@ def salim_fuv_to_sfr(fuv_luminosity):
     # 3D data
     if isinstance(fuv_luminosity, Data3D):
 
-        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz")
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
         factor *= salim
         return fuv_luminosity.converted_by_factor(factor, "Msun/yr")
 

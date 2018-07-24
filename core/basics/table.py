@@ -402,6 +402,7 @@ class SmartTable(Table):
         units = kwargs.pop("units", None)
         dtypes = kwargs.pop("dtypes", None)
         descriptions = kwargs.pop("descriptions", None)
+        as_columns = kwargs.pop("as_columns", False)
         #print("names", names)
 
         # Get tostr kwargs
@@ -435,6 +436,7 @@ class SmartTable(Table):
             # Determine dtype
             if dtypes is not None and dtypes[index] is not None: dtype = dtypes[index]
             else:
+                #print(columns[index])
                 ptype = get_common_property_type(columns[index])
                 dtype, needs_tostring = property_type_to_builtin(ptype, return_tostring=True)
                 if needs_tostring: to_string.append(name)
@@ -461,33 +463,48 @@ class SmartTable(Table):
         table._setup()
         #print(table.colnames)
 
-        # Add the rows, using the Table add_row implementation directly
-        # because the add_row function may be prohibited in the actual class (because of lazy features)
-        #for value, frequency in zip(values, frequencies):
-        for i in range(nrows):
+        # Add data as columns to the table? -> tostring columns not possible
+        if as_columns:
 
-            # row = []
-            # for j, name in enumerate(names):
-            #     unit = table.get_column_unit(name)
-            #     value = columns[j][i]
-            #     if name in to_string: value = tostr(value, **tostr_kwargs)
-            #     elif value is None: pass
-            #     elif unit is not None and hasattr(value, "unit"): value = value.to(unit).value
-            #     else: pass
-            #     row.append(value)
+            if len(to_string) > 0: raise ValueError("Cannot create add data as columns if some columns have complex types")
 
-            #row = [column[i] for column in columns]
-            row = []
+            # Loop over the columns
+            table.remove_all_columns()
             for j, name in enumerate(names):
-                value = columns[j][i]
-                if name in to_string: value = tostr(value, **tostr_kwargs)
-                row.append(value)
 
-            # Add the row
-            #super(SmartTable, table).add_row(row)
-            #print(row)
-            #print([table.column_unit(colname) for colname in table.colnames])
-            SmartTable.add_row(table, row)
+                # Create column
+                col = MaskedColumn(data=columns[j], name=name, dtype=table.get_column_dtype(name), unit=table.get_column_unit(name), copy=False)
+                table.add_column(col)
+
+        # Add data as rows
+        else:
+
+            # Add the rows, using the Table add_row implementation directly
+            # because the add_row function may be prohibited in the actual class (because of lazy features)
+            for i in range(nrows):
+
+                # row = []
+                # for j, name in enumerate(names):
+                #     unit = table.get_column_unit(name)
+                #     value = columns[j][i]
+                #     if name in to_string: value = tostr(value, **tostr_kwargs)
+                #     elif value is None: pass
+                #     elif unit is not None and hasattr(value, "unit"): value = value.to(unit).value
+                #     else: pass
+                #     row.append(value)
+
+                #row = [column[i] for column in columns]
+                row = []
+                for j, name in enumerate(names):
+                    value = columns[j][i]
+                    if name in to_string: value = tostr(value, **tostr_kwargs)
+                    row.append(value)
+
+                # Add the row
+                #super(SmartTable, table).add_row(row)
+                #print(row)
+                #print([table.column_unit(colname) for colname in table.colnames])
+                SmartTable.add_row(table, row)
 
         # Return the table
         return table
@@ -2487,12 +2504,16 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def print_latex(self):
+    def print_latex(self, round=False, ndecimal_places=3):
 
         """
         This function ...
+        :param round:
+        :param ndecimal_places:
         :return: 
         """
+
+        from ..tools.stringify import tostr
 
         #self.show_in_browser()
 
@@ -2518,7 +2539,9 @@ class SmartTable(Table):
         for index in range(len(self)):
 
             row = []
-            for name in self.colnames: row.append(str(self[name][index]).replace("_", "\_"))
+            for name in self.colnames:
+                string = tostr(self[name][index], round=round, ndecimal_places=ndecimal_places)
+                row.append(string.replace("_", "\_"))
             row_string = " & ".join(row) + " \\\\"
 
             print(row_string)
@@ -2785,7 +2808,7 @@ def property_type_to_builtin(ptype, return_tostring=False):
     elif ptype.endswith("_list"): real_type, tostring = str, True
 
     # NOT RECOGNIZED
-    else: raise ValueError("Column type not recognized: " + str(ptype) + " (" + str(type(ptype)) + ")")
+    else: raise ValueError("Column type not recognized: " + str(ptype) + " (" + str(type(ptype).__name__) + ")")
 
     # Return
     if return_tostring: return real_type, tostring

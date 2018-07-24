@@ -279,13 +279,14 @@ def print_dictionary(dictionary, bullet="-"):
 
 #def get_formatted_columns()
 
-def print_table(table, scientific=None, ndecimal_places=3):
+def print_table(table, scientific=None, ndecimal_places=3, round=False):
 
     """
     This function ...
     :param table:
     :param scientific:
     :param ndecimal_places:
+    :param round:
     :return:
     """
 
@@ -332,7 +333,7 @@ def print_table(table, scientific=None, ndecimal_places=3):
 
                     value = table[name][index]
                     #if unit is not None: value = value.to(unit).value
-                    string = tostr(value, scientific=scientific, decimal_places=ndecimal_places)
+                    string = tostr(value, scientific=scientific, decimal_places=ndecimal_places, round=round)
 
                 parts.append(string)
 

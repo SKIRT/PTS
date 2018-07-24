@@ -204,8 +204,14 @@ def add_new_stellar_component(ski, name, component, title=None):
     for label in properties:
         if label == "geometry":
             log.debug(" - geometry:")
-            for parameter in properties[label]: log.debug("    * " + parameter + ": " + tostr(properties[label][parameter]))
-        else: log.debug(" - " + label + ": " + tostr(properties[label]))
+            for parameter in properties[label]:
+                value = properties[label][parameter]
+                if value is None: continue
+                log.debug("    * " + parameter + ": " + tostr(value))
+        else:
+            value = properties[label]
+            if value is None: continue
+            log.debug(" - " + label + ": " + tostr(value))
     log.debug("")
 
     # Create new component
@@ -565,7 +571,17 @@ def add_new_dust_component(ski, name, component, title=None):
     log.debug("")
     log.debug("Dust component properties:")
     log.debug("")
-    for label in properties: log.debug(" - " + label + ": " + tostr(properties[label]))
+    for label in properties:
+        if label == "geometry":
+            log.debug(" - geometry:")
+            for parameter in properties[label]:
+                value = properties[label][parameter]
+                if value is None: continue
+                log.debug("    * " + parameter + ": " + tostr(value))
+        else:
+            value = properties[label]
+            if value is None: continue
+            log.debug(" - " + label + ": " + tostr(properties[label]))
     log.debug("")
 
     # Add the new component

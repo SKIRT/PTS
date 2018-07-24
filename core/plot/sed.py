@@ -563,11 +563,20 @@ class SEDPlotter(Configurable):
         # Inform the user
         log.info("Loading SED files ...")
 
-        # Loop over the SED files
-        for path in self.config.seds:
+        # Get a dictionary
+        if types.is_dictionary(self.config.seds): sed_paths = self.config.seds
+        elif types.is_string_sequence(self.config.seds):
+            sed_paths = OrderedDict() # initialize
+            for filepath in self.config.seds:
+                name = fs.strip_extension(fs.name(filepath))
+                sed_paths[name] = filepath
+        else: raise ValueError("Invalid type for 'seds': must be dictionary or sequence")
 
-            # Get the SED name
-            name = fs.strip_extension(fs.name(path))
+        # Loop over the SED files
+        for name in sed_paths:
+
+            # Get the SED filepath
+            path = sed_paths[name]
 
             # Try getting multiple SEDs
             if self.config.multi:
