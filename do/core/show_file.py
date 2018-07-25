@@ -22,6 +22,7 @@ from pts.core.basics.distribution import Distribution
 from pts.core.plot.sed import plot_sed
 from pts.core.plot.distribution import plot_distribution
 from pts.core.tools import formatting as fmt
+from pts.magic.region.list import load_region_list
 
 # -----------------------------------------------------------------
 
@@ -30,7 +31,8 @@ table = "table"
 dictionary = "dictionary"
 sed = "sed"
 distribution = "distribution"
-filetypes = [composite, table, dictionary, sed, distribution]
+regions = "regions"
+filetypes = [composite, table, dictionary, sed, distribution, regions]
 
 # -----------------------------------------------------------------
 
@@ -113,6 +115,14 @@ def load_structure(path, filetype, columns=None):
         # Remove columns?
         #if columns is not None: tab.remove_other_columns(columns) doesn't really make sense for distribution
 
+    # Regions
+    elif filetype == regions:
+
+        # Load regions
+        structure = load_region_list(path)
+        dictionaries = [region.__dict__ for region in structure]
+        tab = SmartTable.from_dictionaries(*dictionaries)
+
     # Invalid
     else: raise ValueError("Unrecognized filetype")
 
@@ -152,6 +162,11 @@ def show_structure(structure, filetype):
         #else: print(structure.as_table())
         if config.interactive: structure.more()
         else: print(structure)
+
+    # Regions
+    elif filetype == regions:
+        #print(regions)
+        for region in structure: print(region)
 
     # Not recognized
     else: raise ValueError("Unrecognized filetype")
