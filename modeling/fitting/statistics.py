@@ -39,7 +39,8 @@ from ...core.basics.containers import DefaultOrderedDict
 from ...core.tools import filesystem as fs
 from ...core.plot.transmission import plot_filters
 from ...core.tools import types
-from ...core.config.plot_seds import default_residual_reference, residual_references
+from ...core.plot.sed import residual_references
+from ...core.config.plot_seds import default_residual_reference
 from ...magic.config.plot_images import definition as plot_images_definition
 from ...magic.config.plot_residuals import definition as plot_residuals_definition
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
@@ -490,7 +491,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("generations", "integer_and_string_list", "generation indices and/or names", default="all")
+        definition.add_positional_optional("generations", "integer_and_string_list", "generation indices and/or names", default=["all"])
 
         # Add definition settings
         if command_definition is not None:
@@ -528,9 +529,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Get the configuration
         config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
+        ngenerations = len(config.generations)
+        #print(config.generations)
 
         # Get generation a name
-        if config.generations == "all": generation_names = self.generation_names
+        if ngenerations == 1 and config.generations[0] == "all": generation_names = self.generation_names
         else:
             generation_names = []
             for index_or_name in config.generations:
@@ -3605,6 +3608,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Add options
         definition.add_positional_optional("parameters", "string_list", "parameters for which to plot the PDF (in this order)", self.parameter_labels)
         definition.add_optional("path", "string", "save the plot file")
+        definition.add_flag("logprob", "use logarithmic scale for the probability axis")
 
         # Return the definition
         return definition
@@ -3620,21 +3624,24 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         :return:
         """
 
-        # Get generation name
-        generation_name, config = self.get_generation_name_and_config_from_command(command, self.plot_pdfs_definition, **kwargs)
+        # Get generation names
+        generation_names, config = self.get_generation_names_and_config_from_command(command, self.plot_pdfs_definition, **kwargs)
+        ngenerations = len(generation_names)
 
         # Plot
-        self.plot_pdfs(generation_name, path=config.path, labels=config.parameters)
+        if ngenerations == 1: self.plot_pdfs_generation(generation_names[0], path=config.path, labels=config.parameters, logprob=config.logprob)
+        else: self.plot_pdfs_generations(generation_names, path=config.path, labels=config.parameters, logprob=config.logprob)
 
     # -----------------------------------------------------------------
 
-    def plot_pdfs(self, generation_name, path=None, labels=None):
+    def plot_pdfs_generation(self, generation_name, path=None, labels=None, logprob=False):
 
         """
         This function ...
         :param generation_name:
         :param path:
         :param labels:
+        :param logprob:
         :return:
         """
 
@@ -3644,33 +3651,21 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         plotter = DistributionPlotter()
 
         # Set options
-        #plotter.config.smooth = smooth
-        #plotter.config.statistics = statistics
-        #plotter.config.extrema = extrema
         plotter.config.maxima = True
-        #plotter.config.minima = minima
-        #plotter.config.edges = edges
-
-        #plotter.config.frequencies = True
-
-        #plotter.config.alpha = alpha
-
         plotter.config.bar_width = 0.5
-        plotter.config.y_label = "Normalized probability [arbitrary scale]"
+        plotter.config.y_label = "Probability [arbitrary scale]"
 
         # Logscales
         plotter.config.logscale = True
-        #plotter.config.logfrequency = logfrequency
-
+        plotter.config.logfrequency = logprob
         plotter.config.distribution_ticks = True
         plotter.config.y_ticks = False
 
         # Get parameters of best simulation
         best = self.get_best_simulation_parameters(generation_name)
         most_prob = self.get_most_probable_parameter_values(generation_name)
-        #print(best, most_prob)
 
-        #plot_labels = []
+        # Keep dictionary for magnitude scale for the different panels (parameters)
         magnitudes_panels = dict()
 
         # Make distributions
@@ -3680,15 +3675,10 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
             # Get the distribution
             distribution = self.get_parameter_probability_distributions_generation_for_parameter(generation_name, label)
 
-            #print(best[label], most_prob[label])
-
-            #print(distribution.values)
-            #print(label)
-            #print([numbers.order_of_magnitude(value) for value in distribution.values])
+            # Set magnitude for the values of this parameter
             magnitudes = [numbers.order_of_magnitude(value) for value in distribution.values]
             magnitude = sequences.most_present_value(magnitudes, multiple="first")
             magnitudes_panels[label] = magnitude
-            #print(label, magnitude)
 
             # Get parameter unit
             unit = self.get_parameter_unit(label)
@@ -3696,12 +3686,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
             # Set properties
             properties = Map()
             properties.vlines = {"best model": best[label].to(unit).value, "most probable": most_prob[label]}
-            #properties.vlines = {"best model": best[label].to(unit).value}
-            #print(properties.vlines)
-
-            #plot_label = parameter_descriptions_short[label] + " ($\\times 10^{" + str(magnitude) + "}$)"
-            #plot_labels.append(plot_label)
-            #print(plot_label)
 
             # Add the distribution
             plotter.add_distribution(distribution, label, panel=label, properties=properties)
@@ -3709,7 +3693,8 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Set panel properties
         for label in labels:
 
-            plot_label = parameter_descriptions_short[label]
+            # Determine label and magnitude for this panel
+            plot_label = strings.smart_capitalize(parameter_descriptions_short[label])
             magnitude = magnitudes_panels[label]
 
             # Create properties
@@ -3721,6 +3706,94 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
             plotter.set_panel_properties(label, properties)
 
         #plotter.config.x_labels = plot_labels
+
+        # Run the plotter
+        plotter.run(output=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_pdfs_generations(self, generation_names, path=None, labels=None, logprob=False):
+
+        """
+        This function ...
+        :param generation_names:
+        :param path:
+        :param labels:
+        :param logprob:
+        :return:
+        """
+
+        from ..config.parameters import parameter_descriptions_short
+
+        # Initialize plotter
+        plotter = DistributionPlotter()
+
+        # Set options
+        #plotter.config.maxima = True
+        plotter.config.alpha = 0.65
+        plotter.config.bar_width = 0.5
+        plotter.config.y_label = "Probability [arbitrary scale]"
+        plotter.config.colours_per_panel = True
+
+        # Logscales
+        plotter.config.logscale = True
+        plotter.config.logfrequency = logprob
+        plotter.config.distribution_ticks = False # because multiple over each other!
+        plotter.config.y_ticks = False
+
+        # Normalize by peak in each panel
+        plotter.config.normalize = "max"
+
+        # Keep dictionary for magnitude scale for the different panels (parameters)
+        magnitudes_panels = dict()
+
+        # Get parameters of best simulation OF THE LAST GENERATION
+        last_generation_name = generation_names[-1]
+        best = self.get_best_simulation_parameters(last_generation_name)
+        most_prob = self.get_most_probable_parameter_values(last_generation_name)
+
+        # Make distributions
+        if labels is None: labels = self.parameter_labels
+        #print(labels, self.parameter_labels)
+        for label in labels:
+
+            # Get the distributions for the different generations
+            distributions = [self.get_parameter_probability_distributions_generation_for_parameter(generation_name, label) for generation_name in generation_names]
+
+            # Get magnitudes from all distributions
+            magnitudes = []
+            for distribution in distributions:
+                for value in distribution.values: magnitudes.append(numbers.order_of_magnitude(value))
+            magnitude = sequences.most_present_value(magnitudes, multiple="first")
+            magnitudes_panels[label] = magnitude
+
+            # Get parameter unit
+            unit = self.get_parameter_unit(label)
+
+            # Set properties
+            properties = Map()
+            properties.vlines = {"best model": best[label].to(unit).value, "most probable": most_prob[label]}
+
+            # Add the distributions
+            for generation_name, distribution in zip(generation_names, distributions):
+                distribution_label = generation_name
+                if generation_name == last_generation_name: plotter.add_distribution(distribution, distribution_label, panel=label, properties=properties)
+                else: plotter.add_distribution(distribution, distribution_label, panel=label)
+
+        # Set panel properties
+        for label in labels:
+
+            # Determine label and magnitude for this panel
+            plot_label = strings.smart_capitalize(parameter_descriptions_short[label])
+            magnitude = magnitudes_panels[label]
+
+            # Create properties
+            properties = Map()
+            properties.x_label = plot_label
+            properties.magnitude = magnitude
+
+            # Set
+            plotter.set_panel_properties(label, properties)
 
         # Run the plotter
         plotter.run(output=path)

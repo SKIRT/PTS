@@ -1705,18 +1705,20 @@ class DistributionPlotter(Configurable):
             plot.set_xlim((self.min_values[panel], self.max_values[panel]))
 
         # Set x ticks
-        if x_ticks is not None:
-            for panel in x_ticks:
-                plot = self.panel_plots[panel]
-                #print(x_ticks[panel])
-                ticks = x_ticks[panel]
-                # Specify magnitude?
-                if panel in self.panel_properties and "magnitude" in self.panel_properties[panel]:
-                    magnitude = self.panel_properties[panel].magnitude
-                    tick_labels = [tick / 10**magnitude for tick in ticks]
-                    #print(panel, tick_labels)
-                else: tick_labels = ticks
-                plot.set_xticks(ticks, tick_labels=tick_labels)
+        for panel in self.panels:
+
+            plot = self.panel_plots[panel]
+
+            # Get specific ticks
+            ticks = x_ticks[panel] if x_ticks is not None else None
+
+            # Get magnitude
+            if panel in self.panel_properties and "magnitude" in self.panel_properties[panel]: magnitude = self.panel_properties[panel].magnitude
+            else: magnitude = None
+
+            # Set ticks
+            # plot.set_xticks will set things nice also for logscales
+            plot.set_xticks(ticks, magnitude=magnitude)
 
         # Set y ticks
         if not self.config.y_ticks:
@@ -1727,6 +1729,7 @@ class DistributionPlotter(Configurable):
         # Add legend?
         if legend_patches is not None:
             for panel in legend_patches:
+                if len(legend_patches[panel]) == 0: continue
                 plot = self.panel_plots[panel]
                 #print(legend_patches[panel].values())
                 #legend = plot.legend(legend_patches[panel].values()) #for_legend_parameters, **legend_properties)

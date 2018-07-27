@@ -126,6 +126,18 @@ def uppercase(string):
 
 # -----------------------------------------------------------------
 
+def title(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return string.title()
+
+# -----------------------------------------------------------------
+
 def capitalize(string):
 
     """
@@ -134,7 +146,31 @@ def capitalize(string):
     :return:
     """
 
-    return string.lower().title()
+    return string.capitalize()
+
+# -----------------------------------------------------------------
+
+def smart_title(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return ' '.join(smart_capitalize(word) for word in string.split())
+
+# -----------------------------------------------------------------
+
+def smart_capitalize(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return string[0].upper() + string[1:]
 
 # -----------------------------------------------------------------
 
@@ -174,6 +210,18 @@ def is_capitalized(string):
 
 # -----------------------------------------------------------------
 
+def is_title(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return title(string) == string
+
+# -----------------------------------------------------------------
+
 def case_combinations(string, also_one_letter=True):
 
     """
@@ -191,15 +239,15 @@ def case_combinations(string, also_one_letter=True):
 
         result.append(string)
         result.append(uppercase(string))
-        result.append(capitalize(string))
+        result.append(title(string))
 
     elif is_uppercase(string):
 
         result.append(string)
         result.append(lowercase(string))
-        result.append(capitalize(string))
+        result.append(title(string))
 
-    elif is_capitalized(string):
+    elif is_title(string):
 
         result.append(string)
         result.append(lowercase(string))
@@ -210,7 +258,7 @@ def case_combinations(string, also_one_letter=True):
         result.append(string)
         result.append(lowercase(string))
         result.append(uppercase(string))
-        result.append(capitalize(string))
+        result.append(title(string))
 
     # Return the resulting list
     return result

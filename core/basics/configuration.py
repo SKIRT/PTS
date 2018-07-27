@@ -5189,6 +5189,9 @@ def check_default(default, user_type):
                 direction = "descending"
             else: direction = None
 
+            # e.g. for 'integer_and_string_list' > integer_or_string
+            if "_and_" in base_type: base_type = base_type.replace("_and_", "_or_")
+
             new_default = []
             for value in default:
                 try:

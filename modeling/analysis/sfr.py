@@ -606,6 +606,42 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cell_sfrs(self):
+        return self.sfr_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_unit(self):
+        return self.sfr_data.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_masses(self):
+        return self.stellar_mass_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_mass_unit(self):
+        return self.stellar_mass_data.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfrs(self):
+        return self.cell_sfrs / self.cell_masses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_unit(self):
+        return self.sfr_unit / self.stellar_mass_unit
+
+    # -----------------------------------------------------------------
+
     def calculate_cell_ssfr(self):
 
         """
@@ -615,6 +651,10 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Inform the user
         log.info("Calculating the cell specific star formation rate ...")
+
+        # Create the data
+        self.ssfr_data = Data3D("sSFR", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                              self.cell_ssfrs, length_unit="pc", unit=self.ssfr_unit, description="specific star formation rate", distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 

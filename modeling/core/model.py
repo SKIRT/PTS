@@ -11043,7 +11043,7 @@ def kennicutt_fuv_to_sfr(fuv_luminosity):
 
         factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
         factor *= kennicutt
-        return fuv_luminosity.converted_by_factor(factor, "Msun/yr")
+        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt)")
 
     # Photometric quantity
     else: return fuv_luminosity.to("erg/s/Hz").value * kennicutt * u("Msun/yr")
@@ -11076,7 +11076,7 @@ def salim_fuv_to_sfr(fuv_luminosity):
 
         factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
         factor *= salim
-        return fuv_luminosity.converted_by_factor(factor, "Msun/yr")
+        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Salim)")
 
     # Photometric quantity
     else: return fuv_luminosity.to("erg/s/Hz") * salim * u("Msun/yr")
@@ -11296,7 +11296,7 @@ def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
 
         factor = i1_luminosity.unit.conversion_factor("Lsun", density=True, wavelength=i1_wavelength)
         factor *= oliver_factor
-        return i1_luminosity.converted_by_factor(factor, "Msun")
+        return i1_luminosity.converted_by_factor(factor, "Msun", new_name="Mstar", new_description="Stellar mass (Oliver)")
 
     # Photometric quantity
     else: return i1_luminosity.to("Lsun", density=True, wavelength=i1_wavelength).value * oliver_factor * u("Msun")

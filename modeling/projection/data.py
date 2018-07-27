@@ -27,11 +27,10 @@ from ...core.tools import sequences
 from ...core.basics.log import log
 from ...core.basics.table import SmartTable
 from ...core.tools import types
-from ...magic.basics.pixelscale import PhysicalPixelscale
 from ...magic.basics.vector import Extent
 from ...core.tools.stringify import tostr
 from ...core.tools.progress import Bar, BAR_EMPTY_CHAR, BAR_FILLED_CHAR
-from ...core.units.unit import PhotometricUnit
+from ...core.units.unit import PhotometricUnit, get_conversion_factor
 from ...core.units.parsing import parse_unit
 from ...magic.core.frame import AllZeroError
 from ...core.units.quantity import get_value_and_unit, add_with_units, subtract_with_units, multiply_with_units, divide_with_units
@@ -612,12 +611,14 @@ class Data3D(object):
 
     # -----------------------------------------------------------------
 
-    def converted_by_factor(self, factor, new_unit):
+    def converted_by_factor(self, factor, new_unit, new_name=None, new_description=None):
 
         """
         This function ...
         :param factor:
         :param new_unit:
+        :param new_name:
+        :param new_description:
         :return:
         """
 
@@ -626,6 +627,10 @@ class Data3D(object):
 
         # Set the new unit
         new.unit = new_unit
+
+        # Set new name?
+        if new_name is not None: new.name = new_name
+        if new_description is not None: new.description = new_description
 
         # Return the new data instance
         return new
@@ -650,33 +655,37 @@ class Data3D(object):
         :return:
         """
 
-        # The data has a photometric unit
-        if self.is_photometric:
+        # New: one central place to implement this
+        return get_conversion_factor(self.unit, to_unit, parse=False, silent=silent, distance=distance,
+                                     wavelength=wavelength, solid_angle=solid_angle, conversion_info=self.conversion_info)
 
-            # Check that the target unit is also photometric
-            if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the data is")
-
-            # Set the conversion info
-            #conversion_info = dict()
-            conversion_info = self.conversion_info
-            if distance is not None: conversion_info["distance"] = distance
-            if wavelength is not None: conversion_info["wavelength"] = wavelength
-            if solid_angle is not None: conversion_info["solid_angle"] = solid_angle
-
-            # Calculate the conversion factor
-            factor = self.unit.conversion_factor(to_unit, silent=silent, **conversion_info)
-
-        # The data does not have a photometric unit
-        else:
-
-            # Check whether target unit is also not photometric
-            if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the data is not")
-
-            # Calculate the conversion factor
-            factor = self.unit.to(to_unit, silent=True)
-
-        # Return
-        return factor
+        # # The data has a photometric unit
+        # if self.is_photometric:
+        #
+        #     # Check that the target unit is also photometric
+        #     if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the data is")
+        #
+        #     # Set the conversion info
+        #     #conversion_info = dict()
+        #     conversion_info = self.conversion_info
+        #     if distance is not None: conversion_info["distance"] = distance
+        #     if wavelength is not None: conversion_info["wavelength"] = wavelength
+        #     if solid_angle is not None: conversion_info["solid_angle"] = solid_angle
+        #
+        #     # Calculate the conversion factor
+        #     factor = self.unit.conversion_factor(to_unit, silent=silent, **conversion_info)
+        #
+        # # The data does not have a photometric unit
+        # else:
+        #
+        #     # Check whether target unit is also not photometric
+        #     if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the data is not")
+        #
+        #     # Calculate the conversion factor
+        #     factor = self.unit.to(to_unit, silent=True)
+        #
+        # # Return
+        # return factor
 
     # -----------------------------------------------------------------
 

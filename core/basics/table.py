@@ -1763,7 +1763,9 @@ class SmartTable(Table):
         #return np.array(values)
 
         # Get conversion factor
-        conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
+        #conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
+        from ..units.unit import get_conversion_factor
+        conversion_factor = get_conversion_factor(self.get_column_unit(colname), unit, parse=False)
 
         # Return
         return self[colname].data * conversion_factor
