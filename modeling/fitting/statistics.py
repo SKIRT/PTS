@@ -18,7 +18,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.basics.configurable import InteractiveConfigurable
+from ...core.basics.configurable import InteractiveConfigurable, InvalidCommandError
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty
@@ -131,7 +131,7 @@ plot_commands[_terms_command_name] = ("plot_terms_command", True, "plot the chi 
 plot_commands[_ranks_command_name] = ("plot_ranks_command", True, "plot the chi squared as a function of rank", "generation")
 plot_commands[_chisquared_command_name] = ("plot_chi_squared_command", True, "plot the distribution of chi squared values", "generation")
 plot_commands[_prob_command_name] = ("plot_probabilities_command", True, "plot the distribution of probabilities", "generation")
-plot_commands[_pdfs_command_name] = ("plot_pdfs_command", True, "plot the probability density functions of the free parameters", "generation")
+plot_commands[_pdfs_command_name] = ("plot_pdfs_command", True, "plot the probability density functions of the free parameters", "generations")
 
 # Plotting SEDs
 plot_commands[_seds_command_name] = ("plot_seds_command", True, "plot the simulation SEDs of a generation", "generation")
@@ -476,6 +476,110 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Return the names
         return generation_name, simulation_name, config
+
+    # -----------------------------------------------------------------
+
+    def get_generations_command_definition(self, command_definition=None, required_to_optional=True):
+
+        """
+        This function ...
+        :param command_definition:
+        :param required_to_optional:
+        :return:
+        """
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("generations", "integer_and_string_list", "generation indices and/or names", default="all")
+
+        # Add definition settings
+        if command_definition is not None:
+            if required_to_optional: definition.import_settings(command_definition, required_to="optional")
+            else: definition.import_settings(command_definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def parse_generations_command(self, command, command_definition=None, name=None, index=1, required_to_optional=True, interactive=False):
+
+        """
+        Thisf unction ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param index:
+        :param required_to_optional:
+        :param interactive:
+        :return:
+        """
+
+        # Parse
+        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+        if name is None: name = splitted[0]
+
+        # Set parse command
+        if command_definition is not None: parse_command = splitted[index:]
+        else: parse_command = splitted[index:index + 1]  # only generation name
+
+        # Get the definition
+        definition = self.get_generations_command_definition(command_definition, required_to_optional=required_to_optional)
+
+        # Get the configuration
+        config = self.get_config_from_definition(name, definition, parse_command, interactive=interactive)
+
+        # Get generation a name
+        if config.generations == "all": generation_names = self.generation_names
+        else:
+            generation_names = []
+            for index_or_name in config.generations:
+                if types.is_string_type(index_or_name):
+                    generation_name = index_or_name
+                    if generation_name not in self.generation_names: raise InvalidCommandError("Invalid generation name '" + generation_name + "'", command)
+                elif types.is_integer_type(index_or_name): generation_name = self.generation_names[index_or_name]
+                else: raise ValueError("Invalid type")
+                generation_names.append(generation_name)
+
+        # Return
+        return splitted, generation_names, config
+
+    # -----------------------------------------------------------------
+
+    def get_generation_names_from_command(self, command, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, generation_names, config = self.parse_generations_command(command, name=name, interactive=interactive)
+
+        # Return the names
+        return generation_names
+
+    # -----------------------------------------------------------------
+
+    def get_generation_names_and_config_from_command(self, command, command_definition, name=None, interactive=False):
+
+        """
+        This function ...
+        :param command:
+        :param command_definition:
+        :param name:
+        :param interactive:
+        :return:
+        """
+
+        # Parse the command
+        splitted, generation_names, config = self.parse_generations_command(command, command_definition, name=name, interactive=interactive)
+
+        # Return the names
+        return generation_names, config
 
     # -----------------------------------------------------------------
 
@@ -3620,9 +3724,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Run the plotter
         plotter.run(output=path)
-
-        # Plot in different panels
-        #plot_distributions(distributions, panels=True, maxima=True, frequencies=True, path=path, logscale=True)
 
     # -----------------------------------------------------------------
 

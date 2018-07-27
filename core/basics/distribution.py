@@ -75,7 +75,11 @@ class Distribution(Curve):
         # Call the constructor of the base class
         super(Distribution, self).__init__(*args, **kwargs)
 
-        #print(self.column_unit(self.x_name), self.x_name)
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
+        return self.x_name
 
     # -----------------------------------------------------------------
 
@@ -318,6 +322,44 @@ class Distribution(Curve):
         """
 
         raise RuntimeError("Cannot remove rows from a distribution object")
+
+    # -----------------------------------------------------------------
+
+    def normalized(self, value=1.0, method="max"):
+
+        """
+        This function ...
+        :param value:
+        :param method:
+        :return:
+        """
+
+        counts = self.frequencies
+
+        # By setting highest bin width to value
+        if method == "max":
+
+            max_count = np.max(counts)
+            factor = value / max_count
+            normalized = counts * factor
+            y_name = "Probability"
+
+        # Plain sum of all bin counts
+        elif method == "sum":
+
+            total_count = np.sum(counts)
+            factor = value / total_count
+            normalized = counts * factor
+            y_name = "Normalized count"
+
+        # Integral: incorporating bin widths
+        elif method == "integral": raise ValueError("Not implemented yet")
+
+        # Invalid
+        else: raise ValueError("Invalid option for 'method'")
+
+        # Create new distribution
+        return self.__class__.from_columns(self.name, self.values, normalized, y_name=y_name, sort=False)
 
     # -----------------------------------------------------------------
 

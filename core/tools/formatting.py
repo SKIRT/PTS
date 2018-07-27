@@ -306,7 +306,7 @@ def print_table(table, scientific=None, ndecimal_places=3, round=False):
 
         # Get column names and units
         for name in names: column_names.append(bold + name + reset_bold)
-        for unit in units: column_units.append("[" + unit + "]" if (unit is not None and unit != "") else "")
+        for unit in units: column_units.append("[" + tostr(unit) + "]" if (unit is not None and unit != "") else "")
 
         # Show the header
         print_row(*column_names)

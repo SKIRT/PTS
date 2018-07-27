@@ -23,6 +23,8 @@ from pts.core.plot.sed import plot_sed
 from pts.core.plot.distribution import plot_distribution
 from pts.core.tools import formatting as fmt
 from pts.magic.region.list import load_region_list
+from pts.core.tools import sequences
+from pts.core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -36,30 +38,47 @@ filetypes = [composite, table, dictionary, sed, distribution, regions]
 
 # -----------------------------------------------------------------
 
-# Create configuration
+# Create configuration definition
 definition = ConfigurationDefinition(write_config=False)
 definition.add_required("filetype", "string", "type of file", choices=filetypes)
 definition.add_required("filename", "file_path", "path of the dictionary file")
-definition.add_flag("latex", "print as latex")
-definition.add_optional("columns", "string_list", "only show these columns")
+
+# As table?
+definition.add_flag("table", "show as table")
+
+# Displaying and formatting
 definition.add_flag("interactive", "display tables interactively", False)
+definition.add_flag("latex", "print as latex")
+
+# Modyfying the table
+definition.add_optional("columns", "string_list", "only show these columns")
 definition.add_optional("sort", "string", "sort the entries on this column")
+
+# Extra options
 definition.add_flag("plot", "make a plot")
 definition.add_optional("plot_path", "string", "plot output path")
 definition.add_optional("plotting", "dictionary", "plotting options", dict())
+
+# Formatting of the values
 definition.add_flag("round", "round the table values")
 definition.add_optional("ndecimal_places", "positive_integer", "number of decimal places when rounding")
+
+# Additional options
+definition.add_flag("unique", "show only the unique in each column")
+
+# -----------------------------------------------------------------
+
+# Create the configuration
 config = parse_arguments("show_file", definition, add_logging=False, add_cwd=False)
 
 # -----------------------------------------------------------------
 
-def load_structure(path, filetype, columns=None):
+def load_structure(path, filetype):
 
     """
     This function ...
     :param path:
     :param filetype:
-    :param columns:
     :return:
     """
 
@@ -72,18 +91,12 @@ def load_structure(path, filetype, columns=None):
         # Create table
         tab = SmartTable.from_composite(composite)
 
-        # Remove columns?
-        if columns is not None: tab.remove_other_columns(columns)
-
     # Table
     elif filetype == table:
 
         # Load table
         structure = SmartTable.from_file(path)
         tab = structure
-
-        # Remove columns?
-        if columns is not None: tab.remove_other_columns(columns)
 
     # Dictionary
     elif filetype == dictionary:
@@ -92,9 +105,6 @@ def load_structure(path, filetype, columns=None):
         structure = load_dict(path)
         tab = SmartTable.from_dictionary(structure)
 
-        # Remove columns?
-        if columns is not None: tab.remove_other_columns(columns)
-
     # SED
     elif filetype == sed:
 
@@ -102,18 +112,12 @@ def load_structure(path, filetype, columns=None):
         structure = load_sed(path)
         tab = structure
 
-        # Remove columns?
-        if columns is not None: tab.remove_other_columns(columns)
-
     # Distribution
     elif filetype == distribution:
 
         # Load distribution
         structure = Distribution.from_file(path)
         tab = structure
-
-        # Remove columns?
-        #if columns is not None: tab.remove_other_columns(columns) doesn't really make sense for distribution
 
     # Regions
     elif filetype == regions:
@@ -131,6 +135,36 @@ def load_structure(path, filetype, columns=None):
 
 # -----------------------------------------------------------------
 
+def show_table(tab):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    # Only unique values per column
+    if config.unique:
+
+        # Loop over the columns
+        for colname in tab.column_names:
+
+            # Get the values
+            values = tab.get_column_values(colname, add_unit=False)
+            unique_values = sequences.unique_values(values, ignore_none=True)
+            nunique = len(unique_values)
+
+            # Show the values
+            print(" - " + fmt.bold + colname + fmt.reset_bold + ": " + tostr(unique_values, ndecimal_places=config.ndecimal_places, round=config.round) + " (" + str(nunique) + ")")
+
+    # Interactive view
+    elif config.interactive: tab.more()
+
+    # Regular view
+    else: fmt.print_table(tab, ndecimal_places=config.ndecimal_places, round=config.round)
+
+# -----------------------------------------------------------------
+
 def show_structure(structure, filetype):
 
     """
@@ -144,28 +178,19 @@ def show_structure(structure, filetype):
     if filetype == composite: print(structure)
 
     # Table
-    if filetype == table:
-        if config.interactive: structure.more()
-        else: fmt.print_table(structure, ndecimal_places=config.ndecimal_places, round=config.round)
+    if filetype == table: show_table(structure)
 
     # Dictionary
     elif filetype == dictionary: fmt.print_dictionary(structure, bullet="-")
 
     # SED
-    elif filetype == sed:
-        if config.interactive: structure.more()
-        else: print(structure)
+    elif filetype == sed: show_table(structure)
 
     # Distribution
-    elif filetype == distribution:
-        #if config.interactive: structure.as_table().more()
-        #else: print(structure.as_table())
-        if config.interactive: structure.more()
-        else: print(structure)
+    elif filetype == distribution: show_table(structure)
 
     # Regions
     elif filetype == regions:
-        #print(regions)
         for region in structure: print(region)
 
     # Not recognized
@@ -205,17 +230,32 @@ def plot_structure(structure, filetype, filepath=None, **kwargs):
 # -----------------------------------------------------------------
 
 # Load
-structure, tab = load_structure(config.filename, config.filetype, columns=config.columns)
+structure, tab = load_structure(config.filename, config.filetype)
 
-# Sort?
-if config.sort is not None: tab.sort(config.sort)
+# -----------------------------------------------------------------
+
+# Modify table?
+if tab is not None:
+
+    # Remove columns?
+    if config.columns is not None:
+        if sequences.contains_more(config.columns, tab.column_names): raise ValueError("There are invalid column names: '" + tostr(sequences.get_other(config.columns, tab.column_names)) + "'")
+        tab.remove_other_columns(config.columns)
+
+    # Sort?
+    if config.sort is not None: tab.sort(config.sort)
 
 # -----------------------------------------------------------------
 
 # Latex representation
 if config.latex:
-    if tab is None: raise ValueError("Not supported")
+    if tab is None: raise ValueError("Not supported: not a table")
     tab.print_latex(round=config.round, ndecimal_places=config.ndecimal_places)
+
+# Table
+elif config.table:
+    if tab is None: raise ValueError("Not supported: not a table")
+    show_table(tab)
 
 # Regular representation
 else: show_structure(structure, config.filetype)

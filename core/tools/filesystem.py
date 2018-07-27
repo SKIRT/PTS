@@ -2421,6 +2421,18 @@ def get_column_names(filepath):
 
 # -----------------------------------------------------------------
 
+def get_ncolumns(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    return len(get_column_names(filepath))
+
+# -----------------------------------------------------------------
+
 def write_line(filepath, line):
 
     """

@@ -1894,3 +1894,50 @@ def is_wrapped_by_squared_brackets(text):
     return text.startswith("[") and text.endswith("]")
 
 # -----------------------------------------------------------------
+
+def longest_common_substring(string1, string2):
+
+    """
+    This function ...
+    :param string1:
+    :param string2:
+    :return:
+    """
+
+    from difflib import SequenceMatcher
+    match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2))
+    return string1[match.a: match.a + match.size]
+
+# -----------------------------------------------------------------
+
+def common_part(*strings, **kwargs):
+
+    """
+    Thisf unction ...
+    :param strings:
+    :param kwargs:
+    :return:
+    """
+
+    return_none = kwargs.pop("return_none", True)
+
+    if len(strings) == 1: return strings[0]
+    else:
+
+        string = longest_common_substring(strings[0], strings[1])
+        if len(strings) == 2:
+            if string == "" and return_none: return None
+            else: return string
+
+        for index in range(2,len(strings)):
+            print(string, strings[index])
+            string = longest_common_substring(string, strings[index])
+            print(string)
+            if string == "":
+                if return_none: return None
+                else: return string
+
+        # Return
+        return string
+
+# -----------------------------------------------------------------

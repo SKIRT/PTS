@@ -19,6 +19,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from textwrap import wrap
+from matplotlib import rc
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import LinearLocator, LogLocator, FormatStrFormatter
 
@@ -33,6 +34,11 @@ from ..basics.distribution import Distribution
 from ..tools import types
 from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools.stringify import tostr
+
+# -----------------------------------------------------------------
+
+# Use LaTeX rendering
+rc('text', usetex=True)
 
 # -----------------------------------------------------------------
 
@@ -513,6 +519,10 @@ def plot_smooth(distribution, title=None, path=None, logscale=False, xlogscale=F
 
 # -----------------------------------------------------------------
 
+standard_panel = "standard"
+
+# -----------------------------------------------------------------
+
 class DistributionPlotter(Configurable):
     
     """
@@ -588,7 +598,7 @@ class DistributionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_distribution(self, distribution, label, panel="standard", properties=None):
+    def add_distribution(self, distribution, label, panel=standard_panel, properties=None):
 
         """
         This function ...
@@ -745,6 +755,18 @@ class DistributionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_distribution_labels_panel(self, panel):
+
+        """
+        This funtion ...
+        :param panel:
+        :return:
+        """
+
+        return self.distributions[panel].keys()
+
+    # -----------------------------------------------------------------
+
     def get_distributions_panel(self, panel):
 
         """
@@ -806,6 +828,18 @@ class DistributionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_normalize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.normalize is not None
+
+    # -----------------------------------------------------------------
+
     def _run(self, **kwargs):
 
         """
@@ -813,6 +847,9 @@ class DistributionPlotter(Configurable):
         :param kwargs:
         :return:
         """
+
+        # Normalize?
+        if self.do_normalize: self.normalize()
 
         # 2. Make the plot
         self.plot()
@@ -1023,7 +1060,12 @@ class DistributionPlotter(Configurable):
         log.info("Loading distribution files in the current working directory ...")
 
         # Loop over the files
-        for path, name in fs.files_in_path(self.config.path, extension="dat", returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.config.path, extension="dat", returns=["path", "name"], recursive=self.config.recursive):
+
+            # Check whether actually a distribution
+            if fs.get_ncolumns(path) != 2:
+                log.warning("Assuming the file '" + name + "' is not a distribution, skipping ...")
+                continue
 
             # Debugging
             log.debug("Loading '" + name + "' distribution ...")
@@ -1032,8 +1074,50 @@ class DistributionPlotter(Configurable):
             distribution = Distribution.from_file(path)
 
             # Add the distribution
-            if self.config.panels: self.add_distribution(distribution, label=name, panel=name)
-            else: self.add_distribution(distribution, label=name)
+            if self.config.panels:
+
+                current_labels = self.get_distribution_labels_panel(name)
+                if name in current_labels:
+                    log.warning("A distribution with the name '" + name + "' is already added for panel '" + name + "', adjusting distribution label ...")
+                    label = name + str(len(current_labels))
+                else: label = name
+
+                # Add
+                self.add_distribution(distribution, label=label, panel=name)
+
+            else:
+                current_labels = self.get_distribution_labels_panel(standard_panel)
+                if name in current_labels:
+                    log.warning("A distribution with the name '" + name + "' is already added, adjusting distribution label ...")
+                    label = name + str(len(current_labels))
+                else: label = name
+
+                # Ad
+                self.add_distribution(distribution, label=label)
+
+    # -----------------------------------------------------------------
+
+    def normalize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Normalizing the distributions ...")
+
+        # Loop over the panels
+        for panel in self.panels:
+
+            # Loop over the distributions
+            for label in self.distributions[panel]:
+
+                # Get the distribution
+                distribution = self.distributions[panel][label]
+
+                # Normalize and replace
+                self.distributions[panel][label] = distribution.normalized(value=self.config.normalization_value, method=self.config.normalize)
 
     # -----------------------------------------------------------------
 
@@ -1047,8 +1131,10 @@ class DistributionPlotter(Configurable):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot
+        # Single panel
         if self.has_single_panel: self.plot_single_panel()
+
+        # Multiple panels
         else: self.plot_more_panels()
 
     # -----------------------------------------------------------------
@@ -1284,24 +1370,39 @@ class DistributionPlotter(Configurable):
         labels = []
         for panel in self.panels:
 
-            if panel in self.panel_properties and "x_label" in self.panel_properties[panel]:
-                label = self.panel_properties[panel].x_label
+            # Panel label is defined in panel properties
+            if panel in self.panel_properties and "x_label" in self.panel_properties[panel]: label = self.panel_properties[panel].x_label
 
+            # Single distribution for this panel
             elif self.has_single_distribution_panel(panel):
 
                 distribution = self.get_single_distribution_panel(panel)
-                x_label = distribution.value_name
+
+                # Use the name of the distribution?
+                if self.config.use_name_xlabel: x_label = self.get_single_distribution_label_panel(panel)
+
+                # Use the label of the x axis of the distribution object
+                else: x_label = distribution.value_name
+
+                # Add unit
                 if distribution.unit is not None: x_label += " [" + str(distribution.unit) + "]"
                 label = x_label
 
+            # Multiple distributions for this panel
             else:
+
                 distributions = self.get_distributions_panel(panel)
                 value_names = [distribution.value_name for distribution in distributions]
                 value_units = [distribution.unit for distribution in distributions]
 
                 # Determine name
-                if not sequences.all_equal(value_names): label = value_names[0]
-                else: label = "Value"
+                if self.config.use_name_xlabel:
+                    distribution_labels = self.get_distribution_labels_panel(panel)
+                    label = strings.common_part(*distribution_labels)
+                    if label is None: label = tostr(distribution_labels)
+                else:
+                    if sequences.all_equal(value_names): label = value_names[0]
+                    else: label = "Value"
 
                 # Determine unit
                 if not sequences.all_equal(value_units): raise ValueError("Value units are different")
@@ -1349,6 +1450,9 @@ class DistributionPlotter(Configurable):
 
         # Loop over the panels
         for panel in self.panels:
+
+            # Re-iterate the colours for each panel
+            if self.config.colours_per_panel: colors = iter(pretty_colours)
 
             lines_panel = OrderedDict()
 
