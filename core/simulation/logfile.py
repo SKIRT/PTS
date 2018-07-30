@@ -23,7 +23,7 @@ from astropy.table import Table
 from ..tools import time
 from ..tools import filesystem as fs
 from ..basics.distribution import Distribution
-from pts.core.tools.utils import lazyproperty
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -998,6 +998,20 @@ class LogFile(object):
 
         # Simple implementation (should be enough, but I was working with log files where this was not yet present)
         #return "in data parallelization mode" in self.starting_simulation_message
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parallelization(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # WARNING: THE NUMBER OF THREADS PER CORE IS NOT KNOWN (1 IS ASSUMED!)
+        from .parallelization import Parallelization
+        return Parallelization.from_processes_and_threads(self.nprocesses, self.nthreads, data_parallel=self.data_parallel)
 
 # -----------------------------------------------------------------
 

@@ -137,7 +137,7 @@ class Data3D(object):
         x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit)
         y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit)
         z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit)
-        values = table.get_column_array(name, unit=unit)
+        values = table.get_column_array(column_name, unit=unit)
         weights = table.get_column_array(weight_name.capitalize()) if weight_name.capitalize() in table.colnames else None
 
         # Get the description

@@ -166,6 +166,7 @@ _launch_command_name = "launch"
 _assignment_command_name = "assignment"
 _runtimes_command_name = "runtimes"
 _memory_command_name = "memory"
+_cpu_command_name = "cpu"
 _timeline_command_name = "timeline"
 _scaling_command_name = "scaling"
 _base_command_name = "base"
@@ -234,6 +235,7 @@ show_commands[_assignment_command_name] = ("show_assignment", False, "show the s
 show_commands[_status_command_name] = ("show_status", False, "show the simulation status", None)
 show_commands[_runtimes_command_name] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
 show_commands[_memory_command_name] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
+show_commands[_cpu_command_name] = ("show_cpu_command", True, "show the CPU usage of the simulations", "simulations")
 
 # -----------------------------------------------------------------
 
@@ -3926,9 +3928,36 @@ class SimulationManager(InteractiveConfigurable):
 
         # Check if the parallelization is defined
         if simulation.parallelization is not None: return simulation.parallelization
-        elif self.is_screen_execution(simulation_name): return self.get_parallelization_for_simulation_screen(simulation_name)
-        elif self.is_job_execution(simulation_name): return self.get_parallelization_for_simulation_job(simulation_name)
-        else: raise NotImplementedError("Execution handle not supported")
+        elif self.has_execution_handle(simulation_name):
+            if self.is_screen_execution(simulation_name): return self.get_parallelization_for_simulation_screen(simulation_name)
+            elif self.is_job_execution(simulation_name): return self.get_parallelization_for_simulation_job(simulation_name)
+            else: raise NotImplementedError("Execution handle not supported")
+        elif self.has_logfile(simulation_name): return self.get_parallelization_for_simulation_logfile(simulation_name)
+        else: raise ValueError("Parallelization cannot be determined for simulation '" + simulation_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_parallelization_for_simulation_logfile(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_logfile(simulation_name).parallelization
+
+    # -----------------------------------------------------------------
+
+    def get_ncores_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_parallelization_for_simulation(simulation_name).ncores
 
     # -----------------------------------------------------------------
 
@@ -7011,7 +7040,8 @@ class SimulationManager(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_required("simulations", "integer_and_string_list", "simulation indices or names")
+        #definition.add_required("simulations", "integer_and_string_list", "simulation indices or names")
+        definition.add_positional_optional("simulations", "integer_and_string_list", "simulation indices or names", default=["all"])
 
         # Add definition settings
         if command_definition is not None:
@@ -7054,14 +7084,17 @@ class SimulationManager(InteractiveConfigurable):
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation names
-        simulation_names = []
-        for index_or_name in config.simulations:
-            if types.is_string_type(index_or_name):
-                simulation_name = index_or_name
-                if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_name + "'", command)
-            elif types.is_integer_type(index_or_name): simulation_name = self.simulation_names[index_or_name]
-            else: raise ValueError("Invalid type")
-            simulation_names.append(simulation_name)
+        nsimulations = len(config.simulations)
+        if nsimulations == 1 and config.simulations[0] == "all": simulation_names = self.simulation_names
+        else:
+            simulation_names = []
+            for index_or_name in config.simulations:
+                if types.is_string_type(index_or_name):
+                    simulation_name = index_or_name
+                    if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_name + "'", command)
+                elif types.is_integer_type(index_or_name): simulation_name = self.simulation_names[index_or_name]
+                else: raise ValueError("Invalid type")
+                simulation_names.append(simulation_name)
 
         # Return
         return splitted, simulation_names, config
@@ -13939,6 +13972,82 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def show_cpu_command(self, command, **kwargs):
+        
+        """
+        This function ...
+        :param command: 
+        :param kwargs: 
+        :return: 
+        """
+
+        # Get simulation names
+        simulation_names = self.get_simulation_names_from_command(command, **kwargs)
+
+        # Show
+        self.show_cpu(simulation_names)
+
+    # -----------------------------------------------------------------
+
+    def show_cpu(self, simulation_names):
+        
+        """
+        This function ...
+        :param simulation_names: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Showing CPU usage for the simulations ...")
+
+        # Keep a list of the runtimes and CPU times
+        runtimes = []
+        cputimes = []
+
+        # Print in columns
+        print("")
+        with fmt.print_in_columns() as print_row:
+
+            # Set the column names and units
+            column_names = ["Simulation name", "Host ID", "Number of cores", "Total runtime", "Total CPU time"]
+            column_units = ["", "", "", "h", "h"]
+
+            # Show the header
+            print_row(*column_names, bold=True)
+            print_row(*column_units)
+
+            # Loop over the simulations
+            for simulation_name in simulation_names:
+
+                # Get the host ID
+                host_id = self.get_host_id_for_simulation(simulation_name)
+
+                # Get the number of cores
+                ncores = self.get_ncores_for_simulation(simulation_name)
+
+                # Get the runtime of the simulation, in hours
+                runtime = self.get_runtime(simulation_name).to("h").value
+
+                # Get the CPU time
+                cpu_time = runtime * ncores
+
+                # Add
+                runtimes.append(runtime)
+                cputimes.append(cpu_time)
+
+                # Show the row for the simulation
+                parts = [simulation_name, host_id, ncores, tostr(runtime), tostr(cpu_time)]
+                print_row(*parts)
+
+        # Show the averages (and total)
+        print("")
+        print(" - average runtime: " + tostr(numbers.arithmetic_mean(*runtimes)) + " h")
+        print(" - average CPU time: " + tostr(numbers.arithmetic_mean(*cputimes)) + " h")
+        print(" - total CPU time: " + tostr(sequences.sum(cputimes)) + " h")
+        print("")
+
+    # -----------------------------------------------------------------
+
     @property
     def do_write_assignment(self):
 
@@ -15430,6 +15539,9 @@ class SimulationManager(InteractiveConfigurable):
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
         definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
 
+        # Host
+        definition.add_optional("host", "host", "host for the simulation execution (default is same as original simulation)")
+
         # Return the definition
         return definition
 
@@ -15472,12 +15584,12 @@ class SimulationManager(InteractiveConfigurable):
 
         # Mimic the simulation
         self.mimic_simulation(simulation_name, config.name, new_values=config.labeled, parallelization=config.parallelization,
-                              analysis_options=analysis_options, scheduling_options=scheduling_options)
+                              analysis_options=analysis_options, scheduling_options=scheduling_options, host=config.host)
 
     # -----------------------------------------------------------------
 
     def mimic_simulation(self, simulation_name, new_simulation_name, new_values=None, parallelization=None,
-                         analysis_options=None, scheduling_options=None):
+                         analysis_options=None, scheduling_options=None, host=None):
         
         """
         This function ...
@@ -15487,6 +15599,7 @@ class SimulationManager(InteractiveConfigurable):
         :param parallelization:
         :param analysis_options:
         :param scheduling_options:
+        :param host:
         :return: 
         """
 
@@ -15501,8 +15614,10 @@ class SimulationManager(InteractiveConfigurable):
         #else: # TODO: use composer to adapt the model
 
         # Get remote settings
-        host_id = self.get_host_id_for_simulation(simulation_name)
-        cluster_name = self.get_cluster_name_for_simulation(simulation_name)
+        if host is not None: host_id, cluster_name = host.id, host.cluster_name
+        else:
+            host_id = self.get_host_id_for_simulation(simulation_name)
+            cluster_name = self.get_cluster_name_for_simulation(simulation_name)
         #print(host_id, cluster_name)
 
         # Debugging

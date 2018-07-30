@@ -1347,6 +1347,11 @@ def is_single_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_in_single_quotes(string):
+    return string[0] == "'" and string[-1] == "'"
+
+# -----------------------------------------------------------------
+
 def contains_single_quotes(string):
 
     """
@@ -1375,6 +1380,11 @@ def is_double_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_in_double_quotes(string):
+    return string[0] == '"' and string[-1] == '"'
+
+# -----------------------------------------------------------------
+
 def contains_double_quotes(string):
 
     """
@@ -1399,6 +1409,11 @@ def is_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_in_quotes(string):
+    return is_in_single_quotes(string) or is_in_double_quotes(string)
+
+# -----------------------------------------------------------------
+
 def unquote(string):
 
     """
@@ -1407,7 +1422,7 @@ def unquote(string):
     :return:
     """
 
-    if is_quoted(string): return string[1:-1]
+    if is_in_quotes(string): return string[1:-1]
     else: return string
 
 # -----------------------------------------------------------------

@@ -9,7 +9,6 @@
 from pts.core.remote.host import find_host_ids
 from pts.modeling.core.environment import load_modeling_environment_cwd
 from pts.modeling.config.component import definition
-from pts.modeling.fitting.expander import directions
 
 # -----------------------------------------------------------------
 
@@ -48,8 +47,9 @@ definition.add_required("npoints", "integer_or_string_integer_dictionary", "numb
 # -----------------------------------------------------------------
 
 # Remote or local execution
-if has_remotes: definition.add_positional_optional("remotes", "string_list", "remote hosts to use", default=environment.modeling_configuration.fitting_host_ids, choices=all_host_ids)
-else: definition.add_fixed("remotes", [])
+#if has_remotes: definition.add_positional_optional("remotes", "string_list", "remote hosts to use", default=environment.modeling_configuration.fitting_host_ids, choices=all_host_ids)
+#else: definition.add_fixed("remotes", [])
+definition.add_positional_optional("host", "host", "remote host to use")
 definition.add_flag("local", "run everything locally")
 
 # -----------------------------------------------------------------
@@ -61,7 +61,17 @@ definition.add_optional("walltime", "real", "the preferred walltime per job (for
 
 # -----------------------------------------------------------------
 
+# Update flags
 definition.add_flag("update_individuals", "update the individuals table", True)
 definition.add_flag("update_parameters", "update the parameters table", True)
+definition.add_flag("update_info", "update the generation info", True)
+definition.add_flag("update_generations", "update the generations table", True)
+
+# -----------------------------------------------------------------
+
+# Parallelization
+definition.add_optional("parallelization", "parallelization", "parallelization scheme for the simulations")
+definition.add_optional("walltime", "duration", "walltime for the simulations")
+definition.add_optional("nnodes", "positive_integer", "number of computation nodes to use for the simulations")
 
 # -----------------------------------------------------------------

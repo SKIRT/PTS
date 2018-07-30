@@ -94,6 +94,9 @@ class ParameterExpander(FittingComponent):
         # 7. Launch the models
         self.launch()
 
+        # Update the tables
+        self.update()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -109,6 +112,42 @@ class ParameterExpander(FittingComponent):
 
         # Load the generation info
         self.info = self.fitting_run.get_generation_info(self.config.generation)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnew_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.new_simulation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncurrent_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.nsimulation_directories
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntotal_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ncurrent_simulations + self.nnew_simulations
 
     # -----------------------------------------------------------------
 
@@ -1424,22 +1463,11 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Writing the individuals table ...")
 
-        # Update the individuals table
-        if self.config.update_individuals:
+        # Determine the path
+        test_path = fs.join(self.generation_path, "individuals_new.dat")
 
-            # Backup the old individuals table
-            fs.backup_file(self.generation.individuals_table_path, suffix="old")
-            fs.remove_file(self.generation.individuals_table_path)
-
-            # Save
-            self.individuals_table.save()
-
-        # Write a new file
-        else:
-
-            # Write new file
-            test_path = fs.join(self.generation_path, "individuals_new.dat")
-            self.individuals_table.saveto(test_path)
+        # Save
+        self.individuals_table.saveto(test_path)
 
     # -----------------------------------------------------------------
 
@@ -1453,22 +1481,11 @@ class ParameterExpander(FittingComponent):
         # Inform the user
         log.info("Writing the parameters table ...")
 
-        # Update the parameters table
-        if self.config.update_parameters:
+        # Determine the path
+        test_path = fs.join(self.generation_path, "parameters_new.dat")
 
-            # Backup the old parameters table
-            fs.backup_file(self.generation.parameters_table_path, suffix="old")
-            fs.remove_file(self.generation.parameters_table_path)
-
-            # Save
-            self.parameters_table.save()
-
-        # Write a new file
-        else:
-
-            # Write a new file
-            test_path = fs.join(self.generation_path, "parameters_new.dat")
-            self.parameters_table.saveto(test_path)
+        # Save
+        self.parameters_table.saveto(test_path)
 
     # -----------------------------------------------------------------
 
@@ -1511,9 +1528,17 @@ class ParameterExpander(FittingComponent):
         manager.config.commands = []
 
         # EXTRA
-        extra = " --parallelization 16:2:2 --not_mimic_scheduling --scheduling/walltime 54000 --scheduling/nodes 1"
+        #extra = " --parallelization 16:2:2 --not_mimic_scheduling --scheduling/walltime 54000 --scheduling/nodes 1"
+        #extra = " --parallelization 64:8:1" # For nancy
 
-        # Set the mimic commandsmanager.run()
+        # Set extra options
+        extra = " --not_mimic_scheduling"
+        if self.config.host is not None: extra += " --host '" + self.config.host.as_string() + "'"
+        if self.config.parallelization is not None: extra += " --parallelization '" + self.config.parallelization.as_string() + "'"
+        if self.config.walltime is not None: extra += " --scheduling/walltime " + str(self.config.walltime) # in seconds
+        if self.config.nnodes is not None: extra += " --scheduling/nodes " + str(self.config.nnodes)
+
+        # Set the mimic commands
         for simulation_name in self.new_simulation_names:
 
             # Get the parameter values
@@ -1524,10 +1549,134 @@ class ParameterExpander(FittingComponent):
             mimic_command = 'mimic "' + self.first_simulation_name + '" "' + simulation_name + '" ' + '--labeled "' + parameter_values_string + '"' + extra
             #print(mimic_command)
 
+            # Debugging
+            log.debug("Command for running simulation '" + simulation_name + "': '" + mimic_command + "'")
+
             # Add command
             manager.config.commands.append(mimic_command)
 
         # Run the generation manager
         manager.run()
+        if manager.has_failed: raise RuntimeError("Something went wrong launching the simulations")
+
+    # -----------------------------------------------------------------
+
+    def update(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating the generation tables ...")
+
+        # Individuals table
+        if self.config.update_individuals: self.update_individuals()
+
+        # Parameters table
+        if self.config.update_parameters: self.update_parameters()
+
+        # Generation info
+        if self.config.update_info: self.update_info()
+
+        # Generations table
+        if self.config.update_generations: self.update_generations()
+
+    # -----------------------------------------------------------------
+
+    def update_individuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating the individuals table ...")
+
+        # Determine the path
+        filepath = self.generation.individuals_table_path
+        new_filepath = fs.join(self.generation_path, "individuals_new.dat")
+
+        # Backup the old individuals table
+        fs.backup_file(filepath, suffix="old", backup_backup=True)
+        fs.remove_file(filepath)
+
+        # Save
+        self.individuals_table.saveto(filepath)
+
+        # Remove new, it has now become unnecessary
+        if fs.is_file(new_filepath): fs.remove_file(new_filepath)
+
+    # -----------------------------------------------------------------
+
+    def update_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating the parameters table ...")
+
+        # Determine the path
+        filepath = self.generation.parameters_table_path
+        new_filepath = fs.join(self.generation_path, "parameters_new.dat")
+
+        # Backup the old parameters table
+        fs.backup_file(filepath, suffix="old", backup_backup=True)
+        fs.remove_file(filepath)
+
+        # Save
+        self.parameters_table.saveto(filepath)
+
+        # Remove the new, it has now become unnecessary
+        if fs.is_file(new_filepath): fs.remove_file(new_filepath)
+
+    # -----------------------------------------------------------------
+
+    def update_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating the generation info ...")
+
+        # Set the new number of models
+        self.info.nsimulations = self.ntotal_simulations
+
+        # Save the info
+        self.info.save()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generations_table(self):
+        return self.fitting_run.generations_table
+
+    # -----------------------------------------------------------------
+
+    def update_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating the generations table ...")
+
+        # Set the new number of simulations
+        self.generations_table.set_nsimulations(self.generation_name, self.ntotal_simulations)
+
+        # TODO: update the ranges!!
+
+        # Save the table
+        self.generations_table.save()
 
 # -----------------------------------------------------------------

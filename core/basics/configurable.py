@@ -571,6 +571,9 @@ class InteractiveConfigurable(Configurable):
         # The commands that have been executed
         self.commands = []
 
+        # The commands that have failed to be executed
+        self.failed = []
+
     # -----------------------------------------------------------------
 
     def run_commands(self):
@@ -590,10 +593,11 @@ class InteractiveConfigurable(Configurable):
             log.debug("Running '" + command + "' ...")
 
             # Process command, give error if fails
-            self.process_command(command)
+            success = self.try_command(command)
 
             # Add command
-            self.commands.append(command)
+            if success: self.commands.append(command)
+            else: self.failed.append(command)
 
     # -----------------------------------------------------------------
 
@@ -625,45 +629,11 @@ class InteractiveConfigurable(Configurable):
             if command == "last": command = self.last_command
 
             # Process command
-            success = True
-            try: self.process_command(command)
-            except InvalidCommandError as e:
-                if "Invalid command" in e.message: log.warning("Invalid command: '" + e.command + "'")
-                else: log.warning("Invalid command: '" + e.command + "': " + e.message)
-                success = False
-            except Exception as e:
-                message = str(e)
-                if "too few arguments" in message:
-                    log.error("Too few arguments")
-                    # Get first word == key
-                    key = command.split(" ")[0]
-                    if self.has_subcommands(key):
-                        from ..tools import strings
-                        splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
-                        if len(splitted) > 1: usage = self.get_usage_for_key(splitted[1], self._subcommands[key])
-                        else:
-                            # Set subcommands with descriptions
-                            subcommands = self.get_subcommands(key)
-                            subcommands_descriptions = OrderedDict()
-                            for subkey in subcommands:
-                                function_name, pass_command, description, subject = subcommands[subkey]
-                                subcommands_descriptions[subkey] = description
-                            from .configuration import ConfigurationDefinition, get_usage
-                            definition = ConfigurationDefinition(write_config=False)
-                            definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
-                            usage = get_usage(key, definition, add_logging=False, add_cwd=False)
-                        for line in usage: log.error(line)
-                    else:
-                        usage = self.get_usage_for_key(key, self._commands)
-                        for line in usage: log.error(line)
-                elif "invalid choice" in message: log.error(str(e))
-                else:
-                    traceback.print_exc()
-                    log.error(str(e))
-                    success = False
+            success = self.try_command(command)
 
-            # Add command, if succesful
+            # Add command
             if success: self.commands.append(command)
+            else: self.failed.append(command)
 
     # -----------------------------------------------------------------
 
@@ -704,6 +674,18 @@ class InteractiveConfigurable(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def nfailed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.failed)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_commands(self):
 
         """
@@ -712,6 +694,89 @@ class InteractiveConfigurable(Configurable):
         """
 
         return self.ncommands > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_failed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nfailed > 0
+
+    # -----------------------------------------------------------------
+
+    def try_command(self, command):
+
+        """
+        This function ...
+        :return:
+        """
+
+        success = True
+
+        # Try
+        try: self.process_command(command)
+
+        except InvalidCommandError as e:
+
+            if "Invalid command" in e.message: log.warning("Invalid command: '" + e.command + "'")
+            else: log.warning("Invalid command: '" + e.command + "': " + e.message)
+
+            # NO SUCCESS
+            success = False
+
+        except Exception as e:
+
+            message = str(e)
+            if "too few arguments" in message:
+
+                log.error("Too few arguments")
+                # Get first word == key
+                key = command.split(" ")[0]
+                if self.has_subcommands(key):
+
+                    from ..tools import strings
+                    splitted = strings.split_except_within_double_quotes(command, add_quotes=False)
+
+                    if len(splitted) > 1: usage = self.get_usage_for_key(splitted[1], self._subcommands[key])
+                    else:
+                        # Set subcommands with descriptions
+                        subcommands = self.get_subcommands(key)
+                        subcommands_descriptions = OrderedDict()
+                        for subkey in subcommands:
+                            function_name, pass_command, description, subject = subcommands[subkey]
+                            subcommands_descriptions[subkey] = description
+                        from .configuration import ConfigurationDefinition, get_usage
+                        definition = ConfigurationDefinition(write_config=False)
+                        definition.add_required("subcommand", "string", "subcommand", choices=subcommands_descriptions)
+                        usage = get_usage(key, definition, add_logging=False, add_cwd=False)
+
+                    for line in usage: log.error(line)
+
+                else:
+
+                    usage = self.get_usage_for_key(key, self._commands)
+                    for line in usage: log.error(line)
+
+            elif "invalid choice" in message:
+
+                log.error("Invalid choice")
+                log.error(str(e))
+
+            else:
+
+                traceback.print_exc()
+                log.error(str(e))
+
+            # NO SUCCESS
+            success = False
+
+        # Return the success flag
+        return success
 
     # -----------------------------------------------------------------
 
@@ -807,7 +872,8 @@ class InteractiveConfigurable(Configurable):
         if not strings.startswith_any(subcommand, subcommands):
 
             # Show help for the main command
-            if "-h" in subcommand or "--help" in subcommand:
+            #if "-h" in subcommand or "--help" in subcommand:
+            if "--help" in subcommand: # WE DO NOT SUPPORT -h ANYMORE, E.G. IT CAN BE IN '--host'
 
                 # Set subcommands with descriptions
                 subcommands_descriptions = OrderedDict()
@@ -870,9 +936,11 @@ class InteractiveConfigurable(Configurable):
 
         # Get function name and description
         function_name, pass_command, description, subject = cmds[key]
+        #print(function_name, pass_command, description, subject)
 
         # Show help for the command
-        if "-h" in command or "--help" in command:
+        #if "-h" in command or "--help" in command:
+        if "--help" in command:  # WE DO NOT SUPPORT -h ANYMORE, E.G. IT CAN BE IN '--host'
 
             # Get the help info
             help = self.get_help_for_key(key, cmds, main_command=main_command)

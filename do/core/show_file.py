@@ -65,6 +65,7 @@ definition.add_optional("ndecimal_places", "positive_integer", "number of decima
 
 # Additional options
 definition.add_flag("unique", "show only the unique in each column")
+definition.add_flag("sorted_unique", "sort the unique values")
 
 # -----------------------------------------------------------------
 
@@ -152,6 +153,7 @@ def show_table(tab):
             # Get the values
             values = tab.get_column_values(colname, add_unit=False)
             unique_values = sequences.unique_values(values, ignore_none=True)
+            if config.sorted_unique: unique_values = list(sorted(unique_values))
             nunique = len(unique_values)
 
             # Show the values

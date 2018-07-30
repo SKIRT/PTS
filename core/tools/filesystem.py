@@ -3202,17 +3202,22 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix="backup"):
+def backup_file(filepath, suffix="backup", backup_backup=False):
 
     """
     This function ...
     :param filepath:
     :param suffix:
+    :param backup_backup:
     :return:
     """
 
     backup_filepath = appended_filepath(filepath, "_" + suffix)
-    if is_file(backup_filepath): raise IOError("Backup file path already exists (" + backup_filepath + ")")
+    if is_file(backup_filepath):
+        if backup_backup:
+            backup_file(backup_filepath, suffix=suffix, backup_backup=backup_backup) # backup the backup
+            remove_file(backup_filepath)
+        else: raise IOError("Backup file path already exists (" + backup_filepath + ")")
     copy_file(filepath, backup_filepath)
 
 # -----------------------------------------------------------------
