@@ -1348,6 +1348,7 @@ def is_single_quoted(string):
 # -----------------------------------------------------------------
 
 def is_in_single_quotes(string):
+    if string == "": return False
     return string[0] == "'" and string[-1] == "'"
 
 # -----------------------------------------------------------------
