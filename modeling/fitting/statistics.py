@@ -1009,6 +1009,18 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def has_parameter_unit(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.get_parameter_unit(label) is not None
+
+    # -----------------------------------------------------------------
+
     @property
     def initial_parameter_values(self):
 
@@ -3695,6 +3707,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
             # Determine label and magnitude for this panel
             plot_label = strings.smart_capitalize(parameter_descriptions_short[label])
+            if self.has_parameter_unit(label): plot_label += " [" + tostr(self.get_parameter_unit(label) + "]")
             magnitude = magnitudes_panels[label]
 
             # Create properties
@@ -3785,6 +3798,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
             # Determine label and magnitude for this panel
             plot_label = strings.smart_capitalize(parameter_descriptions_short[label])
+            if self.has_parameter_unit(label): plot_label += " [" + tostr(self.get_parameter_unit(label) + "]")
             magnitude = magnitudes_panels[label]
 
             # Create properties

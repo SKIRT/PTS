@@ -1382,6 +1382,7 @@ def is_double_quoted(string):
 # -----------------------------------------------------------------
 
 def is_in_double_quotes(string):
+    if string == "": return False
     return string[0] == '"' and string[-1] == '"'
 
 # -----------------------------------------------------------------

@@ -3941,6 +3941,7 @@ class Generation(object):
         if self.has_assignment_table: nassignment_simulations = len(self.assignment_table)
         else: nassignment_simulations = None
 
+        # Problem with the number of simulations
         if self.nsimulation_directories != self.nsimulations:
             if self.nsimulation_directories == nassignment_simulations:
                 log.warning("Fixing the number of simulations in the generation info (" + str(nassignment_simulations) + " instead of " + str(self.nsimulations) + ") ...")
@@ -3961,6 +3962,7 @@ class Generation(object):
                                                                                    correct_paths=correct_paths, confirm_correction=confirm_correction,
                                                                                    fix_success=fix_success)
             if changed_assignment_sim: changed_assignment = True
+            #print(simulation_name, simulation_status)
 
             # Add the status
             status_list.append(simulation_status)

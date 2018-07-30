@@ -24,6 +24,7 @@ from ...core.tools.utils import lazyproperty
 from ..projection.data import Data3D
 from ..core.model import oliver_stellar_mass, salim_fuv_to_sfr
 from ...core.units.parsing import parse_unit as u
+from ...magic.tools.plotting import plot_map
 
 # -----------------------------------------------------------------
 
@@ -92,7 +93,7 @@ class SFRAnalyser(AnalysisRunComponent):
         self.write()
 
         # Plotting
-        self.plot()
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -130,6 +131,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_projected_sfr_earth(self):
+        return not self.has_projected_sfr_earth or self.do_plot_projected_sfr_earth_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_projected_sfr_faceon(self):
+        return not self.has_projected_sfr_faceon or self.do_plot_projected_sfr_faceon_map
+
+    # -----------------------------------------------------------------
+
     def get_projected_sfr(self):
 
         """
@@ -141,10 +154,10 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Getting the projected star formation rate ...")
 
         # Earth
-        self.get_projected_sfr_earth()
+        if self.needs_projected_sfr_earth: self.get_projected_sfr_earth()
 
         # Faceon
-        self.get_projected_sfr_faceon()
+        if self.needs_projected_sfr_faceon: self.get_projected_sfr_faceon()
 
     # -----------------------------------------------------------------
 
@@ -184,6 +197,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_projected_mass_earth(self):
+        return not self.has_projected_mass_earth or self.do_plot_projected_mass_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_projected_mass_faceon(self):
+        return not self.has_projected_mass_faceon or self.do_plot_projected_mass_faceon
+
+    # -----------------------------------------------------------------
+
     def get_projected_mass(self):
 
         """
@@ -195,10 +220,10 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Getting the projected stellar mass ...")
 
         # Earth
-        self.get_projected_mass_earth()
+        if self.needs_projected_mass_earth: self.get_projected_mass_earth()
 
         # Faceon
-        self.get_projected_mass_faceon()
+        if self.needs_projected_mass_faceon: self.get_projected_mass_faceon()
 
     # -----------------------------------------------------------------
 
@@ -238,6 +263,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_projected_ssfr_earth(self):
+        return not self.has_projected_ssfr_earth or self.do_plot_projected_ssfr_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_projected_ssfr_faceon(self):
+        return not self.has_projected_ssfr_faceon or self.do_plot_projected_ssfr_faceon
+
+    # -----------------------------------------------------------------
+
     def get_projected_ssfr(self):
 
         """
@@ -249,10 +286,10 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Getting the projected specific star formation rate ...")
 
         # Earth
-        self.get_projected_ssfr_earth()
+        if self.needs_projected_ssfr_earth: self.get_projected_ssfr_earth()
 
         # Faceon
-        self.get_projected_ssfr_faceon()
+        if self.needs_projected_ssfr_faceon: self.get_projected_ssfr_faceon()
 
     # -----------------------------------------------------------------
 
@@ -289,6 +326,36 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_cell_fuv(self):
+        return not self.has_cell_fuv or not self.has_cell_sfr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_cell_i1(self):
+        return not self.has_cell_i1 or not self.has_cell_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_cell_sfr(self):
+        return not self.has_cell_sfr or (not self.has_cell_ssfr and self.needs_cell_ssfr) or (not self.has_cell_sfr_map and self.needs_cell_sfr_map)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_cell_mass(self):
+        return not self.has_cell_mass or (not self.has_cell_ssfr and self.needs_cell_ssfr) or (not self.has_cell_mass_map and self.needs_cell_mass_map)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_cell_ssfr(self):
+        return not self.has_cell_ssfr or (not self.has_cell_ssfr_map and self.needs_cell_ssfr_map)
+
+    # -----------------------------------------------------------------
+
     def get_cell(self):
 
         """
@@ -300,19 +367,19 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Getting the cell star formation rates ...")
 
         # FUV luminosity
-        self.get_cell_fuv()
+        if self.needs_cell_fuv: self.get_cell_fuv()
 
         # I1 luminosity
-        self.get_cell_i1()
+        if self.needs_cell_i1: self.get_cell_i1()
 
         # Star formation rate
-        self.get_cell_sfr()
+        if self.needs_cell_sfr: self.get_cell_sfr()
 
         # Stellar mass
-        self.get_cell_mass()
+        if self.needs_cell_mass: self.get_cell_mass()
 
         # Specific star formation rate
-        self.get_cell_ssfr()
+        if self.needs_cell_ssfr: self.get_cell_ssfr()
 
     # -----------------------------------------------------------------
 
@@ -658,6 +725,24 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_cell_sfr_map(self):
+        return not self.has_cell_sfr_map or self.do_plot_cell_sfr_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_cell_mass_map(self):
+        return not self.has_cell_sfr_map or self.do_plot_cell_mass_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_cell_ssfr_map(self):
+        return not self.has_cell_sfr_map or self.do_plot_cell_ssfr_map
+
+    # -----------------------------------------------------------------
+
     def get_cell_maps(self):
 
         """
@@ -669,13 +754,13 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Getting the maps of the cell star formation rates ...")
 
         # Star formation rate
-        self.get_cell_sfr_map()
+        if self.needs_cell_sfr_map: self.get_cell_sfr_map()
 
         # Stellar mass
-        self.get_cell_mass_map()
+        if self.needs_cell_mass_map: self.get_cell_mass_map()
 
         # Specific star formation rate
-        self.get_cell_ssfr_map()
+        if self.needs_cell_ssfr_map: self.get_cell_ssfr_map()
 
     # -----------------------------------------------------------------
 
@@ -775,6 +860,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_projected_sfr_earth(self):
+        return not self.has_projected_sfr_earth()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_sfr_faceon(self):
+        return not self.has_projected_sfr_faceon
+
+    # -----------------------------------------------------------------
+
     def write_projected_sfr(self):
 
         """
@@ -783,10 +880,10 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Earth
-        self.write_projected_sfr_earth()
+        if self.do_write_projected_sfr_earth: self.write_projected_sfr_earth()
 
         # Faceon
-        self.write_projected_sfr_faceon()
+        if self.do_write_projected_sfr_faceon: self.write_projected_sfr_faceon()
 
     # -----------------------------------------------------------------
 
@@ -838,6 +935,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_projected_mass_earth(self):
+        return not self.has_projected_mass_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_mass_faceon(self):
+        return not self.has_projected_mass_faceon
+
+    # -----------------------------------------------------------------
+
     def write_projected_mass(self):
 
         """
@@ -846,10 +955,10 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Earth
-        self.write_projected_mass_earth()
+        if self.do_write_projected_mass_earth: self.write_projected_mass_earth()
 
         # Faceon
-        self.write_projected_mass_faceon()
+        if self.do_write_projected_mass_faceon: self.write_projected_mass_faceon()
 
     # -----------------------------------------------------------------
 
@@ -901,6 +1010,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_projected_ssfr_earth(self):
+        return not self.has_projected_ssfr_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_faceon(self):
+        return not self.has_projected_ssfr_faceon
+
+    # -----------------------------------------------------------------
+
     def write_projected_ssfr(self):
 
         """
@@ -909,10 +1030,10 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Earth
-        self.write_projected_ssfr_earth()
+        if self.do_write_projected_ssfr_earth: self.write_projected_ssfr_earth()
 
         # Faceon
-        self.write_projected_ssfr_faceon()
+        if self.do_write_projected_ssfr_faceon: self.write_projected_ssfr_faceon()
 
     # -----------------------------------------------------------------
 
@@ -964,6 +1085,36 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_cell_fuv(self):
+        return not self.has_cell_fuv
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_i1(self):
+        return not self.has_cell_i1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_sfr(self):
+        return not self.has_cell_sfr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_mass(self):
+        return not self.has_cell_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_ssfr(self):
+        return not self.has_cell_ssfr
+
+    # -----------------------------------------------------------------
+
     def write_cell(self):
 
         """
@@ -975,19 +1126,19 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Writing the cell star formation rates ...")
 
         # Intrinsic FUV luminosity
-        self.write_cell_fuv()
+        if self.do_write_cell_fuv: self.write_cell_fuv()
 
         # Observed I1 luminosity
-        self.write_cell_i1()
+        if self.do_write_cell_i1: self.write_cell_i1()
 
         # Star formation rate
-        self.write_cell_sfr()
+        if self.do_write_cell_sfr: self.write_cell_sfr()
 
         # Stellar mass
-        self.write_cell_mass()
+        if self.do_write_cell_mass: self.write_cell_mass()
 
         # Specific star formation rate
-        self.write_cell_ssfr()
+        if self.do_write_cell_ssfr: self.write_cell_ssfr()
 
     # -----------------------------------------------------------------
 
@@ -1126,6 +1277,24 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_cell_sfr_map(self):
+        return not self.has_cell_sfr_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_mass_map(self):
+        return not self.has_cell_mass_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_ssfr_map(self):
+        return not self.has_cell_ssfr_map
+
+    # -----------------------------------------------------------------
+
     def write_cell_maps(self):
 
         """
@@ -1137,13 +1306,13 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Writing the maps of the cell star formation rates ...")
 
         # Star formation rate
-        self.write_cell_sfr_map()
+        if self.do_write_cell_sfr_map: self.write_cell_sfr_map()
 
         # Stellar mass
-        self.write_cell_mass_map()
+        if self.do_write_cell_mass_map: self.write_cell_mass_map()
 
         # Specific star formation rate
-        self.write_cell_ssfr_map()
+        if self.do_write_cell_ssfr_map: self.write_cell_ssfr_map()
 
     # -----------------------------------------------------------------
 
@@ -1237,5 +1406,368 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Projected maps
+        self.plot_projected()
+
+        # Cell maps
+        self.plot_cell_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_projected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the projected star formation rates ...")
+
+        # Star formation rate
+        self.plot_projected_sfr()
+
+        # Stellar mass
+        self.plot_projected_mass()
+
+        # Specific star formation rate
+        self.plot_projected_ssfr()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_sfr_earth_map(self):
+        return not self.has_projected_sfr_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_sfr_faceon_map(self):
+        return not self.has_projected_sfr_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_projected_sfr_earth_map: self.plot_projected_sfr_earth()
+
+        # Faceon
+        if self.do_plot_projected_sfr_faceon_map: self.plot_projected_sfr_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_sfr_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "sfr_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_sfr_earth_map_plot(self):
+        return fs.is_file(self.projected_sfr_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_sfr_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.sfr_earth_map, path=self.projected_sfr_earth_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_sfr_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "sfr_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_sfr_faceon_map_plot(self):
+        return fs.is_file(self.projected_sfr_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_sfr_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.sfr_faceon_map, path=self.projected_sfr_faceon_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_mass_earth(self):
+        return not self.has_projected_mass_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_mass_faceon(self):
+        return not self.has_projected_mass_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_projected_mass_earth: self.plot_projected_mass_earth()
+
+        # Faceon
+        if self.do_plot_projected_mass_faceon: self.plot_projected_mass_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_mass_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "mass_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_mass_earth_map_plot(self):
+        return fs.is_file(self.projected_mass_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_mass_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.stellar_mass_earth_map, path=self.projected_mass_earth_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_mass_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "mass_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_mass_faceon_map_plot(self):
+        return fs.is_file(self.projected_mass_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_mass_faceon(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.stellar_mass_faceon_map, path=self.projected_mass_faceon_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_earth(self):
+        return not self.has_projected_ssfr_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_faceon(self):
+        return not self.has_projected_ssfr_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_projected_ssfr_earth: self.plot_projected_ssfr_earth()
+
+        # Faceon
+        if self.do_plot_projected_ssfr_faceon: self.plot_projected_ssfr_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_earth_map_plot(self):
+        return fs.is_file(self.projected_ssfr_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_earth_map, path=self.projected_ssfr_earth_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_faceon_map_plot(self):
+        return fs.is_file(self.projected_ssfr_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_faceon_map, path=self.projected_ssfr_faceon_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_cell_sfr_map(self):
+        return not self.has_cell_sfr_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_cell_mass_map(self):
+        return not self.has_cell_mass_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_cell_ssfr_map(self):
+        return not self.has_cell_ssfr_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_cell_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of the cell star formation rates ...")
+
+        # Star formation rate
+        if self.do_plot_cell_sfr_map: self.plot_cell_sfr_map()
+
+        # Stellar mass
+        if self.do_plot_cell_mass_map: self.plot_cell_mass_map()
+
+        # Specific star formation rate
+        if self.do_plot_cell_ssfr_map: self.plot_cell_ssfr_map()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_map_plot_path(self):
+        return fs.join(self.cell_path, "sfr_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_map_plot(self):
+        return fs.is_file(self.cell_sfr_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_cell_sfr_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.sfr_data_faceon_map, path=self.cell_sfr_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mass_map_plot_path(self):
+        return fs.join(self.cell_path, "mass_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_mass_map_plot(self):
+        return fs.is_file(self.cell_mass_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_cell_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.stellar_mass_data_faceon_map, path=self.cell_mass_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_map_plot_path(self):
+        return fs.join(self.cell_path, "ssfr_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_map_plot(self):
+        return fs.is_file(self.cell_ssfr_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_cell_ssfr_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_data_faceon_map, path=self.cell_ssfr_map_plot_path, cmap="inferno", colorbar=True)
 
 # -----------------------------------------------------------------
