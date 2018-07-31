@@ -3707,7 +3707,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
         name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
-        print(print_name, frame.psf_filter, frame.fwhm, highest_fwhm_filter, highest_fwhm)
+        #print(print_name, frame.psf_filter, frame.fwhm, highest_fwhm_filter, highest_fwhm)
         frame_psf_filter_defined = frame.psf_filter is not None
         highest_fwhm_filter_defined = highest_fwhm_filter is not None
         same_psf_filter = frame_psf_filter_defined and highest_fwhm_filter_defined and frame.psf_filter == highest_fwhm_filter
@@ -3732,17 +3732,17 @@ def convolve_to_fwhm_local(*frames, **kwargs):
 
         # Doesn't need convolution
         #elif frame.psf_filter == highest_fwhm_filter:
-        elif same_psf_filter:
-
-            # Debugging
-            log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
-
-            # Make new frame and set the name
-            new = frame.copy()
-            if names is not None: new.name = names[index]
-
-            # Add a copy of the frame
-            new_frames.append(new)
+        # elif same_psf_filter:
+        #
+        #     # Debugging
+        #     log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
+        #
+        #     # Make new frame and set the name
+        #     new = frame.copy()
+        #     if names is not None: new.name = names[index]
+        #
+        #     # Add a copy of the frame
+        #     new_frames.append(new)
 
         # Same FWHM, and potentially the same filter?
         elif same_fwhm and (some_filters_undefined or same_psf_filter):
