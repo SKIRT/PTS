@@ -7092,8 +7092,8 @@ class SimulationManager(InteractiveConfigurable):
 
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
-        #definition.add_required("simulations", "integer_and_string_list", "simulation indices or names")
-        definition.add_positional_optional("simulations", "integer_and_string_list", "simulation indices or names", default=["all"])
+        definition.add_required("simulations", "integer_and_string_list", "simulation indices or names")
+        #definition.add_positional_optional("simulations", "integer_and_string_list", "simulation indices or names", default=["all"])
 
         # Add definition settings
         if command_definition is not None:
