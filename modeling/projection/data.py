@@ -29,11 +29,12 @@ from ...core.basics.table import SmartTable
 from ...core.tools import types
 from ...magic.basics.vector import Extent
 from ...core.tools.stringify import tostr
-from ...core.tools.progress import Bar, BAR_EMPTY_CHAR, BAR_FILLED_CHAR
+from ...core.tools.progress import Bar
 from ...core.units.unit import PhotometricUnit, get_conversion_factor
 from ...core.units.parsing import parse_unit
 from ...magic.core.frame import AllZeroError
 from ...core.units.quantity import get_value_and_unit, add_with_units, subtract_with_units, multiply_with_units, divide_with_units
+from ..basics.projection import FaceOnProjection, EdgeOnProjection
 
 # -----------------------------------------------------------------
 
@@ -169,6 +170,12 @@ class Data3D(object):
     @property
     def has_unit(self):
         return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radii(self):
+        return np.sqrt(self.x ** 2 + self.y ** 2)
 
     # -----------------------------------------------------------------
 
@@ -319,6 +326,18 @@ class Data3D(object):
     def valid_weights(self):
         if not self.has_weights: return None
         return self.masked_weights.compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def masked_radii(self):
+        return np.ma.MaskedArray(self.radii, mask=self.invalid)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_radii(self):
+        return self.masked_radii.compressed()
 
     # -----------------------------------------------------------------
 
@@ -815,6 +834,64 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
 
 # -----------------------------------------------------------------
 
+def project_faceon(name, data, return_stddev=False, return_ncells=False, description=None):
+
+    """
+    This function ...
+    :param name:
+    :param data:
+    :param return_stddev:
+    :param return_ncells:
+    :param description:
+    :return:
+    """
+
+    # Create the projections object
+    projections = DataProjections(name, data, description=description, faceon=True, edgeon=False)
+
+    # Get results
+    frame = projections.faceon
+    stddev_frame = projections.faceon_stddev
+    ncells_frame = projections.faceon_ncells
+
+    # Return
+    if return_stddev:
+        if return_ncells: return frame, stddev_frame, ncells_frame
+        else: return frame, stddev_frame
+    elif return_ncells: return frame, ncells_frame
+    else: return frame
+
+# -----------------------------------------------------------------
+
+def project_edgeon(name, data, return_stddev=False, return_ncells=False, description=None):
+
+    """
+    This function ...
+    :param name:
+    :param data:
+    :param return_stddev:
+    :param return_ncells:
+    :param description:
+    :return:
+    """
+
+    # Create the projections object
+    projections = DataProjections(name, data, description=description, faceon=False, edgeon=True)
+
+    # Get results
+    frame = projections.edgeon
+    stddev_frame = projections.edgeon_stddev
+    ncells_frame = projections.edgeon_ncells
+
+    # Return
+    if return_stddev:
+        if return_ncells: return frame, stddev_frame, ncells_frame
+        else: return frame, stddev_frame
+    elif return_ncells: return frame, ncells_frame
+    else: return frame
+
+# -----------------------------------------------------------------
+
 class DataProjections(object):
 
     """
@@ -822,8 +899,7 @@ class DataProjections(object):
     """
 
     def __init__(self, name, data, projection_faceon=None, projection_edgeon=None,
-                 faceon=True, edgeon=True, description=None, distance=None, wcs=None, center=None,
-                 radial_factor=1, scale_heights=default_scale_heights):
+                 faceon=True, edgeon=True, description=None, distance=None, faceon_height=None, edgeon_width=None):
 
         """
         The constructor ...
@@ -836,10 +912,8 @@ class DataProjections(object):
         :param edgeon:
         :param description:
         :param distance:
-        :param wcs:
-        :param center:
-        :param radial_factor:
-        :param scale_heights:
+        :param faceon_height:
+        :param edgeon_width:
         """
 
         # Set
@@ -855,6 +929,10 @@ class DataProjections(object):
         # Set the projections
         self.projection_faceon = projection_faceon
         self.projection_edgeon = projection_edgeon
+
+        # Set the height and depth (to make cuts of midplane or vertical plane)
+        self.faceon_height = faceon_height
+        self.edgeon_width = edgeon_width
 
         # Create projections?
         if faceon and not self.has_projection_faceon: self.create_projection_faceon()
@@ -878,6 +956,16 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def distance(self):
+        if self.has_projection_faceon: return self.projection_faceon.distance
+        elif self.has_projection_edgeon: return self.projection_edgeon.distance
+        else: return None
+
+    # -----------------------------------------------------------------
+    # DATA
+    # -----------------------------------------------------------------
+
     @property
     def has_weights(self):
         return self.data.has_weights
@@ -890,15 +978,39 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def absolute_x(self):
+        return abs(self.x)
+
+    # -----------------------------------------------------------------
+
     @property
     def y(self):
         return self.data.valid_y
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def absolute_y(self):
+        return abs(self.y)
+
+    # -----------------------------------------------------------------
+
     @property
     def z(self):
         return self.data.valid_z
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absolute_z(self):
+        return abs(self.z)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radii(self):
+        return self.data.valid_radii
 
     # -----------------------------------------------------------------
 
@@ -913,6 +1025,120 @@ class DataProjections(object):
         return self.data.valid_weights
 
     # -----------------------------------------------------------------
+    # DATA FOR FACE-ON MAP
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_height(self):
+        return self.faceon_height is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def within_faceon_height(self):
+        return self.absolute_z <= self.faceon_height
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def x_faceon(self):
+        if self.has_faceon_height: return self.x[self.within_faceon_height]
+        else: return self.x
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def y_faceon(self):
+        if self.has_faceon_height: return self.y[self.within_faceon_height]
+        else: return self.y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def z_faceon(self):
+        if self.has_faceon_height: return self.z[self.within_faceon_height]
+        else: return self.z
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radii_faceon(self):
+        if self.has_faceon_height: return self.radii[self.within_faceon_height]
+        else: return self.radii
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def values_faceon(self):
+        if self.has_faceon_height: return self.values[self.within_faceon_height]
+        else: return self.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def weights_faceon(self):
+        if self.has_faceon_height: return self.values[self.within_faceon_height]
+        else: return self.weights
+
+    # -----------------------------------------------------------------
+    # DATA FOR EDGE-ON MAP
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_width(self):
+        return self.edgeon_width is not None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def within_edgeon_width(self):
+        return self.absolute_x <= self.edgeon_width
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def x_edgeon(self):
+        if self.has_edgeon_width: return self.x[self.within_edgeon_width]
+        else: return self.x
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def y_edgeon(self):
+        if self.has_edgeon_width: return self.y[self.within_edgeon_width]
+        else: return self.y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def z_edgeon(self):
+        if self.has_edgeon_width: return self.z[self.within_edgeon_width]
+        else: return self.z
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radii_edgeon(self):
+        if self.has_edgeon_width: return self.radii[self.within_edgeon_width]
+        else: return self.radii
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def values_edgeon(self):
+        if self.has_edgeon_width: return self.values[self.within_edgeon_width]
+        else: return self.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def weights_edgeon(self):
+        if self.has_edgeon_width: return self.weights[self.within_edgeon_width]
+        else: return self.weights
+
+    # -----------------------------------------------------------------
+    # UNITS
+    # -----------------------------------------------------------------
 
     @property
     def unit(self):
@@ -924,6 +1150,187 @@ class DataProjections(object):
     def length_unit(self):
         return self.data.length_unit
 
+    # -----------------------------------------------------------------
+    # SORTED UNIQUE COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_unique_x_coordinates(self):
+        return np.sort(np.unique(self.x))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_unique_y_coordinates(self):
+        return np.sort(np.unique(self.y))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_unique_z_coordinates(self):
+        return np.sort(np.unique(self.z))
+
+    # -----------------------------------------------------------------
+    # MIN COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_x_coordinate(self):
+        return self.sorted_unique_x_coordinates[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_y_coordinate(self):
+        return self.sorted_unique_y_coordinates[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_z_coordinate(self):
+        return self.sorted_unique_z_coordinates[0]
+
+    # -----------------------------------------------------------------
+    # MAX COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_x_coordinate(self):
+        return self.sorted_unique_x_coordinates[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_y_coordinate(self):
+        return self.sorted_unique_y_coordinates[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_z_coordinates(self):
+        return self.sorted_unique_z_coordinates[-1]
+
+    # -----------------------------------------------------------------
+    # SPACINGS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_spacings(self):
+        return np.diff(self.sorted_unique_x_coordinates)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_spacings(self):
+        return np.diff(self.sorted_unique_y_coordinates)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_z_coordinates_spacings(self):
+        return np.diff(self.sorted_unique_z_coordinates)
+
+    # -----------------------------------------------------------------
+    # AVERAGE SPACING
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_average_spacing(self):
+        return np.mean(self.unique_x_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_average_spacing(self):
+        return np.mean(self.unique_y_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_z_coordinates_average_spacing(self):
+        return np.mean(self.unique_z_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+    # MEDIAN SPACING
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_median_spacing(self):
+        return np.median(self.unique_x_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_median_spacing(self):
+        return np.median(self.unique_y_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_z_coordinates_median_spacing(self):
+        return np.median(self.unique_z_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+    # STD SPACING
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_stddev_spacing(self):
+        return np.std(self.unique_x_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_stddev_spacing(self):
+        return np.std(self.unique_y_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_z_coordinates_stddev_spacing(self):
+        return np.std(self.unique_z_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+    # MIN SPACING
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_min_spacing(self):
+        return np.min(self.unique_x_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_min_spacing(self):
+        return np.min(self.unique_y_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_z_coordinates_min_spacing(self):
+        return np.min(self.unique_z_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+    # MAX SPACING
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_x_coordinates_max_spacing(self):
+        return np.max(self.unique_x_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_y_coordinates_max_spacing(self):
+        return np.max(self.unique_y_coordinates_spacings)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unique_z_coordinates_max_spacing(self):
+        return np.max(self.unique_z_coordinates_spacings)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -938,15 +1345,81 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def create_projection_faceon(self):
+    def get_xy_spacing(self, measure, factor=1.):
 
         """
         This function ...
+        :param measure:
+        :param factor:
+        :return:
+        """
+
+        # Determine
+        if measure == "min": spacing = np.mean([self.unique_x_coordinates_min_spacing, self.unique_y_coordinates_min_spacing])
+        elif measure == "max": spacing = np.mean([self.unique_x_coordinates_max_spacing, self.unique_y_coordinates_max_spacing])
+        elif measure == "mean": spacing = np.mean([self.unique_x_coordinates_average_spacing, self.unique_y_coordinates_average_spacing])
+        elif measure == "median": spacing = np.mean([self.unique_x_coordinates_median_spacing, self.unique_y_coordinates_median_spacing])
+        else: raise ValueError("Invalid measure '" + measure + "'")
+
+        # Return
+        return spacing * factor
+
+    # -----------------------------------------------------------------
+
+    def create_projection_faceon(self, spacing="mean", spacing_factor=1.):
+
+        """
+        This function ...
+        :param spacing:
+        :param spacing_factor:
         :return:
         """
 
         # Inform the user
         log.info("Creating the face-on projection ...")
+
+        # Get scalar value of spacing
+        if types.is_string_type(spacing): spacing = self.get_xy_spacing(spacing, factor=spacing_factor)
+        elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit).value
+        elif types.is_real_type(spacing): pass
+        else: raise ValueError("Invalid value for 'spacing'")
+
+        #map_radius
+        # max(abs(self.min_x_coordinate), self.max_x_coordinate, abs(self.min_y_coordinate),
+        #               self.max_y_coordinate)
+
+        #map_coordinates
+        #np.arange(-self.map_radius, self.map_radius, self.map_spacing)
+
+        #half_map_spacing(self):
+        #return 0.5 * self.map_spacing
+
+        # Create the projection
+        self.projection_faceon = FaceOnProjection(distance=self.distance, pixels_x=self.config.npixels.x,
+                                                  pixels_y=self.config.npixels.y, center_x=self.center_physical.x,
+                                                  center_y=self.center_physical.y, field_x=self.config.field.x,
+                                                  field_y=self.config.field.y)
+
+    # -----------------------------------------------------------------
+
+    def get_yz_spacing(self, measure, factor=1.):
+
+        """
+        This function ...
+        :param measure:
+        :param factor:
+        :return:
+        """
+
+        # Determine
+        if measure == "min": spacing = np.mean([self.unique_y_coordinates_min_spacing, self.unique_z_coordinates_min_spacing])
+        elif measure == "max": spacing = np.mean([self.unique_y_coordinates_max_spacing, self.unique_z_coordinates_max_spacing])
+        elif measure == "mean": spacing = np.mean([self.unique_y_coordinates_average_spacing, self.unique_z_coordinates_average_spacing])
+        elif measure == "median": spacing = np.mean([self.unique_y_coordinates_median_spacing, self.unique_z_coordinates_median_spacing])
+        else: raise ValueError("Invalid measure '" + measure + "'")
+
+        # Return
+        return spacing * factor
 
     # -----------------------------------------------------------------
 
@@ -959,6 +1432,18 @@ class DataProjections(object):
 
         # Inform the user
         log.info("Creating the edge-on projection ...")
+
+        # Get scalar value of spacing
+        if types.is_string_type(spacing): spacing = self.get_yz_spacing(spacing, factor=spacing_factor)
+        elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit).value
+        elif types.is_real_type(spacing): pass
+        else: raise ValueError("Invalid value for 'spacing'")
+
+        # Create projection
+        self.projection_edgeon = EdgeOnProjection(distance=self.distance, pixels_x=self.config.npixels.x,
+                                                  pixels_y=self.config.npixels.y, center_x=self.center_physical.x,
+                                                  center_y=self.center_physical.y, field_x=self.config.field.x,
+                                                  field_y=self.config.field.y)
 
     # -----------------------------------------------------------------
 
@@ -1040,9 +1525,33 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def faceon_pixelscale_x(self):
+        return self.faceon_pixelscale.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_pixelscale_y(self):
+        return self.faceon_pixelscale.y
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def faceon_pixelscale_value(self):
-        return Extent(self.faceon_pixelscale.x.to(self.length_unit).value, self.faceon_pixelscale.y.to(self.length_unit).value)
+        return Extent(self.faceon_pixelscale_x.to(self.length_unit).value, self.faceon_pixelscale_y.to(self.length_unit).value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_pixelscale_value_x(self):
+        return self.faceon_pixelscale_value.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_pixelscale_value_y(self):
+        return self.faceon_pixelscale_value.y
 
     # -----------------------------------------------------------------
 
@@ -1052,27 +1561,33 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def faceon_half_pixelscale_value(self):
-        return Extent(self.faceon_half_pixelscale.x.to(self.length_unit).value, self.faceon_half_pixelscale.y.to(self.length_unit).value)
+    @property
+    def faceon_half_pixelscale_x(self):
+        return self.faceon_half_pixelscale.x
 
     # -----------------------------------------------------------------
 
-    def get_faceon_coordinate_ranges(self, x, y):
+    @property
+    def faceon_half_pixelscale_y(self):
+        return self.faceon_half_pixelscale.y
 
-        """
-        This function ...
-        :param x:
-        :param y:
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        # Determine range of x and y
-        x_range = RealRange(x - self.faceon_half_pixelscale_value.x, x + self.faceon_half_pixelscale_value.x)
-        y_range = RealRange(y - self.faceon_half_pixelscale_value.y, y + self.faceon_half_pixelscale_value.y)
+    @lazyproperty
+    def faceon_half_pixelscale_value(self):
+        return Extent(self.faceon_half_pixelscale_x.to(self.length_unit).value, self.faceon_half_pixelscale_y.to(self.length_unit).value)
 
-        # Return
-        return x_range, y_range
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_half_pixelscale_value_x(self):
+        return self.faceon_half_pixelscale_value.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_half_pixelscale_value_y(self):
+        return self.faceon_half_pixelscale_value.y
 
     # -----------------------------------------------------------------
 
@@ -1099,6 +1614,24 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
+    def get_faceon_coordinate_ranges(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        # Determine range of x and y
+        x_range = RealRange(x - self.faceon_half_pixelscale_value_x, x + self.faceon_half_pixelscale_value_x)
+        y_range = RealRange(y - self.faceon_half_pixelscale_value_y, y + self.faceon_half_pixelscale_value_y)
+
+        # Return
+        return x_range, y_range
+
+    # -----------------------------------------------------------------
+
     def get_faceon_coordinate_mask(self, x, y):
 
         """
@@ -1115,9 +1648,7 @@ class DataProjections(object):
         x_mask = (x_range.min < self.x) * (self.x <= x_range.max)
         y_mask = (y_range.min < self.y) * (self.y <= y_range.max)
 
-        # x_mask = self.get_coordinate_mask_x_for_map(x_range)
-        # y_mask = self.get_coordinate_mask_y_for_map(y_range)
-        # return x_mask * y_mask
+        # Create and return the combined mask
         return x_mask * y_mask
 
     # -----------------------------------------------------------------
@@ -1172,8 +1703,8 @@ class DataProjections(object):
                 if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
 
                 # Show progress
-                progress = int(float(index+1) / float(self.faceon_npixels))
-                bar.show(progress)
+                #progress = int(float(index+1) / float(self.faceon_npixels))
+                bar.show(float(index+1))
 
                 # Get the indices
                 indices = self.get_faceon_coordinate_indices(x, y)
@@ -1187,38 +1718,252 @@ class DataProjections(object):
 
                     # Calculate the heating fraction
                     vals = self.values[indices]
-                    wghts = self.weights[indices] if self.has_weights is not None else None
 
-                    # Calculate the mean heating fraction
-                    fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
-                    fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
+                    # With weights
+                    if self.has_weights:
+
+                        wghts = self.weights[indices]
+                        fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
+                        fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
+
+                    # Without weights
+                    else:
+
+                        # Calculate the mean heating fraction
+                        fraction = numbers.arithmetic_mean_numpy(vals)
+                        fraction_stddev = numbers.standard_deviation_numpy(vals)
 
                     # Set fraction
                     self.faceon[j, i] = fraction
                     self.faceon_stddev[j, i] = fraction_stddev
 
                 # Increment the x and y coordinate with one pixelsize
-                x += self.faceon_pixelscale.x
-                y += self.faceon_pixelscale.y
+                x += self.faceon_pixelscale_value_x
+                y += self.faceon_pixelscale_value_y
                 index += 1
 
     # -----------------------------------------------------------------
 
     @property
-    def edgeon_nx(self):
+    def edgeon_ny(self):
         return self.projection_edgeon.pixels_x
 
     # -----------------------------------------------------------------
 
     @property
-    def edgeon_ny(self):
+    def edgeon_nz(self):
         return self.projection_edgeon.pixels_y
 
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def edgeon_npixels(self):
+        return self.edgeon_ny * self.edgeon_nz
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def edgeon_shape(self):
-        return PixelShape.from_xy(self.edgeon_nx, self.edgeon_ny)
+        return PixelShape.from_xy(self.edgeon_ny, self.edgeon_nz)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_y_min(self):
+        return self.projection_edgeon.center_x - 0.5 * self.projection_edgeon.field_x
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_y_max(self):
+        return self.projection_edgeon.center_x + 0.5 * self.projection_edgeon.field_x
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_z_min(self):
+        return self.projection_edgeon.center_y - 0.5 * self.projection_edgeon.field_y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_z_max(self):
+        return self.projection_edgeon.center_y + 0.5 * self.projection_edgeon.field_y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_y_min_value(self):
+        return self.edgeon_y_min.to(self.length_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_y_max_value(self):
+        return self.edgeon_y_max.to(self.length_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_z_min_value(self):
+        return self.edgeon_z_min.to(self.length_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_z_max_value(self):
+        return self.edgeon_z_max.to(self.length_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixelscale(self):
+        return self.projection_edgeon.physical_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_pixelscale_y(self):
+        return self.edgeon_pixelscale.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_pixelscale_z(self):
+        return self.edgeon_pixelscale.y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixelscale_value(self):
+        return Extent(self.edgeon_pixelscale_y.to(self.length_unit).value, self.edgeon_pixelscale_z.to(self.length_unit).value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_pixelscale_value_y(self):
+        return self.edgeon_pixelscale_value.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_pixelscale_value_z(self):
+        return self.edgeon_pixelscale_value.y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_half_pixelscale(self):
+        return self.edgeon_pixelscale * 0.5
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_half_pixelscale_y(self):
+        return self.edgeon_half_pixelscale.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_half_pixelscale_z(self):
+        return self.edgeon_half_pixelscale.y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_half_pixelscale_value(self):
+        return Extent(self.edgeon_half_pixelscale_y.to(self.length_unit).value, self.edgeon_half_pixelscale_z.to(self.length_unit).value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_half_pixelscale_value_y(self):
+        return self.edgeon_half_pixelscale_value.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_half_pixelscale_value_z(self):
+        return self.edgeon_half_pixelscale_value.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_distance(self):
+        return self.projection_edgeon.distance
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_metadata(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        meta = OrderedDict()
+        meta["y_min"] = repr(self.edgeon_y_min_value) + " " + tostr(self.length_unit)
+        meta["y_max"] = repr(self.edgeon_y_max_value) + " " + tostr(self.length_unit)
+        meta["z_min"] = repr(self.edgeon_z_min_value) + " " + tostr(self.length_unit)
+        meta["z_max"] = repr(self.edgeon_z_max_value) + " " + tostr(self.length_unit)
+        return meta
+
+    # -----------------------------------------------------------------
+
+    def get_edgeon_coordinate_ranges(self, y, z):
+
+        """
+        This function ...
+        :param y:
+        :param z:
+        :return:
+        """
+
+        # Determine range of y and z
+        y_range = RealRange(y - self.edgeon_half_pixelscale_value_y, y + self.edgeon_half_pixelscale_value_y)
+        z_range = RealRange(z - self.edgeon_half_pixelscale_value_z, z + self.edgeon_half_pixelscale_value_z)
+
+        # Return
+        return y_range, z_range
+
+    # -----------------------------------------------------------------
+
+    def get_edgeon_coordinate_mask(self, y, z):
+
+        """
+        This function ...
+        :param y:
+        :param z:
+        :return:
+        """
+
+        # Get range
+        y_range, z_range = self.get_edgeon_coordinate_ranges(y, z)
+
+        # Create masks
+        y_mask = (y_range.min < self.y) * (self.y <= y_range.max)
+        z_mask = (z_range.min < self.z) * (self.z <= z_range.max)
+
+        # Create combined mask
+        return y_mask * z_mask
+
+    # -----------------------------------------------------------------
+
+    def get_edgeon_coordinate_indices(self, y, z):
+
+        """
+        This function ...
+        :param y:
+        :param z:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_edgeon_coordinate_mask(y, z)
+
+        # Get and return
+        return np.where(mask)[0]
 
     # -----------------------------------------------------------------
 
@@ -1238,28 +1983,28 @@ class DataProjections(object):
         self.edgeon_ncells = Frame.initialize_nans(self.edgeon_shape)
 
         # Set the pixelscale and the coordinate info
-        self.edgeon.pixelscale = self.faceon_pixelscale
-        self.edgeon.distance = self.faceon_distance
-        self.edgeon.metadata.update(self.faceon_metadata)
+        self.edgeon.pixelscale = self.edgeon_pixelscale
+        self.edgeon.distance = self.edgeon_distance
+        self.edgeon.metadata.update(self.edgeon_metadata)
 
         # Show progress bar
-        with Bar(label='', expected_size=self.faceon_npixels, every=1, add_datetime=True) as bar:
+        with Bar(label='', expected_size=self.edgeon_npixels, every=1, add_datetime=True) as bar:
 
             # Loop over the pixels of the map
-            #x = self.edgeon_x_min_value
-            #y = self.edgeon_y_min_value
+            y = self.edgeon_y_min_value
+            z = self.edgeon_z_min_value
             index = 0
-            for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
+            for i, j in sequences.multirange(self.edgeon_ny, self.edgeon_nz):
 
                 # Debugging
                 if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
 
                 # Show progress
-                progress = int(float(index + 1) / float(self.faceon_npixels))
-                bar.show(progress)
+                #progress = int(float(index + 1) / float(self.faceon_npixels))
+                bar.show(float(index+1))
 
                 # Get the indices
-                indices = self.get_faceon_coordinate_indices(x, y)
+                indices = self.get_edgeon_coordinate_indices(y, z)
                 nindices = indices.shape[0]
 
                 # Set number of cells
@@ -1267,21 +2012,30 @@ class DataProjections(object):
 
                 # If any cells
                 if nindices > 0:
+
                     # Calculate the heating fraction
                     vals = self.values[indices]
-                    wghts = self.weights[indices] if self.has_weights is not None else None
 
-                    # Calculate the mean heating fraction
-                    fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
-                    fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
+                    # With weights
+                    if self.has_weights:
+
+                        wghts = self.weights[indices]
+                        fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
+                        fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
+
+                    # Without weights
+                    else:
+
+                        fraction = numbers.arithmetic_mean_numpy(vals)
+                        fraction_stddev = numbers.standard_deviation_numpy(vals)
 
                     # Set fraction
-                    self.faceon[j, i] = fraction
-                    self.faceon_stddev[j, i] = fraction_stddev
+                    self.edgeon[j, i] = fraction
+                    self.edgeon_stddev[j, i] = fraction_stddev
 
-                # Increment the x and y coordinate with one pixelsize
-                x += self.faceon_pixelscale.x
-                y += self.faceon_pixelscale.y
+                # Increment the y and z coordinate with one pixelsize
+                y += self.edgeon_pixelscale_value_y
+                z += self.edgeon_pixelscale_value_z
                 index += 1
 
 # -----------------------------------------------------------------

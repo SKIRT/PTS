@@ -1208,6 +1208,18 @@ def standard_deviation(*numbers, **kwargs):
 
 # -----------------------------------------------------------------
 
+def standard_deviation_numpy(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    return np.std(array)
+
+# -----------------------------------------------------------------
+
 def weighed_arithmetic_mean(numbers, weights):
 
     """
@@ -1305,12 +1317,12 @@ def weighed_median_numpy(data, weights=None):
 
         sorted_data, sorted_weights = map(np.array, zip(*sorted(zip(data, weights))))
         midpoint = 0.5 * sum(sorted_weights)
-        if any(weights > midpoint):
-            return (data[weights == np.max(weights)])[0]
+
+        if any(weights > midpoint): return (data[weights == np.max(weights)])[0]
         cumulative_weight = np.cumsum(sorted_weights)
         below_midpoint_index = np.where(cumulative_weight <= midpoint)[0][-1]
-        if cumulative_weight[below_midpoint_index] == midpoint:
-            return np.mean(sorted_data[below_midpoint_index:below_midpoint_index + 2])
+
+        if cumulative_weight[below_midpoint_index] == midpoint: return np.mean(sorted_data[below_midpoint_index:below_midpoint_index + 2])
         return sorted_data[below_midpoint_index + 1]
 
 # -----------------------------------------------------------------
@@ -1378,6 +1390,7 @@ def weighed_standard_deviation_numpy(numbers, weights, mean=None):
     """
 
     if mean is None: mean = weighed_arithmetic_mean_numpy(numbers, weights)
+
     sq_diffs = (numbers - mean)**2
     norm_weights = weights / float(np.sum(weights))
     return np.sqrt(np.dot(sq_diffs, norm_weights))
