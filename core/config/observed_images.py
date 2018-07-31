@@ -83,6 +83,11 @@ definition.add_optional("min_npoints_fwhm", "positive_integer", "minimum number 
 
 # -----------------------------------------------------------------
 
+# Convolve
+definition.add_flag("convolve", "apply spatial convolution by automatically creating PSFs for each filter")
+
+# -----------------------------------------------------------------
+
 # Artifical sky and stars
 definition.add_flag("sky", "add artificial sky", False)
 definition.add_flag("stars", "add artificial stars", False)
