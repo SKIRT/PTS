@@ -1250,7 +1250,9 @@ class SimulationManager(InteractiveConfigurable):
 
             # Input is already an ensemble
             if isinstance(remotes, SKIRTRemotesEnsemble):
-                for name in remotes.names: self.add_host_id(remotes.get_host_id(name), name=name)
+                for name in remotes.names:
+                    if remotes.is_used(name): self.set_remote(remotes[name], name)
+                    else: self.add_host_id(remotes.get_host_id(name), name=name)
 
             # Regular dict
             elif types.is_dictionary(remotes):
@@ -8811,6 +8813,7 @@ class SimulationManager(InteractiveConfigurable):
         # Get the remote ski file path
         ski_path = self.get_remote_skifile_path(simulation_name)
 
+        # Check whether the remote ski file exists
         if remote.is_file(ski_path):
 
             # Debugging
@@ -8819,6 +8822,7 @@ class SimulationManager(InteractiveConfigurable):
             # Remove the remote ski file
             remote.remove_file(ski_path)
 
+        # Ski file is not present (anymore)
         else: log.warning("The ski file '" + ski_path + "' is already removed from remote host '" + remote.host_id + "'")
 
     # -----------------------------------------------------------------
@@ -14076,15 +14080,21 @@ class SimulationManager(InteractiveConfigurable):
                 # Get the number of cores
                 ncores = self.get_ncores_for_simulation(simulation_name)
 
-                # Get the runtime of the simulation, in hours
-                runtime = self.get_runtime(simulation_name).to("h").value
+                # Finished simulation?
+                if self.is_finished(simulation_name):
 
-                # Get the CPU time
-                cpu_time = runtime * ncores
+                    # Get the runtime of the simulation, in hours
+                    runtime = self.get_runtime(simulation_name).to("h").value
 
-                # Add
-                runtimes.append(runtime)
-                cputimes.append(cpu_time)
+                    # Get the CPU time
+                    cpu_time = runtime * ncores
+
+                    # Add
+                    runtimes.append(runtime)
+                    cputimes.append(cpu_time)
+
+                # Not finished
+                else: runtime = cpu_time = "--"
 
                 # Show the row for the simulation
                 parts = [simulation_name, host_id, ncores, tostr(runtime), tostr(cpu_time)]

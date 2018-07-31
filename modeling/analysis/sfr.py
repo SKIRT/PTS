@@ -21,7 +21,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...core.tools.utils import lazyproperty
-from ..projection.data import Data3D
+from ..projection.data import Data3D, project_data
 from ..core.model import oliver_stellar_mass, salim_fuv_to_sfr
 from ...core.units.parsing import parse_unit as u
 from ...magic.tools.plotting import plot_map
@@ -60,7 +60,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # The 3D data
         self.fuv_data = None # intrinsic
-        self.i1_data = None  # observed (ACTUALLY INTRINSIC?)
+        self.i1_data = None  # also intrinsic
         self.sfr_data = None
         self.stellar_mass_data = None
         self.ssfr_data = None
@@ -107,6 +107,24 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Call the setup function of the base class
         super(SFRAnalyser, self).setup()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_projection(self):
+        return self.analysis_run.earth_projection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_projection(self):
+        return self.analysis_run.faceon_projection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_projection(self):
+        return self.analysis_run.edgeon_projection
 
     # -----------------------------------------------------------------
 
@@ -774,6 +792,39 @@ class SFRAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Getting the map of the cell star formation rate ...")
 
+        # Load?
+        if self.has_cell_sfr_map: self.sfr_data_faceon_map = Frame.from_file(self.cell_sfr_map_path)
+
+        # Create
+        else: self.create_cell_sfr_map()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_name(self):
+        return "SFR"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_description(self):
+        return "Star formation rate"
+
+    # -----------------------------------------------------------------
+
+    def create_cell_sfr_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the map of the cell star formation rate ...")
+
+        # Create
+        self.sfr_data_faceon_map = project_data(self.sfr_name, self.sfr_data, self.faceon_projection, description=self.sfr_description)
+
     # -----------------------------------------------------------------
 
     def get_cell_mass_map(self):
@@ -786,6 +837,36 @@ class SFRAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Getting the map of the cell stellar mass ...")
 
+        # Load?
+        if self.has_cell_mass_map: self.stellar_mass_data_faceon_map = Frame.from_file(self.cell_mass_map_path)
+
+        # Create
+        else: self.create_cell_mass_map()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_mass_name(self):
+        return "Mstellar"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_mass_description(self):
+        return "Stellar mass"
+
+    # -----------------------------------------------------------------
+
+    def create_cell_mass_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the map of the cell stellar mass ...")
+
     # -----------------------------------------------------------------
 
     def get_cell_ssfr_map(self):
@@ -797,6 +878,36 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Inform the user
         log.info("Getting the map of the cell specific star formation rate ...")
+
+        # Load?
+        if self.has_cell_ssfr_map: self.ssfr_data_faceon_map = Frame.from_file(self.cell_ssfr_map_path)
+
+        # Create
+        else: self.create_cell_ssfr_map()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_name(self):
+        return "sSFR"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_description(self):
+        return "Specific star formation rate"
+
+    # -----------------------------------------------------------------
+
+    def create_cell_ssfr_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the map of the cell specific star formation rate ...")
 
     # -----------------------------------------------------------------
 

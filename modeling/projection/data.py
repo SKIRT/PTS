@@ -750,6 +750,29 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
     :return:
     """
 
+    # Create the data
+    data = Data3D(name, x_coordinates, y_coordinates, z_coordinates, values, weights=weights, length_unit=length_unit,
+                  unit=unit, description=description)
+
+    # Create projection
+    return project_data(name, data, projection, return_stddev=return_stddev, return_ncells=return_ncells, description=description)
+
+# -----------------------------------------------------------------
+
+def project_data(name, data, projection, return_stddev=False, return_ncells=False, description=None):
+
+    """
+    This function ...
+    :param name:
+    :param data:
+    :param projection:
+    :param return_stddev:
+    :param return_ncells:
+    :param description:
+    :return:
+    """
+
+    # Create faceon or edgeon projection
     faceon = is_faceon(projection)
     edgeon = is_edgeon(projection)
     if faceon:
@@ -760,11 +783,9 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
         edgeon_projection = get_edgeon_projection(projection, strict=True)
     else: raise ValueError("Projection must be face-on or edge-on")
 
-    # Create data
-    data = Data3D(x_coordinates, y_coordinates, z_coordinates, values, weights=weights, length_unit=length_unit, unit=unit)
-
     # Create the projections object
-    projections = DataProjections(name, data, description=description, faceon=faceon, edgeon=edgeon, projection_faceon=faceon_projection, projection_edgeon=edgeon_projection)
+    projections = DataProjections(name, data, description=description, faceon=faceon, edgeon=edgeon,
+                                  projection_faceon=faceon_projection, projection_edgeon=edgeon_projection)
 
     # Get the projected map
     if faceon: frame = projections.faceon
@@ -774,7 +795,7 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
     # Get the stddev
     if return_stddev:
         if faceon: stddev_frame = projections.faceon_stddev
-        elif edgeon: stddev_frame = projection.edgeon_stddev
+        elif edgeon: stddev_frame = projections.edgeon_stddev
         else: raise RuntimeError("Something went wrong")
     else: stddev_frame = None
 
@@ -854,6 +875,42 @@ class DataProjections(object):
         # The ncells maps
         self.faceon_ncells = None
         self.edgeon_ncells = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_weights(self):
+        return self.data.has_weights
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x(self):
+        return self.data.valid_x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y(self):
+        return self.data.valid_y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def z(self):
+        return self.data.valid_z
+
+    # -----------------------------------------------------------------
+
+    @property
+    def values(self):
+        return self.data.valid_values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def weights(self):
+        return self.data.valid_weights
 
     # -----------------------------------------------------------------
 
@@ -1034,10 +1091,10 @@ class DataProjections(object):
         """
 
         meta = OrderedDict()
-        meta["x_min"] = repr(x_min.value) + " " + tostr(self.length_unit)
-        meta["x_max"] = repr(x_max.value) + " " + tostr(self.length_unit)
-        meta["y_min"] = repr(y_min.value) + " " + tostr(self.length_unit)
-        meta["y_max"] = repr(y_max.value) + " " + tostr(self.length_unit)
+        meta["x_min"] = repr(self.faceon_x_min_value) + " " + tostr(self.length_unit)
+        meta["x_max"] = repr(self.faceon_x_max_value) + " " + tostr(self.length_unit)
+        meta["y_min"] = repr(self.faceon_y_min_value) + " " + tostr(self.length_unit)
+        meta["y_max"] = repr(self.faceon_y_max_value) + " " + tostr(self.length_unit)
         return meta
 
     # -----------------------------------------------------------------
@@ -1055,8 +1112,8 @@ class DataProjections(object):
         x_range, y_range = self.get_faceon_coordinate_ranges(x, y)
 
         # Create masks
-        x_mask = (x_range.min < valid_x_coordinates) * (valid_x_coordinates <= x_range.max)
-        y_mask = (y_range.min < valid_y_coordinates) * (valid_y_coordinates <= y_range.max)
+        x_mask = (x_range.min < self.x) * (self.x <= x_range.max)
+        y_mask = (y_range.min < self.y) * (self.y <= y_range.max)
 
         # x_mask = self.get_coordinate_mask_x_for_map(x_range)
         # y_mask = self.get_coordinate_mask_y_for_map(y_range)
@@ -1093,18 +1150,17 @@ class DataProjections(object):
         log.info("Creating the face-on map ...")
 
         # Initialize maps
-        frame = Frame.initialize_nans(self.faceon_shape, unit=self.unit)
-        stddev_frame = Frame.initialize_nans(self.faceon_shape, unit=self.unit)
-        ncells_frame = Frame.initialize_nans(self.faceon_shape)
+        self.faceon = Frame.initialize_nans(self.faceon_shape, unit=self.unit)
+        self.faceon_stddev = Frame.initialize_nans(self.faceon_shape, unit=self.unit)
+        self.faceon_ncells = Frame.initialize_nans(self.faceon_shape)
 
         # Set the pixelscale and the coordinate info
-        frame.pixelscale = self.faceon_pixelscale
-        frame.distance = self.faceon_distance
-        frame.metadata.update(self.faceon_metadata)
+        self.faceon.pixelscale = self.faceon_pixelscale
+        self.faceon.distance = self.faceon_distance
+        self.faceon.metadata.update(self.faceon_metadata)
 
         # Show progress bar
-        with Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                 filled_char=BAR_FILLED_CHAR, expected_size=self.faceon_npixels, every=1, add_datetime=True) as bar:
+        with Bar(label='', expected_size=self.faceon_npixels, every=1, add_datetime=True) as bar:
 
             # Loop over the pixels of the map
             x = self.faceon_x_min_value
@@ -1113,7 +1169,7 @@ class DataProjections(object):
             for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
 
                 # Debugging
-                # if index % 100 == 0: log.debug("Calculating heating fraction in the pixel " + str(index) + " of " + str(self.map_npixels) + " (" + tostr(float(index) / self.map_npixels * 100, decimal_places=1, round=True) + "%) ...")
+                if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
 
                 # Show progress
                 progress = int(float(index+1) / float(self.faceon_npixels))
@@ -1124,24 +1180,22 @@ class DataProjections(object):
                 nindices = indices.shape[0]
 
                 # Set number of cells
-                ncells_frame[j, i] = nindices
+                self.faceon_ncells[j, i] = nindices
 
                 # If any cells
                 if nindices > 0:
 
                     # Calculate the heating fraction
-                    # fractions = self.valid_heating_fractions[indices]
-                    # weights = self.valid_cell_weights[indices]
-                    vals = valid_values[indices]
-                    wghts = valid_weights[indices] if valid_weights is not None else None
+                    vals = self.values[indices]
+                    wghts = self.weights[indices] if self.has_weights is not None else None
 
                     # Calculate the mean heating fraction
                     fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
                     fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
 
                     # Set fraction
-                    frame[j, i] = fraction
-                    stddev_frame[j, i] = fraction_stddev
+                    self.faceon[j, i] = fraction
+                    self.faceon_stddev[j, i] = fraction_stddev
 
                 # Increment the x and y coordinate with one pixelsize
                 x += self.faceon_pixelscale.x
@@ -1177,5 +1231,57 @@ class DataProjections(object):
 
         # Inform the user
         log.info("Creating the edge-on map ...")
+
+        # Initialize maps
+        self.edgeon = Frame.initialize_nans(self.edgeon_shape, unit=self.unit)
+        self.edgeon_stddev = Frame.initialize_nans(self.edgeon_shape, unit=self.unit)
+        self.edgeon_ncells = Frame.initialize_nans(self.edgeon_shape)
+
+        # Set the pixelscale and the coordinate info
+        self.edgeon.pixelscale = self.faceon_pixelscale
+        self.edgeon.distance = self.faceon_distance
+        self.edgeon.metadata.update(self.faceon_metadata)
+
+        # Show progress bar
+        with Bar(label='', expected_size=self.faceon_npixels, every=1, add_datetime=True) as bar:
+
+            # Loop over the pixels of the map
+            #x = self.edgeon_x_min_value
+            #y = self.edgeon_y_min_value
+            index = 0
+            for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
+
+                # Debugging
+                if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
+
+                # Show progress
+                progress = int(float(index + 1) / float(self.faceon_npixels))
+                bar.show(progress)
+
+                # Get the indices
+                indices = self.get_faceon_coordinate_indices(x, y)
+                nindices = indices.shape[0]
+
+                # Set number of cells
+                self.edgeon_ncells[j, i] = nindices
+
+                # If any cells
+                if nindices > 0:
+                    # Calculate the heating fraction
+                    vals = self.values[indices]
+                    wghts = self.weights[indices] if self.has_weights is not None else None
+
+                    # Calculate the mean heating fraction
+                    fraction = numbers.weighed_arithmetic_mean_numpy(vals, weights=wghts)
+                    fraction_stddev = numbers.weighed_standard_deviation_numpy(vals, weights=wghts, mean=fraction)
+
+                    # Set fraction
+                    self.faceon[j, i] = fraction
+                    self.faceon_stddev[j, i] = fraction_stddev
+
+                # Increment the x and y coordinate with one pixelsize
+                x += self.faceon_pixelscale.x
+                y += self.faceon_pixelscale.y
+                index += 1
 
 # -----------------------------------------------------------------
