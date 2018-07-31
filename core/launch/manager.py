@@ -83,6 +83,7 @@ from ..simulation.remote import get_simulation_for_host
 from ..tools import introspection
 from ..simulation.logfile import LogFile
 from ..simulation.remote import aborted_name, crashed_name, cancelled_name
+from ..simulation.remote import analysed_name, retrieved_name, finished_name
 
 # -----------------------------------------------------------------
 
@@ -1195,32 +1196,75 @@ class SimulationManager(InteractiveConfigurable):
         self.get_memory_table(**kwargs)
 
         # Get the info tables
+        self.set_info(**kwargs)
+
+        # Set the remotes
+        self.set_remotes(**kwargs)
+
+        # Set launcher options
+        self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    def set_info(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting info tables for the simulations ...")
+
         if "info_tables" in kwargs:
+
             tables = kwargs.pop("info_tables")
             if types.is_dictionary(tables): self.info.update(tables)
             elif types.is_sequence(tables):
                 for table in tables: self.info[table.filename] = table
             else: raise ValueError("Invalid type for 'info_tables'")
+
         elif self.config.info_tables is not None:
             for path in self.config.info_tables:
                 filename = fs.strip_extension(fs.name(path))
                 self.info[filename] = SmartTable.from_file(path)
 
+    # -----------------------------------------------------------------
+
+    def set_remotes(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the remotes ...")
+
         # Get remotes
-        if "remotes" in kwargs:
+        if kwargs.get("remotes", None) is not None:
+
             remotes = kwargs.pop("remotes")
-            if types.is_dictionary(remotes):
+
+            # Input is already an ensemble
+            if isinstance(remotes, SKIRTRemotesEnsemble):
+                for name in remotes.names: self.add_host_id(remotes.get_host_id(name), name=name)
+
+            # Regular dict
+            elif types.is_dictionary(remotes):
                 for name in remotes: self.set_remote(remotes[name], name)
+
+            # Sequence
             elif types.is_sequence(remotes):
                 for remote in remotes: self.set_remote(remote)
-            elif remotes is None: pass
+
+            # Invalid
             else: raise ValueError("Invalid type for 'remotes'")
 
         # Set remotes from config
         if self.config.remotes is not None: self.add_host_ids(self.config.remotes)
-
-        # Set launcher options
-        self.set_launcher_options()
 
     # -----------------------------------------------------------------
 
@@ -1673,6 +1717,9 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Getting the timing table ...")
+
         if "timing" in kwargs: self.timing = kwargs.pop("timing")
         elif self.config.timing is not None: self.timing = TimingTable.from_file(self.config.timing)
         else:
@@ -1692,6 +1739,9 @@ class SimulationManager(InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Debugging
+        log.debug("Getting the memory table ...")
 
         if "memory" in kwargs: self.memory = kwargs.pop("memory")
         elif self.config.memory is not None: self.memory = MemoryTable.from_file(self.config.memory)
@@ -4423,7 +4473,7 @@ class SimulationManager(InteractiveConfigurable):
         simulation = self.get_simulation(simulation_name)
 
         # Analysed
-        if simulation.analysed: simulation_status = "analysed"
+        if simulation.analysed: simulation_status = analysed_name
 
         # Partly analysed
         elif simulation.analysed_any:
@@ -4440,10 +4490,10 @@ class SimulationManager(InteractiveConfigurable):
             else: simulation_status = "analysed: started"
 
         # Retrieved
-        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved: simulation_status = "retrieved"
+        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved: simulation_status = retrieved_name
 
         # Finished
-        elif isinstance(simulation, RemoteSimulation) and simulation.finished: simulation_status = "finished"
+        elif isinstance(simulation, RemoteSimulation) and simulation.finished: simulation_status = finished_name
 
         # Remote simulation that is not yet retrieved
         elif isinstance(simulation, RemoteSimulation):
@@ -12877,16 +12927,17 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def add_host_id(self, host_id):
+    def add_host_id(self, host_id, name=None):
 
         """
         This function ...
         :param host_id:
+        :param name:
         :return:
         """
 
         # Add
-        self.remotes.add_host_id(host_id)
+        self.remotes.add_host_id(host_id, name=name)
 
     # -----------------------------------------------------------------
 
