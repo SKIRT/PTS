@@ -3764,7 +3764,20 @@ def convolve_to_fwhm_local(*frames, **kwargs):
             log.debug("Frame " + print_name + "will be convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
 
             # Get the kernel, either from aniano or from matching kernels
-            if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)
+            #print(frame.psf_filter, highest_fwhm_filter)
+            #print(frame.filter, frame.psf_filter)
+            #fwhm1 = get_fwhm(frame.psf_filter)
+            #fwhm2 = get_fwhm(highest_fwhm_filter)
+            #print(fwhm1, fwhm2, frame.fwhm, highest_fwhm)
+
+            from_standard_resolution = frame.fwhm == get_fwhm(frame.psf_filter)
+            to_standard_resolution = highest_fwhm == get_fwhm(highest_fwhm_filter)
+            #print(from_standard_resolution, to_standard_resolution)
+            #print(highest_fwhm, highest_fwhm_filter, get_fwhm(highest_fwhm_filter))
+            if not from_standard_resolution and frame.has_psf_filter: log.warning("PSF filter is defined in frame (" + tostr(frame.psf_filter) + ") but it does not seem to be correct comparing to the frame's FWHM (" + tostr(frame.fwhm) + ")")
+            all_standard = from_standard_resolution and to_standard_resolution
+
+            if all_standard and aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)
             else:
 
                 # Get from and to filter
@@ -3778,6 +3791,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
 
                 # Generate the kernel
                 kernel = matching.get_kernel(from_filter, to_filter, frame.pixelscale, from_fwhm=from_fwhm, to_fwhm=to_fwhm)
+                kernel.saveto("kernel.fits")
 
             # Convolve with the kernel
             convolved = frame.convolved(kernel)

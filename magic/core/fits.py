@@ -589,13 +589,19 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     unit = headers.get_unit(header, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
     # Obtain the FWHM of this image
+    no_psf_filter = False
     if fwhm is None: fwhm = headers.get_fwhm(header)
+    else:
+        header_fwhm = headers.get_fwhm(header)
+        if header_fwhm is not None and header_fwhm != fwhm:
+            log.warning("Header FWHM (" + str(header_fwhm) + ") is different from the specified FWHM (" + str(fwhm) + "): assuming FWHM and PSF filter information in header can be overruled ...")
+            no_psf_filter = True
 
     # Obtain the distance of this image
     if distance is None: distance = headers.get_distance(header)
 
     # Obtain the PSF filter of this image
-    psf_filter = headers.get_psf_filter(header)
+    psf_filter = headers.get_psf_filter(header) if not no_psf_filter else None
 
     # Obtain the smoothing factor
     smoothing_factor = headers.get_smoothing_factor(header)

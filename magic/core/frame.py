@@ -227,6 +227,12 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def has_psf_filter(self):
+        return self._psf_filter is not None
+
+    # -----------------------------------------------------------------
+
+    @property
     def psf_filter(self):
 
         """
