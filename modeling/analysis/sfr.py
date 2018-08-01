@@ -553,6 +553,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fuv_name(self):
+        return "FUV"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_description(self):
+        return "Intrinsic FUV luminosity of unevolved stars"
+
+    # -----------------------------------------------------------------
+
     def get_cell_fuv(self):
 
         """
@@ -564,7 +576,7 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Getting the cell FUV luminosity ...")
 
         # Create the data
-        self.fuv_data = Data3D("FUV", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.unevolved_cell_fuv_luminosities, length_unit="pc", unit=self.fuv_luminosity_unit, description="Intrinsic FUV luminosity of unevolved stars", distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+        self.fuv_data = Data3D(self.fuv_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.unevolved_cell_fuv_luminosities, length_unit="pc", unit=self.fuv_luminosity_unit, description=self.fuv_description, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -973,7 +985,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @property
     def do_write_projected_sfr_earth(self):
-        return not self.has_projected_sfr_earth()
+        return not self.has_projected_sfr_earth
 
     # -----------------------------------------------------------------
 

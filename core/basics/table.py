@@ -437,6 +437,10 @@ class SmartTable(Table):
 
             # Determine dtype
             if dtypes is not None and dtypes[index] is not None: dtype = dtypes[index]
+            elif as_columns:
+                coltype = columns[index].dtype.name
+                column_type = dtype_name_to_column_type(coltype)
+                dtype = column_type_to_builtin(column_type)
             else:
                 #print(columns[index])
                 ptype = get_common_property_type(columns[index])

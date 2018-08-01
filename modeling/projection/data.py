@@ -733,8 +733,14 @@ class Data3D(object):
         units = [self.length_unit, self.length_unit, self.length_unit, self.unit]
         if self.has_weights: units.append(None)
 
+        # Debugging
+        log.debug("Creating table ...")
+
         # Create table
         table = SmartTable.from_columns(*columns, names=names, units=units, as_columns=True)
+
+        # Debugging
+        log.debug("Writing table ...")
 
         # Set the description
         if self.has_description: table.meta["description"] = self.description
@@ -1383,6 +1389,9 @@ class DataProjections(object):
         elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit).value
         elif types.is_real_type(spacing): pass
         else: raise ValueError("Invalid value for 'spacing'")
+
+        #half_midplane_map_spacing(self):
+        #return 0.5 * self.midplane_map_spacing
 
         #map_radius
         # max(abs(self.min_x_coordinate), self.max_x_coordinate, abs(self.min_y_coordinate),

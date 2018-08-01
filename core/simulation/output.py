@@ -458,7 +458,7 @@ class Output(object):
         #print(kwargs)
 
         # Debugging
-        log.debug("Loading file paths ...")
+        log.debug("Loading output file paths ...")
 
         # Get flag
         get_prefix = kwargs.pop("get_prefix", False)

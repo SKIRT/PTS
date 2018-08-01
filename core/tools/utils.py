@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import copy
 from collections import OrderedDict, Set
 from functools import wraps, partial
@@ -203,11 +204,24 @@ class lazyproperty(property):
     http://code.activestate.com/recipes/363602-lazy-property-evaluation
     """
 
-    def __init__(self, fget, fset=None, fdel=None, doc=None):
+    def __init__(self, fget, fset=None, fdel=None, doc=None, key=None):
 
+        """
+        The constructor ...
+        :param fget:
+        :param fset:
+        :param fdel:
+        :param doc:
+        :param key:
+        """
+
+        # Call the constructor of the base class
         super(lazyproperty, self).__init__(fget, fset, fdel, doc)
-        self._key = self.fget.__name__
-        #print(self._key)
+
+        if key is not None: self._key = key
+        else: self._key = self.fget.__name__
+
+        #print("KEY:", self._key)
 
     # -----------------------------------------------------------------
 
@@ -266,6 +280,79 @@ class lazyproperty(property):
     # def reset(self, *args, **kwargs):
     #     print(args)
     #     print(kwargs)
+
+# -----------------------------------------------------------------
+
+class lazyfileproperty(object):
+
+    """
+    This class ...
+    Example:
+      >>>  class A(object):
+      ...     pass
+      ...  filepath = "test.dat"
+      >>>  @lazyfileproperty(A, filepath)
+      ...  def my_calc(arg=3):
+      ...     print("Executing my_calc(%s)" % arg)
+      ...     return 1
+    """
+
+    def __init__(self, cls, path, is_attribute=False, write=True):
+
+        """
+        This function ...
+        :param cls:
+        :param path:
+        :param is_attribute:
+        :param write:
+        """
+
+        # Set things
+        self.cls = cls
+        self.path = path
+        self.is_attribute = is_attribute # is the path actually the name of an attribute of the object?
+        self.write = write
+
+    # -----------------------------------------------------------------
+
+    def __call__(self, func):
+
+        """
+        This function ...
+        :param func:
+        :return:
+        """
+
+        #print("Wrapping function '%s'" % func.__name__)
+
+        # Define function to be decorated
+        def wrapper(*args, **kwargs):
+
+            #print("Determining path ...")
+
+            # Determine path
+            if self.is_attribute: filepath = getattr(args[0], self.path)
+            else: filepath = self.path
+
+            #print("Checking path '" + filepath + "' ...")
+
+            # Check whether file exists, if so, load it
+            if os.path.isfile(filepath): out = self.cls.from_file(filepath)
+            else:
+
+                # Calculate
+                out = func(*args, **kwargs)
+
+                #if self.write: print("Writing to path '" + filepath + "' ...")
+
+                # Save to path
+                if self.write: out.saveto(filepath)
+
+            # Return
+            return out
+
+        # Return the actual decorator function
+        return lazyproperty(wrapper, doc=func.__doc__, key=func.__name__)
 
 # -----------------------------------------------------------------
 
