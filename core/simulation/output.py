@@ -414,6 +414,7 @@ class Output(object):
     _with_extensions = None
     _without_extensions = None
     _recursive = False
+    output_kind = None
 
     # -----------------------------------------------------------------
 
@@ -454,11 +455,8 @@ class Output(object):
         :return:
         """
 
-        #print([fs.name(arg) for arg in args])
-        #print(kwargs)
-
         # Debugging
-        log.debug("Loading output file paths ...")
+        log.debug("Loading " + self.output_kind + " file paths ...")
 
         # Get flag
         get_prefix = kwargs.pop("get_prefix", False)
@@ -1383,6 +1381,7 @@ class SimulationOutput(Output):
     _output_types = output_types
     _output_type_choices = output_type_choices
     _without_extensions = "ski"
+    output_kind = "simulation output"
 
     # -----------------------------------------------------------------
 
@@ -2719,6 +2718,7 @@ class ExtractionOutput(Output):
 
     _output_types = extraction_output_types
     _output_type_choices = extraction_output_type_choices
+    output_kind = "extraction output"
 
     # -----------------------------------------------------------------
 
@@ -2947,6 +2947,7 @@ class PlottingOutput(Output):
     _output_types = plotting_output_types
     _output_type_choices = plotting_output_type_choices
     _with_extensions = ["pdf", "png"]
+    output_kind = "plotting ouput"
 
     # -----------------------------------------------------------------
 
@@ -3167,6 +3168,7 @@ class MiscOutput(Output):
     _output_type_choices = misc_output_type_choices
     _with_directories = True
     _recursive = True
+    output_kind = "miscellaneous output"
 
     # -----------------------------------------------------------------
 

@@ -96,7 +96,7 @@ class Data3D(object):
 
         # Set units
         self.length_unit = parse_unit(length_unit)
-        self.unit = parse_unit(unit)
+        self.unit = parse_unit(unit) if unit is not None else None
 
         # Set conversion info
         self.distance = distance

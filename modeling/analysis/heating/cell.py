@@ -18,6 +18,7 @@ from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty, lazyfileproperty
 from ...projection.data import Data3D, project_data
+from ....core.basics.distribution import Distribution, Distribution2D
 
 # -----------------------------------------------------------------
 
@@ -47,13 +48,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         super(CellDustHeatingAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
-
-        # The distribution of heating fractions
-        #self.distribution = None
-        #self.distribution_diffuse = None
-
-        # The 2D distribution of heating fractions
-        #self.radial_distribution = None
 
         # The heating map and related maps
         #self.map = None
@@ -492,6 +486,119 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
                       self.fraction_values, length_unit=self.length_unit, description=self.total_fractions_description, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
+    # DISTRIBUTION DIFFUSE
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_diffuse_name(self):
+        return "Heating fraction (diffuse dust)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_diffuse_path(self):
+        return fs.join(self.cell_heating_path, "distribution_diffuse.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_diffuse(self):
+        return fs.is_file(self.distribution_diffuse_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution, "distribution_diffuse_path", True, write=False)
+    def distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distribution of heating fractions of the unevolved stellar population (diffuse) ...")
+
+        # Generate the distribution
+        # Weights are dust mass fraction
+        return Distribution.from_values(self.distribution_diffuse_name, self.valid_heating_fractions_diffuse, nbins=self.config.nbins, weights=self.valid_cell_weights_diffuse)
+
+    # -----------------------------------------------------------------
+    # DISTRIBUTION TOTAL
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_total_name(self):
+        return "Heating fraction (all dust)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_total_path(self):
+        return fs.join(self.cell_heating_path, "distribution_total.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_total(self):
+        return fs.is_file(self.distribution_total_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution, "distribution_total_path", True, write=False)
+    def distribution_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
+
+        # Generate the distribution
+        # Weights are dust mass fraction
+        return Distribution.from_values(self.distribution_total_name, self.valid_heating_fractions, nbins=self.config.nbins, weights=self.valid_cell_weights)
+
+    # -----------------------------------------------------------------
+    # RADIAL DISTRIBUTION
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_path(self):
+        return fs.join(self.cell_heating_path, "radial_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_radial_distribution(self):
+        return fs.is_file(self.radial_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution2D, "radial_distribution_path", True, write=False)
+    def radial_distribution(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the radial distribution of heating fractions of the unevolved stellar population ...")
+
+        # Generate the radial distribution
+        return Distribution2D.from_values(self.valid_radii, self.valid_heating_fractions,
+                                          weights=self.valid_cell_weights, x_name="radius (pc)",
+                                          y_name=self.radial_distribution_name,
+                                          nbins=self.config.nradial_bins)
+
+    # -----------------------------------------------------------------
 
     def write(self):
 
@@ -508,6 +615,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Write the heating fractions
         self.write_fractions()
+
+        # Write the distributions
+        self.write_distributions()
 
     # -----------------------------------------------------------------
 
@@ -679,6 +789,72 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Save
         self.total_fractions.saveto(self.total_fractions_path)
+
+    # -----------------------------------------------------------------
+
+    def write_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the distributions of the heating fraction ...")
+
+        # Diffuse
+        if self.do_write_distribution_diffuse: self.write_distribution_diffuse()
+
+        # Total
+        if self.do_write_distribution_total: self.write_distribution_total()
+
+        # Radial
+        if self.do_write_radial_distribution: self.write_radial_distribution()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_distribution_diffuse(self):
+        return not self.has_distribution_diffuse
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_distribution_total(self):
+        return not self.has_distribution_total
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_radial_distribution(self):
+        return not self.has_radial_distribution
+
+    # -----------------------------------------------------------------
+
+    def write_radial_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
