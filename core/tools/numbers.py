@@ -1118,6 +1118,39 @@ def round_down_to_int(number):
 
 # -----------------------------------------------------------------
 
+def round_down_to_integer(number):
+    return round_down_to_int(number)
+
+# -----------------------------------------------------------------
+
+def round_down_to_even_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    integer = round_down_to_integer(number)
+    if is_even(integer): return integer
+    else: return integer - 1
+
+# -----------------------------------------------------------------
+
+def round_down_to_odd_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    integer = round_down_to_integer(number)
+    if is_odd(integer): return integer
+    else: return integer - 1
+
+# -----------------------------------------------------------------
+
 def round_up_to_int(number):
 
     """
@@ -1127,6 +1160,39 @@ def round_up_to_int(number):
     """
 
     return int(ceil(number))
+
+# -----------------------------------------------------------------
+
+def round_up_to_integer(number):
+    return round_up_to_int(number)
+
+# -----------------------------------------------------------------
+
+def round_up_to_even_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    integer = round_up_to_integer(number)
+    if is_even(integer): return integer
+    else: return integer + 1
+
+# -----------------------------------------------------------------
+
+def round_up_to_odd_integer(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    integer = round_up_to_integer(number)
+    if is_odd(integer): return integer
+    else: return integer + 1
 
 # -----------------------------------------------------------------
 

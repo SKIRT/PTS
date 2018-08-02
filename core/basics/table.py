@@ -1749,7 +1749,7 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_column_array(self, colname, unit):
+    def get_column_array(self, colname, unit=None):
 
         """
         This function ...
@@ -1766,13 +1766,23 @@ class SmartTable(Table):
         #    values.append(value)
         #return np.array(values)
 
-        # Get conversion factor
-        #conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
-        from ..units.unit import get_conversion_factor
-        conversion_factor = get_conversion_factor(self.get_column_unit(colname), unit, parse=False)
+        # Column unit
+        if self.has_column_unit(colname):
 
-        # Return
-        return self[colname].data * conversion_factor
+            # Check if unit is defined
+            if unit is None: raise ValueError("Unit has to be defined")
+
+            # Get conversion factor
+            #conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
+            from ..units.unit import get_conversion_factor
+            conversion_factor = get_conversion_factor(self.get_column_unit(colname), unit, parse=False)
+
+            # Return
+            return self[colname].data * conversion_factor
+
+        # No unit
+        elif unit is not None: raise ValueError("Unit of column is not defined")
+        else: return self[colname].data
 
     # -----------------------------------------------------------------
 

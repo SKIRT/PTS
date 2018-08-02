@@ -18,6 +18,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...magic.core.frame import Frame
+from ...magic.core.image import Image
 from ...magic.basics.vector import PixelShape
 from ...core.tools import numbers
 from ...core.basics.range import RealRange
@@ -45,7 +46,7 @@ edgeon_name = "edgeon"
 # -----------------------------------------------------------------
 
 def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projection, length_unit, unit=None,
-               return_stddev=False, return_ncells=False, weights=None, description=None):
+               return_stddev=False, return_ncells=False, weights=None, description=None, as_image=False):
 
     """
     This function projects 3D data into a 2D map
@@ -61,6 +62,7 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
     :param return_ncells:
     :param weights:
     :param description:
+    :param as_image:
     :return:
     """
 
@@ -73,7 +75,8 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
 
 # -----------------------------------------------------------------
 
-def project_data(name, data, projection, return_stddev=False, return_ncells=False, description=None):
+def project_data(name, data, projection, return_stddev=False, return_ncells=False, description=None, as_image=False,
+                 height=None, width=None):
 
     """
     This function ...
@@ -83,6 +86,9 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     :param return_stddev:
     :param return_ncells:
     :param description:
+    :param as_image:
+    :param height:
+    :param width:
     :return:
     """
 
@@ -92,14 +98,17 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     if faceon:
         faceon_projection = get_faceon_projection(projection, strict=True)
         edgeon_projection = None
+        if width is not None: raise ValueError("Width cannot be specified when projecting face-on")
     elif edgeon:
         faceon_projection = None
         edgeon_projection = get_edgeon_projection(projection, strict=True)
+        if height is not None: raise ValueError("Height cannot be specified when projecting edge-on")
     else: raise ValueError("Projection must be face-on or edge-on")
 
     # Create the projections object
     projections = DataProjections(name, data, description=description, faceon=faceon, edgeon=edgeon,
-                                  projection_faceon=faceon_projection, projection_edgeon=edgeon_projection)
+                                  projection_faceon=faceon_projection, projection_edgeon=edgeon_projection,
+                                  faceon_height=height, edgeon_width=width)
 
     # Get the projected map
     if faceon: frame = projections.faceon
@@ -120,16 +129,30 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
         else: raise RuntimeError("Something went wrong")
     else: ncells_frame = None
 
-    # Return
-    if return_stddev:
-        if return_ncells: return frame, stddev_frame, ncells_frame
-        else: return frame, stddev_frame
-    elif return_ncells: return frame, ncells_frame
-    else: return frame
+    # Return as image
+    if as_image:
+
+        # Create the image
+        image = Image.from_frame(frame, name=name)
+        if return_stddev: image.add_frame(stddev_frame, name="stddev")
+        if return_ncells: image.add_frame(ncells_frame, name="ncells")
+
+        # Return the image
+        return image
+
+    # Return as individual frames
+    else:
+
+        if return_stddev:
+            if return_ncells: return frame, stddev_frame, ncells_frame
+            else: return frame, stddev_frame
+        elif return_ncells: return frame, ncells_frame
+        else: return frame
 
 # -----------------------------------------------------------------
 
-def project_faceon(name, data, return_stddev=False, return_ncells=False, description=None):
+def project_faceon(name, data, return_stddev=False, return_ncells=False, description=None, spacing="mean",
+                   spacing_factor=1., height=None, as_image=False):
 
     """
     This function ...
@@ -138,27 +161,46 @@ def project_faceon(name, data, return_stddev=False, return_ncells=False, descrip
     :param return_stddev:
     :param return_ncells:
     :param description:
+    :param spacing:
+    :param spacing_factor:
+    :param height:
+    :param as_image:
     :return:
     """
 
     # Create the projections object
-    projections = DataProjections(name, data, description=description, faceon=True, edgeon=False)
+    projections = DataProjections(name, data, description=description, faceon=True, edgeon=False,
+                                  faceon_spacing=spacing, faceon_spacing_factor=spacing_factor, faceon_height=height)
 
     # Get results
     frame = projections.faceon
     stddev_frame = projections.faceon_stddev
     ncells_frame = projections.faceon_ncells
 
-    # Return
-    if return_stddev:
-        if return_ncells: return frame, stddev_frame, ncells_frame
-        else: return frame, stddev_frame
-    elif return_ncells: return frame, ncells_frame
-    else: return frame
+    # Return as image
+    if as_image:
+
+        # Create the image
+        image = Image.from_frame(frame, name=name)
+        if return_stddev: image.add_frame(stddev_frame, name="stddev")
+        if return_ncells: image.add_frame(ncells_frame, name="ncells")
+
+        # Return the image
+        return image
+
+    # Return as seperate frames
+    else:
+
+        if return_stddev:
+            if return_ncells: return frame, stddev_frame, ncells_frame
+            else: return frame, stddev_frame
+        elif return_ncells: return frame, ncells_frame
+        else: return frame
 
 # -----------------------------------------------------------------
 
-def project_edgeon(name, data, return_stddev=False, return_ncells=False, description=None):
+def project_edgeon(name, data, return_stddev=False, return_ncells=False, description=None, spacing="mean",
+                   spacing_factor=1., width=None, as_image=False):
 
     """
     This function ...
@@ -167,23 +209,41 @@ def project_edgeon(name, data, return_stddev=False, return_ncells=False, descrip
     :param return_stddev:
     :param return_ncells:
     :param description:
+    :param spacing:
+    :param spacing_factor:
+    :param width:
+    :param as_image:
     :return:
     """
 
     # Create the projections object
-    projections = DataProjections(name, data, description=description, faceon=False, edgeon=True)
+    projections = DataProjections(name, data, description=description, faceon=False, edgeon=True,
+                                  edgeon_spacing=spacing, edgeon_spacing_factor=spacing_factor, edgeon_width=width)
 
     # Get results
     frame = projections.edgeon
     stddev_frame = projections.edgeon_stddev
     ncells_frame = projections.edgeon_ncells
 
-    # Return
-    if return_stddev:
-        if return_ncells: return frame, stddev_frame, ncells_frame
-        else: return frame, stddev_frame
-    elif return_ncells: return frame, ncells_frame
-    else: return frame
+    # Return as image
+    if as_image:
+
+        # Create the image
+        image = Image.from_file(frame, name=name)
+        if return_stddev: image.add_frame(stddev_frame, name="stddev")
+        if return_ncells: image.add_frame(ncells_frame, name="ncells")
+
+        # Return the image
+        return image
+
+    # Return as separate frames
+    else:
+
+        if return_stddev:
+            if return_ncells: return frame, stddev_frame, ncells_frame
+            else: return frame, stddev_frame
+        elif return_ncells: return frame, ncells_frame
+        else: return frame
 
 # -----------------------------------------------------------------
 
@@ -194,7 +254,8 @@ class DataProjections(object):
     """
 
     def __init__(self, name, data, projection_faceon=None, projection_edgeon=None,
-                 faceon=True, edgeon=True, description=None, distance=None, faceon_height=None, edgeon_width=None):
+                 faceon=True, edgeon=True, description=None, distance=None, faceon_height=None, edgeon_width=None,
+                 faceon_spacing="mean", edgeon_spacing="mean", faceon_spacing_factor=1., edgeon_spacing_factor=1.):
 
         """
         The constructor ...
@@ -209,6 +270,10 @@ class DataProjections(object):
         :param distance:
         :param faceon_height:
         :param edgeon_width:
+        :param faceon_spacing:
+        :param edgeon_spacing:
+        :param faceon_spacing_factor:
+        :param edgeon_spacing_factor:
         """
 
         # Set
@@ -226,12 +291,22 @@ class DataProjections(object):
         self.projection_edgeon = projection_edgeon
 
         # Set the height and depth (to make cuts of midplane or vertical plane)
-        self.faceon_height = faceon_height
-        self.edgeon_width = edgeon_width
+        if faceon_height is not None:
+            if types.is_length_quantity(faceon_height): faceon_height = faceon_height.to(self.length_unit).value
+            elif types.is_real_type(faceon_height): pass
+            else: raise ValueError("Invalid type for 'faceon_height'")
+            self.faceon_height = faceon_height
+        else: self.faceon_height = None
+        if edgeon_width is not None:
+            if types.is_length_quantity(edgeon_width): edgeon_width = edgeon_width.to(self.length_unit).value
+            elif types.is_real_type(edgeon_width): pass
+            else: raise ValueError("Invalid type for 'edgeon_width'")
+            self.edgeon_width = edgeon_width
+        else: self.edgeon_width = None
 
         # Create projections?
-        if faceon and not self.has_projection_faceon: self.create_projection_faceon()
-        if edgeon and not self.has_projection_edgeon: self.create_projection_edgeon()
+        if faceon and not self.has_projection_faceon: self.create_projection_faceon(spacing=faceon_spacing, spacing_factor=faceon_spacing_factor)
+        if edgeon and not self.has_projection_edgeon: self.create_projection_edgeon(spacing=edgeon_spacing, spacing_factor=edgeon_spacing_factor)
 
         # Create?
         if faceon: self.project_faceon()
@@ -248,6 +323,12 @@ class DataProjections(object):
         # The ncells maps
         self.faceon_ncells = None
         self.edgeon_ncells = None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def name(self): # for when name is not a required argument in the constructor anymore..?
+        return self.data.name
 
     # -----------------------------------------------------------------
 
@@ -502,7 +583,7 @@ class DataProjections(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def max_z_coordinates(self):
+    def max_z_coordinate(self):
         return self.sorted_unique_z_coordinates[-1]
 
     # -----------------------------------------------------------------
@@ -626,6 +707,20 @@ class DataProjections(object):
         return np.max(self.unique_z_coordinates_spacings)
 
     # -----------------------------------------------------------------
+    # RADIUS & HEIGHT
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def radius(self):
+        return max(abs(self.min_x_coordinate), self.max_x_coordinate, abs(self.min_y_coordinate), self.max_y_coordinate)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def height(self):
+        return max(abs(self.min_z_coordinate), self.max_z_coordinate)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -679,24 +774,23 @@ class DataProjections(object):
         elif types.is_real_type(spacing): pass
         else: raise ValueError("Invalid value for 'spacing'")
 
-        #half_midplane_map_spacing(self):
-        #return 0.5 * self.midplane_map_spacing
+        # Set field
+        field_x = 2. * self.radius * self.length_unit
+        field_y = 2. * self.radius * self.length_unit
 
-        #map_radius
-        # max(abs(self.min_x_coordinate), self.max_x_coordinate, abs(self.min_y_coordinate),
-        #               self.max_y_coordinate)
+        # Set center of galaxy in frame
+        center_x = self.radius * self.length_unit
+        center_y = self.radius * self.length_unit
 
-        #map_coordinates
-        #np.arange(-self.map_radius, self.map_radius, self.map_spacing)
-
-        #half_map_spacing(self):
-        #return 0.5 * self.map_spacing
+        # Set number of pixels
+        nx = numbers.round_up_to_odd_integer(field_x / spacing)
+        ny = numbers.round_up_to_odd_integer(field_y / spacing)
 
         # Create the projection
-        self.projection_faceon = FaceOnProjection(distance=self.distance, pixels_x=self.config.npixels.x,
-                                                  pixels_y=self.config.npixels.y, center_x=self.center_physical.x,
-                                                  center_y=self.center_physical.y, field_x=self.config.field.x,
-                                                  field_y=self.config.field.y)
+        self.projection_faceon = FaceOnProjection(distance=self.distance, pixels_x=nx,
+                                                  pixels_y=ny, center_x=center_x,
+                                                  center_y=center_y, field_x=self.field_x,
+                                                  field_y=field_y)
 
     # -----------------------------------------------------------------
 
@@ -721,10 +815,12 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def create_projection_edgeon(self):
+    def create_projection_edgeon(self, spacing="mean", spacing_factor=1.):
 
         """
         This function ...
+        :param spacing:
+        :param spacing_factor:
         :return:
         """
 
@@ -737,11 +833,23 @@ class DataProjections(object):
         elif types.is_real_type(spacing): pass
         else: raise ValueError("Invalid value for 'spacing'")
 
+        # Set field
+        field_y = 2. * self.radius * self.length_unit
+        field_z = 2. * self.height * self.length_unit
+
+        # Set center of galaxy in frame
+        center_y = self.radius * self.length_unit
+        center_z = self.height * self.length_unit
+
+        # Set number of pixels
+        ny = numbers.round_up_to_odd_integer(field_y / spacing)
+        nz = numbers.round_up_to_odd_integer(field_z / spacing)
+
         # Create projection
-        self.projection_edgeon = EdgeOnProjection(distance=self.distance, pixels_x=self.config.npixels.x,
-                                                  pixels_y=self.config.npixels.y, center_x=self.center_physical.x,
-                                                  center_y=self.center_physical.y, field_x=self.config.field.x,
-                                                  field_y=self.config.field.y)
+        self.projection_edgeon = EdgeOnProjection(distance=self.distance, pixels_x=ny,
+                                                  pixels_y=nz, center_x=center_y,
+                                                  center_y=center_z, field_x=field_y,
+                                                  field_y=field_z)
 
     # -----------------------------------------------------------------
 

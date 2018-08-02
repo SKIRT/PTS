@@ -25,6 +25,7 @@ from ...core.units.quantity import get_value_and_unit, add_with_units, subtract_
 from ...core.basics.log import log
 from ...core.tools import sequences, types
 from ...core.tools.stringify import tostr
+from ...magic.core.frame import nan_value, inf_value, zero_value
 
 # -----------------------------------------------------------------
 
@@ -685,6 +686,126 @@ class Data3D(object):
         #
         # # Return
         # return factor
+
+    # -----------------------------------------------------------------
+
+    def where(self, value):
+        return np.equal(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    def where_not(self, value):
+        return np.not_equal(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    def where_smaller_than(self, value):
+        return np.less(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    def where_smaller_than_or_equal(self, value):
+        return np.less_equal(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    def where_greater_than(self, value):
+        return np.greater(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    def where_greater_than_or_equal(self, value):
+        return np.greater_equal(self.values, value)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absolute_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.abs(self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnans(self):
+        return np.sum(self.nans)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nnans(self):
+        return float(self.nnans) / self.nvalues
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_nans(self):
+        return np.any(self.nans)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_nans(self):
+        return np.all(self.nans)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ninfs(self):
+        return np.sum(self.infs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_ninfs(self):
+        return float(self.ninfs) / self.nvalues
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_infs(self):
+        return np.any(self.infs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_infs(self):
+        return np.all(self.infs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeroes(self):
+        return self.where(zero_value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nzeroes(self):
+        return np.sum(self.zeroes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nzeroes(self):
+        return float(self.nzeroes) / self.nvalues
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_zeroes(self):
+        return np.any(self.zeroes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_zeroes(self):
+        return np.all(self.zeroes)
 
     # -----------------------------------------------------------------
 

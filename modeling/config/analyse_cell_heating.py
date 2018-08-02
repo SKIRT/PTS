@@ -20,8 +20,9 @@ default_disk_component = ionizing
 
 # -----------------------------------------------------------------
 
-default_spacing_measure = "min"
+default_spacing_measure = "mean"
 spacing_measures = ["min", "max", "mean", "median"]
+default_spacing_factor = 10.
 
 # -----------------------------------------------------------------
 
@@ -43,31 +44,41 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 definition.add_optional("nbins", "positive_integer", "number of bins", 20)
 definition.add_optional("nradial_bins", "positive_integer", "number of radial bins", 200)
 
-# For the midplane heating
+# Spacing of low-res maps
+definition.add_optional("lowres_map_spacing", "string", "method of determining the grid cell spacing", default_spacing_measure, choices=spacing_measures)
+definition.add_optional("lowres_map_spacing_factor", "positive_real", "factor by which to multiply the grid cells spacing measure to become the actual map spacing", default_spacing_factor)
+
+# Scaleheight of midplane maps
 definition.add_optional("midplane_component", "string", "disk component of which to use the scaleheight as the reference for defining the midplane height", default_disk_component, choices=disk_components)
 definition.add_optional("midplane_factor", "positive_real", "factor to be multiplied with the component scaleheight to define the height of the midplane", 0.5)
 
 # For the scale of the heating map
-definition.add_optional("map_spacing_measure", "string", "measure to be used to determined the spacing of the heating map w.r.t. to the spacing of the cell coordinates", default_spacing_measure, choices=spacing_measures)
-definition.add_optional("map_spacing_factor", "positive_real", "factor to be multiplied with the spacing determined from the average of the x and y spacing measure", 5.)
+#definition.add_optional("map_spacing_measure", "string", "measure to be used to determined the spacing of the heating map w.r.t. to the spacing of the cell coordinates", default_spacing_measure, choices=spacing_measures)
+#definition.add_optional("map_spacing_factor", "positive_real", "factor to be multiplied with the spacing determined from the average of the x and y spacing measure", 5.)
 
 # For the scale of the midplane heating map
-definition.add_optional("midplane_spacing_measure", "string", "measure to be used to determine the spacing of the midplane heating map w.r.t. the spacing of the cell coordinates in the midplane", default_spacing_measure, choices=spacing_measures)
-definition.add_optional("midplane_spacing_factor", "positive_real", "factor to be multiplied with the spacing determined from the average of the x and y spacing measure", 2.)
+#definition.add_optional("midplane_spacing_measure", "string", "measure to be used to determine the spacing of the midplane heating map w.r.t. the spacing of the cell coordinates in the midplane", default_spacing_measure, choices=spacing_measures)
+#definition.add_optional("midplane_spacing_factor", "positive_real", "factor to be multiplied with the spacing determined from the average of the x and y spacing measure", 2.)
 
 # -----------------------------------------------------------------
 
 # Plot
 definition.add_flag("plot", "do plotting", True)
-definition.add_flag("plot_distribution", "plot distribution", True)
-definition.add_flag("plot_radial_distribution", "plot radial distribution", True)
-definition.add_flag("plot_map", "plot map", True)
-definition.add_flag("plot_map_midplane", "plot map of the midplane", True)
+#definition.add_flag("plot_distribution", "plot distribution", True)
+#definition.add_flag("plot_radial_distribution", "plot radial distribution", True)
+#definition.add_flag("plot_map", "plot map", True)
+#definition.add_flag("plot_map_midplane", "plot map of the midplane", True)
+
+# -----------------------------------------------------------------
+
+# DO HIGHRES OR LOWRES?
+definition.add_flag("lowres", "make lowres maps")
+definition.add_flag("highres", "make highres maps")
 
 # -----------------------------------------------------------------
 
 # Recreate table
-definition.add_flag("recreate_table", "recreate the absorption table")
+#definition.add_flag("recreate_table", "recreate the absorption table")
 
 # Recalculate fractions, distributions
 definition.add_flag("recalculate_fractions", "recalculate the heating fractions")
@@ -85,7 +96,6 @@ definition.add_flag("recreate_map_midplane", "recreate the map in the midplane")
 definition.add_flag("reinterpolate_maps", "recreate the interpolated maps")
 definition.add_flag("reinterpolate_map", "recreate the interpolated map")
 definition.add_flag("reinterpolate_map_midplane", "recreate the interpolated map in the midplane")
-definition.add_optional("not_nans_dilation_radius", "positive_real", "radius for dilating not-nans", 3)
 
 # Replot
 definition.add_flag("replot", "replot")
@@ -117,7 +127,10 @@ definition.add_flag("contours", "add contours to the plots")
 # -----------------------------------------------------------------
 
 # For creating interpolated maps
-definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated map of the heating fraction", 10)
-definition.add_optional("min_ncells_midplane", "positive_integer", "minimum number of cells for each pixel of the interpolated map of the heating fraction in the midplane", 5)
+#definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated map of the heating fraction", 10)
+#definition.add_optional("min_ncells_midplane", "positive_integer", "minimum number of cells for each pixel of the interpolated map of the heating fraction in the midplane", 5)
+
+definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated maps of the heating fraction", 5)
+definition.add_optional("not_nans_dilation_radius", "positive_real", "radius for dilating not-nans", 3)
 
 # -----------------------------------------------------------------

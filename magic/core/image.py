@@ -113,6 +113,31 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_frame(cls, frame, name=None):
+
+        """
+        This function ...
+        :param frame:
+        :param name:
+        :return:
+        """
+
+        # Set name
+        if name is None: name = frame.name
+
+        # Create image
+        if name is None: image = cls()
+        else: image = cls(name=name)
+
+        # Add frame
+        image.add_frame(frame, name="primary")
+
+        # Return the image
+        return image
+
+    # -----------------------------------------------------------------
+
     def load_image(self, image, replace=True):
 
         """
@@ -121,12 +146,6 @@ class Image(object):
         :param replace:
         :return:
         """
-
-        # Remove the frames, masks, regions and segmentation maps from this image
-        #image.remove_all_frames()
-        #image.remove_all_masks()
-        #image.remove_all_regions()
-        #image.remove_all_segments()
 
         # Add the frames
         for label in image.frames: self.add_frame(image.frames[label], label, overwrite=replace)
