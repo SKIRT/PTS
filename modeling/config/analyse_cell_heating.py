@@ -32,7 +32,7 @@ runs = AnalysisRuns(modeling_path)
 
 definition = definition.copy()
 
-# ANALYSIS RUN
+# The analysis run
 if runs.empty: warnings.warn("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.names)

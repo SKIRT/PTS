@@ -11028,7 +11028,7 @@ def kennicutt_fuv_to_sfr(fuv_luminosity):
     # Get the FUV wavelength
     fuv_wavelength = parse_filter("GALEX FUV").wavelength
 
-    from ..projection.data import Data3D
+    from ..core.data import Data3D
 
     # Frame
     if isinstance(fuv_luminosity, Frame):
@@ -11061,7 +11061,7 @@ def salim_fuv_to_sfr(fuv_luminosity):
     # Get the FUV wavelength
     fuv_wavelength = parse_filter("GALEX FUV").wavelength
 
-    from ..projection.data import Data3D
+    from ..core.data import Data3D
 
     # Frame
     if isinstance(fuv_luminosity, Frame):
@@ -11275,7 +11275,7 @@ def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
     :return:
     """
 
-    from ..projection.data import Data3D
+    from ..core.data import Data3D
 
     # Get the I1 wavelength
     i1_wavelength = parse_filter("IRAC I1").wavelength

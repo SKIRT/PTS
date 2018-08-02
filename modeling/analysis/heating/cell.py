@@ -17,7 +17,8 @@ from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty, lazyfileproperty
-from ...projection.data import Data3D, project_data
+from ...core.data import Data3D
+from ...projection.data import project_data
 from ....core.basics.distribution import Distribution, Distribution2D
 
 # -----------------------------------------------------------------
@@ -390,12 +391,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fraction_values_diffuse(self):
-        return self.unevolved_absorption_values_diffuse / self.total_absorption_values_diffuse
-
-    # -----------------------------------------------------------------
-
     @property
     def diffuse_fractions_path(self):
         return fs.join(self.cell_heating_path, "diffuse_fractions.dat")
@@ -416,10 +411,19 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Calculate
+        fractions = self.unevolved_absorption_values_diffuse / self.total_absorption_values_diffuse
+
         # Create and return the data
         return Data3D(self.diffuse_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.fraction_values_diffuse, length_unit=self.length_unit,
+                      fractions, length_unit=self.length_unit,
                       description=self.diffuse_fractions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def diffuse_fraction_values(self):
+        return self.diffuse_fractions.values
 
     # -----------------------------------------------------------------
     # TOTAL HEATING FRACTIONS
@@ -484,6 +488,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Create and return the data
         return Data3D(self.total_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
                       self.fraction_values, length_unit=self.length_unit, description=self.total_fractions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_fraction_values(self):
+        return self.total_fractions.values
 
     # -----------------------------------------------------------------
     # DISTRIBUTION DIFFUSE

@@ -21,7 +21,8 @@ from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...core.tools.utils import lazyproperty
-from ..projection.data import Data3D, project_data
+from ..core.data import Data3D
+from ..projection.data import project_data
 from ..core.model import oliver_stellar_mass, salim_fuv_to_sfr
 from ...core.units.parsing import parse_unit as u
 from ...magic.tools.plotting import plot_map
