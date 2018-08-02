@@ -3790,8 +3790,8 @@ def convolve_to_fwhm_local(*frames, **kwargs):
                 to_fwhm = highest_fwhm
 
                 # Generate the kernel
-                kernel = matching.get_kernel(from_filter, to_filter, frame.pixelscale, from_fwhm=from_fwhm, to_fwhm=to_fwhm)
-                kernel.saveto("kernel.fits")
+                kernel = matching.get_kernel(from_filter, to_filter, frame.angular_pixelscale, from_fwhm=from_fwhm, to_fwhm=to_fwhm)
+                #kernel.saveto("kernel.fits")
 
             # Convolve with the kernel
             convolved = frame.convolved(kernel)
