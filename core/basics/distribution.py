@@ -173,6 +173,10 @@ class Distribution(Curve):
                 unit = sequences.get_unit(values)
                 values = sequences.without_units(values)
 
+        # Check size
+        nvalues = len(values)
+        if weights is not None and len(weights) != nvalues: raise ValueError("Number of weight values (" + str(len(weights)) + ") should be equal to the number of values (" + str(nvalues) + ")")
+
         # Create histogram
         if logarithmic:
             logvalues = np.log10(np.array(values))

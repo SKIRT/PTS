@@ -2035,6 +2035,21 @@ def get_lines(path):
 
 # -----------------------------------------------------------------
 
+def get_nlines(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from subprocess import check_output
+    command = "wc -l '" + path + "'"
+    output = check_output(command, shell=True)
+    return int(output.split()[0])
+
+# -----------------------------------------------------------------
+
 def get_text(path):
 
     """
