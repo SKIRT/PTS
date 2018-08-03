@@ -3790,6 +3790,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
 
                 # Get from and to FWHM
                 if frame.fwhm is not None: from_fwhm = frame.fwhm
+                elif has_variable_fwhm(from_filter): from_fwhm = get_average_variable_fwhm(from_filter)
                 else: from_fwhm = get_fwhm(from_filter)
                 to_fwhm = highest_fwhm
 
