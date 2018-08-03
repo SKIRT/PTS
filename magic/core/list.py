@@ -3770,8 +3770,12 @@ def convolve_to_fwhm_local(*frames, **kwargs):
             #fwhm2 = get_fwhm(highest_fwhm_filter)
             #print(fwhm1, fwhm2, frame.fwhm, highest_fwhm)
 
-            from_standard_resolution = frame.fwhm == get_fwhm(frame.psf_filter)
-            to_standard_resolution = highest_fwhm == get_fwhm(highest_fwhm_filter)
+            if has_variable_fwhm(frame.psf_filter): from_standard_resolution = True # assume OK
+            else: from_standard_resolution = frame.fwhm == get_fwhm(frame.psf_filter)
+
+            if has_variable_fwhm(highest_fwhm_filter): to_standard_resolution = True # assume OK
+            else: to_standard_resolution = highest_fwhm == get_fwhm(highest_fwhm_filter)
+
             #print(from_standard_resolution, to_standard_resolution)
             #print(highest_fwhm, highest_fwhm_filter, get_fwhm(highest_fwhm_filter))
             if not from_standard_resolution and frame.has_psf_filter: log.warning("PSF filter is defined in frame (" + tostr(frame.psf_filter) + ") but it does not seem to be correct comparing to the frame's FWHM (" + tostr(frame.fwhm) + ")")
