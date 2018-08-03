@@ -145,6 +145,10 @@ def get_fwhm(fltr):
 
     # Determine the aniano name for the PSF
     #psf_name = aniano_names[str(fltr)]
+        
+    if has_average_variable_fwhm(fltr):
+        
+        return(get_average_variable_fwhm(fltr))
 
     if has_variable_fwhm(fltr): raise ValueError("The specified filter has a variable FWHM")
 
