@@ -31,7 +31,7 @@ from ...core.basics.containers import NamedList, FilterBasedList
 from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
-from ..convolution.kernels import get_fwhm, get_average_variable_fwhm, has_variable_fwhm
+from ..convolution.kernels import get_fwhm, get_average_variable_fwhm, has_variable_fwhm, has_average_variable_fwhm
 from ...core.tools import sequences, types
 from ...core.launch.pts import execute_pts_remote
 from ...core.remote.remote import load_remote
@@ -3790,7 +3790,9 @@ def convolve_to_fwhm_local(*frames, **kwargs):
 
                 # Get from and to FWHM
                 if frame.fwhm is not None: from_fwhm = frame.fwhm
-                elif has_variable_fwhm(from_filter): from_fwhm = get_average_variable_fwhm(from_filter)
+                elif has_variable_fwhm(from_filter):
+                    if has_average_variable_fwhm(from_filter): from_fwhm = get_average_variable_fwhm(from_filter)
+                    else: raise ValueError("FWHM for the " + tostr(from_filter) + " frame is undefined")
                 else: from_fwhm = get_fwhm(from_filter)
                 to_fwhm = highest_fwhm
 
