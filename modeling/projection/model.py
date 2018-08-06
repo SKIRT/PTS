@@ -108,7 +108,7 @@ class ComponentProjections(object):
         if center is not None: self.center = center
 
         # Set the earth projection (if necessary)
-        if projection is None and earth: projection = self.create_projection_earth()
+        if projection is None: projection = self.create_projection_earth()
         self.projection_earth = projection
 
         # Set the face-on projection (if necessary)

@@ -14,15 +14,19 @@ from pts.core.basics.plot import plotting_libraries, mpl
 
 formats = ["pdf", "png"]
 default_format = "pdf"
+normalizations = ["max", "sum"]
 
 # -----------------------------------------------------------------
 
 # Create configuration definition
 definition = ConfigurationDefinition()
 
-# Distributions from file
+# Distributions
 definition.add_positional_optional("distributions", "filepath_list", "distribution files to be plotted")
 definition.add_flag("panels", "plot the distributions in separate panels")
+definition.add_flag("recursive", "search distribution files recursively in the working directory")
+definition.add_optional("normalize", "string", "normalize all distributions by a certain method", choices=normalizations)
+definition.add_optional("normalization_value", "real", "value for normalization", 1.)
 
 # Add plotting options
 definition.import_section("plot", "plotting options", plot_definition)
@@ -31,6 +35,8 @@ definition.sections["plot"].optional["ysize"].default = 4
 definition.add_flag("logscale", "use value log scale")
 definition.add_flag("logfrequency", "use log scale for frequency")
 definition.add_optional("bar_width", "positive_real", "relative width of the bars (1 means edges touch)", 1.)
+definition.add_flag("use_name_xlabel", "use the distribution name(s) for the x labels of the panels")
+definition.add_flag("colours_per_panel", "reuse the same colours for each panel")
 
 # Add features
 definition.add_flag("smooth", "add smooth curves to plot")
@@ -40,7 +46,6 @@ definition.add_flag("minima", "add minima", None)
 definition.add_flag("maxima", "add maxima", None)
 definition.add_flag("hatches", "add hatches", False)
 definition.add_optional("y_label", "string", "label for vertical axes")
-#definition.add_optional("x_labels", "string_list", "labels for the horizontal axes of the panels")
 definition.add_flag("distribution_ticks", "use the distribution values as the horizontal axes ticks")
 definition.add_flag("y_ticks", "show the y ticks", True)
 

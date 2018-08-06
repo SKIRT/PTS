@@ -2035,6 +2035,21 @@ def get_lines(path):
 
 # -----------------------------------------------------------------
 
+def get_nlines(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from subprocess import check_output
+    command = "wc -l '" + path + "'"
+    output = check_output(command, shell=True)
+    return int(output.split()[0])
+
+# -----------------------------------------------------------------
+
 def get_text(path):
 
     """
@@ -2418,6 +2433,18 @@ def get_column_names(filepath):
 
     # Return splitted last line of the header
     else: return lines[-1].split()
+
+# -----------------------------------------------------------------
+
+def get_ncolumns(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    return len(get_column_names(filepath))
 
 # -----------------------------------------------------------------
 
@@ -3190,17 +3217,22 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix="backup"):
+def backup_file(filepath, suffix="backup", backup_backup=False):
 
     """
     This function ...
     :param filepath:
     :param suffix:
+    :param backup_backup:
     :return:
     """
 
     backup_filepath = appended_filepath(filepath, "_" + suffix)
-    if is_file(backup_filepath): raise IOError("Backup file path already exists (" + backup_filepath + ")")
+    if is_file(backup_filepath):
+        if backup_backup:
+            backup_file(backup_filepath, suffix=suffix, backup_backup=backup_backup) # backup the backup
+            remove_file(backup_filepath)
+        else: raise IOError("Backup file path already exists (" + backup_filepath + ")")
     copy_file(filepath, backup_filepath)
 
 # -----------------------------------------------------------------
@@ -3331,5 +3363,52 @@ def get_volume_path(volname):
     if is_macos(): return join("/Volumes", volname)
     elif is_linux(): return join("/media", username(), volname)
     else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
+
+# -----------------------------------------------------------------
+
+def file_nbytes(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from .introspection import is_linux, is_macos
+    #from .terminal import execute
+    from subprocess import check_output
+
+    # Mac
+    if is_macos():
+
+        command = "cat '" + path + "' | wc -c"
+        #print(command)
+        output = check_output(command, shell=True)
+        #output = execute(command)
+        #print(output)
+        return int(output)
+
+    # Linux
+    elif is_linux():
+
+        command = "du -b '" + path + "' | awk '{ print $1}' | bc"
+        output = check_output(command, shell=True)
+        #print(output)
+        return int(output)
+
+    # Not supported
+    else: raise RuntimeError("Platforms other than MacOS and Linux are not supported")
+
+# -----------------------------------------------------------------
+
+def file_nbits(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return file_nbytes(path) * 8
 
 # -----------------------------------------------------------------

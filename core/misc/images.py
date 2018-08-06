@@ -672,7 +672,7 @@ class ObservedImageMaker(DatacubesMiscMaker):
         log.debug("Getting the kernel paths ...")
 
         # Checks
-        auto_psfs = kwargs.pop("auto_psfs", False)
+        auto_psfs = kwargs.pop("auto_psfs", self.config.convolve)
         if kwargs.get("kernel_paths", None) is not None and kwargs.get("psf_paths", None) is not None: raise ValueError("Cannot specify 'kernel_paths' and 'psf_paths' simultaneously")
         if kwargs.get("psf_paths", None) is not None and auto_psfs: raise ValueError("Cannot specify 'psf_paths' when 'auto_psfs' is enabled")
         if auto_psfs and kwargs.get("kernel_paths", None) is not None: raise ValueError("Cannot specify 'kernel_paths' when 'auto_psfs' is enabled")

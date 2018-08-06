@@ -31,7 +31,7 @@ from ...core.basics.containers import NamedList, FilterBasedList
 from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
-from ..convolution.kernels import get_fwhm, get_average_variable_fwhm, has_variable_fwhm
+from ..convolution.kernels import get_fwhm, get_average_variable_fwhm, has_variable_fwhm, has_average_variable_fwhm
 from ...core.tools import sequences, types
 from ...core.launch.pts import execute_pts_remote
 from ...core.remote.remote import load_remote
@@ -3707,7 +3707,7 @@ def convolve_to_fwhm_local(*frames, **kwargs):
         name = names[index] if names is not None else ""
         print_name = "'" + names[index] + "' " if names is not None else ""
 
-        print(print_name, frame.psf_filter, frame.fwhm, highest_fwhm_filter, highest_fwhm)
+        #print(print_name, frame.psf_filter, frame.fwhm, highest_fwhm_filter, highest_fwhm)
         frame_psf_filter_defined = frame.psf_filter is not None
         highest_fwhm_filter_defined = highest_fwhm_filter is not None
         same_psf_filter = frame_psf_filter_defined and highest_fwhm_filter_defined and frame.psf_filter == highest_fwhm_filter
@@ -3732,17 +3732,17 @@ def convolve_to_fwhm_local(*frames, **kwargs):
 
         # Doesn't need convolution
         #elif frame.psf_filter == highest_fwhm_filter:
-        elif same_psf_filter:
-
-            # Debugging
-            log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
-
-            # Make new frame and set the name
-            new = frame.copy()
-            if names is not None: new.name = names[index]
-
-            # Add a copy of the frame
-            new_frames.append(new)
+        # elif same_psf_filter:
+        #
+        #     # Debugging
+        #     log.debug("Frame " + print_name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
+        #
+        #     # Make new frame and set the name
+        #     new = frame.copy()
+        #     if names is not None: new.name = names[index]
+        #
+        #     # Add a copy of the frame
+        #     new_frames.append(new)
 
         # Same FWHM, and potentially the same filter?
         elif same_fwhm and (some_filters_undefined or same_psf_filter):
@@ -3764,7 +3764,24 @@ def convolve_to_fwhm_local(*frames, **kwargs):
             log.debug("Frame " + print_name + "will be convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
 
             # Get the kernel, either from aniano or from matching kernels
-            if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)
+            #print(frame.psf_filter, highest_fwhm_filter)
+            #print(frame.filter, frame.psf_filter)
+            #fwhm1 = get_fwhm(frame.psf_filter)
+            #fwhm2 = get_fwhm(highest_fwhm_filter)
+            #print(fwhm1, fwhm2, frame.fwhm, highest_fwhm)
+
+            if has_variable_fwhm(frame.psf_filter): from_standard_resolution = True # assume OK
+            else: from_standard_resolution = frame.fwhm == get_fwhm(frame.psf_filter)
+
+            if has_variable_fwhm(highest_fwhm_filter): to_standard_resolution = True # assume OK
+            else: to_standard_resolution = highest_fwhm == get_fwhm(highest_fwhm_filter)
+
+            #print(from_standard_resolution, to_standard_resolution)
+            #print(highest_fwhm, highest_fwhm_filter, get_fwhm(highest_fwhm_filter))
+            if not from_standard_resolution and frame.has_psf_filter: log.warning("PSF filter is defined in frame (" + tostr(frame.psf_filter) + ") but it does not seem to be correct comparing to the frame's FWHM (" + tostr(frame.fwhm) + ")")
+            all_standard = from_standard_resolution and to_standard_resolution
+
+            if all_standard and aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)
             else:
 
                 # Get from and to filter
@@ -3773,11 +3790,15 @@ def convolve_to_fwhm_local(*frames, **kwargs):
 
                 # Get from and to FWHM
                 if frame.fwhm is not None: from_fwhm = frame.fwhm
+                elif has_variable_fwhm(from_filter):
+                    if has_average_variable_fwhm(from_filter): from_fwhm = get_average_variable_fwhm(from_filter)
+                    else: raise ValueError("FWHM for the " + tostr(from_filter) + " frame is undefined")
                 else: from_fwhm = get_fwhm(from_filter)
                 to_fwhm = highest_fwhm
 
                 # Generate the kernel
-                kernel = matching.get_kernel(from_filter, to_filter, frame.pixelscale, from_fwhm=from_fwhm, to_fwhm=to_fwhm)
+                kernel = matching.get_kernel(from_filter, to_filter, frame.angular_pixelscale, from_fwhm=from_fwhm, to_fwhm=to_fwhm)
+                #kernel.saveto("kernel.fits")
 
             # Convolve with the kernel
             convolved = frame.convolved(kernel)

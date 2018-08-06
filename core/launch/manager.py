@@ -83,6 +83,7 @@ from ..simulation.remote import get_simulation_for_host
 from ..tools import introspection
 from ..simulation.logfile import LogFile
 from ..simulation.remote import aborted_name, crashed_name, cancelled_name
+from ..simulation.remote import analysed_name, retrieved_name, finished_name
 
 # -----------------------------------------------------------------
 
@@ -166,6 +167,7 @@ _launch_command_name = "launch"
 _assignment_command_name = "assignment"
 _runtimes_command_name = "runtimes"
 _memory_command_name = "memory"
+_cpu_command_name = "cpu"
 _timeline_command_name = "timeline"
 _scaling_command_name = "scaling"
 _base_command_name = "base"
@@ -234,6 +236,7 @@ show_commands[_assignment_command_name] = ("show_assignment", False, "show the s
 show_commands[_status_command_name] = ("show_status", False, "show the simulation status", None)
 show_commands[_runtimes_command_name] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
 show_commands[_memory_command_name] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
+show_commands[_cpu_command_name] = ("show_cpu_command", True, "show the CPU usage of the simulations", "simulations")
 
 # -----------------------------------------------------------------
 
@@ -1193,32 +1196,77 @@ class SimulationManager(InteractiveConfigurable):
         self.get_memory_table(**kwargs)
 
         # Get the info tables
+        self.set_info(**kwargs)
+
+        # Set the remotes
+        self.set_remotes(**kwargs)
+
+        # Set launcher options
+        self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    def set_info(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting info tables for the simulations ...")
+
         if "info_tables" in kwargs:
+
             tables = kwargs.pop("info_tables")
             if types.is_dictionary(tables): self.info.update(tables)
             elif types.is_sequence(tables):
                 for table in tables: self.info[table.filename] = table
             else: raise ValueError("Invalid type for 'info_tables'")
+
         elif self.config.info_tables is not None:
             for path in self.config.info_tables:
                 filename = fs.strip_extension(fs.name(path))
                 self.info[filename] = SmartTable.from_file(path)
 
+    # -----------------------------------------------------------------
+
+    def set_remotes(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Setting the remotes ...")
+
         # Get remotes
-        if "remotes" in kwargs:
+        if kwargs.get("remotes", None) is not None:
+
             remotes = kwargs.pop("remotes")
-            if types.is_dictionary(remotes):
+
+            # Input is already an ensemble
+            if isinstance(remotes, SKIRTRemotesEnsemble):
+                for name in remotes.names:
+                    if remotes.is_used(name): self.set_remote(remotes[name], name)
+                    else: self.add_host_id(remotes.get_host_id(name), name=name)
+
+            # Regular dict
+            elif types.is_dictionary(remotes):
                 for name in remotes: self.set_remote(remotes[name], name)
+
+            # Sequence
             elif types.is_sequence(remotes):
                 for remote in remotes: self.set_remote(remote)
-            elif remotes is None: pass
+
+            # Invalid
             else: raise ValueError("Invalid type for 'remotes'")
 
         # Set remotes from config
         if self.config.remotes is not None: self.add_host_ids(self.config.remotes)
-
-        # Set launcher options
-        self.set_launcher_options()
 
     # -----------------------------------------------------------------
 
@@ -1671,6 +1719,9 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Getting the timing table ...")
+
         if "timing" in kwargs: self.timing = kwargs.pop("timing")
         elif self.config.timing is not None: self.timing = TimingTable.from_file(self.config.timing)
         else:
@@ -1690,6 +1741,9 @@ class SimulationManager(InteractiveConfigurable):
         :param kwargs:
         :return:
         """
+
+        # Debugging
+        log.debug("Getting the memory table ...")
 
         if "memory" in kwargs: self.memory = kwargs.pop("memory")
         elif self.config.memory is not None: self.memory = MemoryTable.from_file(self.config.memory)
@@ -3926,9 +3980,36 @@ class SimulationManager(InteractiveConfigurable):
 
         # Check if the parallelization is defined
         if simulation.parallelization is not None: return simulation.parallelization
-        elif self.is_screen_execution(simulation_name): return self.get_parallelization_for_simulation_screen(simulation_name)
-        elif self.is_job_execution(simulation_name): return self.get_parallelization_for_simulation_job(simulation_name)
-        else: raise NotImplementedError("Execution handle not supported")
+        elif self.has_execution_handle(simulation_name):
+            if self.is_screen_execution(simulation_name): return self.get_parallelization_for_simulation_screen(simulation_name)
+            elif self.is_job_execution(simulation_name): return self.get_parallelization_for_simulation_job(simulation_name)
+            else: raise NotImplementedError("Execution handle not supported")
+        elif self.has_logfile(simulation_name): return self.get_parallelization_for_simulation_logfile(simulation_name)
+        else: raise ValueError("Parallelization cannot be determined for simulation '" + simulation_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_parallelization_for_simulation_logfile(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_logfile(simulation_name).parallelization
+
+    # -----------------------------------------------------------------
+
+    def get_ncores_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return self.get_parallelization_for_simulation(simulation_name).ncores
 
     # -----------------------------------------------------------------
 
@@ -4394,7 +4475,7 @@ class SimulationManager(InteractiveConfigurable):
         simulation = self.get_simulation(simulation_name)
 
         # Analysed
-        if simulation.analysed: simulation_status = "analysed"
+        if simulation.analysed: simulation_status = analysed_name
 
         # Partly analysed
         elif simulation.analysed_any:
@@ -4411,10 +4492,10 @@ class SimulationManager(InteractiveConfigurable):
             else: simulation_status = "analysed: started"
 
         # Retrieved
-        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved: simulation_status = "retrieved"
+        elif isinstance(simulation, RemoteSimulation) and simulation.retrieved: simulation_status = retrieved_name
 
         # Finished
-        elif isinstance(simulation, RemoteSimulation) and simulation.finished: simulation_status = "finished"
+        elif isinstance(simulation, RemoteSimulation) and simulation.finished: simulation_status = finished_name
 
         # Remote simulation that is not yet retrieved
         elif isinstance(simulation, RemoteSimulation):
@@ -7012,6 +7093,7 @@ class SimulationManager(InteractiveConfigurable):
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
         definition.add_required("simulations", "integer_and_string_list", "simulation indices or names")
+        #definition.add_positional_optional("simulations", "integer_and_string_list", "simulation indices or names", default=["all"])
 
         # Add definition settings
         if command_definition is not None:
@@ -7054,14 +7136,17 @@ class SimulationManager(InteractiveConfigurable):
         else: config = parse_arguments(name, definition, command=parse_command, error="exception", exit_on_help=False, initialize=False, add_logging=False, add_cwd=False)
 
         # Get simulation names
-        simulation_names = []
-        for index_or_name in config.simulations:
-            if types.is_string_type(index_or_name):
-                simulation_name = index_or_name
-                if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_name + "'", command)
-            elif types.is_integer_type(index_or_name): simulation_name = self.simulation_names[index_or_name]
-            else: raise ValueError("Invalid type")
-            simulation_names.append(simulation_name)
+        nsimulations = len(config.simulations)
+        if nsimulations == 1 and config.simulations[0] == "all": simulation_names = self.simulation_names
+        else:
+            simulation_names = []
+            for index_or_name in config.simulations:
+                if types.is_string_type(index_or_name):
+                    simulation_name = index_or_name
+                    if simulation_name not in self.simulation_names: raise InvalidCommandError("Invalid simulation name '" + simulation_name + "'", command)
+                elif types.is_integer_type(index_or_name): simulation_name = self.simulation_names[index_or_name]
+                else: raise ValueError("Invalid type")
+                simulation_names.append(simulation_name)
 
         # Return
         return splitted, simulation_names, config
@@ -8728,6 +8813,7 @@ class SimulationManager(InteractiveConfigurable):
         # Get the remote ski file path
         ski_path = self.get_remote_skifile_path(simulation_name)
 
+        # Check whether the remote ski file exists
         if remote.is_file(ski_path):
 
             # Debugging
@@ -8736,6 +8822,7 @@ class SimulationManager(InteractiveConfigurable):
             # Remove the remote ski file
             remote.remove_file(ski_path)
 
+        # Ski file is not present (anymore)
         else: log.warning("The ski file '" + ski_path + "' is already removed from remote host '" + remote.host_id + "'")
 
     # -----------------------------------------------------------------
@@ -12844,16 +12931,17 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def add_host_id(self, host_id):
+    def add_host_id(self, host_id, name=None):
 
         """
         This function ...
         :param host_id:
+        :param name:
         :return:
         """
 
         # Add
-        self.remotes.add_host_id(host_id)
+        self.remotes.add_host_id(host_id, name=name)
 
     # -----------------------------------------------------------------
 
@@ -13936,6 +14024,88 @@ class SimulationManager(InteractiveConfigurable):
         print(" - Spectra memory: (" + tostr(spectra, round=True, ndigits=3) + " ± " + tostr(spectra_err, round=True, ndigits=3) + ") GB [" + str(spectra_noutliers) + " outliers out of " + str(nspectra) + " data points]")
         print(" - Dust memory: (" + tostr(dust, round=True, ndigits=3) + " ± " + tostr(dust_err, round=True, ndigits=3) + ") GB [" + str(dust_noutliers) + " outliers out of " + str(ndust) + " data points]")
         print(" - Writing memory: (" + tostr(writing, round=True, ndigits=3) + " ± " + tostr(writing_err, round=True, ndigits=3) + ") GB [" + str(writing_noutliers) + " outliers out of " + str(nwriting) + " data points]")
+
+    # -----------------------------------------------------------------
+
+    def show_cpu_command(self, command, **kwargs):
+        
+        """
+        This function ...
+        :param command: 
+        :param kwargs: 
+        :return: 
+        """
+
+        # Get simulation names
+        simulation_names = self.get_simulation_names_from_command(command, **kwargs)
+
+        # Show
+        self.show_cpu(simulation_names)
+
+    # -----------------------------------------------------------------
+
+    def show_cpu(self, simulation_names):
+        
+        """
+        This function ...
+        :param simulation_names: 
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Showing CPU usage for the simulations ...")
+
+        # Keep a list of the runtimes and CPU times
+        runtimes = []
+        cputimes = []
+
+        # Print in columns
+        print("")
+        with fmt.print_in_columns() as print_row:
+
+            # Set the column names and units
+            column_names = ["Simulation name", "Host ID", "Number of cores", "Total runtime", "Total CPU time"]
+            column_units = ["", "", "", "h", "h"]
+
+            # Show the header
+            print_row(*column_names, bold=True)
+            print_row(*column_units)
+
+            # Loop over the simulations
+            for simulation_name in simulation_names:
+
+                # Get the host ID
+                host_id = self.get_host_id_for_simulation(simulation_name)
+
+                # Get the number of cores
+                ncores = self.get_ncores_for_simulation(simulation_name)
+
+                # Finished simulation?
+                if self.is_finished(simulation_name):
+
+                    # Get the runtime of the simulation, in hours
+                    runtime = self.get_runtime(simulation_name).to("h").value
+
+                    # Get the CPU time
+                    cpu_time = runtime * ncores
+
+                    # Add
+                    runtimes.append(runtime)
+                    cputimes.append(cpu_time)
+
+                # Not finished
+                else: runtime = cpu_time = "--"
+
+                # Show the row for the simulation
+                parts = [simulation_name, host_id, ncores, tostr(runtime), tostr(cpu_time)]
+                print_row(*parts)
+
+        # Show the averages (and total)
+        print("")
+        print(" - average runtime: " + tostr(numbers.arithmetic_mean(*runtimes)) + " h")
+        print(" - average CPU time: " + tostr(numbers.arithmetic_mean(*cputimes)) + " h")
+        print(" - total CPU time: " + tostr(sequences.sum(cputimes)) + " h")
+        print("")
 
     # -----------------------------------------------------------------
 
@@ -15430,6 +15600,9 @@ class SimulationManager(InteractiveConfigurable):
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
         definition.import_section("analysis", "options for the simulation analyser", analyse_simulation_definition)
 
+        # Host
+        definition.add_optional("host", "host", "host for the simulation execution (default is same as original simulation)")
+
         # Return the definition
         return definition
 
@@ -15472,12 +15645,12 @@ class SimulationManager(InteractiveConfigurable):
 
         # Mimic the simulation
         self.mimic_simulation(simulation_name, config.name, new_values=config.labeled, parallelization=config.parallelization,
-                              analysis_options=analysis_options, scheduling_options=scheduling_options)
+                              analysis_options=analysis_options, scheduling_options=scheduling_options, host=config.host)
 
     # -----------------------------------------------------------------
 
     def mimic_simulation(self, simulation_name, new_simulation_name, new_values=None, parallelization=None,
-                         analysis_options=None, scheduling_options=None):
+                         analysis_options=None, scheduling_options=None, host=None):
         
         """
         This function ...
@@ -15487,6 +15660,7 @@ class SimulationManager(InteractiveConfigurable):
         :param parallelization:
         :param analysis_options:
         :param scheduling_options:
+        :param host:
         :return: 
         """
 
@@ -15501,8 +15675,10 @@ class SimulationManager(InteractiveConfigurable):
         #else: # TODO: use composer to adapt the model
 
         # Get remote settings
-        host_id = self.get_host_id_for_simulation(simulation_name)
-        cluster_name = self.get_cluster_name_for_simulation(simulation_name)
+        if host is not None: host_id, cluster_name = host.id, host.cluster_name
+        else:
+            host_id = self.get_host_id_for_simulation(simulation_name)
+            cluster_name = self.get_cluster_name_for_simulation(simulation_name)
         #print(host_id, cluster_name)
 
         # Debugging

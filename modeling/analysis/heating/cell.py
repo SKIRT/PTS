@@ -20,17 +20,14 @@ from collections import OrderedDict
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
+from ....core.tools.utils import lazyproperty, lazyfileproperty
+from ...core.data import Data3D
+from ...projection.data import project_data, project_faceon, project_edgeon
 from ....core.basics.distribution import Distribution, Distribution2D
-from .tables import AbsorptionTable
-from ....core.tools.utils import lazyproperty
-from ....core.plot.distribution import plot_distribution, plot_distributions
 from ....magic.core.frame import Frame
-from ....core.tools import nr
-from ....magic.basics.vector import PixelShape
-from ....core.basics.range import QuantityRange, RealRange
-from ....core.tools.stringify import tostr
-from ....core.tools import numbers, sequences
-from ....magic.tools import plotting
+from ....magic.core.image import Image
+from ....core.plot.distribution import plot_distribution, plot_distributions
+from ....magic.tools.plotting import plot_map
 
 # -----------------------------------------------------------------
 
@@ -59,47 +56,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the constructor of the base class
         super(CellDustHeatingAnalyser, self).__init__(*args, **kwargs)
 
-        # -- Attributes --
-
-        # The table with the absorbed luminosities
-        self.absorptions = None
-
-        # The heating fraction of the unevolved stellar population for each dust cell
-        self.heating_fractions = None
-        self.diffuse_heating_fractions = None
-
-        # The distribution of heating fractions
-        self.distribution = None
-        self.distribution_diffuse = None
-
-        # The 2D distribution of heating fractions
-        self.radial_distribution = None
-
-        # The heating map and related maps
-        self.map = None
-        self.map_stddev = None
-        self.map_ncells = None
-        self.map_interpolated = None
-
-        # The heating map in the midplane and related maps
-        self.map_midplane = None
-        self.map_midplane_stddev = None
-        self.map_midplane_ncells = None
-        self.map_midplane_interpolated = None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_absorption_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return (not self.has_heating_fractions) or (not self.has_heating_fractions_diffuse)
-        return True # x and y coordinates are required to create radial distribution
-
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -108,21 +64,6 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
-
-        # 1. Create the absorption table
-        if self.needs_absorption_table: self.get_absorption_table()
-
-        # 2. Calculate the heating fraction of the unevolved stellar population
-        self.get_fractions()
-
-        # 3. Calculate the distribution of the heating fraction of the unevolved stellar population
-        self.get_distributions()
-
-        # 4. Create the maps of the heating fraction
-        self.get_maps()
-
-        # 5. Interpolate the maps
-        self.interpolate_maps()
 
         # 6. Writing
         self.write()
@@ -142,529 +83,541 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(CellDustHeatingAnalyser, self).setup(**kwargs)
 
-        # Set flags
-        if self.config.recreate_table: self.config.recalculate_fractions = True
-        if self.config.recalculate_fractions: self.config.recalculate_distributions = True
+    # -----------------------------------------------------------------
+    # PROJECTIONS
+    # -----------------------------------------------------------------
 
-        # Set flags
-        if self.config.recalculate_distributions:
-            self.config.recalculate_distribution = True
-            self.config.recalculate_distribution_diffuse = True
-            self.config.recalculate_radial_distribution = True
+    @property
+    def earth_projection(self):
+        return self.analysis_run.earth_projection
 
-        # Set replot flags
-        if self.config.replot:
-            self.config.replot_distribution = True
-            self.config.replot_radial_distribution = True
-            self.config.replot_map = True
+    # -----------------------------------------------------------------
 
-        # Set replot maps flags
-        if self.config.replot_maps: self.config.replot_map = self.config.replot_map_midplane = True
+    @property
+    def faceon_projection(self):
+        return self.analysis_run.faceon_projection
 
-        # Set recreate maps
-        if self.config.recreate_maps: self.config.recreate_map = self.config.recreate_map_midplane = True
+    # -----------------------------------------------------------------
 
-        # Set reinterpolate maps
-        if self.config.reinterpolate_maps: self.config.reinterpolate_map = self.config.reinterpolate_map_midplane = True
+    @property
+    def edgeon_projection(self):
+        return self.analysis_run.edgeon_projection
 
-        # Set flags
-        if self.config.recalculate_distribution or self.config.recalculate_distribution_diffuse: self.config.replot_distribution = True
-        if self.config.recalculate_radial_distribution: self.config.replot_radial_distribution = True
+    # -----------------------------------------------------------------
+    # UNITS
+    # -----------------------------------------------------------------
 
-        # Set reinterpolate maps flags
-        if self.config.recreate_map: self.config.reinterpolate_map = True
-        if self.config.recreate_map_midplane: self.config.reinterpolate_map_midplane = True
+    @property
+    def length_unit(self):
+        return "pc"
 
-        # Set replot maps flags
-        if self.config.recalculate_fractions: self.config.replot_map = True
-        if self.config.reinterpolate_map: self.config.replot_map = True
-        if self.config.reinterpolate_map_midplane: self.config.replot_map_midplane = True
+    # -----------------------------------------------------------------
 
-        # Remove
-        if self.config.recreate_table and self.has_absorptions: self.remove_absorptions()
-        if self.config.recalculate_fractions and self.has_heating_fractions: self.remove_heating_fractions()
-        if self.config.recalculate_fractions and self.has_heating_fractions_diffuse: self.remove_heating_fractions_diffuse()
-        if self.config.recalculate_distribution and self.has_distribution: self.remove_distribution()
-        if self.config.recalculate_distribution_diffuse and self.has_distribution_diffuse: self.remove_distribution_diffuse()
-        if self.config.recalculate_radial_distribution and self.has_radial_distribution: self.remove_radial_distribution()
-        if self.config.recreate_map and self.has_map: self.remove_map()
-        if self.config.recreate_map_midplane and self.has_map_midplane: self.remove_map_midplane()
-        if self.config.reinterpolate_map and self.has_map_interpolated: self.remove_map_interpolated()
-        if self.config.reinterpolate_map_midplane and self.has_map_midplane_interpolated: self.remove_map_midplane_interpolated()
-        if self.config.replot_distribution and self.has_distribution_plot: self.remove_distribution_plot()
-        if self.config.replot_radial_distribution and self.has_radial_distribution_plot: self.remove_radial_distribution_plot()
-        if self.config.replot_map and self.has_map_plot: self.remove_map_plot()
-        if self.config.replot_map_midplane and self.has_map_midplane_plot: self.remove_map_midplane_plot()
+    @property
+    def luminosity_unit(self):
+        return "W"
 
-        # Check for consistency
-        if self.config.consistency:
+    # -----------------------------------------------------------------
+    # TOTAL
+    # -----------------------------------------------------------------
 
-            # Remove the map of heating fraction and/or stddev and/or ncells if either one of them is not present
-            if sequences.some_true_but_not_all([self.has_map, self.has_map_stddev, self.has_map_ncells]): self.remove_map_stddev_and_ncells()
+    @property
+    def total_absorptions_name(self):
+        return "Labs_total"
 
-            # Remove the map of the heating fraction in the midplane and/or stddev and/or ncells if either one of them is not present
-            if sequences.some_true_but_not_all([self.has_map_midplane, self.has_map_midplane_stddev, self.has_map_midplane_ncells]): self.remove_map_midplane_stddev_and_ncells()
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorptions_description(self):
+        return "Cell absorbed luminosities in the total simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorptions_path(self):
+        return fs.join(self.cell_heating_path, "absorptions_total.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorptions(self):
+        return fs.is_file(self.total_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "total_absorptions_path", True, write=False)
+    def total_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate luminosities
+        conversion_factor = self.total_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
+        luminosities_watt = self.total_contribution_absorption_luminosities * conversion_factor
+
+        # Create the data
+        return Data3D(self.total_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                       luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
+                       description=self.total_absorptions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+    # OLD
+    # -----------------------------------------------------------------
+
+    @property
+    def old_absorptions_name(self):
+        return "Labs_old"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_absorptions_description(self):
+        return "Cell absorbed luminosities of the old stars"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_absorptions_path(self):
+        return fs.join(self.cell_heating_path, "absorptions_old.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorptions(self):
+        return fs.is_file(self.old_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "old_absorptions_path", True, write=False)
+    def old_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate luminosities
+        conversion_factor = self.old_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
+        luminosities_watt = self.old_contribution_absorption_luminosities * conversion_factor
+
+        # Create the data
+        return Data3D(self.old_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
+                      description=self.old_absorptions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+    # YOUNG
+    # -----------------------------------------------------------------
+
+    @property
+    def young_absorptions_name(self):
+        return "Labs_young"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_absorptions_description(self):
+        return "Cell absorbed luminosities of the young stars"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_absorptions_path(self):
+        return fs.join(self.cell_heating_path, "absorptions_young.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorptions(self):
+        return fs.is_file(self.young_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "young_absorptions_path", True, write=False)
+    def young_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate luminosities
+        conversion_factor = self.young_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
+        luminosities_watt = self.young_contribution_absorption_luminosities * conversion_factor
+
+        # Create the data
+        return Data3D(self.young_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
+                      description=self.young_absorptions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+    # IONIZING
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_absorptions_name(self):
+        return "Labs_ionizing"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_absorptions_description(self):
+        return "Cell absorbed luminosities of the ionizing stars"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_absorptions_path(self):
+        return fs.join(self.cell_heating_path, "absorptions_ionizing.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_absorptions(self):
+        return fs.is_file(self.ionizing_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "ionizing_absorptions_path", True, write=False)
+    def ionizing_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate luminosities
+        conversion_factor = self.ionizing_contribution_absorption_unit.conversion_factor(self.luminosity_unit)
+        luminosities_watt = self.ionizing_contribution_absorption_luminosities * conversion_factor
+
+        # Create the data
+        return Data3D(self.ionizing_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
+                      description=self.ionizing_absorptions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+    # INTERNAL
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorptions_name(self):
+        return "Labs_internal"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorptions_description(self):
+        return "Cell absorbed luminosities in star formation regions dust"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorptions_path(self):
+        return fs.join(self.cell_heating_path, "absorptions_internal.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_internal_absorptions(self):
+        return fs.is_file(self.internal_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def volumes(self):
+        return self.model.cell_volumes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_densities(self):
+        return self.model.sfr_cell_stellar_density
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorbed_luminosity(self):
+        return self.model.intrinsic_dust_luminosity_sfr.to(self.luminosity_unit, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ncells(self):
+    def relative_masses_ionizing(self):
+        masses = self.volumes * self.ionizing_densities
+        masses /= sum(masses) # normalized
+        return masses
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "internal_absorptions_path", True, write=False)
+    def internal_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        return len(self.total_contribution_absorption_data)
+        # absorptions_ionizing_internal_watt = volumes * density * absorbed_energy
+        luminosities_watt = self.relative_masses_ionizing * self.internal_absorbed_luminosity
+
+        # Create the data
+        return Data3D(self.internal_absorptions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      luminosities_watt, length_unit=self.length_unit, unit=self.luminosity_unit,
+                      description=self.internal_absorptions_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+    # DIFFUSE HEATING FRACTIONS
+    # -----------------------------------------------------------------
+
+    @property
+    def diffuse_fractions_name(self):
+        return "Funev_diffuse"
 
     # -----------------------------------------------------------------
 
-    def get_absorption_table(self):
+    @property
+    def diffuse_fractions_description(self):
+        return "Heating fraction by the unevolved stellar populations (diffuse dust)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_absorption_values(self):
+        return self.young_absorptions.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_absorption_values(self):
+        return self.ionizing_absorptions.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorption_values_diffuse(self):
+        return self.young_absorption_values + self.ionizing_absorption_values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorption_values_diffuse(self):
+        return self.total_absorptions.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def diffuse_fractions_path(self):
+        return fs.join(self.cell_heating_path, "diffuse_fractions.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_diffuse_fractions(self):
+        return fs.is_file(self.diffuse_fractions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "diffuse_fractions_path", True, write=False)
+    def diffuse_fractions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Create
-        if not self.has_absorptions: self.create_absorption_table()
+        # Calculate
+        fractions = self.unevolved_absorption_values_diffuse / self.total_absorption_values_diffuse
 
-        # Load the table
-        else: self.load_absorption_table()
-
-    # -----------------------------------------------------------------
-
-    def create_absorption_table(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the absorption table ...")
-
-        # Get the coordinates (should be in pc)
-        x = self.cell_x_coordinates
-        y = self.cell_y_coordinates
-        z = self.cell_z_coordinates
-
-        # Get luminosity for total stellar population
-        #total_absorptions = self.total_contribution_absorption_data["Absorbed bolometric luminosity"]
-        total_absorptions = self.total_contribution_absorption_luminosities
-        total_unit = self.total_contribution_absorption_unit
-        total_conversion = total_unit.conversion_factor("W")
-        total_absorptions_watt = total_absorptions * total_conversion
-
-        # Get luminosity for old stellar population
-        #old_absorptions = self.old_contribution_absorption_data["Absorbed bolometric luminosity"]
-        old_absorptions = self.old_contribution_absorption_luminosities
-        old_unit = self.old_contribution_absorption_unit
-        old_conversion = old_unit.conversion_factor("W")
-        old_absorptions_watt = old_absorptions * old_conversion
-
-        # Get luminosity for young stellar population
-        #young_absorptions = self.young_contribution_absorption_data["Absorbed bolometric luminosity"]
-        young_absorptions = self.young_contribution_absorption_luminosities
-        young_unit = self.young_contribution_absorption_unit
-        young_conversion = young_unit.conversion_factor("W")
-        young_absorptions_watt = young_absorptions * young_conversion
-
-        # Get luminosity for ionizing stellar population
-        #ionizing_absorptions = self.ionizing_contribution_absorption_data["Absorbed bolometric luminosity"]
-        ionizing_absorptions = self.ionizing_contribution_absorption_luminosities
-        ionizing_unit = self.ionizing_contribution_absorption_unit
-        ionizing_conversion = ionizing_unit.conversion_factor("W")
-        ionizing_absorptions_watt = ionizing_absorptions * ionizing_conversion
-
-        # Create the table
-        self.absorptions = AbsorptionTable.from_columns(x, y, z, total_absorptions_watt, old_absorptions_watt, young_absorptions_watt, ionizing_absorptions_watt)
-
-        # TEMP? SAVE
-        #self.absorptions.saveto(self.absorption_table_path)
+        # Create and return the data
+        return Data3D(self.diffuse_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      fractions, length_unit=self.length_unit,
+                      description=self.diffuse_fractions_description, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
-    def load_absorption_table(self):
+    @property
+    def diffuse_fraction_values(self):
+        return self.diffuse_fractions.values
+
+    # -----------------------------------------------------------------
+    # TOTAL HEATING FRACTIONS
+    # -----------------------------------------------------------------
+
+    @property
+    def total_fractions_name(self):
+        return "Funev_total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_fractions_description(self):
+        return "Heating fraction by the unevolved stellar population (all dust)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def internal_absorption_values(self):
+        return self.internal_absorptions.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorption_values(self):
+        return self.unevolved_absorption_values_diffuse + self.internal_absorption_values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorption_values(self):
+        return self.total_absorption_values_diffuse + self.internal_absorption_values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_fractions_path(self):
+        return fs.join(self.cell_heating_path, "total_fractions.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_fractions(self):
+        return fs.is_file(self.total_fractions_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "total_fractions_path", True, write=False)
+    def total_fractions(self):
 
         """
         This function ...
         :return:
         """
 
-        # Success
-        log.success("Absorption table has already been created: loading from file ...")
+        # Calculate
+        fractions = self.unevolved_absorption_values / self.total_absorption_values
 
-        # Load
-        self.absorptions = AbsorptionTable.from_file(self.absorption_table_path)
+        # Create and return the data
+        return Data3D(self.total_fractions_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      fractions, length_unit=self.length_unit, description=self.total_fractions_description, distance=self.galaxy_distance)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def total_fraction_values(self):
+        return self.total_fractions.values
+
+    # -----------------------------------------------------------------
+    # VALID CELLS
     # -----------------------------------------------------------------
 
     @lazyproperty
     def zero_absorption_mask(self):
+        return self.total_absorptions.zeroes
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        return self.absorptions.zero_absorption_mask
+    @lazyproperty
+    def diffuse_fractions_unphysical_mask(self):
+        return self.diffuse_fractions.where_greater_than(1.)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def invalid_diffuse_fractions_mask(self):
+        return self.diffuse_fractions.invalid + self.diffuse_fractions_unphysical_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fractions_unphysical_mask(self):
+        return self.total_fractions.where_greater_than(1.)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def invalid_total_fractions_mask(self):
+        return self.total_fractions.invalid + self.total_fractions_unphysical_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_diffuse_fraction_values(self):
+        return np.ma.MaskedArray(self.diffuse_fraction_values, self.invalid_diffuse_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_total_fraction_values(self):
+        return np.ma.MaskedArray(self.total_fraction_values, self.invalid_total_fractions_mask).compressed()
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_heating_fractions(self):
+    def cell_weights(self):
+        return self.cell_mass_fractions
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        return True
+    @lazyproperty
+    def valid_diffuse_cell_weights(self):
+        return np.ma.MaskedArray(self.cell_weights, mask=self.invalid_diffuse_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_total_cell_weights(self):
+        return np.ma.MaskedArray(self.cell_weights, mask=self.invalid_total_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_x_coordinates(self):
+        return np.ma.MaskedArray(self.total_fractions.x, mask=self.invalid_total_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_y_coordinates(self):
+        return np.ma.MaskedArray(self.total_fractions.y, mask=self.invalid_total_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_z_coordinates(self):
+        return np.ma.MaskedArray(self.total_fractions.z, mask=self.invalid_total_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_radii(self):
+        return np.ma.MaskedArray(self.total_fractions.radii, mask=self.invalid_total_fractions_mask).compressed()
+
+    # -----------------------------------------------------------------
+    # DISTRIBUTION DIFFUSE
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_diffuse_name(self):
+        return "Heating fraction (diffuse dust)"
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_heating_fractions_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.do_write_distribution_diffuse or self.do_plot_distribution
-
-    # -----------------------------------------------------------------
-
-    def get_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the heating fractions ...")
-
-        # Total heating fractions
-        if self.needs_heating_fractions: self.get_heating_fractions()
-
-        # Diffuse heating fractions
-        if self.needs_heating_fractions_diffuse: self.get_heating_fractions_diffuse()
-
-    # -----------------------------------------------------------------
-
-    def get_heating_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load
-        if self.has_heating_fractions: self.load_heating_fractions()
-
-        # Calculate
-        else: self.calculate_heating_fractions()
-
-    # -----------------------------------------------------------------
-
-    def load_heating_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the heating fractions ...")
-
-        # Load
-        self.heating_fractions = np.loadtxt(self.heating_fractions_path)
-
-    # -----------------------------------------------------------------
-
-    def calculate_heating_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the heating fraction of the unevolved stellar population ...")
-
-        # SEBA:
-
-        ## Total energy absorbed in the new component
-        ## Derived from ../../SKIRTrun/models/testHeating/MappingsHeating/plotSEDs.py
-        #Lnew = 176495776.676  # in Lsun
-
-        #energy_new = volume * density_new * Lnew
-        #F_abs_yng = (yng + new + energy_new) / (old + yng + new + energy_new)
-
-        #cell_properties = self.model.cell_properties
-        #volumes = cell_properties["Volume"]
-
-        # For intrinsic SFR heating
-        volumes = self.model.cell_volumes
-        density = self.model.sfr_cell_stellar_density
-        absorbed_energy = self.model.intrinsic_dust_luminosity_sfr
-        #print("absorbed energy", absorbed_energy)
-        absorbed_energy_watt = absorbed_energy.to("W", distance=self.galaxy_distance).value
-        #print("absorbed energy (watt)", absorbed_energy_watt)
-
-        #absorptions_unevolved_diffuse = self.absorptions["Absorbed bolometric luminosity of the young stellar population"] + self.absorptions["Absorbed bolometric luminosity of the ionizing stellar population"]
-        #absorptions_unevolved_diffuse = self.absorptions["young"] + self.absorptions["ionizing"]
-
-        #absorptions_unevolved_diffuse = self.absorptions.unevolved(unit="W", asarray=True)
-
-        young_unit = self.absorptions.column_unit("young")
-        ionizing_unit = self.absorptions.column_unit("ionizing")
-        young_conversion = young_unit.conversion_factor("W")
-        ionizing_conversion = ionizing_unit.conversion_factor("W")
-        #print("young conversion", young_conversion)
-        #print("ionizing conversion", ionizing_conversion)
-
-        # Unevolved,  diffuse dust
-        absorptions_young = np.asarray(self.absorptions["young"])
-        absorptions_ionizing = np.asarray(self.absorptions["ionizing"])
-        absorptions_young_watt = absorptions_young * young_conversion
-        absorptions_ionizing_watt = absorptions_ionizing * ionizing_conversion
-        #absorptions_unevolved_diffuse = self.absorptions[""]
-        absorptions_unevolved_diffuse_watt = absorptions_young_watt + absorptions_ionizing_watt
-
-        # Mass of ionizing stars for each cell
-        relative_mass_ionizing = volumes * density
-        normalization = sum(relative_mass_ionizing)
-        #print("norm", normalization)
-        relative_mass_ionizing /= normalization
-
-        #
-        #absorptions_ionizing_internal_watt = volumes * density * absorbed_energy
-        absorptions_ionizing_internal_watt = relative_mass_ionizing * absorbed_energy_watt
-
-        #absorptions_unevolved = absorptions_unevolved_diffuse + absorptions_ionizing_internal
-        absorptions_unevolved_watt = absorptions_unevolved_diffuse_watt + absorptions_ionizing_internal_watt
-
-        #absorptions_total = self.absorptions["Absorbed bolometric luminosity of the total stellar population"]
-        #absorptions_total = self.absorptions["total"]
-        #absorptions_total = self.absorptions.total(unit="W", asarray=True)
-        #absorptions_total = absorptions_unevolved_diffuse + absorptions_ionizing_internal + absorptions_evolved # TODO !!
-
-        # Evolved: old
-        #absorptions_evolved = self.absorptions.old(unit="W", asarray=True)
-        old_unit = self.absorptions.column_unit("old")
-        old_conversion = old_unit.conversion_factor("W")
-        #print("old conversion", old_conversion)
-        absorptions_old = np.asarray(self.absorptions["old"])
-        absorptions_old_watt = absorptions_old * old_conversion
-
-        # Total absorptions
-        #absorptions_total = absorptions_unevolved + absorptions_evolved
-
-        # TOTAL
-        absorptions_total_watt = absorptions_unevolved_watt + absorptions_old_watt
-
-        # Calculate the heating fraction of the unevolved stellar population in each dust cell
-        #self.heating_fractions = absorptions_unevolved_diffuse / absorptions_total
-        #self.heating_fractions = absorptions_unevolved / absorptions_total
-        self.heating_fractions = absorptions_unevolved_watt / absorptions_total_watt
-
-    # -----------------------------------------------------------------
-
-    def get_heating_fractions_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_heating_fractions_diffuse: self.load_heating_fractions_diffuse()
-        else: self.calculate_heating_fractions_diffuse()
-
-    # -----------------------------------------------------------------
-
-    def load_heating_fractions_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the diffuse heating fractions ...")
-
-        # Load
-        self.diffuse_heating_fractions = np.loadtxt(self.heating_fractions_diffuse_path)
-
-    # -----------------------------------------------------------------
-
-    def calculate_heating_fractions_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        young_unit = self.absorptions.column_unit("young")
-        ionizing_unit = self.absorptions.column_unit("ionizing")
-        young_conversion = young_unit.conversion_factor("W")
-        ionizing_conversion = ionizing_unit.conversion_factor("W")
-        #print("young conversion", young_conversion)
-        #print("ionizing conversion", ionizing_conversion)
-
-        # Unevolved,  diffuse dust
-        absorptions_young = np.asarray(self.absorptions["young"])
-        absorptions_ionizing = np.asarray(self.absorptions["ionizing"])
-        absorptions_young_watt = absorptions_young * young_conversion
-        absorptions_ionizing_watt = absorptions_ionizing * ionizing_conversion
-        # absorptions_unevolved_diffuse = self.absorptions[""]
-        absorptions_unevolved_diffuse_watt = absorptions_young_watt + absorptions_ionizing_watt
-
-        total_unit = self.absorptions.column_unit("total")
-        total_conversion = total_unit.conversion_factor("W")
-        absorptions_total_diffuse = np.asarray(self.absorptions["total"])
-        absorptions_total_diffuse_watt = absorptions_total_diffuse * total_conversion
-
-        # Diffuse
-        self.diffuse_heating_fractions = absorptions_unevolved_diffuse_watt / absorptions_total_diffuse_watt
+    def distribution_diffuse_path(self):
+        return fs.join(self.cell_heating_path, "distribution_diffuse.dat")
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.do_plot_distribution
+    def has_distribution_diffuse(self):
+        return fs.is_file(self.distribution_diffuse_path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def needs_distribution_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.do_plot_distribution
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_radial_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.do_plot_radial_distribution
-
-    # -----------------------------------------------------------------
-
-    def get_distributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Distribution
-        if self.needs_distribution: self.get_distribution()
-
-        # Distribution diffuse
-        if self.needs_distribution_diffuse: self.get_distribution_diffuse()
-
-        # Radial distribution
-        if self.needs_radial_distribution: self.get_radial_distribution()
-
-    # -----------------------------------------------------------------
-
-    def get_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_distribution: self.load_distribution()
-        else: self.calculate_distribution()
-
-    # -----------------------------------------------------------------
-
-    def load_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.distribution = Distribution.from_file(self.distribution_path)
-
-    # -----------------------------------------------------------------
-
-    def get_distribution_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_distribution_diffuse: self.load_distribution_diffuse()
-        else: self.calculate_distribution_diffuse()
-
-    # -----------------------------------------------------------------
-
-    def load_distribution_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.distribution_diffuse = Distribution.from_file(self.distribution_diffuse_path)
-
-    # -----------------------------------------------------------------
-
-    def get_radial_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #if self.has_radial_distribution: self.load_radial_distribution()
-        #else: self.calculate_radial_distribution()
-
-        # Cannot save the radial distribution for the moment
-        self.calculate_radial_distribution()
-
-    # -----------------------------------------------------------------
-
-    def calculate_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
-
-        # Generate the distribution
-        # Weights are dust mass fraction
-        self.distribution = Distribution.from_values("Heating fraction", self.valid_heating_fractions,
-                                                     nbins=self.config.nbins, weights=self.valid_cell_weights)
-
-    # -----------------------------------------------------------------
-
-    def calculate_distribution_diffuse(self):
+    @lazyfileproperty(Distribution, "distribution_diffuse_path", True, write=False)
+    def distribution_diffuse(self):
 
         """
         This function ...
@@ -676,15 +629,78 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Generate the distribution
         # Weights are dust mass fraction
-        self.distribution_diffuse = Distribution.from_values("Heating fraction", self.valid_heating_fractions_diffuse,
-                                                             nbins=self.config.nbins, weights=self.valid_cell_weights_diffuse)
+        return Distribution.from_values(self.distribution_diffuse_name, self.valid_diffuse_fraction_values, nbins=self.config.nbins, weights=self.valid_diffuse_cell_weights)
+
+    # -----------------------------------------------------------------
+    # DISTRIBUTION TOTAL
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_total_name(self):
+        return "Heating fraction (all dust)"
 
     # -----------------------------------------------------------------
 
-    def calculate_radial_distribution(self):
+    @property
+    def distribution_total_path(self):
+        return fs.join(self.cell_heating_path, "distribution_total.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_total(self):
+        return fs.is_file(self.distribution_total_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution, "distribution_total_path", True, write=False)
+    def distribution_total(self):
 
         """
         This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the distribution of heating fractions of the unevolved stellar population ...")
+
+        # Generate the distribution
+        # Weights are dust mass fraction
+        return Distribution.from_values(self.distribution_total_name, self.valid_total_fraction_values, nbins=self.config.nbins, weights=self.valid_total_cell_weights)
+
+    # -----------------------------------------------------------------
+    # RADIAL DISTRIBUTION
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_path(self):
+        return fs.join(self.cell_heating_path, "radial_distribution.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_radial_distribution(self):
+        return fs.is_file(self.radial_distribution_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_x_name(self):
+        return "Radius [" + str(self.length_unit) + "]"
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Distribution2D, "radial_distribution_path", True, write=False)
+    def radial_distribution(self):
+
+        """
+        Thisf unction ...
         :return:
         """
 
@@ -692,144 +708,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the radial distribution of heating fractions of the unevolved stellar population ...")
 
         # Generate the radial distribution
-        self.radial_distribution = Distribution2D.from_values(self.valid_radii, self.valid_heating_fractions,
-                                                              weights=self.valid_cell_weights, x_name="radius (pc)",
-                                                              y_name="Heating fraction of unevolved stars", nbins=self.config.nradial_bins)
+        return Distribution2D.from_values(self.valid_radii, self.valid_total_fraction_values,
+                                          weights=self.valid_total_cell_weights, x_name=self.radial_distribution_x_name,
+                                          y_name=self.radial_distribution_name,
+                                          nbins=self.config.nradial_bins)
 
     # -----------------------------------------------------------------
-
-    @property
-    def needs_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map or not self.has_map_interpolated
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_midplane or not self.has_map_midplane_interpolated
-
-    # -----------------------------------------------------------------
-
-    def get_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the maps of the heating fraction ...")
-
-        # Get the map
-        if self.needs_map: self.get_map()
-
-        # Get the map in the midplane
-        if self.needs_map_midplane: self.get_map_midplane()
-
-    # -----------------------------------------------------------------
-
-    def get_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load
-        if self.has_map: self.load_map()
-
-        # Create
-        else: self.create_map()
-
-    # -----------------------------------------------------------------
-
-    def load_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the map of the heating fraction ...")
-
-        # Load
-        self.map = Frame.from_file(self.map_path)
-        self.map_stddev = Frame.from_file(self.map_stddev_path)
-        self.map_ncells = Frame.from_file(self.map_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    def create_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the map of the heating fraction ...")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def absolute_z_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return abs(self.valid_z_coordinates)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def smallest_absolute_z(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return min(self.absolute_z_coordinates)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def where_smallest_absolute_z(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.absolute_z_coordinates == self.smallest_absolute_z
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ncells_with_smallest_absolute_z(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return int(np.sum(self.where_smallest_absolute_z))
-
+    # MIDPLANE HEIGHT
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -880,674 +765,453 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.midplane_height.to("pc").value
 
     # -----------------------------------------------------------------
-
-    @lazyproperty
-    def where_midplane_z(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.absolute_z_coordinates <= self.midplane_height_pc
-
+    # LOWRES MAPS
+    # -----------------------------------------------------------------
+    #   MIDPLANE
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def ncells_midplane(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return int(np.sum(self.where_midplane_z))
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def x_coordinates_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.valid_x_coordinates[self.where_midplane_z]
-        #return self.valid_x_coordinates[self.where_smallest_absolute_z]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def y_coordinates_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.valid_y_coordinates[self.where_midplane_z]
-        #return self.valid_y_coordinates[self.where_smallest_absolute_z]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def z_coordinates_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.valid_z_coordinates[self.where_midplane_z]
-        #return self.valid_z_coordinates[self.where_smallest_absolute_z]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def heating_fractions_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.valid_heating_fractions[self.where_midplane_z]
-        #return self.valid_heating_fractions[self.where_smallest_absolute_z]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_weights_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.valid_cell_weights[self.where_midplane_z]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sorted_unique_x_coordinates_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.sort(np.unique(self.x_coordinates_midplane))
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_x_coordinate_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.sorted_unique_x_coordinates_midplane[0]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_x_coordinate_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.sorted_unique_x_coordinates_midplane[-1]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_x_coordinates_midplane_spacings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.diff(self.sorted_unique_x_coordinates_midplane)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_x_coordinates_midplane_average_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.mean(self.unique_x_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_x_coordinates_midplane_median_spacing(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return np.median(self.unique_x_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_x_coordinates_midplane_stddev_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.std(self.unique_x_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_x_coordinates_midplane_min_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.min(self.unique_x_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_x_coordinates_midplane_max_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.max(self.unique_x_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sorted_unique_y_coordinates_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.sort(np.unique(self.y_coordinates_midplane))
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_y_coordinate_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.sorted_unique_y_coordinates_midplane[0]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_y_coordinate_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.sorted_unique_y_coordinates_midplane[-1]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_y_coordinates_midplane_spacings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.diff(self.sorted_unique_y_coordinates_midplane)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_y_coordinates_midplane_average_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.mean(self.unique_y_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_y_coordinates_midplane_median_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.median(self.unique_y_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_y_coordinates_midplane_stddev_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.std(self.unique_y_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_y_coordinates_midplane_min_spacing(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        return np.min(self.unique_y_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unique_y_coordinates_midplane_max_spacing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.max(self.unique_y_coordinates_midplane_spacings)
-
-    # -----------------------------------------------------------------
-
-    def get_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load
-        if self.has_map_midplane: self.load_map_midplane()
-
-        # Create
-        else: self.create_map_midplane()
-
-    # -----------------------------------------------------------------
-
-    def load_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the map of the heating fraction in the midplane ...")
-
-        # Load
-        self.map_midplane = Frame.from_file(self.map_midplane_path)
-        self.map_midplane_stddev = Frame.from_file(self.map_midplane_stddev_path)
-        self.map_midplane_ncells = Frame.from_file(self.map_midplane_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    def create_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the map of the heating fraction in the midplane ...")
+    @property
+    def lowres_map_midplane_path(self):
+        return fs.join(self.cell_heating_path, "lowres_midplane.fits")
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_map_interpolated(self):
+    def has_lowres_map_midplane(self):
+        return fs.is_file(self.lowres_map_midplane_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Image, "lowres_map_midplane_path", True, write=False)
+    def lowres_map_midplane(self):
 
         """
         Thisf unction ...
         :return:
         """
 
-        return not self.has_map_interpolated or self.do_plot_map
+        return project_faceon(self.total_fractions_name, self.total_fractions, spacing=self.config.lowres_map_spacing,
+                              spacing_factor=self.config.lowres_map_spacing_factor, height=self.midplane_height,
+                              return_stddev=True, return_ncells=True, as_image=True)
 
     # -----------------------------------------------------------------
 
     @property
-    def needs_map_midplane_interpolated(self):
+    def lowres_frame_midplane(self):
+        return self.lowres_map_midplane.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_stddev_midplane(self):
+        return self.lowres_map_midplane.frames.stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_ncells_midplane(self):
+        return self.lowres_map_midplane.frames.ncells
+
+    # -----------------------------------------------------------------
+    #   FACEON
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_map_faceon_path(self):
+        return fs.join(self.cell_heating_path, "lowres_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_lowres_map_faceon(self):
+        return fs.is_file(self.lowres_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Image, "lowres_map_faceon_path", True, write=False)
+    def lowres_map_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_map_midplane_interpolated or self.do_plot_map_midplane
+        return project_faceon(self.total_fractions_name, self.total_fractions, spacing=self.config.lowres_map_spacing,
+                              spacing_factor=self.config.lowres_map_spacing_factor, return_stddev=True, return_ncells=True, as_image=True)
 
     # -----------------------------------------------------------------
 
-    def interpolate_maps(self):
+    @property
+    def lowres_frame_faceon(self):
+        return self.lowres_map_faceon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_stddev_faceon(self):
+        return self.lowres_map_faceon.frames.stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_ncells_faceon(self):
+        return self.lowres_map_faceon.frames.ncells
+
+    # -----------------------------------------------------------------
+    #   EDGEON
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_map_edgeon_path(self):
+        return fs.join(self.cell_heating_path, "lowres_edgeon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_lowres_map_edgeon(self):
+        return fs.is_file(self.lowres_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Image, "lowres_map_edgeon_path", True, write=False)
+    def lowres_map_edgeon(self):
 
         """
         This function ...
+        :return:
+        """
+
+        return project_edgeon(self.total_fractions_name, self.total_fractions, spacing=self.config.lowres_map_spacing,
+                              spacing_factor=self.config.lowres_map_spacing_factor, return_stddev=True, return_ncells=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_frame_edgeon(self):
+        return self.lowres_map_edgeon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_stddev_edgeon(self):
+        return self.lowres_map_edgeon.frames.stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_ncells_edgeon(self):
+        return self.lowres_map_edgeon.frames.ncells
+
+    # -----------------------------------------------------------------
+    # HIGHRES MAPS
+    # -----------------------------------------------------------------
+    #   MIDPLANE
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_map_midplane_path(self):
+        return fs.join(self.cell_heating_path, "highres_midplane.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_map_midplane(self):
+        return fs.is_file(self.highres_map_midplane_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Image, "highres_map_midplane_path", True, write=False)
+    def highres_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return project_data(self.total_fractions_name, self.total_fractions, self.faceon_projection,
+                            return_stddev=True, return_ncells=True, as_image=True, height=self.midplane_height)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_frame_midplane(self):
+        return self.highres_map_midplane.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_stddev_midplane(self):
+        return self.highres_map_midplane.frames.stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_ncells_midplane(self):
+        return self.highres_map_midplane.frames.ncells
+
+    # -----------------------------------------------------------------
+    #   FACEON
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_map_faceon_path(self):
+        return fs.join(self.cell_heating_path, "highres_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_map_faceon(self):
+        return fs.is_file(self.highres_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Image, "highres_map_faceon_path", True, write=False)
+    def highres_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return project_data(self.total_fractions_name, self.total_fractions, self.faceon_projection,
+                            return_ncells=True, return_stddev=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_frame_faceon(self):
+        return self.highres_map_faceon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_stddev_faceon(self):
+        return self.highres_map_faceon.frames.stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_ncells_faceon(self):
+        return self.highres_map_faceon.frames.ncells
+
+    # -----------------------------------------------------------------
+    #   EDGEON
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_map_edgeon_path(self):
+        return fs.join(self.cell_heating_path, "highres_edgeon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_map_edgeon(self):
+        return fs.is_file(self.highres_map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Image, "highres_map_edgeon_path", True, write=False)
+    def highres_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return project_data(self.total_fractions_name, self.total_fractions, self.edgeon_projection,
+                            return_ncells=True, return_stddev=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_frame_edgeon(self):
+        return self.highres_map_edgeon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_stddev_edgeon(self):
+        return self.highres_map_edgeon.frames.stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_ncells_edgeon(self):
+        return self.highres_map_edgeon.frames.ncells
+
+    # -----------------------------------------------------------------
+    # INTERPOLATED MAPS
+    # -----------------------------------------------------------------
+
+    def interpolate_map(self, frame, ncells):
+
+        """
+        This function ...
+        :param frame:
+        :param ncells:
         :return:
         """
 
         # Inform the user
-        log.info("Getting the interpolated versions of the heating fraction maps ...")
-
-        # Face-on
-        if self.needs_map_interpolated: self.get_map_interpolated()
-
-        # Midplane
-        if self.needs_map_midplane_interpolated: self.get_map_midplane_interpolated()
-
-    # -----------------------------------------------------------------
-
-    def get_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load
-        if self.has_map_interpolated: self.load_map_interpolated()
-
-        # Create
-        else: self.create_map_interpolated()
-
-    # -----------------------------------------------------------------
-
-    def load_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the interpolated version of the map of the heating fraction ...")
-
-        # Load
-        self.map_interpolated = Frame.from_file(self.map_interpolated_path)
-
-    # -----------------------------------------------------------------
-
-    def create_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the interpolated version of the map of the heating fraction ...")
+        #log.info("Creating the interpolated version of the map of the heating fraction ...")
 
         # Copy
-        self.map_interpolated = self.map.copy()
+        interpolated = frame.copy()
 
         # Get outside nans
-        outside_nans = self.map_interpolated.nans.largest()
-        #plotting.plot_mask(outside_nans, title="outside nans")
-        outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans.fits"))
+        outside_nans = interpolated.nans.largest()
+        # plotting.plot_mask(outside_nans, title="outside nans")
+        #outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans.fits"))
         not_nans = outside_nans.inverse()
         not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
-        #not_nans.fill_holes()
-        not_nans.saveto(fs.join(self.cell_heating_path, "not_nans.fits"))
+        # not_nans.fill_holes()
+        #not_nans.saveto(fs.join(self.cell_heating_path, "not_nans.fits"))
         do_nans = not_nans.largest().inverse()
 
         # Get mask
-        where = self.map_ncells.where_smaller_than(self.config.min_ncells)
+        where = ncells.where_smaller_than(self.config.min_ncells)
 
-        #plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
-        #plotting.plot_mask(self.map_interpolated.nans, title="nans")
-
-        # Put pixels to NaN
-        self.map_interpolated.replace_by_nans(where)
-
-        #plotting.plot_mask(self.map_interpolated.nans, title="nans")
-        #exit()
-
-        # Interpolate nans
-        self.map_interpolated.interpolate_nans(sigma=2.)
-        self.map_interpolated.replace_by_nans(do_nans)
-
-    # -----------------------------------------------------------------
-
-    def get_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load
-        if self.has_map_midplane_interpolated: self.load_map_midplane_interpolated()
-
-        # Create
-        else: self.create_map_midplane_interpolated()
-
-    # -----------------------------------------------------------------
-
-    def load_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the interpolated version of the map of the heating fraction in the midplane ...")
-
-        # Load
-        self.map_midplane_interpolated = Frame.from_file(self.map_midplane_interpolated_path)
-
-    # -----------------------------------------------------------------
-
-    def create_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the interpolated version of the map of the heating fraction in the midplane ...")
-
-        # Copy
-        self.map_midplane_interpolated = self.map_midplane.copy()
-
-        # Get outside nans
-        outside_nans = self.map_midplane_interpolated.nans.largest()
-        #plotting.plot_mask(outside_nans, title="outside nans")
-        outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans_midplane.fits"))
-        not_nans = outside_nans.inverse()
-        not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
-        #not_nans.fill_holes()
-        not_nans.saveto(fs.join(self.cell_heating_path, "not_nans_midplane.fits"))
-        do_nans = not_nans.largest().inverse()
-
-        # Get mask
-        where = self.map_midplane_ncells.where_smaller_than(self.config.min_ncells_midplane)
+        # plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
+        # plotting.plot_mask(self.map_interpolated.nans, title="nans")
 
         # Put pixels to NaN
-        self.map_midplane_interpolated.replace_by_nans(where)
+        interpolated.replace_by_nans(where)
+
+        # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+        # exit()
 
         # Interpolate nans
-        self.map_midplane_interpolated.interpolate_nans(sigma=2.)
-        self.map_midplane_interpolated.replace_by_nans(do_nans)
+        interpolated.interpolate_nans(sigma=2.)
+        interpolated.replace_by_nans(do_nans)
 
+        # Return the interpolated frame
+        return interpolated
+
+    # -----------------------------------------------------------------
+    # LOWRES MIDPLANE
     # -----------------------------------------------------------------
 
     @property
-    def do_write_absorptions(self):
+    def lowres_frame_midplane_interpolated_path(self):
+        return fs.join(self.cell_heating_path, "lowres_midplane_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "lowres_frame_midplane_interpolated_path", True)
+    def lowres_frame_midplane_interpolated(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_absorptions and self.absorptions is not None
+        # Interpolate
+        return self.interpolate_map(self.lowres_frame_midplane, self.lowres_ncells_midplane)
 
+    # -----------------------------------------------------------------
+    # LOWRES FACEON
     # -----------------------------------------------------------------
 
     @property
-    def do_write_heating_fractions(self):
+    def lowres_frame_faceon_interpolated_path(self):
+        return fs.join(self.cell_heating_path, "lowres_faceon_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "lowres_frame_faceon_interpolated_path", True)
+    def lowres_frame_faceon_interpolated(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_heating_fractions and self.heating_fractions is not None
+        # Interpolate
+        return self.interpolate_map(self.lowres_frame_faceon, self.lowres_ncells_faceon)
 
+    # -----------------------------------------------------------------
+    # LOWRES EDGEON
     # -----------------------------------------------------------------
 
     @property
-    def do_write_heating_fractions_diffuse(self):
+    def lowres_frame_edgeon_interpolated_path(self):
+        return fs.join(self.cell_heating_path, "lowres_edgeon_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "lowres_frame_edgeon_interpolated_path", True)
+    def lowres_frame_edgeon_interpolated(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_heating_fractions_diffuse and self.diffuse_heating_fractions is not None
+        # Interpolate
+        return self.interpolate_map(self.lowres_frame_edgeon, self.lowres_ncells_edgeon)
 
+    # -----------------------------------------------------------------
+    # HIGHRES MIDPLANE
     # -----------------------------------------------------------------
 
     @property
-    def do_write_distribution(self):
+    def highres_frame_midplane_interpolated_path(self):
+        return fs.join(self.cell_heating_path, "highres_midplane_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "highres_frame_midplane_interpolated_path", True)
+    def highres_frame_midplane_interpolated(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_distribution and self.distribution is not None
+        # Interpolate
+        return self.interpolate_map(self.highres_frame_midplane, self.highres_ncells_midplane)
 
+    # -----------------------------------------------------------------
+    # HIGHRES FACEON
     # -----------------------------------------------------------------
 
     @property
-    def do_write_distribution_diffuse(self):
+    def highres_frame_faceon_interpolated_path(self):
+        return fs.join(self.cell_heating_path, "highres_faceon_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "highres_frame_faceon_interpolated_path", True)
+    def highres_frame_faceon_interpolated(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_distribution_diffuse and self.distribution_diffuse is not None
+        # Interpolated
+        return self.interpolate_map(self.highres_frame_faceon, self.highres_ncells_faceon)
 
+    # -----------------------------------------------------------------
+    # HIGHRES EDGEON
     # -----------------------------------------------------------------
 
     @property
-    def do_write_radial_distribution(self):
+    def highres_frame_edgeon_interpolated_path(self):
+        return fs.join(self.cell_heating_path, "highres_edgeon_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "highres_frame_edgeon_interpolated_path", True)
+    def highres_frame_edgeon_interpolated(self):
 
         """
         This function ...
         :return:
         """
 
-        return not self.has_radial_distribution and self.radial_distribution is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map and self.map is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_stddev and self.map_stddev is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_ncells and self.map_ncells is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_midplane and self.map_midplane is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_midplane_stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_midplane_stddev and self.map_midplane_stddev is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_midplane_ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_midplane_ncells and self.map_midplane_ncells is not None
+        # Interpolated
+        return self.interpolate_map(self.highres_frame_edgeon, self.highres_ncells_edgeon)
 
     # -----------------------------------------------------------------
 
@@ -1561,82 +1225,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the absorption table
-        if self.do_write_absorptions: self.write_absorptions()
+        # Write absorptions
+        self.write_absorptions()
 
         # Write the heating fractions
-        if self.do_write_heating_fractions: self.write_heating_fractions()
+        self.write_fractions()
 
-        # Write the diffuse heating fractions
-        if self.do_write_heating_fractions_diffuse: self.write_heating_fractions_diffuse()
+        # Write the distributions
+        self.write_distributions()
 
-        # Write the distribution of heating fractions
-        if self.do_write_distribution: self.write_distribution()
-
-        # Write diffuse distribution
-        if self.do_write_distribution_diffuse: self.write_distribution_diffuse()
-
-        # Write the radial distribution of heating fractions
-        if self.do_write_radial_distribution: self.write_radial_distribution()
-
-        # Write the map
-        if self.do_write_map: self.write_map()
-
-        # Write the map of the stddev
-        if self.do_write_map_stddev: self.write_map_stddev()
-
-        # Write the map of the number of cells of the map
-        if self.do_write_map_ncells: self.write_map_ncells()
-
-        # Write the interpolated map
-        if self.do_write_map_interpolated: self.write_map_interpolated()
-
-        # Write the map of the midplane
-        if self.do_write_map_midplane: self.write_map_midplane()
-
-        # Write the map of the stddev of the heating fraction in the midplane
-        if self.do_write_map_midplane_stddev: self.write_map_midplane_stddev()
-
-        # Write the map of the number of cells of the midplane map
-        if self.do_write_map_midplane_ncells: self.write_map_midplane_ncells()
-
-        # Write the interpolated map
-        if self.do_write_map_midplane_interpolated: self.write_map_midplane_interpolated()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def absorption_table_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "absorptions.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_absorptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.absorption_table_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_absorptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.absorption_table_path)
+        # Write maps
+        self.write_maps()
 
     # -----------------------------------------------------------------
 
@@ -1648,49 +1247,116 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the absorption table ...")
+        log.info("Writing the absorption data ...")
 
-        # Save the table
-        self.absorptions.saveto(self.absorption_table_path)
+        # Total
+        if self.do_write_total_absorptions: self.write_total_absorptions()
+
+        # Old
+        if self.do_write_old_absorptions: self.write_old_absorptions()
+
+        # Young
+        if self.do_write_young_absorptions: self.write_young_absorptions()
+
+        # Ionizing
+        if self.do_write_ionizing_absorptions: self.write_ionizing_absorptions()
+
+        # Internal
+        if self.do_write_internal_absorptions: self.write_internal_absorptions()
 
     # -----------------------------------------------------------------
 
     @property
-    def heating_fractions_path(self):
+    def do_write_total_absorptions(self):
+        return not self.has_total_absorptions
+
+    # -----------------------------------------------------------------
+
+    def write_total_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.cell_heating_path, "heating_fractions.dat")
+        # Save
+        self.total_absorptions.saveto(self.total_absorptions_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def has_heating_fractions(self):
+    def do_write_old_absorptions(self):
+        return not self.has_old_absorptions
+
+    # -----------------------------------------------------------------
+
+    def write_old_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.heating_fractions_path)
+        # Save
+        self.old_absorptions.saveto(self.old_absorptions_path)
 
     # -----------------------------------------------------------------
 
-    def remove_heating_fractions(self):
+    @property
+    def do_write_young_absorptions(self):
+        return not self.has_young_absorptions
+
+    # -----------------------------------------------------------------
+
+    def write_young_absorptions(self):
 
         """
         This function ...
         :return:
         """
 
-        fs.remove_file(self.heating_fractions_path)
+        # Save
+        self.young_absorptions.saveto(self.young_absorptions_path)
 
     # -----------------------------------------------------------------
 
-    def write_heating_fractions(self):
+    @property
+    def do_write_ionizing_absorptions(self):
+        return not self.has_ionizing_absorptions
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.ionizing_absorptions.saveto(self.ionizing_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_internal_absorptions(self):
+        return not self.has_internal_absorptions
+
+    # -----------------------------------------------------------------
+
+    def write_internal_absorptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.internal_absorptions.saveto(self.internal_absorptions_path)
+
+    # -----------------------------------------------------------------
+
+    def write_fractions(self):
 
         """
         This function ...
@@ -1698,49 +1364,53 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the heating fractions ...")
+        log.info("Writing the heating fraction data ...")
 
-        # Write
-        np.savetxt(self.heating_fractions_path, self.heating_fractions)
+        # Diffuse
+        if self.do_write_diffuse_fractions: self.write_diffuse_fractions()
 
-    # -----------------------------------------------------------------
-
-    @property
-    def heating_fractions_diffuse_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "heating_fractions_diffuse.dat")
+        # Total
+        if self.do_write_total_fractions: self.write_total_fractions()
 
     # -----------------------------------------------------------------
 
     @property
-    def has_heating_fractions_diffuse(self):
+    def do_write_diffuse_fractions(self):
+        return not self.has_diffuse_fractions
+
+    # -----------------------------------------------------------------
+
+    def write_diffuse_fractions(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.is_file(self.heating_fractions_diffuse_path)
+        # Save
+        self.diffuse_fractions.saveto(self.diffuse_fractions_path)
 
     # -----------------------------------------------------------------
 
-    def remove_heating_fractions_diffuse(self):
+    @property
+    def do_write_total_fractions(self):
+        return not self.has_total_fractions
+
+    # -----------------------------------------------------------------
+
+    def write_total_fractions(self):
 
         """
         This function ...
         :return:
         """
 
-        fs.remove_file(self.heating_fractions_diffuse_path)
+        # Save
+        self.total_fractions.saveto(self.total_fractions_path)
 
     # -----------------------------------------------------------------
 
-    def write_heating_fractions_diffuse(self):
+    def write_distributions(self):
 
         """
         This function ...
@@ -1748,96 +1418,22 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the diffuse heating fractions ...")
+        log.info("Writing the distributions of the heating fraction ...")
 
-        # Write
-        np.savetxt(self.heating_fractions_diffuse_path, self.diffuse_heating_fractions)
+        # Diffuse
+        if self.do_write_distribution_diffuse: self.write_distribution_diffuse()
 
-    # -----------------------------------------------------------------
+        # Total
+        if self.do_write_distribution_total: self.write_distribution_total()
 
-    @property
-    def distribution_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the distribution file
-        return fs.join(self.cell_heating_path, "distribution.dat")
+        # Radial
+        if self.do_write_radial_distribution: self.write_radial_distribution()
 
     # -----------------------------------------------------------------
 
     @property
-    def has_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.distribution_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.distribution_path)
-
-    # -----------------------------------------------------------------
-
-    def write_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the distribution of heating fractions of the unevolved stellar population ...")
-
-        # Save the distribution
-        self.distribution.saveto(self.distribution_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def distribution_diffuse_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "distribution_diffuse.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_distribution_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.distribution_diffuse_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_distribution_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.distribution_diffuse_path)
+    def do_write_distribution_diffuse(self):
+        return not self.has_distribution_diffuse
 
     # -----------------------------------------------------------------
 
@@ -1848,47 +1444,32 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Writing the distribution of heating fractions (diffuse) ...")
-
         # Save
         self.distribution_diffuse.saveto(self.distribution_diffuse_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def radial_distribution_path(self):
+    def do_write_distribution_total(self):
+        return not self.has_distribution_total
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_total(self):
 
         """
         This function ...
         :return:
         """
 
-        # Determine the path to the radial distribution file
-        return fs.join(self.cell_heating_path, "radial_distribution.dat")
+        # Save
+        self.distribution_total.saveto(self.distribution_total_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def has_radial_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.radial_distribution_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_radial_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.radial_distribution_path)
+    def do_write_radial_distribution(self):
+        return not self.has_radial_distribution
 
     # -----------------------------------------------------------------
 
@@ -1899,50 +1480,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Writing the radial distribution of heating fractions of the unevolved stellar population ...")
-
-        # Save the radial distribution
+        # Save
         self.radial_distribution.saveto(self.radial_distribution_path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map(self):
+    def write_maps(self):
 
         """
         This function ...
@@ -1950,49 +1493,17 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the map of the heating fraction ...")
+        log.info("Writing the maps ...")
 
-        # Save the map
-        self.map.saveto(self.map_path)
+        # Low-res
+        if self.config.lowres: self.write_lowres_maps()
 
-    # -----------------------------------------------------------------
-
-    @property
-    def map_stddev_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_stddev.fits")
+        # High-res
+        if self.config.highres: self.write_highres_maps()
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_map_stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_stddev_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_stddev(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_stddev_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_stddev(self):
+    def write_lowres_maps(self):
 
         """
         This function ...
@@ -2000,382 +1511,145 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the map of the standard deviation on the heating fraction ...")
+        log.info("Writing the low-resolution heating fraction maps ...")
 
-        # Save the map
-        self.map_stddev.saveto(self.map_stddev_path)
+        # Midplane
+        if self.do_write_lowres_map_midplane: self.write_lowres_map_midplane()
 
-    # -----------------------------------------------------------------
+        # Face-on
+        if self.do_write_lowres_map_faceon: self.write_lowres_map_faceon()
 
-    @property
-    def map_ncells_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_ncells.fits")
+        # Edge-on
+        if self.do_write_lowres_map_edgeon: self.write_lowres_map_edgeon()
 
     # -----------------------------------------------------------------
 
     @property
-    def has_map_ncells(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_ncells_path)
+    def do_write_lowres_map_midplane(self):
+        return not self.has_lowres_map_midplane
 
     # -----------------------------------------------------------------
 
-    def remove_map_ncells(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_ncells(self):
+    def write_lowres_map_midplane(self):
 
         """
         This function ...
         :return:
         """
-
-        # Inform the user
-        log.info("Writing the map of the number of cells used for the heating fraction map ...")
-
-        # Save the map
-        self.map_ncells.saveto(self.map_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_interpolated and self.map_interpolated is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def map_interpolated_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_interpolated.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_interpolated_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_interpolated_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the interpolated version of the heating fraction map ...")
 
         # Save
-        self.map_interpolated.saveto(self.map_interpolated_path)
+        self.lowres_map_midplane.saveto(self.lowres_map_midplane_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def map_midplane_path(self):
+    def do_write_lowres_map_faceon(self):
+        return not self.has_lowres_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def write_lowres_map_faceon(self):
 
         """
         This function ...
         :return:
         """
-
-        return fs.join(self.cell_heating_path, "map_midplane.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_midplane_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_midplane_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_midplane(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map of the heating fraction in the midplane ...")
-
-        # Save the map
-        self.map_midplane.saveto(self.map_midplane_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def map_midplane_stddev_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_midplane_stddev.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map_midplane_stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_midplane_stddev_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_midplane_stddev(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_midplane_stddev_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_midplane_stddev(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map of the standard deviation on the heating fraction map in the midplane ...")
-
-        # Save the map
-        self.map_midplane_stddev.saveto(self.map_midplane_stddev_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def map_midplane_ncells_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_midplane_ncells.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map_midplane_ncells(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_midplane_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_midplane_ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_midplane_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_midplane_ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map of the number of cells used for the heating fraction map in the midplane ...")
-
-        # Save the map
-        self.map_midplane_ncells.saveto(self.map_midplane_ncells_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_write_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return not self.has_map_midplane_interpolated and self.map_midplane_interpolated is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def map_midplane_interpolated_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_midplane_interpolated.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_midplane_interpolated_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_midplane_interpolated_path)
-
-    # -----------------------------------------------------------------
-
-    def write_map_midplane_interpolated(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the interpolated version of the map of the heating fraction in the midplane ...")
 
         # Save
-        self.map_midplane_interpolated.saveto(self.map_midplane_interpolated_path)
+        self.lowres_map_faceon.saveto(self.lowres_map_faceon_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_plot_distribution(self):
+    def do_write_lowres_map_edgeon(self):
+        return not self.has_lowres_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def write_lowres_map_edgeon(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.plot_distribution and not self.has_distribution_plot
+        # Save
+        self.lowres_map_edgeon.saveto(self.lowres_map_edgeon_path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def do_plot_radial_distribution(self):
+    def write_highres_maps(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.plot_radial_distribution and not self.has_radial_distribution_plot
+        # Inform the user
+        log.info("Writing the high-resolution heating fraction maps ...")
+
+        # Midplane
+        if self.do_write_highres_map_midplane: self.write_highres_map_midplane()
+
+        # Face-on
+        if self.do_write_highres_map_faceon: self.write_highres_map_faceon()
+
+        # Edge-on
+        if self.do_write_highres_map_edgeon: self.write_highres_map_edgeon()
 
     # -----------------------------------------------------------------
 
     @property
-    def do_plot_map(self):
+    def do_write_highres_map_midplane(self):
+        return not self.has_highres_map_midplane
+
+    # -----------------------------------------------------------------
+
+    def write_highres_map_midplane(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.plot_map and not self.has_map_plot
+        # Save
+        self.highres_map_midplane.saveto(self.highres_map_midplane_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_plot_map_midplane(self):
+    def do_write_highres_map_faceon(self):
+        return not self.has_highres_map_faceon
+
+    # -----------------------------------------------------------------
+
+    def write_highres_map_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.plot_map_midplane and not self.has_map_midplane_plot
+        # Save
+        self.highres_map_faceon.saveto(self.highres_map_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_highres_map_edgeon(self):
+        return not self.has_highres_map_edgeon
+
+    # -----------------------------------------------------------------
+
+    def write_highres_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save
+        self.highres_map_edgeon.saveto(self.highres_map_edgeon_path)
 
     # -----------------------------------------------------------------
 
@@ -2389,57 +1663,15 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Plotting ...")
 
-        # Plot the distribution of heating fractions
-        if self.do_plot_distribution: self.plot_distribution()
+        # Distributions
+        self.plot_distributions()
 
-        # Plot the radial distribution of heating fractions
-        if self.do_plot_radial_distribution: self.plot_radial_distribution()
-
-        # Plot a map of the heating fraction for a face-on view of the galaxy
-        if self.do_plot_map: self.plot_map()
-
-        # Plot
-        if self.do_plot_map_midplane: self.plot_map_midplane()
+        # Maps
+        self.plot_maps()
 
     # -----------------------------------------------------------------
 
-    @property
-    def distribution_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the plot file
-        return fs.join(self.cell_heating_path, "distribution.pdf")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_distribution_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.distribution_plot_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_distribution_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.distribution_plot_path)
-
-    # -----------------------------------------------------------------
-
-    def plot_distribution(self):
+    def plot_distributions(self):
 
         """
         This function ...
@@ -2447,54 +1679,132 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Plotting a histogram of the distribution of heating fractions of the unevolved stellar population ...")
+        log.info("Plotting the distributions ...")
 
-        # Create the plot file
-        #self.distribution.plot(title="Distribution of the heating fraction of the unevolved stellar population", path=path)
-        #plot_distribution(self.distribution, title="Distribution of the heating fraction of the unevolved stellar population", path=self.distribution_plot_path)
+        # Diffuse
+        if self.do_plot_distribution_diffuse: self.plot_distribution_diffuse()
 
+        # Total
+        if self.do_plot_distribution_total: self.plot_distribution_total()
+
+        # Diffuse and total
+        if self.do_plot_distribution_diffuse_and_total: self.plot_distribution_diffuse_and_total()
+
+        # Radial
+        if self.do_plot_radial_distribution: self.plot_radial_distribution()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_diffuse_plot_path(self):
+        return fs.join(self.cell_heating_path, "distribution_diffuse.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_diffuse_plot(self):
+        return fs.is_file(self.distribution_diffuse_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_distribution_diffuse(self):
+        return not self.has_distribution_diffuse_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_distribution_diffuse(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Plot
+        plot_distribution(self.distribution_diffuse, path=self.distribution_diffuse_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_total_plot_path(self):
+        return fs.join(self.cell_heating_path, "distribution_total.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_total_plot(self):
+        return fs.is_file(self.distribution_total_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_distribution_total(self):
+        return not self.has_distribution_total_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_distribution_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_distribution(self.distribution_total, path=self.distribution_total_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distribution_diffuse_and_total_plot_path(self):
+        return fs.join(self.cell_heating_path, "distribution_diffuse_and_total.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_distribution_diffuse_and_total_plot(self):
+        return fs.is_file(self.distribution_diffuse_and_total_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_distribution_diffuse_and_total(self):
+        return not self.has_distribution_diffuse_and_total_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_distribution_diffuse_and_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set distributions
         distributions = OrderedDict()
-        distributions["unevolved"] = self.distribution
+        distributions["unevolved"] = self.distribution_total
         distributions["unevolved (diffuse)"] = self.distribution_diffuse
 
         # Plot
-        plot_distributions(distributions, path=self.distribution_plot_path, alpha=0.5)
+        plot_distributions(distributions, path=self.distribution_diffuse_and_total_plot_path, alpha=0.5)
 
     # -----------------------------------------------------------------
 
     @property
     def radial_distribution_plot_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Determine the path to the plot file
         return fs.join(self.cell_heating_path, "radial_distribution.pdf")
 
     # -----------------------------------------------------------------
 
     @property
     def has_radial_distribution_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.radial_distribution_plot_path)
 
     # -----------------------------------------------------------------
 
-    def remove_radial_distribution_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.radial_distribution_plot_path)
+    @property
+    def do_plot_radial_distribution(self):
+        return not self.has_radial_distribution_plot
 
     # -----------------------------------------------------------------
 
@@ -2507,7 +1817,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         if self.config.radial_distribution_radii is None: return []
-        return [radius.to("pc").value for radius in self.config.radial_distribution_radii]
+        else: return [radius.to("pc").value for radius in self.config.radial_distribution_radii]
 
     # -----------------------------------------------------------------
 
@@ -2518,54 +1828,16 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting a 2D histogram of the radial distribution of the heating fractions of the unevolved stellar population ...")
-
         # Set title
         title = "Radial distribution of the heating fraction of the unevolved stellar population"
 
         # Create the plot file
-        self.radial_distribution.plot(radii=self.radial_distribution_plot_radii_pc, title=title, path=self.radial_distribution_plot_path)
+        self.radial_distribution.plot(radii=self.radial_distribution_plot_radii_pc, title=title,
+                                      path=self.radial_distribution_plot_path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def map_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the plot file
-        return fs.join(self.cell_heating_path, "map." + self.config.plotting_format)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_map_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_plot_path)
-
-    # -----------------------------------------------------------------
-
-    def remove_map_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_plot_path)
-
-    # -----------------------------------------------------------------
-
-    def plot_map(self):
+    def plot_maps(self):
 
         """
         This function ...
@@ -2573,93 +1845,236 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
+        log.info("Plotting the maps of the heating fraction ...")
+
+        # Lowres
+        if self.config.lowres: self.plot_lowres_maps()
+
+        # Highres
+        if self.config.highres: self.plot_highres_maps()
+
+    # -----------------------------------------------------------------
+
+    def plot_heating_fraction_map(self, frame, path=None):
+
+        """
+        This function ...
+        :param frame:
+        :param path:
+        :return:
+        """
 
         # Plot
-        plotting.plot_map(self.map_interpolated, path=self.map_plot_path, interval=(0.,1.), contours=self.config.contours, ncontours=self.config.nlevels)
+        plot_map(frame, path=path, interval=(0., 1.), contours=self.config.contours, ncontours=self.config.nlevels)
 
-        # Plot
-        #plotting.plot_frame_contours(self.map_interpolated, plot_data=True, single_colour="white",
-        #                             path=self.map_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
+    # -----------------------------------------------------------------
+
+    def plot_lowres_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Midplane
+        if self.do_plot_lowres_map_midplane: self.plot_lowres_map_midplane()
+
+        # Faceon
+        if self.do_plot_lowres_map_faceon: self.plot_lowres_map_faceon()
+
+        # Edgeon
+        if self.do_plot_lowres_map_edgeon: self.plot_lowres_map_edgeon()
 
     # -----------------------------------------------------------------
 
     @property
-    def map_midplane_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.cell_heating_path, "map_midplane." + self.config.plotting_format)
+    def lowres_map_midplane_plot_path(self):
+        return fs.join(self.cell_heating_path, "lowres_midplane.pdf")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_map_midplane_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.is_file(self.map_midplane_plot_path)
+    def has_lowres_map_midplane_plot(self):
+        return fs.is_file(self.lowres_map_midplane_plot_path)
 
     # -----------------------------------------------------------------
 
-    def remove_map_midplane_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fs.remove_file(self.map_midplane_plot_path)
+    @property
+    def do_plot_lowres_map_midplane(self):
+        return not self.has_lowres_map_midplane_plot
 
     # -----------------------------------------------------------------
 
-    def plot_map_midplane(self):
+    def plot_lowres_map_midplane(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting a map of the heating fraction in the midplane of the galaxy ...")
-
-        # Plot
-        plotting.plot_map(self.map_midplane_interpolated, path=self.map_midplane_plot_path, contours=self.config.contours, ncontours=self.config.nlevels, interval=(0.,1.))
-
-        # Plot
-        #plotting.plot_frame_contours(self.map_midplane_interpolated, plot_data=True, single_colour="white",
-        #                             path=self.map_midplane_plot_path, nlevels=self.config.nlevels, interval=[0.,1.])
+        self.plot_heating_fraction_map(self.lowres_frame_midplane_interpolated, path=self.lowres_map_midplane_plot_path)
 
     # -----------------------------------------------------------------
 
-    def remove_map_stddev_and_ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.has_map: self.remove_map()
-        if self.has_map_stddev: self.remove_map_stddev()
-        if self.has_map_ncells: self.remove_map_ncells()
+    @property
+    def lowres_map_faceon_plot_path(self):
+        return fs.join(self.cell_heating_path, "lowres_faceon.pdf")
 
     # -----------------------------------------------------------------
 
-    def remove_map_midplane_stddev_and_ncells(self):
+    @property
+    def has_lowres_map_faceon_plot(self):
+        return fs.is_file(self.lowres_map_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_lowres_map_faceon(self):
+        return not self.has_lowres_map_faceon_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_lowres_map_faceon(self):
 
         """
         This function ...
         :return:
         """
 
-        if self.has_map_midplane: self.remove_map_midplane()
-        if self.has_map_midplane_stddev: self.remove_map_midplane_stddev()
-        if self.has_map_midplane_ncells: self.remove_map_midplane_ncells()
+        self.plot_heating_fraction_map(self.lowres_frame_faceon_interpolated, path=self.lowres_map_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lowres_map_edgeon_plot_path(self):
+        return fs.join(self.cell_heating_path, "lowres_edgeon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_lowres_map_edgeon_plot(self):
+        return fs.is_file(self.lowres_map_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_lowres_map_edgeon(self):
+        return not self.has_lowres_map_edgeon_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_lowres_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.plot_heating_fraction_map(self.lowres_frame_edgeon_interpolated, path=self.lowres_map_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_highres_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Midplane
+        if self.do_plot_highres_map_midplane: self.plot_highres_map_midplane()
+
+        # Faceon
+        if self.do_plot_highres_map_faceon: self.plot_highres_map_faceon()
+
+        # Edgeon
+        if self.do_plot_highres_map_edgeon: self.plot_highres_map_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_map_midplane_plot_path(self):
+        return fs.join(self.cell_heating_path, "highres_midplane.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_map_midplane_plot(self):
+        return fs.is_file(self.highres_map_midplane_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_highres_map_midplane(self):
+        return not self.has_highres_map_midplane_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_highres_map_midplane(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.plot_heating_fraction_map(self.highres_frame_midplane_interpolated, path=self.highres_map_midplane_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_map_faceon_plot_path(self):
+        return fs.join(self.cell_heating_path, "highres_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_map_faceon_plot(self):
+        return fs.is_file(self.highres_map_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_highres_map_faceon(self):
+        return not self.has_highres_map_faceon_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_highres_map_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.plot_heating_fraction_map(self.highres_frame_faceon_interpolated, path=self.highres_map_faceon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highres_map_edgeon_plot_path(self):
+        return fs.join(self.cell_heating_path, "highres_edgeon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_map_edgeon_plot(self):
+        return fs.is_file(self.highres_map_edgeon_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_highres_map_edgeon(self):
+        return not self.has_highres_map_edgeon_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_highres_map_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.plot_heating_fraction_map(self.highres_frame_edgeon_interpolated, path=self.highres_map_edgeon_plot_path)
 
 # -----------------------------------------------------------------

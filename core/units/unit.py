@@ -3871,3 +3871,57 @@ def get_common_unit(values):
     return units[0]
 
 # -----------------------------------------------------------------
+
+def get_conversion_factor(from_unit, to_unit, distance=None, wavelength=None, solid_angle=None, silent=False, parse=True,
+                          conversion_info=None):
+
+    """
+    This function ...
+    :param from_unit:
+    :param to_unit:
+    :param distance:
+    :param wavelength:
+    :param solid_angle:
+    :param silent:
+    :param parse:
+    :param conversion_info:
+    :return:
+    """
+
+    # Parse
+    if parse:
+        from_unit = parse_unit(from_unit)
+        to_unit = parse_unit(to_unit)
+
+    # Check if photometric unit
+    is_photometric = isinstance(from_unit, PhotometricUnit)
+
+    # This frame has a photometric unit
+    if is_photometric:
+
+        # Check that the target unit is also photometric
+        if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the original unit is")
+
+        # Set the conversion info
+        if conversion_info is None: conversion_info = dict()
+        else: conversion_info = copy.copy(conversion_info)
+        if distance is not None: conversion_info["distance"] = distance
+        if wavelength is not None: conversion_info["wavelength"] = wavelength
+        if solid_angle is not None: conversion_info["solid_angle"] = solid_angle
+
+        # Calculate the conversion factor
+        factor = from_unit.conversion_factor(to_unit, silent=silent, **conversion_info)
+
+    # This frame does not have a photometric unit
+    else:
+
+        # Check whether target unit is also not photometric
+        if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the original unit is not")
+
+        # Calculate the conversion factor
+        factor = from_unit.to(to_unit)
+
+    # Return
+    return factor
+
+# -----------------------------------------------------------------

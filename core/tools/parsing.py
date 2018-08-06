@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
+import ast
 import warnings
 from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
@@ -549,7 +550,9 @@ def string(argument):
     :return:
     """
 
-    return argument
+    from .strings import is_in_quotes, unquote
+    if is_in_quotes(argument): return unquote(argument)
+    else: return argument
 
 # -----------------------------------------------------------------
 
@@ -995,7 +998,7 @@ def string_list(argument):
     if argument == "": return []
     else:
         parts = argument.split(",")
-        return [part.strip() for part in parts]
+        return [string(part.strip()) for part in parts]
 
 # -----------------------------------------------------------------
 
@@ -1227,10 +1230,11 @@ def ordered_dictionary(argument):
     :return:
     """
 
-    if argument == "": return OrderedDict()
-    else:
-        d = eval("OrderedDict([(" + argument.replace(",", "), (").replace(":", ", ") + ")])")
-        return d
+    #if argument == "": return OrderedDict()
+    #else:
+    #    d = eval("OrderedDict([(" + argument.replace(",", "), (").replace(":", ", ") + ")])")
+    #    return d
+    return dictionary(argument) # now also ordered
 
 # -----------------------------------------------------------------
 
@@ -1242,13 +1246,26 @@ def dictionary(argument):
     :return:
     """
 
-    if argument == "": return dict()
+    class DictParser(ast.NodeVisitor):
+        def visit_Dict(self, node):
+            #keys, values = node.keys, node.values
+            keys = [n.s for n in node.keys]
+            values = [n.s for n in node.values]
+            self.od = OrderedDict(zip(keys, values))
+
+    if argument == "": return OrderedDict()
     else:
         eval_string = "{" + argument + "}"
         #print(eval_string)
-        d = eval(eval_string)
-        if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
-        return d
+        #d = eval(eval_string)
+        dp = DictParser()
+
+        try:
+            dp.visit(ast.parse(eval_string))
+            ordered_dict = dp.od
+            #if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
+            return ordered_dict
+        except AttributeError: raise ValueError("Not a proper specification of a dictionary")
 
 # -----------------------------------------------------------------
 
@@ -1460,6 +1477,19 @@ def filepath_or_string_filepath_dictionary(argument):
 
     try: return string_filepath_dictionary(argument)
     except (ValueError, SyntaxError) as e: return file_path(argument)
+
+# -----------------------------------------------------------------
+
+def filepath_list_or_string_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_filepath_dictionary(argument)
+    except (ValueError, SyntaxError) as e: return filepath_list(argument)
 
 # -----------------------------------------------------------------
 
@@ -2313,6 +2343,8 @@ def lazy_filter_list(argument):
         # If parsing directly failes
         except ValueError:
 
+            matched = []
+
             # Try matching with broad bands
             for spec in broad_band_identifiers:
 
@@ -2320,11 +2352,13 @@ def lazy_filter_list(argument):
 
                 if "instruments" in identifier:
                     if arg in identifier.instruments:
-                        filters.append(BroadBandFilter(spec))
+                        #filters.append(BroadBandFilter(spec))
+                        matched.append(BroadBandFilter(spec))
                         continue # this filter matches
                 if "observatories" in identifier:
                     if arg in identifier.observatories:
-                        filters.append(BroadBandFilter(spec))
+                        #filters.append(BroadBandFilter(spec))
+                        matched.append(BroadBandFilter(spec))
                         continue # this filter matches
 
             # Try matching with narrow bands defined by wavelength ranges
@@ -2339,8 +2373,13 @@ def lazy_filter_list(argument):
                 fltr_min = NarrowBandFilter(wavelength_range.min, name=alias + " min")
                 fltr_max = NarrowBandFilter(wavelength_range.max, name=alias + " max")
 
-                filters.append(fltr_min)
-                filters.append(fltr_max)
+                #filters.append(fltr_min)
+                #filters.append(fltr_max)
+                matched.append(fltr_min)
+                matched.append(fltr_max)
+
+            if len(matched) == 0: raise ValueError("No matching filter(s) found for '" + arg + "'")
+            filters.extend(matched)
 
     # Return the list of filters
     return filters
@@ -2368,21 +2407,30 @@ def lazy_broad_band_filter_list(argument):
 
         except ValueError:
 
+            matched = []
+
             # Try matching with broad bands
             for spec in broad_band_identifiers:
 
                 identifier = broad_band_identifiers[spec]
 
+                #print(identifier)
                 #print(spec)
 
                 if "instruments" in identifier:
                     if arg in identifier.instruments:
-                        filters.append(BroadBandFilter(spec))
+                        #filters.append(BroadBandFilter(spec))
+                        matched.append(BroadBandFilter(spec))
                         continue  # this filter matches
                 if "observatories" in identifier:
                     if arg in identifier.observatories:
-                        filters.append(BroadBandFilter(spec))
+                        #filters.append(BroadBandFilter(spec))
+                        matched.append(BroadBandFilter(spec))
                         continue  # this filter matches
+
+            #print(arg, matched)
+            if len(matched) == 0: raise ValueError("No matching filter(s) found for '" + arg + "'")
+            filters.extend(matched)
 
     # Return the filters
     return filters
@@ -2763,7 +2811,7 @@ def parallelization(argument, default_nthreads_per_core=1):
     """
 
     from ..simulation.parallelization import Parallelization
-    return Parallelization.from_string(argument, default_nthreads_per_core=default_nthreads_per_core)
+    return Parallelization.from_string(string(argument), default_nthreads_per_core=default_nthreads_per_core)
 
 # -----------------------------------------------------------------
 
@@ -2793,7 +2841,7 @@ def host(argument):
     """
 
     from ..remote.host import load_host
-    return load_host(argument)
+    return load_host(string(argument))
 
 # -----------------------------------------------------------------
 

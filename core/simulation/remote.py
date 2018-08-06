@@ -2113,10 +2113,19 @@ class SKIRTRemote(Remote):
                 # Determine local filepath
                 local_filepath = fs.join(simulation.output_path, filename)
 
+                # Is the file present locally?
                 if fs.is_file(local_filepath):
 
-                    # For a FITS file, check whether it's valid
-                    if local_filepath.endswith(".fits") and not is_valid(local_filepath):
+                    # Does the filesize match?
+                    if fs.file_nbytes(local_filepath) != self.file_nbytes(remote_filepath):
+
+                        log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                        fs.remove_file(local_filepath)
+                        copy_paths.append(remote_filepath)
+
+                    # For a FITS file, ALSO check whether it's valid
+                    elif local_filepath.endswith(".fits") and not is_valid(local_filepath):
+
                         log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
                         fs.remove_file(local_filepath)
                         copy_paths.append(remote_filepath)
@@ -2167,11 +2176,22 @@ class SKIRTRemote(Remote):
                 local_filepath = fs.join(simulation.output_path, filename)
 
                 if not fs.is_file(local_filepath): copy_paths.append(filepath)
-                elif local_filepath.endswith(".fits") and not is_valid(local_filepath):
-                    log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
-                    fs.remove_file(local_filepath)
-                    copy_paths.append(filepath)
-                else: log.warning("The output file '" + filename + "' has already been retrieved: skipping ...")
+
+                else:
+
+                    if fs.file_nbytes(local_filepath) != self.file_nbytes(filepath):
+
+                        log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                        fs.remove_file(local_filepath)
+                        copy_paths.append(filepath)
+
+                    elif local_filepath.endswith(".fits") and not is_valid(local_filepath):
+
+                        log.warning("Output file '" + filename + "' was incompletely retrieved: downloading again ...")
+                        fs.remove_file(local_filepath)
+                        copy_paths.append(filepath)
+
+                    else: log.warning("The output file '" + filename + "' has already been (completely) retrieved: skipping ...")
 
         # All already retrieved
         if len(copy_paths) == 0: log.success("All necessary output files have already been retrieved succesfully")

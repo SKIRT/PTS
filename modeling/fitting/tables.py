@@ -656,6 +656,19 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def _get_generation_index(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # COMPLETELY DIFFERENT FROM INDEX_FOR_GENERATION!!
+        return self.find_index(generation_name, "Generation name")
+
+    # -----------------------------------------------------------------
+
     def set_finishing_time(self, generation_name, timestamp):
 
         """
@@ -669,17 +682,35 @@ class GenerationsTable(SmartTable):
         if generation_name not in self.generation_names: raise ValueError("Generation '" + generation_name + "' does not exist in the table")
 
         # Loop over the rows, find the entry for the specified generation
-        for i in range(len(self)):
+        #for i in range(len(self)):
+        index = self._get_generation_index(generation_name)
 
-            if self["Generation name"][i] == generation_name: # match
+        # Resize column if necessary
+        self._resize_string_column("Finishing time", timestamp)
 
-                self._resize_string_column("Finishing time", timestamp)
+        # Set the value
+        self["Finishing time"].mask[index] = False
+        self["Finishing time"][index] = timestamp
 
-                # Set the value
-                self["Finishing time"].mask[i] = False
-                self["Finishing time"][i] = timestamp
+    # -----------------------------------------------------------------
 
-                break
+    def set_nsimulations(self, generation_name, nsimulations):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nsimulations:
+        :return:
+        """
+
+        # Check if the generation exists
+        if generation_name not in self.generation_names: raise ValueError("Generation '" + generation_name + "' does not exist in the table")
+
+        # Get the index
+        index = self._get_generation_index(generation_name)
+
+        # Set the number of simulations
+        self["Number of simulations"][index] = nsimulations
 
     # -----------------------------------------------------------------
 

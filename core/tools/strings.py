@@ -126,6 +126,18 @@ def uppercase(string):
 
 # -----------------------------------------------------------------
 
+def title(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return string.title()
+
+# -----------------------------------------------------------------
+
 def capitalize(string):
 
     """
@@ -134,7 +146,31 @@ def capitalize(string):
     :return:
     """
 
-    return string.lower().title()
+    return string.capitalize()
+
+# -----------------------------------------------------------------
+
+def smart_title(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return ' '.join(smart_capitalize(word) for word in string.split())
+
+# -----------------------------------------------------------------
+
+def smart_capitalize(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return string[0].upper() + string[1:]
 
 # -----------------------------------------------------------------
 
@@ -174,6 +210,18 @@ def is_capitalized(string):
 
 # -----------------------------------------------------------------
 
+def is_title(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return title(string) == string
+
+# -----------------------------------------------------------------
+
 def case_combinations(string, also_one_letter=True):
 
     """
@@ -191,15 +239,15 @@ def case_combinations(string, also_one_letter=True):
 
         result.append(string)
         result.append(uppercase(string))
-        result.append(capitalize(string))
+        result.append(title(string))
 
     elif is_uppercase(string):
 
         result.append(string)
         result.append(lowercase(string))
-        result.append(capitalize(string))
+        result.append(title(string))
 
-    elif is_capitalized(string):
+    elif is_title(string):
 
         result.append(string)
         result.append(lowercase(string))
@@ -210,7 +258,7 @@ def case_combinations(string, also_one_letter=True):
         result.append(string)
         result.append(lowercase(string))
         result.append(uppercase(string))
-        result.append(capitalize(string))
+        result.append(title(string))
 
     # Return the resulting list
     return result
@@ -1299,6 +1347,12 @@ def is_single_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_in_single_quotes(string):
+    if string == "": return False
+    return string[0] == "'" and string[-1] == "'"
+
+# -----------------------------------------------------------------
+
 def contains_single_quotes(string):
 
     """
@@ -1327,6 +1381,12 @@ def is_double_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_in_double_quotes(string):
+    if string == "": return False
+    return string[0] == '"' and string[-1] == '"'
+
+# -----------------------------------------------------------------
+
 def contains_double_quotes(string):
 
     """
@@ -1351,6 +1411,11 @@ def is_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_in_quotes(string):
+    return is_in_single_quotes(string) or is_in_double_quotes(string)
+
+# -----------------------------------------------------------------
+
 def unquote(string):
 
     """
@@ -1359,7 +1424,7 @@ def unquote(string):
     :return:
     """
 
-    if is_quoted(string): return string[1:-1]
+    if is_in_quotes(string): return string[1:-1]
     else: return string
 
 # -----------------------------------------------------------------
@@ -1892,5 +1957,52 @@ def is_wrapped_by_squared_brackets(text):
     """
 
     return text.startswith("[") and text.endswith("]")
+
+# -----------------------------------------------------------------
+
+def longest_common_substring(string1, string2):
+
+    """
+    This function ...
+    :param string1:
+    :param string2:
+    :return:
+    """
+
+    from difflib import SequenceMatcher
+    match = SequenceMatcher(None, string1, string2).find_longest_match(0, len(string1), 0, len(string2))
+    return string1[match.a: match.a + match.size]
+
+# -----------------------------------------------------------------
+
+def common_part(*strings, **kwargs):
+
+    """
+    Thisf unction ...
+    :param strings:
+    :param kwargs:
+    :return:
+    """
+
+    return_none = kwargs.pop("return_none", True)
+
+    if len(strings) == 1: return strings[0]
+    else:
+
+        string = longest_common_substring(strings[0], strings[1])
+        if len(strings) == 2:
+            if string == "" and return_none: return None
+            else: return string
+
+        for index in range(2,len(strings)):
+            print(string, strings[index])
+            string = longest_common_substring(string, strings[index])
+            print(string)
+            if string == "":
+                if return_none: return None
+                else: return string
+
+        # Return
+        return string
 
 # -----------------------------------------------------------------

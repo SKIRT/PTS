@@ -11025,13 +11025,25 @@ def kennicutt_fuv_to_sfr(fuv_luminosity):
     :return:
     """
 
+    # Get the FUV wavelength
+    fuv_wavelength = parse_filter("GALEX FUV").wavelength
+
+    from ..core.data import Data3D
+
     # Frame
     if isinstance(fuv_luminosity, Frame):
 
-        converted = fuv_luminosity.converted_to("erg/s/Hz")
+        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength)
         converted *= kennicutt
         converted.unit = "Msun/yr"
         return converted
+
+    # 3D data
+    if isinstance(fuv_luminosity, Data3D):
+
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor *= kennicutt
+        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt)")
 
     # Photometric quantity
     else: return fuv_luminosity.to("erg/s/Hz").value * kennicutt * u("Msun/yr")
@@ -11046,13 +11058,25 @@ def salim_fuv_to_sfr(fuv_luminosity):
     :return:
     """
 
+    # Get the FUV wavelength
+    fuv_wavelength = parse_filter("GALEX FUV").wavelength
+
+    from ..core.data import Data3D
+
     # Frame
     if isinstance(fuv_luminosity, Frame):
 
-        converted = fuv_luminosity.converted_to("erg/s/Hz")
+        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength)
         converted *= salim
         converted.unit = "Msun/yr"
         return converted
+
+    # 3D data
+    if isinstance(fuv_luminosity, Data3D):
+
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor *= salim
+        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Salim)")
 
     # Photometric quantity
     else: return fuv_luminosity.to("erg/s/Hz") * salim * u("Msun/yr")
@@ -11219,6 +11243,28 @@ oliver_stellar_mass_factors["Sdm"] = 18.7
 
 # -----------------------------------------------------------------
 
+def get_oliver_stellar_mass_factor(hubble_type, hubble_subtype=None):
+
+    """
+    Thisf unction ...
+    :param hubble_type:
+    :param hubble_subtype:
+    :return:
+    """
+
+    # Get the factor
+    if hubble_type not in oliver_stellar_mass_factors:
+        if hubble_subtype is not None:
+            if hubble_subtype not in oliver_stellar_mass_factors: raise ValueError("Hubble type '" + hubble_type + "' or '" + hubble_subtype + "' not supported")
+            else: factor = oliver_stellar_mass_factors[hubble_subtype]
+        else: raise ValueError("Hubble type '" + hubble_type + "' not supported")
+    else: factor = oliver_stellar_mass_factors[hubble_type]
+
+    # Return the factor
+    return factor
+
+# -----------------------------------------------------------------
+
 def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
 
     """
@@ -11229,26 +11275,30 @@ def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
     :return:
     """
 
+    from ..core.data import Data3D
+
     # Get the I1 wavelength
     i1_wavelength = parse_filter("IRAC I1").wavelength
 
     # Get the factor
-    if hubble_type not in oliver_stellar_mass_factors:
-        if hubble_subtype is not None:
-            if hubble_subtype not in oliver_stellar_mass_factors: raise ValueError("Hubble type '" + hubble_type + "' or '" + hubble_subtype + "' not supported")
-            else: factor = oliver_stellar_mass_factors[hubble_subtype]
-        else: raise ValueError("Hubble type '" + hubble_type + "' not supported")
-    else:  factor = oliver_stellar_mass_factors[hubble_type]
+    oliver_factor = get_oliver_stellar_mass_factor(hubble_type, hubble_subtype=hubble_subtype)
 
     # Frame
     if isinstance(i1_luminosity, Frame):
 
         converted = i1_luminosity.converted_to("Lsun", density=True, wavelength=i1_wavelength)
-        converted *= factor
+        converted *= oliver_factor
         converted.unit = "Msun"
         return converted
 
+    # 3D data
+    elif isinstance(i1_luminosity, Data3D):
+
+        factor = i1_luminosity.unit.conversion_factor("Lsun", density=True, wavelength=i1_wavelength)
+        factor *= oliver_factor
+        return i1_luminosity.converted_by_factor(factor, "Msun", new_name="Mstar", new_description="Stellar mass (Oliver)")
+
     # Photometric quantity
-    else: return i1_luminosity.to("Lsun", density=True, wavelength=i1_wavelength).value * factor * u("Msun")
+    else: return i1_luminosity.to("Lsun", density=True, wavelength=i1_wavelength).value * oliver_factor * u("Msun")
 
 # -----------------------------------------------------------------

@@ -3659,6 +3659,34 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def file_nbytes(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        command = "du -b '" + path + "' | awk '{ print $1}' | bc"
+        output = self.execute(command)
+        for line in output:
+            if "No such file or directory" in line: raise IOError("File does not exist: '" + path + "'")
+        return int(output[0])
+
+    # -----------------------------------------------------------------
+
+    def file_nbits(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return self.file_nbytes(path) * 8
+
+    # -----------------------------------------------------------------
+
     def to_home_directory(self):
 
         """

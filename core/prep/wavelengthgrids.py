@@ -81,7 +81,7 @@ class WavelengthGridsTable(SmartTable):
     _column_info["Microwave points"] = (int, None, "number of points in microwave spectrum (range: " + str(ranges[microwave]) + ")")
     _column_info["Broad band filters"] = (str, None, "broad band filters for which the wavelength range was resampled")
     _column_info["Narrow band filters"] = (str, None, "narrow band filters for which the wavelength was added")
-    _column_info["Adjusted points"] = (int, None, "number of points that were adjuted")
+    _column_info["Adjusted points"] = (int, None, "number of points that were adjusted")
     _column_info["New points"] = (int, None, "number of new points")
     _column_info["Emission lines"] = (int, None, "number of emission lines")
     _column_info["Fixed points"] = (int, None, "number of fixed points")

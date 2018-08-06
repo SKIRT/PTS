@@ -21,6 +21,7 @@ import copy
 
 # Import astronomical modules
 from astropy.table import Table, MaskedColumn
+from astropy.io.registry import IORegistryError
 
 # Import the relevant PTS classes and modules
 from ..units.unit import PhotometricUnit, get_common_unit
@@ -402,6 +403,7 @@ class SmartTable(Table):
         units = kwargs.pop("units", None)
         dtypes = kwargs.pop("dtypes", None)
         descriptions = kwargs.pop("descriptions", None)
+        as_columns = kwargs.pop("as_columns", False)
         #print("names", names)
 
         # Get tostr kwargs
@@ -428,13 +430,19 @@ class SmartTable(Table):
 
         # Initialize list for the column names for which we have to convert the values to strings
         to_string = []
+        #to_split = []
 
         # Loop over the columns
         for index, name in enumerate(names):
 
             # Determine dtype
             if dtypes is not None and dtypes[index] is not None: dtype = dtypes[index]
+            elif as_columns:
+                coltype = columns[index].dtype.name
+                column_type = dtype_name_to_column_type(coltype)
+                dtype = column_type_to_builtin(column_type)
             else:
+                #print(columns[index])
                 ptype = get_common_property_type(columns[index])
                 dtype, needs_tostring = property_type_to_builtin(ptype, return_tostring=True)
                 if needs_tostring: to_string.append(name)
@@ -461,33 +469,49 @@ class SmartTable(Table):
         table._setup()
         #print(table.colnames)
 
-        # Add the rows, using the Table add_row implementation directly
-        # because the add_row function may be prohibited in the actual class (because of lazy features)
-        #for value, frequency in zip(values, frequencies):
-        for i in range(nrows):
+        # Add data as columns to the table? -> tostring columns not possible
+        if as_columns:
 
-            # row = []
-            # for j, name in enumerate(names):
-            #     unit = table.get_column_unit(name)
-            #     value = columns[j][i]
-            #     if name in to_string: value = tostr(value, **tostr_kwargs)
-            #     elif value is None: pass
-            #     elif unit is not None and hasattr(value, "unit"): value = value.to(unit).value
-            #     else: pass
-            #     row.append(value)
+            if len(to_string) > 0: raise ValueError("Cannot add data as columns if some columns have complex types")
+            #if len(to_split) > 0: raise ValueError("Cannot add data as columns if some column objects have to be splitted into builtin types")
 
-            #row = [column[i] for column in columns]
-            row = []
+            # Loop over the columns
+            table.remove_all_columns()
             for j, name in enumerate(names):
-                value = columns[j][i]
-                if name in to_string: value = tostr(value, **tostr_kwargs)
-                row.append(value)
 
-            # Add the row
-            #super(SmartTable, table).add_row(row)
-            #print(row)
-            #print([table.column_unit(colname) for colname in table.colnames])
-            SmartTable.add_row(table, row)
+                # Create column
+                col = MaskedColumn(data=columns[j], name=name, dtype=table.get_column_dtype(name), unit=table.get_column_unit(name), copy=False)
+                table.add_column(col)
+
+        # Add data as rows
+        else:
+
+            # Add the rows, using the Table add_row implementation directly
+            # because the add_row function may be prohibited in the actual class (because of lazy features)
+            for i in range(nrows):
+
+                # row = []
+                # for j, name in enumerate(names):
+                #     unit = table.get_column_unit(name)
+                #     value = columns[j][i]
+                #     if name in to_string: value = tostr(value, **tostr_kwargs)
+                #     elif value is None: pass
+                #     elif unit is not None and hasattr(value, "unit"): value = value.to(unit).value
+                #     else: pass
+                #     row.append(value)
+
+                #row = [column[i] for column in columns]
+                row = []
+                for j, name in enumerate(names):
+                    value = columns[j][i]
+                    if name in to_string: value = tostr(value, **tostr_kwargs)
+                    row.append(value)
+
+                # Add the row
+                #super(SmartTable, table).add_row(row)
+                #print(row)
+                #print([table.column_unit(colname) for colname in table.colnames])
+                SmartTable.add_row(table, row)
 
         # Return the table
         return table
@@ -769,7 +793,10 @@ class SmartTable(Table):
         column_units = []
 
         # COLUMNS FOR WHICH THE VALUE HAS TO BE CONVERTED TO STRING
+        # OR SPLITTED INTO MULTIPLE TYPES
         to_string = []
+        to_split = []
+        actual_column_names = OrderedDict()
 
         # Make the columns
         for name in column_names:
@@ -779,6 +806,10 @@ class SmartTable(Table):
                 real_type = str
                 column_unit = None
                 column_description = label
+
+                # Add the column info
+                table.add_column_info(name, real_type, column_unit, column_description)
+                actual_column_names[name] = (name, None, None, None)
 
             else:
 
@@ -791,12 +822,43 @@ class SmartTable(Table):
                 column_types.append(column_type)
                 column_units.append(column_unit)
 
-                # Get builtin type for the column
-                real_type, needs_tostring = property_type_to_builtin(column_type, return_tostring=True)
-                if needs_tostring: to_string.append(name)
+                # Get builtin type(s) for the column
+                if composed_of_multiple_builtins(column_type):
 
-            # Add the column info
-            table.add_column_info(name, real_type, column_unit, column_description)
+                    all_items, itemspec = property_type_to_builtins(column_type)
+                    if all_items:
+                        keys_lists = [getattr(obj, name).keys() for obj in objects if hasattr(obj, name)] if attr else [obj[name].keys() for obj in objects if name in obj]
+                        #print(keys_lists)
+                        item_keys = sequences.union(*keys_lists)
+                        for key in item_keys:
+                            item_colname = name + " " + key
+                            #print(item_colname)
+                            # Get type, unit
+                            raise NotImplementedError("Not yet implemented")
+                            #table.add_column_info(name, real_type, column_unit, column_description)
+                            #actual_column_names.append(item_colname)
+                    for itemname, itemtype, item_is_attr in itemspec:
+                        #print(itemname, itemtype, item_is_attr)
+                        item_colname = name + " " + itemname
+                        #print(item_colname)
+                        itemdescription = column_description + " " + itemname if column_description is not None else None
+                        if item_is_attr: itemvalues = [getattr(getattr(obj, name), itemname) for obj in objects if hasattr(obj, name)] if attr else [getattr(obj[name], itemname) for obj in objects if name in obj]
+                        else: itemvalues = [getattr(obj, name)[itemname] for obj in objects if hasattr(obj, name)] if attr else [obj[name][itemname] for obj in objects if name in obj]
+                        # Determine item unit
+                        itemunits = [value.unit for value in itemvalues if hasattr(value, "unit")]
+                        itemunit = sequences.get_first_not_none_value(itemunits)
+                        #print(itemname, itemvalues, itemunit)
+                        table.add_column_info(item_colname, itemtype, itemunit, itemdescription)
+                        actual_column_names[item_colname] = (name, itemname, itemunit, item_is_attr)
+                else:
+
+                    #print(column_type)
+                    real_type, needs_tostring = property_type_to_builtin(column_type, return_tostring=True)
+                    if needs_tostring: to_string.append(name)
+
+                    # Add the column info
+                    table.add_column_info(name, real_type, column_unit, column_description)
+                    actual_column_names[name] = (name, None, None, None)
 
         # Set None string
         if "none_string" not in tostr_kwargs: tostr_kwargs["none_string"] = string_column_none_default
@@ -808,33 +870,47 @@ class SmartTable(Table):
 
             # Fill the row
             #for name, dtype, unit in zip(column_names, column_types, column_units):
-            for name in column_names:
+            #for name in column_names:
+            for name in actual_column_names:
+
+                pname, itemname, itemunit, itemattr = actual_column_names[name]
+                #print(name, pname, punit, pisattr)
 
                 if name == label: value = composite_label
+
                 else:
 
                     # Properties are attributes of the objects
                     if attr:
 
                         # Get the value
-                        if hasattr(obj, name):
-                            value = getattr(obj, name)
-                            if name in to_string: value = tostr(value, **tostr_kwargs)
+                        if hasattr(obj, pname):
+                            value = getattr(obj, pname)
+                            if pname in to_string: value = tostr(value, **tostr_kwargs)
                         else: value = None
 
                     # Properties are items of the objects
                     else:
 
-                        if name in obj:
-                            value = obj[name]
-                            if name in to_string: value = tostr(value, **tostr_kwargs)
+                        if pname in obj:
+                            value = obj[pname]
+                            if pname in to_string: value = tostr(value, **tostr_kwargs)
                         else: value = None
 
+                    if name != pname:
+                        if value is not None:
+                            if itemattr: value = getattr(value, itemname)
+                            else: value = value[itemname]
+
                 # Add the value
+                #print(value)
                 values.append(value)
 
             # Add the row: unit conversion is done here
             table.add_row(values)
+
+        #print(table.colnames)
+        #print(table)
 
         # Return the table
         return table
@@ -1398,6 +1474,15 @@ class SmartTable(Table):
         # Latex
         elif format == "latex": table = super(SmartTable, cls).read(lines, fill_values=fill_values, format="ascii.latex")
 
+        # Unknown
+        elif format is None:
+
+            # Try guessing from Astropy
+            try: table = super(SmartTable, cls).read(lines, fill_values=fill_values)
+            except IORegistryError:
+                # Try ASCII
+                table = super(SmartTable, cls).read(lines, fill_values=fill_values, format="ascii")
+
         # All other
         else: table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
 
@@ -1664,7 +1749,7 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_column_array(self, colname, unit):
+    def get_column_array(self, colname, unit=None):
 
         """
         This function ...
@@ -1681,11 +1766,23 @@ class SmartTable(Table):
         #    values.append(value)
         #return np.array(values)
 
-        # Get conversion factor
-        conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
+        # Column unit
+        if self.has_column_unit(colname):
 
-        # Return
-        return self[colname].data * conversion_factor
+            # Check if unit is defined
+            if unit is None: raise ValueError("Unit has to be defined")
+
+            # Get conversion factor
+            #conversion_factor = self.get_column_unit(colname).conversion_factor(unit)
+            from ..units.unit import get_conversion_factor
+            conversion_factor = get_conversion_factor(self.get_column_unit(colname), unit, parse=False)
+
+            # Return
+            return self[colname].data * conversion_factor
+
+        # No unit
+        elif unit is not None: raise ValueError("Unit of column is not defined")
+        else: return self[colname].data
 
     # -----------------------------------------------------------------
 
@@ -2487,12 +2584,16 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def print_latex(self):
+    def print_latex(self, round=False, ndecimal_places=3):
 
         """
         This function ...
+        :param round:
+        :param ndecimal_places:
         :return: 
         """
+
+        from ..tools.stringify import tostr
 
         #self.show_in_browser()
 
@@ -2518,7 +2619,9 @@ class SmartTable(Table):
         for index in range(len(self)):
 
             row = []
-            for name in self.colnames: row.append(str(self[name][index]).replace("_", "\_"))
+            for name in self.colnames:
+                string = tostr(self[name][index], round=round, ndecimal_places=ndecimal_places)
+                row.append(string.replace("_", "\_"))
             row_string = " & ".join(row) + " \\\\"
 
             print(row_string)
@@ -2748,6 +2851,38 @@ def column_type_to_builtin(column_type):
 
 # -----------------------------------------------------------------
 
+def composed_of_multiple_builtins(ptype):
+
+    """
+    Thisf unction ...
+    :param ptype:
+    :return:
+    """
+
+    if ptype.endswith("coordinate"): return True
+    elif ptype.endswith("extent"): return True
+    elif ptype.endswith("dictionary"): return True
+    else: return False
+
+# -----------------------------------------------------------------
+
+def property_type_to_builtins(ptype):
+
+    """
+    This function ...
+    :param ptype:
+    :return:
+    """
+
+    if ptype == "skycoordinate": return False, [("ra", float, True), ("dec", float, True)]
+    elif ptype == "pixelcoordinate": return False,  [("x", float, True), ("y", float, True)]
+    elif ptype == "physicalcoordinate": return False, [("x", float, True), ("y", float, True)]
+    elif ptype.endswith("extent"): return False, [("x", float, True), ("y", float, True)]
+    elif ptype.endswith("dictionary"): return False, []
+    else: raise ValueError("Not recognized as property type that consists of multiple builtins")
+
+# -----------------------------------------------------------------
+
 def property_type_to_builtin(ptype, return_tostring=False):
 
     """
@@ -2784,8 +2919,14 @@ def property_type_to_builtin(ptype, return_tostring=False):
     # LISTS OF THINGS -> STRINGS
     elif ptype.endswith("_list"): real_type, tostring = str, True
 
+    # Dictionary
+    #elif ptype.endswith("dictionary"): real_type, tostring = str, True
+
+    # Coordinate
+    #elif ptype.endswith("coordinate"): real_type, tostring = str, True
+
     # NOT RECOGNIZED
-    else: raise ValueError("Column type not recognized: " + str(ptype) + " (" + str(type(ptype)) + ")")
+    else: raise ValueError("Column type not recognized: " + str(ptype) + " (" + str(type(ptype).__name__) + ")")
 
     # Return
     if return_tostring: return real_type, tostring

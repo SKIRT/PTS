@@ -32,7 +32,7 @@ default_ages = "8.0 Gyr,0.1 Gyr"
 definition = ConfigurationDefinition()
 
 # SEDs from file
-definition.add_positional_optional("seds", "filepath_list", "SED files to be plotted")
+definition.add_positional_optional("seds", "filepath_list_or_string_filepath_dictionary", "SED files to be plotted")
 definition.add_flag("multi", "look for multiple SEDs per file", False)
 definition.add_optional("wavelength_unit_file", "length_unit", "wavelength unit in SED file")
 definition.add_optional("unit_file", "photometric_unit", "photometric unit in SED file")

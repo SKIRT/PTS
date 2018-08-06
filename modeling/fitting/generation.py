@@ -1532,10 +1532,12 @@ class Generation(object):
                     simulation = find_simulation_for_host(simulation_name, host_id)
                     if simulation is not None: simulations[simulation_name] = simulation
 
-            else:
+            elif has_simulation_for_host(host_id, simulation_id):
 
                 simulation = get_simulation_for_host(host_id, simulation_id)
                 simulations[simulation.name] = simulation
+
+            else: log.warning("Simulation with ID '" + str(simulation_id) + "' is not found in the directory remote host '" + host_id + "'")
 
         # Return the simulations
         if as_dict: return simulations
@@ -2217,7 +2219,7 @@ class Generation(object):
             if self.nsimulation_directories == self.nsimulations: return simulations.values()
             elif self.nsimulation_directories == nassignment_simulations:
                 # There are probably more simulations than the info says (maybe because of expansion)
-                log.warning("Fixing the number of simulations in the generation info ...")
+                log.warning("Fixing the number of simulations in the generation info (" + str(nassignment_simulations) + " instead of " + str(nsimulations) + ") ...")
                 self.info.nsimulations = nassignment_simulations
                 self.info.save()
                 self._add_missing_simulations(simulations, from_directory_names=True)
@@ -3939,9 +3941,10 @@ class Generation(object):
         if self.has_assignment_table: nassignment_simulations = len(self.assignment_table)
         else: nassignment_simulations = None
 
+        # Problem with the number of simulations
         if self.nsimulation_directories != self.nsimulations:
             if self.nsimulation_directories == nassignment_simulations:
-                log.warning("Fixing the number of simulations in the generation info ...")
+                log.warning("Fixing the number of simulations in the generation info (" + str(nassignment_simulations) + " instead of " + str(self.nsimulations) + ") ...")
                 self.info.nsimulations = nassignment_simulations
                 self.info.save()
                 all_simulation_names = self.simulation_directory_names
@@ -3959,6 +3962,7 @@ class Generation(object):
                                                                                    correct_paths=correct_paths, confirm_correction=confirm_correction,
                                                                                    fix_success=fix_success)
             if changed_assignment_sim: changed_assignment = True
+            #print(simulation_name, simulation_status)
 
             # Add the status
             status_list.append(simulation_status)

@@ -169,6 +169,18 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def cell_mass_fractions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.asarray(self.cell_properties["Mass fraction"])
+
+    # -----------------------------------------------------------------
+
     @property
     def total_contribution_absorption_filepath(self):
 

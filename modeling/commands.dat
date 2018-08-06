@@ -99,6 +99,7 @@ analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | argu
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_cell_energy | -- | analysis.energy.cell.CellEnergyAnalyser | arguments | Analyse the dust cell energy balance
 analyse_projected_energy | -- | analysis.energy.projected.ProjectedEnergyAnalyser | arguments | Analyse the projected energy balance
+analyse_sfr | -- | analysis.sfr.SFRAnalyser | arguments | Analyse the (specific) star formation rates
 analyse_correlations | -- | analysis.correlations.CorrelationsAnalyser | arguments | Analyse correlations
 analyse_temperature | -- | analysis.temperature.TemperatureAnalyser | arguments | Analyse the dust temperature
 cache_analysis_run | -- | analysis.cache.AnalysisRunCacher | arguments | Cache a certain analysis run to a remote host
