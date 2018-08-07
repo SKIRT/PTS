@@ -701,7 +701,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def radial_distribution_path(self):
-        return fs.join(self.cell_heating_path, "radial_distribution.dat")
+        return fs.join(self.cell_heating_path, "radial_distribution.fits")
 
     # -----------------------------------------------------------------
 
