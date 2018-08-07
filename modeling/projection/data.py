@@ -114,6 +114,7 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     if faceon: frame = projections.faceon
     elif edgeon: frame = projections.edgeon
     else: raise RuntimeError("Something went wrong")
+    if frame is None: raise RuntimeError("Something went wrong: projected frame not created")
 
     # Get the stddev
     if return_stddev:
@@ -176,6 +177,9 @@ def project_faceon(name, data, return_stddev=False, return_ncells=False, descrip
     frame = projections.faceon
     stddev_frame = projections.faceon_stddev
     ncells_frame = projections.faceon_ncells
+    if frame is None: raise RuntimeError("Something went wrong: projected frame not created")
+    if stddev_frame is None: raise RuntimeError("Something went wrong: stddev frame not created")
+    if ncells_frame is None: raise RuntimeError("Something went wrong: ncells frame not created")
 
     # Return as image
     if as_image:
@@ -224,6 +228,9 @@ def project_edgeon(name, data, return_stddev=False, return_ncells=False, descrip
     frame = projections.edgeon
     stddev_frame = projections.edgeon_stddev
     ncells_frame = projections.edgeon_ncells
+    if frame is None: raise RuntimeError("Something went wrong: projected frame not created")
+    if stddev_frame is None: raise RuntimeError("Something went wrong: projected stddev frame not created")
+    if ncells_frame is None: raise RuntimeError("Something went wrong: projected ncells frame not created")
 
     # Return as image
     if as_image:
@@ -308,13 +315,13 @@ class DataProjections(object):
         if faceon and not self.has_projection_faceon: self.create_projection_faceon(spacing=faceon_spacing, spacing_factor=faceon_spacing_factor)
         if edgeon and not self.has_projection_edgeon: self.create_projection_edgeon(spacing=edgeon_spacing, spacing_factor=edgeon_spacing_factor)
 
-        # Create?
-        if faceon: self.project_faceon()
-        if edgeon: self.project_edgeon()
-
         # The maps
         self.faceon = None
         self.edgeon = None
+
+        # Create?
+        if faceon: self.project_faceon()
+        if edgeon: self.project_edgeon()
 
         # The stddev maps
         self.faceon_stddev = None
@@ -752,7 +759,7 @@ class DataProjections(object):
         else: raise ValueError("Invalid measure '" + measure + "'")
 
         # Return
-        return spacing * factor
+        return spacing * factor * self.length_unit
 
     # -----------------------------------------------------------------
 
@@ -770,8 +777,8 @@ class DataProjections(object):
 
         # Get scalar value of spacing
         if types.is_string_type(spacing): spacing = self.get_xy_spacing(spacing, factor=spacing_factor)
-        elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit).value
-        elif types.is_real_type(spacing): pass
+        elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit)
+        elif types.is_real_type(spacing): spacing = spacing * self.length_unit
         else: raise ValueError("Invalid value for 'spacing'")
 
         # Set field
@@ -789,7 +796,7 @@ class DataProjections(object):
         # Create the projection
         self.projection_faceon = FaceOnProjection(distance=self.distance, pixels_x=nx,
                                                   pixels_y=ny, center_x=center_x,
-                                                  center_y=center_y, field_x=self.field_x,
+                                                  center_y=center_y, field_x=field_x,
                                                   field_y=field_y)
 
     # -----------------------------------------------------------------
@@ -811,7 +818,7 @@ class DataProjections(object):
         else: raise ValueError("Invalid measure '" + measure + "'")
 
         # Return
-        return spacing * factor
+        return spacing * factor * self.length_unit
 
     # -----------------------------------------------------------------
 
@@ -829,8 +836,8 @@ class DataProjections(object):
 
         # Get scalar value of spacing
         if types.is_string_type(spacing): spacing = self.get_yz_spacing(spacing, factor=spacing_factor)
-        elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit).value
-        elif types.is_real_type(spacing): pass
+        elif types.is_length_quantity(spacing): spacing = spacing.to(self.length_unit)
+        elif types.is_real_type(spacing): spacing = spacing * self.length_unit
         else: raise ValueError("Invalid value for 'spacing'")
 
         # Set field

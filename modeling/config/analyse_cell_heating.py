@@ -72,8 +72,8 @@ definition.add_flag("plot", "do plotting", True)
 # -----------------------------------------------------------------
 
 # DO HIGHRES OR LOWRES?
-definition.add_flag("lowres", "make lowres maps")
-definition.add_flag("highres", "make highres maps")
+definition.add_flag("lowres", "make lowres maps", True)
+definition.add_flag("highres", "make highres maps", True)
 
 # -----------------------------------------------------------------
 

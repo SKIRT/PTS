@@ -22,6 +22,7 @@ from textwrap import wrap
 from matplotlib import rc
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import LinearLocator, LogLocator, FormatStrFormatter
+from mpl_toolkits.mplot3d import Axes3D
 
 # Import the relevant PTS classes and modules
 from ..basics.log import log
@@ -30,7 +31,7 @@ from ..tools import strings
 from ..basics.configurable import Configurable
 from ..basics.containers import DefaultOrderedDict
 from ..tools import filesystem as fs
-from ..basics.distribution import Distribution
+from ..basics.distribution import Distribution, Distribution2D
 from ..tools import types
 from ..basics.plot import MPLFigure, BokehFigure, BokehPlot, mpl, bokeh
 from ..tools.stringify import tostr
@@ -45,6 +46,23 @@ rc('text', usetex=True)
 #patterns = ('-', '+', 'x', '\\', '*', 'o', 'O', '.')
 patterns = ("/", "\\", '-', '+', 'x', "//", '*', 'o', 'O', '.')
 line_styles = ['-', '--', '-.', ':']
+
+# -----------------------------------------------------------------
+
+def plot_distribution_from_file(path, **kwargs):
+
+    """
+    This function ...
+    :param path:
+    :param kwargs:
+    :return:
+    """
+
+    # Load
+    distr = Distribution.from_file(path)
+
+    # Plot
+    plot_distribution(distr, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -322,6 +340,128 @@ def plot_distributions(distributions, panels=False, smooth=False, statistics=Fal
 
     # Run the plotter
     plotter.run(output=path)
+
+# -----------------------------------------------------------------
+
+def plot_2d_distribution_from_file(path, **kwargs):
+
+    """
+    This function ...
+    :param path:
+    :param kwargs:
+    :return:
+    """
+
+    # Load
+    distr = Distribution2D.from_file(path)
+
+    # Plot
+    plot_2d_distribution(distr, **kwargs)
+
+# -----------------------------------------------------------------
+
+def plot_2d_distribution(distribution, title=None, path=None, x_lines=None, y_lines=None, xlim=None, ylim=None,
+                         mode="colormesh", add_average=False, format=None):
+
+    """
+    This function ...
+    :param distribution:
+    :param title:
+    :param path:
+    :param x_lines:
+    :param y_lines:
+    :param xlim:
+    :param ylim:
+    :param mode:
+    :param add_average:
+    :return:
+    """
+
+    # Get format from path
+    if path is not None: format = fs.get_extension(path)
+
+    # Create a figure
+    fig = plt.figure()
+
+    #ax.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$', fontsize=18)
+    #ax.set_xlabel('R (kpc)', fontsize=18)
+    # ax.hexbin(r/1000.,F_abs_yng,gridsize=150,bins='log',cmap=plt.cm.autumn, mincnt=1,linewidths=0)
+    #print("x edges:", self.x_edges, self.x_edges.shape)
+    #print("y edges:", self.y_edges, self.y_edges.shape)
+    #print("counts:", self.counts, self.counts.shape)
+    #ax.pcolor(self.x_edges, self.y_edges, self.counts)
+    #ax.imshow(self.counts)
+
+    if mode == "colormesh":
+
+        ax = fig.gca()
+
+        # Plot the colored 2D distribution
+        # Plot 2D histogram using pcolor
+        ax.pcolormesh(distribution.x, distribution.y, distribution.counts)
+
+        # Plot the running average
+        # if self.rBins_F is not None and self.FBins_r is not None:
+        #    #ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
+        #    ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
+
+        # ax.errorbar(1.7, 0.88, xerr=1.4, color='k')
+        # ax.text(1.8, 0.90, 'Bulge', ha='center')
+        # ax.errorbar(11., 0.88, xerr=2.75, color='k')
+        # ax.text(11., 0.90, 'main SF ring', ha='center')
+        # ax.errorbar(16., 0.88, xerr=1, color='k')
+        # ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
+
+        # Plot vertical lines
+        if x_lines is not None:
+            for x in x_lines: plt.axvline(x=x)
+
+        # Plot horizontal lines
+        if y_lines is not None:
+            for y in y_lines: plt.axhline(y=y)
+
+        # Set axes limits
+        if xlim is not None: ax.set_xlim(xlim[0], xlim[1])
+        if ylim is not None: ax.set_ylim(ylim[0], ylim[1])
+
+        # Set labels
+        ax.set_xlabel(distribution.x_name)
+        ax.set_ylabel(distribution.y_name)
+
+    elif mode == "3d":
+
+        #fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Construct arrays for the anchor positions of the bars.
+        # Note: np.meshgrid gives arrays in (ny, nx) so we use 'F' to flatten xpos,
+        # ypos in column-major order. For numpy >= 1.7, we could instead call meshgrid
+        # with indexing='ij'.
+        xpos, ypos = np.meshgrid(distribution.x[:-1] + 0.25, distribution.y[:-1] + 0.25)
+        xpos = xpos.flatten('F')
+        ypos = ypos.flatten('F')
+        zpos = np.zeros_like(xpos)
+
+        # Construct arrays with the dimensions for the 16 bars.
+        dx = 0.5 * np.ones_like(zpos)
+        dy = dx.copy()
+        dz = distribution.counts.flatten()
+        #dz = distribution.counts
+
+        # Plot 3D bars
+        ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color='b', zsort='average')
+
+        #plt.show()
+
+    # Set plot title
+    if title is not None: ax.set_title(title)
+
+    # Save the figure
+    if path is not None: plt.savefig(path, format=format)
+    else: plt.show()
+
+    # Close
+    plt.close()
 
 # -----------------------------------------------------------------
 

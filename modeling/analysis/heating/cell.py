@@ -26,7 +26,7 @@ from ...projection.data import project_data, project_faceon, project_edgeon
 from ....core.basics.distribution import Distribution, Distribution2D
 from ....magic.core.frame import Frame
 from ....magic.core.image import Image
-from ....core.plot.distribution import plot_distribution, plot_distributions
+from ....core.plot.distribution import plot_distribution, plot_distributions, plot_2d_distribution
 from ....magic.tools.plotting import plot_map
 
 # -----------------------------------------------------------------
@@ -531,6 +531,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def valid_diffuse_fractions_mask(self):
+        return np.logical_not(self.invalid_diffuse_fractions_mask)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def total_fractions_unphysical_mask(self):
         return self.total_fractions.where_greater_than(1.)
 
@@ -543,14 +549,20 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def valid_total_fractions_mask(self):
+        return np.logical_not(self.invalid_total_fractions_mask)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def valid_diffuse_fraction_values(self):
-        return np.ma.MaskedArray(self.diffuse_fraction_values, self.invalid_diffuse_fractions_mask).compressed()
+        return self.diffuse_fraction_values[self.valid_diffuse_fractions_mask]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_total_fraction_values(self):
-        return np.ma.MaskedArray(self.total_fraction_values, self.invalid_total_fractions_mask).compressed()
+        return self.total_fraction_values[self.valid_total_fractions_mask]
 
     # -----------------------------------------------------------------
 
@@ -562,37 +574,37 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def valid_diffuse_cell_weights(self):
-        return np.ma.MaskedArray(self.cell_weights, mask=self.invalid_diffuse_fractions_mask).compressed()
+        return self.cell_weights[self.valid_diffuse_fractions_mask]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_total_cell_weights(self):
-        return np.ma.MaskedArray(self.cell_weights, mask=self.invalid_total_fractions_mask).compressed()
+        return self.cell_weights[self.valid_total_fractions_mask]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_x_coordinates(self):
-        return np.ma.MaskedArray(self.total_fractions.x, mask=self.invalid_total_fractions_mask).compressed()
+        return self.total_fractions.x[self.valid_total_fractions_mask]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_y_coordinates(self):
-        return np.ma.MaskedArray(self.total_fractions.y, mask=self.invalid_total_fractions_mask).compressed()
+        return self.total_fractions.y[self.valid_total_fractions_mask]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_z_coordinates(self):
-        return np.ma.MaskedArray(self.total_fractions.z, mask=self.invalid_total_fractions_mask).compressed()
+        return self.total_fractions.z[self.valid_total_fractions_mask]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_radii(self):
-        return np.ma.MaskedArray(self.total_fractions.radii, mask=self.invalid_total_fractions_mask).compressed()
+        return self.total_fractions.radii[self.valid_total_fractions_mask]
 
     # -----------------------------------------------------------------
     # DISTRIBUTION DIFFUSE
@@ -629,6 +641,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Generate the distribution
         # Weights are dust mass fraction
+        print(self.valid_diffuse_fraction_values.shape)
+        print(self.valid_diffuse_cell_weights.shape)
         return Distribution.from_values(self.distribution_diffuse_name, self.valid_diffuse_fraction_values, nbins=self.config.nbins, weights=self.valid_diffuse_cell_weights)
 
     # -----------------------------------------------------------------
@@ -674,7 +688,14 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def radial_distribution_name(self):
-        return "Heating fraction"
+        #return "Heating fraction"
+        return "Number of cells"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radial_distribution_description(self):
+        return "Radial distribution of the dust cell heating fraction"
 
     # -----------------------------------------------------------------
 
@@ -696,6 +717,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def radial_distribution_y_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Distribution2D, "radial_distribution_path", True, write=False)
     def radial_distribution(self):
 
@@ -708,10 +735,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Calculating the radial distribution of heating fractions of the unevolved stellar population ...")
 
         # Generate the radial distribution
-        return Distribution2D.from_values(self.valid_radii, self.valid_total_fraction_values,
+        # name, x, y, weights=None, nbins=200, x_name=None, y_name=None, x_unit=None, y_unit=None, description=None
+        return Distribution2D.from_values(self.radial_distribution_name, self.valid_radii, self.valid_total_fraction_values,
                                           weights=self.valid_total_cell_weights, x_name=self.radial_distribution_x_name,
-                                          y_name=self.radial_distribution_name,
-                                          nbins=self.config.nradial_bins)
+                                          y_name=self.radial_distribution_y_name, x_unit=self.length_unit,
+                                          nbins=self.config.nradial_bins, description=self.radial_distribution_description)
 
     # -----------------------------------------------------------------
     # MIDPLANE HEIGHT
@@ -1832,8 +1860,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         title = "Radial distribution of the heating fraction of the unevolved stellar population"
 
         # Create the plot file
-        self.radial_distribution.plot(radii=self.radial_distribution_plot_radii_pc, title=title,
-                                      path=self.radial_distribution_plot_path)
+        plot_2d_distribution(self.radial_distribution, x_lines=self.radial_distribution_plot_radii_pc, title=title, path=self.radial_distribution_plot_path)
 
     # -----------------------------------------------------------------
 
