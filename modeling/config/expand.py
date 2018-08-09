@@ -71,7 +71,6 @@ definition.add_flag("update_generations", "update the generations table", True)
 
 # Parallelization
 definition.add_optional("parallelization", "parallelization", "parallelization scheme for the simulations")
-definition.add_optional("walltime", "duration", "walltime for the simulations")
 definition.add_optional("nnodes", "positive_integer", "number of computation nodes to use for the simulations")
 
 # -----------------------------------------------------------------
