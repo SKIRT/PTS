@@ -337,6 +337,11 @@ class SmartTable(Table):
         :param kwargs:
         """
 
+        #print("SMARTTABLE")
+        #print(args)
+        #print(kwargs)
+        #print("")
+
         # Always used masked tables
         kwargs["masked"] = True
 

@@ -1410,7 +1410,7 @@ class DataProjections(object):
             for i, j in sequences.multirange(self.edgeon_ny, self.edgeon_nz):
 
                 # Debugging
-                if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
+                if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.edgeon_npixels) + " (" + tostr(float(index) / self.edgeon_npixels * 100, decimal_places=1, round=True) + "%) ...")
 
                 # Show progress
                 #progress = int(float(index + 1) / float(self.faceon_npixels))

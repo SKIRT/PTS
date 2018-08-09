@@ -36,6 +36,11 @@ class Relation(SmartTable):
         :param kwargs:
         """
 
+        #print("RELATION")
+        #print(args)
+        #print(kwargs)
+        #print("")
+
         if kwargs.get("from_astropy", None) is None:
             if "x_unit" in kwargs: from_astropy = False
             else: from_astropy = True
@@ -43,12 +48,22 @@ class Relation(SmartTable):
 
         # Get properties
         if not from_astropy:
+
             x_unit = kwargs.pop("x_unit", None)
             y_unit = kwargs.pop("y_unit", None)
+
             x_name = kwargs.pop("x_name", "x")
+            if x_name is None: x_name = "x"
+
             y_name = kwargs.pop("y_name", "y")
+            if y_name is None: y_name = "y"
+
             x_description = kwargs.pop("x_description", "x values")
+            if x_description is None: x_description = "x values"
+
             y_description = kwargs.pop("y_description", "y values")
+            if y_description is None: y_description = "y values"
+
         else: x_unit = y_unit = x_name = y_name = x_description = y_description = None
 
         # Call the constructor of the base class
@@ -117,7 +132,8 @@ class Relation(SmartTable):
         kwargs["x_description"] = x_description
         kwargs["y_description"] = y_description
 
-        # USe the base class implementation
+        # Use the base class implementation
+        #print(kwargs)
         curve = super(Relation, cls).from_columns(*columns, **kwargs)
 
         # Set x name and y name

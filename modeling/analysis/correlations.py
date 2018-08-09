@@ -16,11 +16,11 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
+from .component import AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.tools import introspection
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, lazyfileproperty
 from ...core.basics.scatter import Scatter2D
 
 # -----------------------------------------------------------------
@@ -31,7 +31,7 @@ m31_data_path = fs.join(correlations_data_path, "M31_sSFR_Fyoung.dat")
 
 # -----------------------------------------------------------------
 
-class CorrelationsAnalyser(AnalysisComponent):
+class CorrelationsAnalyser(AnalysisRunComponent):
     
     """
     This class...
@@ -48,11 +48,6 @@ class CorrelationsAnalyser(AnalysisComponent):
         # Call the constructor of the base class
         super(CorrelationsAnalyser, self).__init__(*args, **kwargs)
 
-        # -- Attributes --
-
-        # The analysis run
-        self.analysis_run = None
-
     # -----------------------------------------------------------------
 
     def _run(self, **kwargs):
@@ -63,13 +58,10 @@ class CorrelationsAnalyser(AnalysisComponent):
         :return:
         """
 
-        # Get the data points
-        self.get_data()
-
-        # 4. Writing
+        # Writing
         self.write()
 
-        # 5. Plotting
+        # Plotting
         self.plot()
 
     # -----------------------------------------------------------------
@@ -85,20 +77,29 @@ class CorrelationsAnalyser(AnalysisComponent):
         # Call the setup function of the base class
         super(CorrelationsAnalyser, self).setup()
 
-        # Get the run
-        self.analysis_run = self.get_run(self.config.run)
+    # -----------------------------------------------------------------
+
+    @property
+    def correlations_path(self):
+        return self.analysis_run.correlations_path
 
     # -----------------------------------------------------------------
 
     @property
-    def model(self):
+    def heating_path(self):
+        return self.analysis_run.heating_path
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        return self.analysis_run.model
+    @property
+    def projected_heating_path(self):
+        return fs.join(self.heating_path, "projected")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_heating_path(self):
+        return fs.join(self.heating_path, "cell")
 
     # -----------------------------------------------------------------
 
@@ -221,29 +222,57 @@ class CorrelationsAnalyser(AnalysisComponent):
         return self.m31_data[1] * 100.
 
     # -----------------------------------------------------------------
+    # sSFR-Funev cell scatter data
+    # -----------------------------------------------------------------
 
-    def get_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #
-        self.get_ssfr_funev()
+    @property
+    def ssfr_funev_cells_path(self):
+        return fs.join()
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_funev(self):
+    @property
+    def has_ssfr_funev_cells(self):
+        return fs.is_file(self.ssfr_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_funev_cells_path", True, write=False)
+    def ssfr_funev_cells(self):
 
         """
         This function ...
         :return:
         """
 
-        ssfr = self.model.total_ssfr_map_earth
-        #funev =
+        #ssfr = self.model.total_ssfr_map_earth
+        ##funev =
 
+    # -----------------------------------------------------------------
+    # sSFR-Funev pixel scatter data
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_funev_pixels_path(self):
+        return fs.join()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_funev_pixels(self):
+        return fs.is_file(self.ssfr_funev_pixels)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_funev_pixels_path", True, write=False)
+    def ssfr_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def write(self):
@@ -255,6 +284,63 @@ class CorrelationsAnalyser(AnalysisComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # sSFR Funev scatter data
+        self.write_ssfr_funev()
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sSFR Funev scatter data ...")
+
+        # Write the sSFR to Funev cell scatter data
+        if self.do_write_ssfr_funev_cells: self.write_ssfr_funev_cells()
+
+        # Write the sSFR to Funev pixel scatter data
+        if self.do_write_ssfr_funev_pixels: self.write_ssfr_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ssfr_funev_cells(self):
+        return not self.has_ssfr_funev_cells
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.ssfr_funev_cells.saveto(self.ssfr_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ssfr_funev_pixels(self):
+        return not self.has_ssfr_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_funev_pixels(self):
+
+        """
+        This fnction ...
+        :return:
+        """
+
+        # Write
+        self.ssfr_funev_pixels.saveto(self.ssfr_funev_pixels_path)
 
     # -----------------------------------------------------------------
 

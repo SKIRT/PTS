@@ -1667,7 +1667,7 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     else: raise ValueError("Invalid scale: '" + str(y_scale) + "'")
 
     # Set labels
-    if x_label is not None: plt.ylabel(x_label.replace("_", "\_"))
+    if x_label is not None: plt.xlabel(x_label.replace("_", "\_"))
     if y_label is not None: plt.ylabel(y_label.replace("_", "\_"))
 
     # Create legend
