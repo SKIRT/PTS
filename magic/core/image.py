@@ -1244,8 +1244,21 @@ class Image(object):
 
         # Pixelscale
         if self.wcs is None and self.pixelscale is not None:
-            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
-            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+
+            # Angular
+            if self.has_angular_pixelscale:
+
+                header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
+                header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+
+            # Physical
+            elif self.has_physical_pixelscale:
+
+                header.set("XPIXSIZE", repr(self.pixelscale.x.to("pc").value), "[pc] Pixelscale for x axis")
+                header.set("YPIXSIZE", repr(self.pixelscale.y.to("pc").value), "[pc] Pixelscale for y axis")
+
+            # Invalid pixelscale
+            else: raise RuntimeError("We shouldn't get here")
 
         # Set distance
         if self.distance is not None: header.set("DISTANCE", repr(self.distance.to("Mpc").value), "[Mpc] Distance to the object")
