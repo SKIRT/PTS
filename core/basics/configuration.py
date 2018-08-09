@@ -3116,7 +3116,8 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True, error="exit", exit_on_help=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True, error="exit",
+                 exit_on_help=True):
 
         """
         This function ...
