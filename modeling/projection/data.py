@@ -319,10 +319,6 @@ class DataProjections(object):
         self.faceon = None
         self.edgeon = None
 
-        # Create?
-        if faceon: self.project_faceon()
-        if edgeon: self.project_edgeon()
-
         # The stddev maps
         self.faceon_stddev = None
         self.edgeon_stddev = None
@@ -330,6 +326,10 @@ class DataProjections(object):
         # The ncells maps
         self.faceon_ncells = None
         self.edgeon_ncells = None
+
+        # Create?
+        if faceon: self.project_faceon()
+        if edgeon: self.project_edgeon()
 
     # -----------------------------------------------------------------
 
