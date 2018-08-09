@@ -5,30 +5,29 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.distribution Contains the Distribution class.
+## \package pts.core.basics.distribution Contains the Distribution and Distribution2D classes.
 
 # -----------------------------------------------------------------
 
 # Import standard modules
-import warnings
 import numpy as np
-from scipy.stats import rv_continuous
-import matplotlib.pyplot as plt
-from scipy.interpolate import spline
 from scipy.interpolate import interp1d
 from scipy.signal import argrelextrema
 from scipy.interpolate import InterpolatedUnivariateSpline
-from scipy.integrate import quad, simps
-#import seaborn as sns
 
 # Import astronomical modules
-from astropy.table import Table
 from astropy.modeling import models, fitting
+from astropy.io import fits
 
 # Import the relevant PTS classes and modules
-from ..tools import strings
 from ..tools.utils import lazyproperty
 from .curve import Curve
+from .log import log
+from .table import SmartTable
+
+# -----------------------------------------------------------------
+
+nan_value = float("nan")
 
 # -----------------------------------------------------------------
 
@@ -1797,78 +1796,257 @@ def get_local_minima(x, y):
 
 # -----------------------------------------------------------------
 
+default_x_name = "x"
+default_y_name = "y"
+
+# -----------------------------------------------------------------
+
 class Distribution2D(object):
 
     """
     This class ...
     """
 
-    def __init__(self, counts, x_edges, y_edges, rBins_F, FBins_r, x_name, y_name):
+    def __init__(self, name, x, y, counts, x_name=default_x_name, y_name=default_y_name, x_unit=None,
+                 y_unit=None, description=None):
 
         """
         The constructor ...
+        :param name:
+        :param x:
+        :param y:
+        :param counts:
+        :param x_name:
+        :param y_name:
+        :param x_unit:
+        :param y_unit:
+        :param description:
         """
 
-        self.counts = counts
-        self.x_edges = x_edges
-        self.y_edges = y_edges
-        self.rBins_F = rBins_F
-        self.FBins_r = FBins_r
+        from ..units.parsing import parse_unit
+
+        # The name and description
+        self.name = name
+        self.description = description
         self.x_name = x_name
         self.y_name = y_name
+
+        # Set the data
+        self.x = x # X EDGES
+        self.y = y # Y EDGES
+        self.counts = counts
+
+        # Set the units
+        self.x_unit = parse_unit(x_unit) if x_unit is not None else None
+        self.y_unit = parse_unit(y_unit) if y_unit is not None else None
+
+        # Check lenghts
+        self.check()
 
         # The path
         self.path = None
 
     # -----------------------------------------------------------------
 
-    def __len__(self):
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from ..units.parsing import parse_unit as u
+        from ..tools.parsing import real_list
+
+        # Debugging
+        log.debug("Loading the 2D histogram in FITS format from '" + path + "' ...")
+
+        # Get data and header
+        counts = fits.getdata(path)
+        header = fits.getheader(path)
+
+        # Add properties to the header
+        name = header["NAME"]
+        x_name = header["XNAME"]
+        y_name = header["YNAME"]
+        x_unit = u(header["XUNIT"]) if "XUNIT" in header else None
+        y_unit = u(header["YUNIT"]) if "YUNIT" in header else None
+        x = np.array(real_list(header["X"]))
+        y = np.array(real_list(header["Y"]))
+        description = header["DESCR"] if "DESCR" in header else None
+
+        # Create distribution
+        distribution = cls(name, x, y, counts, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit, description=description)
+
+        # Return
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_description(self):
+        return self.description is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_x_unit(self):
+        return self.x_unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_y_unit(self):
+        return self.y_unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nx(self):
+        return len(self.x) # NUMBER OF X EDGES
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ny(self):
+        return len(self.y) # NUMBER OF Y EDGES
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nxbins(self):
+        return self.nx - 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nybins(self):
+        return self.ny - 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nbins(self):
+        if self.nxbins == self.nybins: return self.nxbins
+        else: return (self.nxbins, self.nybins,)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def counts_nx(self):
+        return self.counts.shape[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def counts_ny(self):
+        return self.counts.shape[0]
+
+    # -----------------------------------------------------------------
+
+    def check(self):
 
         """
         This function ...
         :return:
         """
 
-        return len(self.counts)
+        from ..tools import types, sequences
+
+        # Check types
+        if not types.is_real_array(self.x): raise ValueError("x data must be an array of real values")
+        if not types.is_real_array(self.y): raise ValueError("y data must be an array of real values")
+        if not types.is_real_or_integer_array(self.counts): raise ValueError("counts must be an array of real or integer values")
+
+        # Check
+        sizes_x = [self.nxbins, self.counts_nx]
+        if not sequences.all_equal(sizes_x): raise ValueError("Sizes of x data arrays are not compatible")
+        sizes_y = [self.nybins, self.counts_ny]
+        if not sequences.all_equal(sizes_y): raise ValueError("Sizes of y data arrays are not compatible")
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_values(cls, x, y, weights=None, nbins=200, x_name=None, y_name=None):
+    def from_values(cls, name, x, y, weights=None, nbins=200, x_name=default_x_name, y_name=default_y_name,
+                    x_unit=None, y_unit=None, description=None, frequency=False):
 
         """
         This function ...
+        :param name:
         :param x:
         :param y:
         :param weights:
         :param nbins:
         :param x_name:
         :param y_name:
+        :param x_unit:
+        :param y_unit:
+        :param description:
+        :param frequency:
         :return:
         """
 
-        binstep = max(x) / float(nbins)
+        # Determine the bin step
+        #binstep = max(x) / float(nbins)
         #rBins_F, FBins_r = getRadBins(x, y, 1, weights)
-        rBins_F, FBins_r = getRadBins(x, y, binstep, weights)
+        #rBins_F, FBins_r = getRadBins(x, y, binstep, weights)
         #rBins_F[rBins_F > 25] = np.nan
-
         #rBins_F = None
         #FBins_r = None
-
         #print("rBins_F", rBins_F)
         #print("FBins_r", FBins_r)
 
-        # Estimate the 2D histogram
-        H, xedges, yedges = np.histogram2d(x, y, bins=nbins, normed=True, weights=weights)
+        # Calculate the 2D histogram
+        prob, xedges, yedges = np.histogram2d(x, y, bins=nbins, normed=frequency, weights=weights)
 
         # H needs to be rotated and flipped
-        H = np.rot90(H)
-        H = np.flipud(H)
+        prob = np.rot90(prob)
+        prob = np.flipud(prob)
 
         # Mask zeros
-        Hmasked = np.ma.masked_where(H == 0, H)  # Mask pixels with a value of zero
+        #zeroes = np.equal(prob, 0)
+        #valid = np.logical_not(zeroes)
+        #print(prob.shape, len(prob), len(valid), len(xedges), len(yedges))
+        #Hmasked = np.ma.masked_where(prob == 0, prob)  # Mask pixels with a value of zero
+        #prob = np.ma.masked_where(prob == 0, prob)
 
-        return cls(Hmasked, xedges, yedges, rBins_F, FBins_r, x_name, y_name)
+        # Clip zeroes
+        #xedges = xedges[valid]
+        #yedges = yedges[valid]
+        #prob = prob[valid]
+
+        # Create the distribution
+        # name, x, y, counts, x_name="x", y_name="y", x_unit=None, y_unit=None, description=None
+        distribution = cls(name, xedges, yedges, prob, x_name, y_name, x_unit=x_unit, y_unit=y_unit, description=description)
+
+        # Return
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def x_centers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.x[:-1] + self.x[1:]) / 2.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def y_centers(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return (self.y[:-1] + self.y[1:]) / 2.
 
     # -----------------------------------------------------------------
 
@@ -1895,71 +2073,95 @@ class Distribution2D(object):
         :return:
         """
 
-        print("Saving Distribution2D not implemented yet!")
-
-        # Update the path
-        #self.path = path
+        self.saveto_fits(path)
 
     # -----------------------------------------------------------------
 
-    def plot(self, title=None, path=None, radii=None):
+    def saveto_fits(self, path):
 
         """
         This function ...
-        :param title:
         :param path:
-        :param radii:
         :return:
         """
 
-        # Plot 2D histogram using pcolor
+        from ..tools.stringify import tostr
 
-        # Create a figure
-        fig = plt.figure()
-        ax = fig.gca()
+        # Check path
+        if not path.endswith("fits"): raise ValueError("Not a valid path for saving as FITS file")
 
-        #ax.set_ylabel('$\mathcal{F}_\mathrm{unev.}^\mathrm{abs}$', fontsize=18)
-        #ax.set_xlabel('R (kpc)', fontsize=18)
+        # Create header with information
+        header = fits.Header()
 
-        # ax.hexbin(r/1000.,F_abs_yng,gridsize=150,bins='log',cmap=plt.cm.autumn, mincnt=1,linewidths=0)
+        # Add properties to the header
+        header["NAME"] = self.name
+        header["XNAME"] = self.x_name
+        header["YNAME"] = self.y_name
+        if self.has_x_unit: header["XUNIT"] = tostr(self.x_unit)
+        if self.has_y_unit: header["YUNIT"] = tostr(self.y_unit)
+        header["X"] = tostr(list(self.x))
+        header["Y"] = tostr(list(self.y))
+        if self.has_description: header["DESCR"] = self.description
 
-        #print("x edges:", self.x_edges, self.x_edges.shape)
-        #print("y edges:", self.y_edges, self.y_edges.shape)
-        #print("counts:", self.counts, self.counts.shape)
+        # Create the HDU
+        hdu = fits.PrimaryHDU(self.counts, header)
 
-        #ax.pcolor(self.x_edges, self.y_edges, self.counts)
+        # Write the HDU to a FITS file
+        hdu.writeto(path, clobber=True)
 
-        #ax.imshow(self.counts)
+        # Inform the user that the file has been created
+        log.debug("File '" + path + "' created")
 
-        ax.pcolormesh(self.x_edges, self.y_edges, self.counts)
+        # Update path
+        self.path = path
 
-        if self.rBins_F is not None and self.FBins_r is not None:
-            #ax.plot(self.rBins_F, self.FBins_r, 'k-', linewidth=2)
-            ax.plot(self.rBins_F, self.FBins_r, 'w-', linewidth=1)
+    # -----------------------------------------------------------------
 
-        #ax.errorbar(1.7, 0.88, xerr=1.4, color='k')
-        #ax.text(1.8, 0.90, 'Bulge', ha='center')
-        #ax.errorbar(11., 0.88, xerr=2.75, color='k')
-        #ax.text(11., 0.90, 'main SF ring', ha='center')
-        #ax.errorbar(16., 0.88, xerr=1, color='k')
-        #ax.text(15., 0.90, r'$2^\mathrm{nd}$ SF ring', ha='left')
+    def saveto_table(self, path):
 
-        # Plot radii
-        if radii is not None:
-            for radius in radii:
-                plt.axvline(x=radius)
+        """
+        This function ...
+        :param path:
+        :return:
+        """
 
-        ax.set_ylim(0.0, 1.0)
+        # Debugging
+        log.debug("Saving the 2D histogram in table format to '" + path + "' ...")
 
-        if title is not None: ax.set_title(title)
+        # Set the columns
+        columns = [self.x, self.y]
+        names = [self.x_name, self.y_name]
 
-        # Labels
-        if self.x_name is not None: ax.set_xlabel(self.x_name)
-        if self.y_name is not None: ax.set_ylabel(self.y_name)
+        # Loop over the columns of the counts
+        for i in self.counts_nx:
+            column = self.counts_nx[i]
+            column = np.append(column, nan_value) # to match size
+            columns.append(column)
+            names.append(self.name + str(i))
 
-        # Save the figure
-        plt.savefig(path)
-        plt.close()
+        # Capitalize column names
+        names = [name.capitalize() for name in names]
+
+        # Set units
+        units = [self.x_unit, self.y_unit, None]
+
+        # Debugging
+        log.debug("Creating table ...")
+
+        # Create table
+        table = SmartTable.from_columns(*columns, names=names, units=units, as_columns=True)
+
+        # Debugging
+        log.debug("Writing table ...")
+
+        # Set the description
+        if self.has_description: table.meta["description"] = self.description
+
+        # Save the table
+        table.saveto(path)
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 

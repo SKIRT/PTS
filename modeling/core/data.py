@@ -87,6 +87,9 @@ class Data3D(object):
         # Check sizes?
         self.check()
 
+        # Path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -130,9 +133,15 @@ class Data3D(object):
         wavelength = table.meta["wavelength"] if "wavelength" in table.meta else None
         solid_angle = table.meta["solid_angle"] if "solid_angle" in table.meta else None
 
-        # Create and return
-        return cls(name, x, y, z, values, weights=weights, length_unit=length_unit, unit=unit, description=description,
+        # Create
+        data = cls(name, x, y, z, values, weights=weights, length_unit=length_unit, unit=unit, description=description,
                    distance=distance, wavelength=wavelength, solid_angle=solid_angle)
+
+        # Set the path
+        data.path = path
+
+        # Return the data
+        return data
 
     # -----------------------------------------------------------------
 
@@ -249,76 +258,88 @@ class Data3D(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def masked_x(self):
-        return np.ma.MaskedArray(self.x, mask=self.invalid)
+    def valid(self):
+        return np.logical_not(self.invalid)
+
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def masked_x(self):
+    #    return np.ma.MaskedArray(self.x, mask=self.invalid)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_x(self):
-        return self.masked_x.compressed()
+        #return self.masked_x.compressed()
+        return self.x[self.valid]
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_y(self):
-        return np.ma.MaskedArray(self.y, mask=self.invalid)
+    #@lazyproperty
+    #def masked_y(self):
+    #    return np.ma.MaskedArray(self.y, mask=self.invalid)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_y(self):
-        return self.masked_y.compressed()
+        #return self.masked_y.compressed()
+        return self.y[self.valid]
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_z(self):
-        return np.ma.MaskedArray(self.z, mask=self.invalid)
+    #@lazyproperty
+    #def masked_z(self):
+    #    return np.ma.MaskedArray(self.z, mask=self.invalid)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_z(self):
-        return self.masked_z.compressed()
+        #return self.masked_z.compressed()
+        return self.z[self.valid]
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_values(self):
-        return np.ma.MaskedArray(self.values, mask=self.invalid)
+    #@lazyproperty
+    #def masked_values(self):
+    #    return np.ma.MaskedArray(self.values, mask=self.invalid)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_values(self):
-        return self.masked_values.compressed()
+        #return self.masked_values.compressed()
+        return self.values[self.valid]
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_weights(self):
-        if not self.has_weights: return None
-        return np.ma.MaskedArray(self.weights, mask=self.invalid)
+    #@lazyproperty
+    #def masked_weights(self):
+    #    if not self.has_weights: return None
+    #    return np.ma.MaskedArray(self.weights, mask=self.invalid)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_weights(self):
         if not self.has_weights: return None
-        return self.masked_weights.compressed()
+        #return self.masked_weights.compressed()
+        return self.weights[self.valid]
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_radii(self):
-        return np.ma.MaskedArray(self.radii, mask=self.invalid)
+    #@lazyproperty
+    #def masked_radii(self):
+    #    return np.ma.MaskedArray(self.radii, mask=self.invalid)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_radii(self):
-        return self.masked_radii.compressed()
+        #return self.masked_radii.compressed()
+        return self.radii[self.valid]
 
     # -----------------------------------------------------------------
 
@@ -809,6 +830,21 @@ class Data3D(object):
 
     # -----------------------------------------------------------------
 
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
     def saveto(self, path):
 
         """
@@ -853,5 +889,8 @@ class Data3D(object):
 
         # Save the table
         table.saveto(path)
+
+        # Save the path
+        self.path = path
 
 # -----------------------------------------------------------------

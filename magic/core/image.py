@@ -24,7 +24,7 @@ from ..region.list import PixelRegionList
 from .mask import Mask, union, intersection
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
-from .frame import sum_frames
+from .frame import sum_frames, Frame
 from ...core.tools.stringify import tostr
 from ...core.units.unit import PhotometricUnit
 from ...core.units.stringify import represent_unit
@@ -122,6 +122,9 @@ class Image(object):
         :param name:
         :return:
         """
+
+        # Check type
+        if not isinstance(frame, Frame): raise ValueError("Argument is not a frame")
 
         # Set name
         if name is None: name = frame.name
