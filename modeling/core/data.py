@@ -27,6 +27,8 @@ from ...core.tools import sequences, types
 from ...core.tools.stringify import tostr, yes_or_no
 from ...magic.core.frame import nan_value, inf_value, zero_value
 from ...core.tools import formatting as fmt
+from ...core.tools.numbers import weighed_arithmetic_mean_numpy, arithmetic_mean_numpy, weighed_median_numpy, median_numpy, weighed_standard_deviation_numpy, standard_deviation_numpy
+from ...core.basics.range import RealRange, QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -360,6 +362,84 @@ class Data3D(object):
 
         # Calculate
         result = np.nansum(self.values)
+
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
+        # Return
+        if add_unit and self.has_unit: return result * unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def mean(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check
+        unit = conversion_factor = None
+
+        # Calculate
+        result = weighed_arithmetic_mean_numpy(self.values, weights=self.weights) if self.has_weights else arithmetic_mean_numpy(self.values)
+
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
+        # Return
+        if add_unit and self.has_unit: return result * unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def median(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check
+        unit = conversion_factor = None
+
+        # Calculate
+        result = weighed_median_numpy(self.values, weights=self.weights) if self.has_weights else median_numpy(self.values)
+
+        # Convert?
+        if conversion_factor is not None: result *= conversion_factor
+
+        # Set unit
+        if unit is None: unit = self.unit
+
+        # Return
+        if add_unit and self.has_unit: return result * unit
+        else: return result
+
+    # -----------------------------------------------------------------
+
+    def stddev(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        # Check
+        unit = conversion_factor = None
+
+        # Calculate
+        result = weighed_standard_deviation_numpy(self.values, weights=self.weights) if self.has_weights else standard_deviation_numpy(self.values)
 
         # Convert?
         if conversion_factor is not None: result *= conversion_factor
@@ -800,6 +880,106 @@ class Data3D(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def min_x(self):
+        return np.min(self.x)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_x(self):
+        return np.max(self.x)
+
+    # -----------------------------------------------------------------
+
+    def x_range(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        if add_unit and self.has_length_unit: return QuantityRange(self.min_x, self.max_x, unit=self.length_unit)
+        else: return RealRange(self.min_x, self.max_x)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_y(self):
+        return np.min(self.y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_y(self):
+        return np.max(self.y)
+
+    # -----------------------------------------------------------------
+
+    def y_range(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        if add_unit and self.has_length_unit: return QuantityRange(self.min_y, self.max_y, unit=self.length_unit)
+        else: return RealRange(self.min_y, self.max_y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_z(self):
+        return np.min(self.z)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_z(self):
+        return np.max(self.z)
+
+    # -----------------------------------------------------------------
+
+    def z_range(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        if add_unit and self.has_length_unit: return QuantityRange(self.min_z, self.max_z, unit=self.length_unit)
+        else: return RealRange(self.min_z, self.max_z)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_value(self):
+        return np.nanmin(self.values)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_value(self):
+        return np.nanmax(self.values)
+
+    # -----------------------------------------------------------------
+
+    def value_range(self, add_unit=False):
+
+        """
+        This function ...
+        :param add_unit:
+        :return:
+        """
+
+        if add_unit and self.has_unit: return QuantityRange(self.min_value, self.max_value, unit=self.unit)
+        else: return RealRange(self.min_value, self.max_value)
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """
@@ -888,6 +1068,14 @@ def show_data_properties(data):
     if data.has_distance: print(" - " + fmt.bold + "Distance: " + fmt.reset_bold + tostr(data.distance))
     if data.has_wavelength: print(" - " + fmt.bold + "Wavelength: " + fmt.reset_bold + tostr(data.wavelength))
     if data.has_solid_angle: print(" - " + fmt.bold + "Solid angle: " + fmt.reset_bold + tostr(data.solid_angle))
+    print(" - " + fmt.bold + "Sum of all values: " + fmt.reset_bold + tostr(data.sum(add_unit=True)))
+    print(" - " + fmt.bold + "Average value: " + fmt.reset_bold + tostr(data.mean(add_unit=True)))
+    print(" - " + fmt.bold + "Median value: " + fmt.reset_bold + tostr(data.median(add_unit=True)))
+    print(" - " + fmt.bold + "Standard deviation from the mean: " + fmt.reset_bold + tostr(data.stddev(add_unit=True)))
+    print(" - " + fmt.bold + "Range of x coordinates: " + fmt.reset_bold + tostr(data.x_range(add_unit=True)))
+    print(" - " + fmt.bold + "Range of y coordinates: " + fmt.reset_bold + tostr(data.y_range(add_unit=True)))
+    print(" - " + fmt.bold + "Range of z coordinates: " + fmt.reset_bold + tostr(data.z_range(add_unit=True)))
+    print(" - " + fmt.bold + "Range of values: " + fmt.reset_bold + tostr(data.value_range(add_unit=True)))
     print("")
 
 # -----------------------------------------------------------------

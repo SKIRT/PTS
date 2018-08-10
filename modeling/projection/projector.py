@@ -78,6 +78,9 @@ class DataProjector(Projector):
         # Project
         self.project()
 
+        # Interpolate
+        if self.config.interpolate: self.interpolate()
+
         # Write
         self.write()
 
@@ -193,6 +196,12 @@ class DataProjector(Projector):
 
     # -----------------------------------------------------------------
 
+    @property
+    def faceon_ncells(self):
+        return self.faceon.frames.ncells
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def edgeon(self):
         return Image.from_frames(self.projections.edgeon, stddev=self.projections.edgeon_stddev, ncells=self.projections.edgeon_ncells)
@@ -202,6 +211,102 @@ class DataProjector(Projector):
     @property
     def edgeon_frame(self):
         return self.edgeon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_ncells(self):
+        return self.edgeon.frames.ncells
+
+    # -----------------------------------------------------------------
+
+    def interpolate_map(self, frame, ncells):
+
+        """
+        This function ...
+        :param frame:
+        :param ncells:
+        :return:
+        """
+
+        # Copy
+        #interpolated = frame.copy()
+
+        # Get outside nans
+        outside_nans = frame.nans.largest()
+        # plotting.plot_mask(outside_nans, title="outside nans")
+        #outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans.fits"))
+        not_nans = outside_nans.inverse()
+        not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
+        # not_nans.fill_holes()
+        #not_nans.saveto(fs.join(self.cell_heating_path, "not_nans.fits"))
+        do_nans = not_nans.largest().inverse()
+
+        # Get mask
+        where = ncells.where_smaller_than(self.config.min_ncells)
+
+        # plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
+        # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+
+        # Put pixels to NaN
+        frame.replace_by_nans(where)
+
+        # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+
+        # Interpolate nans
+        frame.interpolate_nans(sigma=2.)
+        frame.replace_by_nans(do_nans)
+
+        # Return the interpolated frame
+        #return interpolated
+
+    # -----------------------------------------------------------------
+
+    def interpolate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the maps ...")
+
+        # Faceon
+        if self.do_faceon: self.interpolate_faceon()
+
+        # Edgeon
+        if self.do_edgeon: self.interpolate_edgeon()
+
+    # -----------------------------------------------------------------
+
+    def interpolate_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Interpolating the face-on map ...")
+
+        # Interpolate
+        self.interpolate_map(self.faceon_frame, self.faceon_ncells)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_edgeon(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Interpolating the edge-on map ...")
+
+        # Interpolate
+        self.interpolate_map(self.edgeon_frame, self.edgeon_ncells)
 
     # -----------------------------------------------------------------
 
@@ -346,6 +451,19 @@ class DataProjector(Projector):
 
     # -----------------------------------------------------------------
 
+    @property
+    def plotting_interval(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.plotting.minmax is not None: return self.config.plotting.minmax
+        else: return self.config.plotting.interval
+
+    # -----------------------------------------------------------------
+
     def plot_faceon_map(self):
 
         """
@@ -357,7 +475,7 @@ class DataProjector(Projector):
         path = self.output_path_file("faceon.pdf")
 
         # Plot
-        plot_map(self.faceon_frame, path=path, interval=self.config.plotting.interval, contours=self.config.plotting.contours,
+        plot_map(self.faceon_frame, path=path, interval=self.plotting_interval, contours=self.config.plotting.contours,
                  ncontours=self.config.plotting.ncontours, contours_color=self.config.plotting.contours_color)
 
     # -----------------------------------------------------------------
@@ -373,7 +491,7 @@ class DataProjector(Projector):
         path = self.output_path_file("edgeon.pdf")
 
         # Plot
-        plot_map(self.edgeon_frame, path=path, interval=self.config.plotting.interval, contours=self.config.plotting.contours,
+        plot_map(self.edgeon_frame, path=path, interval=self.plotting_interval, contours=self.config.plotting.contours,
                  ncontours=self.config.plotting.ncontours, contours_color=self.config.plotting.contours_color)
 
 # -----------------------------------------------------------------

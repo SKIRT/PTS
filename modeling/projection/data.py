@@ -790,12 +790,20 @@ class DataProjections(object):
         # Set center of galaxy in frame
         #center_x = self.radius * self.length_unit
         #center_y = self.radius * self.length_unit
-        center_x = 0.0 * self.length_unit
-        center_y = 0.0 * self.length_unit
+        #center_x = 0.0 * self.length_unit
+        #center_y = 0.0 * self.length_unit
 
         # Set number of pixels
         nx = numbers.round_up_to_odd_integer(field_x / spacing)
         ny = numbers.round_up_to_odd_integer(field_y / spacing)
+
+        # Determine pixelscale
+        pixelscale_x = field_x / nx
+        pixelscale_y = field_y / ny
+
+        # Determine center
+        center_x = -0.5 * pixelscale_x
+        center_y = -0.5 * pixelscale_y
 
         # Create the projection
         self.projection_faceon = FaceOnProjection(distance=self.distance, pixels_x=nx,
@@ -851,12 +859,20 @@ class DataProjections(object):
         # Set center of galaxy in frame
         #center_y = self.radius * self.length_unit
         #center_z = self.height * self.length_unit
-        center_y = 0.0 * self.length_unit
-        center_z = 0.0 * self.length_unit
+        #center_y = 0.0 * self.length_unit
+        #center_z = 0.0 * self.length_unit
 
         # Set number of pixels
         ny = numbers.round_up_to_odd_integer(field_y / spacing)
         nz = numbers.round_up_to_odd_integer(field_z / spacing)
+
+        # Determine pixelscale
+        pixelscale_y = field_y / ny
+        pixelscale_z = field_z / nz
+
+        # Determine center
+        center_y = -0.5 * pixelscale_y
+        center_z = -0.5 * pixelscale_z
 
         # Create projection
         self.projection_edgeon = EdgeOnProjection(distance=self.distance, pixels_x=ny,
@@ -916,6 +932,9 @@ class DataProjections(object):
 
     @lazyproperty
     def faceon_x_min_value(self):
+        #print("center X", self.projection_faceon.center_x)
+        #print("field X", self.projection_faceon.field_x)
+        #print("xmin", self.faceon_x_min)
         return self.faceon_x_min.to(self.length_unit).value
 
     # -----------------------------------------------------------------
@@ -1088,6 +1107,46 @@ class DataProjections(object):
         return np.where(mask)[0]
 
     # -----------------------------------------------------------------
+    # FACEON PIXEL X COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_x_min_value(self):
+        return self.faceon_x_min_value + 0.5 * self.faceon_pixelscale_value_x # coordinate for the center of the pixel
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_x_max_value(self):
+        return self.faceon_pixel_x_min_value + (self.faceon_nx-1) * self.faceon_pixelscale_value_x
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_x_coordinates(self):
+        return np.linspace(self.faceon_pixel_x_min_value, self.faceon_pixel_x_max_value, num=self.faceon_nx)
+
+    # -----------------------------------------------------------------
+    # FACEON PIXEL Y COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_y_min_value(self):
+        return self.faceon_y_min_value + 0.5 * self.faceon_pixelscale_value_y # coordinate for the center of the pixel
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_y_max_value(self):
+        return self.faceon_pixel_y_min_value + (self.faceon_ny-1) * self.faceon_pixelscale_value_y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_y_coordinates(self):
+        return np.linspace(self.faceon_pixel_y_min_value, self.faceon_pixel_y_max_value, num=self.faceon_ny)
+
+    # -----------------------------------------------------------------
 
     def project_faceon(self, logfreq=100):
 
@@ -1114,15 +1173,19 @@ class DataProjections(object):
         with Bar(label='', expected_size=self.faceon_npixels, every=1, add_datetime=True) as bar:
 
             # Loop over the pixels of the map
-            x = self.faceon_x_min_value
-            y = self.faceon_y_min_value
+            #x = self.faceon_x_min_value
+            #y = self.faceon_y_min_value
             index = 0
-            for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
+            #for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
+            #for i in range(self.faceon_nx):
+            #for j in range(self.faceon_ny):
+            for i, x, j, y in sequences.iterate_enumerated_combinations(self.faceon_pixel_x_coordinates, self.faceon_pixel_y_coordinates):
 
                 # Debugging
                 if index % logfreq == 0:
                     log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
                     log.debug("Pixel position: x = " + tostr(x) + " " + tostr(self.length_unit) + ", y = " + tostr(y) + " " + tostr(self.length_unit))
+                    log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
 
                 # Show progress
                 #progress = int(float(index+1) / float(self.faceon_npixels))
@@ -1159,9 +1222,11 @@ class DataProjections(object):
                     self.faceon[j, i] = fraction
                     self.faceon_stddev[j, i] = fraction_stddev
 
+                # NO!
                 # Increment the x and y coordinate with one pixelsize
-                x += self.faceon_pixelscale_value_x
-                y += self.faceon_pixelscale_value_y
+                #x += self.faceon_pixelscale_value_x
+                #y += self.faceon_pixelscale_value_y
+
                 index += 1
 
     # -----------------------------------------------------------------
@@ -1388,6 +1453,46 @@ class DataProjections(object):
         return np.where(mask)[0]
 
     # -----------------------------------------------------------------
+    # EDGEON PIXEL Y COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_y_min_value(self):
+        return self.edgeon_y_min_value + 0.5 * self.edgeon_pixelscale_value_y  # coordinate for the center of the pixel
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_y_max_value(self):
+        return self.edgeon_pixel_y_min_value + (self.edgeon_ny - 1) * self.edgeon_pixelscale_value_y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_y_coordinates(self):
+        return np.linspace(self.edgeon_pixel_y_min_value, self.edgeon_pixel_y_max_value, num=self.edgeon_ny)
+
+    # -----------------------------------------------------------------
+    # EDGEON PIXEL Z COORDINATES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_z_min_value(self):
+        return self.edgeon_z_min_value + 0.5 * self.edgeon_pixelscale_value_z # coordinate for the center of the pixel
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_z_max_value(self):
+        return self.edgeon_pixel_z_min_value + (self.edgeon_nz - 1) * self.edgeon_pixelscale_value_z
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_z_coordinates(self):
+        return np.linspace(self.edgeon_pixel_z_min_value, self.edgeon_pixel_z_max_value, num=self.edgeon_nz)
+
+    # -----------------------------------------------------------------
 
     def project_edgeon(self, logfreq=100):
 
@@ -1414,15 +1519,17 @@ class DataProjections(object):
         with Bar(label='', expected_size=self.edgeon_npixels, every=1, add_datetime=True) as bar:
 
             # Loop over the pixels of the map
-            y = self.edgeon_y_min_value
-            z = self.edgeon_z_min_value
+            #y = self.edgeon_y_min_value
+            #z = self.edgeon_z_min_value
             index = 0
-            for i, j in sequences.multirange(self.edgeon_ny, self.edgeon_nz):
+            #for i, j in sequences.multirange(self.edgeon_ny, self.edgeon_nz):
+            for i, y, j, z in sequences.iterate_enumerated_combinations(self.edgeon_pixel_y_coordinates, self.edgeon_pixel_z_coordinates):
 
                 # Debugging
                 if index % logfreq == 0:
                     log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.edgeon_npixels) + " (" + tostr(float(index) / self.edgeon_npixels * 100, decimal_places=1, round=True) + "%) ...")
                     log.debug("Pixel position: y = " + tostr(y) + " " + tostr(self.length_unit) + ", z = " + tostr(z) + " " + tostr(self.length_unit))
+                    log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
 
                 # Show progress
                 #progress = int(float(index + 1) / float(self.faceon_npixels))
@@ -1459,8 +1566,8 @@ class DataProjections(object):
                     self.edgeon_stddev[j, i] = fraction_stddev
 
                 # Increment the y and z coordinate with one pixelsize
-                y += self.edgeon_pixelscale_value_y
-                z += self.edgeon_pixelscale_value_z
+                #y += self.edgeon_pixelscale_value_y
+                #z += self.edgeon_pixelscale_value_z
                 index += 1
 
 # -----------------------------------------------------------------

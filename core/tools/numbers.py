@@ -1499,7 +1499,19 @@ def median(*numbers):
     :return:
     """
 
-    return np.median(np.asarray(numbers))
+    return median_numpy(np.asarray(numbers))
+
+# -----------------------------------------------------------------
+
+def median_numpy(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    return np.median(array)
 
 # -----------------------------------------------------------------
 

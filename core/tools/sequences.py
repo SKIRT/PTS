@@ -341,6 +341,18 @@ def iterate_lists_combinations(*lsts):
 
 # -----------------------------------------------------------------
 
+def iterate_enumerated_combinations(*lsts):
+
+    """
+    This function ...
+    :param lsts:
+    :return:
+    """
+
+    for values in iterate_lists_combinations(*[enumerate(lst) for lst in lsts]): yield tuple(itertools.chain(*values))
+
+# -----------------------------------------------------------------
+
 def lists_combinations(*lsts):
 
     """

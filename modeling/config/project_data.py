@@ -45,6 +45,11 @@ definition.add_optional("spacing_factor", "positive_real", "factor by which to m
 
 # -----------------------------------------------------------------
 
+# Do interpolation on the maps
+definition.add_flag("interpolate", "do interpolation", False)
+
+# -----------------------------------------------------------------
+
 # Do plot
 definition.add_flag("plot", "do plotting", True)
 
@@ -54,5 +59,6 @@ definition.sections["plotting"].add_optional("interval", "string", "interval", "
 definition.sections["plotting"].add_flag("contours", "show contours", False)
 definition.sections["plotting"].add_optional("ncontours", "positive_integer", "number of contour levels", 5)
 definition.sections["plotting"].add_optional("contours_color", "string", "color for the contour lines", "white")
+definition.sections["plotting"].add_optional("minmax", "real_pair", "plotting minimum and maximum value")
 
 # -----------------------------------------------------------------
