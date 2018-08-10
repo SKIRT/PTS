@@ -106,7 +106,7 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     else: raise ValueError("Projection must be face-on or edge-on")
 
     # Create the projections object
-    projections = DataProjections(name, data, description=description, faceon=faceon, edgeon=edgeon,
+    projections = DataProjections(data, name=name, description=description, faceon=faceon, edgeon=edgeon,
                                   projection_faceon=faceon_projection, projection_edgeon=edgeon_projection,
                                   faceon_height=height, edgeon_width=width)
 
@@ -170,7 +170,7 @@ def project_faceon(name, data, return_stddev=False, return_ncells=False, descrip
     """
 
     # Create the projections object
-    projections = DataProjections(name, data, description=description, faceon=True, edgeon=False,
+    projections = DataProjections(data, name=name, description=description, faceon=True, edgeon=False,
                                   faceon_spacing=spacing, faceon_spacing_factor=spacing_factor, faceon_height=height)
 
     # Get results
@@ -221,7 +221,7 @@ def project_edgeon(name, data, return_stddev=False, return_ncells=False, descrip
     """
 
     # Create the projections object
-    projections = DataProjections(name, data, description=description, faceon=False, edgeon=True,
+    projections = DataProjections(data, name=name, description=description, faceon=False, edgeon=True,
                                   edgeon_spacing=spacing, edgeon_spacing_factor=spacing_factor, edgeon_width=width)
 
     # Get results
@@ -236,7 +236,7 @@ def project_edgeon(name, data, return_stddev=False, return_ncells=False, descrip
     if as_image:
 
         # Create the image
-        image = Image.from_file(frame, name=name)
+        image = Image.from_frame(frame, name=name)
         if return_stddev: image.add_frame(stddev_frame, name="stddev")
         if return_ncells: image.add_frame(ncells_frame, name="ncells")
 
@@ -260,16 +260,17 @@ class DataProjections(object):
     This class ...
     """
 
-    def __init__(self, name, data, projection_faceon=None, projection_edgeon=None,
+    def __init__(self, data, name=None, projection_faceon=None, projection_edgeon=None,
                  faceon=True, edgeon=True, description=None, distance=None, faceon_height=None, edgeon_width=None,
-                 faceon_spacing="mean", edgeon_spacing="mean", faceon_spacing_factor=1., edgeon_spacing_factor=1.):
+                 faceon_spacing="mean", edgeon_spacing="mean", faceon_spacing_factor=1., edgeon_spacing_factor=1.,
+                 logfreq=100):
 
         """
         The constructor ...
         :param name:
         :param data:
         :param projection_faceon:
-        :param projection_edgeon:
+        :param projection_edgeon:DataProjections
         :param path:
         :param faceon:
         :param edgeon:
@@ -281,13 +282,14 @@ class DataProjections(object):
         :param edgeon_spacing:
         :param faceon_spacing_factor:
         :param edgeon_spacing_factor:
+        :param logfreq:
         """
 
-        # Set
-        self.name = name
+        # Set the data
         self.data = data
 
-        # Set other
+        # Name and description
+        if name is not None: self.name = name
         self.description = description
 
         # Other
@@ -328,8 +330,8 @@ class DataProjections(object):
         self.edgeon_ncells = None
 
         # Create?
-        if faceon: self.project_faceon()
-        if edgeon: self.project_edgeon()
+        if faceon: self.project_faceon(logfreq=logfreq)
+        if edgeon: self.project_edgeon(logfreq=logfreq)
 
     # -----------------------------------------------------------------
 
@@ -786,8 +788,10 @@ class DataProjections(object):
         field_y = 2. * self.radius * self.length_unit
 
         # Set center of galaxy in frame
-        center_x = self.radius * self.length_unit
-        center_y = self.radius * self.length_unit
+        #center_x = self.radius * self.length_unit
+        #center_y = self.radius * self.length_unit
+        center_x = 0.0 * self.length_unit
+        center_y = 0.0 * self.length_unit
 
         # Set number of pixels
         nx = numbers.round_up_to_odd_integer(field_x / spacing)
@@ -845,8 +849,10 @@ class DataProjections(object):
         field_z = 2. * self.height * self.length_unit
 
         # Set center of galaxy in frame
-        center_y = self.radius * self.length_unit
-        center_z = self.height * self.length_unit
+        #center_y = self.radius * self.length_unit
+        #center_z = self.height * self.length_unit
+        center_y = 0.0 * self.length_unit
+        center_z = 0.0 * self.length_unit
 
         # Set number of pixels
         ny = numbers.round_up_to_odd_integer(field_y / spacing)
@@ -1083,10 +1089,11 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def project_faceon(self):
+    def project_faceon(self, logfreq=100):
 
         """
         This function ...
+        :param logfreq:
         :return:
         """
 
@@ -1113,7 +1120,9 @@ class DataProjections(object):
             for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
 
                 # Debugging
-                if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
+                if index % logfreq == 0:
+                    log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.faceon_npixels) + " (" + tostr(float(index) / self.faceon_npixels * 100, decimal_places=1, round=True) + "%) ...")
+                    log.debug("Pixel position: x = " + tostr(x) + " " + tostr(self.length_unit) + ", y = " + tostr(y) + " " + tostr(self.length_unit))
 
                 # Show progress
                 #progress = int(float(index+1) / float(self.faceon_npixels))
@@ -1380,10 +1389,11 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def project_edgeon(self):
+    def project_edgeon(self, logfreq=100):
 
         """
         This function ...
+        :param logfreq:
         :return:
         """
 
@@ -1410,7 +1420,9 @@ class DataProjections(object):
             for i, j in sequences.multirange(self.edgeon_ny, self.edgeon_nz):
 
                 # Debugging
-                if index % 100 == 0: log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.edgeon_npixels) + " (" + tostr(float(index) / self.edgeon_npixels * 100, decimal_places=1, round=True) + "%) ...")
+                if index % logfreq == 0:
+                    log.debug("Calculating projected value in pixel " + str(index) + " of " + str(self.edgeon_npixels) + " (" + tostr(float(index) / self.edgeon_npixels * 100, decimal_places=1, round=True) + "%) ...")
+                    log.debug("Pixel position: y = " + tostr(y) + " " + tostr(self.length_unit) + ", z = " + tostr(z) + " " + tostr(self.length_unit))
 
                 # Show progress
                 #progress = int(float(index + 1) / float(self.faceon_npixels))

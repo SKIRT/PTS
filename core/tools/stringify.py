@@ -577,7 +577,9 @@ def stringify_array(value, **kwargs):
     delimiter = kwargs.pop("delimiter", ",")
 
     ptype, val = stringify_not_list(value[0], **kwargs)
-    return ptype + "_array", delimiter.join([repr(el) for el in value])
+
+    if ptype is None: return "array", delimiter.join([repr(el) for el in value])
+    else: return ptype + "_array", delimiter.join([repr(el) for el in value])
 
     #ptype, val = stringify_not_list(value[0])
     #return ptype + "_array", ",".join([repr(el) for el in value])

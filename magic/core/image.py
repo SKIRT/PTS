@@ -29,6 +29,7 @@ from ...core.tools.stringify import tostr
 from ...core.units.unit import PhotometricUnit
 from ...core.units.stringify import represent_unit
 from ...core.units.unit import parse_unit as u
+from ...core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -135,6 +136,35 @@ class Image(object):
 
         # Add frame
         image.add_frame(frame, name="primary")
+
+        # Return the image
+        return image
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_frames(cls, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Give warning
+        if introspection.is_python2(): log.warning("In python 2, the order of the frames in the image is not determined by the order of the keyword arguments, but effectively random")
+
+        # Check primary frame
+        if len(args) == 0: image = Image()
+        elif len(args) == 1: image = Image.from_frame(args[0])
+        else: raise ValueError("Cannot pass more than one primary frame, specifiy other frames as keyword arguments")
+
+        # Add other frames
+        for name in kwargs:
+            frame = kwargs[name]
+            if not isinstance(frame, Frame): raise ValueError("Not a frame: '" + name + "'")
+            image.add_frame(frame, name=name)
 
         # Return the image
         return image
