@@ -312,8 +312,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_cell_funev(self):
+        return fs.is_file(self.cell_funev_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_ssfr_path(self):
         return fs.join(self.cell_sfr_path, "ssfr.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr(self):
+        return fs.is_file(self.cell_ssfr_path)
 
     # -----------------------------------------------------------------
 
@@ -379,6 +391,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_cell_ssfr: raise IOError("The cell sSFR data is not present: run the SFR analysis first")
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Create and return
         return Scatter2D.from_xy(self.cell_ssfr_values, self.cell_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -409,6 +426,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_pixel_funev(self):
+        return fs.is_file(self.pixel_funev_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def pixel_funev(self):
         return Frame.from_file(self.pixel_funev_path)
@@ -424,6 +447,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def pixel_ssfr_path(self):
         return fs.join(self.projected_sfr_path, "ssfr_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr(self):
+        return fs.is_file(self.pixel_ssfr_path)
 
     # -----------------------------------------------------------------
 
@@ -447,6 +476,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_pixel_ssfr: raise IOError("The sSFR frame is not present: run the SFR analysis first")
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Create and return
         return Scatter2D.from_xy(self.pixel_ssfr_values, self.pixel_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
