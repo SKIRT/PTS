@@ -20,6 +20,7 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
 from matplotlib.widgets import Slider
 from collections import OrderedDict
+from scipy.stats.kde import gaussian_kde
 
 # Import astronomical modules
 from astropy.visualization.stretch import SqrtStretch, LogStretch, LinearStretch, HistEqStretch, AsinhStretch
@@ -31,6 +32,7 @@ from photutils import CircularAperture
 
 # Import the relevant PTS classes and modules
 from ...core.tools import types, sequences
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -1344,7 +1346,6 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
     from ...core.basics.range import RealRange
     from ..basics.coordinate import PixelCoordinate, SkyCoordinate
     from ..core.mask import intersection
-    from ...core.basics.log import log
 
     # Convert center to pixel coordinates
     if isinstance(center, PixelCoordinate): center_pix = center
@@ -1609,8 +1610,57 @@ def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="li
 
 # -----------------------------------------------------------------
 
+def plot_density(points, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, nbins=200):
+
+    """
+    This function ...
+    :param points:
+    :param title:
+    :param path:
+    :param x_scale:
+    :param y_scale:
+    :param xlimits:
+    :param ylimits:
+    :param nbins:
+    :return:
+    """
+
+    # Get x, y and labels
+    x, y, x_label, y_label = get_xy(points, return_labels=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
+            plot_type="density", xlimits=xlimits, ylimits=ylimits, density_nbins=nbins)
+
+# -----------------------------------------------------------------
+
+def plot_densities(points, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, nbins=200):
+
+    """
+    This function ...
+    :param points: 
+    :param title: 
+    :param path: 
+    :param x_scale: 
+    :param y_scale: 
+    :param xlimits: 
+    :param ylimits: 
+    :param nbins:
+    :return: 
+    """
+
+    # Get data
+    x, y, x_label, y_label = get_multiple_xy(points, return_labels=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
+            plot_type="density", xlimits=xlimits, ylimits=ylimits, density_nbins=nbins)
+
+# -----------------------------------------------------------------
+
 def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, x_scale="linear",
-            y_scale="linear", vlines=None, hlines=None, plot_type="line", legend=True, xlimits=None, ylimits=None):
+            y_scale="linear", vlines=None, hlines=None, plot_type="line", legend=True, xlimits=None, ylimits=None,
+            density_nbins=200):
 
     """
     Low-level function, only scalar values (no units)
@@ -1631,11 +1681,13 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     :param legend:
     :param xlimits:
     :param ylimits:
+    :param density_nbins:
     :return:
     """
 
     # Create plot
     fig = plt.figure()
+    ax = fig.gca()
 
     # Add the data
     if types.is_dictionary(x):
@@ -1650,8 +1702,34 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
             _y = y[name]
             if plot_type == "line": plt.plot(_x, _y, label=name)
             elif plot_type == "scatter": plt.scatter(_x, _y, label=name)
-            elif plot_type == "density": pass
-            elif plot_type == "scatter_density": pass
+            elif plot_type == "density":
+
+                # Warn
+                warnings.warn("Calculating density of points: this can take a while ...")
+
+                k = gaussian_kde([_x, _y])
+                xi, yi = np.mgrid[_x.min():_x.max():density_nbins * 1j, _y.min():_y.max():density_nbins * 1j]
+                zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+
+                # Plot
+                plt.pcolormesh(xi, yi, zi.reshape(xi.shape))
+
+            elif plot_type == "scatter_density":
+
+                # Warn
+                warnings.warn("Caculating density of points: this can take a while ...")
+
+                # Calculate the point density
+                xy = np.vstack([_x, _y])
+                z = gaussian_kde(xy)(xy)
+
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                xi, yi, zi = _x[idx], _y[idx], _z[idx]
+
+                # Plot
+                ax.scatter(xi, yi, c=zi, s=50, edgecolor='')
+
             else: raise ValueError("Invalid plot type: '" + plot_type + "'")
 
     # Sequence
@@ -1664,8 +1742,34 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         # Plot
         if plot_type == "line": plt.plot(x, y)
         elif plot_type == "scatter": plt.scatter(x, y)
-        elif plot_type == "density": pass
-        elif plot_type == "scatter_density": pass
+        elif plot_type == "density":
+
+            # Warn
+            warnings.warn("Caculating density of points: this can take a while ...")
+
+            k = gaussian_kde([x, y])
+            xi, yi = np.mgrid[x.min():x.max():density_nbins * 1j, y.min():y.max():density_nbins * 1j]
+            zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+
+            # Plot
+            plt.pcolormesh(xi, yi, zi.reshape(xi.shape))
+
+        elif plot_type == "scatter_density":
+
+            # Warn
+            warnings.warn("Caculating density of points: this can take a while ...")
+
+            # Calculate the point density
+            xy = np.vstack([x, y])
+            z = gaussian_kde(xy)(xy)
+
+            # Sort the points by density, so that the densest points are plotted last
+            idx = z.argsort()
+            xi, yi, zi = x[idx], y[idx], z[idx]
+
+            # Plot
+            ax.scatter(xi, yi, c=zi, s=50, edgecolor='')
+
         else: raise ValueError("Invalid plot type: '" + plot_type + "'")
 
     # Invalid
@@ -2412,8 +2516,11 @@ def plot_table(filepath, column_x, column_y, output_path, x_log=False, y_log=Fal
 
     """
     This function ...
-    :param xlog:
-    :param ylog:
+    :param filepath:
+    :param column_x:
+    :param column_y:
+    :param x_log:
+    :param y_log:
     :param output_path:
     :return:
     """
@@ -2425,8 +2532,66 @@ def plot_table(filepath, column_x, column_y, output_path, x_log=False, y_log=Fal
     ylog = "true" if y_log else "false"
 
     # Make command
-    command = "topcat -stilts plot2plane xlog=" + xlog + " ylog=" + ylog + " in=" + filepath + " ifmt=ASCII x=" + column_x + " y=" + column_y + " legend=false layer_1=Mark layer_2=LinearFit out=" + output_path
+    command = "topcat -stilts plot2plane xlog=" + xlog + " ylog=" + ylog + " in=" + filepath + " ifmt=ASCII x=" + \
+              column_x + " y=" + column_y + " legend=false layer_1=Mark layer_2=LinearFit out=" + output_path
     #print(command)
+
+    # Execute the plotting command
+    terminal.execute(command)
+
+# -----------------------------------------------------------------
+
+def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=None, xlimits=None, ylimits=None, legend=True):
+
+    """
+    This function ...
+    :param filepaths:
+    :param xcolumn:
+    :param ycolumn:
+    :param xlabel:
+    :param ylabel:
+    :param path:
+    :param title:
+    :param xlimits:
+    :param ylimits:
+    :param legend:
+    :return:
+    """
+
+    from ...core.tools import terminal
+
+    # xpix=932 ypix=371 \
+    # xcrowd=0.9998301109057076 ycrowd=0.9998301109057076
+
+    # Construct command
+    command = "topcat -stilts plot2plane xlog=true xlabel='" + xlabel + "' ylabel='" + ylabel + "'"
+
+    if xlimits is not None: command += " xmin=" + str(xlimits[0]) + " xmax=" + str(xlimits[1])
+    if ylimits is not None: command += " ymin=" + str(ylimits[0]) + " ymax=" + str(ylimits[1])
+
+    if legend: command += " legend=true"
+
+    command += " ifmt=ASCII x=" + xcolumn + " y=" + ycolumn + " shading=density"
+
+    # Loop over the table files
+    colors = iter(["white", "green", "grey"])
+    densemaps = iter(["greyscale", "viridis", "plasma"])
+    for index, name in enumerate(filepaths.keys()):
+
+        filepath = filepaths[name]
+
+        color = colors.next()
+        densemap = densemaps.next()
+
+        line = " layer_" + str(index+1) + "=Mark in_" + str(index+1) + "='" + filepath + "' color_" + str(index+1) + "=" + color + " densemap_" + str(index+1) + "=" + densemap + " leglabel_" + str(index+1) + "='" + name + "'"
+        command += line
+
+    # Set output path
+    if path is not None: command += " out='" + path + "'"
+
+    # Debugging
+    log.debug("Plotting command:")
+    if log.is_debug: print(command)
 
     # Execute the plotting command
     terminal.execute(command)

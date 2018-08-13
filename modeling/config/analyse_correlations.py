@@ -28,3 +28,7 @@ elif runs.has_single: definition.add_fixed("run", "name of the analysis run", ru
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.names)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("topcat", "make plots using topcat (STILTS)")
+
+# -----------------------------------------------------------------

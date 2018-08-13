@@ -4843,6 +4843,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_spectral_maps_emission_earth(self):
+        return self.do_cubes_earth_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_absorption_earth(self):
+        return self.do_cubes_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_emission_faceon(self):
+        return self.do_cubes_faceon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_absorption_faceon(self):
+        return self.do_cubes_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_emission_edgeon(self):
+        return self.do_cubes_edgeon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_absorption_edgeon(self):
+        return self.do_cubes_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def plot_spectral_maps(self):
 
         """
@@ -4852,18 +4888,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            self.plot_spectral_maps_emission_earth()
-            self.plot_spectral_maps_absorption_earth()
+            if self.do_plot_spectral_maps_emission_earth: self.plot_spectral_maps_emission_earth()
+            if self.do_plot_spectral_maps_absorption_earth: self.plot_spectral_maps_absorption_earth()
 
         # Face-on
         if self.do_faceon:
-            self.plot_spectral_maps_emission_faceon()
-            self.plot_spectral_maps_absorption_faceon()
+            if self.do_plot_spectral_maps_emission_faceon: self.plot_spectral_maps_emission_faceon()
+            if self.do_plot_spectral_maps_absorption_faceon: self.plot_spectral_maps_absorption_faceon()
 
         # Edge-on
         if self.do_edgeon:
-            self.plot_spectral_maps_emission_edgeon()
-            self.plot_spectral_maps_absorption_edgeon()
+            if self.do_plot_spectral_maps_emission_edgeon: self.plot_spectral_maps_emission_edgeon()
+            if self.do_plot_spectral_maps_absorption_edgeon: self.plot_spectral_maps_absorption_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -5251,6 +5287,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_curve_earth_emission(self):
+        return self.do_curve_earth_emission and not self.has_curve_earth_emission_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_earth_absorption(self):
+        return self.do_curve_earth_absorption and not self.has_curve_earth_absorption_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_faceon_emission(self):
+        return self.do_curve_faceon_emission and not self.has_curve_faceon_emission_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_faceon_absorption(self):
+        return self.do_curve_faceon_absorption and not self.has_curve_faceon_absorption_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_edgeon_emission(self):
+        return self.do_curve_edgeon_emission and not self.has_curve_edgeon_emission_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_edgeon_absorption(self):
+        return self.do_curve_edgeon_absorption and not self.has_curve_edgeon_absorption_plot
+
+    # -----------------------------------------------------------------
+
     def plot_curves(self):
 
         """
@@ -5260,18 +5332,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            if not self.has_curve_earth_emission_plot: self.plot_curve_earth_emission()
-            if not self.has_curve_earth_absorption_plot: self.plot_curve_earth_absorption()
+            if self.do_plot_curve_earth_emission: self.plot_curve_earth_emission()
+            if self.do_plot_curve_earth_absorption: self.plot_curve_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            if not self.has_curve_faceon_emission_plot: self.plot_curve_faceon_emission()
-            if not self.has_curve_faceon_absorption_plot: self.plot_curve_faceon_absorption()
+            if self.do_plot_curve_faceon_emission: self.plot_curve_faceon_emission()
+            if self.do_plot_curve_faceon_absorption: self.plot_curve_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            if not self.has_curve_edgeon_emission_plot: self.plot_curve_edgeon_emission()
-            if not self.has_curve_edgeon_absorption_plot: self.plot_curve_edgeon_absorption()
+            if self.do_plot_curve_edgeon_emission: self.plot_curve_edgeon_emission()
+            if self.do_plot_curve_edgeon_absorption: self.plot_curve_edgeon_absorption()
 
     # -----------------------------------------------------------------
 

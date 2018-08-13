@@ -148,14 +148,12 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     """
 
     # If conversion info is not defined
+    wavelengths = None
     if conversion_info is None:
-
         conversion_info = dict()
-        wavelengths = None
 
     # Wavelengths are specified in the conversion info
     elif "wavelengths" in conversion_info:
-
         wavelengths = conversion_info["wavelengths"]
         conversion_info = copy.deepcopy(conversion_info)
         del conversion_info["wavelengths"]
@@ -245,6 +243,60 @@ def plain_array(column, unit=None, array_unit=None, conversion_info=None, densit
 
     """
     This function ...
+    :param column:
+    :param unit:
+    :param array_unit:
+    :param conversion_info:
+    :param density:
+    :param brightness:
+    :param equivalencies:
+    :param mask:
+    :return:
+    """
+
+    # Array has unit and target unit is specified?
+    if unit is not None and array_unit is not None:
+
+        # Parse the target unit
+        unit = parse_unit(unit, density=density, brightness=brightness)
+
+        # Same unit as column?
+        if unit == array_unit: return _column_to_array(column, mask=mask)
+
+        #elif TODO: CAN THERE BE ONE CONVERSION FACTOR FOR THE ENTIRE ARRAY?
+
+        else: return _plain_array_from_column(column, unit=unit, array_unit=array_unit, conversion_info=conversion_info,
+                                              equivalencies=equivalencies, mask=mask)
+
+    # Array has no unit and target unit is also None
+    elif unit is None and array_unit is None: return _column_to_array(column, mask=mask)
+
+    # All other cases
+    else: return _plain_array_from_column(column, unit=unit, array_unit=array_unit, conversion_info=conversion_info,
+                                          equivalencies=equivalencies, mask=mask)
+
+# -----------------------------------------------------------------
+
+def _column_to_array(column, mask=None):
+
+    """
+    This function ...
+    :param column:
+    :param mask:
+    :return:
+    """
+
+    array = np.asarray(column)
+    if mask is not None: array = array[np.logical_not(mask)]
+    return array
+
+# -----------------------------------------------------------------
+
+def _plain_array_from_column(column, unit=None, array_unit=None, conversion_info=None, density=False, brightness=False,
+                            equivalencies=None, mask=None):
+
+    """
+    Thisnf unction ...
     :param column:
     :param unit:
     :param array_unit:
