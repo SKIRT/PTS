@@ -153,6 +153,12 @@ class Scatter2D(Scatter, Relation): # scatter (points, ranges), but also relatio
     """
 
     @classmethod
+    def from_file(cls, path):
+        return super(Scatter2D, cls).from_file(path, format="pts", method="pandas")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def random(cls, npoints, x_range=None, y_range=None, x_name=None, y_name=None, x_unit=None, y_unit=None,
                x_description=None, y_description=None):
 

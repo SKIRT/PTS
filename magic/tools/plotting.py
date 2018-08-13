@@ -1553,7 +1553,7 @@ def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear
 
 # -----------------------------------------------------------------
 
-def plot_scatter(scatter, title=None, path=None, x_scale="linear", y_scale="linear"):
+def plot_scatter(scatter, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, density=False):
 
     """
     This function ...
@@ -1562,18 +1562,26 @@ def plot_scatter(scatter, title=None, path=None, x_scale="linear", y_scale="line
     :param path:
     :param x_scale:
     :param y_scale:
+    :param xlimits:
+    :param ylimits:
+    :param density:
     :return:
     """
 
     # Get x, y and labels
     x, y, x_label, y_label = get_xy(scatter, return_labels=True)
 
+    # Set plot type
+    if density: plot_type = "scatter_density"
+    else: plot_type = "scatter"
+
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="scatter")
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
+            plot_type=plot_type, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
-def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="linear"):
+def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, density=False):
 
     """
     This function ...
@@ -1582,19 +1590,27 @@ def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="li
     :param path:
     :param x_scale:
     :param y_scale:
+    :param xlimits:
+    :param ylimits:
+    :param density:
     :return:
     """
 
     # Get data
     x, y, x_label, y_label = get_multiple_xy(scatters, return_labels=True)
 
+    # Set plot type
+    if density: plot_type = "scatter_density"
+    else: plot_type = "scatter"
+
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="scatter")
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
+            plot_type=plot_type, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
 def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, x_scale="linear",
-            y_scale="linear", vlines=None, hlines=None, plot_type="line", legend=True):
+            y_scale="linear", vlines=None, hlines=None, plot_type="line", legend=True, xlimits=None, ylimits=None):
 
     """
     Low-level function, only scalar values (no units)
@@ -1613,11 +1629,13 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     :param hlines:
     :param plot_type:
     :param legend:
+    :param xlimits:
+    :param ylimits:
     :return:
     """
 
     # Create plot
-    plt.figure()
+    fig = plt.figure()
 
     # Add the data
     if types.is_dictionary(x):
@@ -1632,6 +1650,8 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
             _y = y[name]
             if plot_type == "line": plt.plot(_x, _y, label=name)
             elif plot_type == "scatter": plt.scatter(_x, _y, label=name)
+            elif plot_type == "density": pass
+            elif plot_type == "scatter_density": pass
             else: raise ValueError("Invalid plot type: '" + plot_type + "'")
 
     # Sequence
@@ -1644,6 +1664,8 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         # Plot
         if plot_type == "line": plt.plot(x, y)
         elif plot_type == "scatter": plt.scatter(x, y)
+        elif plot_type == "density": pass
+        elif plot_type == "scatter_density": pass
         else: raise ValueError("Invalid plot type: '" + plot_type + "'")
 
     # Invalid
@@ -1654,6 +1676,10 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         for vline in vlines: plt.axvline(x=vline)
     if hlines is not None:
         for hline in hlines: plt.axhline(y=hline)
+
+    # Set axes limits
+    if xlimits is not None: plt.xlim(xlimits[0], xlimits[1])
+    if ylimits is not None: plt.ylim(ylimits[0], ylimits[1])
 
     # Set scale
     if x_scale == "linear": pass

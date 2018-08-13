@@ -3968,37 +3968,37 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_write_cube_earth(self):
-        return not self.has_cube_earth
+        return self.do_cubes_earth_emission and not self.has_cube_earth
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_earth_absorption(self):
-        return not self.has_cube_earth_absorption
+        return self.do_cubes_earth_absorption and not self.has_cube_earth_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_faceon(self):
-        return not self.has_cube_faceon
+        return self.do_cubes_faceon_emission and not self.has_cube_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_faceon_absorption(self):
-        return not self.has_cube_faceon_absorption
+        return self.do_cubes_faceon_absorption and not self.has_cube_faceon_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_edgeon(self):
-        return not self.has_cube_edgeon
+        return self.do_cubes_edgeon_emission and not self.has_cube_edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_edgeon_absorption(self):
-        return not self.has_cube_edgeon_absorption
+        return self.do_cubes_edgeon_absorption and not self.has_cube_edgeon_absorption
 
     # -----------------------------------------------------------------
 
@@ -4300,6 +4300,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_curve_earth(self):
+        return self.do_curve_earth_emission and not self.has_curve_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_earth_absorption(self):
+        return self.do_curve_earth_absorption and not self.has_curve_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_faceon(self):
+        return self.do_curve_faceon_emission and not self.has_curve_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_faceon_absorption(self):
+        return self.do_curve_faceon_absorption and not self.has_curve_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_edgeon(self):
+        return self.do_curve_edgeon_emission and not self.has_curve_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_edgeon_absorption(self):
+        return self.do_curve_edgeon_absorption and not self.has_curve_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def write_curves(self):
 
         """
@@ -4309,18 +4345,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            if not self.has_curve_earth: self.write_curve_earth()
-            if not self.has_curve_earth_absorption: self.write_curve_earth_absorption()
+            if self.do_write_curve_earth: self.write_curve_earth()
+            if self.do_write_curve_earth_absorption: self.write_curve_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            if not self.has_curve_faceon: self.write_curve_faceon()
-            if not self.has_curve_faceon_absorption: self.write_curve_faceon_absorption()
+            if self.do_write_curve_faceon: self.write_curve_faceon()
+            if self.do_write_curve_faceon_absorption: self.write_curve_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            if not self.has_curve_edgeon: self.write_curve_edgeon()
-            if not self.has_curve_edgeon_absorption: self.write_curve_edgeon_absorption()
+            if self.do_write_curve_edgeon: self.write_curve_edgeon()
+            if self.do_write_curve_edgeon_absorption: self.write_curve_edgeon_absorption()
 
     # -----------------------------------------------------------------
 

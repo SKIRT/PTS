@@ -409,6 +409,7 @@ class SmartTable(Table):
         dtypes = kwargs.pop("dtypes", None)
         descriptions = kwargs.pop("descriptions", None)
         as_columns = kwargs.pop("as_columns", False)
+        meta = kwargs.pop("meta", {})
         #print("names", names)
 
         # Get tostr kwargs
@@ -453,8 +454,16 @@ class SmartTable(Table):
                 if needs_tostring: to_string.append(name)
 
             # Determine the unit
-            if units is not None and units[index] is not None: unit = units[index]
-            else: unit = get_common_unit(columns[index])
+            unit = None
+            if units is not None:
+                if types.is_sequence(units): unit = units[index]
+                elif types.is_dictionary(units):
+                    if name in units: unit = units[name]
+                    else: unit = None
+                else: raise ValueError("Invalid type for 'units': must be list or dictionary")
+
+            # Determine unit from quantities
+            if unit is None: unit = get_common_unit(columns[index])
 
             # Set column unit?
             #self.column_units[name] = unit
@@ -517,6 +526,9 @@ class SmartTable(Table):
                 #print(row)
                 #print([table.column_unit(colname) for colname in table.colnames])
                 SmartTable.add_row(table, row)
+
+        # Set meta info
+        for key in meta: table.meta[key] = meta[key]
 
         # Return the table
         return table
@@ -1223,12 +1235,13 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, format=None):
+    def from_file(cls, path, format=None, method="lines"):
 
         """
         This function ...
         :param path:
         :param format:
+        :param lines:
         :return:
         """
 
@@ -1241,12 +1254,48 @@ class SmartTable(Table):
             if "ECSV" in first_line: format = "ecsv"
             elif "PTS data format" in first_line: format = "pts"
 
-        # Read lines: NO, astropy doesn't like generators: 'Input "table" must be a string (filename or data) or an iterable')
-        #lines = fs.read_lines(path)
-        lines = fs.get_lines(path)
+        # Read as lines and parse each line individually
+        if method == "lines":
 
-        # Create table from the lines
-        table = cls.from_lines(lines, format=format)
+            # Read lines: NO, astropy doesn't like generators: 'Input "table" must be a string (filename or data) or an iterable')
+            #lines = fs.read_lines(path)
+            lines = fs.get_lines(path)
+
+            # Create table from the lines
+            table = cls.from_lines(lines, format=format)
+
+        # Read using Pandas
+        elif method == "pandas":
+
+            # Check
+            if format != "pts": raise IOError("Reading through Pandas is currently only supported for PTS style tables")
+
+            # Read the header
+            header = fs.get_header_lines(path)
+            column_names, column_types, column_units, meta = parse_pts_header(header)
+
+            import pandas as pd
+            df = pd.read_csv(path, sep=" ", comment="#", header=None)
+            ncolumns = len(df.columns)
+            cols = [df[index].values for index in range(ncolumns)]
+            table = cls.from_columns(*cols, as_columns=True, names=column_names, dtypes=column_types, units=column_units, meta=meta)
+
+        # Read using NumPy
+        elif method == "numpy":
+
+            # Check
+            if format != "pts": raise IOError("Reading through NumPy is currently only supported for PTS style tables")
+
+            # Read the header
+            header = fs.get_header_lines(path)
+            column_names, column_types, column_units, meta = parse_pts_header(header)
+
+            columns = np.loadtxt(path, unpack=True)
+            ncolumns = len(columns)
+            table = cls.from_columns(*columns, as_columns=True, names=column_names, dtypes=column_types, units=column_units, meta=meta)
+
+        # Invalid
+        else: raise ValueError("Invalid option for 'method'")
 
         # Set the path
         table.path = path
@@ -2988,5 +3037,100 @@ def get_common_property_type(values):
 
     # Return the common type
     return ptype
+
+# -----------------------------------------------------------------
+
+def parse_pts_header(header):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Put last header line (colum names) as first data line (and remove it from the header)
+    #sequences.prepend(data_lines, "# " + header[-1])
+    #header = header[:-1]
+
+    # Search for density and brightness, set meta info
+    index = -1
+    density = None
+    brightness = None
+    for index, line in enumerate(header):
+
+        if line.startswith("PTS data format"): continue
+
+        if line.startswith("density:"):
+
+            density_string = line.split("density: ")[1]
+            string = "[" + ",".join('"' + s + '"' for s in density_string.split(",")) + "]"
+            density = eval(string)
+
+        elif line.startswith("brightness:"):
+
+            brightness_string = line.split("brightness: ")[1]
+            string = "[" + ",".join('"' + s + '"' for s in brightness_string.split(",")) + "]"
+            brightness = eval(string)
+
+        else: break
+
+    # Get the META info
+    from ..tools import parsing
+    meta = OrderedDict()
+    old_header = header[:]
+    header = []
+    for line in old_header:
+        if line.startswith("META"):
+            spec = line.split("META: ")[1]
+            key = spec.split(" [")[0]
+            ptype = spec.split("[")[1].split("]")[0]
+            if ptype == "None":
+                meta[key] = None
+            else:
+                string = spec.split("] ")[1]
+                parsing_function = getattr(parsing, ptype)
+                value = parsing_function(string)
+                meta[key] = value
+        else: header.append(line)
+
+    # print(meta)
+
+    # Contains type line
+    if index == len(header) - 3:
+
+        # Get types
+        types_string = header[-3]
+        column_type_strings = types_string.split()
+        column_types = []
+        for type_string in column_type_strings:
+            dtype = column_type_to_builtin(type_string)
+            column_types.append(dtype)
+
+    # Doesn't contain type line
+    elif index == len(header) - 1: column_types = column_type_strings = None
+
+    # Invalid
+    else: raise IOError("Something is wrong with the file")
+
+    # Get column names
+    from ..tools import strings
+    column_names = strings.split_except_within_double_quotes(header[-1])
+
+    # Get column units
+    column_units = dict()
+    unit_string = header[-2]
+    unit_strings = unit_string.split()
+    assert len(unit_strings) == len(column_names)
+
+    for unit_string, colname in zip(unit_strings, column_names):
+        if unit_string == '""': continue
+        #table[colname].unit = unit_string
+        is_brightness = colname in brightness if brightness is not None else False
+        is_density = colname in density if density is not None else False
+        unit = u(unit_string, brightness=is_brightness, density=is_density)
+        column_units[colname] = unit
+
+    # Return
+    return column_names, column_types, column_units, meta
 
 # -----------------------------------------------------------------

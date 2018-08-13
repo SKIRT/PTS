@@ -486,6 +486,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
+    @property
+    def do_ssfr_funev_cells(self):
+        return self.has_cell_ssfr and self.has_cell_funev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_ssfr_funev_pixels(self):
+        return self.has_pixel_ssfr and self.has_pixel_funev
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -521,7 +533,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def do_write_ssfr_funev_cells(self):
-        return not self.has_ssfr_funev_cells
+        return self.do_ssfr_funev_cells and not self.has_ssfr_funev_cells
 
     # -----------------------------------------------------------------
 
@@ -542,7 +554,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def do_write_ssfr_funev_pixels(self):
-        return not self.has_ssfr_funev_pixels
+        return self.do_ssfr_funev_pixels and not self.has_ssfr_funev_pixels
 
     # -----------------------------------------------------------------
 
@@ -608,7 +620,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def do_plot_ssfr_funev_cells(self):
-        return not self.has_ssfr_funev_cells_plot
+        return self.do_ssfr_funev_cells and not self.has_ssfr_funev_cells_plot
 
     # -----------------------------------------------------------------
 
@@ -645,7 +657,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         log.info("Plotting the sSFR to Funev dust cell scatter data ...")
 
         # Plot
-        plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, x_scale="log", path=self.ssfr_funev_cells_plot_path)
+        plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, x_scale="log",
+                      path=self.ssfr_funev_cells_plot_path, ylimits=(0,1))
 
     # -----------------------------------------------------------------
 
@@ -663,7 +676,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def do_plot_ssfr_funev_pixels(self):
-        return not self.has_ssfr_funev_pixels_plot
+        return self.do_ssfr_funev_pixels and not self.has_ssfr_funev_pixels_plot
 
     # -----------------------------------------------------------------
 
@@ -697,9 +710,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Plottin the sSFR to Funev pixel scatter data ...")
+        log.info("Plotting the sSFR to Funev pixel scatter data ...")
 
         # Plot
-        plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, x_scale="log", path=self.ssfr_funev_pixels_plot_path)
+        plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, x_scale="log",
+                      path=self.ssfr_funev_pixels_plot_path, ylimits=(0,1))
 
 # -----------------------------------------------------------------

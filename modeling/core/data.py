@@ -110,7 +110,7 @@ class Data3D(object):
         log.debug("Loading the 3D data in table format from '" + path + "' ...")
 
         # Read the table
-        table = SmartTable.from_file(path)
+        table = SmartTable.from_file(path, method="pandas")
 
         # Find the name of the variable
         standard_column_names = [x_coordinate_name.capitalize(), y_coordinate_name.capitalize(), z_coordinate_name.capitalize(), weight_name.capitalize()]
