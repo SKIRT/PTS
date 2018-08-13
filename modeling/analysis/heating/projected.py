@@ -2406,37 +2406,37 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_fix_cube_earth(self):
-        return "fixed" not in self.cube_earth.metadata or not self.cube_earth.metadata["fixed"]
+        return self.cube_earth is not None and ("fixed" not in self.cube_earth.metadata or not self.cube_earth.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_earth_absorption(self):
-        return "fixed" not in self.cube_earth_absorption.metadata or not self.cube_earth_absorption.metadata["fixed"]
+        return self.cube_earth_absorption is not None and ("fixed" not in self.cube_earth_absorption.metadata or not self.cube_earth_absorption.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_faceon(self):
-        return "fixed" not in self.cube_faceon.metadata or not self.cube_faceon.metadata["fixed"]
+        return self.cube_faceon is not None and ("fixed" not in self.cube_faceon.metadata or not self.cube_faceon.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_faceon_absorption(self):
-        return "fixed" not in self.cube_faceon_absorption.metadata or not self.cube_faceon_absorption.metadata["fixed"]
+        return self.cube_faceon_absorption is not None and ("fixed" not in self.cube_faceon_absorption.metadata or not self.cube_faceon_absorption.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_edgeon(self):
-        return "fixed" not in self.cube_edgeon.metadata or not self.cube_edgeon.metadata["fixed"]
+        return self.cube_edgeon is not None and ("fixed" not in self.cube_edgeon.metadata or not self.cube_edgeon.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_edgeon_absorption(self):
-        return "fixed" not in self.cube_edgeon_absorption.metadata or not self.cube_edgeon_absorption.metadata["fixed"]
+        return self.cube_edgeon_absorption is not None and ("fixed" not in self.cube_edgeon_absorption.metadata or not self.cube_edgeon_absorption.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
@@ -2530,6 +2530,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_curve_earth_emission(self):
+        return self.do_cubes_earth_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_earth_absorption(self):
+        return self.do_cubes_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_faceon_emission(self):
+        return self.do_cubes_faceon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_faceon_absorption(self):
+        return self.do_cubes_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_edgeon_emission(self):
+        return self.do_cubes_edgeon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_edgeon_absorption(self):
+        return self.do_cubes_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def get_curves(self):
 
         """
@@ -2539,18 +2575,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            self.get_curve_earth()
-            self.get_curve_earth_absorption()
+            if self.do_curve_earth_emission: self.get_curve_earth()
+            if self.do_curve_earth_absorption: self.get_curve_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            self.get_curve_faceon()
-            self.get_curve_faceon_absorption()
+            if self.do_curve_faceon_emission: self.get_curve_faceon()
+            if self.do_curve_faceon_absorption: self.get_curve_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            self.get_curve_edgeon()
-            self.get_curve_edgeon_absorption()
+            if self.do_curve_edgeon_emission: self.get_curve_edgeon()
+            if self.do_curve_edgeon_absorption: self.get_curve_edgeon_absorption()
 
     # -----------------------------------------------------------------
 

@@ -130,7 +130,7 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return self.in_place and fs.is_empty(self.backup_path)
+        return (self.in_place and not self.individual_simulations) and fs.is_empty(self.backup_path)
 
     # -----------------------------------------------------------------
 
@@ -166,46 +166,46 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        # 2. As run: create run directory
+        # Create run directory
         if self.do_create_run: self.create_run()
 
-        # 3. Make a backup of the current fitting run
-        if self.do_backup_run: self.backup_run()
+        # Make backups where necessary
+        self.backup()
 
-        # 4. Get the weights
+        # Get the weights
         self.get_weights()
 
-        # 5. Get the fluxes
+        # Get the fluxes
         self.get_fluxes()
 
-        # 6. Get the differences
+        # Get the differences
         self.get_differences()
 
-        # 7. Calculate the chi squared values
+        # Calculate the chi squared values
         self.calculate_chi_squared()
 
-        # 8. Get the parameters of the best models for each generation
+        # Get the parameters of the best models for each generation
         self.get_best_parameters()
 
-        # 9. Calculate the probabilities
+        # Calculate the probabilities
         self.calculate_probabilities()
 
-        # 10. Calculate the probability distributions
+        # Calculate the probability distributions
         self.create_distributions()
 
-        # 11. Get best simulation
+        # Get best simulation
         self.get_best_simulations()
 
-        # 12. Create the configuration
+        # Create the configuration
         self.create_config()
 
-        # 13. Writing
+        # Writing
         self.write()
 
-        # 14. Show
+        # Show
         if self.do_show: self.show()
 
-        # 15. Plot
+        # Plot
         if self.do_plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -415,11 +415,15 @@ class Refitter(FittingComponent):
         # Check options
         if self.as_run and self.in_place: raise ValueError("Cannot refit as new fitting run and refit in-place simultaneously")
         if self.config.name is None and not (self.as_run or self.in_place): raise ValueError("Refitting name must be specified when not refitting as new run or in-place")
-        if self.in_place and self.config.generations is not None: raise ValueError("Cannot specify generations when refitting is done in place")
+        if self.in_place:
+            if self.config.generations is not None and self.config.simulations is None: raise ValueError("Cannot specify generations without specifying individual simulations when refitting is done in place")
+        if self.as_run and self.individual_simulations: raise ValueError("Cannot refit as new fitting run and specify individual simulation names")
+        if self.individual_simulations:
+            if self.reweigh: raise ValueError("Cannot reweigh when refitting only individual simulations")
 
         # Load the fitting run
         if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
-        else: self.fitting_run = self.load_fitting_run(self.config.fitting_run)
+        else: self.fitting_run = self.load_fitting_run(self.config.run)
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
@@ -510,6 +514,68 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def backup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Backup individual simulations results
+        if self.individual_simulations:
+
+            # Backup the chi squared table
+            self.backup_chi_squared()
+
+            # Backup simulations
+            self.backup_simulations()
+
+        # Make a backup of the current fitting run
+        if self.do_backup_run: self.backup_run()
+
+    # -----------------------------------------------------------------
+
+    def backup_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating backup of chi squared table for generation '" + self.single_generation_name + "' ...")
+
+        # Copy the file
+        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True)
+
+    # -----------------------------------------------------------------
+
+    def backup_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Making a backup of simulations that will be refitted ...")
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            # Check whether the simulation has differences
+            if not self.single_generation.has_sed_differences(simulation_name):
+                log.warning("No differences table for simulation '" + simulation_name + "' of generation '" + self.single_generation_name + "'")
+                continue
+
+            # Debugging
+            log.debug("Creating backup of differences table for simulation '" + simulation_name + "' ...")
+
+            # Copy the file
+            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True)
+
+    # -----------------------------------------------------------------
+
     def backup_run(self):
 
         """
@@ -545,7 +611,7 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return self.model_for_run(self.config.fitting_run)
+        return self.model_for_run(self.config.run)
 
     # -----------------------------------------------------------------
 
@@ -712,6 +778,25 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ngenerations(self):
+        return len(self.generation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_generation(self):
+        return self.ngenerations == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_generation_name(self):
+        if not self.has_single_generation: raise ValueError("Not a single generation")
+        return self.generation_names[0]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def generations(self):
 
@@ -723,6 +808,58 @@ class Refitter(FittingComponent):
         gens = OrderedDict()
         for name in self.generation_names: gens[name] = self.fitting_run.get_generation(name)
         return gens
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_generation(self):
+        return self.generations[self.single_generation_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def individual_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation names are specified
+        if self.config.simulations is not None:
+
+            # Check
+            if not self.has_single_generation: raise ValueError("Cannot specify individual simulation names when there are multiple generations specified")
+            return True
+
+        # All simulations of generation(s)
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.simulations is not None: return self.config.simulations
+        else: return self.single_generation.simulation_names
+
+    # -----------------------------------------------------------------
+
+    def simulation_names_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        if self.individual_simulations: return self.simulation_names
+        else: return self.generations[generation_name].simulation_names
 
     # -----------------------------------------------------------------
 
@@ -1058,7 +1195,7 @@ class Refitter(FittingComponent):
             spectral_convolution = self.spectral_convolution_for_generation(generation_name)
 
             # Loop over the simulation names
-            for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Get the simulation
                 simulation = generation.get_simulation_or_basic(simulation_name)
@@ -1199,7 +1336,8 @@ class Refitter(FittingComponent):
             generation = self.generations[generation_name]
 
             # Loop over the simulation names
-            for simulation_name in generation.simulation_names:
+            #for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Get the differences filepath
                 if not generation.has_sed_differences(simulation_name): raise IOError("Differences file is not found for simulation '" + simulation_name + "'")
@@ -1286,6 +1424,7 @@ class Refitter(FittingComponent):
 
                 # Get simulation name
                 simulation_name = simulation.name
+                if self.individual_simulations and simulation_name not in self.simulation_names: continue
 
                 # Debugging
                 log.debug("Calculating differences for the '" + simulation_name + "' simulation ...")
@@ -1749,7 +1888,7 @@ class Refitter(FittingComponent):
 
         # Adapt fitting filters?
         if self.different_filters: self.new_fitting_config.filters = self.filters
-        else: log.warning("No diff filters") #raise RuntimeError("No diff filters")
+        #else: log.warning("No diff filters") #raise RuntimeError("No diff filters")
 
     # -----------------------------------------------------------------
 
@@ -1825,7 +1964,9 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = self.new_fitting_config_path
-        elif self.in_place: path = self.fitting_run.fitting_configuration_path
+        elif self.in_place:
+            if self.different_filters: path = self.fitting_run.fitting_configuration_path
+            else: return # not necessary
         else: path = fs.join(self.path, "configuration.cfg")
 
         # Save the config
@@ -1874,7 +2015,9 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "weights.dat")
-        elif self.in_place: path = self.fitting_run.weights_table_path
+        elif self.in_place:
+            if self.reweigh: path = self.fitting_run.weights_table_path
+            else: return # not necessary
         else: path = self.weights_table_path
 
         # Write the table with weights
@@ -1894,7 +2037,9 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "observed_sed.dat")
-        elif self.in_place: path = fs.join(self.fitting_run.path, "observed_sed.dat")
+        elif self.in_place:
+            if self.individual_simulations: return # don't write the changed SED (additional errors)
+            else: path = fs.join(self.fitting_run.path, "observed_sed.dat")
         else: path = fs.join(self.path, "observed_sed.dat")
 
         # Write the reference SED
@@ -1926,7 +2071,7 @@ class Refitter(FittingComponent):
             else: directory_name = "fluxes"
 
             # Loop over the simulations
-            for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Check
                 if simulation_name not in self.fluxes[generation_name]:
@@ -1969,7 +2114,7 @@ class Refitter(FittingComponent):
             generation = self.generations[generation_name]
 
             # Loop over the simulations
-            for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Check
                 if simulation_name not in self.differences[generation_name]:

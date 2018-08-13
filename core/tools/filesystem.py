@@ -3217,13 +3217,14 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix="backup", backup_backup=False):
+def backup_file(filepath, suffix="backup", backup_backup=False, remove=False):
 
     """
     This function ...
     :param filepath:
     :param suffix:
     :param backup_backup:
+    :param remove:
     :return:
     """
 
@@ -3234,6 +3235,10 @@ def backup_file(filepath, suffix="backup", backup_backup=False):
             remove_file(backup_filepath)
         else: raise IOError("Backup file path already exists (" + backup_filepath + ")")
     copy_file(filepath, backup_filepath)
+
+    # Remove original?
+    if not is_file(backup_filepath): raise IOError("Something went wrong: backup file not created")
+    if remove: remove_file(filepath)
 
 # -----------------------------------------------------------------
 

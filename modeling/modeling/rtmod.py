@@ -33,6 +33,7 @@ from ...core.remote.host import find_host_ids
 from ..analysis.run import AnalysisRunInfo
 from ..config.expand import definition as expand_definition
 from ..config.manage_generation import definition as manage_generation_definition
+from ..config.refit import definition as refit_definition
 
 # Fitting
 from ..fitting.manager import GenerationManager
@@ -1642,7 +1643,15 @@ class RTMod(InteractiveConfigurable):
         :return:
         """
 
+        # Create the definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(refit_definition)
+        definition.remove_setting("run")
+        #definition.remove_optional("generations")
+
+        # Return the definition
         return definition
 
     # -----------------------------------------------------------------
@@ -1660,23 +1669,29 @@ class RTMod(InteractiveConfigurable):
         fitting_run_name, config = self.get_fitting_run_name_and_config_from_command(command, self.refit_definition, **kwargs)
 
         # Refit
-        self.refit(fitting_run_name)
+        self.refit(fitting_run_name, config=config)
 
     # -----------------------------------------------------------------
 
-    def refit(self, fitting_run_name):
+    def refit(self, fitting_run_name, config=None):
 
         """
         This function ...
         :param fitting_run_name:
+        :param config:
         :return:
         """
 
-        refitter = Refitter()
+        # Initialize the refitter
+        refitter = Refitter(config=config)
+
+        # Set the modeling path
         refitter.config.path = self.config.path
 
-        refitter.fitting_run = fitting_run_name
+        # Set the fitting run name
+        refitter.config.run = fitting_run_name
 
+        # Run the refitting
         refitter.run()
 
     # -----------------------------------------------------------------
