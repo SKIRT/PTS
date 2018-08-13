@@ -2867,6 +2867,9 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
                 nwavelengths = logfile.nwavelengths
                 ncells = logfile.ndust_cells
 
+                # Get the number of photon packages per wavelength
+                npackages = logfile.npackages
+
                 # Get flags
                 selfabsorption = logfile.selfabsorption
                 transient_heating = logfile.uses_transient_heating
@@ -2884,15 +2887,18 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
                 #ncells = skifile.get_ncells(input_path=self.)
                 ncells = None # Cannot be determined from the skifile alone (tree.dat is always the name in the skifile)
 
+                # Get the number of photon packages per wavelength
+                npackages = skifile.packages()
+
                 # Get flags
                 selfabsorption = skifile.dustselfabsorption()
                 transient_heating = skifile.transient_dust_emissivity
 
             # Missing ski file
-            else: nwavelengths = ncells = selfabsorption = transient_heating = None
+            else: nwavelengths = ncells = npackages = selfabsorption = transient_heating = None
 
             # Add the simulation under the appropriate method
-            key = (filters_string, additional_error, nwavelengths, ncells, selfabsorption, transient_heating)
+            key = (filters_string, additional_error, nwavelengths, ncells, npackages, selfabsorption, transient_heating)
             methods[key].append((generation_name, simulation_name))
 
             # Increment
@@ -2936,8 +2942,9 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
             print(fmt.bold + " NUMBER OF WAVELENGTHS: " + fmt.reset_bold + str(method[2]))
             print(fmt.bold + " NUMBER OF DUST CELLS: " + fmt.reset_bold + str(method[3]))
-            print(fmt.bold + " SELF-ABSORPTION: " + fmt.reset_bold + yes_or_no(method[4]))
-            print(fmt.bold + " TRANSIENT HEATING: " + fmt.reset_bold + yes_or_no(method[5]))
+            print(fmt.bold + " NUMBER OF PHOTON PACKAGES PER WAVELENGTH: " + fmt.reset_bold + str(method[4]))
+            print(fmt.bold + " SELF-ABSORPTION: " + fmt.reset_bold + yes_or_no(method[5]))
+            print(fmt.bold + " TRANSIENT HEATING: " + fmt.reset_bold + yes_or_no(method[6]))
             print("")
             print(fmt.bold + "SIMULATIONS (" + str(nsimulations) + "): " + fmt.reset_bold)
             print("")
