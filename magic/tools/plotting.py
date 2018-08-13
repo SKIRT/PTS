@@ -1056,10 +1056,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
                             single_colour=contours_color, path=path, background_color=background_color)
 
     # No contours
-    else:
-
-        # Plot frame
-        plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path, background_color=background_color)
+    else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path, background_color=background_color)
 
 # -----------------------------------------------------------------
 

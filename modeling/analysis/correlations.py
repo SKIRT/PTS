@@ -498,6 +498,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the sSFR to Funev dust cell scatter data ...")
+
         # Write
         self.ssfr_funev_cells.saveto(self.ssfr_funev_cells_path)
 
@@ -515,6 +518,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         This fnction ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the sSFR to Funev pixel scatter data ...")
 
         # Write
         self.ssfr_funev_pixels.saveto(self.ssfr_funev_pixels_path)
@@ -601,6 +607,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the sSFR to Funev dust cell scatter data ...")
+
         # Plot
         plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, x_scale="log", path=self.ssfr_funev_cells_plot_path)
 
@@ -652,6 +661,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plottin the sSFR to Funev pixel scatter data ...")
 
         # Plot
         plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, x_scale="log", path=self.ssfr_funev_pixels_plot_path)

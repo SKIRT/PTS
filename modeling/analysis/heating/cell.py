@@ -83,6 +83,124 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(CellDustHeatingAnalyser, self).setup(**kwargs)
 
+        # Set recreate maps
+        self.set_recreate_maps()
+
+        # Set replot maps
+        self.set_replot_maps()
+
+    # -----------------------------------------------------------------
+
+    def set_recreate_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set recreate maps flags
+        if self.config.recreate_maps:
+            self.config.recreate_lowres_maps = True
+            self.config.recreate_highres_maps = True
+
+        # Set recreate lowres maps flags
+        if self.config.recreate_lowres_maps:
+            self.config.recreate_lowres_map_midplane = True
+            self.config.recreate_lowres_map_faceon = True
+            self.config.recreate_lowres_map_edgeon = True
+
+        # Set recreate highres maps flags
+        if self.config.recreate_highres_maps:
+            self.config.recreate_highres_map_midplane = True
+            self.config.recreate_highres_map_faceon = True
+            self.config.recreate_highres_map_edgeon = True
+
+        # Lowres midplane
+        if self.config.recreate_lowres_map_midplane:
+            self.config.replot_lowres_map_midplane = True
+            if self.has_lowres_map_midplane: fs.remove_file(self.lowres_map_midplane_path)
+            if self.has_lowres_frame_midplane_interpolated: fs.remove_file(self.lowres_frame_midplane_interpolated_path)
+
+        # Lowres faceon
+        if self.config.recreate_lowres_map_faceon:
+            self.config.replot_lowres_map_faceon = True
+            if self.has_lowres_map_faceon: fs.remove_file(self.lowres_map_faceon_path)
+            if self.has_lowres_frame_faceon_interpolated: fs.remove_file(self.lowres_frame_faceon_interpolated_path)
+
+        # Lowres edgeon
+        if self.config.recreate_lowres_map_edgeon:
+            self.config.replot_lowres_map_edgeon = True
+            if self.has_lowres_map_edgeon: fs.remove_file(self.lowres_map_edgeon_path)
+            if self.has_lowres_frame_edgeon_interpolated: fs.remove_file(self.lowres_frame_edgeon_interpolated_path)
+
+        # Highres midplane
+        if self.config.recreate_highres_map_midplane:
+            self.config.replot_highres_map_midplane = True
+            if self.has_highres_map_midplane: fs.remove_file(self.highres_map_midplane_path)
+            if self.has_highres_frame_midplane_interpolated: fs.remove_file(self.highres_frame_midplane_interpolated_path)
+
+        # Highres faceon
+        if self.config.recreate_highres_map_faceon:
+            self.config.replot_highres_map_faceon = True
+            if self.has_highres_map_faceon: fs.remove_file(self.highres_map_faceon_path)
+            if self.has_highres_frame_faceon_interpolated: fs.remove_file(self.highres_frame_faceon_interpolated_path)
+
+        # Highres edgeon
+        if self.config.recreate_highres_map_edgeon:
+            self.config.replot_highres_map_edgeon = True
+            if self.has_highres_map_edgeon: fs.remove_file(self.highres_map_edgeon_path)
+            if self.has_highres_frame_edgeon_interpolated: fs.remove_file(self.highres_frame_edgeon_interpolated_path)
+
+    # -----------------------------------------------------------------
+
+    def set_replot_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set replot maps flags
+        if self.config.replot_maps:
+            self.config.replot_lowres_maps = True
+            self.config.replot_highres_maps = True
+
+        # Set replot lowres maps flags
+        if self.config.replot_lowres_maps:
+            self.config.replot_lowres_map_midplane = True
+            self.config.replot_lowres_map_faceon = True
+            self.config.replot_lowres_map_edgeon = True
+
+        # Set replot highres maps flags
+        if self.config.replot_highres_maps:
+            self.config.replot_highres_map_midplane = True
+            self.config.replot_highres_map_faceon = True
+            self.config.replot_highres_map_edgeon = True
+
+        # Lowres midplane
+        if self.config.replot_lowres_map_midplane:
+            if self.has_lowres_map_midplane_plot: fs.remove_file(self.lowres_map_midplane_plot_path)
+
+        # Lowres faceon
+        if self.config.replot_lowres_map_faceon:
+            if self.has_lowres_map_faceon_plot: fs.remove_file(self.lowres_map_faceon_plot_path)
+
+        # Lowres edgeon
+        if self.config.replot_lowres_map_edgeon:
+            if self.has_lowres_map_edgeon_plot: fs.remove_file(self.lowres_map_edgeon_plot_path)
+
+        # Highres midplane
+        if self.config.replot_highres_map_midplane:
+            if self.has_highres_map_midplane_plot: fs.remove_file(self.highres_map_midplane_plot_path)
+
+        # Highres faceon
+        if self.config.replot_highres_map_faceon:
+            if self.has_highres_map_faceon_plot: fs.remove_file(self.highres_map_faceon_plot_path)
+
+        # Highres edgeon
+        if self.config.replot_highres_map_edgeon:
+            if self.has_highres_map_edgeon_plot: fs.remove_file(self.highres_map_edgeon_plot_path)
+
     # -----------------------------------------------------------------
     # PROJECTIONS
     # -----------------------------------------------------------------
@@ -1125,6 +1243,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_lowres_frame_midplane_interpolated(self):
+        return fs.is_file(self.lowres_frame_midplane_interpolated_path)
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Frame, "lowres_frame_midplane_interpolated_path", True)
     def lowres_frame_midplane_interpolated(self):
 
@@ -1143,6 +1267,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @property
     def lowres_frame_faceon_interpolated_path(self):
         return fs.join(self.cell_heating_path, "lowres_faceon_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_lowres_frame_faceon_interpolated(self):
+        return fs.is_file(self.lowres_frame_faceon_interpolated_path)
 
     # -----------------------------------------------------------------
 
@@ -1167,6 +1297,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_lowres_frame_edgeon_interpolated(self):
+        return fs.is_file(self.lowres_frame_edgeon_interpolated_path)
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Frame, "lowres_frame_edgeon_interpolated_path", True)
     def lowres_frame_edgeon_interpolated(self):
 
@@ -1185,6 +1321,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @property
     def highres_frame_midplane_interpolated_path(self):
         return fs.join(self.cell_heating_path, "highres_midplane_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_frame_midplane_interpolated(self):
+        return fs.is_file(self.highres_frame_midplane_interpolated_path)
 
     # -----------------------------------------------------------------
 
@@ -1209,6 +1351,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_highres_frame_faceon_interpolated(self):
+        return fs.is_file(self.highres_frame_faceon_interpolated_path)
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Frame, "highres_frame_faceon_interpolated_path", True)
     def highres_frame_faceon_interpolated(self):
 
@@ -1227,6 +1375,12 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @property
     def highres_frame_edgeon_interpolated_path(self):
         return fs.join(self.cell_heating_path, "highres_edgeon_interpolated.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_highres_frame_edgeon_interpolated(self):
+        return fs.is_file(self.highres_frame_edgeon_interpolated_path)
 
     # -----------------------------------------------------------------
 

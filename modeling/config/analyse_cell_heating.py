@@ -77,33 +77,55 @@ definition.add_flag("highres", "make highres maps", True)
 
 # -----------------------------------------------------------------
 
-# Recreate table
-#definition.add_flag("recreate_table", "recreate the absorption table")
-
+# TODO: reimplement these options?
 # Recalculate fractions, distributions
-definition.add_flag("recalculate_fractions", "recalculate the heating fractions")
-definition.add_flag("recalculate_distributions", "recreate the heating distributions")
-definition.add_flag("recalculate_distribution", "recalculate")
-definition.add_flag("recalculate_distribution_diffuse", "recalculate")
-definition.add_flag("recalculate_radial_distribution", "recalculate")
+#definition.add_flag("recalculate_fractions", "recalculate the heating fractions")
+#definition.add_flag("recalculate_distributions", "recreate the heating distributions")
+#definition.add_flag("recalculate_radial_distribution", "recalculate")
 
 # Recreate maps
-definition.add_flag("recreate_maps", "recreate the map and the map in the midplane")
-definition.add_flag("recreate_map", "recreate the map")
-definition.add_flag("recreate_map_midplane", "recreate the map in the midplane")
+#definition.add_flag("recreate_maps", "recreate the map and the map in the midplane")
+#definition.add_flag("recreate_map", "recreate the map")
+#definition.add_flag("recreate_map_midplane", "recreate the map in the midplane")
 
 # Re-interpolate maps
-definition.add_flag("reinterpolate_maps", "recreate the interpolated maps")
-definition.add_flag("reinterpolate_map", "recreate the interpolated map")
-definition.add_flag("reinterpolate_map_midplane", "recreate the interpolated map in the midplane")
+#definition.add_flag("reinterpolate_maps", "recreate the interpolated maps")
+#definition.add_flag("reinterpolate_map", "recreate the interpolated map")
+#definition.add_flag("reinterpolate_map_midplane", "recreate the interpolated map in the midplane")
 
 # Replot
-definition.add_flag("replot", "replot")
-definition.add_flag("replot_distribution", "replot the distribution")
-definition.add_flag("replot_radial_distribution", "replot the radial distribution")
-definition.add_flag("replot_map", "replot the map")
-definition.add_flag("replot_map_midplane", "replot the map in the midplane")
-definition.add_flag("replot_maps", "replot the map and the map in the midplane")
+#definition.add_flag("replot", "replot")
+#definition.add_flag("replot_distribution", "replot the distribution")
+#definition.add_flag("replot_radial_distribution", "replot the radial distribution")
+#definition.add_flag("replot_map", "replot the map")
+#definition.add_flag("replot_map_midplane", "replot the map in the midplane")
+#definition.add_flag("replot_maps", "replot the map and the map in the midplane")
+
+# -----------------------------------------------------------------
+
+# New flags
+
+# Creating maps
+definition.add_flag("recreate_maps")
+definition.add_flag("recreate_lowres_maps")
+definition.add_flag("recreate_highres_maps")
+definition.add_flag("recreate_lowres_map_midplane")
+definition.add_flag("recreate_lowres_map_faceon")
+definition.add_flag("recreate_lowres_map_edgeon")
+definition.add_flag("recreate_highres_map_midplane")
+definition.add_flag("recreate_highres_map_faceon")
+definition.add_flag("recreate_highres_map_edgeon")
+
+# Plotting maps
+definition.add_flag("replot_maps")
+definition.add_flag("replot_lowres_maps")
+definition.add_flag("replot_highres_maps")
+definition.add_flag("replot_lowres_map_midplane")
+definition.add_flag("replot_lowres_map_faceon")
+definition.add_flag("replot_lowres_map_edgeon")
+definition.add_flag("replot_highres_map_midplane")
+definition.add_flag("replot_highres_map_faceon")
+definition.add_flag("replot_highres_map_edgeon")
 
 # -----------------------------------------------------------------
 

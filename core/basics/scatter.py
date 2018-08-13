@@ -240,7 +240,8 @@ class Scatter2D(Scatter, Relation): # scatter (points, ranges), but also relatio
         :return:
         """
 
-        return cls.from_columns(x, y, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit, x_description=x_description, y_description=y_description)
+        return cls.from_columns(x, y, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit,
+                                x_description=x_description, y_description=y_description, as_columns=True)
 
 # -----------------------------------------------------------------
 
