@@ -1549,7 +1549,7 @@ def get_single(sequence, none="none", method="first"):
         elif method == "first_not_none": return find_first_not_none(sequence, return_none=True)
         elif method == "last": return sequence[-1]
         elif method == "none": return None
-        elif method == "error": raise ValueError("Multiple items")
+        elif method == "error": raise ValueError("Multiple items: " + ", ".join([str(item) for item in sequence]))
         else: raise ValueError("Invalid value for 'method'")
 
 # -----------------------------------------------------------------

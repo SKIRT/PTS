@@ -110,17 +110,31 @@ class Relation(SmartTable):
 
         # x and y name
         if kwargs.get("names", None) is not None:
+
             names = kwargs.get("names")
             x_name = names[0]
             y_name = names[1]
+
+            # Set
             kwargs["x_name"] = x_name
             kwargs["y_name"] = y_name
 
         # x and y unit
         if kwargs.get("units", None) is not None:
             units = kwargs.get("units")
-            x_unit = units[0]
-            y_unit = units[1]
+
+            from ..tools import types
+            if types.is_sequence(units):
+                x_unit = units[0]
+                y_unit = units[1]
+            elif types.is_dictionary(units):
+                if "x_name" not in kwargs: raise ValueError("Cannot determine x unit if x name is not explicitely defined")
+                if "y_name" not in kwargs: raise ValueError("Cannot determine y unit if y name is not explicitely defined")
+                x_unit = units[kwargs["x_name"]] if kwargs["x_name"] in units else None
+                y_unit = units[kwargs["y_name"]] if kwargs["y_name"] in units else None
+            else: raise ValueError("Invalid type for 'units': must be sequence or dictionary")
+
+            # Set
             kwargs["x_unit"] = x_unit
             kwargs["y_unit"] = y_unit
 
@@ -146,15 +160,16 @@ class Relation(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
-        # Load the curve
-        relation = super(Relation, cls).from_file(path)
+        # Load the curve using the base class implementation
+        relation = super(Relation, cls).from_file(path, **kwargs)
 
         # Set x name and y name
         relation.x_name = relation.column_info[0][0]

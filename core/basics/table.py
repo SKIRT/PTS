@@ -3114,7 +3114,7 @@ def parse_pts_header(header):
 
     # Get column names
     from ..tools import strings
-    column_names = strings.split_except_within_double_quotes(header[-1])
+    column_names = strings.split_except_within_double_quotes(header[-1], add_quotes=False)
 
     # Get column units
     column_units = dict()

@@ -410,7 +410,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def has_ssfr_funev_pixels(self):
-        return fs.is_file(self.ssfr_funev_pixels)
+        return fs.is_file(self.ssfr_funev_pixels_path)
 
     # -----------------------------------------------------------------
 
