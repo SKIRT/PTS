@@ -698,7 +698,7 @@ def get_all_equal_value(sequence, ignore_none=False, ignore=None, return_none=Fa
 
 # -----------------------------------------------------------------
 
-def get_all_close_value(sequence, ignore_none=False, ignore=None, return_none=False):
+def get_all_close_value(sequence, ignore_none=False, ignore=None, return_none=False, rtol=1.e-5, atol=1.e-8, pick="first"):
 
     """
     This function ...
@@ -706,16 +706,30 @@ def get_all_close_value(sequence, ignore_none=False, ignore=None, return_none=Fa
     :param ignore_none:
     :param ignore:
     :param return_none:
+    :param rtol
+    :param atol:
+    :param pick:
     :return:
     """
 
-    if not all_close(sequence, ignore_none=ignore_none, ignore=ignore):
+    import numpy as np
+
+    if not all_close(sequence, ignore_none=ignore_none, ignore=ignore, rtol=rtol, atol=atol):
         if return_none: return None
         else: raise ValueError("Not all close: " + str(sequence))
     else:
-        if ignore_none: return find_first_not_none(sequence, ignore=ignore)
-        elif ignore is not None: return find_first(sequence, ignore=ignore)
-        else: return sequence[0] # take average of close values?
+        if ignore_none:
+            if pick != "first": raise ValueError("Only pick = 'first' is currently allowed")
+            return find_first_not_none(sequence, ignore=ignore)
+        elif ignore is not None:
+            if pick != "first": raise ValueError("Only pick = 'first' is currently allowed")
+            return find_first(sequence, ignore=ignore)
+        else:
+            if pick == "first": return sequence[0] # take average of close values?
+            elif pick == "last": return sequence[-1]
+            elif pick == "mean": return np.mean(sequence)
+            elif pick == "median": return np.median(sequence)
+            else: raise ValueError("Invalid value for 'pick'")
 
 # -----------------------------------------------------------------
 

@@ -609,6 +609,12 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ndust_cells(self):
+        return self.dust_cells
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def uses_transient_heating(self):
 
@@ -887,6 +893,12 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nwavelengths(self):
+        return self.wavelengths
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def processes(self):
 
@@ -907,12 +919,6 @@ class LogFile(object):
 
     @property
     def nprocesses(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.processes
 
     # -----------------------------------------------------------------
@@ -957,12 +963,6 @@ class LogFile(object):
 
     @property
     def nthreads(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.threads
 
     # -----------------------------------------------------------------

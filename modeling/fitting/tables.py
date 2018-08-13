@@ -1386,6 +1386,7 @@ class ChiSquaredTable(SmartTable):
         """
 
         index = self.index_for_simulation(simulation_name)
+        if index is None: return None
         return self["Chi squared"][index]
 
     # -----------------------------------------------------------------

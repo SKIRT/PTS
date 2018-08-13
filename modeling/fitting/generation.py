@@ -49,6 +49,7 @@ from ...core.basics.configuration import prompt_yn, prompt_string
 from ...core.tools.stringify import tostr
 from ...core.launch.batch import MissingSimulation
 from ...core.simulation.jobscript import SKIRTJobScript, get_host_id_from_jobscript_file
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -560,6 +561,21 @@ class Generation(object):
 
         path = self.get_simulation_ski_path(name)
         return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def has_skifile(self, name):
+        return self.has_ski_file(name)
+
+    # -----------------------------------------------------------------
+
+    def has_simulation_skifile(self, name):
+        return self.has_skifile(name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_skifile(self, name):
+        return SkiFile(self.get_simulation_ski_path(name))
 
     # -----------------------------------------------------------------
 
