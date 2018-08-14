@@ -14,14 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.plot.sed import plot_sed
 from pts.core.plot.distribution import plot_distribution
-from pts.core.basics.structure import load_structure, filetypes, composite, table, dictionary, sed, distribution, regions
+from pts.core.basics.structure import load_structure, filetypes
+from pts.core.basics.structure import composite, table, dictionary, sed, distribution, regions, scatter2d, data3d
 from pts.core.tools import arrays
 from pts.core.basics.distribution import Distribution
+from pts.magic.tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -36,7 +39,21 @@ definition.add_optional("path", "string", "plot output path")
 
 # Column
 definition.add_optional("column", "string", "column name")
+
+# Axes
 definition.add_flag("logarithmic", "logarithmic")
+definition.add_flag("xlog", "use logarithmic horizontal axis")
+definition.add_flag("ylog", "use logarithmic vertical axis")
+definition.add_optional("xlimits", "real_pair", "x axis limits")
+definition.add_optional("ylimits", "real_pair", "y axis limits")
+
+# For scatter data: density/points/contours
+definition.add_flag("density", "plot the scatter density")
+definition.add_flag("points", "plot the individual scatter points", None)
+definition.add_flag("contours", "plot density contours")
+definition.add_flag("joint", "make joint plot")
+definition.add_flag("rug", "add rug to density plots")
+definition.add_flag("seaborn", "use Seaborn for density plots", None)
 
 # -----------------------------------------------------------------
 
@@ -78,6 +95,34 @@ def plot_structure(structure, filetype, filepath=None, **kwargs):
 
     # Distribution
     elif filetype == distribution: plot_distribution(structure, path=filepath, **kwargs)
+
+    # Scatter
+    elif filetype == scatter2d:
+
+        #print(structure.x_name, structure.y_name)
+
+        # Joint plot?
+        if config.joint: plotting.plot_joint(structure)
+
+        # Contours of scatter density
+        elif config.contours: plotting.plot_density(structure, contours=True, rug=config.rug, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits, seaborn=config.seaborn)
+
+        # Density of scatter points
+        elif config.density:
+
+            # With points
+            if config.points: plotting.plot_scatter(structure, density=True, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits)
+
+            # Without points
+            else: plotting.plot_density(structure, rug=config.rug, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits, seaborn=config.seaborn)
+
+        # Regular scatter plot
+        else: plotting.plot_scatter(structure, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits)
+
+    # Data3D
+    elif filetype == data3d:
+
+        pass
 
     # Not recognized
     else: raise ValueError("Unrecognized filetype")

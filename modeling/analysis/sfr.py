@@ -73,9 +73,6 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Get cell star formation rates
-        self.get_cell()
-
         # Writing
         self.write()
 

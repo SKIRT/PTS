@@ -96,13 +96,14 @@ class Data3D(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, length_unit=None, unit=None):
+    def from_file(cls, path, length_unit=None, unit=None, return_table=False):
 
         """
         This function ...
         :param path:
         :param length_unit:
         :param unit:
+        :param return_table:
         :return:
         """
 
@@ -144,7 +145,8 @@ class Data3D(object):
         data.path = path
 
         # Return the data
-        return data
+        if return_table: return data, table
+        else: return data
 
     # -----------------------------------------------------------------
 

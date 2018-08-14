@@ -666,6 +666,23 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_objects(cls, objects):
+
+        """
+        This function creates a table from objects of the SAME TYPE (same attributes)
+        :param objects:
+        :return:
+        """
+
+        # Create list of attribute dictionaries
+        dictionaries = [obj.__dict__ for obj in objects]
+
+        # Create the table and return
+        return cls.from_dictionaries(*dictionaries)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_composite(cls, composite, key_label="Property", value_label="Value", tostr_kwargs=None,
                        key_description="property name", value_description="property value"):
 

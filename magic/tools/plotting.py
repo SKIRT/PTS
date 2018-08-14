@@ -1467,7 +1467,7 @@ def plot_curve(curve, title=None, path=None, x_scale="linear", y_scale="linear")
     x, y, x_label, y_label = get_xy(curve, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="line")
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, connect=True)
 
 # -----------------------------------------------------------------
 
@@ -1550,19 +1550,19 @@ def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear
     x, y, x_label, y_label = get_multiple_xy(curves, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, plot_type="line")
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, connect=True)
 
 # -----------------------------------------------------------------
 
-def plot_scatter(scatter, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, density=False):
+def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, density=False):
 
     """
     This function ...
     :param scatter:
     :param title:
     :param path:
-    :param x_scale:
-    :param y_scale:
+    :param xlog:
+    :param ylog:
     :param xlimits:
     :param ylimits:
     :param density:
@@ -1572,25 +1572,21 @@ def plot_scatter(scatter, title=None, path=None, x_scale="linear", y_scale="line
     # Get x, y and labels
     x, y, x_label, y_label = get_xy(scatter, return_labels=True)
 
-    # Set plot type
-    if density: plot_type = "scatter_density"
-    else: plot_type = "scatter"
-
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
-            plot_type=plot_type, xlimits=xlimits, ylimits=ylimits)
+            connect=False, density=density, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
-def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, density=False):
+def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, density=False):
 
     """
     This function ...
     :param scatters:
     :param title:
     :param path:
-    :param x_scale:
-    :param y_scale:
+    :param xlog:
+    :param ylog:
     :param xlimits:
     :param ylimits:
     :param density:
@@ -1600,28 +1596,28 @@ def plot_scatters(scatters, title=None, path=None, x_scale="linear", y_scale="li
     # Get data
     x, y, x_label, y_label = get_multiple_xy(scatters, return_labels=True)
 
-    # Set plot type
-    if density: plot_type = "scatter_density"
-    else: plot_type = "scatter"
-
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
-            plot_type=plot_type, xlimits=xlimits, ylimits=ylimits)
+            connect=False, density=density, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
-def plot_density(points, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, nbins=200):
+def plot_density(points, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+                 nbins=200, contours=False, seaborn=None, rug=False):
 
     """
     This function ...
     :param points:
     :param title:
     :param path:
-    :param x_scale:
-    :param y_scale:
+    :param xlog:
+    :param ylog:
     :param xlimits:
     :param ylimits:
     :param nbins:
+    :param contours:
+    :param seaborn:
+    :param rug:
     :return:
     """
 
@@ -1629,23 +1625,27 @@ def plot_density(points, title=None, path=None, x_scale="linear", y_scale="linea
     x, y, x_label, y_label = get_xy(points, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
-            plot_type="density", xlimits=xlimits, ylimits=ylimits, density_nbins=nbins)
+    plot_xy_density(x, y, title=title, nbins=nbins, contours=contours, path=path, seaborn=seaborn, rug=rug,
+                    xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
-def plot_densities(points, title=None, path=None, x_scale="linear", y_scale="linear", xlimits=None, ylimits=None, nbins=200):
+def plot_densities(points, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+                   nbins=200, contours=False, seaborn=None, rug=False):
 
     """
     This function ...
     :param points: 
     :param title: 
     :param path: 
-    :param x_scale: 
-    :param y_scale: 
+    :param xlog:
+    :param ylog:
     :param xlimits: 
     :param ylimits: 
     :param nbins:
+    :param contours:
+    :param seaborn:
+    :param rug:
     :return: 
     """
 
@@ -1653,14 +1653,14 @@ def plot_densities(points, title=None, path=None, x_scale="linear", y_scale="lin
     x, y, x_label, y_label = get_multiple_xy(points, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
-            plot_type="density", xlimits=xlimits, ylimits=ylimits, density_nbins=nbins)
+    plot_xy_density(x, y, title=title, nbins=nbins, contours=contours, path=path, seaborn=seaborn, rug=rug,
+                    xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
-def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, x_scale="linear",
-            y_scale="linear", vlines=None, hlines=None, plot_type="line", legend=True, xlimits=None, ylimits=None,
-            density_nbins=200):
+def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, xlog=False,
+            ylog=False, vlines=None, hlines=None, legend=True, xlimits=None, ylimits=None, connect=True,
+            density=False):
 
     """
     Low-level function, only scalar values (no units)
@@ -1673,17 +1673,20 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     :param transparent:
     :param x_label:
     :param y_label:
-    :param x_scale:
-    :param y_scale:
+    :param xlog:
+    :param ylog:
     :param vlines:
     :param hlines:
-    :param plot_type:
     :param legend:
     :param xlimits:
     :param ylimits:
-    :param density_nbins:
+    :param connect:
+    :param density:
     :return:
     """
+
+    # Check
+    if connect and density: raise ValueError("Cannot enable 'connect' and 'density' at the same time")
 
     # Create plot
     fig = plt.figure()
@@ -1700,21 +1703,12 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         for name in x:
             _x = x[name]
             _y = y[name]
-            if plot_type == "line": plt.plot(_x, _y, label=name)
-            elif plot_type == "scatter": plt.scatter(_x, _y, label=name)
-            elif plot_type == "density":
 
-                # Warn
-                warnings.warn("Calculating density of points: this can take a while ...")
+            # Connect with lines
+            if connect: plt.plot(_x, _y, label=name)
 
-                k = gaussian_kde([_x, _y])
-                xi, yi = np.mgrid[_x.min():_x.max():density_nbins * 1j, _y.min():_y.max():density_nbins * 1j]
-                zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-
-                # Plot
-                plt.pcolormesh(xi, yi, zi.reshape(xi.shape))
-
-            elif plot_type == "scatter_density":
+            # Points with density
+            elif density:
 
                 # Warn
                 warnings.warn("Caculating density of points: this can take a while ...")
@@ -1725,12 +1719,13 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
 
                 # Sort the points by density, so that the densest points are plotted last
                 idx = z.argsort()
-                xi, yi, zi = _x[idx], _y[idx], _z[idx]
+                xi, yi, zi = _x[idx], _y[idx], z[idx]
 
                 # Plot
                 ax.scatter(xi, yi, c=zi, s=50, edgecolor='')
 
-            else: raise ValueError("Invalid plot type: '" + plot_type + "'")
+            # Just points
+            else: plt.scatter(_x, _y, label=name)
 
     # Sequence
     elif types.is_sequence_or_array(x):
@@ -1739,22 +1734,11 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         if not types.is_sequence_or_array(y): raise ValueError("The type of x and y data must be equal")
         if not sequences.equal_sizes(x, y): raise ValueError("The number of x and y points must agree")
 
-        # Plot
-        if plot_type == "line": plt.plot(x, y)
-        elif plot_type == "scatter": plt.scatter(x, y)
-        elif plot_type == "density":
+        # Connect with lines
+        if connect: plt.plot(x, y)
 
-            # Warn
-            warnings.warn("Caculating density of points: this can take a while ...")
-
-            k = gaussian_kde([x, y])
-            xi, yi = np.mgrid[x.min():x.max():density_nbins * 1j, y.min():y.max():density_nbins * 1j]
-            zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-
-            # Plot
-            plt.pcolormesh(xi, yi, zi.reshape(xi.shape))
-
-        elif plot_type == "scatter_density":
+        # Points with density
+        elif density:
 
             # Warn
             warnings.warn("Caculating density of points: this can take a while ...")
@@ -1770,7 +1754,8 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
             # Plot
             ax.scatter(xi, yi, c=zi, s=50, edgecolor='')
 
-        else: raise ValueError("Invalid plot type: '" + plot_type + "'")
+        # Just points
+        else: plt.scatter(x, y)
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
@@ -1786,12 +1771,14 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     if ylimits is not None: plt.ylim(ylimits[0], ylimits[1])
 
     # Set scale
-    if x_scale == "linear": pass
-    elif x_scale == "log": plt.xscale("log")
-    else: raise ValueError("Invalid scale: '" + str(x_scale) + "'")
-    if y_scale == "linear": pass
-    elif y_scale == "log": plt.yscale("log")
-    else: raise ValueError("Invalid scale: '" + str(y_scale) + "'")
+    #if x_scale == "linear": pass
+    #elif x_scale == "log": plt.xscale("log")
+    #else: raise ValueError("Invalid scale: '" + str(x_scale) + "'")
+    #if y_scale == "linear": pass
+    #elif y_scale == "log": plt.yscale("log")
+    #else: raise ValueError("Invalid scale: '" + str(y_scale) + "'")
+    if xlog: plt.xscale("log")
+    if ylog: plt.yscale("log")
 
     # Set labels
     if x_label is not None: plt.xlabel(x_label.replace("_", "\_"))
@@ -1809,6 +1796,126 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
 
     # Close
     plt.close()
+
+# -----------------------------------------------------------------
+
+def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, seaborn=None, rug=False, transparent=False,
+                    xlog=False, ylog=False, xlimits=None, ylimits=None):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param title:
+    :param nbins:
+    :param contours:
+    :param path:
+    :param seaborn:
+    :param rug:
+    :param transparent:
+    :param xlog:
+    :param ylog:
+    :param xlimits:
+    :param ylimits:
+    :return:
+    """
+
+    # Mask invalid
+    mask_x = np.isfinite(x) * (x > 0)
+    mask_y = np.isfinite(y) * (y > 0)
+    mask = mask_x * mask_y
+    x = x[mask]
+    y = y[mask]
+    #print("x", x)
+    #print("y", y)
+
+    # Make into log
+    if xlog:
+        x = np.log10(x)
+        if xlimits is not None: xlimits = (np.log10(xlimits[0]), np.log10(xlimits[1]),)
+
+    if ylog:
+        y = np.log10(y)
+        if ylimits is not None: ylimits = (np.log10(ylimits[0]), np.log10(ylimits[1]),)
+
+    if seaborn is None: seaborn = contours or rug
+
+    # Create the figure
+    fig = plt.figure()
+    ax = fig.gca()
+
+    # Set scale
+    #if xlog: plt.xscale("log")
+    #if ylog: plt.yscale("log")
+
+    # Set limits
+    if xlimits is not None: plt.xlim(xlimits[0], xlimits[1])
+    if ylimits is not None: plt.ylim(ylimits[0], ylimits[1])
+
+    # Density with contours
+    if contours:
+
+        import seaborn as sns
+
+        # Plot
+        sns.kdeplot(x, y, ax=ax)
+
+        if rug:
+            sns.rugplot(x, color="g", ax=ax)
+            sns.rugplot(y, vertical=True, ax=ax)
+
+    # Density without contours, Seaborn
+    elif seaborn:
+
+        import seaborn as sns
+
+        #f, ax = plt.subplots(figsize=(6, 6))
+
+        cmap = sns.cubehelix_palette(as_cmap=True, dark=0, light=1, reverse=True)
+
+        sns.kdeplot(x, y, cmap=cmap, n_levels=60, shade=True)
+
+    # Density without contours, Matplotlib
+    else:
+
+        # Warning
+        warnings.warn("Calculating density of points: this can take a while ...")
+
+        k = gaussian_kde([x, y])
+        xi, yi = np.mgrid[x.min():x.max():nbins * 1j, y.min():y.max():nbins * 1j]
+        zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+
+        # Plot
+        plt.pcolormesh(xi, yi, zi.reshape(xi.shape))
+
+    # Create legend
+    #if legend: plt.legend()
+
+    # Add title
+    if title is not None: plt.title(title)
+
+    # Show or save
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format, transparent=transparent)
+
+    # Close
+    plt.close()
+
+# -----------------------------------------------------------------
+
+def plot_joint(x, y, kind="scatter"):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param kind:
+    :return:
+    """
+
+    import seaborn as sns
+
+    sns.jointplot(x=x, y=y, kind=kind) #color="k")
 
 # -----------------------------------------------------------------
 
@@ -2541,7 +2648,8 @@ def plot_table(filepath, column_x, column_y, output_path, x_log=False, y_log=Fal
 
 # -----------------------------------------------------------------
 
-def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=None, xlimits=None, ylimits=None, legend=True):
+def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=None, xlimits=None, ylimits=None, legend=True,
+                xlog=False, ylog=False):
 
     """
     This function ...
@@ -2555,6 +2663,8 @@ def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=No
     :param xlimits:
     :param ylimits:
     :param legend:
+    :param xlog:
+    :param ylog:
     :return:
     """
 
@@ -2563,8 +2673,18 @@ def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=No
     # xpix=932 ypix=371 \
     # xcrowd=0.9998301109057076 ycrowd=0.9998301109057076
 
+    # Set log flags
+    xlog = "true" if xlog else "false"
+    ylog = "true" if ylog else "false"
+
     # Construct command
-    command = "topcat -stilts plot2plane xlog=true xlabel='" + xlabel + "' ylabel='" + ylabel + "'"
+    command = "topcat -stilts plot2plane"
+
+    # Set scales
+    command += " xlog=" + xlog + " ylog=" + ylog
+
+    # Add labels
+    command += " xlabel='" + xlabel + "' ylabel='" + ylabel + "'"
 
     if xlimits is not None: command += " xmin=" + str(xlimits[0]) + " xmax=" + str(xlimits[1])
     if ylimits is not None: command += " ymin=" + str(ylimits[0]) + " ymax=" + str(ylimits[1])

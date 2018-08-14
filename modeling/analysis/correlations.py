@@ -822,7 +822,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if self.config.topcat: plot_stilts(self.ssfr_funev_cells_scatter_paths, self.ssfr_name, self.funev_name,
                                            self.ssfr_description, self.funev_description,
                                            title=self.ssfr_funev_cells_title, path=self.ssfr_funev_cells_plot_path,
-                                           ylimits=self.funev_limits)
+                                           ylimits=self.funev_limits, xlog=True)
 
         # Plot using Matplotlib
         else: plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, x_scale="log",
@@ -901,7 +901,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if self.config.topcat: plot_stilts(self.ssfr_funev_pixels_scatter_paths, self.ssfr_name, self.funev_name,
                                            self.ssfr_description, self.funev_description,
                                            title=self.ssfr_funev_cells_title, path=self.ssfr_funev_pixels_plot_path,
-                                           ylimits=self.funev_limits)
+                                           ylimits=self.funev_limits, xlog=True)
 
         # Plot using Matplotlib
         else: plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, x_scale="log",
