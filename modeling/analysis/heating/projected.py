@@ -5382,8 +5382,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the earth projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_earth, path=self.curve_earth_emission_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_earth, path=self.curve_earth_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_earth, path=self.curve_earth_emission_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5422,8 +5421,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the earth projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_earth_absorption, path=self.curve_earth_absorption_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5462,8 +5460,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the face-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_faceon, path=self.curve_faceon_emission_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_faceon, path=self.curve_faceon_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_faceon, path=self.curve_faceon_emission_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5502,8 +5499,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the face-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_faceon_absorption, path=self.curve_faceon_absorption_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5542,8 +5538,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the edge-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_edgeon, path=self.curve_edgeon_emission_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_edgeon, path=self.curve_edgeon_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_edgeon, path=self.curve_edgeon_emission_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5582,7 +5577,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the edge-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True)
 
 # -----------------------------------------------------------------

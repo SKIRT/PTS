@@ -1421,6 +1421,8 @@ def plot_radial_profile(box, center, angle, ratio, nbins=20, path=None, title=No
     plot_xy(radius_list, value_list, title=title, format=format, transparent=transparent, path=path)
 
 # -----------------------------------------------------------------
+# GET XY DATA
+# -----------------------------------------------------------------
 
 def get_xy(curve, return_labels=False):
 
@@ -1448,26 +1450,6 @@ def get_xy(curve, return_labels=False):
     # Return
     if return_labels: return x, y, x_label, y_label
     else: return x, y
-
-# -----------------------------------------------------------------
-
-def plot_curve(curve, title=None, path=None, x_scale="linear", y_scale="linear"):
-
-    """
-    This function ...
-    :param curve:
-    :param title:
-    :param path:
-    :param x_scale:
-    :param y_scale:
-    :return:
-    """
-
-    # Get x, y and labels
-    x, y, x_label, y_label = get_xy(curve, return_labels=True)
-
-    # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, connect=True)
 
 # -----------------------------------------------------------------
 
@@ -1533,16 +1515,60 @@ def get_multiple_xy(curves, return_labels=False):
     else: return x, y
 
 # -----------------------------------------------------------------
+# PLOTTING CURVES
+# -----------------------------------------------------------------
 
-def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear"):
+def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+               xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
+               ynonzero=False):
+
+    """
+    This function ...
+    :param curve:
+    :param title:
+    :param path:
+    :param xlog:
+    :param ylog:
+    :param xlimits:
+    :param ylimits:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
+    :return:
+    """
+
+    # Get x, y and labels
+    x, y, x_label, y_label = get_xy(curve, return_labels=True)
+
+    # Plot
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
+            xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
+            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
+
+# -----------------------------------------------------------------
+
+def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+                xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
+                ynonzero=False):
 
     """
     This function ...
     :param curves:
     :param title:
     :param path:
-    :param x_scale:
-    :param y_scale:
+    :param xlog:
+    :param ylog:
+    :param xlimits:
+    :param ylimits:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
@@ -1550,11 +1576,17 @@ def plot_curves(curves, title=None, path=None, x_scale="linear", y_scale="linear
     x, y, x_label, y_label = get_multiple_xy(curves, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale, connect=True)
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
+            xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative,
+            ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
 
 # -----------------------------------------------------------------
+# PLOTTING SCATTER
+# -----------------------------------------------------------------
 
-def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, density=False):
+def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, density=False,
+                 xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
+                 ynonzero=False):
 
     """
     This function ...
@@ -1566,6 +1598,12 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
     :param xlimits:
     :param ylimits:
     :param density:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
@@ -1573,12 +1611,15 @@ def plot_scatter(scatter, title=None, path=None, xlog=False, ylog=False, xlimits
     x, y, x_label, y_label = get_xy(scatter, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
-            connect=False, density=density, xlimits=xlimits, ylimits=ylimits)
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
+            connect=False, density=density, xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive,
+            xnonnegative=xnonnegative, ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
 
 # -----------------------------------------------------------------
 
-def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, density=False):
+def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None, density=False,
+                  xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
+                  ynonzero=False):
 
     """
     This function ...
@@ -1590,6 +1631,12 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
     :param xlimits:
     :param ylimits:
     :param density:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
@@ -1597,13 +1644,17 @@ def plot_scatters(scatters, title=None, path=None, xlog=False, ylog=False, xlimi
     x, y, x_label, y_label = get_multiple_xy(scatters, return_labels=True)
 
     # Plot
-    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, x_scale=x_scale, y_scale=y_scale,
-            connect=False, density=density, xlimits=xlimits, ylimits=ylimits)
+    plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog,
+            connect=False, density=density, xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive,
+            xnonnegative=xnonnegative, ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
 
+# -----------------------------------------------------------------
+# PLOTTING DENSITY
 # -----------------------------------------------------------------
 
 def plot_density(points, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
-                 nbins=200, contours=False, seaborn=None, rug=False):
+                 nbins=200, contours=False, seaborn=None, rug=False, xpositive=False, ypositive=False,
+                xnonnegative=False, ynonnegative=False, xnonzero=False, ynonzero=False):
 
     """
     This function ...
@@ -1618,6 +1669,12 @@ def plot_density(points, title=None, path=None, xlog=False, ylog=False, xlimits=
     :param contours:
     :param seaborn:
     :param rug:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
@@ -1626,7 +1683,8 @@ def plot_density(points, title=None, path=None, xlog=False, ylog=False, xlimits=
 
     # Plot
     plot_xy_density(x, y, title=title, nbins=nbins, contours=contours, path=path, seaborn=seaborn, rug=rug,
-                    xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits)
+                    xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits, xpositive=xpositive, ypositive=ypositive,
+                    xnonnegative=xnonnegative, ynonnegative=ynonnegative, xnonzero=xnonzero, ynonzero=ynonzero)
 
 # -----------------------------------------------------------------
 
@@ -1649,18 +1707,22 @@ def plot_densities(points, title=None, path=None, xlog=False, ylog=False, xlimit
     :return: 
     """
 
+    raise NotImplementedError("Not really implemented yet")
+
     # Get data
-    x, y, x_label, y_label = get_multiple_xy(points, return_labels=True)
+    #x, y, x_label, y_label = get_multiple_xy(points, return_labels=True)
 
     # Plot
-    plot_xy_density(x, y, title=title, nbins=nbins, contours=contours, path=path, seaborn=seaborn, rug=rug,
-                    xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits)
+    # DOESN'T WORK YET WITH MULIPLE
+    #plot_xy_density(x, y, title=title, nbins=nbins, contours=contours, path=path, seaborn=seaborn, rug=rug,
+    #                xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits)
 
 # -----------------------------------------------------------------
 
 def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label=None, y_label=None, xlog=False,
             ylog=False, vlines=None, hlines=None, legend=True, xlimits=None, ylimits=None, connect=True,
-            density=False):
+            density=False, xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
+            ynonzero=False):
 
     """
     Low-level function, only scalar values (no units)
@@ -1682,6 +1744,12 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     :param ylimits:
     :param connect:
     :param density:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
@@ -1692,6 +1760,9 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
     fig = plt.figure()
     ax = fig.gca()
 
+    original_xlimits = xlimits
+    original_ylimits = ylimits
+
     # Add the data
     if types.is_dictionary(x):
 
@@ -1701,31 +1772,16 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
 
         # Loop over the curves
         for name in x:
-            _x = x[name]
-            _y = y[name]
 
-            # Connect with lines
-            if connect: plt.plot(_x, _y, label=name)
+            # Clean xy data
+            # XLIMITS AND Y LIMITS ARE NOW IN LOG SCALE IF NECESSARY
+            _x, _y, xlimits, ylimits = clean_xy_data(x[name], y[name], original_xlimits, original_ylimits, xlog=xlog, ylog=ylog,
+                                                   xpositive=xpositive, ypositive=ypositive,
+                                                   xnonnegative=xnonnegative, ynonnegative=ynonnegative,
+                                                   xnonzero=xnonzero, ynonzero=ynonzero, adjust_limits=False)
 
-            # Points with density
-            elif density:
-
-                # Warn
-                warnings.warn("Caculating density of points: this can take a while ...")
-
-                # Calculate the point density
-                xy = np.vstack([_x, _y])
-                z = gaussian_kde(xy)(xy)
-
-                # Sort the points by density, so that the densest points are plotted last
-                idx = z.argsort()
-                xi, yi, zi = _x[idx], _y[idx], z[idx]
-
-                # Plot
-                ax.scatter(xi, yi, c=zi, s=50, edgecolor='')
-
-            # Just points
-            else: plt.scatter(_x, _y, label=name)
+            # Plot
+            _plot_xy(_x, _y, label=name, connect=connect, density=density)
 
     # Sequence
     elif types.is_sequence_or_array(x):
@@ -1734,51 +1790,38 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
         if not types.is_sequence_or_array(y): raise ValueError("The type of x and y data must be equal")
         if not sequences.equal_sizes(x, y): raise ValueError("The number of x and y points must agree")
 
-        # Connect with lines
-        if connect: plt.plot(x, y)
+        # CLEAN
+        x, y, xlimits, ylimits = clean_xy_data(x, y, original_xlimits, original_ylimits, xlog=xlog, ylog=ylog,
+                                             xpositive=xpositive, ypositive=ypositive,
+                                             xnonnegative=xnonnegative, ynonnegative=ynonnegative,
+                                             xnonzero=xnonzero, ynonzero=ynonzero, adjust_limits=False)
 
-        # Points with density
-        elif density:
-
-            # Warn
-            warnings.warn("Caculating density of points: this can take a while ...")
-
-            # Calculate the point density
-            xy = np.vstack([x, y])
-            z = gaussian_kde(xy)(xy)
-
-            # Sort the points by density, so that the densest points are plotted last
-            idx = z.argsort()
-            xi, yi, zi = x[idx], y[idx], z[idx]
-
-            # Plot
-            ax.scatter(xi, yi, c=zi, s=50, edgecolor='')
-
-        # Just points
-        else: plt.scatter(x, y)
+        # Plot
+        _plot_xy(x, y, connect=connect, density=density)
 
     # Invalid
     else: raise ValueError("Invalid type for x data: '" + str(type(x)) + "'")
 
     # Add vertical lines
     if vlines is not None:
-        for vline in vlines: plt.axvline(x=vline)
+        for vline in vlines:
+            if xlog: vline = np.log10(vline)
+            plt.axvline(x=vline)
+
+    # Add horizontal lines
     if hlines is not None:
-        for hline in hlines: plt.axhline(y=hline)
+        for hline in hlines:
+            if ylog: hline = np.log10(hline)
+            plt.axhline(y=hline)
 
     # Set axes limits
     if xlimits is not None: plt.xlim(xlimits[0], xlimits[1])
     if ylimits is not None: plt.ylim(ylimits[0], ylimits[1])
 
     # Set scale
-    #if x_scale == "linear": pass
-    #elif x_scale == "log": plt.xscale("log")
-    #else: raise ValueError("Invalid scale: '" + str(x_scale) + "'")
-    #if y_scale == "linear": pass
-    #elif y_scale == "log": plt.yscale("log")
-    #else: raise ValueError("Invalid scale: '" + str(y_scale) + "'")
-    if xlog: plt.xscale("log")
-    if ylog: plt.yscale("log")
+    # NO-> DATA IS SCALED DURING CLEANING
+    #if xlog: plt.xscale("log")
+    #if ylog: plt.yscale("log")
 
     # Set labels
     if x_label is not None: plt.xlabel(x_label.replace("_", "\_"))
@@ -1799,8 +1842,46 @@ def plot_xy(x, y, title=None, path=None, format=None, transparent=False, x_label
 
 # -----------------------------------------------------------------
 
+def _plot_xy(x, y, label=None, connect=True, density=False):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param label:
+    :param connect:
+    :param density:
+    :return:
+    """
+
+    # Connect with lines
+    if connect: plt.plot(x, y, label=label)
+
+    # Points with density
+    elif density:
+
+        # Give warning
+        warnings.warn("Caculating density of points: this can take a while ...")
+
+        # Calculate the point density
+        xy = np.vstack([x, y])
+        z = gaussian_kde(xy)(xy)
+
+        # Sort the points by density, so that the densest points are plotted last
+        idx = z.argsort()
+        xi, yi, zi = x[idx], y[idx], z[idx]
+
+        # Plot
+        plt.scatter(xi, yi, c=zi, s=50, edgecolor='')
+
+    # Just points
+    else: plt.scatter(x, y, label=label)
+
+# -----------------------------------------------------------------
+
 def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, seaborn=None, rug=False, transparent=False,
-                    xlog=False, ylog=False, xlimits=None, ylimits=None):
+                    xlog=False, ylog=False, xlimits=None, ylimits=None, format=None, xpositive=False, ypositive=False,
+                    xnonnegative=False, ynonnegative=False, xnonzero=False, ynonzero=False):
 
     """
     This function ...
@@ -1817,26 +1898,21 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, seab
     :param ylog:
     :param xlimits:
     :param ylimits:
+    :param format:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
-    # Mask invalid
-    mask_x = np.isfinite(x) * (x > 0)
-    mask_y = np.isfinite(y) * (y > 0)
-    mask = mask_x * mask_y
-    x = x[mask]
-    y = y[mask]
-    #print("x", x)
-    #print("y", y)
-
-    # Make into log
-    if xlog:
-        x = np.log10(x)
-        if xlimits is not None: xlimits = (np.log10(xlimits[0]), np.log10(xlimits[1]),)
-
-    if ylog:
-        y = np.log10(y)
-        if ylimits is not None: ylimits = (np.log10(ylimits[0]), np.log10(ylimits[1]),)
+    # Clean xy data
+    x, y, xlimits, ylimits = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog,
+                                           xpositive=xpositive, ypositive=ypositive,
+                                           xnonnegative=xnonnegative, ynonnegative=ynonnegative,
+                                           xnonzero=xnonzero, ynonzero=ynonzero)
 
     if seaborn is None: seaborn = contours or rug
 
@@ -1903,19 +1979,87 @@ def plot_xy_density(x, y, title=None, nbins=200, contours=False, path=None, seab
 
 # -----------------------------------------------------------------
 
-def plot_joint(x, y, kind="scatter"):
+def plot_joint(points, title=None, kind="scatter", path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
+               xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False, ynonzero=False):
+    
+    """
+    This function ...
+    :param points:
+    :param title:
+    :param kind:
+    :param path:
+    :param xlog:
+    :param ylog:
+    :param xlimits:
+    :param ylimits:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
+    :return: 
+    """
+
+    # Get x, y and labels
+    x, y, x_label, y_label = get_xy(points, return_labels=True)
+
+    # Plot
+    plot_xy_joint(x, y, kind=kind, title=title, path=path, xlog=xlog, ylog=ylog, xlimits=xlimits, ylimits=ylimits,
+                  xpositive=xpositive, ypositive=ypositive, xnonnegative=xnonnegative, ynonnegative=ynonnegative,
+                  xnonzero=xnonzero, ynonzero=ynonzero)
+
+# -----------------------------------------------------------------
+
+def plot_xy_joint(x, y, kind="scatter", title=None, path=None, transparent=False, format=None, xlimits=None, ylimits=None,
+                  xlog=False, ylog=False, xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False,
+                  xnonzero=False, ynonzero=False):
 
     """
     This function ...
     :param x:
     :param y:
     :param kind:
+    :param title:
+    :param path:
+    :param transparent:
+    :param format:
+    :param xlimits:
+    :param ylimits:
+    :param xlog:
+    :param ylog:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
     :return:
     """
 
     import seaborn as sns
 
+    # Clean xy data
+    x, y, xlimits, ylimits = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog,
+                                           xpositive=xpositive, ypositive=ypositive,
+                                           xnonnegative=xnonnegative, ynonnegative=ynonnegative,
+                                           xnonzero=xnonzero, ynonzero=ynonzero)
+
+    # Create figure
+    #plt.figure()
+
+    # Plot
     sns.jointplot(x=x, y=y, kind=kind) #color="k")
+
+    # Add title
+    if title is not None: plt.title(title)
+
+    # Show or save
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format, transparent=transparent)
+
+    # Close
+    plt.close()
 
 # -----------------------------------------------------------------
 
@@ -2715,5 +2859,76 @@ def plot_stilts(filepaths, xcolumn, ycolumn, xlabel, ylabel, path=None, title=No
 
     # Execute the plotting command
     terminal.execute(command)
+
+# -----------------------------------------------------------------
+
+def clean_xy_data(x, y, xlimits=None, ylimits=None, xlog=False, ylog=False, xpositive=False, ypositive=False,
+                  xnonnegative=False, ynonnegative=False, xnonzero=False, ynonzero=False, adjust_limits=False):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param xlimits:
+    :param ylimits:
+    :param xlog:
+    :param ylog:
+    :param xpositive:
+    :param ypositive:
+    :param xnonnegative:
+    :param ynonnegative:
+    :param xnonzero:
+    :param ynonzero:
+    :param adjust_limits:
+    :return:
+    """
+
+    # IF LOG, ONLY POSITIVE VALUES ARE ALLOWED!
+    if xlog: xpositive = True
+    if ylog: ypositive = True
+
+    # Create mask of valid data points
+    valid_x = np.isfinite(x)
+    valid_y = np.isfinite(y)
+
+    # Only positive values?
+    if xpositive: valid_x *= (x > 0)
+    if ypositive: valid_y *= (y > 0)
+
+    # Only non-negative values?
+    if xnonnegative: valid_x *= (x >= 0)
+    if ynonnegative: valid_y *= (y >= 0)
+
+    # No zero values
+    if xnonzero: valid_x *= (x != 0)
+    if ynonzero: valid_y *= (y != 0)
+
+    # OUTSIDE LIMITS? -> ALREADY CLIP OUT TO POTENTIALLY SAVE RENDERING/CALCULATION TIME & MEMORY
+    if xlimits is not None: valid_x *= (x >= xlimits[0]) * (x <= xlimits[1])
+    if ylimits is not None: valid_y *= (y >= ylimits[0]) * (y <= ylimits[1])
+
+    # Create combined mask
+    valid = valid_x * valid_y
+
+    # Keep only the valid data
+    x = x[valid]
+    y = y[valid]
+
+    # Make into log
+    if xlog:
+        x = np.log10(x)
+        if xlimits is not None: xlimits = (np.log10(xlimits[0]), np.log10(xlimits[1]),)
+
+    if ylog:
+        y = np.log10(y)
+        if ylimits is not None: ylimits = (np.log10(ylimits[0]), np.log10(ylimits[1]),)
+
+    # ADJUST LIMITS? -> SHRINK TO THE DATA
+    if adjust_limits:
+        xlimits = (np.min(x), np.max(x),)
+        ylimits = (np.min(y), np.max(y),)
+
+    # Return cleaned data
+    return x, y, xlimits, ylimits
 
 # -----------------------------------------------------------------

@@ -55,6 +55,14 @@ definition.add_flag("joint", "make joint plot")
 definition.add_flag("rug", "add rug to density plots")
 definition.add_flag("seaborn", "use Seaborn for density plots", None)
 
+# Cleaning of data
+definition.add_flag("xpositive", "only allow positive x values")
+definition.add_flag("ypositive", "only allow positive y values")
+definition.add_flag("xnonnegative", "only allow non-negative x values")
+definition.add_flag("ynonnegative", "only allow non-negative y values")
+definition.add_flag("xnonzero", "discard points where x = 0")
+definition.add_flag("ynonzero", "discard points where y = 0")
+
 # -----------------------------------------------------------------
 
 # Create the configuration
@@ -102,22 +110,40 @@ def plot_structure(structure, filetype, filepath=None, **kwargs):
         #print(structure.x_name, structure.y_name)
 
         # Joint plot?
-        if config.joint: plotting.plot_joint(structure)
+        if config.joint: plotting.plot_joint(structure, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits,
+                                             ylimits=config.ylimits, xpositive=config.xpositive, ypositive=config.ypositive,
+                                             xnonnegative=config.xnonnegative, ynonnegative=config.ynonnegative,
+                                             xnonzero=config.xnonzero, ynonzero=config.ynonzero)
 
         # Contours of scatter density
-        elif config.contours: plotting.plot_density(structure, contours=True, rug=config.rug, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits, seaborn=config.seaborn)
+        elif config.contours: plotting.plot_density(structure, contours=True, rug=config.rug, xlog=config.xlog,
+                                                    ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits,
+                                                    seaborn=config.seaborn, xpositive=config.xpositive, ypositive=config.ypositive,
+                                                    xnonnegative=config.xnonnegative, ynonnegative=config.ynonnegative,
+                                                    xnonzero=config.xnonzero, ynonzero=config.ynonzero)
 
         # Density of scatter points
         elif config.density:
 
             # With points
-            if config.points: plotting.plot_scatter(structure, density=True, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits)
+            if config.points: plotting.plot_scatter(structure, density=True, xlog=config.xlog, ylog=config.ylog,
+                                                    xlimits=config.xlimits, ylimits=config.ylimits,
+                                                    xpositive=config.xpositive, ypositive=config.ypositive,
+                                                    xnonnegative=config.xnonnegative, ynonnegative=config.ynonnegative,
+                                                    xnonzero=config.xnonzero, ynonzero=config.ynonzero)
 
             # Without points
-            else: plotting.plot_density(structure, rug=config.rug, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits, seaborn=config.seaborn)
+            else: plotting.plot_density(structure, rug=config.rug, xlog=config.xlog, ylog=config.ylog,
+                                        xlimits=config.xlimits, ylimits=config.ylimits, seaborn=config.seaborn,
+                                        xpositive=config.xpositive, ypositive=config.ypositive,
+                                        xnonnegative=config.xnonnegative, ynonnegative=config.ynonnegative,
+                                        xnonzero=config.xnonzero, ynonzero=config.ynonzero)
 
         # Regular scatter plot
-        else: plotting.plot_scatter(structure, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits)
+        else: plotting.plot_scatter(structure, xlog=config.xlog, ylog=config.ylog, xlimits=config.xlimits, ylimits=config.ylimits,
+                                    xpositive=config.xpositive, ypositive=config.ypositive,
+                                    xnonnegative=config.xnonnegative, ynonnegative=config.ynonnegative,
+                                    xnonzero=config.xnonzero, ynonzero=config.ynonzero)
 
     # Data3D
     elif filetype == data3d:
