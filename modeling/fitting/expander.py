@@ -1600,7 +1600,7 @@ class ParameterExpander(FittingComponent):
         new_filepath = fs.join(self.generation_path, "individuals_new.dat")
 
         # Backup the old individuals table
-        fs.backup_file(filepath, suffix="old", backup_backup=True)
+        fs.backup_file(filepath, suffix="old", exists="backup")
         fs.remove_file(filepath)
 
         # Save
@@ -1626,7 +1626,7 @@ class ParameterExpander(FittingComponent):
         new_filepath = fs.join(self.generation_path, "parameters_new.dat")
 
         # Backup the old parameters table
-        fs.backup_file(filepath, suffix="old", backup_backup=True)
+        fs.backup_file(filepath, suffix="old", exists="backup")
         fs.remove_file(filepath)
 
         # Save

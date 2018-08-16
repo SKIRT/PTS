@@ -521,6 +521,9 @@ class Refitter(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making backups before refitting ...")
+
         # Backup individual simulations results
         if self.individual_simulations:
 
@@ -546,7 +549,7 @@ class Refitter(FittingComponent):
         log.debug("Creating backup of chi squared table for generation '" + self.single_generation_name + "' ...")
 
         # Copy the file
-        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True, prefix=self.backup_name, sep="__")
+        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False)
 
     # -----------------------------------------------------------------
 
@@ -572,7 +575,7 @@ class Refitter(FittingComponent):
             log.debug("Creating backup of differences table for simulation '" + simulation_name + "' ...")
 
             # Copy the file
-            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True, prefix=self.backup_name, sep="__")
+            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False)
 
     # -----------------------------------------------------------------
 
@@ -1339,14 +1342,25 @@ class Refitter(FittingComponent):
             #for simulation_name in generation.simulation_names:
             for simulation_name in self.simulation_names_for_generation(generation_name):
 
-                # Get the differences filepath
-                if not generation.has_sed_differences(simulation_name): raise IOError("Differences file is not found for simulation '" + simulation_name + "'")
+                # Individual simulations: differences files have been backupped and originals have already been removed
+                if self.individual_simulations:
+
+                    backup_filepath = fs.prepended_filepath(generation.get_simulation_sed_differences_path(simulation_name), self.backup_name, sep="__")
+                    if not fs.is_file(backup_filepath): raise IOError("Differences backup file is not found for simulation '" + simulation_name + "'")
+                    differences_filepath = backup_filepath
+
+                else:
+
+                    # Get the differences filepath
+                    if not generation.has_sed_differences(simulation_name): raise IOError("Differences file is not found for simulation '" + simulation_name + "'")
+                    differences_filepath = generation.get_simulation_sed_differences_path(simulation_name)
 
                 # Debugging
                 log.debug("Loading the differences for the '" + simulation_name + "' simulation ...")
 
                 # Load
-                differences = generation.get_simulation_sed_differences(simulation_name)
+                #differences = generation.get_simulation_sed_differences(simulation_name)
+                differences = FluxDifferencesTable.from_file(differences_filepath)
 
                 # Set table
                 self.differences[generation_name][simulation_name] = differences
@@ -1563,8 +1577,11 @@ class Refitter(FittingComponent):
             generation = self.generations[generation_name]
 
             # Get the name of the simulation with the lowest chi squared value
-            best_simulation_name = generation.chi_squared_table.best_simulation_name
-            chi_squared = generation.chi_squared_table.chi_squared_for(best_simulation_name)
+            # WHY WAS THIS USING THE ORIGINAL CHI SQUARED TABLE?
+            #best_simulation_name = generation.chi_squared_table.best_simulation_name
+            #chi_squared = generation.chi_squared_table.chi_squared_for(best_simulation_name)
+            best_simulation_name = self.chi_squared_tables[generation_name].best_simulation_name
+            chi_squared = self.chi_squared_tables[generation_name].chi_squared_for(best_simulation_name)
 
             # Get the parameter values
             values = generation.parameters_table.parameter_values_for_simulation(best_simulation_name)

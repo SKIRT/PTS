@@ -21,6 +21,7 @@ import platform
 import subprocess
 import datetime
 import filecmp
+import warnings
 from collections import OrderedDict
 from itertools import takewhile
 
@@ -2838,93 +2839,102 @@ def add_extension(filename, extension):
 
 # -----------------------------------------------------------------
 
-def appended_filename(filepath, append_with):
+def appended_filename(filepath, append_with, sep=None):
 
     """
     This function ...
     :param filepath:
     :param append_with:
+    :param sep:
     :return:
     """
 
     filename = name(filepath)
     the_name = strip_extension(filename)
     extension = get_extension(filename)
-    appended_name = the_name + append_with
+    appended_name = the_name + sep + append_with
     return add_extension(appended_name, extension)
 
 # -----------------------------------------------------------------
 
-def prepended_filename(filepath, prepend_with):
+def prepended_filename(filepath, prepend_with, sep=None):
 
     """
     This function ...
     :param filepath:
     :param prepend_with:
+    :param sep:
     :return:
     """
 
+    if sep is None: sep = ""
     filename = name(filepath)
-    return prepend_with + filename
+    return prepend_with + sep + filename
 
 # -----------------------------------------------------------------
 
-def prepended_and_appended_filename(filepath, prepend, append):
+def prepended_and_appended_filename(filepath, prepend, append, sep=None):
 
     """
     This function ...
     :param filepath:
     :param prepend:
     :param append:
+    :param sep:
     :return:
     """
+
+    if sep is None: sep = ""
 
     filename = name(filepath)
     the_name = strip_extension(filename)
     extension = get_extension(filename)
 
-    new_name = prepend + the_name + append
+    new_name = prepend + sep + the_name + sep + append
     return add_extension(new_name, extension)
 
 # -----------------------------------------------------------------
 
-def appended_filepath(filepath, append_with):
+def appended_filepath(filepath, append_with, sep=None):
 
     """
     This function ...
     :param filepath:
     :param append_with:
+    :param sep:
     :return:
     """
 
-    return join(directory_of(filepath), appended_filename(filepath, append_with))
+    return join(directory_of(filepath), appended_filename(filepath, append_with, sep=sep))
 
 # -----------------------------------------------------------------
 
-def prepended_filepath(filepath, prepend_with):
+def prepended_filepath(filepath, prepend_with, sep=None):
 
     """
     This function ...
     :param filepath:
     :param prepend_with:
+    :param sep:
     :return:
     """
 
-    return join(directory_of(filepath), prepended_filename(filepath, prepend_with))
+    return join(directory_of(filepath), prepended_filename(filepath, prepend_with, sep=sep))
 
 # -----------------------------------------------------------------
 
-def prepended_and_appended_filepath(filepath, prepend, append):
+def prepended_and_appended_filepath(filepath, prepend, append, sep=None):
 
     """
     This function ...
     :param filepath:
     :param prepend:
     :param append:
+    :param sep:
     :return:
     """
 
-    return join(directory_of(filepath), prepended_and_appended_filename(filepath, prepend, append))
+    return join(directory_of(filepath), prepended_and_appended_filename(filepath, prepend, append, sep=sep))
 
 # -----------------------------------------------------------------
 
@@ -3277,18 +3287,22 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix=None, prefix=None, backup_backup=False, remove=False, sep="_"):
+def backup_file(filepath, suffix=None, prefix=None, exists="error", remove=False, sep="_", check_filepath=True):
 
     """
     This function ...
     :param filepath:
     :param suffix:
     :param prefix:
-    :param backup_backup:
+    :param exists:
     :param remove:
     :param sep:
+    :param check_filepath:
     :return:
     """
+
+    # Check
+    if check_filepath and not is_file(filepath): raise ValueError("File '" + filepath + "' does not exist")
 
     # Set name for backup file
     if prefix is not None and suffix is not None: backup_filepath = prepended_and_appended_filepath(filepath, prefix + sep, sep + suffix)
@@ -3301,10 +3315,27 @@ def backup_file(filepath, suffix=None, prefix=None, backup_backup=False, remove=
     # Already exists
     if is_file(backup_filepath):
 
-        if backup_backup:
-            backup_file(backup_filepath, suffix=suffix, prefix=prefix, sep=sep, backup_backup=backup_backup) # backup the backup
+        # First backup the seemingly earlier backup
+        if exists == "backup":
+
+            backup_file(backup_filepath, suffix=suffix, prefix=prefix, sep=sep, exists=exists) # backup the backup
             remove_file(backup_filepath)
-        else: raise IOError("Backup file path already exists (" + backup_filepath + ")")
+
+        # Give error
+        elif exists == "error": raise IOError("Backup file path already exists (" + backup_filepath + ")")
+
+        # Just overwrite the previous, but give warning
+        elif exists == "overwrite":
+            warnings.warn("The backup '" + backup_filepath + "' already exists: will be overwritten ...")
+            remove_file(backup_filepath)
+
+        # Do nothing, trust earlier backup
+        elif exists == "pass":
+            warnings.warn("The backup '" + backup_filepath + "' already exists: skipping ...")
+            return
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'exists'")
 
     # Actually make the backup
     copy_file(filepath, backup_filepath)
