@@ -2006,7 +2006,7 @@ def get_linear_series(npoints, start=1, step=1):
     :return:
     """
 
-    stop = start + npoints
+    stop = start + step * npoints
     return list(range(start, stop, step))
 
 # -----------------------------------------------------------------

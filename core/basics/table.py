@@ -2691,7 +2691,7 @@ class SmartTable(Table):
 
             row = []
             for name in self.colnames:
-                string = tostr(self[name][index], round=round, ndecimal_places=ndecimal_places)
+                string = tostr(self[name][index], round=round, decimal_places=ndecimal_places)
                 row.append(string.replace("_", "\_"))
             row_string = " & ".join(row) + " \\\\"
 

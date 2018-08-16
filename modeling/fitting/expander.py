@@ -76,22 +76,22 @@ class ParameterExpander(FittingComponent):
         :return:
         """
 
-        # 2. Generate the parameter values
+        # Generate the parameter values
         self.generate_parameters()
 
-        # 3. Generate the models
+        # Generate the models
         self.generate_models()
 
-        # 4. Fill the tables for the current generation
+        # Fill the tables for the current generation
         self.fill_tables()
 
-        # 5. Show
+        # Show
         self.show()
 
-        # 6. Write
+        # Write
         self.write()
 
-        # 7. Launch the models
+        # Launch the models
         self.launch()
 
         # Update the tables
@@ -721,6 +721,9 @@ class ParameterExpander(FittingComponent):
         :param value:
         :return:
         """
+
+        # Debugging
+        log.debug("Adding new parameter value of " + tostr(value) + " for parameter '" + label + "' ...")
 
         # Add unit
         value = value * self.get_parameter_unit(label)

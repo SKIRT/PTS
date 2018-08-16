@@ -80,7 +80,7 @@ def show_table(tab):
             nunique = len(unique_values)
 
             # Show the values
-            print(" - " + fmt.bold + colname + fmt.reset_bold + ": " + tostr(unique_values, ndecimal_places=config.ndecimal_places, round=config.round) + " (" + str(nunique) + ")")
+            print(" - " + fmt.bold + colname + fmt.reset_bold + ": " + tostr(unique_values, decimal_places=config.ndecimal_places, round=config.round) + " (" + str(nunique) + ")")
 
     # Interactive view
     elif config.interactive: tab.more()

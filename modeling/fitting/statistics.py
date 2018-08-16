@@ -4065,6 +4065,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         plotter.config.distribution_ticks = True
         plotter.config.y_ticks = False
 
+        # Plot lower than 1%
+        plotter.config.lower_than = 0.01
+        plotter.config.add_lower_frequencies = True
+        plotter.config.lower_frequency_percentages = True
+
         # Get parameters of best simulation
         best = self.get_best_simulation_parameters(generation_name)
         most_prob = self.get_most_probable_parameter_values(generation_name)
@@ -4140,6 +4145,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         plotter.config.y_label = "Probability [arbitrary scale]"
         plotter.config.colours_per_panel = True
 
+        # Plot lower than 1%
+        plotter.config.lower_than = 0.01
+        plotter.config.add_lower_frequencies = True
+        plotter.config.lower_frequency_percentages = True
+
         # Logscales
         plotter.config.logscale = True
         plotter.config.logfrequency = logprob
@@ -4190,7 +4200,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
             # Determine label and magnitude for this panel
             plot_label = strings.smart_capitalize(parameter_descriptions_short[label])
-            if self.has_parameter_unit(label): plot_label += " [" + tostr(self.get_parameter_unit(label) + "]")
+            if self.has_parameter_unit(label): plot_label += " [" + tostr(self.get_parameter_unit(label)) + "]"
             magnitude = magnitudes_panels[label]
 
             # Create properties
