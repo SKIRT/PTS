@@ -1533,9 +1533,9 @@ class Refitter(FittingComponent):
 
                     # Calculate the difference
                     #print(fluxdensity, observed_fluxdensity)
-                    observed_fluxdensity_value = observed_fluxdensity.value # is in Jy
-                    difference = fluxdensity - observed_fluxdensity_value
-                    relative_difference = float(difference / observed_fluxdensity_value)
+                    #observed_fluxdensity_value = observed_fluxdensity.value # is in Jy
+                    difference = fluxdensity - observed_fluxdensity
+                    relative_difference = float(difference / observed_fluxdensity)
 
                     # Find the index of the current band in the weights table
                     index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
