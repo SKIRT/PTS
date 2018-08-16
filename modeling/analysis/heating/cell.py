@@ -1227,7 +1227,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # exit()
 
         # Interpolate nans
-        interpolated.interpolate_nans(sigma=2.)
+        interpolated.interpolate_nans(sigma=2., error_on_max=False)
         interpolated.replace_by_nans(do_nans)
 
         # Return the interpolated frame

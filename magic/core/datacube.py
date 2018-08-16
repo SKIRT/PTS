@@ -1237,7 +1237,7 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
-                     smoothing_factor=None):
+                     smoothing_factor=None, error_on_max=True):
 
         """
         This function ...
@@ -1246,7 +1246,8 @@ class DataCube(Image):
         :param plot: 
         :param not_converge: 
         :param min_max_in: 
-        :param smoothing_factor: 
+        :param smoothing_factor:
+        :param error_on_max:
         :return: 
         """
 
@@ -1278,9 +1279,9 @@ class DataCube(Image):
         kernel = Gaussian2DKernel(stddev=sigma)
 
         # Interpolate each frame
-        for frame_name in self.frame_names:
-            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
-                                                                    not_converge=not_converge, min_max_in=min_max_in)
+        for frame_name in self.frame_names: self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
+                                                                    not_converge=not_converge, min_max_in=min_max_in,
+                                                                    error_on_max=error_on_max)
 
     # -----------------------------------------------------------------
 

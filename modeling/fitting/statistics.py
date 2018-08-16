@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from copy import deepcopy
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
@@ -51,6 +52,7 @@ from .tables import ParameterProbabilitiesTable
 from ...core.basics.map import Map
 from ...core.tools import numbers
 from ...core.tools import tables
+from ...core.simulation.discover import matching_npackages
 
 # -----------------------------------------------------------------
 
@@ -2697,6 +2699,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
         # Pick a random sample of simulations
         definition.add_optional("random", "positive_integer", "pick a random sample of simulations")
+        definition.add_optional("write_names", "directory_path", "write a text file with the simulation names for each method")
 
         # Return the definition
         return definition
@@ -2716,7 +2719,10 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         generation_name, config = self.get_generation_name_and_config_from_command(command, self.show_methods_definition, **kwargs)
 
         # Show
-        self.show_methods(generation_name, nrandom=config.random)
+        methods = self.show_methods(generation_name, nrandom=config.random, return_methods=True)
+
+        # Write simulation names for methods
+        if config.write_names is not None: self.write_methods(methods, config.write_names)
 
     # -----------------------------------------------------------------
 
@@ -2904,17 +2910,48 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
             # Increment
             index += 1
 
+        # CHECK FOR KEYS WHICH ARE THE SAME EXCEPT FOR SLIGHTLY DIFFERENT NUMBER OF PHOTON PACKAGES
+        unique_npackages = set()
+        for key in methods:
+            npackages = key[4]
+            unique_npackages.add(npackages)
+        #print("unique npackages:", unique_npackages)
+        close_npackages = dict()
+        for npackages1, npackages2 in sequences.pairs(unique_npackages):
+            #print(npackages1, npackages2)
+            #if matching_npackages(npackages1, npackages2, ): only works if we have the number of processes for two simulations
+            if numbers.is_close(npackages1, npackages2): close_npackages[npackages1] = npackages2
+        remove_keys = []
+        for npackages1 in close_npackages:
+            for key in methods:
+
+                if key[4] != npackages1: continue
+                other_key = list(deepcopy(key))
+                other_key[4] = close_npackages[npackages1] # set npackages2
+                other_key = tuple(other_key)
+                if other_key not in methods: continue
+
+                # Add to npackages1 key
+                for generation_name, simulation_name in methods[other_key]:
+                    methods[key].append((generation_name, simulation_name))
+
+                remove_keys.append(other_key)
+                # Remove npackages2 key
+                #del methods[other_key]
+        for key in remove_keys: del methods[key]
+
         # Return the methods
         return methods
 
     # -----------------------------------------------------------------
 
-    def show_methods(self, generation_name, nrandom=None):
+    def show_methods(self, generation_name, nrandom=None, return_methods=False):
 
         """
         This function ...
         :param generation_name:
         :param nrandom:
+        :param return_methods:
         :return:
         """
 
@@ -2968,6 +3005,53 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
                     print_row(*parts)
 
             print("")
+
+        # Also return the methods
+        if return_methods: return methods
+
+    # -----------------------------------------------------------------
+
+    def write_methods(self, methods, path, sep="\t"):
+
+        """
+        This function ...
+        :param methods:
+        :param path:
+        :param sep:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the methods and simulation names ...")
+
+        # Loop over the methods
+        for index, method in enumerate(methods.keys()):
+
+            # Determine filepath
+            filepath = fs.join(path, "method" + str(index) + ".txt")
+
+            # Set lines
+            lines = []
+
+            # Add info about method
+            header = []
+            if method[0] is not None: header.append("filters: " + method[0])
+            if method[1] is not None: header.append("additional relative error: " + str(method[1]))
+            header.append("nwavelengths: " + str(method[2]))
+            header.append("ncells: " + str(method[3]))
+            header.append("npackages: " + str(method[4]))
+            header.append("selfabsorption: " + yes_or_no(method[5]))
+            header.append("transient heating: " + yes_or_no(method[6]))
+            for line in header: lines.append("# " + line)
+
+            # Add simulation names
+            for generation_name, simulation_name in methods[method]:
+
+                # Add line
+                lines.append(generation_name + sep + simulation_name)
+
+            # Write the lines
+            fs.write_lines(filepath, lines)
 
     # -----------------------------------------------------------------
 

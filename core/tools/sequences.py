@@ -2481,3 +2481,15 @@ def multirange(*dimensions):
     return np.ndindex(shape)
 
 # -----------------------------------------------------------------
+
+def pairs(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return list(combinations(sequence, 2))
+
+# -----------------------------------------------------------------

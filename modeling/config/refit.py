@@ -37,6 +37,7 @@ definition.add_optional("generations", "string_list", "generation names")
 
 # Simulations?
 definition.add_optional("simulations", "string_list", "simulation names (in the case of one generation)")
+definition.add_optional("simulation_file", "file_path", "path of file with simulation names")
 
 # -----------------------------------------------------------------
 

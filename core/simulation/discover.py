@@ -26,7 +26,7 @@ from ..tools import formatting as fmt
 from ..basics.log import log
 from ..simulation.logfile import LogFile
 from ..basics.map import Map
-from ..tools import types
+from ..tools import types, numbers
 
 # -----------------------------------------------------------------
 
@@ -941,16 +941,26 @@ def simplify_xml(xml_string):
 
 # -----------------------------------------------------------------
 
-def matching_npackages(npackages1, npackages2, nprocesses):
+def matching_npackages(npackages1, npackages2, nprocesses, nprocesses2=None):
 
     """
     This function ...
     :param npackages1:
     :param npackages2:
     :param nprocesses:
+    :param nprocesses2:
     :return:
     """
 
-    return math.ceil(npackages1 / float(nprocesses)) == math.ceil(npackages2 / float(nprocesses))
+    if nprocesses2 is None: nprocesses2 = nprocesses
+
+    # Checks
+    if not types.is_integer_type(nprocesses): raise ValueError("Number of processes must be integer")
+    if not types.is_integer_type(nprocesses2): raise ValueError("Number of processes must be integer")
+    if not numbers.is_integer(npackages1): raise ValueError("Number of photon packages must be integer") # doesn't need to be a literal integer (e.g. 1e6 is fine = float)
+    if not numbers.is_integer(npackages2): raise ValueError("Number of photon packages must be integer") # doesn't need to be a literal integer
+
+    # Return
+    return math.ceil(npackages1 / float(nprocesses)) * nprocesses == math.ceil(npackages2 / float(nprocesses2)) * nprocesses2
 
 # -----------------------------------------------------------------
