@@ -2855,6 +2855,39 @@ def appended_filename(filepath, append_with):
 
 # -----------------------------------------------------------------
 
+def prepended_filename(filepath, prepend_with):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend_with:
+    :return:
+    """
+
+    filename = name(filepath)
+    return prepend_with + filename
+
+# -----------------------------------------------------------------
+
+def prepended_and_appended_filename(filepath, prepend, append):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend:
+    :param append:
+    :return:
+    """
+
+    filename = name(filepath)
+    the_name = strip_extension(filename)
+    extension = get_extension(filename)
+
+    new_name = prepend + the_name + append
+    return add_extension(new_name, extension)
+
+# -----------------------------------------------------------------
+
 def appended_filepath(filepath, append_with):
 
     """
@@ -2865,6 +2898,33 @@ def appended_filepath(filepath, append_with):
     """
 
     return join(directory_of(filepath), appended_filename(filepath, append_with))
+
+# -----------------------------------------------------------------
+
+def prepended_filepath(filepath, prepend_with):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend_with:
+    :return:
+    """
+
+    return join(directory_of(filepath), prepended_filename(filepath, prepend_with))
+
+# -----------------------------------------------------------------
+
+def prepended_and_appended_filepath(filepath, prepend, append):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend:
+    :param append:
+    :return:
+    """
+
+    return join(directory_of(filepath), prepended_and_appended_filename(filepath, prepend, append))
 
 # -----------------------------------------------------------------
 
@@ -3217,23 +3277,36 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix="backup", backup_backup=False, remove=False):
+def backup_file(filepath, suffix=None, prefix=None, backup_backup=False, remove=False, sep="_"):
 
     """
     This function ...
     :param filepath:
     :param suffix:
+    :param prefix:
     :param backup_backup:
     :param remove:
+    :param sep:
     :return:
     """
 
-    backup_filepath = appended_filepath(filepath, "_" + suffix)
+    # Set name for backup file
+    if prefix is not None and suffix is not None: backup_filepath = prepended_and_appended_filepath(filepath, prefix + sep, sep + suffix)
+    elif prefix is None and suffix is not None: backup_filepath = appended_filepath(filepath, sep + suffix)
+    elif suffix is None and prefix is not None: backup_filepath = prepended_filepath(filepath, prefix + sep)
+    else:
+        suffix = "backup" # default
+        backup_filepath = appended_filepath(filepath, sep + suffix)
+
+    # Already exists
     if is_file(backup_filepath):
+
         if backup_backup:
-            backup_file(backup_filepath, suffix=suffix, backup_backup=backup_backup) # backup the backup
+            backup_file(backup_filepath, suffix=suffix, prefix=prefix, sep=sep, backup_backup=backup_backup) # backup the backup
             remove_file(backup_filepath)
         else: raise IOError("Backup file path already exists (" + backup_filepath + ")")
+
+    # Actually make the backup
     copy_file(filepath, backup_filepath)
 
     # Remove original?

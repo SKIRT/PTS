@@ -412,6 +412,10 @@ class Refitter(FittingComponent):
         # Call the setup function of the base class
         super(Refitter, self).setup(**kwargs)
 
+        # Load the fitting run
+        if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
+        else: self.fitting_run = self.load_fitting_run(self.config.run)
+
         # Check options
         if self.as_run and self.in_place: raise ValueError("Cannot refit as new fitting run and refit in-place simultaneously")
         if self.config.name is None and not (self.as_run or self.in_place): raise ValueError("Refitting name must be specified when not refitting as new run or in-place")
@@ -420,10 +424,6 @@ class Refitter(FittingComponent):
         if self.as_run and self.individual_simulations: raise ValueError("Cannot refit as new fitting run and specify individual simulation names")
         if self.individual_simulations:
             if self.reweigh: raise ValueError("Cannot reweigh when refitting only individual simulations")
-
-        # Load the fitting run
-        if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
-        else: self.fitting_run = self.load_fitting_run(self.config.run)
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
@@ -546,7 +546,7 @@ class Refitter(FittingComponent):
         log.debug("Creating backup of chi squared table for generation '" + self.single_generation_name + "' ...")
 
         # Copy the file
-        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True)
+        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True, prefix=self.backup_name, sep="__")
 
     # -----------------------------------------------------------------
 
@@ -572,7 +572,7 @@ class Refitter(FittingComponent):
             log.debug("Creating backup of differences table for simulation '" + simulation_name + "' ...")
 
             # Copy the file
-            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True)
+            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True, prefix=self.backup_name, sep="__")
 
     # -----------------------------------------------------------------
 
@@ -2109,9 +2109,6 @@ class Refitter(FittingComponent):
 
             # Debugging
             log.debug("Writing the flux difference tables of generation '" + generation_name + "' ...")
-
-            # Get the generation
-            generation = self.generations[generation_name]
 
             # Loop over the simulations
             for simulation_name in self.simulation_names_for_generation(generation_name):

@@ -36,8 +36,9 @@ definition.add_positional_optional("name", "string", "name for the refitting (re
 definition.add_optional("generations", "string_list", "generation names")
 
 # Simulations?
-definition.add_optional("simulations", "string_list", "simulation names (in the case of one generation)")
-definition.add_optional("simulation_file", "file_path", "path of file with simulation names")
+definition.add_optional("simulations", "string_list_or_string_column", "simulation names (in the case of one generation) of filepath with simulation names")
+#definition.add_optional("simulation_file", "file_path", "path of file with simulation names") # REPLACED BY 'STRING_LIST_OR_STRING_COLUMN' ABOVE
+#definition.add_optional("simulation_file_column", "positive_integer", "index of the column containing the simulation names")
 
 # -----------------------------------------------------------------
 
