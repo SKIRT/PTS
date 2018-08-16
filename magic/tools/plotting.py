@@ -2039,7 +2039,7 @@ def plot_xy_joint(x, y, kind="scatter", title=None, path=None, transparent=False
 
     import seaborn as sns
 
-    # Clean xy data
+    # Clean xy dataif not fs.is_directory(dirpath): raise RuntimeError("The directory '" + dirpath + "' does not exist")
     x, y, xlimits, ylimits = clean_xy_data(x, y, xlimits, ylimits, xlog=xlog, ylog=ylog,
                                            xpositive=xpositive, ypositive=ypositive,
                                            xnonnegative=xnonnegative, ynonnegative=ynonnegative,

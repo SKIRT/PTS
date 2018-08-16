@@ -592,12 +592,17 @@ class NewSimulationsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+# Extra info
 _screen_extra_name = "screen"
 _job_extra_name = "job"
 _disk_extra_name = "disk"
 _runtime_extra_name = "runtime"
 _memory_extra_name = "memory"
 _elapsed_extra_name = "elapsed"
+_cached_output_name = "cached_out"
+_cached_extraction_name = "cached_extr"
+_cached_plotting_name = "cached_plot"
+_cached_misc_name = "cached_misc"
 
 # -----------------------------------------------------------------
 
@@ -609,6 +614,10 @@ extra_columns[_disk_extra_name] = "simulation output disk size"
 extra_columns[_runtime_extra_name] = "total simulation runtime"
 extra_columns[_memory_extra_name] = "peak simulation memory usage"
 extra_columns[_elapsed_extra_name] = "elapsed time since start of simulation"
+extra_columns[_cached_output_name] = "whether the output of the simulation has been cached"
+extra_columns[_cached_extraction_name] = "whether the extraction output has been cached"
+extra_columns[_cached_plotting_name] = "whether the plotting output has been cached"
+extra_columns[_cached_misc_name] = "whether the miscellaneous output has been cached"
 
 # Define extra column names
 extra_column_names = dict()
@@ -618,6 +627,10 @@ extra_column_names[_disk_extra_name] = "Disk size"
 extra_column_names[_runtime_extra_name] = "Runtime"
 extra_column_names[_memory_extra_name] = "Peak memory"
 extra_column_names[_elapsed_extra_name] = "Elapsed time"
+extra_column_names[_cached_output_name] = "Cached output"
+extra_column_names[_cached_extraction_name] = "Cached extraction"
+extra_column_names[_cached_plotting_name] = "Cached plotting"
+extra_column_names[_cached_misc_name] = "Cached misc output"
 
 # Define extra column units
 extra_column_units = dict()
@@ -13135,7 +13148,7 @@ class SimulationManager(InteractiveConfigurable):
                for col in extra:
                    column_names.append(fmt.bold + extra_column_names[col] + fmt.reset)
                    if col in extra_column_units: column_units.append("[" + extra_column_units[col] + "]" if extra_column_units[col] != "" else "")
-                   else: column_units.append(None)
+                   else: column_units.append("")
 
             # Show the header
             print_row(*column_names)
@@ -13242,6 +13255,10 @@ class SimulationManager(InteractiveConfigurable):
         elif name == _runtime_extra_name: value = self.get_runtime(simulation_name)
         elif name == _memory_extra_name: value = self.get_peak_memory(simulation_name)
         elif name == _elapsed_extra_name: value = self.get_elapsed_time(simulation_name)
+        elif name == _cached_output_name: value = self.is_cached_output(simulation_name)
+        elif name == _cached_extraction_name: value = self.is_cached_extraction(simulation_name)
+        elif name == _cached_plotting_name: value = self.is_cached_plotting(simulation_name)
+        elif name == _cached_misc_name: value = self.is_cached_misc(simulation_name)
         else: raise ValueError("Invalid extra column name: '" + name + "'")
 
         # Add unit?
