@@ -181,7 +181,7 @@ class PhotometricQuantity(Quantity):
         new_value = add_with_units(self.value, self.unit, other)
 
         # Create new quantity
-        return PhotometricQuantity(new_value * self.unit)
+        return PhotometricQuantity(new_value, self.unit)
 
     # -----------------------------------------------------------------
 
@@ -197,7 +197,7 @@ class PhotometricQuantity(Quantity):
         new_value = subtract_with_units(self.value, self.unit, other)
 
         # Create new quantity
-        return PhotometricQuantity(new_value * self.unit)
+        return PhotometricQuantity(new_value, self.unit)
 
     # -----------------------------------------------------------------
 
@@ -571,7 +571,7 @@ def add_with_units(value, unit, other, other_unit=None, conversion_info=None):
 
         if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
         if not has_unit: raise ValueError("First value has no unit")
-        new_value = value + other.to(unit, **conversion_info)
+        new_value = value + other.to(unit, **conversion_info).value
 
     # Frame
     elif types.is_real_or_integer_array(other):
@@ -629,7 +629,7 @@ def subtract_with_units(value, unit, other, other_unit=None, conversion_info=Non
 
         if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
         if not has_unit: raise ValueError("First value has no unit")
-        new_value = value - other.to(unit, **conversion_info)
+        new_value = value - other.to(unit, **conversion_info).value
 
     # Frame
     elif types.is_real_or_integer_array(other):
