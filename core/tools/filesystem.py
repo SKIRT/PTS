@@ -3287,7 +3287,32 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix=None, prefix=None, exists="error", remove=False, sep="_", check_filepath=True):
+def get_backup_filepath(filepath, suffix=None, prefix=None, sep="_"):
+
+    """
+    Thisf unction ...
+    :param filepath:
+    :param suffix:
+    :param prefix:
+    :param sep:
+    :return:
+    """
+
+    # Set name for backup file
+    if prefix is not None and suffix is not None: backup_filepath = prepended_and_appended_filepath(filepath, prefix + sep, sep + suffix)
+    elif prefix is None and suffix is not None: backup_filepath = appended_filepath(filepath, sep + suffix)
+    elif suffix is None and prefix is not None: backup_filepath = prepended_filepath(filepath, prefix + sep)
+    else:
+        suffix = "backup"  # default
+        backup_filepath = appended_filepath(filepath, sep + suffix)
+
+    # Return
+    return backup_filepath
+
+# -----------------------------------------------------------------
+
+def backup_file(filepath, suffix=None, prefix=None, exists="error", remove=False, sep="_", check_filepath=True,
+                remove_if_exists=False):
 
     """
     This function ...
@@ -3298,19 +3323,15 @@ def backup_file(filepath, suffix=None, prefix=None, exists="error", remove=False
     :param remove:
     :param sep:
     :param check_filepath:
+    :param remove_if_exists:
     :return:
     """
 
     # Check
     if check_filepath and not is_file(filepath): raise ValueError("File '" + filepath + "' does not exist")
 
-    # Set name for backup file
-    if prefix is not None and suffix is not None: backup_filepath = prepended_and_appended_filepath(filepath, prefix + sep, sep + suffix)
-    elif prefix is None and suffix is not None: backup_filepath = appended_filepath(filepath, sep + suffix)
-    elif suffix is None and prefix is not None: backup_filepath = prepended_filepath(filepath, prefix + sep)
-    else:
-        suffix = "backup" # default
-        backup_filepath = appended_filepath(filepath, sep + suffix)
+    # Get backup filepath
+    backup_filepath = get_backup_filepath(filepath, suffix=suffix, prefix=prefix)
 
     # Already exists
     if is_file(backup_filepath):
@@ -3332,6 +3353,7 @@ def backup_file(filepath, suffix=None, prefix=None, exists="error", remove=False
         # Do nothing, trust earlier backup
         elif exists == "pass":
             warnings.warn("The backup '" + backup_filepath + "' already exists: skipping ...")
+            if remove and remove_if_exists and is_file(filepath): remove_file(filepath)
             return
 
         # Invalid

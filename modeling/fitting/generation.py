@@ -2744,6 +2744,12 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_chi_squared_table(self):
+        return fs.is_file(self.chi_squared_table_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def chi_squared_table(self):
 

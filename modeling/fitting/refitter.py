@@ -38,6 +38,7 @@ from ...core.filter.filter import parse_filter
 from .generation import GenerationInfo
 from .weights import WeightsCalculator
 from .backup import FitBackupper
+from .modelanalyser import calculate_chi_squared_from_differences
 
 # -----------------------------------------------------------------
 
@@ -428,14 +429,61 @@ class Refitter(FittingComponent):
         # Create the table to contain the weights
         self.weights = WeightsTable()
 
-        # Initialize chi squared table for each generation
-        for generation_name in self.generation_names:
-            table = ChiSquaredTable()
-            self.chi_squared_tables[generation_name] = table
+        # Load chi squared tables
+        self.load_chi_squared()
 
         # Initialize best parameters table
         self.best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
         self.best_parameters_table._setup()
+
+    # -----------------------------------------------------------------
+
+    def load_chi_squared(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Initialize chi squared table for each generation
+        for generation_name in self.generation_names:
+
+            # Only some simulations of the single generation are going to be refitted
+            if self.individual_simulations:
+
+                # No chi squared table found?
+                if not self.single_generation.has_chi_squared_table:
+
+                    # Determine backup filepath, look for chi squared backup table
+                    backup_filepath = fs.get_backup_filepath(self.single_generation.chi_squared_table_path, prefix=self.backup_name, sep="__")
+                    if fs.is_file(backup_filepath):
+
+                        # Load
+                        table = ChiSquaredTable.from_file(backup_filepath)
+                        table.path = None
+
+                    # Not found?
+                    else:
+
+                        # Warn
+                        log.warning("Chi squared table for the '" + self.single_generation_name + "' generation could not be found: creating new one, filling in the chi squared based on the flux differences ...")
+
+                        # Create chi squared table
+                        table = ChiSquaredTable()  # new one anyway
+                        for simulation_name in self.single_generation.simulation_names:
+                            if simulation_name in self.simulation_names: continue # don't get chi squared, is going to be refitted anyway
+                            differences = self.single_generation.get_simulation_sed_differences(simulation_name)
+                            chi_squared = calculate_chi_squared_from_differences(differences, self.nfree_parameters)
+                            table.add_entry(simulation_name, chi_squared)
+
+                # Load the existing chi squared table
+                else: table = self.single_generation.chi_squared_table
+
+            # All simulations of the generation are goging to be refitted
+            else: table = ChiSquaredTable()  # new table since all simulations are going to be re-evaluated anyway
+
+            # Set the table for the generation
+            self.chi_squared_tables[generation_name] = table
 
     # -----------------------------------------------------------------
 
@@ -549,7 +597,7 @@ class Refitter(FittingComponent):
         log.debug("Creating backup of chi squared table for generation '" + self.single_generation_name + "' ...")
 
         # Copy the file
-        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False)
+        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False, remove_if_exists=True)
 
     # -----------------------------------------------------------------
 
@@ -575,7 +623,7 @@ class Refitter(FittingComponent):
             log.debug("Creating backup of differences table for simulation '" + simulation_name + "' ...")
 
             # Copy the file
-            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False)
+            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False, remove_if_exists=True)
 
     # -----------------------------------------------------------------
 
@@ -1541,16 +1589,8 @@ class Refitter(FittingComponent):
                 # Debugging
                 log.debug("Calculating the chi squared value for simulation '" + simulation_name + "' ...")
 
-                # Calculate the degrees of freedom
-                ndifferences = len(differences)
-                ndof = ndifferences - self.nfree_parameters - 1 # number of data points - number of fitted parameters - 1
-
-                # The (reduced) chi squared value is the sum of all the terms (for each band),
-                # divided by the number of degrees of freedom
-                chi_squared = np.sum(differences["Chi squared term"]) / ndof
-
-                # Debugging
-                log.debug("Found a (reduced) chi squared value of " + str(chi_squared))
+                # Calculate
+                chi_squared = calculate_chi_squared_from_differences(differences, self.nfree_parameters)
 
                 # Add entry to the chi squared table
                 chi_squared_table.add_entry(simulation_name, chi_squared)

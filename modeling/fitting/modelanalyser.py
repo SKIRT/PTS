@@ -1127,3 +1127,28 @@ class ImagesFitModelAnalyser(FittingComponent):
         pass
 
 # -----------------------------------------------------------------
+
+def calculate_chi_squared_from_differences(differences, nfree_parameters):
+
+    """
+    This function ...
+    :param differences:
+    :param nfree_parameters:
+    :return:
+    """
+
+    # Calculate the degrees of freedom
+    ndifferences = len(differences)
+    ndof = ndifferences - nfree_parameters - 1  # number of data points - number of fitted parameters - 1
+
+    # The (reduced) chi squared value is the sum of all the terms (for each band),
+    # divided by the number of degrees of freedom
+    chi_squared = np.sum(differences["Chi squared term"]) / ndof
+
+    # Debugging
+    log.debug("Found a (reduced) chi squared value of " + str(chi_squared))
+
+    # Return
+    return chi_squared
+
+# -----------------------------------------------------------------

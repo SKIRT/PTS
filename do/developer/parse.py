@@ -46,6 +46,8 @@ try:
         for item in result: print(str(item))
     else: print(str(result))
 
-except ValueError: log.error("The string could not be parsed into this property")
+except ValueError as e:
+    log.error("The string could not be parsed into this property")
+    log.error(e.message)
 
 # -----------------------------------------------------------------
