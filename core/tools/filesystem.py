@@ -2849,6 +2849,8 @@ def appended_filename(filepath, append_with, sep=None):
     :return:
     """
 
+    if sep is None: sep = ""
+
     filename = name(filepath)
     the_name = strip_extension(filename)
     extension = get_extension(filename)

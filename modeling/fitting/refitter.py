@@ -472,7 +472,13 @@ class Refitter(FittingComponent):
                         table = ChiSquaredTable()  # new one anyway
                         for simulation_name in self.single_generation.simulation_names:
                             if simulation_name in self.simulation_names: continue # don't get chi squared, is going to be refitted anyway
-                            differences = self.single_generation.get_simulation_sed_differences(simulation_name)
+                            if self.single_generation.has_sed_differences(simulation_name): differences = self.single_generation.get_simulation_sed_differences(simulation_name)
+                            else:
+                                #backup_differences_filepath = fs.get_backup_filepath(self.single_generation.get_simulation_sed_differences_path(simulation_name), prefix=self.backup_name, sep="__")
+                                #if not fs.is_file(backup_differences_filepath): raise IOError("Could not find existing differences file for simulation '" + simulation_name + "'")
+                                #differences = FluxDifferencesTable.from_file(backup_differences_filepath)
+                                log.warning("No flux differences can be found for simulation '" + simulation_name + "': skipping ...")
+                                continue
                             chi_squared = calculate_chi_squared_from_differences(differences, self.nfree_parameters)
                             table.add_entry(simulation_name, chi_squared)
 
@@ -1345,7 +1351,7 @@ class Refitter(FittingComponent):
         if self.config.rediff is not None:
             if not self.config.rediff and self.config.additional_error is not None: raise ValueError("The differences have to be calculated again if an additional relative error has to be used")
             return self.config.rediff
-        else: return self.different_filters or self.reflux or self.reweigh # also after reweighing because chi squared terms are calculated during differences!
+        else: return self.different_filters or self.reflux or self.reweigh or self.config.additional_error # also after reweighing because chi squared terms are calculated during differences!
 
     # -----------------------------------------------------------------
 
@@ -1434,31 +1440,33 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_fluxdensity(self, fltr):
+    def get_fluxdensity(self, fltr, unit="Jy"):
 
         """
         This function ...
         :param fltr:
+        :param unit:
         :return:
         """
 
         # Find the corresponding flux in the SED derived from observation
         #observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
-        return self.reference_sed.photometry_for_filter(fltr, unit="Jy")
+        return self.reference_sed.photometry_for_filter(fltr, unit=unit)
 
     # -----------------------------------------------------------------
 
-    def get_fluxdensity_error(self, fltr):
+    def get_fluxdensity_error(self, fltr, unit="Jy"):
 
         """
         This function ...
         :param fltr:
+        :param unit:
         :return:
         """
 
         # Find the corresponding flux error in the SED derived from observation
         #observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
-        return self.reference_sed.error_for_filter(fltr, unit="Jy")
+        return self.reference_sed.error_for_filter(fltr, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1524,8 +1532,10 @@ class Refitter(FittingComponent):
                         continue
 
                     # Calculate the difference
-                    difference = fluxdensity - observed_fluxdensity
-                    relative_difference = float(difference / observed_fluxdensity)
+                    #print(fluxdensity, observed_fluxdensity)
+                    observed_fluxdensity_value = observed_fluxdensity.value # is in Jy
+                    difference = fluxdensity - observed_fluxdensity_value
+                    relative_difference = float(difference / observed_fluxdensity_value)
 
                     # Find the index of the current band in the weights table
                     index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
@@ -1592,8 +1602,14 @@ class Refitter(FittingComponent):
                 # Calculate
                 chi_squared = calculate_chi_squared_from_differences(differences, self.nfree_parameters)
 
+                # Loop over the
+                if simulation_name in chi_squared_table.simulation_names:
+
+                    if not self.individual_simulations: raise RuntimeError("Something went wrong: chi squared table can only already be containing to be refitted simulations when refitting only select simulations for one generation")
+                    else: chi_squared_table.set_chi_squared(simulation_name, chi_squared)
+
                 # Add entry to the chi squared table
-                chi_squared_table.add_entry(simulation_name, chi_squared)
+                else: chi_squared_table.add_entry(simulation_name, chi_squared)
 
     # -----------------------------------------------------------------
 

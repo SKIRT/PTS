@@ -4854,109 +4854,73 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def nfinished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.nfinished
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nfinished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.relative_nfinished
 
     # -----------------------------------------------------------------
 
     @property
     def percentage_nfinished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.percentage_nfinished
 
     # -----------------------------------------------------------------
 
     @property
     def nretrieved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.nretrieved
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nretrieved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.relative_nretrieved
 
     # -----------------------------------------------------------------
 
     @property
     def percentage_nretrieved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.percentage_nretrieved
 
     # -----------------------------------------------------------------
 
     @property
     def nanalysed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.nanalysed
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nanalysed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.relative_nanalysed
 
     # -----------------------------------------------------------------
 
     @property
     def percentage_nanalysed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.percentage_nanalysed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrunning(self):
+        return self.status.nrunning
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nrunning(self):
+        return self.status.relative_nrunning
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nrunning(self):
+        return self.status.percentage_nrunning
 
     # -----------------------------------------------------------------
 
@@ -13125,6 +13089,7 @@ class SimulationManager(InteractiveConfigurable):
         print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(self.nfinished) + " (" + tostr(self.percentage_nfinished, round=True, ndigits=2) + "%)")
         print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(self.nretrieved) + " (" + tostr(self.percentage_nretrieved, round=True, ndigits=2) + "%)")
         print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(self.nanalysed) + " (" + tostr(self.percentage_nanalysed, round=True, ndigits=2) + "%)")
+        print(fmt.bold + "Number of running simulations: " + fmt.reset + str(self.nrunning) + " (" + tostr(self.percentage_nrunning, round=True, ndigits=2) + "%)")
         print("")
 
         # If path is given, initialize table

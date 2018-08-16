@@ -1447,7 +1447,12 @@ class Generation(object):
         """
 
         # Check whether the chi squared is set in the chi squared table
-        return self.chi_squared_table.has_simulation(name)
+        if self.has_chi_squared_table: return self.chi_squared_table.has_simulation(name)
+
+        # Chi squared is not present!
+        else:
+            log.warning("Chi squared table for generation " + self.name + " is not present at '" + self.chi_squared_table_path + ": determining whether simulation '" + name + "' is analysed by looking at the miscellaneous output")
+            return self.has_misc_output(name)
 
     # -----------------------------------------------------------------
 

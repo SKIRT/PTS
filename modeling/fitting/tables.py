@@ -1468,6 +1468,25 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def set_chi_squared(self, simulation_name, chi_squared, index=None):
+
+        """
+        Thisn function ...
+        :param simulation_name:
+        :param chi_squared:
+        :param index:
+        :return:
+        """
+
+        # Get simulation index
+        if index is None: index = self.find_index(simulation_name, "Simulation name")
+        elif self.get_value("Simulation name", index) != simulation_name: raise ValueError("Invalid index for simulation '" + simulation_name + "'")
+
+        # Set
+        self.set_value("Chi squared", index, chi_squared)
+
+    # -----------------------------------------------------------------
+
     def add_or_set_chi_squared(self, simulation_name, chi_squared):
 
         """
@@ -1479,7 +1498,7 @@ class ChiSquaredTable(SmartTable):
 
         index = self.find_index(simulation_name, "Simulation name")
         if index is None: self.add_entry(simulation_name, chi_squared)
-        else: self.set_value("Chi squared", index, chi_squared)
+        else: self.set_chi_squared(simulation_name, chi_squared, index=index)
 
     # -----------------------------------------------------------------
 
