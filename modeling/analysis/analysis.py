@@ -42,7 +42,7 @@ from ..config.analyse_cell_energy import definition as analyse_cell_energy_defin
 from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
-from ...magic.tools.plotting import plot_frame, plot_frame_contours
+from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube
 from ...core.filter.filter import Filter, parse_filter
 from ...core.tools import types
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
@@ -2662,7 +2662,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #datacube = DataCube.from_file(path, wavelength_grid)
 
         # Plot
-        plotting.plot_datacube(datacube, title=instr_name, share_normalization=share_normalization, show_axes=False)
+        plot_datacube(datacube, title=instr_name, share_normalization=share_normalization, show_axes=False)
 
     # -----------------------------------------------------------------
 
@@ -2827,13 +2827,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def total_output(self):
-        return self.total_simulation.output
+        return self.model.total_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def total_data(self):
-        return self.total_simulation.data
+        return self.model.total_simulation_data
 
     # -----------------------------------------------------------------
     # BULGE SIMULATION
@@ -2853,13 +2853,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def bulge_output(self):
-        return self.bulge_simulation.output
+        return self.model.bulge_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def bulge_data(self):
-        return self.bulge_simulation.data
+        return self.model.bulge_simulation_data
 
     # -----------------------------------------------------------------
     # DISK SIMULATION
@@ -2879,13 +2879,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def disk_output(self):
-        return self.disk_simulation.output
+        return self.model.disk_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def disk_data(self):
-        return self.disk_simulation.data
+        return self.model.disk_simulation_data
 
     # -----------------------------------------------------------------
     # OLD SIMULATION
@@ -2905,13 +2905,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def old_output(self):
-        return self.old_simulation.output
+        return self.model.old_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def old_data(self):
-        return self.old_simulation.data
+        return self.model.old_simulation_data
 
     # -----------------------------------------------------------------
     # YOUNG SIMULATION
@@ -2931,13 +2931,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def young_output(self):
-        return self.young_simulation.output
+        return self.model.young_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def young_data(self):
-        return self.young_simulation.data
+        return self.model.young_simulation_data
 
     # -----------------------------------------------------------------
     # SFR SIMULATION
@@ -2957,13 +2957,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def sfr_output(self):
-        return self.sfr_simulation.output
+        return self.model.sfr_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def sfr_data(self):
-        return self.sfr_simulation.data
+        return self.model.sfr_simulation_data
 
     # -----------------------------------------------------------------
     # UNEVOLVED SIMULATION
@@ -2983,13 +2983,13 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def unevolved_output(self):
-        return self.unevolved_simulation.output
+        return self.model.unevolved_simulation_output
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_data(self):
-        return self.unevolved_simulation.data
+        return self.model.unevolved_simulation_data
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------

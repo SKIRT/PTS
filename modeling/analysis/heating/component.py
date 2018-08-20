@@ -81,15 +81,11 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return fs.create_directory_in(self.analysis_run.heating_path, "projected")
 
     # -----------------------------------------------------------------
+    # TOTAL SIMULATION
+    # -----------------------------------------------------------------
 
     @property
     def total_contribution_simulation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_simulation_path_for_contribution(total)
         return self.analysis_run.simulation_path_for_contribution(total)
 
@@ -97,12 +93,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def total_contribution_ski_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_ski_path_for_contribution(total)
         return self.analysis_run.ski_path_for_contribution(total)
 
@@ -110,97 +100,53 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def total_contribution_output_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_output_path_for_contribution(total)
         return self.analysis_run.output_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def total_contribution_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationOutput.from_directory(self.total_contribution_output_path, self.galaxy_name)
+        #return SimulationOutput.from_directory(self.total_contribution_output_path, self.galaxy_name)
+        return self.model.total_simulation_output
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def total_contribution_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.total_contribution_output)
+        #return SimulationData.from_output(self.total_contribution_output)
+        return self.model.total_simulation_data
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_cell_properties_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_data.cell_properties_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_data.cell_properties
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_mass_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_absorption_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_contribution_absorption_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.total_contribution_data.has_absorption: return self.total_contribution_data.absorption
         elif self.total_contribution_data.has_isrf: return self.total_contribution_data.isrf
         else: raise IOError("No absorption data")
@@ -209,12 +155,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def total_contribution_absorption_column_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
         return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.colnames)
 
@@ -222,108 +162,56 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def total_contribution_absorption_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_absorption_data.column_unit(self.total_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_contribution_absorption_luminosities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_logfile_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_output.logfiles[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_contribution_logfile(self):
-
-        """
-        This ufnction ...
-        :return:
-        """
-
         return LogFile.from_file(self.total_contribution_logfile_path)
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_data.images["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_faceon_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_data.images["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_sed(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return self.total_contribution_data.seds["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_faceon_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_contribution_data.seds["faceon"]["total"]
 
+    # -----------------------------------------------------------------
+    # OLD SIMULATION
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_simulation_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_simulation_path_for_contribution(old)
         return self.analysis_run.simulation_path_for_contribution(old)
 
@@ -331,12 +219,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def old_contribution_ski_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_ski_path_for_contribution(old)
         return self.analysis_run.ski_path_for_contribution(old)
 
@@ -344,61 +226,35 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def old_contribution_output_path(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         #return self.analysis_run.heating_output_path_for_contribution(old)
         return self.analysis_run.output_path_for_contribution(old)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def old_contribution_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationOutput.from_directory(self.old_contribution_output_path, self.galaxy_name)
+        #return SimulationOutput.from_directory(self.old_contribution_output_path, self.galaxy_name)
+        return self.model.old_simulation_output
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def old_contribution_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.old_contribution_output)
+        #return SimulationData.from_output(self.old_contribution_output)
+        return self.model.old_simulation_data
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_absorption_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_contribution_absorption_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.old_contribution_data.has_absorption: return self.old_contribution_data.absorption
         elif self.old_contribution_data.has_isrf: return self.old_contribution_data.isrf
         else: raise IOError("No absorption data")
@@ -407,12 +263,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def old_contribution_absorption_column_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
         return sequences.find_single_in_both(abs_colnames, self.old_contribution_absorption_data.colnames)
 
@@ -420,108 +270,56 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def old_contribution_absorption_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_contribution_absorption_data.column_unit(self.old_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_contribution_absorption_luminosities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.old_contribution_absorption_data[self.old_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_logfile_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_contribution_output.logfiles[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_contribution_logfile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return LogFile.from_file(self.old_contribution_logfile_path)
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_contribution_data.images["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_faceon_datacube(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return self.old_contribution_data.images["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_sed(self):
-
-        """
-        Thisfnctin ...
-        :return:
-        """
-
         return self.old_contribution_data.seds["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_faceon_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_contribution_data.seds["faceon"]["total"]
 
+    # -----------------------------------------------------------------
+    # YOUNG SIMULATION
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_simulation_path(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_simulation_path_for_contribution(young)
         return self.analysis_run.simulation_path_for_contribution(young)
 
@@ -529,12 +327,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def young_contribution_ski_path(self):
-
-        """
-        Thisnf unction ...
-        :return:
-        """
-
         #return self.analysis_run.heating_ski_path_for_contribution(young)
         return self.analysis_run.ski_path_for_contribution(young)
 
@@ -542,61 +334,35 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def young_contribution_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_output_path_for_contribution(young)
         return self.analysis_run.output_path_for_contribution(young)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def young_contribution_output(self):
-
-        """
-        This functio n...
-        :return:
-        """
-
-        return SimulationOutput.from_directory(self.young_contribution_output_path, self.galaxy_name)
+        #return SimulationOutput.from_directory(self.young_contribution_output_path, self.galaxy_name)
+        return self.model.young_simulation_output
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def young_contribution_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.young_contribution_output)
+        #return SimulationData.from_output(self.young_contribution_output)
+        return self.model.young_simulation_data
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_absorption_filepath(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
         return self.young_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_contribution_absorption_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.young_contribution_data.has_absorption: return self.young_contribution_data.absorption
         elif self.young_contribution_data.has_isrf: return self.young_contribution_data.isrf
         else: raise IOError("No absorption data")
@@ -605,12 +371,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def young_contribution_absorption_column_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
         return sequences.find_single_in_both(abs_colnames, self.young_contribution_absorption_data.colnames)
 
@@ -618,108 +378,56 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def young_contribution_absorption_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_contribution_absorption_data.column_unit(self.young_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_contribution_absorption_luminosities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.young_contribution_absorption_data[self.young_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_logfile_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_contribution_output.logfiles[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_contribution_logfile(self):
-
-        """
-        Thins ufnction ...
-        :return:
-        """
-
         return LogFile.from_file(self.young_contribution_logfile_path)
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_datacube(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.young_contribution_data.images["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_faceon_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_contribution_data.images["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_sed(self):
-
-        """
-        Tihs function ...
-        :return:
-        """
-
         return self.young_contribution_data.seds["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_faceon_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_contribution_data.seds["faceon"]["total"]
 
+    # -----------------------------------------------------------------
+    # IONIZING (SFR) SIMULATION
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_simulation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_simulation_path_for_contribution(ionizing)
         return self.analysis_run.simulation_path_for_contribution(young)
 
@@ -727,12 +435,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def ionizing_contribution_ski_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_ski_path_for_contribution(ionizing)
         return self.analysis_run.ski_path_for_contribution(ionizing)
 
@@ -740,61 +442,35 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def ionizing_contribution_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_output_path_for_contribution(ionizing)
         return self.analysis_run.output_path_for_contribution(ionizing)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def ionizing_contribution_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationOutput.from_directory(self.ionizing_contribution_output_path, self.galaxy_name)
+        #return SimulationOutput.from_directory(self.ionizing_contribution_output_path, self.galaxy_name)
+        return self.model.sfr_simulation_output
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def ionizing_contribution_data(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.ionizing_contribution_output)
+        #return SimulationData.from_output(self.ionizing_contribution_output)
+        return self.model.sfr_simulation_data
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_absorption_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_contribution_absorption_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.ionizing_contribution_data.has_absorption: return self.ionizing_contribution_data.absorption
         elif self.ionizing_contribution_data.has_isrf: return self.ionizing_contribution_data.isrf
         else: raise IOError("No absorption data")
@@ -803,12 +479,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def ionizing_contribution_absorption_column_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
         return sequences.find_single_in_both(abs_colnames, self.ionizing_contribution_absorption_data.colnames)
 
@@ -816,108 +486,56 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def ionizing_contribution_absorption_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_contribution_absorption_data.column_unit(self.ionizing_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_contribution_absorption_luminosities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.ionizing_contribution_absorption_data[self.ionizing_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_logfile_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_contribution_output.logfiles[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_contribution_logfile(self):
-
-        """
-        This functino ...
-        :return:
-        """
-
         return LogFile.from_file(self.ionizing_contribution_logfile_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_datacube(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
         return self.ionizing_contribution_data.images["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_faceon_datacube(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
         return self.ionizing_contribution_data.images["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_contribution_data.seds["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_faceon_sed(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
         return self.ionizing_contribution_data.seds["faceon"]["total"]
 
+    # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATION
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_simulation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_simulation_path_for_contribution(unevolved)
         return self.analysis_run.simulation_path_for_contribution(unevolved)
 
@@ -925,12 +543,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def unevolved_contribution_ski_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_ski_path_for_contribution(unevolved)
         return self.analysis_run.ski_path_for_contribution(unevolved)
 
@@ -938,61 +550,35 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def unevolved_contribution_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.analysis_run.heating_output_path_for_contribution(unevolved)
         return self.analysis_run.output_path_for_contribution(unevolved)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def unevolved_contribution_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationOutput.from_directory(self.unevolved_contribution_output_path)
+        #return SimulationOutput.from_directory(self.unevolved_contribution_output_path)
+        return self.model.unevolved_simulation_output
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property
     def unevolved_contribution_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SimulationData.from_output(self.unevolved_contribution_output)
+        #return SimulationData.from_output(self.unevolved_contribution_output)
+        return self.model.unevolved_simulation_data
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_absorption_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unevolved_contribution_data.absorption_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_contribution_absorption_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.unevolved_contribution_data.has_absorption: return self.unevolved_contribution_data.absorption
         elif self.unevolved_contribution_data.has_isrf: return self.unevolved_contribution_data.isrf
         else: raise IOError("No absorption data")
@@ -1001,12 +587,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def unevolved_contribution_absorption_column_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
         return sequences.find_single_in_both(abs_colnames, self.unevolved_contribution_absorption_data.colnames)
 
@@ -1014,98 +594,51 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def unevolved_contribution_absorption_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unevolved_contribution_absorption_data.column_unit(self.unevolved_contribution_absorption_column_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_contribution_absorption_luminosities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.unevolved_contribution_absorption_data[self.unevolved_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_logfile_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unevolved_contribution_output.logfiles[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_contribution_logfile(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return LogFile.from_file(self.unevolved_contribution_logfile_path)
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unevolved_contribution_data.images["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_faceon_datacube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unevolved_contribution_data.images["faceon"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_sed(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.unevolved_contribution_data.seds["earth"]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_faceon_sed(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.unevolved_contribution_data.seds["faceon"]["total"]
 
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):

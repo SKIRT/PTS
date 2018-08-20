@@ -564,6 +564,8 @@ class RTModel(object):
         return cubes
 
     # -----------------------------------------------------------------
+    # TOTAL SIMULATIONS
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def total_simulations(self):
@@ -588,6 +590,20 @@ class RTModel(object):
         #return self.total_simulations.observed
         return ObservedComponentSimulation.from_output_path(self.observed_total_output_path, total_simulation_name, earth_wcs=self.earth_wcs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def total_simulation_output(self):
+        return self.total_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_simulation_data(self):
+        return self.total_simulation.data
+
+    # -----------------------------------------------------------------
+    # BULGE SIMULATIONS
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -616,6 +632,20 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bulge_simulation_output(self):
+        return self.bulge_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_simulation_data(self):
+        return self.bulge_simulation.data
+
+    # -----------------------------------------------------------------
+    # DISK SIMULATIONS
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def disk_simulations(self):
 
@@ -640,6 +670,19 @@ class RTModel(object):
         #return self.disk_simulations.observed
         return ObservedComponentSimulation.from_output_path(self.observed_disk_output_path, disk_simulation_name, earth_wcs=self.earth_wcs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_simulation_output(self):
+        return self.disk_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_simulation_data(self):
+        return self.disk_simulation.data
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -767,6 +810,8 @@ class RTModel(object):
         return cubes
 
     # -----------------------------------------------------------------
+    # OLD SIMULATIONS
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def old_simulations(self):
@@ -791,6 +836,20 @@ class RTModel(object):
         #return self.old_simulations.observed
         return ObservedComponentSimulation.from_output_path(self.observed_old_output_path, old_simulation_name, earth_wcs=self.earth_wcs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def old_simulation_output(self):
+        return self.old_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_simulation_data(self):
+        return self.old_simulation.data
+
+    # -----------------------------------------------------------------
+    # YOUNG SIMULATIONS
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -819,6 +878,20 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def young_simulation_output(self):
+        return self.young_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_simulation_data(self):
+        return self.young_simulation.data
+
+    # -----------------------------------------------------------------
+    # SFR SIMULATIONS
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sfr_simulations(self):
 
@@ -843,6 +916,19 @@ class RTModel(object):
         #return self.sfr_simulations.observed
         return ObservedComponentSimulation.from_output_path(self.observed_sfr_output_path, sfr_simulation_name, earth_wcs=self.earth_wcs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_simulation_output(self):
+        return self.sfr_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_simulation_data(self):
+        return self.sfr_simulation.data
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -963,6 +1049,8 @@ class RTModel(object):
         return cubes
 
     # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATIONS
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_simulations(self):
@@ -987,6 +1075,19 @@ class RTModel(object):
         #return self.unevolved_simulations.observed
         return ObservedComponentSimulation.from_output_path(self.observed_unevolved_output_path, unevolved_simulation_name, earth_wcs=self.earth_wcs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_simulation_output(self):
+        return self.unevolved_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_simulation_data(self):
+        return self.unevolved_simulation.data
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
