@@ -12,8 +12,12 @@
 # Import standard modules
 from abc import ABCMeta, abstractproperty
 
+# Import astronomical modules
+from astropy.units import spectral
+
 # Import the relevant PTS classes and modules
 from ..tools import types
+from ..tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -240,6 +244,12 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def mean_frequency(self):
+        return self.mean.to("Hz", equivalencies=spectral())
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def effective(self):
 
@@ -249,6 +259,12 @@ class Filter(object):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def effective_frequency(self):
+        return self.effective.to("Hz", equivalencies=spectral())
 
     # -----------------------------------------------------------------
 
@@ -264,6 +280,12 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def min_frequency(self):
+        return self.max.to("Hz", equivalencies=spectral()) # MAX WAVELENGTH
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def max(self):
 
@@ -276,6 +298,12 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def max_frequency(self):
+        return self.min.to("Hz", equivalencies=spectral()) # MIN WAVELENGTH
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def center(self):
 
@@ -283,6 +311,14 @@ class Filter(object):
         This property returns the center wavelength
         :return:
         """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def center_frequency(self):
+        return self.center.to("Hz", equivalencies=spectral())
 
     # -----------------------------------------------------------------
 
@@ -298,6 +334,12 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def pivot_frequency(self):
+        return self.pivot.to("Hz", equivalencies=spectral())
+
+    # -----------------------------------------------------------------
+
     @property
     def range(self):
 
@@ -308,6 +350,25 @@ class Filter(object):
 
         from ..basics.range import QuantityRange
         return QuantityRange(self.min, self.max)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frequency_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..basics.range import QuantityRange
+        return QuantityRange(self.min_frequency, self.max_frequency)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frequency(self):
+        return self.wavelength.to("Hz", equivalencies=spectral())
 
     # -----------------------------------------------------------------
 
