@@ -2406,37 +2406,37 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_fix_cube_earth(self):
-        return "fixed" not in self.cube_earth.metadata or not self.cube_earth.metadata["fixed"]
+        return self.cube_earth is not None and ("fixed" not in self.cube_earth.metadata or not self.cube_earth.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_earth_absorption(self):
-        return "fixed" not in self.cube_earth_absorption.metadata or not self.cube_earth_absorption.metadata["fixed"]
+        return self.cube_earth_absorption is not None and ("fixed" not in self.cube_earth_absorption.metadata or not self.cube_earth_absorption.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_faceon(self):
-        return "fixed" not in self.cube_faceon.metadata or not self.cube_faceon.metadata["fixed"]
+        return self.cube_faceon is not None and ("fixed" not in self.cube_faceon.metadata or not self.cube_faceon.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_faceon_absorption(self):
-        return "fixed" not in self.cube_faceon_absorption.metadata or not self.cube_faceon_absorption.metadata["fixed"]
+        return self.cube_faceon_absorption is not None and ("fixed" not in self.cube_faceon_absorption.metadata or not self.cube_faceon_absorption.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_edgeon(self):
-        return "fixed" not in self.cube_edgeon.metadata or not self.cube_edgeon.metadata["fixed"]
+        return self.cube_edgeon is not None and ("fixed" not in self.cube_edgeon.metadata or not self.cube_edgeon.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
     @property
     def do_fix_cube_edgeon_absorption(self):
-        return "fixed" not in self.cube_edgeon_absorption.metadata or not self.cube_edgeon_absorption.metadata["fixed"]
+        return self.cube_edgeon_absorption is not None and ("fixed" not in self.cube_edgeon_absorption.metadata or not self.cube_edgeon_absorption.metadata["fixed"])
 
     # -----------------------------------------------------------------
 
@@ -2530,6 +2530,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_curve_earth_emission(self):
+        return self.do_cubes_earth_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_earth_absorption(self):
+        return self.do_cubes_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_faceon_emission(self):
+        return self.do_cubes_faceon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_faceon_absorption(self):
+        return self.do_cubes_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_edgeon_emission(self):
+        return self.do_cubes_edgeon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_curve_edgeon_absorption(self):
+        return self.do_cubes_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def get_curves(self):
 
         """
@@ -2539,18 +2575,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            self.get_curve_earth()
-            self.get_curve_earth_absorption()
+            if self.do_curve_earth_emission: self.get_curve_earth()
+            if self.do_curve_earth_absorption: self.get_curve_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            self.get_curve_faceon()
-            self.get_curve_faceon_absorption()
+            if self.do_curve_faceon_emission: self.get_curve_faceon()
+            if self.do_curve_faceon_absorption: self.get_curve_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            self.get_curve_edgeon()
-            self.get_curve_edgeon_absorption()
+            if self.do_curve_edgeon_emission: self.get_curve_edgeon()
+            if self.do_curve_edgeon_absorption: self.get_curve_edgeon_absorption()
 
     # -----------------------------------------------------------------
 
@@ -3932,37 +3968,37 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_write_cube_earth(self):
-        return not self.has_cube_earth
+        return self.do_cubes_earth_emission and not self.has_cube_earth
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_earth_absorption(self):
-        return not self.has_cube_earth_absorption
+        return self.do_cubes_earth_absorption and not self.has_cube_earth_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_faceon(self):
-        return not self.has_cube_faceon
+        return self.do_cubes_faceon_emission and not self.has_cube_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_faceon_absorption(self):
-        return not self.has_cube_faceon_absorption
+        return self.do_cubes_faceon_absorption and not self.has_cube_faceon_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_edgeon(self):
-        return not self.has_cube_edgeon
+        return self.do_cubes_edgeon_emission and not self.has_cube_edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_cube_edgeon_absorption(self):
-        return not self.has_cube_edgeon_absorption
+        return self.do_cubes_edgeon_absorption and not self.has_cube_edgeon_absorption
 
     # -----------------------------------------------------------------
 
@@ -4264,6 +4300,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_curve_earth(self):
+        return self.do_curve_earth_emission and not self.has_curve_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_earth_absorption(self):
+        return self.do_curve_earth_absorption and not self.has_curve_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_faceon(self):
+        return self.do_curve_faceon_emission and not self.has_curve_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_faceon_absorption(self):
+        return self.do_curve_faceon_absorption and not self.has_curve_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_edgeon(self):
+        return self.do_curve_edgeon_emission and not self.has_curve_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_edgeon_absorption(self):
+        return self.do_curve_edgeon_absorption and not self.has_curve_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def write_curves(self):
 
         """
@@ -4273,18 +4345,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            if not self.has_curve_earth: self.write_curve_earth()
-            if not self.has_curve_earth_absorption: self.write_curve_earth_absorption()
+            if self.do_write_curve_earth: self.write_curve_earth()
+            if self.do_write_curve_earth_absorption: self.write_curve_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            if not self.has_curve_faceon: self.write_curve_faceon()
-            if not self.has_curve_faceon_absorption: self.write_curve_faceon_absorption()
+            if self.do_write_curve_faceon: self.write_curve_faceon()
+            if self.do_write_curve_faceon_absorption: self.write_curve_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            if not self.has_curve_edgeon: self.write_curve_edgeon()
-            if not self.has_curve_edgeon_absorption: self.write_curve_edgeon_absorption()
+            if self.do_write_curve_edgeon: self.write_curve_edgeon()
+            if self.do_write_curve_edgeon_absorption: self.write_curve_edgeon_absorption()
 
     # -----------------------------------------------------------------
 
@@ -4771,6 +4843,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_spectral_maps_emission_earth(self):
+        return self.do_cubes_earth_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_absorption_earth(self):
+        return self.do_cubes_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_emission_faceon(self):
+        return self.do_cubes_faceon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_absorption_faceon(self):
+        return self.do_cubes_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_emission_edgeon(self):
+        return self.do_cubes_edgeon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_spectral_maps_absorption_edgeon(self):
+        return self.do_cubes_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
     def plot_spectral_maps(self):
 
         """
@@ -4780,18 +4888,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            self.plot_spectral_maps_emission_earth()
-            self.plot_spectral_maps_absorption_earth()
+            if self.do_plot_spectral_maps_emission_earth: self.plot_spectral_maps_emission_earth()
+            if self.do_plot_spectral_maps_absorption_earth: self.plot_spectral_maps_absorption_earth()
 
         # Face-on
         if self.do_faceon:
-            self.plot_spectral_maps_emission_faceon()
-            self.plot_spectral_maps_absorption_faceon()
+            if self.do_plot_spectral_maps_emission_faceon: self.plot_spectral_maps_emission_faceon()
+            if self.do_plot_spectral_maps_absorption_faceon: self.plot_spectral_maps_absorption_faceon()
 
         # Edge-on
         if self.do_edgeon:
-            self.plot_spectral_maps_emission_edgeon()
-            self.plot_spectral_maps_absorption_edgeon()
+            if self.do_plot_spectral_maps_emission_edgeon: self.plot_spectral_maps_emission_edgeon()
+            if self.do_plot_spectral_maps_absorption_edgeon: self.plot_spectral_maps_absorption_edgeon()
 
     # -----------------------------------------------------------------
 
@@ -5179,6 +5287,42 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_curve_earth_emission(self):
+        return self.do_curve_earth_emission and not self.has_curve_earth_emission_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_earth_absorption(self):
+        return self.do_curve_earth_absorption and not self.has_curve_earth_absorption_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_faceon_emission(self):
+        return self.do_curve_faceon_emission and not self.has_curve_faceon_emission_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_faceon_absorption(self):
+        return self.do_curve_faceon_absorption and not self.has_curve_faceon_absorption_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_edgeon_emission(self):
+        return self.do_curve_edgeon_emission and not self.has_curve_edgeon_emission_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_edgeon_absorption(self):
+        return self.do_curve_edgeon_absorption and not self.has_curve_edgeon_absorption_plot
+
+    # -----------------------------------------------------------------
+
     def plot_curves(self):
 
         """
@@ -5188,18 +5332,18 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Earth
         if self.do_earth:
-            if not self.has_curve_earth_emission_plot: self.plot_curve_earth_emission()
-            if not self.has_curve_earth_absorption_plot: self.plot_curve_earth_absorption()
+            if self.do_plot_curve_earth_emission: self.plot_curve_earth_emission()
+            if self.do_plot_curve_earth_absorption: self.plot_curve_earth_absorption()
 
         # Face-on
         if self.do_faceon:
-            if not self.has_curve_faceon_emission_plot: self.plot_curve_faceon_emission()
-            if not self.has_curve_faceon_absorption_plot: self.plot_curve_faceon_absorption()
+            if self.do_plot_curve_faceon_emission: self.plot_curve_faceon_emission()
+            if self.do_plot_curve_faceon_absorption: self.plot_curve_faceon_absorption()
 
         # Edge-on
         if self.do_edgeon:
-            if not self.has_curve_edgeon_emission_plot: self.plot_curve_edgeon_emission()
-            if not self.has_curve_edgeon_absorption_plot: self.plot_curve_edgeon_absorption()
+            if self.do_plot_curve_edgeon_emission: self.plot_curve_edgeon_emission()
+            if self.do_plot_curve_edgeon_absorption: self.plot_curve_edgeon_absorption()
 
     # -----------------------------------------------------------------
 
@@ -5238,8 +5382,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the earth projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_earth, path=self.curve_earth_emission_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_earth, path=self.curve_earth_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_earth, path=self.curve_earth_emission_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5278,8 +5421,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the earth projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_earth_absorption, path=self.curve_earth_absorption_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5318,8 +5460,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the face-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_faceon, path=self.curve_faceon_emission_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_faceon, path=self.curve_faceon_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_faceon, path=self.curve_faceon_emission_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5358,8 +5499,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the face-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_faceon_absorption, path=self.curve_faceon_absorption_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5398,8 +5538,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the edge-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_edgeon, path=self.curve_edgeon_emission_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_edgeon, path=self.curve_edgeon_emission_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_edgeon, path=self.curve_edgeon_emission_plot_path, xlog=True)
 
     # -----------------------------------------------------------------
 
@@ -5438,7 +5577,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the edge-on projection ...")
 
         # Plot
-        #plotting.plot_curve(self.curve_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, x_scale="log")
-        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, x_scale="log")
+        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True)
 
 # -----------------------------------------------------------------

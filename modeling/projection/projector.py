@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.project Contains the Projector class.
+## \package pts.modeling.projection.projector Contains the Projector class and derived classes.
 
 # -----------------------------------------------------------------
 
@@ -14,66 +14,32 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...modeling.basics.instruments import FrameInstrument
-from ...core.tools.utils import lazyproperty
-from ...core.prep.smile import SKIRTSmileSchema
+from .data import DataProjections
 from ...core.basics.log import log
-from ...core.tools import filesystem as fs
-from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.launch.launcher import SKIRTLauncher
-from ...magic.core.frame import Frame
-from ...modeling.basics.models import DeprojectionModel3D
-from ...core.tools import introspection
+from ..core.data import Data3D, show_data_properties
+from ...magic.core.image import Image
+from ...core.tools.utils import lazyproperty
+from ...magic.tools.plotting import plot_map
 
 # -----------------------------------------------------------------
 
-map_filename = "map.fits"
-
-# -----------------------------------------------------------------
-
-# TODO: class should be connected to the ComponentProjections class in the other module
-
-# -----------------------------------------------------------------
-
-def project(model, projections, output_path=None, simulation_path=None, npackages=1e7, parallelization=None, coordinate_systems=None):
-
-    """
-    This function ...
-    :param model:
-    :param projections:
-    :param output_path:
-    :param simulation_path:
-    :param npackages:
-    :param parallelization
-    :param coordinate_systems:
-    :return:
-    """
-
-    # Create the projector
-    projector = Projector()
-
-    # Set output path
-    if output_path is not None:
-        projector.config.output = output_path
-        projector.config.write = True
-    else: projector.config.write = False
-
-    # Set the simulation path
-    projector.config.simulation_path = simulation_path
-
-    # Set simulation options
-    projector.config.npackages = npackages
-    if parallelization is not None: projector.config.parallelization = parallelization
-
-    # Run the projector
-    projector.run(model=model, projections=projections, coordinate_systems=coordinate_systems)
-
-    # Return the projected images
-    return projector.projected
+faceon_name = "faceon"
+edgeon_name = "edgeon"
+orientations = [faceon_name, edgeon_name]
 
 # -----------------------------------------------------------------
 
 class Projector(Configurable):
+    pass
+
+# -----------------------------------------------------------------
+
+stddev_name = "stddev"
+ncells_name = "ncells"
+
+# -----------------------------------------------------------------
+
+class DataProjector(Projector):
 
     """
     This class ...
@@ -88,32 +54,13 @@ class Projector(Configurable):
         """
 
         # Call the constructor of the base class
-        super(Projector, self).__init__(*args, **kwargs)
+        super(DataProjector, self).__init__(*args, **kwargs)
 
-        # The model to project
-        self.model = None
+        # The 3D data
+        self.data = None
 
-        # The projections
+        # The projections instance
         self.projections = None
-
-        # Coordinate systems
-        self.coordinate_systems = None
-
-        # The instruments
-        self.instruments = dict()
-
-        # The ski file
-        self.ski = None
-
-        # The simulation path and the simulation input path
-        self.simulation_path = None
-        self.in_path = None
-
-        # The SKIRT launcher
-        self.launcher = SKIRTLauncher()
-
-        # The projected maps
-        self.projected = dict()
 
     # -----------------------------------------------------------------
 
@@ -125,23 +72,20 @@ class Projector(Configurable):
         :return:
         """
 
-        # 2. Create the instruments
-        self.create_instruments()
+        # Show
+        self.show()
 
-        # 3. Set the input path
-        if self.is_deprojection: self.set_input_path()
+        # Project
+        self.project()
 
-        # 4. Create the ski file
-        self.create_ski()
+        # Interpolate
+        if self.config.interpolate: self.interpolate()
 
-        # 5. Write the ski file
-        self.write_ski()
-
-        # 6. Launch SKIRT
-        self.launch()
-
-        # 7. Write
+        # Write
         self.write()
+
+        # Plot
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -154,61 +98,14 @@ class Projector(Configurable):
         """
 
         # Call the setup function of the base class
-        super(Projector, self).setup(**kwargs)
+        super(DataProjector, self).setup(**kwargs)
 
-        # Get the model
-        self.model = kwargs.pop("model")
-
-        # Get the projections
-        self.projections = kwargs.pop("projections")
-
-        # Coordinate systems?
-        self.coordinate_systems = kwargs.pop("coordinate_systems", None)
-
-        # Set the simulation path
-        if self.config.simulation_path is not None: self.simulation_path = self.config.simulation_path
-        else: self.simulation_path = introspection.create_unique_temp_dir("deprojection")
+        # Load the data
+        self.load_data()
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_coordinate_systems(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.coordinate_systems is not None
-
-    # -----------------------------------------------------------------
-
-    def has_coordinate_system(self, instrument_name):
-
-        """
-        Thisn function ...
-        :param instrument_name:
-        :return:
-        """
-
-        return self.has_coordinate_systems and instrument_name in self.coordinate_systems
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def smile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SKIRTSmileSchema()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ski_template(self):
+    def load_data(self):
 
         """
         This function ...
@@ -216,65 +113,32 @@ class Projector(Configurable):
         """
 
         # Debugging
-        log.debug("Creating the ski file template ...")
+        log.debug("Loading the 3D data from file ...")
 
-        # Create
-        ski = self.smile.create_oligochromatic_template()
-
-        # Remove the existing instruments
-        ski.remove_all_instruments()
-
-        # Remove the stellar system
-        # ski.remove_stellar_system()
-
-        # Remove the dust system
-        if ski.has_dust_system: ski.remove_dust_system()
-
-        # Set the number of photon packages
-        ski.setpackages(self.config.npackages)
-
-        # Enable writing options
-        # ski.enable_all_writing_options()
-
-        # Return the ski template
-        return ski
-
-    # -----------------------------------------------------------------
-
-    def create_instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the instruments ...")
-
-        # Loop over the projections
-        for name in self.projections:
-
-            # Create frame instrument
-            instrument = FrameInstrument.from_projection(self.projections[name])
-
-            # Set the instrument
-            self.instruments[name] = instrument
+        # Load
+        self.data = Data3D.from_file(self.config.filename)
 
     # -----------------------------------------------------------------
 
     @property
-    def is_deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return isinstance(self.model, DeprojectionModel3D)
+    def do_faceon(self):
+        return faceon_name in self.config.orientations
 
     # -----------------------------------------------------------------
 
-    def set_input_path(self):
+    @property
+    def do_edgeon(self):
+        return edgeon_name in self.config.orientations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_any(self):
+        return self.do_faceon or self.do_edgeon
+
+    # -----------------------------------------------------------------
+
+    def show(self):
 
         """
         This function ...
@@ -282,38 +146,14 @@ class Projector(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the input path ...")
+        log.info("Showing data properties ...")
 
-        # No map?
-        if not self.model.has_map: raise ValueError("The map cannot be loaded")
-
-        # .. because file is present?
-        map_path = self.model.filepath
-        if fs.is_file(map_path):
-
-            self.in_path = fs.directory_of(map_path)  # directory of input map
-            filename = fs.name(map_path)
-
-        # .. or because map is loaded
-        elif self.model.map_is_loaded:
-
-            # Create input directory
-            self.in_path = fs.create_directory_in(self.simulation_path, "in")
-
-            # Save the map
-            map_path = fs.join(self.in_path, map_filename)
-            filename = map_filename
-            self.model.map.saveto(map_path)  # save the map
-
-        # We shouldn't get here
-        else: raise RuntimeError("We shouldn't get here")
-
-        # Set the model map filename
-        self.model.filename = filename
+        # Show properties of the data
+        show_data_properties(self.data)
 
     # -----------------------------------------------------------------
 
-    def create_ski(self):
+    def project(self):
 
         """
         This function ...
@@ -321,79 +161,108 @@ class Projector(Configurable):
         """
 
         # Inform the user
-        log.info("Creating a ski file ...")
+        log.info("Projecting the data ...")
 
-        # Make copy of ski file template
-        ski = self.ski_template.copy()
-
-        # Add the instruments
-        for instrument_name in self.instruments: ski.add_instrument(instrument_name, self.instruments[instrument_name])
-
-        # Remove the dust system
-        if ski.has_dust_system: ski.remove_dust_system()
-
-        # Add the stellar component
-        ski.create_new_stellar_component(geometry=self.model, luminosities=[1])
-
-        # Set the ski file
-        self.ski = ski
+        # Create projections
+        self.projections = DataProjections(self.data, faceon=self.do_faceon, edgeon=self.do_edgeon,
+                                           faceon_height=self.config.height, edgeon_width=self.config.width,
+                                           faceon_spacing=self.config.spacing, edgeon_spacing=self.config.spacing,
+                                           faceon_spacing_factor=self.config.spacing_factor,
+                                           edgeon_spacing_factor=self.config.spacing_factor)
 
     # -----------------------------------------------------------------
 
-    def write_ski(self):
+    @property
+    def faceon_projection(self):
+        return self.projections.projection_faceon
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        # Inform the user
-        log.info("Writing the ski file ...")
-
-        # Save the ski file
-        self.ski.saveto(self.ski_path, fix=True)
+    @property
+    def edgeon_projection(self):
+        return self.projections.projection_edgeon
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ski_path(self):
+    def faceon(self):
+        return Image.from_frames(self.projections.faceon, stddev=self.projections.faceon_stddev, ncells=self.projections.faceon_ncells)
 
-        """
-        Thisn function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        # Determine path
-        return fs.join(self.simulation_path, "projection.ski")
+    @property
+    def faceon_frame(self):
+        return self.faceon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_ncells(self):
+        return self.faceon.frames.ncells
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def out_path(self):
+    def edgeon(self):
+        return Image.from_frames(self.projections.edgeon, stddev=self.projections.edgeon_stddev, ncells=self.projections.edgeon_ncells)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_frame(self):
+        return self.edgeon.primary
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_ncells(self):
+        return self.edgeon.frames.ncells
+
+    # -----------------------------------------------------------------
+
+    def interpolate_map(self, frame, ncells):
 
         """
         This function ...
+        :param frame:
+        :param ncells:
         :return:
         """
 
-        return fs.create_directory_in(self.simulation_path, "out")
+        # Copy
+        #interpolated = frame.copy()
+
+        # Get outside nans
+        outside_nans = frame.nans.largest()
+        # plotting.plot_mask(outside_nans, title="outside nans")
+        #outside_nans.saveto(fs.join(self.cell_heating_path, "outside_nans.fits"))
+        not_nans = outside_nans.inverse()
+        not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
+        # not_nans.fill_holes()
+        #not_nans.saveto(fs.join(self.cell_heating_path, "not_nans.fits"))
+        do_nans = not_nans.largest().inverse()
+
+        # Get mask
+        where = ncells.where_smaller_than(self.config.min_ncells)
+
+        # plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
+        # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+
+        # Put pixels to NaN
+        frame.replace_by_nans(where)
+
+        # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+
+        # Interpolate nans
+        frame.interpolate_nans(sigma=2.)
+        frame.replace_by_nans(do_nans)
+
+        # Return the interpolated frame
+        #return interpolated
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def definition(self):
-
-        """
-        This funtion ...
-        :return:
-        """
-
-        # Create simulation definition
-        return SingleSimulationDefinition(self.ski_path, self.out_path, self.in_path)
-
-    # -----------------------------------------------------------------
-
-    def launch(self):
+    def interpolate(self):
 
         """
         This function ...
@@ -401,27 +270,43 @@ class Projector(Configurable):
         """
 
         # Inform the user
-        log.info("Launching ...")
+        log.info("Interpolating the maps ...")
 
-        # Set launcher settings
-        self.launcher.config.show_progress = True
+        # Faceon
+        if self.do_faceon: self.interpolate_faceon()
 
-        # Run
-        self.launcher.run(definition=self.definition, parallelization=self.config.parallelization)
-        simulation = self.launcher.simulation
+        # Edgeon
+        if self.do_edgeon: self.interpolate_edgeon()
 
-        # Loop over the instruments
-        for instrument_name in self.instruments:
+    # -----------------------------------------------------------------
 
-            # Determine the path to the simulated image file
-            other_path = fs.join(self.out_path, simulation.prefix() + "_" + instrument_name + "_total.fits")
-            other_map = Frame.from_file(other_path)
+    def interpolate_faceon(self):
 
-            # Get coordinate system for this map
-            if self.has_coordinate_system(instrument_name): other_map.wcs = self.coordinate_systems[instrument_name]
+        """
+        This function ...
+        :return:
+        """
 
-            # Set the map
-            self.projected[instrument_name] = other_map
+        # Debugging
+        log.debug("Interpolating the face-on map ...")
+
+        # Interpolate
+        self.interpolate_map(self.faceon_frame, self.faceon_ncells)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_edgeon(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Interpolating the edge-on map ...")
+
+        # Interpolate
+        self.interpolate_map(self.edgeon_frame, self.edgeon_ncells)
 
     # -----------------------------------------------------------------
 
@@ -435,12 +320,105 @@ class Projector(Configurable):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the projections?
+        self.write_projections()
+
         # Write the projected maps
-        self.write_projected()
+        self.write_maps()
 
     # -----------------------------------------------------------------
 
-    def write_projected(self):
+    def write_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Faceon
+        if self.do_faceon: self.write_faceon_projection()
+
+        # Edgeon
+        if self.do_edgeon: self.write_edgeon_projection()
+
+    # -----------------------------------------------------------------
+
+    def write_faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = self.output_path_file("faceon.proj")
+
+        # Save
+        self.faceon_projection.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_edgeon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = self.output_path_file("edgeon.proj")
+
+        # Save
+        self.edgeon_projection.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Faceon
+        if self.do_faceon: self.write_faceon_map()
+
+        # Edgeon
+        if self.do_edgeon: self.write_edgeon_map()
+
+    # -----------------------------------------------------------------
+
+    def write_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = self.output_path_file("faceon.fits")
+
+        # Save
+        self.faceon.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_edgeon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = self.output_path_file("edgeon.fits")
+
+        # Save
+        self.edgeon.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
 
         """
         This function ...
@@ -448,15 +426,72 @@ class Projector(Configurable):
         """
 
         # Inform the user
-        log.info("Writing the projected maps ...")
+        log.info("Plotting ...")
 
-        # Loop over the instruments
-        for instrument_name in self.instruments:
+        # Plot the maps
+        self.plot_maps()
 
-            # Determine path
-            path = self.output_path_file(instrument_name + ".fits")
+    # -----------------------------------------------------------------
 
-            # Save
-            self.projected[instrument_name].saveto(path)
+    def plot_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps ...")
+
+        # Faceon
+        if self.do_faceon: self.plot_faceon_map()
+
+        # Edgeon
+        if self.do_edgeon: self.plot_edgeon_map()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plotting_interval(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.plotting.minmax is not None: return self.config.plotting.minmax
+        else: return self.config.plotting.interval
+
+    # -----------------------------------------------------------------
+
+    def plot_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = self.output_path_file("faceon.pdf")
+
+        # Plot
+        plot_map(self.faceon_frame, path=path, interval=self.plotting_interval, contours=self.config.plotting.contours,
+                 ncontours=self.config.plotting.ncontours, contours_color=self.config.plotting.contours_color)
+
+    # -----------------------------------------------------------------
+
+    def plot_edgeon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = self.output_path_file("edgeon.pdf")
+
+        # Plot
+        plot_map(self.edgeon_frame, path=path, interval=self.plotting_interval, contours=self.config.plotting.contours,
+                 ncontours=self.config.plotting.ncontours, contours_color=self.config.plotting.contours_color)
 
 # -----------------------------------------------------------------

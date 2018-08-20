@@ -24,14 +24,6 @@ from .relation import Relation
 
 # -----------------------------------------------------------------
 
-class Scatter2D(Relation):
-
-    """
-    This class ...
-    """
-
-# -----------------------------------------------------------------
-
 class Scatter(SmartTable):
 
     """
@@ -45,6 +37,11 @@ class Scatter(SmartTable):
         :param args:
         :param kwargs:
         """
+
+        #print("SCATTER")
+        #print(args)
+        #print(kwargs)
+        #print("")
 
         # Check
         if "variables" in kwargs: from_astropy = False
@@ -134,8 +131,6 @@ class Scatter(SmartTable):
         :return:
         """
 
-        result = None
-
         if as_list:
 
             result = []
@@ -148,6 +143,111 @@ class Scatter(SmartTable):
 
         # Return
         return result
+
+# -----------------------------------------------------------------
+
+class Scatter2D(Scatter, Relation): # scatter (points, ranges), but also relation between two variables (like Curve)
+
+    """
+    This class
+    """
+
+    @classmethod
+    def from_file(cls, path):
+        return super(Scatter2D, cls).from_file(path, format="pts", method="pandas")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def random(cls, npoints, x_range=None, y_range=None, x_name=None, y_name=None, x_unit=None, y_unit=None,
+               x_description=None, y_description=None):
+
+        """
+        This function ...
+        :param npoints:
+        :param x_range:
+        :param y_range:
+        :param x_name:
+        :param y_name:
+        :param x_unit:
+        :param y_unit:
+        :param x_description:
+        :param y_description:
+        :return:
+        """
+
+        # Set limits
+        lowx = x_range.min if x_range is not None else 0
+        highx = x_range.max if x_range is not None else 1
+        lowy = y_range.min if y_range is not None else 0
+        highy = y_range.max if y_range is not None else 1
+
+        # Create random x and y data
+        x = np.random.uniform(size=npoints, low=lowx, high=highx)
+        y = np.random.uniform(size=npoints, low=lowy, high=highy)
+
+        # Create and return
+        return cls.from_xy(x, y, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit, x_description=x_description, y_description=y_description)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_points(cls, points, x_name=None, y_name=None, x_unit=None, y_unit=None,
+                    x_description=None, y_description=None):
+
+        """
+        This function ...
+        :param points:
+        :param x_name:
+        :param y_name:
+        :param x_unit:
+        :param y_unit:
+        :param x_description:
+        :param y_description:
+        :return:
+        """
+
+        # Set kwargs
+        kwargs = dict()
+        kwargs["from_astropy"] = False
+
+        # x and y name
+        if x_name is not None: kwargs["x_name"] = x_name
+        if y_name is not None: kwargs["y_name"] = y_name
+
+        # x and y unit
+        if x_unit is not None: kwargs["x_unit"] = x_unit
+        if y_unit is not None: kwargs["y_unit"] = y_unit
+
+        # x and y descriptions
+        if x_description is not None: kwargs["x_description"] = x_description
+        if y_description is not None: kwargs["y_description"] = y_description
+
+        # Create
+        scatter = cls(**kwargs)
+        for x,y in points: scatter.add_point(x, y)
+        return scatter
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_xy(cls, x, y, x_name=None, y_name=None, x_unit=None, y_unit=None, x_description=None, y_description=None):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :param x_name:
+        :param y_name:
+        :param x_unit:
+        :param y_unit:
+        :param x_description:
+        :param y_description:
+        :return:
+        """
+
+        return cls.from_columns(x, y, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit,
+                                x_description=x_description, y_description=y_description, as_columns=True)
 
 # -----------------------------------------------------------------
 
@@ -189,6 +289,40 @@ class Scatter3D(Scatter):
 
         # Call the constructor of the base class
         super(Scatter3D, self).__init__(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_points(cls, points):
+
+        """
+        This function ...
+        :param points:
+        :return:
+        """
+
+        # TODO: not really implemented or tested
+
+        scatter = cls()
+        for x,y,z in points: scatter.add_point(x, y, z)
+        return scatter
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_xyz(cls, x, y, z):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        # TODO: not really implemented or tested
+
+        # Return
+        return cls.from_columns(x, y, z)
 
     # -----------------------------------------------------------------
 

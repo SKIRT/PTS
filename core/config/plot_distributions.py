@@ -48,6 +48,12 @@ definition.add_flag("hatches", "add hatches", False)
 definition.add_optional("y_label", "string", "label for vertical axes")
 definition.add_flag("distribution_ticks", "use the distribution values as the horizontal axes ticks")
 definition.add_flag("y_ticks", "show the y ticks", True)
+definition.add_optional("lower_than", "positive_real", "mark frequencies/counts lower than this amount")
+definition.add_optional("higher_than", "positive_real", "mark frequencies/counts higher than this amount")
+definition.add_flag("add_lower_frequencies", "add frequencies for marked lower")
+definition.add_flag("add_higher_frequencies", "add frequencies for marked higher")
+definition.add_flag("lower_frequency_percentages", "display frequencies as percentages")
+definition.add_flag("higher_frequency_percentages", "display frequencies as percentages")
 
 # Show
 definition.add_flag("edges", "show edges")

@@ -37,7 +37,7 @@ for index in range(len(table["Command"])):
 # -----------------------------------------------------------------
 
 # Determine commands for which the cwd doesn't need to be a modeling directory
-not_modeling_cwd_commands = ["setup", "calculate_weights"]
+not_modeling_cwd_commands = ["setup", "calculate_weights", "project_data"]
 
 # -----------------------------------------------------------------
 
@@ -142,6 +142,8 @@ def finish(command_name, cwd, config_path=None):
     :param config_path:
     :return: 
     """
+
+    if command_name in not_modeling_cwd_commands: return
 
     # Mark end in history
     mark_end(command_name, cwd)

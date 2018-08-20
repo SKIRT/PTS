@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.show_dictionary Show a file created from a PTS structure (composite, table, ...).
+## \package pts.do.core.show_file Show a file created from a PTS structure (composite, table, ...).
 
 # -----------------------------------------------------------------
 
@@ -14,27 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.tools.serialization import load_dict
-from pts.core.basics.table import SmartTable
-from pts.core.data.sed import load_sed
-from pts.core.basics.composite import load_composite
-from pts.core.basics.distribution import Distribution
 from pts.core.plot.sed import plot_sed
 from pts.core.plot.distribution import plot_distribution
 from pts.core.tools import formatting as fmt
-from pts.magic.region.list import load_region_list
 from pts.core.tools import sequences
 from pts.core.tools.stringify import tostr
-
-# -----------------------------------------------------------------
-
-composite = "composite"
-table = "table"
-dictionary = "dictionary"
-sed = "sed"
-distribution = "distribution"
-regions = "regions"
-filetypes = [composite, table, dictionary, sed, distribution, regions]
+from pts.core.basics.structure import load_structure, filetypes, composite, table, dictionary, sed, distribution, regions
 
 # -----------------------------------------------------------------
 
@@ -74,68 +59,6 @@ config = parse_arguments("show_file", definition, add_logging=False, add_cwd=Fal
 
 # -----------------------------------------------------------------
 
-def load_structure(path, filetype):
-
-    """
-    This function ...
-    :param path:
-    :param filetype:
-    :return:
-    """
-
-    # Composite
-    if filetype == composite:
-
-        # Load composite
-        structure = load_composite(path)
-
-        # Create table
-        tab = SmartTable.from_composite(composite)
-
-    # Table
-    elif filetype == table:
-
-        # Load table
-        structure = SmartTable.from_file(path)
-        tab = structure
-
-    # Dictionary
-    elif filetype == dictionary:
-
-        # Load dictionary
-        structure = load_dict(path)
-        tab = SmartTable.from_dictionary(structure)
-
-    # SED
-    elif filetype == sed:
-
-        # Load SED
-        structure = load_sed(path)
-        tab = structure
-
-    # Distribution
-    elif filetype == distribution:
-
-        # Load distribution
-        structure = Distribution.from_file(path)
-        tab = structure
-
-    # Regions
-    elif filetype == regions:
-
-        # Load regions
-        structure = load_region_list(path)
-        dictionaries = [region.__dict__ for region in structure]
-        tab = SmartTable.from_dictionaries(*dictionaries)
-
-    # Invalid
-    else: raise ValueError("Unrecognized filetype")
-
-    # Return
-    return structure, tab
-
-# -----------------------------------------------------------------
-
 def show_table(tab):
 
     """
@@ -157,7 +80,7 @@ def show_table(tab):
             nunique = len(unique_values)
 
             # Show the values
-            print(" - " + fmt.bold + colname + fmt.reset_bold + ": " + tostr(unique_values, ndecimal_places=config.ndecimal_places, round=config.round) + " (" + str(nunique) + ")")
+            print(" - " + fmt.bold + colname + fmt.reset_bold + ": " + tostr(unique_values, decimal_places=config.ndecimal_places, round=config.round) + " (" + str(nunique) + ")")
 
     # Interactive view
     elif config.interactive: tab.more()
@@ -261,10 +184,5 @@ elif config.table:
 
 # Regular representation
 else: show_structure(structure, config.filetype)
-
-# -----------------------------------------------------------------
-
-# Plot
-if config.plot: plot_structure(structure, config.filetype, **config.plotting)
 
 # -----------------------------------------------------------------

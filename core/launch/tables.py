@@ -367,6 +367,39 @@ class SimulationStatusTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def running_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for simulation_name in self.simulation_names:
+            if self.is_running(simulation_name): names.append(simulation_name)
+        return names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nrunning(self):
+        return len(self.running_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nrunning(self):
+        return float(self.nrunning) / float(self.nsimulations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nrunning(self):
+        return self.relative_nrunning * 100.
+
+    # -----------------------------------------------------------------
+
     @memoize_method_reset
     def is_queued(self, simulation_name):
 

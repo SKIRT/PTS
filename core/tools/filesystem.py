@@ -21,6 +21,7 @@ import platform
 import subprocess
 import datetime
 import filecmp
+import warnings
 from collections import OrderedDict
 from itertools import takewhile
 
@@ -2838,33 +2839,104 @@ def add_extension(filename, extension):
 
 # -----------------------------------------------------------------
 
-def appended_filename(filepath, append_with):
+def appended_filename(filepath, append_with, sep=None):
 
     """
     This function ...
     :param filepath:
     :param append_with:
+    :param sep:
     :return:
     """
+
+    if sep is None: sep = ""
 
     filename = name(filepath)
     the_name = strip_extension(filename)
     extension = get_extension(filename)
-    appended_name = the_name + append_with
+    appended_name = the_name + sep + append_with
     return add_extension(appended_name, extension)
 
 # -----------------------------------------------------------------
 
-def appended_filepath(filepath, append_with):
+def prepended_filename(filepath, prepend_with, sep=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend_with:
+    :param sep:
+    :return:
+    """
+
+    if sep is None: sep = ""
+    filename = name(filepath)
+    return prepend_with + sep + filename
+
+# -----------------------------------------------------------------
+
+def prepended_and_appended_filename(filepath, prepend, append, sep=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend:
+    :param append:
+    :param sep:
+    :return:
+    """
+
+    if sep is None: sep = ""
+
+    filename = name(filepath)
+    the_name = strip_extension(filename)
+    extension = get_extension(filename)
+
+    new_name = prepend + sep + the_name + sep + append
+    return add_extension(new_name, extension)
+
+# -----------------------------------------------------------------
+
+def appended_filepath(filepath, append_with, sep=None):
 
     """
     This function ...
     :param filepath:
     :param append_with:
+    :param sep:
     :return:
     """
 
-    return join(directory_of(filepath), appended_filename(filepath, append_with))
+    return join(directory_of(filepath), appended_filename(filepath, append_with, sep=sep))
+
+# -----------------------------------------------------------------
+
+def prepended_filepath(filepath, prepend_with, sep=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend_with:
+    :param sep:
+    :return:
+    """
+
+    return join(directory_of(filepath), prepended_filename(filepath, prepend_with, sep=sep))
+
+# -----------------------------------------------------------------
+
+def prepended_and_appended_filepath(filepath, prepend, append, sep=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param prepend:
+    :param append:
+    :param sep:
+    :return:
+    """
+
+    return join(directory_of(filepath), prepended_and_appended_filename(filepath, prepend, append, sep=sep))
 
 # -----------------------------------------------------------------
 
@@ -3217,23 +3289,84 @@ def nopen_files():
 
 # -----------------------------------------------------------------
 
-def backup_file(filepath, suffix="backup", backup_backup=False):
+def get_backup_filepath(filepath, suffix=None, prefix=None, sep="_"):
+
+    """
+    Thisf unction ...
+    :param filepath:
+    :param suffix:
+    :param prefix:
+    :param sep:
+    :return:
+    """
+
+    # Set name for backup file
+    if prefix is not None and suffix is not None: backup_filepath = prepended_and_appended_filepath(filepath, prefix + sep, sep + suffix)
+    elif prefix is None and suffix is not None: backup_filepath = appended_filepath(filepath, sep + suffix)
+    elif suffix is None and prefix is not None: backup_filepath = prepended_filepath(filepath, prefix + sep)
+    else:
+        suffix = "backup"  # default
+        backup_filepath = appended_filepath(filepath, sep + suffix)
+
+    # Return
+    return backup_filepath
+
+# -----------------------------------------------------------------
+
+def backup_file(filepath, suffix=None, prefix=None, exists="error", remove=False, sep="_", check_filepath=True,
+                remove_if_exists=False):
 
     """
     This function ...
     :param filepath:
     :param suffix:
-    :param backup_backup:
+    :param prefix:
+    :param exists:
+    :param remove:
+    :param sep:
+    :param check_filepath:
+    :param remove_if_exists:
     :return:
     """
 
-    backup_filepath = appended_filepath(filepath, "_" + suffix)
+    # Check
+    if check_filepath and not is_file(filepath): raise ValueError("File '" + filepath + "' does not exist")
+
+    # Get backup filepath
+    backup_filepath = get_backup_filepath(filepath, suffix=suffix, prefix=prefix)
+
+    # Already exists
     if is_file(backup_filepath):
-        if backup_backup:
-            backup_file(backup_filepath, suffix=suffix, backup_backup=backup_backup) # backup the backup
+
+        # First backup the seemingly earlier backup
+        if exists == "backup":
+
+            backup_file(backup_filepath, suffix=suffix, prefix=prefix, sep=sep, exists=exists) # backup the backup
             remove_file(backup_filepath)
-        else: raise IOError("Backup file path already exists (" + backup_filepath + ")")
+
+        # Give error
+        elif exists == "error": raise IOError("Backup file path already exists (" + backup_filepath + ")")
+
+        # Just overwrite the previous, but give warning
+        elif exists == "overwrite":
+            warnings.warn("The backup '" + backup_filepath + "' already exists: will be overwritten ...")
+            remove_file(backup_filepath)
+
+        # Do nothing, trust earlier backup
+        elif exists == "pass":
+            warnings.warn("The backup '" + backup_filepath + "' already exists: skipping ...")
+            if remove and remove_if_exists and is_file(filepath): remove_file(filepath)
+            return
+
+        # Invalid
+        else: raise ValueError("Invalid value for 'exists'")
+
+    # Actually make the backup
     copy_file(filepath, backup_filepath)
+
+    # Remove original?
+    if not is_file(backup_filepath): raise IOError("Something went wrong: backup file not created")
+    if remove: remove_file(filepath)
 
 # -----------------------------------------------------------------
 

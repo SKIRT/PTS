@@ -38,6 +38,7 @@ from ...core.filter.filter import parse_filter
 from .generation import GenerationInfo
 from .weights import WeightsCalculator
 from .backup import FitBackupper
+from .modelanalyser import calculate_chi_squared_from_differences
 
 # -----------------------------------------------------------------
 
@@ -130,7 +131,7 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return self.in_place and fs.is_empty(self.backup_path)
+        return (self.in_place and not self.individual_simulations) and fs.is_empty(self.backup_path)
 
     # -----------------------------------------------------------------
 
@@ -166,46 +167,46 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        # 2. As run: create run directory
+        # Create run directory
         if self.do_create_run: self.create_run()
 
-        # 3. Make a backup of the current fitting run
-        if self.do_backup_run: self.backup_run()
+        # Make backups where necessary
+        self.backup()
 
-        # 4. Get the weights
+        # Get the weights
         self.get_weights()
 
-        # 5. Get the fluxes
+        # Get the fluxes
         self.get_fluxes()
 
-        # 6. Get the differences
+        # Get the differences
         self.get_differences()
 
-        # 7. Calculate the chi squared values
+        # Calculate the chi squared values
         self.calculate_chi_squared()
 
-        # 8. Get the parameters of the best models for each generation
+        # Get the parameters of the best models for each generation
         self.get_best_parameters()
 
-        # 9. Calculate the probabilities
+        # Calculate the probabilities
         self.calculate_probabilities()
 
-        # 10. Calculate the probability distributions
+        # Calculate the probability distributions
         self.create_distributions()
 
-        # 11. Get best simulation
+        # Get best simulation
         self.get_best_simulations()
 
-        # 12. Create the configuration
+        # Create the configuration
         self.create_config()
 
-        # 13. Writing
+        # Writing
         self.write()
 
-        # 14. Show
+        # Show
         if self.do_show: self.show()
 
-        # 15. Plot
+        # Plot
         if self.do_plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -412,26 +413,83 @@ class Refitter(FittingComponent):
         # Call the setup function of the base class
         super(Refitter, self).setup(**kwargs)
 
+        # Load the fitting run
+        if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
+        else: self.fitting_run = self.load_fitting_run(self.config.run)
+
         # Check options
         if self.as_run and self.in_place: raise ValueError("Cannot refit as new fitting run and refit in-place simultaneously")
         if self.config.name is None and not (self.as_run or self.in_place): raise ValueError("Refitting name must be specified when not refitting as new run or in-place")
-        if self.in_place and self.config.generations is not None: raise ValueError("Cannot specify generations when refitting is done in place")
-
-        # Load the fitting run
-        if kwargs.get("fitting_run", None) is not None: self.fitting_run = kwargs.pop("fitting_run")
-        else: self.fitting_run = self.load_fitting_run(self.config.fitting_run)
+        if self.in_place:
+            if self.config.generations is not None and self.config.simulations is None: raise ValueError("Cannot specify generations without specifying individual simulations when refitting is done in place")
+        if self.as_run and self.individual_simulations: raise ValueError("Cannot refit as new fitting run and specify individual simulation names")
+        if self.individual_simulations:
+            if self.reweigh: raise ValueError("Cannot reweigh when refitting only individual simulations")
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
 
-        # Initialize chi squared table for each generation
-        for generation_name in self.generation_names:
-            table = ChiSquaredTable()
-            self.chi_squared_tables[generation_name] = table
+        # Load chi squared tables
+        self.load_chi_squared()
 
         # Initialize best parameters table
         self.best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
         self.best_parameters_table._setup()
+
+    # -----------------------------------------------------------------
+
+    def load_chi_squared(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Initialize chi squared table for each generation
+        for generation_name in self.generation_names:
+
+            # Only some simulations of the single generation are going to be refitted
+            if self.individual_simulations:
+
+                # No chi squared table found?
+                if not self.single_generation.has_chi_squared_table:
+
+                    # Determine backup filepath, look for chi squared backup table
+                    backup_filepath = fs.get_backup_filepath(self.single_generation.chi_squared_table_path, prefix=self.backup_name, sep="__")
+                    if fs.is_file(backup_filepath):
+
+                        # Load
+                        table = ChiSquaredTable.from_file(backup_filepath)
+                        table.path = None
+
+                    # Not found?
+                    else:
+
+                        # Warn
+                        log.warning("Chi squared table for the '" + self.single_generation_name + "' generation could not be found: creating new one, filling in the chi squared based on the flux differences ...")
+
+                        # Create chi squared table
+                        table = ChiSquaredTable()  # new one anyway
+                        for simulation_name in self.single_generation.simulation_names:
+                            if simulation_name in self.simulation_names: continue # don't get chi squared, is going to be refitted anyway
+                            if self.single_generation.has_sed_differences(simulation_name): differences = self.single_generation.get_simulation_sed_differences(simulation_name)
+                            else:
+                                #backup_differences_filepath = fs.get_backup_filepath(self.single_generation.get_simulation_sed_differences_path(simulation_name), prefix=self.backup_name, sep="__")
+                                #if not fs.is_file(backup_differences_filepath): raise IOError("Could not find existing differences file for simulation '" + simulation_name + "'")
+                                #differences = FluxDifferencesTable.from_file(backup_differences_filepath)
+                                log.warning("No flux differences can be found for simulation '" + simulation_name + "': skipping ...")
+                                continue
+                            chi_squared = calculate_chi_squared_from_differences(differences, self.nfree_parameters)
+                            table.add_entry(simulation_name, chi_squared)
+
+                # Load the existing chi squared table
+                else: table = self.single_generation.chi_squared_table
+
+            # All simulations of the generation are goging to be refitted
+            else: table = ChiSquaredTable()  # new table since all simulations are going to be re-evaluated anyway
+
+            # Set the table for the generation
+            self.chi_squared_tables[generation_name] = table
 
     # -----------------------------------------------------------------
 
@@ -510,6 +568,71 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def backup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making backups before refitting ...")
+
+        # Backup individual simulations results
+        if self.individual_simulations:
+
+            # Backup the chi squared table
+            self.backup_chi_squared()
+
+            # Backup simulations
+            self.backup_simulations()
+
+        # Make a backup of the current fitting run
+        if self.do_backup_run: self.backup_run()
+
+    # -----------------------------------------------------------------
+
+    def backup_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating backup of chi squared table for generation '" + self.single_generation_name + "' ...")
+
+        # Copy the file
+        fs.backup_file(self.single_generation.chi_squared_table_path, remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False, remove_if_exists=True)
+
+    # -----------------------------------------------------------------
+
+    def backup_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.info("Making a backup of simulations that will be refitted ...")
+
+        # Loop over the simulations
+        for simulation_name in self.simulation_names:
+
+            # Check whether the simulation has differences
+            if not self.single_generation.has_sed_differences(simulation_name):
+                log.warning("No differences table for simulation '" + simulation_name + "' of generation '" + self.single_generation_name + "'")
+                continue
+
+            # Debugging
+            log.debug("Creating backup of differences table for simulation '" + simulation_name + "' ...")
+
+            # Copy the file
+            fs.backup_file(self.single_generation.get_simulation_sed_differences_path(simulation_name), remove=True, prefix=self.backup_name, sep="__", exists="pass", check_filepath=False, remove_if_exists=True)
+
+    # -----------------------------------------------------------------
+
     def backup_run(self):
 
         """
@@ -545,7 +668,7 @@ class Refitter(FittingComponent):
         :return:
         """
 
-        return self.model_for_run(self.config.fitting_run)
+        return self.model_for_run(self.config.run)
 
     # -----------------------------------------------------------------
 
@@ -712,6 +835,25 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ngenerations(self):
+        return len(self.generation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_generation(self):
+        return self.ngenerations == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_generation_name(self):
+        if not self.has_single_generation: raise ValueError("Not a single generation")
+        return self.generation_names[0]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def generations(self):
 
@@ -723,6 +865,58 @@ class Refitter(FittingComponent):
         gens = OrderedDict()
         for name in self.generation_names: gens[name] = self.fitting_run.get_generation(name)
         return gens
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_generation(self):
+        return self.generations[self.single_generation_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def individual_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Simulation names are specified
+        if self.config.simulations is not None:
+
+            # Check
+            if not self.has_single_generation: raise ValueError("Cannot specify individual simulation names when there are multiple generations specified")
+            return True
+
+        # All simulations of generation(s)
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.simulations is not None: return self.config.simulations
+        else: return self.single_generation.simulation_names
+
+    # -----------------------------------------------------------------
+
+    def simulation_names_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        if self.individual_simulations: return self.simulation_names
+        else: return self.generations[generation_name].simulation_names
 
     # -----------------------------------------------------------------
 
@@ -1058,7 +1252,7 @@ class Refitter(FittingComponent):
             spectral_convolution = self.spectral_convolution_for_generation(generation_name)
 
             # Loop over the simulation names
-            for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Get the simulation
                 simulation = generation.get_simulation_or_basic(simulation_name)
@@ -1157,7 +1351,7 @@ class Refitter(FittingComponent):
         if self.config.rediff is not None:
             if not self.config.rediff and self.config.additional_error is not None: raise ValueError("The differences have to be calculated again if an additional relative error has to be used")
             return self.config.rediff
-        else: return self.different_filters or self.reflux or self.reweigh # also after reweighing because chi squared terms are calculated during differences!
+        else: return self.different_filters or self.reflux or self.reweigh or self.config.additional_error # also after reweighing because chi squared terms are calculated during differences!
 
     # -----------------------------------------------------------------
 
@@ -1199,16 +1393,28 @@ class Refitter(FittingComponent):
             generation = self.generations[generation_name]
 
             # Loop over the simulation names
-            for simulation_name in generation.simulation_names:
+            #for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
-                # Get the differences filepath
-                if not generation.has_sed_differences(simulation_name): raise IOError("Differences file is not found for simulation '" + simulation_name + "'")
+                # Individual simulations: differences files have been backupped and originals have already been removed
+                if self.individual_simulations:
+
+                    backup_filepath = fs.prepended_filepath(generation.get_simulation_sed_differences_path(simulation_name), self.backup_name, sep="__")
+                    if not fs.is_file(backup_filepath): raise IOError("Differences backup file is not found for simulation '" + simulation_name + "'")
+                    differences_filepath = backup_filepath
+
+                else:
+
+                    # Get the differences filepath
+                    if not generation.has_sed_differences(simulation_name): raise IOError("Differences file is not found for simulation '" + simulation_name + "'")
+                    differences_filepath = generation.get_simulation_sed_differences_path(simulation_name)
 
                 # Debugging
                 log.debug("Loading the differences for the '" + simulation_name + "' simulation ...")
 
                 # Load
-                differences = generation.get_simulation_sed_differences(simulation_name)
+                #differences = generation.get_simulation_sed_differences(simulation_name)
+                differences = FluxDifferencesTable.from_file(differences_filepath)
 
                 # Set table
                 self.differences[generation_name][simulation_name] = differences
@@ -1234,31 +1440,33 @@ class Refitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_fluxdensity(self, fltr):
+    def get_fluxdensity(self, fltr, unit="Jy"):
 
         """
         This function ...
         :param fltr:
+        :param unit:
         :return:
         """
 
         # Find the corresponding flux in the SED derived from observation
         #observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
-        return self.reference_sed.photometry_for_filter(fltr, unit="Jy")
+        return self.reference_sed.photometry_for_filter(fltr, unit=unit)
 
     # -----------------------------------------------------------------
 
-    def get_fluxdensity_error(self, fltr):
+    def get_fluxdensity_error(self, fltr, unit="Jy"):
 
         """
         This function ...
         :param fltr:
+        :param unit:
         :return:
         """
 
         # Find the corresponding flux error in the SED derived from observation
         #observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
-        return self.reference_sed.error_for_filter(fltr, unit="Jy")
+        return self.reference_sed.error_for_filter(fltr, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1286,6 +1494,7 @@ class Refitter(FittingComponent):
 
                 # Get simulation name
                 simulation_name = simulation.name
+                if self.individual_simulations and simulation_name not in self.simulation_names: continue
 
                 # Debugging
                 log.debug("Calculating differences for the '" + simulation_name + "' simulation ...")
@@ -1323,6 +1532,8 @@ class Refitter(FittingComponent):
                         continue
 
                     # Calculate the difference
+                    #print(fluxdensity, observed_fluxdensity)
+                    #observed_fluxdensity_value = observed_fluxdensity.value # is in Jy
                     difference = fluxdensity - observed_fluxdensity
                     relative_difference = float(difference / observed_fluxdensity)
 
@@ -1388,19 +1599,17 @@ class Refitter(FittingComponent):
                 # Debugging
                 log.debug("Calculating the chi squared value for simulation '" + simulation_name + "' ...")
 
-                # Calculate the degrees of freedom
-                ndifferences = len(differences)
-                ndof = ndifferences - self.nfree_parameters - 1 # number of data points - number of fitted parameters - 1
+                # Calculate
+                chi_squared = calculate_chi_squared_from_differences(differences, self.nfree_parameters)
 
-                # The (reduced) chi squared value is the sum of all the terms (for each band),
-                # divided by the number of degrees of freedom
-                chi_squared = np.sum(differences["Chi squared term"]) / ndof
+                # Loop over the
+                if simulation_name in chi_squared_table.simulation_names:
 
-                # Debugging
-                log.debug("Found a (reduced) chi squared value of " + str(chi_squared))
+                    if not self.individual_simulations: raise RuntimeError("Something went wrong: chi squared table can only already be containing to be refitted simulations when refitting only select simulations for one generation")
+                    else: chi_squared_table.set_chi_squared(simulation_name, chi_squared)
 
                 # Add entry to the chi squared table
-                chi_squared_table.add_entry(simulation_name, chi_squared)
+                else: chi_squared_table.add_entry(simulation_name, chi_squared)
 
     # -----------------------------------------------------------------
 
@@ -1424,8 +1633,11 @@ class Refitter(FittingComponent):
             generation = self.generations[generation_name]
 
             # Get the name of the simulation with the lowest chi squared value
-            best_simulation_name = generation.chi_squared_table.best_simulation_name
-            chi_squared = generation.chi_squared_table.chi_squared_for(best_simulation_name)
+            # WHY WAS THIS USING THE ORIGINAL CHI SQUARED TABLE?
+            #best_simulation_name = generation.chi_squared_table.best_simulation_name
+            #chi_squared = generation.chi_squared_table.chi_squared_for(best_simulation_name)
+            best_simulation_name = self.chi_squared_tables[generation_name].best_simulation_name
+            chi_squared = self.chi_squared_tables[generation_name].chi_squared_for(best_simulation_name)
 
             # Get the parameter values
             values = generation.parameters_table.parameter_values_for_simulation(best_simulation_name)
@@ -1749,7 +1961,7 @@ class Refitter(FittingComponent):
 
         # Adapt fitting filters?
         if self.different_filters: self.new_fitting_config.filters = self.filters
-        else: log.warning("No diff filters") #raise RuntimeError("No diff filters")
+        #else: log.warning("No diff filters") #raise RuntimeError("No diff filters")
 
     # -----------------------------------------------------------------
 
@@ -1825,7 +2037,9 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = self.new_fitting_config_path
-        elif self.in_place: path = self.fitting_run.fitting_configuration_path
+        elif self.in_place:
+            if self.different_filters: path = self.fitting_run.fitting_configuration_path
+            else: return # not necessary
         else: path = fs.join(self.path, "configuration.cfg")
 
         # Save the config
@@ -1874,7 +2088,9 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "weights.dat")
-        elif self.in_place: path = self.fitting_run.weights_table_path
+        elif self.in_place:
+            if self.reweigh: path = self.fitting_run.weights_table_path
+            else: return # not necessary
         else: path = self.weights_table_path
 
         # Write the table with weights
@@ -1894,7 +2110,9 @@ class Refitter(FittingComponent):
 
         # Determine the path
         if self.as_run: path = fs.join(self.new_run_path, "observed_sed.dat")
-        elif self.in_place: path = fs.join(self.fitting_run.path, "observed_sed.dat")
+        elif self.in_place:
+            if self.individual_simulations: return # don't write the changed SED (additional errors)
+            else: path = fs.join(self.fitting_run.path, "observed_sed.dat")
         else: path = fs.join(self.path, "observed_sed.dat")
 
         # Write the reference SED
@@ -1926,7 +2144,7 @@ class Refitter(FittingComponent):
             else: directory_name = "fluxes"
 
             # Loop over the simulations
-            for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Check
                 if simulation_name not in self.fluxes[generation_name]:
@@ -1965,11 +2183,8 @@ class Refitter(FittingComponent):
             # Debugging
             log.debug("Writing the flux difference tables of generation '" + generation_name + "' ...")
 
-            # Get the generation
-            generation = self.generations[generation_name]
-
             # Loop over the simulations
-            for simulation_name in generation.simulation_names:
+            for simulation_name in self.simulation_names_for_generation(generation_name):
 
                 # Check
                 if simulation_name not in self.differences[generation_name]:

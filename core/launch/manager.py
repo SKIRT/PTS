@@ -222,8 +222,8 @@ commands[_compare_command_name] = (None, None, "compare simulation settings or a
 commands[_steal_command_name] = (None, None, "take on simulation settings or analysis options from one simulation to another", "simulations_simulation")
 commands[_retrieve_command_name] = ("retrieve_simulations_command", True, "retrieve one or multiple simulation(s) from the remote host", "simulations")
 commands[_analyse_command_name] = ("analyse_simulations_command", True, "analyse one or multiple simulation(s)", "simulations")
-commands[_allretrieve_command_name] = ("retrieve_all", False, "retrieve all finished simulations", None)
-commands[_allanalyse_command_name] = ("analyse_all_command", True, "analyse all retrieved simulations", None)
+commands[_allretrieve_command_name] = ("retrieve_all", False, "retrieve all finished simulations", None) # -> REPLACE BY USING 'RETRIEVE ALL'? -> NO, (not yet), this function loops over all simulations that CAN be retrieved
+commands[_allanalyse_command_name] = ("analyse_all_command", True, "analyse all retrieved simulations", None) # -> REPLACE BY USING 'ANALYSE ALL'? -> NO, (not yet), this function loops over all simulations that CAN be analysed
 commands[_reanalyse_command_name] = ("reanalyse_simulations_command", True, "re-analyse a simulation", "simulations")
 commands[_mimic_command_name] = ("mimic_simulation_command", True, "mimic a simulation", "simulation")
 commands[_launch_command_name] = ("launch_simulation_command", True, "launch a new simulation", None)
@@ -592,12 +592,17 @@ class NewSimulationsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+# Extra info
 _screen_extra_name = "screen"
 _job_extra_name = "job"
 _disk_extra_name = "disk"
 _runtime_extra_name = "runtime"
 _memory_extra_name = "memory"
 _elapsed_extra_name = "elapsed"
+_cached_output_name = "cached_out"
+_cached_extraction_name = "cached_extr"
+_cached_plotting_name = "cached_plot"
+_cached_misc_name = "cached_misc"
 
 # -----------------------------------------------------------------
 
@@ -609,6 +614,10 @@ extra_columns[_disk_extra_name] = "simulation output disk size"
 extra_columns[_runtime_extra_name] = "total simulation runtime"
 extra_columns[_memory_extra_name] = "peak simulation memory usage"
 extra_columns[_elapsed_extra_name] = "elapsed time since start of simulation"
+extra_columns[_cached_output_name] = "whether the output of the simulation has been cached"
+extra_columns[_cached_extraction_name] = "whether the extraction output has been cached"
+extra_columns[_cached_plotting_name] = "whether the plotting output has been cached"
+extra_columns[_cached_misc_name] = "whether the miscellaneous output has been cached"
 
 # Define extra column names
 extra_column_names = dict()
@@ -618,6 +627,10 @@ extra_column_names[_disk_extra_name] = "Disk size"
 extra_column_names[_runtime_extra_name] = "Runtime"
 extra_column_names[_memory_extra_name] = "Peak memory"
 extra_column_names[_elapsed_extra_name] = "Elapsed time"
+extra_column_names[_cached_output_name] = "Cached output"
+extra_column_names[_cached_extraction_name] = "Cached extraction"
+extra_column_names[_cached_plotting_name] = "Cached plotting"
+extra_column_names[_cached_misc_name] = "Cached misc output"
 
 # Define extra column units
 extra_column_units = dict()
@@ -4841,109 +4854,73 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def nfinished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.nfinished
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nfinished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.relative_nfinished
 
     # -----------------------------------------------------------------
 
     @property
     def percentage_nfinished(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.percentage_nfinished
 
     # -----------------------------------------------------------------
 
     @property
     def nretrieved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.nretrieved
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nretrieved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.relative_nretrieved
 
     # -----------------------------------------------------------------
 
     @property
     def percentage_nretrieved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.percentage_nretrieved
 
     # -----------------------------------------------------------------
 
     @property
     def nanalysed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.nanalysed
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nanalysed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.relative_nanalysed
 
     # -----------------------------------------------------------------
 
     @property
     def percentage_nanalysed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.status.percentage_nanalysed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrunning(self):
+        return self.status.nrunning
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nrunning(self):
+        return self.status.relative_nrunning
+
+    # -----------------------------------------------------------------
+
+    @property
+    def percentage_nrunning(self):
+        return self.status.percentage_nrunning
 
     # -----------------------------------------------------------------
 
@@ -13112,6 +13089,7 @@ class SimulationManager(InteractiveConfigurable):
         print(fmt.bold + "Number of finished simulations: " + fmt.reset + str(self.nfinished) + " (" + tostr(self.percentage_nfinished, round=True, ndigits=2) + "%)")
         print(fmt.bold + "Number of retrieved simulations: " + fmt.reset + str(self.nretrieved) + " (" + tostr(self.percentage_nretrieved, round=True, ndigits=2) + "%)")
         print(fmt.bold + "Number of analysed simulations: " + fmt.reset + str(self.nanalysed) + " (" + tostr(self.percentage_nanalysed, round=True, ndigits=2) + "%)")
+        print(fmt.bold + "Number of running simulations: " + fmt.reset + str(self.nrunning) + " (" + tostr(self.percentage_nrunning, round=True, ndigits=2) + "%)")
         print("")
 
         # If path is given, initialize table
@@ -13135,7 +13113,7 @@ class SimulationManager(InteractiveConfigurable):
                for col in extra:
                    column_names.append(fmt.bold + extra_column_names[col] + fmt.reset)
                    if col in extra_column_units: column_units.append("[" + extra_column_units[col] + "]" if extra_column_units[col] != "" else "")
-                   else: column_units.append(None)
+                   else: column_units.append("")
 
             # Show the header
             print_row(*column_names)
@@ -13242,6 +13220,10 @@ class SimulationManager(InteractiveConfigurable):
         elif name == _runtime_extra_name: value = self.get_runtime(simulation_name)
         elif name == _memory_extra_name: value = self.get_peak_memory(simulation_name)
         elif name == _elapsed_extra_name: value = self.get_elapsed_time(simulation_name)
+        elif name == _cached_output_name: value = self.is_cached_output(simulation_name)
+        elif name == _cached_extraction_name: value = self.is_cached_extraction(simulation_name)
+        elif name == _cached_plotting_name: value = self.is_cached_plotting(simulation_name)
+        elif name == _cached_misc_name: value = self.is_cached_misc(simulation_name)
         else: raise ValueError("Invalid extra column name: '" + name + "'")
 
         # Add unit?

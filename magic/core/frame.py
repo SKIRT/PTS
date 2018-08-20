@@ -4041,7 +4041,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
-                         smoothing_factor=None):
+                         smoothing_factor=None, error_on_max=True):
 
         """
         This function ...
@@ -4052,6 +4052,7 @@ class Frame(NDDataArray):
         #                     -> "error', or "keep"
         :param min_max_in:
         :param smoothing_factor:
+        :param error_on_max:
         :return:
         """
 
@@ -4084,11 +4085,12 @@ class Frame(NDDataArray):
 
         # Interpolate
         return self.interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
-                                                 not_converge=not_converge, min_max_in=min_max_in)
+                                                 not_converge=not_converge, min_max_in=min_max_in, error_on_max=error_on_max)
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans_with_kernel(self, kernel, plot=False, max_iterations=10, not_converge="keep", min_max_in=None):
+    def interpolate_nans_with_kernel(self, kernel, plot=False, max_iterations=10, not_converge="keep", min_max_in=None,
+                                     error_on_max=True):
 
         """
         This function ...
@@ -4097,6 +4099,7 @@ class Frame(NDDataArray):
         :param max_iterations:
         :param not_converge:
         :param min_max_in:
+        :param error_on_max:
         :return:
         """
 
@@ -4135,7 +4138,11 @@ class Frame(NDDataArray):
         while nnans > 0:
 
             # Check number of iterations
-            if max_iterations is not None and niterations == max_iterations: raise RuntimeError("The maximum number of iterations has been reached without success")
+            if max_iterations is not None and niterations == max_iterations:
+                if error_on_max: raise RuntimeError("The maximum number of iterations has been reached without success")
+                else:
+                    log.warning("The maximum number of iterations has been reached without success (" + str(nnans) + " remaining NaNs)")
+                    break # break the loop
 
             # Debugging
             log.debug("Interpolation iteration " + str(niterations+1) + " ...")

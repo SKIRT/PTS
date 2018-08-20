@@ -14,7 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-from collections import OrderedDict
+from copy import deepcopy
+from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -50,6 +51,8 @@ from ...magic.tools.headers import get_header, get_filter
 from .tables import ParameterProbabilitiesTable
 from ...core.basics.map import Map
 from ...core.tools import numbers
+from ...core.tools import tables
+from ...core.simulation.discover import matching_npackages
 
 # -----------------------------------------------------------------
 
@@ -64,6 +67,7 @@ _simulations_command_name = "simulations"
 _best_command_name = "best"
 _counts_command_name = "counts"
 _parameters_command_name = "parameters"
+_methods_command_name = "methods"
 _compare_command_name = "compare"
 _closest_command_name = "closest"
 _plot_command_name = "plot"
@@ -102,6 +106,7 @@ commands[_simulations_command_name] = ("show_simulations_command", True, "show s
 commands[_best_command_name] = ("show_best_command", True, "show best models", "generation")
 commands[_counts_command_name] = ("show_counts_command", True, "show counts statistics", "generation")
 commands[_parameters_command_name] = ("show_parameters_command", True, "show parameters statistics", "generation")
+commands[_methods_command_name] = ("show_methods_command", True, "show the fitting method used for the simulations of a generation", "generation")
 
 # Commands with subcommands
 commands[_compare_command_name] = (None, None, "compare simulations", None)
@@ -1325,56 +1330,74 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         return self.get_generation(generation_name).get_simulation_or_basic(simulation_name)
 
     # -----------------------------------------------------------------
+    # SKIFILE
+    # -----------------------------------------------------------------
+
+    def get_simulation_skifile(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).get_simulation_skifile(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_simulation_skifile(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).has_simulation_skifile(simulation_name)
+
+    # -----------------------------------------------------------------
+    # OUTPUT
+    # -----------------------------------------------------------------
 
     def get_simulation_output(self, generation_name, simulation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_generation(generation_name).get_simulation_output(simulation_name)
 
     # -----------------------------------------------------------------
 
+    def has_simulation_output(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).has_simulation_output(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_logfile(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).get_simulation_logfile(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_simulation_logfile(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).has_simulation_logfile(simulation_name)
+
+    # -----------------------------------------------------------------
+    # EXTRACTION OUTPUT
+    # -----------------------------------------------------------------
+
     def get_extraction_output(self, generation_name, simulation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_generation(generation_name).get_extraction_output(simulation_name)
 
     # -----------------------------------------------------------------
 
+    def has_extraction_output(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).has_extraction_output(simulation_name)
+
+    # -----------------------------------------------------------------
+    # PLOTTING OUTPUT
+    # -----------------------------------------------------------------
+
     def get_plotting_output(self, generation_name, simulation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_generation(generation_name).get_plotting_output(simulation_name)
 
     # -----------------------------------------------------------------
 
+    def has_plotting_output(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).has_plotting_output(simulation_name)
+
+    # -----------------------------------------------------------------
+    # MISC OUTPUT
+    # -----------------------------------------------------------------
+
     def get_misc_output(self, generation_name, simulation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_generation(generation_name).get_misc_output(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_misc_output(self, generation_name, simulation_name):
+        return self.get_generation(generation_name).has_misc_output(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -2663,6 +2686,375 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def show_methods_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Pick a random sample of simulations
+        definition.add_optional("random", "positive_integer", "pick a random sample of simulations")
+        definition.add_optional("write_names", "directory_path", "write a text file with the simulation names for each method")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def show_methods_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the generation name
+        generation_name, config = self.get_generation_name_and_config_from_command(command, self.show_methods_definition, **kwargs)
+
+        # Show
+        methods = self.show_methods(generation_name, nrandom=config.random, return_methods=True)
+
+        # Write simulation names for methods
+        if config.write_names is not None: self.write_methods(methods, config.write_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_weights(self):
+        return self.fitting_run.weights
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def has_weight(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Find the index of the current band in the weights table
+        index = tables.find_index(self.fitting_weights, key=[fltr.instrument, fltr.band], column_name=["Instrument", "Band"])
+        return index is not None
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_weight(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Get index
+        index = tables.find_index(self.fitting_weights, key=[fltr.instrument, fltr.band], column_name=["Instrument", "Band"])
+        weight = self.fitting_weights["Weight"][index]
+        return float(weight)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grids_path(self):
+        return self.fitting_run.wavelength_grids_path
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_observed_flux(self, fltr, unit="Jy"):
+
+        """
+        This function ...
+        :param fltr:
+        :param unit:
+        :return:
+        """
+
+        # Find the corresponding flux in the SED derived from observation
+        observed_fluxdensity = self.observed_sed.photometry_for_filter(fltr, unit=unit).value
+
+        # Find the corresponding flux error in the SED derived from observation
+        observed_fluxdensity_error = self.observed_sed.error_for_filter(fltr, unit=unit).average.to(unit).value
+
+        # Return
+        return observed_fluxdensity, observed_fluxdensity_error
+
+    # -----------------------------------------------------------------
+
+    def get_methods(self, generation_name, nrandom=None):
+        
+        """
+        This function ...
+        :param generation_name:
+        :param nrandom:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Gathering the fitting methods for each of the simulations of generation '" + generation_name + "' ...")
+
+        # Keep dictionary with simulation names
+        methods = defaultdict(list)
+
+        # Loop over the simulations of the generation
+        index = 1
+        if nrandom is not None: simulation_names = sequences.random_subset(self.get_simulation_names(generation_name), nrandom, avoid_duplication=True)
+        else: simulation_names = self.get_simulation_names(generation_name)
+        nsimulations = len(simulation_names)
+        for simulation_name in simulation_names:
+
+            # Debugging
+            log.debug("Checking methods for simulation '" + simulation_name + "' (" + str(index) + " out of " + str(nsimulations) + ") ...")
+
+            # Get differences table
+            if self.has_flux_differences(generation_name, simulation_name):
+
+                # Get the flux differences table
+                table = self.get_flux_differences(generation_name, simulation_name)
+                filters = table.filters(sort=True)
+                #nfilters = len(filters)
+
+                # Loop over the filters
+                additional_errors = []
+                for fltr in filters:
+
+                    # Get the weight
+                    weight = self.get_weight(fltr)
+
+                    # Get the difference
+                    difference = table.difference_for_filter(fltr)
+
+                    # Get fluxdensity and error
+                    observed_fluxdensity, observed_fluxdensity_error = self.get_observed_flux(fltr, unit=difference.unit)
+
+                    # Calculate the chi squared term
+                    chi_squared_term = weight * difference.value ** 2 / observed_fluxdensity_error ** 2
+
+                    # Get the actual chi squared term
+                    chi_squared_term_table = table.chi_squared_term_for_filter(fltr)
+
+                    # Get the ratio
+                    #ratio = np.sqrt(chi_squared_term_table / chi_squared_term)
+                    ratio = chi_squared_term / chi_squared_term_table
+                    error_ratio = np.sqrt(ratio - 1)
+                    #print(fltr, error_ratio)
+                    additional_error_filter = error_ratio / observed_fluxdensity * observed_fluxdensity_error # relative additional error (e.g. 0.1 of the flux)
+                    #print(fltr, additional_error)
+                    additional_errors.append(additional_error_filter)
+
+                # Get additional error
+                additional_error = sequences.get_all_close_value(additional_errors, atol=0.005, pick="mean") # half a percentage of difference between the percentual additional errors is allowed
+                additional_error = numbers.nearest_integer(additional_error * 100)
+
+                # Create string
+                filters_string = tostr(filters)
+
+            # No table: simulation has not been analysed yet
+            else:
+                filters_string = None
+                additional_error = None
+
+            # Get simulation parameters
+            if self.has_simulation_logfile(generation_name, simulation_name):
+
+                # Get the logfile
+                logfile = self.get_simulation_logfile(generation_name, simulation_name)
+
+                # Get number of wavelengths and cells
+                nwavelengths = logfile.nwavelengths
+                ncells = logfile.ndust_cells
+
+                # Get the number of photon packages per wavelength
+                npackages = logfile.npackages
+
+                # Get flags
+                selfabsorption = logfile.selfabsorption
+                transient_heating = logfile.uses_transient_heating
+
+            # Simulation has not been performed/retrieved yet
+            elif self.has_simulation_skifile(generation_name, simulation_name):
+
+                # Get the skifile
+                skifile = self.get_simulation_skifile(generation_name, simulation_name)
+
+                # Get the number of wavelengths
+                nwavelengths = skifile.get_nwavelengths(input_path=self.wavelength_grids_path)
+
+                # Get the number of cells
+                #ncells = skifile.get_ncells(input_path=self.)
+                ncells = None # Cannot be determined from the skifile alone (tree.dat is always the name in the skifile)
+
+                # Get the number of photon packages per wavelength
+                npackages = skifile.packages()
+
+                # Get flags
+                selfabsorption = skifile.dustselfabsorption()
+                transient_heating = skifile.transient_dust_emissivity
+
+            # Missing ski file
+            else: nwavelengths = ncells = npackages = selfabsorption = transient_heating = None
+
+            # Add the simulation under the appropriate method
+            key = (filters_string, additional_error, nwavelengths, ncells, npackages, selfabsorption, transient_heating)
+            methods[key].append((generation_name, simulation_name))
+
+            # Increment
+            index += 1
+
+        # CHECK FOR KEYS WHICH ARE THE SAME EXCEPT FOR SLIGHTLY DIFFERENT NUMBER OF PHOTON PACKAGES
+        unique_npackages = set()
+        for key in methods:
+            npackages = key[4]
+            unique_npackages.add(npackages)
+        #print("unique npackages:", unique_npackages)
+        close_npackages = dict()
+        for npackages1, npackages2 in sequences.pairs(unique_npackages):
+            #print(npackages1, npackages2)
+            #if matching_npackages(npackages1, npackages2, ): only works if we have the number of processes for two simulations
+            if numbers.is_close(npackages1, npackages2): close_npackages[npackages1] = npackages2
+        remove_keys = []
+        for npackages1 in close_npackages:
+            for key in methods:
+
+                if key[4] != npackages1: continue
+                other_key = list(deepcopy(key))
+                other_key[4] = close_npackages[npackages1] # set npackages2
+                other_key = tuple(other_key)
+                if other_key not in methods: continue
+
+                # Add to npackages1 key
+                for generation_name, simulation_name in methods[other_key]:
+                    methods[key].append((generation_name, simulation_name))
+
+                remove_keys.append(other_key)
+                # Remove npackages2 key
+                #del methods[other_key]
+        for key in remove_keys: del methods[key]
+
+        # Return the methods
+        return methods
+
+    # -----------------------------------------------------------------
+
+    def show_methods(self, generation_name, nrandom=None, return_methods=False):
+
+        """
+        This function ...
+        :param generation_name:
+        :param nrandom:
+        :param return_methods:
+        :return:
+        """
+
+        # Get the methods
+        methods = self.get_methods(generation_name, nrandom=nrandom)
+
+        # Inform the user
+        log.info("Showing the fitting methods ...")
+
+        # Loop over the methods
+        print("")
+        for index, method in enumerate(methods.keys()):
+
+            nsimulations = len(methods[method])
+
+            # Show the method
+            print(fmt.bold + "METHOD #" + str(index+1) + fmt.reset_bold)
+            print("")
+
+            if method[0] is not None: print(fmt.bold + " FITTING FILTERS: " + fmt.reset_bold + method[0])
+            else: print(fmt.bold + " FITTING FILTERS: " + fmt.reset_bold + "--")
+
+            if method[1] is not None: print(fmt.bold + " ADDITIONAL RELATIVE ERROR: " + fmt.reset_bold + str(method[1]) + "%")
+            else: print(fmt.bold + " ADDITIONAL RELATIVE ERROR: " + fmt.reset_bold + "--")
+
+            print(fmt.bold + " NUMBER OF WAVELENGTHS: " + fmt.reset_bold + str(method[2]))
+            print(fmt.bold + " NUMBER OF DUST CELLS: " + fmt.reset_bold + str(method[3]))
+            print(fmt.bold + " NUMBER OF PHOTON PACKAGES PER WAVELENGTH: " + fmt.reset_bold + str(method[4]))
+            print(fmt.bold + " SELF-ABSORPTION: " + fmt.reset_bold + yes_or_no(method[5]))
+            print(fmt.bold + " TRANSIENT HEATING: " + fmt.reset_bold + yes_or_no(method[6]))
+            print("")
+            print(fmt.bold + "SIMULATIONS (" + str(nsimulations) + "): " + fmt.reset_bold)
+            print("")
+
+            #print(method)
+
+            # Get simulation names
+            #simulation_names = methods[method]
+
+            with fmt.print_in_columns() as print_row:
+
+                # Loop over the simulations
+                for generation_name, simulation_name in methods[method]:
+
+                    #print(" - " + simulation_name)
+
+                    # Get the chi squared value
+                    chisq = self.get_chi_squared(generation_name, simulation_name)
+                    if chisq is None: chisq = "--"
+                    parts = [" - ", simulation_name, chisq]
+                    print_row(*parts)
+
+            print("")
+
+        # Also return the methods
+        if return_methods: return methods
+
+    # -----------------------------------------------------------------
+
+    def write_methods(self, methods, path, sep="\t"):
+
+        """
+        This function ...
+        :param methods:
+        :param path:
+        :param sep:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the methods and simulation names ...")
+
+        # Loop over the methods
+        for index, method in enumerate(methods.keys()):
+
+            # Determine filepath
+            filepath = fs.join(path, "method" + str(index) + ".txt")
+
+            # Set lines
+            lines = []
+
+            # Add info about method
+            header = []
+            if method[0] is not None: header.append("filters: " + method[0])
+            if method[1] is not None: header.append("additional relative error: " + str(method[1]))
+            header.append("nwavelengths: " + str(method[2]))
+            header.append("ncells: " + str(method[3]))
+            header.append("npackages: " + str(method[4]))
+            header.append("selfabsorption: " + yes_or_no(method[5]))
+            header.append("transient heating: " + yes_or_no(method[6]))
+            for line in header: lines.append("# " + line)
+
+            # Add simulation names
+            for generation_name, simulation_name in methods[method]:
+
+                # Add line
+                lines.append(generation_name + sep + simulation_name)
+
+            # Write the lines
+            fs.write_lines(filepath, lines)
+
+    # -----------------------------------------------------------------
+
     @memoize_method
     def get_simulation_matches(self, generation_a_name, generation_b_name):
 
@@ -3673,6 +4065,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         plotter.config.distribution_ticks = True
         plotter.config.y_ticks = False
 
+        # Plot lower than 1%
+        plotter.config.lower_than = 0.01
+        plotter.config.add_lower_frequencies = True
+        plotter.config.lower_frequency_percentages = True
+
         # Get parameters of best simulation
         best = self.get_best_simulation_parameters(generation_name)
         most_prob = self.get_most_probable_parameter_values(generation_name)
@@ -3748,6 +4145,11 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         plotter.config.y_label = "Probability [arbitrary scale]"
         plotter.config.colours_per_panel = True
 
+        # Plot lower than 1%
+        plotter.config.lower_than = 0.01
+        plotter.config.add_lower_frequencies = True
+        plotter.config.lower_frequency_percentages = True
+
         # Logscales
         plotter.config.logscale = True
         plotter.config.logfrequency = logprob
@@ -3798,7 +4200,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
             # Determine label and magnitude for this panel
             plot_label = strings.smart_capitalize(parameter_descriptions_short[label])
-            if self.has_parameter_unit(label): plot_label += " [" + tostr(self.get_parameter_unit(label) + "]")
+            if self.has_parameter_unit(label): plot_label += " [" + tostr(self.get_parameter_unit(label)) + "]"
             magnitude = magnitudes_panels[label]
 
             # Create properties

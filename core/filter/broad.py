@@ -17,7 +17,6 @@
 # Import standard modules
 import os
 import os.path
-import sys
 import types
 import numpy as np
 from scipy.interpolate import interp1d
@@ -29,7 +28,6 @@ from ..basics.map import Map
 from ..tools import strings
 from ..tools.strings import str_from_real_or_integer
 from .filter import Filter
-from ..tools import introspection
 
 # -----------------------------------------------------------------
 

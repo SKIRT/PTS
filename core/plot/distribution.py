@@ -738,6 +738,30 @@ class DistributionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def add_lower(self):
+        return self.config.lower_than is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lower_than(self):
+        return self.config.lower_than
+
+    # -----------------------------------------------------------------
+
+    @property
+    def add_higher(self):
+        return self.config.higher_than is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def higher_than(self):
+        return self.config.higher_than
+
+    # -----------------------------------------------------------------
+
     def add_distribution(self, distribution, label, panel=standard_panel, properties=None):
 
         """
@@ -1385,6 +1409,36 @@ class DistributionPlotter(Configurable):
                 x, y = distribution.local_minima
                 self.main_plot.scatter(x, y, color='red', marker='v', s=100)
 
+            # Add lower than
+            if self.add_lower:
+
+                from ...magic.tools.plotting import align_marker
+
+                # Get
+                x, y = distribution.less_frequent_than(self.lower_than)
+                self.main_plot.scatter(x, y, color=color, marker=align_marker('v', valign="bottom"), s=100)
+                if self.config.add_lower_frequencies:
+                    for xi, yi in zip(x, y):
+                        y_value = yi + 0.05
+                        if self.config.lower_frequency_percentages: text = tostr(yi * 100, round=True, decimal_places=1) + "%"
+                        else: text = tostr(yi, round=True, ndigits=2)
+                        self.main_plot.text(xi, y_value, text, color=color, horizontalalignment='center', size="small")
+
+            # Add higher than
+            if self.add_higher:
+
+                from ...magic.tools.plotting import align_marker
+
+                # Get
+                x, y = distribution.more_frequent_than(self.higher_than)
+                self.main_plot.scatter(x, y, color=color, marker=align_marker('^', valign="bottom"), s=100)
+                if self.config.add_higher_frequencies:
+                    for xi, yi in zip(x, y):
+                        y_value = yi + 0.05
+                        if self.config.higher_frequency_percentages: text = tostr(yi * 100, round=True, decimal_places=1) + "%"
+                        else: text = tostr(yi, round=True, ndigits=2)
+                        self.main_plot.text(xi, y_value, text, color=color, horizontalalignment='center', size="small")
+
             # Add statistics
             if self.add_statistics:
 
@@ -1687,6 +1741,36 @@ class DistributionPlotter(Configurable):
                     # Local minima
                     x, y = distribution.local_minima
                     plot.scatter(x, y, color="red", marker='v', s=100)
+
+                # Add lower than
+                if self.add_lower:
+
+                    from ...magic.tools.plotting import align_marker
+
+                    # Get
+                    x, y = distribution.less_frequent_than(self.lower_than)
+                    plot.scatter(x, y, color=color, marker=align_marker('v', valign='bottom'), s=100)
+                    if self.config.add_lower_frequencies:
+                        for xi, yi in zip(x, y):
+                            y_value = yi + 0.05
+                            if self.config.lower_frequency_percentages: text = tostr(yi * 100, round=True, decimal_places=1) + "%"
+                            else: text = tostr(yi, round=True, ndigits=2)
+                            plot.text(xi, y_value, text, color=color, horizontalalignment='center', size="small")
+
+                # Add higher than
+                if self.add_higher:
+
+                    from ...magic.tools.plotting import align_marker
+
+                    # Get
+                    x, y = distribution.more_frequent_than(self.higher_than)
+                    plot.scatter(x, y, color=color, marker=align_marker('^', valign='bottom'), s=100)
+                    if self.config.add_higher_frequencies:
+                        for xi, yi in zip(x, y):
+                            y_value = yi + 0.05
+                            if self.config.higher_frequency_percentages: text = tostr(yi * 100, round=True, decimal_places=1) + "%"
+                            else: text = tostr(yi, round=True, ndigits=2)
+                            plot.text(xi, y_value, text, color=color, horizontalalignment='center', size="small")
 
                 # Add statistics
                 if self.add_statistics:

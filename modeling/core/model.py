@@ -11012,8 +11012,45 @@ class RTModel(object):
 
 # -----------------------------------------------------------------
 
-kennicutt = 1.4e-28
-salim = 1.08e-28
+kennicutt_evans_logc = 43.35 # 2012
+kennicutt = 1.4e-28 # 1998
+salim = 1.08e-28 # 200
+
+# -----------------------------------------------------------------
+
+def kennicutt_evans_fuv_to_sfr(fuv_luminosity):
+
+    """
+    This function ...
+    :param fuv_luminosity:
+    :return:
+    """
+
+    # Calculate factor
+    calibration = 1./ 10**kennicutt_evans_logc
+
+    # Get the FUV wavelength
+    fuv_wavelength = parse_filter("GALEX FUV").wavelength
+
+    from ..core.data import Data3D
+
+    # Frame
+    if isinstance(fuv_luminosity, Frame):
+
+        converted = fuv_luminosity.converted_to("erg/s", wavelength=fuv_wavelength)
+        converted *= calibration
+        converted.unit = "Msun/yr"
+        return converted
+
+    # 3D data
+    elif isinstance(fuv_luminosity, Data3D):
+
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor *= calibration
+        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt & Evans)")
+
+    # Photometric quantity
+    else: return fuv_luminosity.to("erg/s").value * calibration * u("Msun/yr")
 
 # -----------------------------------------------------------------
 
@@ -11039,7 +11076,7 @@ def kennicutt_fuv_to_sfr(fuv_luminosity):
         return converted
 
     # 3D data
-    if isinstance(fuv_luminosity, Data3D):
+    elif isinstance(fuv_luminosity, Data3D):
 
         factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
         factor *= kennicutt
@@ -11072,7 +11109,7 @@ def salim_fuv_to_sfr(fuv_luminosity):
         return converted
 
     # 3D data
-    if isinstance(fuv_luminosity, Data3D):
+    elif isinstance(fuv_luminosity, Data3D):
 
         factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
         factor *= salim

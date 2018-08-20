@@ -108,7 +108,7 @@ analysis | -- | analysis.analysis.Analysis | arguments | Run
 # OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
 deproject | -- | misc.deprojector.Deprojector | arguments | Deproject maps
-project | -- | misc.projector.Projector | arguments | Project geometries with SKIRT
+project_models | -- | misc.projector.Projector | arguments | Project geometries with SKIRT
 info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
 
 # PLOTTING
@@ -168,4 +168,5 @@ generate_heating_page | -- | html.heating.HeatingPageGenerator | arguments | Gen
 publish | -- | html.publish.Publisher | arguments | Publish the pages
 
 # PROJECTION
-project | project2 | projection.projector.Projector | arguments | Project a model with SKIRT
+*project_old | project_old | projection.projector_old.Projector | arguments | Project a model with SKIRT
+project_data | -- | projection.projector.DataProjector | arguments | Project 3D data into a faceon or edgeon projection

@@ -519,6 +519,21 @@ def python_version_short():
 
 # -----------------------------------------------------------------
 
+def python_main_version():
+    return sys.version_info.major
+
+# -----------------------------------------------------------------
+
+def is_python2():
+    return python_main_version() == 2
+
+# -----------------------------------------------------------------
+
+def is_python3():
+    return python_main_version() == 3
+
+# -----------------------------------------------------------------
+
 def in_python_virtual_environment():
 
     """

@@ -68,7 +68,7 @@ class FluxDifferencesTable(SmartTable):
         :return:
         """
 
-        return list(self["Instrument"])
+        return self.get_column_values("Instrument")
 
     # -----------------------------------------------------------------
 
@@ -79,18 +79,21 @@ class FluxDifferencesTable(SmartTable):
         :return:
         """
 
-        return list(self["Band"])
+        return self.get_column_values("Band")
 
     # -----------------------------------------------------------------
 
-    def differences(self):
+    def differences(self, relative=True, add_unit=True):
 
         """
         This function ...
+        :param relative:
+        :param add_unit:
         :return:
         """
 
-        return list(self["Relative difference"])
+        if relative: return self.get_column_values("Relative difference")
+        else: return self.get_column_values("Flux difference", add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -101,7 +104,7 @@ class FluxDifferencesTable(SmartTable):
         :return:
         """
 
-        return list(self["Chi squared term"])
+        return self.get_column_values("Chi squared term")
 
     # -----------------------------------------------------------------
 
@@ -176,11 +179,12 @@ class FluxDifferencesTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def difference_for_filter(self, fltr):
+    def difference_for_filter(self, fltr, add_unit=True):
 
         """
         This function ...
         :param fltr:
+        :param add_unit:
         :return:
         """
 
@@ -188,7 +192,8 @@ class FluxDifferencesTable(SmartTable):
         index = self.index_for_filter(fltr)
 
         # Return the difference
-        return self["Flux difference"][index]
+        #return self["Flux difference"][index]
+        return self.get_value("Flux difference", index, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -220,7 +225,7 @@ class FluxDifferencesTable(SmartTable):
         index = self.index_for_filter(fltr)
 
         # Return the chi squared term
-        return self["Chi squared term"] if not self["Chi squared term"].mask[index] else None
+        return self["Chi squared term"][index] if not self["Chi squared term"].mask[index] else None
 
     # -----------------------------------------------------------------
 
@@ -1120,5 +1125,30 @@ class ImagesFitModelAnalyser(FittingComponent):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+def calculate_chi_squared_from_differences(differences, nfree_parameters):
+
+    """
+    This function ...
+    :param differences:
+    :param nfree_parameters:
+    :return:
+    """
+
+    # Calculate the degrees of freedom
+    ndifferences = len(differences)
+    ndof = ndifferences - nfree_parameters - 1  # number of data points - number of fitted parameters - 1
+
+    # The (reduced) chi squared value is the sum of all the terms (for each band),
+    # divided by the number of degrees of freedom
+    chi_squared = np.sum(differences["Chi squared term"]) / ndof
+
+    # Debugging
+    log.debug("Found a (reduced) chi squared value of " + str(chi_squared))
+
+    # Return
+    return chi_squared
 
 # -----------------------------------------------------------------

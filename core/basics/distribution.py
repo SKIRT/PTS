@@ -1184,6 +1184,32 @@ class Distribution(Curve):
 
     # -----------------------------------------------------------------
 
+    def less_frequent_than(self, frequency, including=False):
+
+        """
+        This function ...
+        :param frequency:
+        :param including:
+        :return:
+        """
+
+        return get_less_frequent_than(self.values, self.frequencies, frequency, including=including)
+
+    # -----------------------------------------------------------------
+
+    def more_frequent_than(self, frequency, including=False):
+
+        """
+        This function ...
+        :param frequency:
+        :param including:
+        :return:
+        """
+
+        return get_more_frequent_than(self.values, self.frequencies, frequency, including=including)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def smooth(self):
 
@@ -1793,6 +1819,46 @@ def get_local_minima(x, y):
 
     # Return
     return x_minima, y_minima
+
+# -----------------------------------------------------------------
+
+def get_more_frequent_than(x, y, y0, including=False):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param y0:
+    :param including:
+    :return:
+    """
+
+    # Get mask
+    if including: where = y >= y0
+    else: where = y > y0
+
+    # Return
+    return x[where], y[where]
+
+# -----------------------------------------------------------------
+
+def get_less_frequent_than(x, y, y0, including=False):
+
+    """
+    Thisf unction ...
+    :param x:
+    :param y:
+    :param y0:
+    :param including:
+    :return:
+    """
+
+    # Get mask
+    if including: where = y <= y0
+    else: where = y < y0
+
+    # Return
+    return x[where], y[where]
 
 # -----------------------------------------------------------------
 

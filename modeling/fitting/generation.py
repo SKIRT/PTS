@@ -49,6 +49,7 @@ from ...core.basics.configuration import prompt_yn, prompt_string
 from ...core.tools.stringify import tostr
 from ...core.launch.batch import MissingSimulation
 from ...core.simulation.jobscript import SKIRTJobScript, get_host_id_from_jobscript_file
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -560,6 +561,21 @@ class Generation(object):
 
         path = self.get_simulation_ski_path(name)
         return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    def has_skifile(self, name):
+        return self.has_ski_file(name)
+
+    # -----------------------------------------------------------------
+
+    def has_simulation_skifile(self, name):
+        return self.has_skifile(name)
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_skifile(self, name):
+        return SkiFile(self.get_simulation_ski_path(name))
 
     # -----------------------------------------------------------------
 
@@ -1431,7 +1447,12 @@ class Generation(object):
         """
 
         # Check whether the chi squared is set in the chi squared table
-        return self.chi_squared_table.has_simulation(name)
+        if self.has_chi_squared_table: return self.chi_squared_table.has_simulation(name)
+
+        # Chi squared is not present!
+        else:
+            log.warning("Chi squared table for generation " + self.name + " is not present at '" + self.chi_squared_table_path + ": determining whether simulation '" + name + "' is analysed by looking at the miscellaneous output")
+            return self.has_misc_output(name)
 
     # -----------------------------------------------------------------
 
@@ -2725,6 +2746,12 @@ class Generation(object):
         """
 
         return fs.join(self.path, "chi_squared.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_chi_squared_table(self):
+        return fs.is_file(self.chi_squared_table_path)
 
     # -----------------------------------------------------------------
 

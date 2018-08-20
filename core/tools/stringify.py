@@ -577,7 +577,9 @@ def stringify_array(value, **kwargs):
     delimiter = kwargs.pop("delimiter", ",")
 
     ptype, val = stringify_not_list(value[0], **kwargs)
-    return ptype + "_array", delimiter.join([repr(el) for el in value])
+
+    if ptype is None: return "array", delimiter.join([repr(el) for el in value])
+    else: return ptype + "_array", delimiter.join([repr(el) for el in value])
 
     #ptype, val = stringify_not_list(value[0])
     #return ptype + "_array", ",".join([repr(el) for el in value])
@@ -1001,7 +1003,12 @@ def str_from_real(real, **kwargs):
             else:
                 primary_ndigits = numbers.order_of_magnitude(real) + 1
                 ndigits = decimal_places + primary_ndigits
-                return ("{:." + str(ndigits) + "}").format(real)
+                if ndigits < 1:
+                    warnings.warn("The small number '" + repr(real) + "' cannot be represented with only " + str(decimal_places) + " decimal places: using scientific notation")
+                    return str_from_real(real, scientific=True, ndigits=decimal_places+1)
+                else:
+                    #print(decimal_places, primary_ndigits, ndigits)
+                    return ("{:." + str(ndigits) + "}").format(real)
 
         else: return repr(real)
 

@@ -472,12 +472,20 @@ class LogFile(object):
             # Search for the line stating the number of photon packages
             if "photon packages for each of" in self.contents["Message"][i]:
 
+                #print(self.contents["Message"][i])
                 # Return the number of stellar photon packages
-                stellar_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                #stellar_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0]) # doesn't work anymore?
+                stellar_packages = int(self.contents["Message"][i].split(" photon packages")[0])
                 return stellar_packages
 
         # If the number of stellar photon packages could not be determined, return None
         return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npackages(self):
+        return self.stellar_packages
 
     # -----------------------------------------------------------------
 
@@ -606,6 +614,12 @@ class LogFile(object):
 
         # If the number of nodes could not be determined, return None
         return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_cells(self):
+        return self.dust_cells
 
     # -----------------------------------------------------------------
 
@@ -887,6 +901,12 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nwavelengths(self):
+        return self.wavelengths
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def processes(self):
 
@@ -907,12 +927,6 @@ class LogFile(object):
 
     @property
     def nprocesses(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.processes
 
     # -----------------------------------------------------------------
@@ -957,12 +971,6 @@ class LogFile(object):
 
     @property
     def nthreads(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.threads
 
     # -----------------------------------------------------------------

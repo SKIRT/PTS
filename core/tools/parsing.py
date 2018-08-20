@@ -783,6 +783,63 @@ def filepath_list(argument):
 
 # -----------------------------------------------------------------
 
+def string_column(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    import numpy as np
+
+    # Get filepath and column index (if specified)
+    filepath, col = string_or_string_integer_pair(argument, return_none=True)
+
+    # Load columns
+    if col is None: col = 0
+    column = np.loadtxt(filepath, usecols=col, dtype=str)
+
+    # Return the column as a list
+    return list(column)
+
+# -----------------------------------------------------------------
+
+def real_column(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    import numpy as np
+
+    # Get filepath and column index (if specified)
+    filepath, col = string_or_string_integer_pair(argument, return_none=True)
+
+    # Load columns
+    if col is None: col = 0
+    column = np.loadtxt(filepath, usecols=col, dtype=float)
+
+    # Return the column as a list
+    return list(column)
+
+# -----------------------------------------------------------------
+
+def string_list_or_string_column(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_column(argument)
+    except (ValueError, IOError) as e: return string_list(argument)
+
+# -----------------------------------------------------------------
+
 def string_pair(argument):
 
     """
@@ -825,6 +882,37 @@ def integer_or_string_pair(argument):
         a, b = map(integer_or_string, argument.split(","))
         return a, b
     except: raise ValueError("Pair must be of format a,b")
+
+# -----------------------------------------------------------------
+
+def string_integer_pair(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    a, b = integer_or_string_pair(argument)
+    if not types.is_string_type(a): raise ValueError("First argument is not a string")
+    if not types.is_integer_type(b): raise ValueError("Second argument is not an integer")
+    return a, b
+
+# -----------------------------------------------------------------
+
+def string_or_string_integer_pair(argument, return_none=False):
+
+    """
+    This function ...
+    :param argument:
+    :param return_none:
+    :return:
+    """
+
+    try: return string_integer_pair(argument)
+    except ValueError:
+        if return_none: return string(argument), None
+        else: return string(argument)
 
 # -----------------------------------------------------------------
 

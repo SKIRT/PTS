@@ -65,6 +65,50 @@ def split_at_first(string, pattern):
 
 # -----------------------------------------------------------------
 
+def replace(string, pattern, new):
+
+    """
+    This functino ...
+    :param string:
+    :param pattern:
+    :param new:
+    :return:
+    """
+
+    return string.replace(pattern, new)
+
+# -----------------------------------------------------------------
+
+def replace_last(string, pattern, new):
+
+    """
+    This function ...
+    :param string:
+    :param pattern:
+    :param new:
+    :return:
+    """
+
+    before, after = split_at_last(string, pattern)
+    return before + new + after
+
+# -----------------------------------------------------------------
+
+def replace_first(string, pattern, new):
+
+    """
+    This function ...
+    :param string:
+    :param pattern:
+    :param new:
+    :return:
+    """
+
+    before, after = split_at_first(string, pattern)
+    return before + new + after
+
+# -----------------------------------------------------------------
+
 def noccurences(string, character):
 
     """

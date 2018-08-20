@@ -1499,7 +1499,19 @@ def median(*numbers):
     :return:
     """
 
-    return np.median(np.asarray(numbers))
+    return median_numpy(np.asarray(numbers))
+
+# -----------------------------------------------------------------
+
+def median_numpy(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    return np.median(array)
 
 # -----------------------------------------------------------------
 
@@ -1994,7 +2006,7 @@ def get_linear_series(npoints, start=1, step=1):
     :return:
     """
 
-    stop = start + npoints
+    stop = start + step * npoints
     return list(range(start, stop, step))
 
 # -----------------------------------------------------------------
@@ -2020,5 +2032,28 @@ def get_alternating_series(npoints, start=1, step=1):
 
     #return numbers
     raise RuntimeError("We shouldn't get here")
+
+# -----------------------------------------------------------------
+
+def closest_half_integer(number):
+
+    """
+    Round a number to the closest half integer.
+    >>> closest_half_integer(1.3)
+    1.5
+    >>> closest_half_integer(2.6)
+    2.5
+    >>> closest_half_integer(3.0)
+    3.0
+    >>> closest_half_integer(4.1)
+    4.0
+    """
+
+    return round(number * 2) / 2.0
+
+# -----------------------------------------------------------------
+
+def nearest_half_integer(number):
+    return closest_half_integer(number)
 
 # -----------------------------------------------------------------

@@ -36,6 +36,7 @@ definition.add_optional("extension", "string", "the file extension")
 # Add flags
 definition.add_flag("recursive", "search recursively", False)
 definition.add_flag("full", "show the full paths", False)
+definition.add_flag("remove", "remove the found files", False)
 
 # -----------------------------------------------------------------
 
@@ -66,6 +67,7 @@ if config.remote is not None:
         for path in paths:
             if config.full: print(path)
             else: print(path.split(find_path)[1])
+            if config.remove: remote.remove_file(path)
 
 # LOCALLY
 else:
@@ -74,12 +76,13 @@ else:
     find_path = fs.cwd()
 
     # Loop over the files
-    paths =  fs.files_in_path(find_path, contains=config.contains, extension=config.extension, recursive=config.recursive)
+    paths = fs.files_in_path(find_path, contains=config.contains, extension=config.extension, recursive=config.recursive)
 
     if len(paths) == 0: log.warning("No files found")
     else:
         for path in paths:
             if config.full: print(path)
             else: print(path.split(find_path)[1])
+            if config.remove: fs.remove_file(path)
 
 # -----------------------------------------------------------------

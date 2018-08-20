@@ -15,8 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import re
 import math
-#import filecmp
-#import difflib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -28,7 +26,7 @@ from ..tools import formatting as fmt
 from ..basics.log import log
 from ..simulation.logfile import LogFile
 from ..basics.map import Map
-from ..tools import types
+from ..tools import types, numbers
 
 # -----------------------------------------------------------------
 
@@ -706,25 +704,27 @@ def find_input(ski_path, output_path):
 
 # -----------------------------------------------------------------
 
-def equaltextfiles(filepath1, filepath2, allowedDiffs, ignore_empty=True):
+def equaltextfiles(filepath1, filepath2, max_ndiffs, ignore_empty=True):
 
     """
     This function ...
     :param filepath1:
     :param filepath2:
-    :param allowedDiffs:
+    :param max_ndiffs:
+    :param ignore_empty:
     :return:
     """
 
-    lines1 = readlines(filepath1)
-    lines2 = readlines(filepath2)
+    # Get lines
+    lines1 = fs.get_lines(filepath1)
+    lines2 = fs.get_lines(filepath2)
 
     if ignore_empty:
 
         lines1 = [line for line in lines1 if line]
         lines2 = [line for line in lines2 if line]
 
-    return equallists(lines1, lines2, allowedDiffs)
+    return equallists(lines1, lines2, max_ndiffs)
 
 # -----------------------------------------------------------------
 
@@ -737,8 +737,9 @@ def textfiledifferences(filepath1, filepath2):
     :return:
     """
 
-    lines1 = readlines(filepath1)
-    lines2 = readlines(filepath2)
+    # Get lines
+    lines1 = fs.get_lines(filepath1)
+    lines2 = fs.get_lines(filepath2)
 
     indices = listdifferences(lines1, lines2)
 
@@ -747,13 +748,13 @@ def textfiledifferences(filepath1, filepath2):
 
 # -----------------------------------------------------------------
 
-def equallists(list1, list2, allowedDiffs):
+def equallists(list1, list2, max_ndiffs):
 
     """
     This function ...
     :param list1:
     :param list2:
-    :param allowedDiffs:
+    :param max_ndiffs:
     :return:
     """
 
@@ -761,13 +762,17 @@ def equallists(list1, list2, allowedDiffs):
     length = len(list1)
     if length < 2 or length != len(list2): return False
 
-    # compare the lists item by item
+    # Compare the lists item by item
     diffs = 0
     for index in range(length):
+
         if list1[index] != list2[index]:
+
             # verify against allowed number of differences
             diffs += 1
-            if diffs > allowedDiffs: return False
+
+            if diffs > max_ndiffs: return False
+
             # verify that the differing items are identical up to numerics and months
             pattern = re.compile(r"(\d{1,4}-[0-9a-f]{7,7}(-dirty){0,1})|\d{1,4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
             item1 = re.sub(pattern, "*", list1[index])
@@ -815,20 +820,6 @@ def listdifferences(list1, list2):
 
     # Return the indices
     return indices
-
-# -----------------------------------------------------------------
-
-def readlines(filepath):
-
-    """
-    This function reads the lines of the specified text file into a list of strings, and returns the list.
-    :param filepath:
-    :return:
-    """
-
-    with open(filepath) as f: result = f.readlines()
-    return [line.split("\n")[0] for line in result]
-    #return result
 
 # -----------------------------------------------------------------
 
@@ -950,16 +941,26 @@ def simplify_xml(xml_string):
 
 # -----------------------------------------------------------------
 
-def matching_npackages(npackages1, npackages2, nprocesses):
+def matching_npackages(npackages1, npackages2, nprocesses, nprocesses2=None):
 
     """
     This function ...
     :param npackages1:
     :param npackages2:
     :param nprocesses:
+    :param nprocesses2:
     :return:
     """
 
-    return math.ceil(npackages1 / float(nprocesses)) == math.ceil(npackages2 / float(nprocesses))
+    if nprocesses2 is None: nprocesses2 = nprocesses
+
+    # Checks
+    if not types.is_integer_type(nprocesses): raise ValueError("Number of processes must be integer")
+    if not types.is_integer_type(nprocesses2): raise ValueError("Number of processes must be integer")
+    if not numbers.is_integer(npackages1): raise ValueError("Number of photon packages must be integer") # doesn't need to be a literal integer (e.g. 1e6 is fine = float)
+    if not numbers.is_integer(npackages2): raise ValueError("Number of photon packages must be integer") # doesn't need to be a literal integer
+
+    # Return
+    return math.ceil(npackages1 / float(nprocesses)) * nprocesses == math.ceil(npackages2 / float(nprocesses2)) * nprocesses2
 
 # -----------------------------------------------------------------

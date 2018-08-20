@@ -20,7 +20,7 @@ from .component import AnalysisComponent, AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, lazyfileproperty
 from ..core.data import Data3D
 from ..projection.data import project_data
 from ..core.model import oliver_stellar_mass, salim_fuv_to_sfr
@@ -51,14 +51,6 @@ class SFRAnalyser(AnalysisRunComponent):
         # Call the constructor of the base class
         super(SFRAnalyser, self).__init__(*args, **kwargs)
 
-        # The projected maps
-        self.sfr_earth_map = None
-        self.sfr_faceon_map = None
-        self.stellar_mass_earth_map = None
-        self.stellar_mass_faceon_map = None
-        self.ssfr_earth_map = None
-        self.ssfr_faceon_map = None
-
         # The 3D data
         self.fuv_data = None # intrinsic
         self.i1_data = None  # also intrinsic
@@ -80,15 +72,6 @@ class SFRAnalyser(AnalysisRunComponent):
         :param kwargs:
         :return:
         """
-
-        # Get projected star formation rates
-        self.get_projected()
-
-        # Get cell star formation rates
-        self.get_cell()
-
-        # Get the projected cell star formation rates
-        self.get_cell_maps()
 
         # Writing
         self.write()
@@ -128,277 +111,82 @@ class SFRAnalyser(AnalysisRunComponent):
         return self.analysis_run.edgeon_projection
 
     # -----------------------------------------------------------------
+    # SFR MAPS
+    # -----------------------------------------------------------------
 
-    def get_projected(self):
+    @lazyfileproperty(Frame, "projected_sfr_earth_path", True, write=False)
+    def sfr_earth_map(self):
+
+        """
+        projected star formation rate from the earth projection
+        :return:
+        """
+
+        return self.model.total_star_formation_rate_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_sfr_faceon_path", True, write=False)
+    def sfr_faceon_map(self):
+
+        """
+        projected star formation rate from the faceon projection
+        :return:
+        """
+
+        return self.model.total_star_formation_rate_map_faceon
+
+    # -----------------------------------------------------------------
+    # STELLAR MASS MAPS
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_mass_earth_path", True, write=False)
+    def stellar_mass_earth_map(self):
+
+        """
+        projected stellar mass from the earth projection
+        :return:
+        """
+
+        return self.model.total_stellar_mass_map_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_mass_faceon_path", True, write=False)
+    def stellar_mass_faceon_map(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Getting the projected star formation rates ...")
+        return self.model.total_stellar_mass_map_faceon
 
-        # Star formation rate
-        self.get_projected_sfr()
+    # -----------------------------------------------------------------
+    # sSFR MAPS
+    # -----------------------------------------------------------------
 
-        # Stellar mass
-        self.get_projected_mass()
+    @lazyfileproperty(Frame, "projected_ssfr_earth_path", True, write=False)
+    def ssfr_earth_map(self):
 
-        # Specific star formation rate
-        self.get_projected_ssfr()
+        """
+        projected specific star formation rate from the earth projection
+        :return:
+        """
+
+        return self.model.total_ssfr_map_earth
 
     # -----------------------------------------------------------------
 
-    @property
-    def needs_projected_sfr_earth(self):
-        return not self.has_projected_sfr_earth or self.do_plot_projected_sfr_earth_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_projected_sfr_faceon(self):
-        return not self.has_projected_sfr_faceon or self.do_plot_projected_sfr_faceon_map
-
-    # -----------------------------------------------------------------
-
-    def get_projected_sfr(self):
+    @lazyfileproperty(Frame, "projected_ssfr_faceon_path", True, write=False)
+    def ssfr_faceon_map(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Getting the projected star formation rate ...")
-
-        # Earth
-        if self.needs_projected_sfr_earth: self.get_projected_sfr_earth()
-
-        # Faceon
-        if self.needs_projected_sfr_faceon: self.get_projected_sfr_faceon()
-
-    # -----------------------------------------------------------------
-
-    def get_projected_sfr_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected star formation rate from the earth projection ...")
-
-        # Load
-        if self.has_projected_sfr_earth: self.sfr_earth_map = Frame.from_file(self.projected_sfr_earth_path)
-
-        # Calculate
-        else: self.sfr_earth_map = self.model.total_star_formation_rate_map_earth
-
-    # -----------------------------------------------------------------
-
-    def get_projected_sfr_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected star formation rate from the faceon projection ...")
-
-        # Load
-        if self.has_projected_sfr_faceon: self.sfr_faceon_map = Frame.from_file(self.projected_sfr_faceon_path)
-
-        # Calculate
-        else: self.sfr_faceon_map = self.model.total_star_formation_rate_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_projected_mass_earth(self):
-        return not self.has_projected_mass_earth or self.do_plot_projected_mass_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_projected_mass_faceon(self):
-        return not self.has_projected_mass_faceon or self.do_plot_projected_mass_faceon
-
-    # -----------------------------------------------------------------
-
-    def get_projected_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected stellar mass ...")
-
-        # Earth
-        if self.needs_projected_mass_earth: self.get_projected_mass_earth()
-
-        # Faceon
-        if self.needs_projected_mass_faceon: self.get_projected_mass_faceon()
-
-    # -----------------------------------------------------------------
-
-    def get_projected_mass_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected stellar mass from the earth projection ...")
-
-        # Load
-        if self.has_projected_mass_earth: self.stellar_mass_earth_map = Frame.from_file(self.projected_mass_earth_path)
-
-        # Calculate
-        else: self.stellar_mass_earth_map = self.model.total_stellar_mass_map_earth
-
-    # -----------------------------------------------------------------
-
-    def get_projected_mass_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected stellar mass from the faceon projection ...")
-
-        # Load
-        if self.has_projected_mass_faceon: self.stellar_mass_faceon_map = Frame.from_file(self.projected_mass_faceon_path)
-
-        # Calculate
-        else: self.stellar_mass_faceon_map = self.model.total_stellar_mass_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_projected_ssfr_earth(self):
-        return not self.has_projected_ssfr_earth or self.do_plot_projected_ssfr_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_projected_ssfr_faceon(self):
-        return not self.has_projected_ssfr_faceon or self.do_plot_projected_ssfr_faceon
-
-    # -----------------------------------------------------------------
-
-    def get_projected_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected specific star formation rate ...")
-
-        # Earth
-        if self.needs_projected_ssfr_earth: self.get_projected_ssfr_earth()
-
-        # Faceon
-        if self.needs_projected_ssfr_faceon: self.get_projected_ssfr_faceon()
-
-    # -----------------------------------------------------------------
-
-    def get_projected_ssfr_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the projected specific star formation rate from the earth projection ...")
-
-        # Load
-        if self.has_projected_ssfr_earth: self.ssfr_earth_map = Frame.from_file(self.projected_ssfr_earth_path)
-
-        # Calculate
-        else: self.ssfr_earth_map = self.model.total_ssfr_map_earth
-
-    # -----------------------------------------------------------------
-
-    def get_projected_ssfr_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load
-        if self.has_projected_ssfr_faceon: self.ssfr_faceon_map = Frame.from_file(self.projected_ssfr_faceon_path)
-
-        # Calculate
-        else: self.ssfr_faceon_map = self.model.total_ssfr_map_faceon
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_fuv(self):
-        return not self.has_cell_fuv or not self.has_cell_sfr
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_i1(self):
-        return not self.has_cell_i1 or not self.has_cell_mass
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_sfr(self):
-        return not self.has_cell_sfr or (not self.has_cell_ssfr and self.needs_cell_ssfr) or (not self.has_cell_sfr_map and self.needs_cell_sfr_map)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_mass(self):
-        return not self.has_cell_mass or (not self.has_cell_ssfr and self.needs_cell_ssfr) or (not self.has_cell_mass_map and self.needs_cell_mass_map)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_ssfr(self):
-        return not self.has_cell_ssfr or (not self.has_cell_ssfr_map and self.needs_cell_ssfr_map)
-
-    # -----------------------------------------------------------------
-
-    def get_cell(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the cell star formation rates ...")
-
-        # FUV luminosity
-        if self.needs_cell_fuv: self.get_cell_fuv()
-
-        # I1 luminosity
-        if self.needs_cell_i1: self.get_cell_i1()
-
-        # Star formation rate
-        if self.needs_cell_sfr: self.get_cell_sfr()
-
-        # Stellar mass
-        if self.needs_cell_mass: self.get_cell_mass()
-
-        # Specific star formation rate
-        if self.needs_cell_ssfr: self.get_cell_ssfr()
+        return self.model.total_ssfr_map_faceon
 
     # -----------------------------------------------------------------
 
@@ -566,18 +354,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def get_cell_fuv(self):
+    @lazyfileproperty(Data3D, "cell_fuv_path", True, write=False)
+    def fuv_data(self):
 
         """
-        This function ...
+        cell FUV luminosity data
         :return:
         """
 
-        # Inform the user
-        log.info("Getting the cell FUV luminosity ...")
-
         # Create the data
-        self.fuv_data = Data3D(self.fuv_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.unevolved_cell_fuv_luminosities, length_unit="pc", unit=self.fuv_luminosity_unit, description=self.fuv_description, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
+        return Data3D(self.fuv_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      self.unevolved_cell_fuv_luminosities, length_unit="pc", unit=self.fuv_luminosity_unit,
+                      description=self.fuv_description, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -605,40 +393,35 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def get_cell_i1(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the cell I1 luminosity ...")
-
-        # Create the data
-        self.i1_data = Data3D("I1", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.old_cell_i1_luminosities, length_unit="pc", unit=self.i1_luminosity_unit, description="Intrinsic I1 luminosity of evolved stars", distance=self.galaxy_distance, wavelength=self.i1_wavelength)
+    @property
+    def i1_name(self):
+        return "I1"
 
     # -----------------------------------------------------------------
 
-    def get_cell_sfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the cell star formation rate ...")
-
-        # Load
-        if self.has_cell_sfr: self.sfr_data = Data3D.from_file(self.cell_sfr_path)
-
-        # Calculate
-        else: self.calculate_cell_sfr()
+    @property
+    def i1_description(self):
+        return "Intrinsic I1 luminosity of evolved stars"
 
     # -----------------------------------------------------------------
 
-    def calculate_cell_sfr(self):
+    @lazyfileproperty(Data3D, "cell_i1_path", True, write=False)
+    def i1_data(self):
+
+        """
+        cell I1 luminosity data
+        :return:
+        """
+
+        return Data3D(self.i1_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      self.old_cell_i1_luminosities, length_unit="pc", unit=self.i1_luminosity_unit,
+                      description=self.i1_description, distance=self.galaxy_distance,
+                      wavelength=self.i1_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_sfr_path", True, write=False)
+    def sfr_data(self):
 
         """
         This function ...
@@ -649,29 +432,12 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Calculating the cell star formation rate ...")
 
         # Calculate the SFR data from the intrinsic FUV data
-        self.sfr_data = salim_fuv_to_sfr(self.fuv_data)
+        return salim_fuv_to_sfr(self.fuv_data)
 
     # -----------------------------------------------------------------
 
-    def get_cell_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the cell stellar mass ...")
-
-        # Load
-        if self.has_cell_mass: self.stellar_mass_data = Data3D.from_file(self.cell_mass_path)
-
-        # Calculate
-        else: self.calculate_cell_mass()
-
-    # -----------------------------------------------------------------
-
-    def calculate_cell_mass(self):
+    @lazyfileproperty(Data3D, "cell_mass_path", True, write=False)
+    def stellar_mass_data(self):
 
         """
         This function ...
@@ -682,25 +448,7 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Calculating the cell stellar mass ...")
 
         # Calculate the stellar mass data from the I1 data
-        self.stellar_mass_data = oliver_stellar_mass(self.i1_data, hubble_type=self.hubble_stage_type, hubble_subtype=self.hubble_stage_subtype)
-
-    # -----------------------------------------------------------------
-
-    def get_cell_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the cell specific star formation rate ...")
-
-        # Load
-        if self.has_cell_ssfr: self.ssfr_data = Data3D.from_file(self.cell_ssfr_path)
-
-        # Calculate
-        else: self.calculate_cell_ssfr()
+        return oliver_stellar_mass(self.i1_data, hubble_type=self.hubble_stage_type, hubble_subtype=self.hubble_stage_subtype)
 
     # -----------------------------------------------------------------
 
@@ -740,77 +488,32 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_cell_ssfr(self):
+    @property
+    def ssfr_name(self):
+        return "sSFR"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_description(self):
+        return "Specific star formation rate"
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_ssfr_path", True, write=False)
+    def ssfr_data(self):
 
         """
-        This function ...
+        cell specific star formation rate
         :return:
         """
-
-        # Inform the user
-        log.info("Calculating the cell specific star formation rate ...")
 
         # Create the data
-        self.ssfr_data = Data3D("sSFR", self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                              self.cell_ssfrs, length_unit="pc", unit=self.ssfr_unit, description="specific star formation rate", distance=self.galaxy_distance)
+        return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.cell_ssfrs,
+                      length_unit="pc", unit=self.ssfr_unit, description=self.ssfr_description, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_sfr_map(self):
-        return not self.has_cell_sfr_map or self.do_plot_cell_sfr_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_mass_map(self):
-        return not self.has_cell_sfr_map or self.do_plot_cell_mass_map
-
-    # -----------------------------------------------------------------
-
-    @property
-    def needs_cell_ssfr_map(self):
-        return not self.has_cell_sfr_map or self.do_plot_cell_ssfr_map
-
-    # -----------------------------------------------------------------
-
-    def get_cell_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the maps of the cell star formation rates ...")
-
-        # Star formation rate
-        if self.needs_cell_sfr_map: self.get_cell_sfr_map()
-
-        # Stellar mass
-        if self.needs_cell_mass_map: self.get_cell_mass_map()
-
-        # Specific star formation rate
-        if self.needs_cell_ssfr_map: self.get_cell_ssfr_map()
-
-    # -----------------------------------------------------------------
-
-    def get_cell_sfr_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the map of the cell star formation rate ...")
-
-        # Load?
-        if self.has_cell_sfr_map: self.sfr_data_faceon_map = Frame.from_file(self.cell_sfr_map_path)
-
-        # Create
-        else: self.create_cell_sfr_map()
-
+    # CELL SFR MAP
     # -----------------------------------------------------------------
 
     @property
@@ -825,37 +528,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def create_cell_sfr_map(self):
+    @lazyfileproperty(Frame, "cell_sfr_map_path", True, write=False)
+    def sfr_data_faceon_map(self):
 
         """
-        This function ...
+        map of the cell star formation rate
         :return:
         """
 
-        # Inform the user
-        log.info("Creating the map of the cell star formation rate ...")
-
-        # Create
-        self.sfr_data_faceon_map = project_data(self.sfr_name, self.sfr_data, self.faceon_projection, description=self.sfr_description)
+        return project_data(self.sfr_name, self.sfr_data, self.faceon_projection, description=self.sfr_description)
 
     # -----------------------------------------------------------------
-
-    def get_cell_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the map of the cell stellar mass ...")
-
-        # Load?
-        if self.has_cell_mass_map: self.stellar_mass_data_faceon_map = Frame.from_file(self.cell_mass_map_path)
-
-        # Create
-        else: self.create_cell_mass_map()
-
+    # CELL STELLAR MASS MAP
     # -----------------------------------------------------------------
 
     @property
@@ -870,58 +554,30 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def create_cell_mass_map(self):
+    @lazyfileproperty(Frame, "cell_mass_map_path", True, write=False)
+    def stellar_mass_data_faceon_map(self):
 
         """
-        This function ...
+        map of the cell stellar mass
         :return:
         """
 
-        # Inform the user
-        log.info("Creating the map of the cell stellar mass ...")
+        return project_data(self.stellar_mass_name, self.stellar_mass_data, self.faceon_projection, description=self.stellar_mass_description)
 
     # -----------------------------------------------------------------
-
-    def get_cell_ssfr_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the map of the cell specific star formation rate ...")
-
-        # Load?
-        if self.has_cell_ssfr_map: self.ssfr_data_faceon_map = Frame.from_file(self.cell_ssfr_map_path)
-
-        # Create
-        else: self.create_cell_ssfr_map()
-
+    # CELL SSFR MAP
     # -----------------------------------------------------------------
 
-    @property
-    def ssfr_name(self):
-        return "sSFR"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_description(self):
-        return "Specific star formation rate"
-
-    # -----------------------------------------------------------------
-
-    def create_cell_ssfr_map(self):
+    @lazyfileproperty(Frame, "cell_ssfr_map_path", True, write=False)
+    def ssfr_data_faceon_map(self):
 
         """
-        This function ...
-        :return:
+        map of the cell specific star formation rate
         """
 
-        # Inform the user
-        log.info("Creating the map of the cell specific star formation rate ...")
+        return project_data(self.ssfr_name, self.ssfr_data, self.faceon_projection, description=self.ssfr_description)
 
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def write(self):
