@@ -2785,6 +2785,11 @@ def initialize_table(table):
     :return:
     """
 
+    from .log import log
+
+    # Debugging
+    log.debug("Initializing the table ...")
+
     # Clear the column info so that we can rebuild it
     table.column_info = []
 

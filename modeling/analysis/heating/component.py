@@ -36,6 +36,12 @@ contributions = [total, old, young, ionizing, unevolved]
 
 # -----------------------------------------------------------------
 
+cell_dirname = "cell"
+projected_dirname = "projected"
+spectral_dirname = "spectral"
+
+# -----------------------------------------------------------------
+
 class DustHeatingAnalysisComponent(AnalysisComponent):
     
     """
@@ -60,25 +66,19 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @lazyproperty
     def cell_heating_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.create_directory_in(self.analysis_run.heating_path, "cell")
+        return fs.create_directory_in(self.analysis_run.heating_path, cell_dirname)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def projected_heating_path(self):
+        return fs.create_directory_in(self.analysis_run.heating_path, projected_dirname)
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        return fs.create_directory_in(self.analysis_run.heating_path, "projected")
+    @lazyproperty
+    def spectral_heating_path(self):
+        return fs.create_directory_in(self.analysis_run.heating_path, spectral_dirname)
 
     # -----------------------------------------------------------------
     # TOTAL SIMULATION

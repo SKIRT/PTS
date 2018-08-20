@@ -21,6 +21,7 @@ from ..units.unit import parse_unit
 from ..tools.utils import memoize_method, lazyproperty
 from ..tools import numbers
 from .wavelengthgrid import WavelengthGrid
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -126,17 +127,21 @@ class SkirtTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, expected_nrows=None):
+    def from_file(cls, path, expected_nrows=None, method="numpy"):
 
         """
         This function ...
         :param path:
         :param expected_nrows:
+        :param method:
         :return:
         """
 
         # Get the data
-        data, names, units = get_skirt_data(path, expected_nrows=expected_nrows)
+        data, names, units = get_skirt_data(path, expected_nrows=expected_nrows, method=method)
+
+        # Debugging
+        log.debug("Creating the table ...")
 
         # Create a new table from the data
         table = cls(data=data, names=names, masked=True)
@@ -560,17 +565,30 @@ class AbsorptionSpectraTable(SkirtTable):
 
 # -----------------------------------------------------------------
 
-def get_skirt_data(path, expected_nrows=None):
+def get_skirt_data(path, expected_nrows=None, method="numpy"):
 
     """
     This function ...
     :param path:
     :param expected_nrows:
+    :param method:
     :return:
     """
 
+    # Debugging
+    log.debug("Loading SKIRT table from '" + path + "' using " + method.capitalize() + " ...")
+
+    # Debugging
+    log.debug("Reading data ...")
+
     # Get the column data
-    columns = np.loadtxt(path, unpack=True, ndmin=2)
+    if method == "numpy": columns = np.loadtxt(path, unpack=True, ndmin=2)
+    elif method == "pandas":
+        import pandas as pd
+        df = pd.read_csv(path, sep=" ", comment="#", header=None)
+        ncolumns = len(df.columns)
+        columns = [df[index].values for index in range(ncolumns)]
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
 
     # Get number of columns and number of rows
     number_of_columns = len(columns)
@@ -590,6 +608,9 @@ def get_skirt_data(path, expected_nrows=None):
     data = []
     names = []
     units = dict()
+
+    # Debugging
+    log.debug("Reading header ...")
 
     # Get names and units
     with open(path) as table_file:
