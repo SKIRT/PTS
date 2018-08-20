@@ -125,7 +125,8 @@ def can_be_opened(url):
         return True
     except HTTPError as e:
         message = str(e)
-        if "404" in message: return False
+        if "404" in message: return False # Not existing
+        elif "403" in message: return False # forbidden
         else: raise ValueError("Unknown error: '" + message + "'")
 
 # -----------------------------------------------------------------
