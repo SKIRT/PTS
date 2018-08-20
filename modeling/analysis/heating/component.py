@@ -138,6 +138,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def total_contribution_absorption_filepath(self):
@@ -170,6 +172,15 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def total_contribution_absorption_luminosities(self):
         return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
 
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_spectral_absorption_filepath(self):
+        return self.total_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -246,6 +257,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.old_simulation_data
 
     # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def old_contribution_absorption_filepath(self):
@@ -278,6 +291,15 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def old_contribution_absorption_luminosities(self):
         return np.asarray(self.old_contribution_absorption_data[self.old_contribution_absorption_column_name])
 
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_spectral_absorption_filepath(self):
+        return self.old_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -354,6 +376,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.young_simulation_data
 
     # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def young_contribution_absorption_filepath(self):
@@ -386,6 +410,15 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def young_contribution_absorption_luminosities(self):
         return np.asarray(self.young_contribution_absorption_data[self.young_contribution_absorption_column_name])
 
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_spectral_absorption_filepath(self):
+        return self.young_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -462,6 +495,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.sfr_simulation_data
 
     # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_absorption_filepath(self):
@@ -494,6 +529,15 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def ionizing_contribution_absorption_luminosities(self):
         return np.asarray(self.ionizing_contribution_absorption_data[self.ionizing_contribution_absorption_column_name])
 
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_spectral_absorption_filepath(self):
+        return self.ionizing_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -570,6 +614,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.unevolved_simulation_data
 
     # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_absorption_filepath(self):
@@ -602,6 +648,15 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def unevolved_contribution_absorption_luminosities(self):
         return np.asarray(self.unevolved_contribution_absorption_data[self.unevolved_contribution_absorption_column_name])
 
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_spectral_absorption_filepath(self):
+        return self.unevolved_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property

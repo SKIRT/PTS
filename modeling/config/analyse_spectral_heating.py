@@ -29,8 +29,7 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 
 # -----------------------------------------------------------------
 
-# NOW MOVED TO SPECTRAL HEATING
-#definition.add_optional("emission_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust emission", "W3,W4,MIPS 24mu,Herschel", convert_default=True)
-#definition.add_optional("absorption_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust absorption", "GALEX,SDSS", convert_default=True)
+definition.add_optional("emission_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust emission", "W3,W4,MIPS 24mu,Herschel", convert_default=True)
+definition.add_optional("absorption_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust absorption", "GALEX,SDSS", convert_default=True)
 
 # -----------------------------------------------------------------

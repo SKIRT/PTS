@@ -34,8 +34,10 @@ from ..config.evaluate_analysis import definition as evaluate_analysis_definitio
 from ...core.plot.attenuation import plot_attenuation_curve, plot_attenuation_curves
 from ..config.analyse_cell_heating import definition as analyse_cell_heating_definition
 from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
+from ..config.analyse_spectral_heating import definition as analyse_spectral_heating_definition
 from .heating.cell import CellDustHeatingAnalyser
 from .heating.projected import ProjectedDustHeatingAnalyser
+from .heating.spectral import SpectralDustHeatingAnalyser
 from ..config.analyse_properties import definition as analyse_properties_definition
 from .properties import PropertiesAnalyser
 from ..config.analyse_cell_energy import definition as analyse_cell_energy_definition
@@ -274,6 +276,7 @@ map_commands[_dust_name] = ("show_dust_map_command", True, "show a map of the du
 
 _cell_name = "cell"
 _projected_name = "projected"
+_spectral_name = "spectral"
 
 # -----------------------------------------------------------------
 
@@ -283,6 +286,7 @@ heating_commands = OrderedDict()
 # Cell and projected
 heating_commands[_cell_name] = ("analyse_cell_heating_command", True, "analyse the cell heating", None)
 heating_commands[_projected_name] = ("analyse_projected_heating_command", True, "analyse the projected heating", None)
+heating_commands[_spectral_name] = ("analyse_spectral_heating_command", True, "analyse the spectral heating", None)
 
 # -----------------------------------------------------------------
 
@@ -3726,6 +3730,68 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create the analyser
         analyser = ProjectedDustHeatingAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_spectral_heating_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Change settings
+        definition.import_settings(analyse_spectral_heating_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_spectral_heating_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_spectral_heating_definition, **kwargs)
+
+        # Analyse
+        self.analyse_spectral_heating(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_spectral_heating(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the spectral heating ...")
+
+        # Create the analyser
+        analyser = SpectralDustHeatingAnalyser(config=config)
 
         # Set the modeling path
         analyser.config.path = self.config.path
