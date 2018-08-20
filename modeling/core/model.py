@@ -32,6 +32,7 @@ from ...core.tools import filesystem as fs
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..simulation.single import SingleComponentSimulations
 from ..simulation.multi import MultiComponentSimulations
+from ..simulation.simulation import ObservedComponentSimulation
 from ...magic.core.frame import Frame
 from ...magic.core.list import convolve_and_rebin, convolve_rebin_and_convert
 from ...magic.basics.coordinatesystem import CoordinateSystem
@@ -583,6 +584,13 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_simulation(self):
+        #return self.total_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_total_output_path, total_simulation_name, earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def bulge_simulations(self):
 
         """
@@ -602,6 +610,13 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def bulge_simulation(self):
+        #return self.bulge_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_bulge_output_path, bulge_simulation_name, earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def disk_simulations(self):
 
         """
@@ -617,6 +632,13 @@ class RTModel(object):
                                                             intrinsic=sed.out_path, distance=self.distance,
                                                             map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon,
                                                             map_edgeon=self.old_disk_map_edgeon, earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_simulation(self):
+        #return self.disk_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_disk_output_path, disk_simulation_name, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -765,6 +787,13 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_simulation(self):
+        #return self.old_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_old_output_path, old_simulation_name, earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def young_simulations(self):
 
         """
@@ -784,6 +813,13 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def young_simulation(self):
+        #return self.young_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_young_output_path, young_simulation_name, earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_simulations(self):
 
         """
@@ -799,6 +835,13 @@ class RTModel(object):
                                                             intrinsic=sed.out_path, distance=self.distance,
                                                             map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon,
                                                             map_edgeon=self.sfr_map_edgeon, earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_simulation(self):
+        #return self.sfr_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_sfr_output_path, sfr_simulation_name, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -936,6 +979,13 @@ class RTModel(object):
                                                           intrinsic_cubes_faceon=self.unevolved_simulation_component_cubes_faceon,
                                                           intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon,
                                                           earth_wcs=self.earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation(self):
+        #return self.unevolved_simulations.observed
+        return ObservedComponentSimulation.from_output_path(self.observed_unevolved_output_path, unevolved_simulation_name, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 

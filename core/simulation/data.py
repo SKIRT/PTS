@@ -257,149 +257,111 @@ class SimulationData(object):
         return self.to_string()
 
     # -----------------------------------------------------------------
+    # CELL PROPERTIES
+    # -----------------------------------------------------------------
 
     @property
     def has_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.has_single_cell_properties
 
     # -----------------------------------------------------------------
 
     @property
     def cell_properties_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.single_cell_properties
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return is_valid(self.cell_properties_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SkirtTable.from_file(self.cell_properties_path)
 
+    # -----------------------------------------------------------------
+    # ISRF
     # -----------------------------------------------------------------
 
     @property
     def has_isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.has_isrf
 
     # -----------------------------------------------------------------
 
     @property
     def isrf_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.single_isrf
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_isrf(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return is_valid(self.isrf_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def isrf(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
         return SkirtTable.from_file(self.isrf_path)
+
+    # -----------------------------------------------------------------
+    # CELL TEMPERATURE
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_temperature(self):
+        return self.output.has_cell_temperature
 
     # -----------------------------------------------------------------
 
     @property
+    def cell_temperature_path(self):
+        return self.output.single_cell_temperature
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_temperature(self):
+        return is_valid(self.cell_temperature_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_temperature(self):
+        return SkirtTable.from_file(self.cell_temperature_path)
+
+    # -----------------------------------------------------------------
+    # ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
     def has_absorption(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return self.output.has_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def absorption_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.single_absorption
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_absorption(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return is_valid(self.absorption_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def absorption(self):
-
-        """
-        This function ..
-        :return:
-        """
-
         return SkirtTable.from_file(self.absorption_path)
 
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -425,88 +387,50 @@ class SimulationData(object):
         return SkirtTable.from_file(self.spectral_absorption_path)
 
     # -----------------------------------------------------------------
+    # WAVELENGTHS
+    # -----------------------------------------------------------------
 
     @property
     def has_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.has_wavelengths
 
     # -----------------------------------------------------------------
 
     @property
     def wavelengths_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.single_wavelengths
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return is_valid(self.wavelengths_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .wavelengthgrid import WavelengthGrid
         return WavelengthGrid.from_skirt_output(self.wavelengths[0])
 
     # -----------------------------------------------------------------
+    # SEDS
+    # -----------------------------------------------------------------
 
     @property
     def has_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.has_seds
 
     # -----------------------------------------------------------------
 
     @property
     def sed_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.seds
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         for path in self.sed_paths:
             if not is_valid(path): return False
         return True
@@ -599,6 +523,8 @@ class SimulationData(object):
         return seds_instruments
 
     # -----------------------------------------------------------------
+    # INSTRUMENTS
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def has_instruments(self):
@@ -630,15 +556,11 @@ class SimulationData(object):
         else: raise ValueError("Cannot determine instrument names")
 
     # -----------------------------------------------------------------
+    # WAVELENGTH GRID
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def has_wavelength_grid(self):
-
-        """
-        This function ..
-        :return:
-        """
-
         return self.has_wavelengths or self.has_seds
 
     # -----------------------------------------------------------------
@@ -672,27 +594,119 @@ class SimulationData(object):
         else: raise ValueError("Cannot get wavelength grid")
 
     # -----------------------------------------------------------------
+    # TEMPERATURE IMAGES
+    # -----------------------------------------------------------------
 
     @property
-    def has_images(self):
+    def has_temperature_images(self):
+        return self.output.has_temperature
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_image_paths(self):
+        return self.output.temperature
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_temperature_images(self):
 
         """
         This function ...
         :return:
         """
 
+        from ...magic.core.fits import is_valid as is_valid_fits
+
+        # Check all
+        for path in self.temperature_image_paths:
+            if not is_valid_fits(path): return False
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    def is_valid_temperature_image(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get the file path
+        path = self.temperature_images.get_raw(projection)
+
+        from ...magic.core.fits import is_valid as is_valid_fits
+
+        # Check validity
+        return is_valid_fits(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def temperature_image_paths_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        paths_projections = dict()
+
+        # Loop over the paths
+        for path in self.temperature_image_paths:
+
+            # Get projection name
+            projection = fs.strip_extension(fs.name(path)).split("ds_temp")[1]
+
+            # Set the datacube path for this instrument
+            paths_projections[projection] = path
+
+        # Return the dictionary
+        return paths_projections
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def temperature_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...magic.core.image import Image
+
+        # Set
+        images_projections = LazyDictionary(Image.from_file)
+
+        # Loop over the paths
+        for path in self.temperature_image_paths:
+
+            # Get projection name
+            projection = fs.strip_extension(fs.name(path)).split("ds_temp")[1]
+
+            # Add
+            images_projections[projection] = path
+
+        # Return
+        return images_projections
+
+    # -----------------------------------------------------------------
+    # IMAGES
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images(self):
         return self.output.has_images
 
     # -----------------------------------------------------------------
 
     @property
     def image_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.images
 
     # -----------------------------------------------------------------
@@ -796,53 +810,32 @@ class SimulationData(object):
         return images_instruments
 
     # -----------------------------------------------------------------
+    # STELLAR DENSITY
+    # -----------------------------------------------------------------
 
     @property
     def has_stellar_density(self):
-
-        """
-        This funtion ...
-        :return:
-        """
-
         return self.output.has_stellar_density
 
     # -----------------------------------------------------------------
 
     @property
     def stellar_density_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.single_stellar_density
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def valid_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return is_valid(self.stellar_density_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SkirtTable.from_file(self.stellar_density_path)
 
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -893,11 +886,13 @@ class SimulationData(object):
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix=""):
+    def to_string(self, line_prefix="", check_valid=True, dense=False):
 
         """
         This function ...
         :param line_prefix:
+        :param check_valid:
+        :param dense:
         :return:
         """
 
@@ -905,59 +900,120 @@ class SimulationData(object):
 
         lines = []
 
+        # Cell properties
+        if self.has_cell_properties:
+
+            if not dense: lines.append(line_prefix)
+
+            # Make line
+            if (not check_valid) or self.valid_cell_properties: line = fmt.green + fmt.underlined + "Cell properties" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Cell properties: invalid" + fmt.reset
+
+            lines.append(line_prefix + line)
+            if not dense: lines.append(line_prefix)
+
+        # Cell temperatures
+        if self.has_cell_temperature:
+
+            if not dense: lines.append(line_prefix)
+
+            # Make line
+            if (not check_valid) or self.valid_cell_temperature: line = fmt.green + fmt.underlined + "Cell temperature" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Cell temperature: invalid" + fmt.reset
+
+            lines.append(line_prefix + line)
+            if not dense: lines.append(line_prefix)
+
+        # Temperature images
+        if self.has_temperature_images:
+
+            if not dense: lines.append(line_prefix)
+
+            # Make line
+            if (not check_valid) or self.valid_temperature_images: line = fmt.green + fmt.underlined + "Temperature images" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Temperature images" + fmt.reset
+
+            lines.append(line_prefix + line)
+            if not dense: lines.append(line_prefix)
+
+            # Loop over the projections
+            for projection in self.temperature_images:
+
+                # Check whether file is valid
+                is_valid = (not check_valid) or self.is_valid_temperature_image(projection)
+
+                #
+                if is_valid: line = " - " + fmt.green + projection + fmt.reset
+                else: line = " - " + fmt.red + projection + ": invalid" + fmt.reset
+
+                # Add the line
+                lines.append(line_prefix + line)
+
         # ISRF
         if self.has_isrf:
 
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Make line
-            if self.valid_isrf: line = fmt.green + fmt.underlined + "ISRF" + fmt.reset
+            if (not check_valid) or self.valid_isrf: line = fmt.green + fmt.underlined + "ISRF" + fmt.reset
             else: line = fmt.red + fmt.underlined + "ISRF: invalid" + fmt.reset
 
             lines.append(line_prefix + line)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
         # Absorption
         if self.has_absorption:
 
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Make line
-            if self.valid_absorption: line = fmt.green + fmt.underlined + "Absorption" + fmt.reset
+            if (not check_valid) or self.valid_absorption: line = fmt.green + fmt.underlined + "Absorption" + fmt.reset
             else: line = fmt.red + fmt.underlined + "Absorption: invalid" + fmt.reset
 
             lines.append(line_prefix + line)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
+
+        # Spectral absorption
+        if self.has_spectral_absorption:
+
+            if not dense: lines.append(line_prefix)
+
+            # Make line
+            if (not check_valid) or self.valid_spectral_absorption: line = fmt.green + fmt.underlined + "Spectral absorption" + fmt.reset
+            else: line = fmt.red + fmt.underlined + "Spectral absorption: invalid" + fmt.reset
+
+            lines.append(line_prefix + line)
+            if not dense: lines.append(line_prefix)
 
         # Stellar density
         if self.has_stellar_density:
 
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Make line
-            if self.valid_stellar_density: line = fmt.green + fmt.underlined + "Stellar density" + fmt.reset
+            if (not check_valid) or self.valid_stellar_density: line = fmt.green + fmt.underlined + "Stellar density" + fmt.reset
             else: line = fmt.red + fmt.underlined + "Stellar density: invalid" + fmt.reset
 
             lines.append(line_prefix + line)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
         # SEDs
         if self.has_seds:
 
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Make line
-            if self.valid_seds: line = fmt.green + fmt.underlined + "SEDs:" + fmt.reset
+            if (not check_valid) or self.valid_seds: line = fmt.green + fmt.underlined + "SEDs:" + fmt.reset
             else: line = fmt.red + fmt.underlined + "SEDs:" + fmt.reset
 
             lines.append(line_prefix + line)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Loop over the instruments
             for instrument_name in self.seds:
 
                 # Check whether file is valid
-                is_valid = self.is_valid_sed(instrument_name)
+                is_valid = (not check_valid) or self.is_valid_sed(instrument_name)
 
                 #
                 if is_valid: line = " - " + fmt.green + instrument_name + fmt.reset
@@ -969,7 +1025,7 @@ class SimulationData(object):
                 # Valid? -> show contributions
                 if is_valid:
 
-                    lines.append(line_prefix)
+                    if not dense: lines.append(line_prefix)
 
                     # Loop over the contributions
                     for contribution in self.seds[instrument_name]:
@@ -979,54 +1035,56 @@ class SimulationData(object):
                         # Add the line
                         lines.append(line_prefix + line)
 
-                    lines.append(line_prefix)
+                    if not dense: lines.append(line_prefix)
 
         # Images
         if self.has_images:
 
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Make line
-            if self.valid_images: line = fmt.green + fmt.underlined + "Images:" + fmt.reset
+            if (not check_valid) or self.valid_images: line = fmt.green + fmt.underlined + "Images:" + fmt.reset
             else: line = fmt.red + fmt.underlined + "Images:" + fmt.reset
 
             lines.append(line_prefix + line)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Loop over the instruments
             for instrument_name in self.images:
 
                 lines.append(line_prefix + " - " + instrument_name + ":")
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
 
                 # Loop over the contributions
                 for contribution in self.images[instrument_name]:
 
-                    if self.is_valid_image(instrument_name, contribution): line = "    * " + fmt.green + contribution + fmt.reset
+                    if (not check_valid) or self.is_valid_image(instrument_name, contribution): line = "    * " + fmt.green + contribution + fmt.reset
                     else: line = "    * " + fmt.red + contribution + ": invalid" + fmt.reset
 
                     # Add the line
                     lines.append(line_prefix + line)
 
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
 
         # Add new line
-        lines.append(line_prefix)
+        if not dense: lines.append(line_prefix)
 
         # Return
         return "\n".join(lines)
 
     # -----------------------------------------------------------------
 
-    def show(self, line_prefix=""):
+    def show(self, line_prefix="", check_valid=True, dense=False):
 
         """
         This function ...
         :param line_prefix:
+        :param check_valid:
+        :param dense:
         :return:
         """
 
-        print(self.to_string(line_prefix=line_prefix))
+        print(self.to_string(line_prefix=line_prefix, check_valid=check_valid, dense=dense))
 
 # -----------------------------------------------------------------
 

@@ -220,51 +220,29 @@ class ComponentSimulation(SkirtSimulation):
         return SimulationData.from_output(self.output, coordinate_systems=self.coordinate_systems, distances=self.distances)
 
     # -----------------------------------------------------------------
+    # CELL PROPERTIES
+    # -----------------------------------------------------------------
 
     @property
     def has_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.has_cell_properties
 
     # -----------------------------------------------------------------
 
     @property
     def cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.cell_properties
 
     # -----------------------------------------------------------------
 
     @property
     def cell_properties_columns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.cell_properties.colnames
 
     # -----------------------------------------------------------------
 
     @property
     def cell_volumes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if "Volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Volume"])  # SKIRT 7
         elif "Cell volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Cell volume"])  # SKIRT 8
         else: raise IOError("")
@@ -273,12 +251,6 @@ class ComponentSimulation(SkirtSimulation):
 
     @property
     def cell_dust_densities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if "Density" in self.cell_properties_columns: return np.asarray(self.cell_properties["Density"])  # SKIRT 7
         elif "Average dust density in cell" in self.cell_properties_columns: return np.asarray(self.cell_properties["Average dust density in cell"])  # SKIRT 8
         else: raise IOError("")
@@ -287,36 +259,20 @@ class ComponentSimulation(SkirtSimulation):
 
     @property
     def cell_mass_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
 
     @property
     def cell_optical_depths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.cell_properties["Optical depth"])
 
+    # -----------------------------------------------------------------
+    # COORDINATES
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_x_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if "X coordinate of cell center" in self.cell_properties_columns: return np.asarray(self.cell_properties["X coordinate of cell center"]) # SKIRT 8
         elif "X coordinate of cell center" in self.cell_absorptions_columns: return np.asarray(self.cell_absorptions["X coordinate of cell center"]) # SKIRT 7
         else: raise IOError("")
@@ -325,12 +281,6 @@ class ComponentSimulation(SkirtSimulation):
 
     @lazyproperty
     def cell_y_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if "Y coordinate of cell center" in self.cell_properties_columns: return np.asarray(self.cell_properties["Y coordinate of cell center"]) # SKIRT 8
         elif "Y coordinate of cell center" in self.cell_absorptions_columns: return np.asarray(self.cell_absorptions["Y coordinate of cell center"]) # SKIRT 7
         else: raise IOError("")
@@ -339,147 +289,101 @@ class ComponentSimulation(SkirtSimulation):
 
     @lazyproperty
     def cell_z_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if "Z coordinate of cell center" in self.cell_properties_columns: return np.asarray(self.cell_properties["Z coordinate of cell center"]) # SKIRT 8
         elif "Z coordinate of cell center" in self.cell_absorptions_columns: return np.asarray(self.cell_absorptions["Z coordinate of cell center"]) # SKIRT 7
         else: raise IOError("")
 
     # -----------------------------------------------------------------
+    # DUST GRID FILES
+    # -----------------------------------------------------------------
 
     @property
     def has_grid_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.has_grids
 
     # -----------------------------------------------------------------
 
     @property
     def grid_filepaths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.grids
 
     # -----------------------------------------------------------------
 
     @property
     def grid_xy_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.pick_contains(self.grid_filepaths, "gridxy.")
 
     # -----------------------------------------------------------------
 
     @property
     def grid_xz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.pick_contains(self.grid_filepaths, "gridxz.")
 
     # -----------------------------------------------------------------
 
     @property
     def grid_yz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.pick_contains(self.grid_filepaths, "gridyz.")
 
     # -----------------------------------------------------------------
 
     @property
     def grid_xyz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.pick_contains(self.grid_filepaths, "gridxyz.")
 
+    # -----------------------------------------------------------------
+    # STELLAR DENSITY
     # -----------------------------------------------------------------
 
     @property
     def has_cell_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.has_stellar_density
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.asarray(self.data.stellar_density["Stellar density"])
 
+    # -----------------------------------------------------------------
+    # ABSORPTION
     # -----------------------------------------------------------------
 
     @property
     def has_cell_absorptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.has_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def cell_absorptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.absorption
 
     # -----------------------------------------------------------------
 
     @property
     def cell_absorptions_columns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.cell_absorptions.colnames
+
+    # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTIONS
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_spectral_absorptions(self):
+        return self.data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_spectral_absorptions(self):
+        return self.data.spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_spectral_absorptions_columns(self):
+        return self.cell_spectral_absorptions.colnames
 
 # -----------------------------------------------------------------
 

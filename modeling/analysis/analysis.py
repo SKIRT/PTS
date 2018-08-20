@@ -84,6 +84,8 @@ _status_command_name = "status"
 # Other commands
 _show_command_name = "show"
 _properties_command_name = "properties"
+_output_command_name = "output"
+_data_command_name = "data"
 _model_command_name = "model"
 
 # Plot commands
@@ -169,6 +171,10 @@ show_commands = OrderedDict()
 
 # Properties
 show_commands[_properties_command_name] = ("show_properties", False, "show the model properties", None)
+
+# Simulation output and data
+show_commands[_output_command_name] = ("show_output", False, "show the simulation output", None)
+show_commands[_data_command_name] = ("show_data", False, "show the simulation data available for the model", None)
 
 # -----------------------------------------------------------------
 
@@ -802,6 +808,114 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         print(fmt.cyan + fmt.underlined + "Derived parameter values of dust component:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values_dust: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_dust[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_output(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the simulation output ...")
+
+        # TOTAL
+        print(fmt.blue + fmt.underlined + "TOTAL" + fmt.reset + ":")
+        print("")
+        self.total_output.show(line_prefix="  ", dense=True)
+        print("")
+
+        # BULGE
+        print(fmt.blue + fmt.underlined + "BULGE" + fmt.reset + ":")
+        print("")
+        self.bulge_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # DISK
+        print(fmt.blue + fmt.underlined + "DISK" + fmt.reset + ":")
+        print("")
+        self.disk_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # OLD
+        print(fmt.blue + fmt.underlined + "OLD" + fmt.reset + ":")
+        print("")
+        self.old_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # YOUNG
+        print(fmt.blue + fmt.underlined + "YOUNG" + fmt.reset + ":")
+        print("")
+        self.young_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # SFR
+        print(fmt.blue + fmt.underlined + "SFR" + fmt.reset + ":")
+        print("")
+        self.sfr_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # UNEVOLVED
+        print(fmt.blue + fmt.underlined + "UNEVOLVED" + fmt.reset + ":")
+        print("")
+        self.unevolved_output.show(line_prefix="   ", dense=True)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_data(self, **kwargs):
+
+        """
+        This function ...
+        """
+
+        # Debugging
+        log.debug("Showing the available model data ...")
+
+        # TOTAL
+        print(fmt.blue + fmt.underlined + "TOTAL" + fmt.reset + ":")
+        print("")
+        self.total_data.show(line_prefix="  ", check_valid=False, dense=True)
+        print("")
+
+        # BULGE
+        print(fmt.blue + fmt.underlined + "BULGE" + fmt.reset + ":")
+        print("")
+        self.bulge_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # DISK
+        print(fmt.blue + fmt.underlined + "DISK" + fmt.reset + ":")
+        print("")
+        self.disk_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # OLD
+        print(fmt.blue + fmt.underlined + "OLD" + fmt.reset + ":")
+        print("")
+        self.old_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # YOUNG
+        print(fmt.blue + fmt.underlined + "YOUNG" + fmt.reset + ":")
+        print("")
+        self.young_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # SFR
+        print(fmt.blue + fmt.underlined + "SFR" + fmt.reset + ":")
+        print("")
+        self.sfr_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # UNEVOLVED
+        print(fmt.blue + fmt.underlined + "UNEVOLVED" + fmt.reset + ":")
+        print("")
+        self.unevolved_data.show(line_prefix="   ", check_valid=False, dense=True)
         print("")
 
     # -----------------------------------------------------------------
@@ -2696,89 +2810,188 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         self.show_total_map(config.which, orientation=config.orientation)
 
     # -----------------------------------------------------------------
+    # TOTAL SIMULATION
+    # -----------------------------------------------------------------
 
     @property
     def total_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.total_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def total_simulation(self):
+        return self.model.total_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_output(self):
+        return self.total_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_data(self):
+        return self.total_simulation.data
+
+    # -----------------------------------------------------------------
+    # BULGE SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def bulge_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.bulge_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def bulge_simulation(self):
+        return self.model.bulge_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_output(self):
+        return self.bulge_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_data(self):
+        return self.bulge_simulation.data
+
+    # -----------------------------------------------------------------
+    # DISK SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def disk_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.disk_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def disk_simulation(self):
+        return self.model.disk_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_output(self):
+        return self.disk_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_data(self):
+        return self.disk_simulation.data
+
+    # -----------------------------------------------------------------
+    # OLD SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def old_simulations(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.model.old_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def old_simulation(self):
+        return self.model.old_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_output(self):
+        return self.old_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_data(self):
+        return self.old_simulation.data
+
+    # -----------------------------------------------------------------
+    # YOUNG SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def young_simulations(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.model.young_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def young_simulation(self):
+        return self.model.young_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_output(self):
+        return self.young_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_data(self):
+        return self.young_simulation.data
+
+    # -----------------------------------------------------------------
+    # SFR SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.sfr_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def sfr_simulation(self):
+        return self.model.sfr_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_output(self):
+        return self.sfr_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_data(self):
+        return self.sfr_simulation.data
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.unevolved_simulations
 
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_simulation(self):
+        return self.model.unevolved_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_output(self):
+        return self.unevolved_simulation.output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_data(self):
+        return self.unevolved_simulation.data
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def show_total_map(self, which, orientation=earth_name):

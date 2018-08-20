@@ -1286,11 +1286,12 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix=""):
+    def to_string(self, line_prefix="", dense=False):
 
         """
         This function ...
         :param line_prefix:
+        :param dense:
         :return:
         """
 
@@ -1305,7 +1306,7 @@ class Output(object):
             if not self.has_files(output_type) and not self.has_directories(output_type): continue
 
             # Add title
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
             title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset
             if self.has_files(output_type):
                 nfiles = self.get_nfiles(output_type)
@@ -1319,7 +1320,7 @@ class Output(object):
             if self.has_files(output_type):
 
                 # Empty line
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
                 #print(self.files[output_type])
 
                 # Add paths
@@ -1330,16 +1331,16 @@ class Output(object):
             # Show directories for this type
             if self.has_directories(output_type):
 
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
                 lines.append(line_prefix + fmt.red + "directories:" + fmt.reset)
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
                 for path in self.directories[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Other
         if self.has_other_files:
 
             # Empty line
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Get number of files
             nfiles = self.nother_files
@@ -1347,28 +1348,29 @@ class Output(object):
             # Add title
             title = fmt.green + fmt.underlined + "Other output" + fmt.reset + " (" + str(nfiles) + "):"
             lines.append(line_prefix + title)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Add paths
             for path in self.other_files: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Add new line
-        lines.append(line_prefix)
+        if not dense: lines.append(line_prefix)
 
         # Return
         return "\n".join(lines)
 
     # -----------------------------------------------------------------
 
-    def show(self, line_prefix=""):
+    def show(self, line_prefix="", dense=False):
 
         """
         This function ...
         :param line_prefix:
+        :param dense:
         :return:
         """
 
-        print(self.to_string(line_prefix=line_prefix))
+        print(self.to_string(line_prefix=line_prefix, dense=dense))
 
 # -----------------------------------------------------------------
 
