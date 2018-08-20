@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import urllib
 import requests
 from lxml import html
 from collections import OrderedDict
@@ -31,6 +30,7 @@ from ...core.tools import network
 from ..core import fits
 from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -737,7 +737,24 @@ class AnianoKernels(Kernels):
             kernel_link = new_aniano_kernels_highres_link + kernel_gzname
 
             # CHECK AGAIN
-            if not network.is_available(kernel_link): raise ValueError("Cannot find the " + kernel_basename + " kernel file")
+            if not network.is_available(kernel_link):
+
+                # Try finding Gauss instead of BiGauss kernel
+                if "to_BiGauss" in kernel_link:
+
+                    # Replace with Gauss
+                    new_kernel_link = strings.replace_last(kernel_link, "BiGauss", "Gauss")
+
+                    # Check
+                    if not network.is_available(new_kernel_link): raise ValueError("Cannot find the " + kernel_basename + " kernel file")
+
+                    # Use
+                    else:
+                        log.warning("The '" + kernel_basename + "' kernel does not exist: taking the '" + strings.replace_last(kernel_basename, "BiGauss", "Gauss") + "' kernel instead ...")
+                        kernel_link = new_kernel_link
+
+                # Not found
+                else: raise ValueError("Cannot find the " + kernel_basename + " kernel file")
 
         # Download the kernel
         network.download_file(kernel_link, gz_path, progress_bar=log.is_debug)
@@ -806,7 +823,24 @@ class AnianoKernels(Kernels):
             #print(psf_link)
 
             # CHECK AGAIN
-            if not network.is_available(psf_link): raise ValueError("Cannot find the " + psf_basename + " PSF file")
+            if not network.is_available(psf_link):
+
+                # Try to find Gauss instead of BiGauss
+                if "BiGauss" in psf_link:
+
+                    # Replace with Gauss
+                    new_psf_link = strings.replace(psf_link, "BiGauss", "Gauss")
+
+                    # Check
+                    if not network.is_available(new_psf_link): raise ValueError("Cannot find the " + psf_basename + " PSF file")
+
+                    # Use
+                    else:
+                        log.warning("The '" + psf_basename + "' PSF file does not exist: taking the '" + strings.replace(psf_basename, "BiGauss", "Gauss") + "' PSF instead ...")
+                        psf_link = new_psf_link
+
+                # Not found
+                else: raise ValueError("Cannot find the " + psf_basename + " PSF file")
 
         # Download the file
         network.download_file(psf_link, gz_path, progress_bar=log.is_debug)
