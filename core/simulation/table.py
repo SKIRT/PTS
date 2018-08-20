@@ -22,6 +22,7 @@ from ..tools.utils import memoize_method, lazyproperty
 from ..tools import numbers
 from .wavelengthgrid import WavelengthGrid
 from ..basics.log import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -79,8 +80,6 @@ def is_valid(path):
         #raise TruncatedSKIRTTableError("The file only contains one line", path=path)
         return False
 
-    from ..tools import filesystem as fs
-
     # Get first ncolumn+1 rows of the file = the header
     header = fs.get_first_lines(path, number_of_columns + 1)
 
@@ -127,13 +126,14 @@ class SkirtTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, expected_nrows=None, method="numpy"):
+    def from_file(cls, path, expected_nrows=None, method="numpy", set_masks=True):
 
         """
         This function ...
         :param path:
         :param expected_nrows:
         :param method:
+        :param set_masks:
         :return:
         """
 
@@ -144,16 +144,19 @@ class SkirtTable(SmartTable):
         log.debug("Creating the table ...")
 
         # Create a new table from the data
-        table = cls(data=data, names=names, masked=True)
+        table = cls(data=data, names=names, masked=True, copy=False)
 
         # SET THE DATA
         # Set mask for each column from None values
-        for column_index in range(len(names)):
-            table[names[column_index]].mask = [value is None for value in data[column_index]]
+        # Are there even None values? Data are Numpy arrays!
+        #for column_index in range(len(names)): table[names[column_index]].mask = [value is None for value in data[column_index]]
+        if set_masks:
+            # NEW, not even necessary?
+            # -> introduced as flag 'set_masks' to be able to turn this off
+            for column_index in range(len(names)): table[names[column_index]].mask = np.isnan(data[column_index])
 
         # Set the column units
-        for column_name in units:
-            table[column_name].unit = parse_unit(units[column_name])
+        for column_name in units: table[column_name].unit = parse_unit(units[column_name])
 
         # Initialize
         initialize_table(table)
@@ -578,17 +581,8 @@ def get_skirt_data(path, expected_nrows=None, method="numpy"):
     # Debugging
     log.debug("Loading SKIRT table from '" + path + "' using " + method.capitalize() + " ...")
 
-    # Debugging
-    log.debug("Reading data ...")
-
-    # Get the column data
-    if method == "numpy": columns = np.loadtxt(path, unpack=True, ndmin=2)
-    elif method == "pandas":
-        import pandas as pd
-        df = pd.read_csv(path, sep=" ", comment="#", header=None)
-        ncolumns = len(df.columns)
-        columns = [df[index].values for index in range(ncolumns)]
-    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+    # Get the columns
+    columns = fs.get_columns(path, method=method)
 
     # Get number of columns and number of rows
     number_of_columns = len(columns)

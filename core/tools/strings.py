@@ -1075,6 +1075,21 @@ def any_contains(lines, pattern):
 
 # -----------------------------------------------------------------
 
+def all_contains(lines, pattern):
+
+    """
+    This function ...
+    :param lines:
+    :param pattern:
+    :return:
+    """
+
+    for line in lines:
+        if pattern not in line: return False
+    return True
+
+# -----------------------------------------------------------------
+
 def remove_escape_characters(string):
 
     """
@@ -2039,9 +2054,9 @@ def common_part(*strings, **kwargs):
             else: return string
 
         for index in range(2,len(strings)):
-            print(string, strings[index])
+            #print(string, strings[index])
             string = longest_common_substring(string, strings[index])
-            print(string)
+            #print(string)
             if string == "":
                 if return_none: return None
                 else: return string

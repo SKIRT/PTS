@@ -58,22 +58,10 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        # 3. Get the cube of the heating fraction per wavelength
-        #self.get_cubes()
-
-        # 4. Fix the cubes
-        #self.fix_cubes()
-
-        # 5. Get the curves of the heating fraction per wavelength
-        #self.get_curves()
-
-        # 6. Show
-        #self.show()
-
-        # 7. Writing
+        # Writing
         self.write()
 
-        # 8. Plotting
+        # Plotting
         self.plot()
 
     # -----------------------------------------------------------------

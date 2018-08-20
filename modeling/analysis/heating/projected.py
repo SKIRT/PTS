@@ -152,12 +152,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_earth_cube_all
         #return self.has_earth_cube_contributions_all
 
@@ -165,12 +159,6 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def do_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_cube_all
         #return self.has_faceon_cube_contributions_all
 
@@ -178,337 +166,181 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @lazyproperty
     def do_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_cube_all
         #return self.has_edgeon_cube_contributions_all
 
     # -----------------------------------------------------------------
+    # HAS EARTH CUBES
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def has_earth_cube_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_earth_cube_total and self.has_earth_cube_young and self.has_earth_cube_ionizing
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_earth_cube_contributions_all(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.has_earth_cube_contributions_total and self.has_earth_cube_contributions_young and self.has_earth_cube_contributions_ionizing
 
+    # -----------------------------------------------------------------
+    # HAS FACEON CUBES
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_faceon_cube_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_cube_total and self.has_faceon_cube_young and self.has_faceon_cube_ionizing
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_faceon_cube_contributions_all(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.has_faceon_cube_contributions_total and self.has_faceon_cube_contributions_young and self.has_faceon_cube_contributions_ionizing
 
+    # -----------------------------------------------------------------
+    # HAS EDGEON CUBES
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_edgeon_cube_all(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.has_edgeon_cube_total and self.has_edgeon_cube_young and self.has_edgeon_cube_ionizing
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_edgeon_cube_contributions_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_cube_contributions_total and self.has_edgeon_cube_contributions_young and self.has_edgeon_cube_contributions_ionizing
 
+    # -----------------------------------------------------------------
+    # TOTAL SIMULATIONS
     # -----------------------------------------------------------------
 
     @property
     def total_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.total_simulations
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_cube_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.has_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_cube_contributions_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_earth_cube_total and self.total_simulations.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_cube_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.has_faceon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_cube_contributions_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_cube_total and self.total_simulations.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_cube_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.has_edgeon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_cube_contributions_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_cube_total and self.total_simulations.has_other_observed_cube_contributions_edgeon
 
+    # -----------------------------------------------------------------
+    # YOUNG SIMULATIONS
     # -----------------------------------------------------------------
 
     @property
     def young_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.young_simulations
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_cube_young(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.young_simulations.has_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_cube_contributions_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_earth_cube_young and self.young_simulations.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_cube_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_simulations.has_faceon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_cube_contributions_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_cube_young and self.young_simulations.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_cube_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_simulations.has_edgeon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_cube_contributions_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_cube_young and self.young_simulations.has_other_observed_cube_contributions_edgeon
 
+    # -----------------------------------------------------------------
+    # IONIZING SIMULATIONS
     # -----------------------------------------------------------------
 
     @property
     def ionizing_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.sfr_simulations
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_cube_ionizing(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.ionizing_simulations.has_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_cube_contributions_ionizing(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.has_earth_cube_ionizing and self.ionizing_simulations.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_cube_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_simulations.has_faceon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_cube_contributions_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_cube_ionizing and self.ionizing_simulations.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_cube_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_simulations.has_edgeon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_cube_contributions_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_cube_ionizing and self.ionizing_simulations.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------

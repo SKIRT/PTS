@@ -1962,7 +1962,8 @@ def read_lines_filehandle(fh, newlines=False):
     """
 
     # Loop over the lines, cut off the end-of-line characters
-    for line in fh.readlines():
+    #for line in fh.readlines(): # MUCHHHHHH SLOWER: THIS LOADS EVERYTHING IN MEMORY FIRST!!!!!!!!
+    for line in fh:
         if newlines: yield line
         elif line.endswith("\n"): yield line[:-1]
         else: yield line # sometimes, the last line does not end on a newline character!
@@ -3543,5 +3544,101 @@ def file_nbits(path):
     """
 
     return file_nbytes(path) * 8
+
+# -----------------------------------------------------------------
+
+def get_columns(filepath, method="numpy", dtype=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param method:
+    :param dtype:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data ...")
+
+    # Using NumPy
+    if method == "numpy":
+
+        import numpy as np
+        columns = np.loadtxt(filepath, unpack=True, ndmin=2, dtype=dtype)
+
+    # Using Pandas
+    elif method == "pandas":
+
+        import pandas as pd
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, dtype=dtype)
+        ncolumns = len(df.columns)
+        columns = [df[index].values for index in range(ncolumns)]
+
+    # Invalid
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+
+    # Return the columns
+    return columns
+
+# -----------------------------------------------------------------
+
+def get_column(filepath, index, dtype, method="numpy"):
+
+    """
+    This function ...
+    :param filepath:
+    :param index:
+    :param dtype
+    :param method:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data ...")
+
+    # Using NumPy
+    if method == "numpy":
+
+        import numpy as np
+        column = np.loadtxt(filepath, usecols=index, dtype=dtype)
+
+    # Using Pandas
+    elif method == "pandas":
+
+        import pandas as pd
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, usecols=[index], dtype=dtype)
+        column = df[0].values
+
+    # Invalid
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+
+    # Return the column
+    return column
+
+# -----------------------------------------------------------------
+
+def get_row(filepath, index):
+
+    """
+    This function ...
+    :param filepath:
+    :param index:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data ...")
+
+    import pandas as pd
+    df = pd.read_csv(filepath, sep=" ", comment="#", header=None, skiprows=lambda i: i != index)
+
+    # Return the row as an array
+    return df.values[0]
 
 # -----------------------------------------------------------------

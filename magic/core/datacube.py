@@ -631,16 +631,6 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     def get_indices(self, min_wavelength=None, max_wavelength=None, include_min=True, include_max=True):
-
-        """
-        This function ...
-        :param min_wavelength:
-        :param max_wavelength:
-        :param include_min:
-        :param include_max:
-        :return:
-        """
-
         return self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength, include_min=include_min, include_max=include_max)
 
     # -----------------------------------------------------------------
@@ -1799,13 +1789,6 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     def get_wavelength(self, index):
-
-        """
-        This function ...
-        :param index:
-        :return:
-        """
-
         return self.wavelength_grid[index]
 
     # -----------------------------------------------------------------
@@ -3537,24 +3520,12 @@ class DataCube(Image):
 
     @property
     def wavelength_unit(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.wavelength_grid.unit
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_unit_string(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return tostr(self.wavelength_unit)
 
     # -----------------------------------------------------------------
