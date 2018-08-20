@@ -31,6 +31,7 @@ from ..core import fits
 from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
 from ...core.tools import strings
+from ...core.tools.numbers import nearest_half_integer, nearest_integer
 
 # -----------------------------------------------------------------
 
@@ -312,8 +313,8 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False,
-                        from_model=None, to_model=None, check_valid=True):
+    def get_kernel_basename(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, from_model=None,
+                            to_model=None, return_name=False):
 
         """
         This function ...
@@ -322,10 +323,9 @@ class AnianoKernels(Kernels):
         :param high_res:
         :param from_fwhm:
         :param to_fwhm:
-        :param return_name:
         :param from_model:
         :param to_model:
-        :param check_valid:
+        :param return_name:
         :return:
         """
 
@@ -348,8 +348,14 @@ class AnianoKernels(Kernels):
             # Determine aniano name for the FWHM
             fwhm_arcsec = from_fwhm.to("arcsec").value
             #aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+
+            # Under 10
             if int(round(fwhm_arcsec)) < 10: aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec)
-            else: aniano_name = from_model + "_" + closest_half_integer_string(fwhm_arcsec)
+
+            # Above 10
+            #else: aniano_name = from_model + "_" + closest_half_integer_string(fwhm_arcsec)
+            else: aniano_name = from_model + "_" + closest_integer_string(fwhm_arcsec)
+
             log.warning("The convolution kernel will be based on the FWHM of the original image, which is specified as " + str(from_fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
             from_psf_name = aniano_name
 
@@ -371,8 +377,14 @@ class AnianoKernels(Kernels):
             # Determine aniano name for the FWHM
             fwhm_arcsec = to_fwhm.to("arcsec").value
             #aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+
+            # Under 10
             if int(round(fwhm_arcsec)) < 10: aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)
-            else: aniano_name = to_model + "_" + closest_half_integer_string(fwhm_arcsec)
+
+            # Above 10
+            #else: aniano_name = to_model + "_" + closest_half_integer_string(fwhm_arcsec)
+            else: aniano_name = to_model + "_" + closest_integer_string(fwhm_arcsec)
+
             log.warning("The convolution kernel will be based on the FWHM of the target image, which is specified as " + str(to_fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
             to_psf_name = aniano_name
 
@@ -382,6 +394,35 @@ class AnianoKernels(Kernels):
         # Determine the path to the kernel file
         if high_res: kernel_file_basename = "Kernel_HiRes_" + from_psf_name + "_to_" + to_psf_name
         else: kernel_file_basename = "Kernel_LoRes_" + from_psf_name + "_to_" + to_psf_name
+
+        # Return
+        if return_name: return kernel_file_basename, to_psf_name
+        else: return kernel_file_basename
+
+    # -----------------------------------------------------------------
+
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None,
+                        return_name=False, from_model=None, to_model=None, check_valid=True):
+
+        """
+        This function ...
+        :param from_filter:
+        :param to_filter:
+        :param high_res:
+        :param from_fwhm:
+        :param to_fwhm:
+        :param return_name:
+        :param from_model:
+        :param to_model:
+        :param check_valid:
+        :return:
+        """
+
+        # Get the kernel file basename
+        kernel_file_basename, to_psf_name = self.get_kernel_basename(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm,
+                                                        to_fwhm=to_fwhm, from_model=from_model, to_model=to_model, return_name=True)
+
+        # Determine kernel path
         kernel_file_path = fs.join(self.kernels_path, kernel_file_basename + ".fits")
 
         # Download the kernel if it is not present
@@ -477,14 +518,11 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
-    def get_psf_path(self, fltr, return_name=False, check_valid=True, fwhm=None):
+    def get_psf_basename(self, fltr):
 
         """
         This function ...
         :param fltr:
-        :param return_name:
-        :param check_valid:
-        :param fwhm:
         :return:
         """
 
@@ -498,6 +536,27 @@ class AnianoKernels(Kernels):
         if aniano_psf_files_link == aniano_psf_files_link_2018: basename = "PSF_Original_" + psf_name
         elif aniano_psf_files_link == aniano_psf_files_link_2012: basename = "PSF_" + psf_name
         else: raise ValueError("Invalid aniano PSF files URL '" + aniano_psf_files_link + "'")
+
+        # Return
+        return basename
+
+    # -----------------------------------------------------------------
+
+    def get_psf_path(self, fltr, return_name=False, check_valid=True, fwhm=None):
+
+        """
+        This function ...
+        :param fltr:
+        :param return_name:
+        :param check_valid:
+        :param fwhm:
+        :return:
+        """
+
+        # Get the PSF basename
+        basename = self.get_psf_basename(fltr)
+
+        # Set path
         psf_file_path = fs.join(self.kernels_path, basename + ".fits")
         #print(psf_file_path)
 
@@ -862,24 +921,6 @@ class AnianoKernels(Kernels):
 
 # -----------------------------------------------------------------
 
-def closest_half_integer(number):
-
-    """
-    Round a number to the closest half integer.
-    >>> closest_half_integer(1.3)
-    1.5
-    >>> closest_half_integer(2.6)
-    2.5
-    >>> closest_half_integer(3.0)
-    3.0
-    >>> closest_half_integer(4.1)
-    4.0
-    """
-
-    return round(number * 2) / 2.0
-
-# -----------------------------------------------------------------
-
 def closest_half_integer_string(number):
 
     """
@@ -888,7 +929,20 @@ def closest_half_integer_string(number):
     :return:
     """
 
-    value = closest_half_integer(number)
+    value = nearest_half_integer(number)
     return "{0:.1f}".format(round(value, 1))
+
+# -----------------------------------------------------------------
+
+def closest_integer_string(number):
+
+    """
+    Thisn function ...
+    :param number:
+    :return:
+    """
+
+    value = nearest_integer(number)
+    return repr(value)
 
 # -----------------------------------------------------------------

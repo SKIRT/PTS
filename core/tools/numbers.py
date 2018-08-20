@@ -2034,3 +2034,26 @@ def get_alternating_series(npoints, start=1, step=1):
     raise RuntimeError("We shouldn't get here")
 
 # -----------------------------------------------------------------
+
+def closest_half_integer(number):
+
+    """
+    Round a number to the closest half integer.
+    >>> closest_half_integer(1.3)
+    1.5
+    >>> closest_half_integer(2.6)
+    2.5
+    >>> closest_half_integer(3.0)
+    3.0
+    >>> closest_half_integer(4.1)
+    4.0
+    """
+
+    return round(number * 2) / 2.0
+
+# -----------------------------------------------------------------
+
+def nearest_half_integer(number):
+    return closest_half_integer(number)
+
+# -----------------------------------------------------------------
