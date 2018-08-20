@@ -24,12 +24,13 @@ from . import progress
 
 # -----------------------------------------------------------------
 
-def exists(url, allow_redirection=False):
+def exists(url, allow_redirection=True, check_open=True):
 
     """
     This function ...
     :param url:
     :param allow_redirection:
+    :param check_open:
     :return:
     """
 
@@ -45,6 +46,7 @@ def exists(url, allow_redirection=False):
     conn.close()
 
     #print(resp.status)
+    #print(resp.read()) # doesn't show anything
 
     # successful
     # OK = 200
@@ -101,8 +103,30 @@ def exists(url, allow_redirection=False):
     # NOT_EXTENDED = 510
 
     # Allow redirection?
-    if allow_redirection: return resp.status < 400
-    else: return resp.status < 300
+    if allow_redirection:
+        if check_open: return resp.status < 400 and can_be_opened(url)
+        else: return resp.status < 400
+    else:
+        if check_open: return resp.status < 300 and can_be_opened(url)
+        else: return resp.status < 300
+
+# -----------------------------------------------------------------
+
+def can_be_opened(url):
+
+    """
+    This function ...
+    :param url:
+    :return:
+    """
+
+    try:
+        data = urlopen(url)
+        return True
+    except HTTPError as e:
+        message = str(e)
+        if "404" in message: return False
+        else: raise ValueError("Unknown error: '" + message + "'")
 
 # -----------------------------------------------------------------
 

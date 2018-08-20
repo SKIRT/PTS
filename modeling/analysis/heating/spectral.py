@@ -303,7 +303,19 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     #   EARTH
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(DataCube, "", True, write=False)
+    @property
+    def cube_earth_absorption_path(self):
+        return fs.join(self.cubes_path, "earth_absorption.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cube_earth_absorption(self):
+        return fs.is_file(self.cube_earth_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(DataCube, "cube_earth_absorption_path", True, write=False)
     def cube_earth_absorption(self):
 
         """
@@ -350,7 +362,19 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     #   EARTH
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(DataCube, "", True, write=False)
+    @property
+    def cube_earth_emission_path(self):
+        return fs.join(self.cubes_path, "earth_emission.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cube_earth_emission(self):
+        return fs.is_file(self.cube_earth_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(DataCube, "cube_earth_emission_path", True, write=False)
     def cube_earth_emission(self):
 
         """
@@ -1633,20 +1657,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def cube_earth_path(self):
-        return fs.join(self.cubes_path, "earth.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_cube_earth(self):
-        return fs.is_file(self.cube_earth_path)
-
-    # -----------------------------------------------------------------
-
     def remove_cube_earth(self):
-        fs.remove_file(self.cube_earth_path)
+        fs.remove_file(self.cube_earth_emission_path)
 
     # -----------------------------------------------------------------
 
@@ -1658,19 +1670,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Save
-        self.cube_earth.saveto(self.cube_earth_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cube_earth_absorption_path(self):
-        return fs.join(self.cubes_path, "earth_absorption.fits")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_cube_earth_absorption(self):
-        return fs.is_file(self.cube_earth_absorption_path)
+        self.cube_earth_emission.saveto(self.cube_earth_emission_path)
 
     # -----------------------------------------------------------------
 
@@ -1693,35 +1693,17 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def cube_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.cubes_path, "faceon.fits")
 
     # -----------------------------------------------------------------
 
     @property
     def has_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.cube_faceon_path)
 
     # -----------------------------------------------------------------
 
     def remove_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         fs.remove_file(self.cube_faceon_path)
 
     # -----------------------------------------------------------------
