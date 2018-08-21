@@ -2778,17 +2778,22 @@ def fix_nones(table):
 
 # -----------------------------------------------------------------
 
-def initialize_table(table):
+def initialize_table(table, table_name=None):
 
     """
     This function ...
+    :param table:
+    :param table_name:
     :return:
     """
 
     from .log import log
 
+    if table_name is None: table_name = ""
+    else: table_name = table_name + " "
+
     # Debugging
-    log.debug("Initializing the table ...")
+    log.debug("Initializing the " + table_name + "table ...")
 
     # Clear the column info so that we can rebuild it
     table.column_info = []

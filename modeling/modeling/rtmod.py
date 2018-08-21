@@ -1620,7 +1620,7 @@ class RTMod(InteractiveConfigurable):
         """
 
         # Create the manager
-        manager = GenerationManager(config=config)
+        manager = GenerationManager(config=config, extend_config=True, check_required=False)
         manager.config.path = self.config.path
 
         # Set fitting run name and generation name

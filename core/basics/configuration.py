@@ -681,7 +681,134 @@ def create_configuration_flexible(name, definition, settings=None, default=False
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None, use_default=None, check_required=True):
+def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_optional=None, use_default=None,
+                         check_required=True, extend_config=False):
+
+    """
+    This function ...
+    :param cls:
+    :param config:
+    :param interactive:
+    :param cwd:
+    :param prompt_optional:
+    :param use_default:
+    :param check_required:
+    :param extend_config: EXTEND CONFIGS TO ALL SETTINGS EVEN IF PASSED AS ACTUAL CONFIGURATION INSTANCE (don't assume config contains all)
+    :return:
+    """
+
+    # If config is specified
+    if config is not None:
+
+        # Actual configuration object
+        if isinstance(config, Configuration):
+
+            # config, interactive=False, cwd=None, prompt_optional=None, use_default=None, check_required=True
+            if extend_config: return extend_config_for_class(cls, config, interactive=interactive, cwd=cwd, prompt_optional=prompt_optional, use_default=use_default, check_required=check_required)
+            else: return config
+
+        # Other dictionary-like: always extend
+        elif isinstance(config, dict): return extend_config_for_class(cls, config, interactive=interactive, cwd=cwd, prompt_optional=prompt_optional, use_default=use_default, check_required=check_required)
+
+        # Not a valid config argument
+        else: raise ValueError("Config should be Configuration, dictionary or None")
+
+    # Look for the config
+    else: return create_config_for_class(cls)
+
+# -----------------------------------------------------------------
+
+def create_config_for_class(cls, interactive=False, cwd=None, prompt_optional=None, use_default=None):
+
+    """
+    This function ...
+    :param cls:
+    :param interactive:
+    :param cwd:
+    :param prompt_optional:
+    :param use_default:
+    :return:
+    """
+
+    # Find the command
+    command_name, class_name, configuration_module_path, description = find_command(cls)
+
+    # If command is found
+    if command_name is not None: return _create_config_from_module_path(class_name, configuration_module_path, interactive=interactive, cwd=cwd, prompt_optional=prompt_optional, use_default=use_default)
+
+    # Command is not found
+    else: return create_new_config(class_name, cwd=cwd, use_default=use_default)
+
+# -----------------------------------------------------------------
+
+def create_new_config(class_name, cwd=None, use_default=None):
+
+    """
+    This function ...
+    :param cwd:
+    :param use_default:
+    :return:
+    """
+
+    # Cannot pass use_default
+    if use_default is not None: raise ValueError("Cannot specifiy 'use_default': command is not recognized so configuration definition cannot be found")
+
+    # Create an empty definition
+    definition = ConfigurationDefinition(write_config=False)
+    setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+
+    # Create new config
+    config = setter.run(definition, prompt_optional=False)
+
+    # Set the path
+    if cwd is not None: config.path = cwd
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def _create_config_from_module_path(class_name, configuration_module_path, interactive=False, cwd=None, prompt_optional=None,
+                                    use_default=None):
+
+    """
+    This function ...
+    :param class_name:
+    :param configuration_module_path:
+    :param interactive:
+    :param cwd:
+    :param prompt_optional:
+    :param use_default:
+    :return:
+    """
+
+    # Get definition
+    definition = get_definition(class_name, configuration_module_path, cwd=cwd)
+
+    ## CREATE THE CONFIGURATION
+
+    # Create configuration setter
+    if interactive:
+
+        setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+        config = setter.run(definition, prompt_optional=prompt_optional, use_default=use_default)
+
+    # Not interactive
+    else:
+
+        setter = PassiveConfigurationSetter(class_name, add_logging=False)
+        config = setter.run(definition)
+
+    # Set the path
+    if cwd is not None: config.path = cwd
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def extend_config_for_class(cls, config, interactive=False, cwd=None, prompt_optional=None, use_default=None,
+                            check_required=True):
 
     """
     This function ...
@@ -695,97 +822,32 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None, prompt_o
     :return:
     """
 
-    # If config is specified
-    if config is not None:
+    # Find the command
+    command_name, class_name, configuration_module_path, description = find_command(cls)
 
-        #from .configuration import Configuration, ConfigurationDefinition, DictConfigurationSetter
+    # Get configuration definition
+    if command_name is not None: definition = get_definition(class_name, configuration_module_path, cwd=cwd)
+    else: definition = ConfigurationDefinition(write_config=False)
 
-        if isinstance(config, Configuration): return config
-        elif isinstance(config, dict):
+    # Create the configuration interactively with pre-defined settings
+    if interactive:
 
-            # Find the command
-            command_name, class_name, configuration_module_path, description = find_command(cls)
+        # Create configuration with InteractiveConfigurationSetter
+        setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+        config = setter.run(definition, settings=config, prompt_optional=prompt_optional, use_default=use_default)
 
-            # Get configuration definition
-            if command_name is not None: definition = get_definition(class_name, configuration_module_path, cwd=cwd)
-            else: definition = ConfigurationDefinition(write_config=False)
-
-            # Create the configuration interactively with pre-defined settings
-            if interactive:
-
-                # Create configuration with InteractiveConfigurationSetter
-                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition, settings=config, prompt_optional=prompt_optional, use_default=use_default)
-
-            # Not interactive, use dict configuration setter
-            else:
-
-                # Create the DictConfigurationSetter
-                setter = DictConfigurationSetter(config, command_name, description, check_required=check_required)
-                config = setter.run(definition)
-
-            # Set the path
-            if cwd is not None: config.path = cwd
-
-            # Return the configuration
-            return config
-
-        # Not a valid config argument
-        else: raise ValueError("Config should be Configuration, dictionary or None")
-
-    # Look for the config
+    # Not interactive, use dict configuration setter
     else:
 
-        # Find the command
-        command_name, class_name, configuration_module_path, description = find_command(cls)
-        #print(command_name, class_name, configuration_module_path, description)
+        # Create the DictConfigurationSetter
+        setter = DictConfigurationSetter(config, command_name, description, check_required=check_required)
+        config = setter.run(definition)
 
-        # If command is found
-        if command_name is not None:
+    # Set the path
+    if cwd is not None: config.path = cwd
 
-            # Get definition
-            definition = get_definition(class_name, configuration_module_path, cwd=cwd)
-
-            ## CREATE THE CONFIGURATION
-
-            # Create configuration setter
-            if interactive:
-
-                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition, prompt_optional=prompt_optional, use_default=use_default)
-
-            # Not interactive
-            else:
-
-                setter = PassiveConfigurationSetter(class_name, add_logging=False)
-                config = setter.run(definition)
-
-            # Set the path
-            if cwd is not None: config.path = cwd
-
-            # Return the configuration
-            return config
-
-            # log.warning("The object has not been configured yet")
-
-        # Command is not fond
-        else:
-
-            # Cannot pass use_default
-            if use_default is not None: raise ValueError("Cannot specifiy 'use_default': command is not recognized so configuration definition cannot be found")
-
-            # Create an empty definition
-            definition = ConfigurationDefinition(write_config=False)
-            setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-
-            # Create new config
-            config = setter.run(definition, prompt_optional=False)
-
-            # Set the path
-            if cwd is not None: config.path = cwd
-
-            # Return the configuration
-            return config
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------
 

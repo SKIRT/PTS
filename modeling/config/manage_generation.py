@@ -31,8 +31,12 @@ if runs.empty: raise RuntimeError("No fitting runs are present")
 elif runs.has_single: definition.add_fixed("run", "name of the fitting run", runs.single_name)
 else: definition.add_required("run", "string", "name of the fitting run", choices=runs.names)
 
+# -----------------------------------------------------------------
+
 # Generation name
 definition.add_required("generation", "string", "generation name")
+
+# -----------------------------------------------------------------
 
 # Plotting
 definition.add_flag("plot_chisquared", "plot chi squared")

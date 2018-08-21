@@ -930,108 +930,54 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def has_moving(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.move
 
     # -----------------------------------------------------------------
 
     @property
     def has_showing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.show and (self.config.show_assignment or self.config.show_status or self.config.show_runtimes or self.config.show_memory)
 
     # -----------------------------------------------------------------
 
     @property
     def has_plotting(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.plot and (self.config.plot_runtimes or self.config.plot_memory)
 
     # -----------------------------------------------------------------
 
     @property
     def has_writing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.write and (self.config.write_assignment or self.config.write_status or self.config.write_moved or self.config.write_relaunched or self.config.write_commands)
 
     # -----------------------------------------------------------------
 
     @property
     def has_analysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.analyse
 
     # -----------------------------------------------------------------
 
     @property
     def has_reanalysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.reanalysis is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_any(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_moving or self.has_showing or self.has_plotting or self.has_writing or self.has_analysis or self.has_reanalysis
 
     # -----------------------------------------------------------------
 
     @property
     def do_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.commands is not None and len(self.config.commands) > 0
 
     # -----------------------------------------------------------------
 
     @property
     def do_interactive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.interactive is None: return not self.has_any and not self.do_commands
         else: return self.config.interactive
 
@@ -1039,96 +985,48 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def do_moving(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.move
 
     # -----------------------------------------------------------------
 
     @property
     def do_launch(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.launcher.has_queued
 
     # -----------------------------------------------------------------
 
     @property
     def do_showing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.show
 
     # -----------------------------------------------------------------
 
     @property
     def do_writing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.write
 
     # -----------------------------------------------------------------
 
     @property
     def do_plotting(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.plot
 
     # -----------------------------------------------------------------
 
     @property
     def do_reanalysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.reanalyse is not None
 
     # -----------------------------------------------------------------
 
     @property
     def do_analysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.analyse
 
     # -----------------------------------------------------------------
 
     @property
     def do_caching(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.cache_output or self.config.cache_datacubes or self.config.cache_misc or self.config.cache_images
 
     # -----------------------------------------------------------------
