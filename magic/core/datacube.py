@@ -693,6 +693,41 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def truncated(self, min_wavelength=None, max_wavelength=None, copy=False):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param copy:
+        :return:
+        """
+
+        # Get the indices
+        wavelength_grid, indices = self.wavelength_grid.get_subgrid(min_wavelength=min_wavelength,
+                                                                    max_wavelength=max_wavelength, return_indices=True,
+                                                                    include_min=True, include_max=True)
+
+        # Determine the frame names
+        frame_names = ["frame" + str(index) for index in indices]
+
+        # Create new datacube
+        new = self.__class__(name=self.name)
+
+        # Add the frames
+        for index, frame_name in enumerate(frame_names):
+            frame = self.frames[frame_name]
+            new_name = "frame" + str(index)
+            new.add_frame(frame, new_name, copy=copy)
+
+        # Set the wavelength grid
+        new.wavelength_grid = wavelength_grid
+
+        # Return the new cube
+        return new
+
+    # -----------------------------------------------------------------
+
     def flatten_above(self, wavelength, flatten_value=0., include=True):
 
         """

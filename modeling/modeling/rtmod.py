@@ -2190,18 +2190,25 @@ class RTMod(InteractiveConfigurable):
         # Get generation and config
         fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.show_generation_status_definition, **kwargs)
 
+        # Use previous status?
+        if config.previous:
+            status_filepath = fs.join(self.get_generation_path(fitting_run_name, generation_name), "status.dat")
+            if not fs.is_file(status_filepath): status_filepath = None  # does not exist
+        else: status_filepath = None
+
         # Show
-        self.show_generation_status(fitting_run_name, generation_name, config)
+        self.show_generation_status(fitting_run_name, generation_name, config, status_filepath=status_filepath)
 
     # -----------------------------------------------------------------
 
-    def show_generation_status(self, fitting_run_name, generation_name, config):
+    def show_generation_status(self, fitting_run_name, generation_name, config, status_filepath=None):
 
         """
         This function ...
         :param fitting_run_name:
         :param generation_name:
         :param config:
+        :param status_filepath:
         :return:
         """
 
@@ -2229,6 +2236,9 @@ class RTMod(InteractiveConfigurable):
 
         # Not interactive
         manager.config.interactive = False
+
+        # Set the status table filepath
+        manager.config.status = status_filepath
 
         # Set the status command
         if config.extra is not None: status_command = "status " + ",".join(config.extra)

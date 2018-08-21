@@ -1488,8 +1488,8 @@ def get_multiple_xy(curves, return_labels=False):
     # Get the labels
     x_labels = [curve.x_name for curve in curves]
     y_labels = [curve.y_name for curve in curves]
-    x_label = sequences.get_single(x_labels)
-    y_label = sequences.get_single(y_labels)
+    x_label = sequences.get_single(x_labels, method="common")
+    y_label = sequences.get_single(y_labels, method="common")
 
     # Get the units
     x_units = [curve.x_unit for curve in curves]

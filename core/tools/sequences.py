@@ -1546,6 +1546,11 @@ def get_single(sequence, none="none", method="first"):
     else:
 
         if method == "first": return sequence[0]
+        elif method == "common": # common part (only for strings!)
+            from .strings import common_part
+            string = common_part(*sequence, return_none=True)
+            if string is None: return find_first_not_none(sequence, return_none=True) # no common part
+            else: return string
         elif method == "first_not_none": return find_first_not_none(sequence, return_none=True)
         elif method == "last": return sequence[-1]
         elif method == "none": return None
