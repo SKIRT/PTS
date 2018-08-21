@@ -169,68 +169,59 @@ class GenerationManager(SimulationManager, FittingComponent):
         # Show chi squared values?
         if len(self.chi_squared_table) > 0: self.show_chi_squared()
 
-        # Get status
-        status = self.get_generation_status(remotes)
-
-        # Determine input: assignment table or simulation objects
-        # if self.generation.has_assignment_table:
-        #     assignment = self.generation.assignment_table
-        #     simulations = None
-        # else:
-        #     assignment = None
-        #     # basic because there will be no information about which host ID or simulation ID so simulation files cannot be located
-        #     # -> not entirely true, host ID information can be found, so RemoteSimulation objects can still be expected
-        #     simulations = self.generation.simulations_basic
-        #     # Fix simulation status
-        #     for simulation in simulations:
-        #         simulation_status = status.get_status(simulation.name)
-        #         if simulation_status == "analysed": simulation.analysed = True
-
-        # Check the simulations, adapt status if necessary
-        status = self.check_simulations(status)
-
-        # Get the assignment table
+        # Get assignment and simulations
         if self.generation.has_assignment_table: assignment = self.generation.assignment_table
         else: assignment = None
-        #print(assignment is not None)
-
-        # Create the simulations
-        _add_to_status = []
-        _adapted_assignment = False
         simulations = self.generation.simulations_or_basic
-        for simulation in simulations:
-            #simulation = simulations[simulation_name]
-            #print(simulation)
-            simulation_name = simulation.name
-            #print(simulation.name)
 
-            if status.has_simulation(simulation_name):
-                simulation_status = status.get_status(simulation_name)
-                if is_analysed_status(simulation_status): simulation.analysed = True
-            else: _add_to_status.append(simulation_name)
+        # Get status?
+        if self.config.status is not None: status = SimulationStatusTable.from_file(self.config.status)
 
-            # Fix assignment scheme
-            if assignment is not None:
-                #print("here")
-                if not assignment.has_simulation(simulation_name):
-                    _adapted_assignment = True
-                    assignment.add_simulation_object(simulation)
-                if not assignment.has_host_id(simulation_name):
-                    _adapted_assignment = True
-                    assignment.set_host_id(simulation_name, simulation.host_id)
-                if not assignment.has_id(simulation_name):
-                    _adapted_assignment = True
-                    assignment.set_id(simulation_name, simulation.id)
+        # Get status and fix things according to this real-time status
+        else:
 
-        # Add simulations to status table?
-        if len(_add_to_status) > 0:
-            status = SimulationStatusTable.from_previous(status, new_simulations=_add_to_status)
-            for simulation_name in _add_to_status:
-                simulation_status, _ = self.generation.get_simulation_status(simulation_name)
-                status.reset_for_simulation(simulation_name, simulation_status)
+            # Get real-time simulation status
+            status = self.get_generation_status(remotes)
 
-        # Save the assignment scheme table
-        if _adapted_assignment: assignment.save()
+            # Check the simulations, adapt status if necessary
+            status = self.check_simulations(status)
+
+            # Create the simulations
+            _add_to_status = []
+            _adapted_assignment = False
+            for simulation in simulations:
+                #simulation = simulations[simulation_name]
+                #print(simulation)
+                simulation_name = simulation.name
+                #print(simulation.name)
+
+                if status.has_simulation(simulation_name):
+                    simulation_status = status.get_status(simulation_name)
+                    if is_analysed_status(simulation_status): simulation.analysed = True
+                else: _add_to_status.append(simulation_name)
+
+                # Fix assignment scheme
+                if assignment is not None:
+                    #print("here")
+                    if not assignment.has_simulation(simulation_name):
+                        _adapted_assignment = True
+                        assignment.add_simulation_object(simulation)
+                    if not assignment.has_host_id(simulation_name):
+                        _adapted_assignment = True
+                        assignment.set_host_id(simulation_name, simulation.host_id)
+                    if not assignment.has_id(simulation_name):
+                        _adapted_assignment = True
+                        assignment.set_id(simulation_name, simulation.id)
+
+            # Add simulations to status table?
+            if len(_add_to_status) > 0:
+                status = SimulationStatusTable.from_previous(status, new_simulations=_add_to_status)
+                for simulation_name in _add_to_status:
+                    simulation_status, _ = self.generation.get_simulation_status(simulation_name)
+                    status.reset_for_simulation(simulation_name, simulation_status)
+
+            # Save the assignment scheme table
+            if _adapted_assignment: assignment.save()
 
         # Set input for base class
         input = dict()
