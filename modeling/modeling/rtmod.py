@@ -1557,8 +1557,7 @@ class RTMod(InteractiveConfigurable):
         # From manage_generation
         import_names = ["lazy", "find_simulations", "find_remotes", "produce_missing", "check_paths", "correct_paths", "confirm_correction", "check_analysis"]
 
-        # Below: from manage_simulations
-
+        # Below: options from manage_simulations that we want the user to be able to control here in this context
         import_names.append("offline")
         import_names.append("dry")
         import_names.append("fix_success")
@@ -1586,6 +1585,9 @@ class RTMod(InteractiveConfigurable):
 
         # Change default
         definition.flags["fix_success"].default = True
+
+        # Write the simulation status to the generation directory
+        definition.add_flag("write_status", "write the status table", True)
 
         # Return the definition
         return definition

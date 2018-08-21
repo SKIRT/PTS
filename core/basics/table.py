@@ -1243,11 +1243,14 @@ class SmartTable(Table):
         # Check if file exists
         if not remote.is_file(path): raise IOError("The file '" + path + "' does not exist")
 
+        # Get filename
+        filename = fs.strip_extension(fs.name(path))
+
         # Get the lines
         lines = remote.get_lines(path)
 
         # Get the table from the lines and return
-        return cls.from_lines(lines, format=format)
+        return cls.from_lines(lines, format=format, table_name=filename)
 
     # -----------------------------------------------------------------
 
@@ -1265,6 +1268,9 @@ class SmartTable(Table):
         # Check the path
         if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
 
+        # Get filename
+        filename = fs.strip_extension(fs.name(path))
+
         # Guess the format
         if format is None:
             first_line = fs.get_first_line(path)
@@ -1279,7 +1285,7 @@ class SmartTable(Table):
             lines = fs.get_lines(path)
 
             # Create table from the lines
-            table = cls.from_lines(lines, format=format)
+            table = cls.from_lines(lines, format=format, table_name=filename)
 
         # Read using Pandas
         elif method == "pandas":
@@ -1323,13 +1329,14 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_lines(cls, lines, format=None, always_check_types=False):
+    def from_lines(cls, lines, format=None, always_check_types=False, table_name=None):
 
         """
         This function ...
         :param lines:
         :param format:
         :param always_check_types:
+        :param table_name:
         :return:
         """
 
@@ -1558,7 +1565,7 @@ class SmartTable(Table):
         else: table = super(SmartTable, cls).read(lines, fill_values=fill_values, format=format)
 
         # Initialize
-        initialize_table(table)
+        initialize_table(table, table_name=table_name)
 
         # Re-order the columns
         reorder_columns(table)
