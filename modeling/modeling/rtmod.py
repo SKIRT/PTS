@@ -2134,8 +2134,8 @@ class RTMod(InteractiveConfigurable):
         definition.add_flag("fix_success", "check success flags in assignment table", True)
         definition.add_flag("check_analysis", "check analysis output", False)
 
-        # Write the status table
-        definition.add_flag("write_status", "write the status", False)
+        # Write the status table to the generation directory
+        definition.add_flag("write_status", "write the status", True)
 
         # Correct analysis status
         definition.add_flag("correct_status", "correct the status", True)

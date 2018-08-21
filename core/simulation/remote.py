@@ -28,7 +28,7 @@ from ..launch.options import SchedulingOptions
 from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
 from ..basics.handle import ExecutionHandle
-from .status import LogSimulationStatus
+from .status import LogSimulationStatus, get_status_from_last_log_line
 from .input import SimulationInput
 from ..tools import types
 from ..tools import numbers
@@ -2847,17 +2847,39 @@ class SKIRTRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def running_status_from_log_file(self, file_path):
+    def running_status_from_log_file(self, file_path, nlibrary_entries=None):
 
         """
         This function ...
+        :param nlibrary_entries:
         :return:
         """
+
+        # Try to interpret the full status from the last log line
+        status_string = self.running_status_from_last_log_line(file_path, nlibrary_entries=nlibrary_entries)
+        if status_string is not None: return status_string
 
         # Return string from simulation status
         status_string = str(LogSimulationStatus(file_path, self))
         if not is_running_status(status_string): raise RuntimeError("Something went wrong: status from log file is '" + status_string + "' but simulation is supposed to be running")
         return status_string
+
+    # -----------------------------------------------------------------
+
+    def running_status_from_last_log_line(self, file_path, nlibrary_entries=None):
+
+        """
+        This function ...
+        :param file_path:
+        :param nlibrary_entries:
+        :return:
+        """
+
+        # Get the line
+        line = self.get_last_line(file_path)
+
+        # Return the status
+        return get_status_from_last_log_line(line, nlibrary_entries=nlibrary_entries)
 
     # -----------------------------------------------------------------
 
