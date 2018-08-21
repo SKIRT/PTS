@@ -33,3 +33,8 @@ definition.add_optional("emission_filters", "lazy_broad_band_filter_list", "filt
 definition.add_optional("absorption_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust absorption", "GALEX,SDSS", convert_default=True)
 
 # -----------------------------------------------------------------
+
+# Convolution?
+definition.add_flag("spectral_convolution", "use spectral convolution for maps from the cubes", False)
+
+# -----------------------------------------------------------------
