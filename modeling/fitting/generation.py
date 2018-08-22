@@ -50,6 +50,7 @@ from ...core.tools.stringify import tostr
 from ...core.launch.batch import MissingSimulation
 from ...core.simulation.jobscript import SKIRTJobScript, get_host_id_from_jobscript_file
 from ...core.simulation.skifile import SkiFile
+from ...core.tools.progress import Bar
 
 # -----------------------------------------------------------------
 
@@ -3978,21 +3979,32 @@ class Generation(object):
             else: all_simulation_names = self.simulation_names
         else: all_simulation_names = self.simulation_names
 
-        # Loop over the simulations
-        for simulation_name in all_simulation_names:
+        # Show progress bar of getting status
+        log.info("Checking status for each simulation ...")
+        nsimulations = len(all_simulation_names)
+        with Bar(label='', expected_size=nsimulations, every=1, add_datetime=True) as bar:
 
-            # Get the status
-            simulation_status, changed_assignment_sim = self.get_simulation_status(simulation_name, remotes=remotes,
-                                                                                   lazy=lazy, find_simulations=find_simulations,
-                                                                                   find_remotes=find_remotes, produce_missing=produce_missing,
-                                                                                   retrieve=retrieve, check_paths=check_paths,
-                                                                                   correct_paths=correct_paths, confirm_correction=confirm_correction,
-                                                                                   fix_success=fix_success)
-            if changed_assignment_sim: changed_assignment = True
-            #print(simulation_name, simulation_status)
+            # Loop over the simulations
+            for index, simulation_name in enumerate(all_simulation_names):
 
-            # Add the status
-            status_list.append(simulation_status)
+                # Debugging
+                #log.debug("Getting the status of simulation '" + simulation_name + "' ...")
+
+                # Show progress
+                bar.show(float(index + 1))
+
+                # Get the status
+                simulation_status, changed_assignment_sim = self.get_simulation_status(simulation_name, remotes=remotes,
+                                                                                       lazy=lazy, find_simulations=find_simulations,
+                                                                                       find_remotes=find_remotes, produce_missing=produce_missing,
+                                                                                       retrieve=retrieve, check_paths=check_paths,
+                                                                                       correct_paths=correct_paths, confirm_correction=confirm_correction,
+                                                                                       fix_success=fix_success)
+                if changed_assignment_sim: changed_assignment = True
+                #print(simulation_name, simulation_status)
+
+                # Add the status
+                status_list.append(simulation_status)
 
         # Save the assignment table if it has been adapted
         if changed_assignment:

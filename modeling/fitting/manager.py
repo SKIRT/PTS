@@ -169,9 +169,17 @@ class GenerationManager(SimulationManager, FittingComponent):
         # Show chi squared values?
         if len(self.chi_squared_table) > 0: self.show_chi_squared()
 
-        # Get assignment and simulations
+        # Debugging
+        log.debug("Getting the simulation assignment ...")
+
+        # Get assignment
         if self.generation.has_assignment_table: assignment = self.generation.assignment_table
         else: assignment = None
+
+        # Debugging
+        log.debug("Loading the simulations ...")
+
+        # Get simulations
         simulations = self.generation.simulations_or_basic
 
         # Get status?
@@ -180,8 +188,14 @@ class GenerationManager(SimulationManager, FittingComponent):
         # Get status and fix things according to this real-time status
         else:
 
+            # Debugging
+            log.debug("Getting the simulation status ...")
+
             # Get real-time simulation status
             status = self.get_generation_status(remotes)
+
+            # Debugging
+            log.debug("Checking the simulation status ...")
 
             # Check the simulations, adapt status if necessary
             status = self.check_simulations(status)
@@ -190,11 +204,13 @@ class GenerationManager(SimulationManager, FittingComponent):
             _add_to_status = []
             _adapted_assignment = False
             for simulation in simulations:
+
                 #simulation = simulations[simulation_name]
                 #print(simulation)
                 simulation_name = simulation.name
                 #print(simulation.name)
 
+                # Simulation in status table?
                 if status.has_simulation(simulation_name):
                     simulation_status = status.get_status(simulation_name)
                     if is_analysed_status(simulation_status): simulation.analysed = True

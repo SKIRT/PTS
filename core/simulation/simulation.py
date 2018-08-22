@@ -1435,7 +1435,19 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         logname = self._prefix + "_log"
-        return remote.files_in_path(self.remote_output_path, startswith=logname, extension="txt")
+        filepaths = remote.files_in_path(self.remote_output_path, startswith=logname, extension="txt")
+        nfiles = len(filepaths)
+        if nfiles == 0: return []
+
+        had_logzero = False
+        if self.remote_log_file_path in filepaths:
+            had_logzero = True
+            filepaths.remove(self.remote_log_file_path)
+
+        # Sort on process rank
+        filepaths = list(sorted(filepaths, key=lambda path: int(path.split("_logP")[1].split(".")[0])))
+        if had_logzero: filepaths = [self.remote_log_file_path] + filepaths
+        return filepaths
 
     # -----------------------------------------------------------------
 

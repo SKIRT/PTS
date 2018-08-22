@@ -2861,6 +2861,7 @@ class SKIRTRemote(Remote):
 
         # Return string from simulation status
         status_string = str(LogSimulationStatus(file_path, self))
+        #print(status_string)
         if not is_running_status(status_string): raise RuntimeError("Something went wrong: status from log file is '" + status_string + "' but simulation is supposed to be running")
         return status_string
 
