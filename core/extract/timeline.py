@@ -874,9 +874,9 @@ class TimeLineExtractor(object):
         if not self.has_logfiles: raise ValueError("No log files found in simulation output")
 
         # Set the output path
-        if len(args) > 0: output_path = args[0]
-        else: output_path = kwargs.pop("output_path", None)
-        self.output_path = output_path
+        #if len(args) > 0: output_path = args[1]
+        #else: output_path = kwargs.pop("output_path", None)
+        self.output_path = kwargs.pop("output_path", None)
 
     # -----------------------------------------------------------------
 

@@ -4328,8 +4328,10 @@ class SimulationManager(InteractiveConfigurable):
         # Debugging
         log.debug("Creating simulation status table ...")
 
+        # TODO: show progress bar!
+
         # Loop over the simulations
-        for simulation_name in self.simulation_names:
+        for index, simulation_name in enumerate(self.simulation_names):
 
             # Get the simulation status
             simulation_status = self.get_simulation_status(simulation_name)

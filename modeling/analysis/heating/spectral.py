@@ -203,86 +203,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.has_dust_absorption_cubes_edgeon
 
     # -----------------------------------------------------------------
-    # -----------------------------------------------------------------
-
-    @property
-    def old_dust_emission_cube_earth(self):
-        return self.model.old_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_old_dust_emission_cube_earth(self):
-        return self.model.has_old_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_dust_emission_cube_earth(self):
-        return self.model.young_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_young_dust_emission_cube_earth(self):
-        return self.model.has_young_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_dust_emission_cube_earth(self):
-        return self.model.sfr_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_ionizing_dust_emission_cube_earth(self):
-        return self.model.has_sfr_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def unevolved_dust_emission_cube_earth(self):
-        return self.young_dust_emission_cube_earth + self.ionizing_dust_emission_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_unevolved_dust_emission_cube_earth(self):
-        return self.has_young_dust_emission_cube_earth and self.has_ionizing_dust_emission_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def evolved_dust_emission_cube_earth(self):
-        return self.old_dust_emission_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_evolved_dust_emission_cube_earth(self):
-        return self.has_old_dust_emission_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_dust_emission_cube_earth(self):
-        return self.model.total_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_total_dust_emission_cube_earth(self):
-        return self.model.has_total_dust_luminosity_cube_earth
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_dust_emission_cubes_earth(self):
-        return self.has_unevolved_dust_emission_cube_earth and self.has_total_dust_emission_cube_earth and self.has_evolved_dust_emission_cube_earth
-
-    # -----------------------------------------------------------------
-    # CUBES: ABSORPTION
+    # CUBES: ABSORPTION FRACTION
     #   EARTH
     # -----------------------------------------------------------------
 
@@ -1193,6 +1114,97 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                               name=self.evolved_spectral_absorption_name, description=self.evolved_spectral_absorption_description)
 
     # -----------------------------------------------------------------
+    # SIMULATION CUBES
+    #   EARTH
+    #     EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def old_dust_emission_cube_earth(self):
+        return self.model.old_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_dust_emission_cube_earth(self):
+        return self.model.has_old_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_dust_emission_cube_earth(self):
+        return self.model.young_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_dust_emission_cube_earth(self):
+        return self.model.has_young_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_dust_emission_cube_earth(self):
+        return self.model.sfr_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_dust_emission_cube_earth(self):
+        return self.model.has_sfr_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_emission_cube_earth(self):
+        return self.has_young_dust_emission_cube_earth and self.has_ionizing_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_dust_emission_cube_earth(self):
+        if self.model.has_unevolved_dust_luminosity_cube_earth: return self.model.unevolved_dust_luminosity_cube_earth
+        elif self.has_young_and_ionizing_dust_emission_cube_earth: return self.young_dust_emission_cube_earth + self.ionizing_dust_emission_cube_earth
+        else: raise IOError("Cannot obtain a cube of the dust emission from unevolved stars in the earth projection")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_dust_emission_cube_earth(self):
+        return self.model.has_unevolved_dust_luminosity_cube_earth or self.has_young_and_ionizing_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_emission_cube_earth(self):
+        return self.old_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_evolved_dust_emission_cube_earth(self):
+        return self.has_old_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_emission_cube_earth(self):
+        return self.model.total_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_emission_cube_earth(self):
+        return self.model.has_total_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_emission_cubes_earth(self):
+        return self.has_unevolved_dust_emission_cube_earth and self.has_total_dust_emission_cube_earth and self.has_evolved_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+    #     ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -1231,16 +1243,23 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_and_ionizing_dust_absorption_cube_earth(self):
+        return self.has_young_dust_absorption_cube_earth and self.has_ionizing_dust_absorption_cube_earth
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def unevolved_dust_absorption_cube_earth(self):
-        #return self.young_dust_absorption_cube_earth + self.ionizing_dust_absorption_cube_earth
-        return self.model.unevolved_absorbed_diffuse_stellar_luminosity_cube_earth
+        if self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_earth: return self.model.unevolved_absorbed_diffuse_stellar_luminosity_cube_earth
+        elif self.has_young_and_ionizing_dust_absorption_cube_earth: return self.young_dust_absorption_cube_earth + self.ionizing_dust_absorption_cube_earth
+        else: raise IOError("Cannot obtain a cube of the dust absorption from unevolved stars in the earth projection")
 
     # -----------------------------------------------------------------
 
     @property
     def has_unevolved_dust_absorption_cube_earth(self):
-        return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_earth
+        return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_earth or self.has_young_and_ionizing_dust_absorption_cube_earth
 
     # -----------------------------------------------------------------
 
@@ -1270,14 +1289,11 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def has_dust_absorption_cubes_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_unevolved_dust_absorption_cube_earth and self.has_total_dust_absorption_cube_earth and self.has_evolved_dust_absorption_cube_earth
 
+    # -----------------------------------------------------------------
+    #   FACEON
+    #     EMISSION
     # -----------------------------------------------------------------
 
     @property
@@ -1317,8 +1333,16 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_and_ionizing_dust_emission_cube_faceon(self):
+        return self.has_young_dust_emission_cube_faceon and self.has_ionizing_dust_emission_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_dust_emission_cube_faceon(self):
-        return self.young_dust_emission_cube_faceon + self.ionizing_dust_emission_cube_faceon
+        if self.model.has_unevolved_dust_luminosity_cube_faceon: return self.model.unevolved_dust_luminosity_cube_faceon
+        elif self.has_young_and_ionizing_dust_emission_cube_faceon: return self.young_dust_emission_cube_faceon + self.ionizing_dust_emission_cube_faceon
+        else: raise IOError("Cannot obtain a cube of the dust emission from unevolved stars in the faceon projection")
 
     # -----------------------------------------------------------------
 
@@ -1354,14 +1378,10 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def has_dust_emission_cubes_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_unevolved_dust_emission_cube_faceon and self.has_total_dust_emission_cube_faceon and self.has_evolved_dust_emission_cube_faceon
 
+    # -----------------------------------------------------------------
+    #     ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -1400,15 +1420,23 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_and_ionizing_dust_absorption_cube_faceon(self):
+        return self.has_young_dust_absorption_cube_faceon and self.has_ionizing_dust_absorption_cube_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def unevolved_dust_absorption_cube_faceon(self):
-        return self.young_dust_absorption_cube_faceon + self.ionizing_dust_absorption_cube_faceon
+        if self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_faceon: return self.model.unevolved_absorbed_diffuse_stellar_luminosity_cube_faceon
+        elif self.has_young_and_ionizing_dust_absorption_cube_faceon: return self.young_dust_absorption_cube_faceon + self.ionizing_dust_absorption_cube_faceon
+        else: raise IOError("Cannot obtain a cube of the dust absorption from unevolved stars in the faceon projection")
 
     # -----------------------------------------------------------------
 
     @property
     def has_unevolved_dust_absorption_cube_faceon(self):
-        return self.has_young_dust_absorption_cube_faceon and self.has_ionizing_dust_absorption_cube_faceon
+        return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_faceon or self.has_young_and_ionizing_dust_absorption_cube_faceon
 
     # -----------------------------------------------------------------
 
@@ -1438,14 +1466,11 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def has_dust_absorption_cubes_faceon(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_unevolved_dust_absorption_cube_faceon and self.has_total_dust_absorption_cube_faceon and self.has_evolved_dust_absorption_cube_faceon
 
+    # -----------------------------------------------------------------
+    #   EDGEON
+    #     EMISSION
     # -----------------------------------------------------------------
 
     @property
@@ -1484,9 +1509,17 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_and_ionizing_dust_emission_cube_edgeon(self):
+        return self.has_young_dust_emission_cube_edgeon and self.has_ionizing_dust_emission_cube_edgeon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def unevolved_dust_emission_cube_edgeon(self):
-        return self.young_dust_emission_cube_edgeon + self.ionizing_dust_emission_cube_edgeon
+        if self.model.has_unevolved_dust_luminosity_cube_edgeon: return self.model.unevolved_dust_luminosity_cube_edgeon
+        elif self.has_young_and_ionizing_dust_emission_cube_edgeon: return self.young_dust_emission_cube_edgeon + self.ionizing_dust_emission_cube_edgeon
+        else: raise IOError("Cannot obtain a cube of the dust emission from unevolved stars in the edgeon projection")
 
     # -----------------------------------------------------------------
 
@@ -1522,14 +1555,10 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def has_dust_emission_cubes_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_unevolved_dust_emission_cube_edgeon and self.has_total_dust_emission_cube_edgeon and self.has_evolved_dust_emission_cube_edgeon
 
+    # -----------------------------------------------------------------
+    #     ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -1568,15 +1597,23 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_young_and_ionizing_dust_absorption_cube_edgeon(self):
+        return self.has_young_dust_absorption_cube_edgeon and self.has_ionizing_dust_absorption_cube_edgeon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def unevolved_dust_absorption_cube_edgeon(self):
-        return self.young_dust_absorption_cube_edgeon + self.ionizing_dust_absorption_cube_edgeon
+        if self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon: return self.model.unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon
+        elif self.has_young_and_ionizing_dust_absorption_cube_edgeon: return self.young_dust_absorption_cube_edgeon + self.ionizing_dust_absorption_cube_edgeon
+        else: raise IOError("Cannot obtain a cube of the dust absorption from unevolved stars in the edgeon projection")
 
     # -----------------------------------------------------------------
 
     @property
     def has_unevolved_dust_absorption_cube_edgeon(self):
-        return self.has_young_dust_absorption_cube_edgeon and self.has_ionizing_dust_absorption_cube_edgeon
+        return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon or self.has_young_and_ionizing_dust_absorption_cube_edgeon
 
     # -----------------------------------------------------------------
 
@@ -1606,14 +1643,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def has_dust_absorption_cubes_edgeon(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_unevolved_dust_absorption_cube_edgeon and self.has_total_dust_absorption_cube_edgeon and self.has_evolved_dust_absorption_cube_edgeon
 
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property

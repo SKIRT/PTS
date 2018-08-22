@@ -181,7 +181,7 @@ class ResourceEstimator(object):
 
         # Create a TimeLineExtractor instance
         self.extractor = TimeLineExtractor()
-        self.extractor.run(self.simulation)
+        self.extractor.run(simulation=self.simulation)
 
     # -----------------------------------------------------------------
 

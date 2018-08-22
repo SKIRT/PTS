@@ -718,7 +718,7 @@ class DataCube(Image):
         for index, frame_name in enumerate(frame_names):
             frame = self.frames[frame_name]
             new_name = "frame" + str(index)
-            new.add_frame(frame, new_name, copy=copy)
+            new.add_frame(frame, new_name, copy=copy, silent=True)
 
         # Set the wavelength grid
         new.wavelength_grid = wavelength_grid
@@ -3554,6 +3554,12 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @property
+    def wavelength_array(self):
+        return self.wavelengths(unit=self.wavelength_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
     def wavelength_unit(self):
         return self.wavelength_grid.unit
 
@@ -3562,6 +3568,162 @@ class DataCube(Image):
     @property
     def wavelength_unit_string(self):
         return tostr(self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nans(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Initialize image
+        masks = Image("nans")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame nans
+            nans = self.frames[frame_name].nans
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(nans, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("infs")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame infs
+            infs = self.frames[frame_name].infs
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(infs, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def invalid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("invalid")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame invalid mask
+            invalid = self.frames[frame_name].invalid
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(invalid, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def valid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("valid")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame valid mask
+            valid = self.frames[frame_name].valid
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(valid, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("zeroes")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame zeroes
+            zeroes = self.frames[frame_name].zeroes
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(zeroes, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("nonzeroes")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame nonzeroes
+            nonzeroes = self.frames[frame_name].nonzeroes
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(nonzeroes, mask_name)
+
+        # Return the masks
+        return masks
 
     # -----------------------------------------------------------------
 

@@ -929,7 +929,7 @@ class BasicAnalyser(Configurable):
         try:
 
             # Try extracting timeline information
-            extractor.run(self.simulation, path)
+            extractor.run(simulation=self.simulation, output_path=path)
             self.timeline = extractor.table
 
             # Done
