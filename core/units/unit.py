@@ -713,6 +713,9 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
+        # Other unit is None?
+        if other is None: return False
+
         # Try to parse as a photometric unit
         try: other = PhotometricUnit(other)
         #except ValueError: raise ValueError("The other unit is not a photometric unit")

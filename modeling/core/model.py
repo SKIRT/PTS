@@ -5473,8 +5473,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
+        return self.unevolved_simulations.has_faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.unevolved_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
+        return self.unevolved_simulations.has_edgeon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
     # TOTAL MAPS

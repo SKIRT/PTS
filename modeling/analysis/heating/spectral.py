@@ -466,7 +466,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def cube_edgeon_emission_path(self):
-        return fs.join(self.cubes_path, "edgeon.fits")
+        return fs.join(self.cubes_path, "edgeon_emission.fits")
 
     # -----------------------------------------------------------------
 
@@ -491,7 +491,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def cube_edgeon_emission_fixed_path(self):
-        return fs.join(self.cubes_path, "edgeon_fixed.fits")
+        return fs.join(self.cubes_path, "edgeon_emission_fixed.fits")
 
     # -----------------------------------------------------------------
 
@@ -2615,6 +2615,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def curves_emission_y_label(self):
+        return "Fraction of emitted dust luminosity"
+
+    # -----------------------------------------------------------------
+
     def plot_curve_earth_emission(self):
 
         """
@@ -2626,7 +2632,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the earth projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_earth_emission, path=self.curve_earth_emission_plot_path, xlog=True)
+        plotting.plot_curves(self.curves_earth_emission, path=self.curve_earth_emission_plot_path, xlog=True, y_label=self.curves_emission_y_label)
 
     # -----------------------------------------------------------------
 
@@ -2648,6 +2654,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def curves_absorption_y_label(self):
+        return "Fraction of absorbed luminosity"
+
+    # -----------------------------------------------------------------
+
     def plot_curve_earth_absorption(self):
 
         """
@@ -2659,7 +2671,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the earth projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, xlog=True)
+        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, xlog=True, y_label=self.curves_absorption_y_label)
 
     # -----------------------------------------------------------------
 
@@ -2692,7 +2704,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the face-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_faceon_emission, path=self.curve_faceon_emission_plot_path, xlog=True)
+        plotting.plot_curves(self.curves_faceon_emission, path=self.curve_faceon_emission_plot_path, xlog=True, y_label=self.curves_emission_y_label)
 
     # -----------------------------------------------------------------
 
@@ -2725,7 +2737,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the face-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, xlog=True)
+        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, xlog=True, y_label=self.curves_absorption_y_label)
 
     # -----------------------------------------------------------------
 
@@ -2758,7 +2770,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the edge-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_edgeon_emission, path=self.curve_edgeon_emission_plot_path, xlog=True)
+        plotting.plot_curves(self.curves_edgeon_emission, path=self.curve_edgeon_emission_plot_path, xlog=True, y_label=self.curves_emission_y_label)
 
     # -----------------------------------------------------------------
 
@@ -2791,7 +2803,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the edge-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True)
+        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True, y_label=self.curves_absorption_y_label)
 
 # -----------------------------------------------------------------
 
@@ -2814,8 +2826,12 @@ def get_fixed_cube_emission(cube):
     fixed.replace_by_nans_where_greater_than(1.1)
     fixed.cutoff_greater(1.)
 
+    # EVERYTHING INVALID IS NOW NAN
+    # NOW WE WANT TO INTERPOLATE THESE NANS, EXCEPT FOR THE BACKGROUND NANS (LARGEST)
+
     # Interpolate nans
-    fixed.interpolate_nans(sigma=3.)
+    #fixed.interpolate_nans(sigma=3.)
+    fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
 
     # Set flag
     fixed.metadata["fixed"] = True
@@ -2844,8 +2860,12 @@ def get_fixed_cube_absorption(cube):
     fixed.replace_by_nans_where_greater_than(1.1)
     fixed.cutoff_greater(1.)
 
+    # EVERYTHING INVALID IS NOW NAN
+    # NOW WE WANT TO INTERPOLATE THESE NANS, EXCEPT FOR THE BACKGROUND NANS (LARGEST)
+
     # Interpolate nans
-    fixed.interpolate_nans(sigma=3.)
+    #fixed.interpolate_nans(sigma=3.)
+    fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
 
     # Set flag
     fixed.metadata["fixed"] = True

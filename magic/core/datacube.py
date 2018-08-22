@@ -40,6 +40,8 @@ from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr, get_list_string_max_nvalues
 from ...core.tools import sequences, numbers
 from ...core.units.unit import PhotometricUnit
+from ..region.region import PixelRegion, SkyRegion
+from .frame import nan_value
 
 # -----------------------------------------------------------------
 
@@ -1261,19 +1263,32 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
-                     smoothing_factor=None, error_on_max=True):
+    def get_mask(self, region_or_mask):
 
         """
         This function ...
-        :param sigma: 
-        :param max_iterations: 
-        :param plot: 
-        :param not_converge: 
-        :param min_max_in: 
+        :param region_or_mask:
+        :return:
+        """
+
+        # Get mask
+        if isinstance(region_or_mask, PixelRegion): mask = region_or_mask.to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, SkyRegion): mask = region_or_mask.to_pixel(self.wcs).to_mask(self.xsize, self.ysize)
+        elif isinstance(region_or_mask, Mask): mask = region_or_mask
+        else: raise ValueError("Argument must be region or mask")
+
+        # Return
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def create_kernel(self, sigma=None, smoothing_factor=None):
+
+        """
+        This function ...
+        :param sigma:
         :param smoothing_factor:
-        :param error_on_max:
-        :return: 
+        :return:
         """
 
         # Determine sigma
@@ -1288,6 +1303,7 @@ class DataCube(Image):
 
             # Smoothing factor
             if smoothing_factor is not None:
+
                 if smoothing_factor < 1: raise ValueError("Smoothing factor cannot be smaller than one")
                 log.debug("Original sigma of the frame resolution is " + tostr(sigma) + " pixels")
                 log.debug("Interpolated regions will be smoother by a factor of " + str(smoothing_factor))
@@ -1303,10 +1319,214 @@ class DataCube(Image):
         # Create the kernel
         kernel = Gaussian2DKernel(stddev=sigma)
 
+        # Return
+        return kernel
+
+    # -----------------------------------------------------------------
+
+    def interpolate(self, region_or_mask, sigma=None, max_iterations=10, plot=False, not_converge="keep",
+                    min_max_in=None, smoothing_factor=None, replace_nans=None):
+
+        """
+        Thisfunction ...
+        :param region_or_mask:
+        :param sigma:
+        :param max_iterations:
+        :param plot:
+        :param not_converge:
+        :param min_max_in:
+        :param smoothing_factor:
+        :param replace_nans:
+        :return:
+        """
+
+        # Get mask
+        mask = self.get_mask(region_or_mask)
+
+        # Create kernel
+        kernel = self.create_kernel(sigma=sigma, smoothing_factor=smoothing_factor)
+
         # Interpolate each frame
-        for frame_name in self.frame_names: self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
+        for frame_name in self.frame_names:
+
+            # Get the frame
+            frame = self.frames[frame_name]
+
+            # Get a mask of the original NaN pixels
+            original_nans = frame.nans
+
+            # Set originally NaN pixels to something else? zero? -> CAN AFFECT THE INTERPOLATION OF NEIGHBOURING PIXELS
+            if replace_nans: frame[original_nans] = replace_nans
+
+            # Set nans at masked pixels
+            original_values = frame[mask]
+            frame[mask] = nan_value
+
+            # Interpolate the nans
+            try: frame.interpolate_nans_with_kernel(kernel, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
+            except RuntimeError as e:
+
+                # Reset the original values (e.g. infs)
+                frame[mask] = original_values
+
+                # Set original Nans Back to Nan
+                frame[original_nans] = nan_value
+
+                # Reraise the error
+                raise e
+
+            # Set original NaNs back to NaN
+            frame[original_nans] = nan_value
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def interpolate_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
+                     smoothing_factor=None, error_on_max=True, return_nans=False):
+
+        """
+        This function ...
+        :param sigma: 
+        :param max_iterations: 
+        :param plot: 
+        :param not_converge: 
+        :param min_max_in: 
+        :param smoothing_factor:
+        :param error_on_max:
+        :param return_nans:
+        :return: 
+        """
+
+        # Create kernel
+        kernel = self.create_kernel(sigma=sigma, smoothing_factor=smoothing_factor)
+
+        # Initialize image for NaNs
+        nans_image = Image("nans") if return_nans else None
+
+        # Interpolate each frame
+        for frame_name in self.frame_names:
+            nans = self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
                                                                     not_converge=not_converge, min_max_in=min_max_in,
                                                                     error_on_max=error_on_max)
+            if return_nans: nans_image.add_mask(nans, frame_name.replace("frame", "mask"))
+
+        # Return nans?
+        if return_nans: return nans_image
+
+    # -----------------------------------------------------------------
+
+    def interpolate_largest_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
+                                 smoothing_factor=None, error_on_max=True, return_masks=False, replace_nans=None):
+
+        """
+        This function ...
+        :param sigma:
+        :param max_iterations:
+        :param plot:
+        :param not_converge:
+        :param min_max_in:
+        :param smoothing_factor:
+        :param error_on_max:
+        :param return_masks:
+        :param replace_nans:
+        :return:
+        """
+
+        # Create kernel
+        kernel = self.create_kernel(sigma=sigma, smoothing_factor=smoothing_factor)
+
+        # Initialize image for masks
+        masks_image = Image("largest_nans") if return_masks else None
+
+        # Interpolate each frame
+        for frame_name in self.frame_names:
+
+            # Get the frame
+            frame = self.frames[frame_name]
+
+            # Get a mask of the original NaN pixels
+            original_nans = frame.nans
+
+            # Get the mask
+            largest_nans = original_nans.largest()
+            other_nans = largest_nans.inverse()
+            mask = largest_nans
+
+            # Set originally NaN pixels to something else? zero? -> CAN AFFECT THE INTERPOLATION OF NEIGHBOURING PIXELS
+            if replace_nans is not None: frame[original_nans] = replace_nans
+
+            # Set nans at masked pixels
+            #original_values = frame[mask]
+            frame[mask] = nan_value
+
+            # Interpolate
+            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge,
+                                                                 min_max_in=min_max_in, error_on_max=error_on_max)
+            if return_masks: masks_image.add_mask(mask, frame_name.replace("frame", "mask"))
+
+            # Set other NaNs back to NaN
+            frame[other_nans] = nan_value
+
+        # Return masks?
+        if return_masks: return masks_image
+
+    # -----------------------------------------------------------------
+
+    def interpolate_not_largest_nans(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
+                                     smoothing_factor=None, error_on_max=True, return_masks=False, replace_nans=None):
+
+        """
+        This function ...
+        :param sigma:
+        :param max_iterations:
+        :param plot:
+        :param not_converge:
+        :param min_max_in:
+        :param smoothing_factor:
+        :param error_on_max:
+        :param return_masks:
+        :param replace_nans:
+        :return:
+        """
+
+        # Create kernel
+        kernel = self.create_kernel(sigma=sigma, smoothing_factor=smoothing_factor)
+
+        # Initialize image for masks
+        masks_image = Image("not_largest_nans") if return_masks else None
+
+        # Interpolate each frame
+        for frame_name in self.frame_names:
+
+            # Get the frame
+            frame = self.frames[frame_name]
+
+            # Get a mask of the original NaN pixels
+            original_nans = frame.nans
+
+            # Get the mask
+            largest_nans = original_nans.largest()
+            mask = largest_nans.inverse()
+
+            # Set originally NaN pixels to something else? zero? -> CAN AFFECT THE INTERPOLATION OF NEIGHBOURING PIXELS
+            if replace_nans is not None: frame[original_nans] = replace_nans
+
+            # Set nans at masked pixels
+            #original_values = frame[mask]
+            frame[mask] = nan_value
+
+            # Interpolate
+            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge,
+                                                                 min_max_in=min_max_in, error_on_max=error_on_max)
+            if return_masks: masks_image.add_mask(mask, frame_name.replace("frame", "mask"))
+
+            # Set largest NaNs back to NaN
+            frame[largest_nans] = nan_value
+
+        # Return masks?
+        if return_masks: return masks_image
 
     # -----------------------------------------------------------------
 
@@ -3598,6 +3818,32 @@ class DataCube(Image):
     # -----------------------------------------------------------------
 
     @property
+    def largest_nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("largest_nans")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame nans
+            nans = self.frames[frame_name].nans.largest()
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(nans, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
     def infs(self):
 
         """
@@ -3613,6 +3859,32 @@ class DataCube(Image):
 
             # Get frame infs
             infs = self.frames[frame_name].infs
+            mask_name = frame_name.replace("frame", "mask")
+
+            # Add mask
+            masks.add_mask(infs, mask_name)
+
+        # Return the masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def largest_infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize image
+        masks = Image("largest_infs")
+
+        # Loop over the frames
+        for frame_name in self.frame_names:
+
+            # Get frame infs
+            infs = self.frames[frame_name].infs.largest()
             mask_name = frame_name.replace("frame", "mask")
 
             # Add mask

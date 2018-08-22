@@ -547,6 +547,21 @@ def all_zero(lst):
 
 # -----------------------------------------------------------------
 
+def has_identical_to(lst, value):
+
+    """
+    This function ...
+    :param lst:
+    :param value:
+    :return:
+    """
+
+    for item in lst:
+        if item is value: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def has_equal_to(lst, value):
 
     """
@@ -1767,6 +1782,24 @@ def random_subset(sequence, nsamples, avoid_duplication=False, ignore=None):
 
     import numpy as np
     return np.random.choice(sequence, nsamples, replace=not avoid_duplication, p=probabilities)
+
+# -----------------------------------------------------------------
+
+def put(these, into, indices):
+
+    """
+    This function ...
+    :param these:
+    :param into:
+    :param indices:
+    :return:
+    """
+
+    # Check
+    if len(these) != len(indices): raise ValueError("First argument must have equal length as indices")
+
+    # Loop
+    for this, index in zip(these, indices): into[index] = this
 
 # -----------------------------------------------------------------
 

@@ -553,3 +553,27 @@ def is_sequence_or_array(value):
     return is_sequence(value) or is_array_like(value)
 
 # -----------------------------------------------------------------
+
+def is_sequence_or_tuple(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_sequence(value) or is_tuple(value)
+
+# -----------------------------------------------------------------
+
+def is_integer_sequence_or_tuple(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return is_integer_sequence(value) or is_integer_tuple(value)
+
+# -----------------------------------------------------------------

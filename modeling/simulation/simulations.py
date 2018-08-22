@@ -1057,7 +1057,7 @@ class ComponentSimulations(object):
         """
 
         # Uniformize
-        absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor)
+        absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor, convert=False)
 
         # Return
         return absorbed * correction
@@ -1141,7 +1141,7 @@ class ComponentSimulations(object):
         """
 
         # Uniformize
-        absorbed, correction_term, correction_factor = uniformize(self.observed_cube_absorbed_alternative_uncorrected, self.absorbed_scattering_correction_term, self.absorbed_scattering_correction_factor)
+        absorbed, correction_term, correction_factor = uniformize(self.observed_cube_absorbed_alternative_uncorrected, self.absorbed_scattering_correction_term, self.absorbed_scattering_correction_factor, convert=(0,1,))
 
         # Return
         return (absorbed - correction_term) * correction_factor
@@ -1183,8 +1183,14 @@ class ComponentSimulations(object):
         """
 
         # Get
-        scattered = self.faceon_observed_cube_scattered
-        transparent = self.intrinsic_stellar_cube_faceon
+        #scattered = self.faceon_observed_cube_scattered
+        #transparent = self.intrinsic_stellar_cube_faceon
+
+        # Return the correction factor
+        #return 1. + scattered / transparent
+
+        # Uniformize
+        scattered, transparent = uniformize(self.faceon_observed_cube_scattered, self.intrinsic_stellar_cube_faceon)
 
         # Return the correction factor
         return 1. + scattered / transparent
@@ -1212,9 +1218,15 @@ class ComponentSimulations(object):
         """
 
         # Get
-        intrinsic = self.intrinsic_stellar_cube_faceon
-        direct = self.faceon_observed_cube_direct
-        scattered = self.faceon_observed_cube_scattered
+        #intrinsic = self.intrinsic_stellar_cube_faceon
+        #direct = self.faceon_observed_cube_direct
+        #scattered = self.faceon_observed_cube_scattered
+
+        # Return
+        #return intrinsic - direct - scattered
+
+        # Uniformize
+        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct, self.faceon_observed_cube_scattered)
 
         # Return
         return intrinsic - direct - scattered
@@ -1242,8 +1254,14 @@ class ComponentSimulations(object):
         """
 
         # Get
-        absorbed = self.faceon_observed_cube_absorbed_uncorrected
-        correction = self.faceon_absorbed_scattering_correction_factor
+        #absorbed = self.faceon_observed_cube_absorbed_uncorrected
+        #correction = self.faceon_absorbed_scattering_correction_factor
+
+        # Return
+        #return absorbed * correction
+
+        # Uniformize
+        absorbed, correction = uniformize(self.faceon_observed_cube_absorbed_uncorrected, self.faceon_absorbed_scattering_correction_factor, convert=False)
 
         # Return
         return absorbed * correction
@@ -1271,11 +1289,17 @@ class ComponentSimulations(object):
         """
 
         # Get
-        transparent = self.intrinsic_stellar_cube_faceon
-        observed = self.faceon_observed_stellar_cube
+        #transparent = self.intrinsic_stellar_cube_faceon
+        #observed = self.faceon_observed_stellar_cube
 
         # Return
-        return transparent - observed
+        #return transparent - observed
+
+        # Uniformize
+        intrinsic, observed = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_stellar_cube, distance=self.distance)
+
+        # Return
+        return intrinsic - observed
 
     # -----------------------------------------------------------------
 
@@ -1300,9 +1324,15 @@ class ComponentSimulations(object):
         """
 
         # Uniformize
-        transparent = self.intrinsic_stellar_cube_faceon
-        direct = self.faceon_observed_cube_direct
-        scattered = self.faceon_observed_cube_scattered
+        #transparent = self.intrinsic_stellar_cube_faceon
+        #direct = self.faceon_observed_cube_direct
+        #scattered = self.faceon_observed_cube_scattered
+
+        # Return
+        #return (scattered / transparent) * (transparent - direct)
+
+        # Uniformize
+        transparent, direct, scattered = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct, self.faceon_observed_cube_scattered)
 
         # Return
         return (scattered / transparent) * (transparent - direct)
@@ -1330,9 +1360,18 @@ class ComponentSimulations(object):
         """
 
         # Get
-        absorbed = self.faceon_observed_cube_absorbed_alternative_uncorrected
-        correction_term = self.faceon_absorbed_scattering_correction_term
-        correction_factor = self.faceon_absorbed_scattering_correction_factor
+        #absorbed = self.faceon_observed_cube_absorbed_alternative_uncorrected
+        #correction_term = self.faceon_absorbed_scattering_correction_term
+        #correction_factor = self.faceon_absorbed_scattering_correction_factor
+
+        # Return
+        #return (absorbed - correction_term) * correction_factor
+
+        # Uniformize
+        absorbed, correction_term, correction_factor = uniformize(self.faceon_observed_cube_absorbed_alternative_uncorrected,
+                                                                  self.faceon_absorbed_scattering_correction_term,
+                                                                  self.faceon_absorbed_scattering_correction_factor,
+                                                                  convert=(0, 1,))
 
         # Return
         return (absorbed - correction_term) * correction_factor
@@ -1374,8 +1413,14 @@ class ComponentSimulations(object):
         """
 
         # Get
-        scattered = self.edgeon_observed_cube_scattered
-        transparent = self.intrinsic_stellar_cube_edgeon
+        #scattered = self.edgeon_observed_cube_scattered
+        #transparent = self.intrinsic_stellar_cube_edgeon
+
+        # Return the correction factor
+        #return 1. + scattered / transparent
+
+        # Uniformize
+        scattered, transparent = uniformize(self.edgeon_observed_cube_scattered, self.intrinsic_stellar_cube_edgeon)
 
         # Return the correction factor
         return 1. + scattered / transparent
@@ -1403,9 +1448,15 @@ class ComponentSimulations(object):
         """
 
         # Get
-        intrinsic = self.intrinsic_stellar_cube_edgeon
-        direct = self.edgeon_observed_cube_direct
-        scattered = self.edgeon_observed_cube_scattered
+        #intrinsic = self.intrinsic_stellar_cube_edgeon
+        #direct = self.edgeon_observed_cube_direct
+        #scattered = self.edgeon_observed_cube_scattered
+
+        # Return
+        #return intrinsic - direct - scattered
+
+        # Uniformize
+        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct, self.edgeon_observed_cube_scattered)
 
         # Return
         return intrinsic - direct - scattered
@@ -1433,8 +1484,14 @@ class ComponentSimulations(object):
         """
 
         # Get
-        absorbed = self.edgeon_observed_cube_absorbed_uncorrected
-        correction = self.edgeon_absorbed_scattering_correction_factor
+        #absorbed = self.edgeon_observed_cube_absorbed_uncorrected
+        #correction = self.edgeon_absorbed_scattering_correction_factor
+
+        # Return
+        #return absorbed * correction
+
+        # Uniformize
+        absorbed, correction = uniformize(self.edgeon_observed_cube_absorbed_uncorrected, self.edgeon_absorbed_scattering_correction_factor, convert=False)
 
         # Return
         return absorbed * correction
@@ -1462,11 +1519,17 @@ class ComponentSimulations(object):
         """
 
         # Get
-        transparent = self.intrinsic_stellar_cube_edgeon
-        observed = self.edgeon_observed_stellar_cube
+        #transparent = self.intrinsic_stellar_cube_edgeon
+        #observed = self.edgeon_observed_stellar_cube
 
         # Return
-        return transparent - observed
+        #return transparent - observed
+
+        # Uniformize
+        intrinsic, observed = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_stellar_cube, distance=self.distance)
+
+        # Return
+        return intrinsic - observed
 
     # -----------------------------------------------------------------
 
@@ -1491,9 +1554,15 @@ class ComponentSimulations(object):
         """
 
         # Uniformize
-        transparent = self.intrinsic_stellar_cube_edgeon
-        direct = self.edgeon_observed_cube_direct
-        scattered = self.edgeon_observed_cube_scattered
+        #transparent = self.intrinsic_stellar_cube_edgeon
+        #direct = self.edgeon_observed_cube_direct
+        #scattered = self.edgeon_observed_cube_scattered
+
+        # Return
+        #return (scattered / transparent) * (transparent - direct)
+
+        # Uniformize
+        transparent, direct, scattered = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct, self.edgeon_observed_cube_scattered)
 
         # Return
         return (scattered / transparent) * (transparent - direct)
@@ -1521,9 +1590,18 @@ class ComponentSimulations(object):
         """
 
         # Get
-        absorbed = self.edgeon_observed_cube_absorbed_alternative_uncorrected
-        correction_term = self.edgeon_absorbed_scattering_correction_term
-        correction_factor = self.edgeon_absorbed_scattering_correction_factor
+        #absorbed = self.edgeon_observed_cube_absorbed_alternative_uncorrected
+        #correction_term = self.edgeon_absorbed_scattering_correction_term
+        #correction_factor = self.edgeon_absorbed_scattering_correction_factor
+
+        # Return
+        #return (absorbed - correction_term) * correction_factor
+
+        # Uniformize
+        absorbed, correction_term, correction_factor = uniformize(self.edgeon_observed_cube_absorbed_alternative_uncorrected,
+                                                                  self.edgeon_absorbed_scattering_correction_term,
+                                                                  self.edgeon_absorbed_scattering_correction_factor,
+                                                                  convert=(0, 1,))
 
         # Return
         return (absorbed - correction_term) * correction_factor

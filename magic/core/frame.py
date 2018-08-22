@@ -79,11 +79,6 @@ class AllZeroError(Exception):
 
 nan_value = float("nan")
 inf_value = float("inf")
-
-# -----------------------------------------------------------------
-
-nan_values = [float("nan"), np.NaN]
-inf_values = [float("inf"), float("-inf"), np.Inf, -np.Inf]
 zero_value = 0.0
 
 # -----------------------------------------------------------------
@@ -1678,24 +1673,12 @@ class Frame(NDDataArray):
 
     @property
     def min(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return np.nanmin(self.data)
 
     # -----------------------------------------------------------------
 
     @property
     def max(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return np.nanmax(self.data)
 
     # -----------------------------------------------------------------
@@ -3762,7 +3745,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     def interpolate(self, region_or_mask, sigma=None, max_iterations=10, plot=False, not_converge="keep",
-                    min_max_in=None, smoothing_factor=None):
+                    min_max_in=None, smoothing_factor=None, replace_nans=None):
 
         """
         Thisfunction ...
@@ -3773,6 +3756,7 @@ class Frame(NDDataArray):
         :param not_converge:
         :param min_max_in:
         :param smoothing_factor:
+        :param interpolate_nans:
         :return:
         """
 
@@ -3781,7 +3765,9 @@ class Frame(NDDataArray):
 
         # Get a mask of the original NaN pixels
         original_nans = self.nans
+
         # Set originally NaN pixels to something else? zero?
+        if replace_nans: self[original_nans] = replace_nans
 
         # Set nans at masked pixels
         original_values = self[mask]
