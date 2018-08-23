@@ -2807,11 +2807,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
 # -----------------------------------------------------------------
 
-def get_fixed_cube_emission(cube):
+def get_fixed_cube_emission(cube, return_masks=False):
 
     """
     This function ...
     :param cube:
+    :param return_masks:
     :return:
     """
 
@@ -2832,21 +2833,25 @@ def get_fixed_cube_emission(cube):
     # Interpolate nans
     #fixed.interpolate_nans(sigma=3.)
     #fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
-    fixed.interpolate_nans_special(sigma=3., replace_nans=0.)
+    masks_image = None
+    if return_masks: masks_image = fixed.interpolate_nans_special(sigma=3., replace_nans=0., return_masks=True)
+    else: fixed.interpolate_nans_special(sigma=3., replace_nans=0.)
 
     # Set flag
     fixed.metadata["fixed"] = True
 
     # Return the new cube
-    return fixed
+    if return_masks: return fixed, masks_image
+    else: return fixed
 
 # -----------------------------------------------------------------
 
-def get_fixed_cube_absorption(cube):
+def get_fixed_cube_absorption(cube, return_masks=False):
 
     """
     This function ...
     :param cube:
+    :param return_masks:
     :return:
     """
 
@@ -2866,12 +2871,16 @@ def get_fixed_cube_absorption(cube):
 
     # Interpolate nans
     #fixed.interpolate_nans(sigma=3.)
-    fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
+    #fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
+    masks_image = None
+    if return_masks: masks_image = fixed.interpolate_nans_special(sigma=3., replace_nans=0., return_masks=True)
+    else: fixed.interpolate_nans_special(sigma=3., replace_nans=0.)
 
     # Set flag
     fixed.metadata["fixed"] = True
 
     # Return the new cube
-    return fixed
+    if return_masks: return fixed, masks_image
+    else: return fixed
 
 # -----------------------------------------------------------------

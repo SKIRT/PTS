@@ -1533,12 +1533,76 @@ class DataCube(Image):
             log.debug("Interpolating frame " + str(index+1) + " of " + str(nframes) + " ...")
 
             # Interpolate
-            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge,
-                                                                 min_max_in=min_max_in, error_on_max=error_on_max)
+            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge, min_max_in=min_max_in, error_on_max=error_on_max)
             if return_masks: masks_image.add_mask(mask, frame_name.replace("frame", "mask"))
 
             # Set largest NaNs back to NaN
             frame[largest_nans] = nan_value
+
+        # Return masks?
+        if return_masks: return masks_image
+
+    # -----------------------------------------------------------------
+
+    def interpolate_nans_special(self, sigma=None, max_iterations=10, plot=False, not_converge="keep", min_max_in=None,
+                                     smoothing_factor=None, error_on_max=True, return_masks=False, replace_nans=None,
+                                    dilation_rank=2, dilation_connectivity=2):
+
+        """
+        This function ...
+        :param sigma:
+        :param max_iterations:
+        :param plot:
+        :param not_converge:
+        :param min_max_in:
+        :param smoothing_factor:
+        :param error_on_max:
+        :param return_masks:
+        :param replace_nans:
+        :return:
+        """
+
+        # Create kernel
+        kernel = self.create_kernel(sigma=sigma, smoothing_factor=smoothing_factor)
+
+        # Initialize image for masks
+        masks_image = Image("nans_special") if return_masks else None
+
+        # Interpolate each frame
+        nframes = self.nframes
+        for index, frame_name in enumerate(self.frame_names):
+
+            # Get the frame
+            frame = self.frames[frame_name]
+
+            # Get a mask of the original NaN pixels
+            original_nans = frame.nans
+
+            # Debugging
+            log.debug("Preparing mask for frame " + str(index+1) + " of " + str(nframes) + " ...")
+
+            # Get not-NaN mask and dilate, then fill holes
+            not_nans = original_nans.inverse()
+            not_nans.dilate_rc(dilation_rank, dilation_connectivity)
+            not_nans.fill_holes()
+            mask = original_nans * not_nans
+            original_not_mask_nans = original_nans * mask.inverse() # ORIGINAL AND NOT MASKED
+
+            # Set originally NaN pixels to something else? zero? -> CAN AFFECT THE INTERPOLATION OF NEIGHBOURING PIXELS
+            if replace_nans is not None: frame[original_nans] = replace_nans
+
+            # Set nans at masked pixels, so that they will be interpolated
+            frame[mask] = nan_value
+
+            # Debugging
+            log.debug("Interpolating frame " + str(index + 1) + " of " + str(nframes) + " ...")
+
+            # Interpolate
+            self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge, min_max_in=min_max_in, error_on_max=error_on_max)
+            if return_masks: masks_image.add_mask(mask, frame_name.replace("frame", "mask"))
+
+            # Set original NaNs back to NaN
+            frame[original_not_mask_nans] = nan_value
 
         # Return masks?
         if return_masks: return masks_image
