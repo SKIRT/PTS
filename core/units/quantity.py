@@ -20,7 +20,7 @@ from astropy.coordinates import Angle
 from ..tools import types
 from .parsing import parse_quantity, parse_unit, parse_photometric_unit
 from .stringify import represent_quantity
-from .unit import PhotometricUnit, divide_units, multiply_units
+from .unit import PhotometricUnit, divide_units, multiply_units, get_conversion_factor
 
 # -----------------------------------------------------------------
 
@@ -580,7 +580,9 @@ def add_with_units(value, unit, other, other_unit=None, conversion_info=None):
         if other_unit is not None:
 
             if not has_unit: raise ValueError("First value has no unit")
-            conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            #conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            # from_unit, to_unit, distance=None, wavelength=None, solid_angle=None, silent=False, parse=True, conversion_info=None
+            conversion_factor = get_conversion_factor(other_unit, unit, conversion_info=conversion_info)
             new_value = value + conversion_factor * other
 
         # Without unit
@@ -639,7 +641,8 @@ def subtract_with_units(value, unit, other, other_unit=None, conversion_info=Non
 
             if not has_unit: raise ValueError("First value has no unit")
             #self._data -= value.converted_to(self.unit).data
-            conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            #conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            conversion_factor = get_conversion_factor(other_unit, unit, conversion_info=conversion_info)
             new_value = value - conversion_factor * other
 
         # Without unit

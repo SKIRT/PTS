@@ -825,7 +825,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                            ylimits=self.funev_limits, xlog=True)
 
         # Plot using Matplotlib
-        else: plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, x_scale="log",
+        else: plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, xlog=True,
                       path=self.ssfr_funev_cells_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits,
                       density=True)
 
@@ -904,7 +904,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                            ylimits=self.funev_limits, xlog=True)
 
         # Plot using Matplotlib
-        else: plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, x_scale="log",
+        else: plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, xlog=True,
                       path=self.ssfr_funev_pixels_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits,
                       density=True)
 

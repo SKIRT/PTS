@@ -3270,7 +3270,12 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
         conversion_factor = None
         original_unit = None
-        correction_factor = (wcs.pixelarea / frame.pixelarea).to("").value
+
+        #print(wcs.pixelarea, frame.pixel_solid_angle, frame.pixel_area)
+        if wcs.is_celestial: correction_factor = (wcs.pixelarea / frame.pixel_solid_angle).to("").value
+        elif wcs.is_physical: correction_factor = (wcs.pixelarea / frame.pixel_area).to("").value
+        else: raise ValueError("Uknown coordinate system type")
+
         #print(type(correction_factor))
         #exit()
 
