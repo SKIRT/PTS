@@ -1347,7 +1347,8 @@ class DataCube(Image):
         kernel = self.create_kernel(sigma=sigma, smoothing_factor=smoothing_factor)
 
         # Interpolate each frame
-        for frame_name in self.frame_names:
+        nframes = self.nframes
+        for index, frame_name in enumerate(self.frame_names):
 
             # Get the frame
             frame = self.frames[frame_name]
@@ -1361,6 +1362,9 @@ class DataCube(Image):
             # Set nans at masked pixels
             original_values = frame[mask]
             frame[mask] = nan_value
+
+            # Debugging
+            log.debug("Interpolating frame " + str(index+1) + " of " + str(nframes) + " ...")
 
             # Interpolate the nans
             try: frame.interpolate_nans_with_kernel(kernel, max_iterations=max_iterations, plot=plot, not_converge=not_converge, min_max_in=min_max_in)
@@ -1406,7 +1410,9 @@ class DataCube(Image):
         nans_image = Image("nans") if return_nans else None
 
         # Interpolate each frame
-        for frame_name in self.frame_names:
+        nframes = self.nframes
+        for index, frame_name in enumerate(self.frame_names):
+            log.debug("Interpolating frame " + str(index+1) + " of " + str(nframes) + " ...")
             nans = self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations,
                                                                     not_converge=not_converge, min_max_in=min_max_in,
                                                                     error_on_max=error_on_max)
@@ -1441,7 +1447,8 @@ class DataCube(Image):
         masks_image = Image("largest_nans") if return_masks else None
 
         # Interpolate each frame
-        for frame_name in self.frame_names:
+        nframes = self.nframes
+        for index, frame_name in enumerate(self.frame_names):
 
             # Get the frame
             frame = self.frames[frame_name]
@@ -1460,6 +1467,9 @@ class DataCube(Image):
             # Set nans at masked pixels
             #original_values = frame[mask]
             frame[mask] = nan_value
+
+            # Debugging
+            log.debug("Interpolating frame " + str(index+1) + " of " + str(nframes) + " ...")
 
             # Interpolate
             self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge,
@@ -1498,7 +1508,8 @@ class DataCube(Image):
         masks_image = Image("not_largest_nans") if return_masks else None
 
         # Interpolate each frame
-        for frame_name in self.frame_names:
+        nframes = self.nframes
+        for index, frame_name in enumerate(self.frame_names):
 
             # Get the frame
             frame = self.frames[frame_name]
@@ -1508,7 +1519,8 @@ class DataCube(Image):
 
             # Get the mask
             largest_nans = original_nans.largest()
-            mask = largest_nans.inverse()
+            #mask = largest_nans.inverse()
+            mask = original_nans * largest_nans.inverse()
 
             # Set originally NaN pixels to something else? zero? -> CAN AFFECT THE INTERPOLATION OF NEIGHBOURING PIXELS
             if replace_nans is not None: frame[original_nans] = replace_nans
@@ -1516,6 +1528,9 @@ class DataCube(Image):
             # Set nans at masked pixels
             #original_values = frame[mask]
             frame[mask] = nan_value
+
+            # Debugging
+            log.debug("Interpolating frame " + str(index+1) + " of " + str(nframes) + " ...")
 
             # Interpolate
             self.frames[frame_name].interpolate_nans_with_kernel(kernel, plot=plot, max_iterations=max_iterations, not_converge=not_converge,

@@ -50,6 +50,7 @@ definition.add_flag("check_paths", "check simulation paths", False)
 definition.add_flag("correct_paths", "correct simulation paths instead of raising errors", False)
 definition.add_flag("confirm_correction", "confirm before correcting paths", False)
 definition.add_flag("check_analysis", "check analysis output", False)
+definition.add_flag("check_status", "check the simulation status", True)
 
 # Caching
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")

@@ -9433,7 +9433,9 @@ class SimulationManager(InteractiveConfigurable):
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
             # Debugging
-            log.debug("Caching '" + dirname + "' directory from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
+            from_name = fs.directory_of(relpath)
+            if from_name == "": from_name = fs.directory_of(dirpath)
+            log.debug("Caching '" + dirname + "' directory from '" + from_name + "' to '" + cache_directory_path + "' ...")
 
             # Copy the directory
             fs.copy_directory(dirpath, cache_directory_path, replace_files=True, replace_directories=False) # avoid replacing filed directories with empty ones
@@ -9479,7 +9481,9 @@ class SimulationManager(InteractiveConfigurable):
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
             # Debugging
-            log.debug("Caching '" + filename + "' file from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
+            from_name = fs.directory_of(relpath)
+            if from_name == "": from_name = fs.directory_of(filepath)
+            log.debug("Caching '" + filename + "' file from '" + from_name + "' to '" + cache_directory_path + "' ...")
 
             # Copy the file
             fs.copy_file(filepath, cache_directory_path)

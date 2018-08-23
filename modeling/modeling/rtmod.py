@@ -1606,6 +1606,9 @@ class RTMod(InteractiveConfigurable):
         # Use previous status
         definition.add_flag("previous_status", "show the previous simulation status", False)
 
+        # Check status
+        definition.add_flag("check_status", "check the simulation status", True)
+
         # Return the definition
         return definition
 

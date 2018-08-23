@@ -540,6 +540,90 @@ class CubicSpline:
 
 # -----------------------------------------------------------------
 
+def set_transparent_color(image, color, tolerance=None):
+
+    """
+    This function ...
+    :param image:
+    :param color:
+    :param tolerance:
+    :return:
+    """
+
+    # Get color
+    red, blue, green = color
+
+    # With tolerance
+    if tolerance is not None:
+        offset = tolerance * 256
+        where = np.where(np.isclose(red, image[:, :, 0], atol=offset) * np.isclose(blue, image[:, :, 1], atol=offset) * np.isclose(green, image[:, :, 2], atol=offset))
+
+    # Exact
+    else: where = np.where((image[:, :, 0] == red) * (image[:, :, 1] == blue) * (image[:, :, 2] == green))
+
+    # Set transparent
+    for x, y in zip(where[0], where[1]): image[x, y, 3] = 0
+
+# -----------------------------------------------------------------
+
+def set_transparency_gradient(image, color, scale, scale_value=0.5):
+
+    """
+    This fnuction ...
+    :param image:
+    :param color:
+    :param scale:
+    :param scale_value:
+    :return:
+    """
+
+    abscale = scale * 256
+
+    # Get color
+    red, blue, green = color
+    #print(red, blue, green)
+
+    offset_red = abs(image[:, :, 0].astype(float) - red)
+    offset_blue = abs(image[:, :, 1].astype(float) - blue)
+    offset_green = abs(image[:, :, 2].astype(float) - green)
+
+    #print(offset_red, offset_blue, offset_green)
+
+    reloffset_red = offset_red.astype(float) / float(abscale)
+    reloffset_blue = offset_blue.astype(float) / float(abscale)
+    reloffset_green = offset_green.astype(float) / float(abscale)
+
+    #print(reloffset_red, reloffset_blue, reloffset_green)
+
+    #transparency = peak_alpha * normalized / normalized_max
+
+    transparency_red = reloffset_red * scale_value
+    transparency_blue = reloffset_blue * scale_value
+    transparency_green = reloffset_green * scale_value
+
+    transparency = (transparency_red + transparency_blue + transparency_green) / 3.
+    #print(transparency)
+    transparency[transparency > 1] = 1
+    #print(transparency)
+
+    # Set new
+    current_alpha = image[:, :, 3].astype(float) / 255
+    #print(current_alpha)
+    #print(current_transparency)
+    #new_transparency = current_transparency * transparency
+    #print(new_transparency)
+    #alpha = (1. - new_transparency) * 255
+    #print(alpha)
+    #alpha = current_alpha * (1-transparency)
+    alpha = current_alpha * transparency
+    #print(alpha)
+    image[:, :, 3] = alpha * 255
+
+    # Return the mask
+    #return new_transparency
+
+# -----------------------------------------------------------------
+
 def invert_colors(image):
 
     """

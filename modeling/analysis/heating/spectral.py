@@ -2831,7 +2831,8 @@ def get_fixed_cube_emission(cube):
 
     # Interpolate nans
     #fixed.interpolate_nans(sigma=3.)
-    fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
+    #fixed.interpolate_not_largest_nans(sigma=3., replace_nans=0.)
+    fixed.interpolate_nans_special(sigma=3., replace_nans=0.)
 
     # Set flag
     fixed.metadata["fixed"] = True
