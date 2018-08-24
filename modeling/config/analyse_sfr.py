@@ -33,3 +33,7 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 definition.add_flag("plot", "do plotting", True)
 
 # -----------------------------------------------------------------
+
+definition.add_flag("project", "create and plot maps from the 3D data", True)
+
+# -----------------------------------------------------------------

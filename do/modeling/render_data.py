@@ -35,7 +35,7 @@ config = parse_arguments("render_data", definition)
 
 # -----------------------------------------------------------------
 
-def test():
+def make_testdata():
 
     n_particles = 5000000
 
@@ -43,47 +43,141 @@ def test():
 
     ppm = np.ones(n_particles)
 
+    #print(ppx.shape)
+    #print(ppy.shape)
+    #print(ppz.shape)
+    #print(ppm.shape)
+
+    return ppx, ppy, ppz, ppm
+
+# -----------------------------------------------------------------
+
+def make_data(ppx, ppy, ppz, ppm):
+
+    """
+    This function ...
+    :param ppx:
+    :param ppy:
+    :param ppz:
+    :param ppm:
+    :return:
+    """
+
     data = {'particle_position_x': ppx,
             'particle_position_y': ppy,
             'particle_position_z': ppz,
             'particle_mass': ppm}
-    bbox = 1.1*np.array([[min(ppx), max(ppx)], [min(ppy), max(ppy)], [min(ppz), max(ppz)]])
+
+    bbox = 1.1 * np.array([[np.min(ppx), np.max(ppx)], [np.min(ppy), np.max(ppy)], [np.min(ppz), np.max(ppz)]])
+    return data, bbox
+
+# -----------------------------------------------------------------
+
+def plot(data, bbox):
+
+    """
+    This function ...
+    :param data:
+    :param bbox:
+    :return:
+    """
+
+    #yt.load_amr_grids()
+
     ds = yt.load_particles(data, length_unit=parsec, mass_unit=1e8*Msun, n_ref=256, bbox=bbox)
 
-    slc = yt.SlicePlot(ds, 2, ('deposit', 'all_cic'))
-    slc.set_width((8, 'Mpc'))
-    slc.show_axes()
-    plt.show()
+    #xwidth = (data.x_span,"pc",)
+    #ywidth = (data.y_span,"pc",)
+    xwidth = (bbox[0][1]-bbox[0][0], "pc",)
+    ywidth = (bbox[1][1]-bbox[1][0], "pc",)
 
-test()
-exit()
+    #print(ds.derived_field_list)
+
+    what = ('deposit', 'io_density')
+    slc = yt.SlicePlot(ds, "z", what)
+    slc.set_width((xwidth,ywidth,))
+
+    #slc.show() # only for ipython notebook? :(
+    slc.save("test.pdf")
 
 # -----------------------------------------------------------------
 
 # Load the data
 data = Data3D.from_file(config.filename)
+x, y, z, values = data.valid_x, data.valid_y, data.valid_z, data.valid_values
+#x, y, z, values = make_testdata()
+#values = np.ones(data.nx)
+#print(x.shape, type(x), x.mask, np.sum(x.mask))
+#print(y.shape, type(y), y.mask, np.sum(y.mask))
+#print(z.shape, type(z), z.mask, np.sum(z.mask))
+#x, y, z = np.random.normal(size=[3, data.nx])
+#print(x.shape, type(x))
+#print(y.shape, type(y))
+#print(z.shape, type(z))
+data, bbox = make_data(x, y, z, values)
+plot(data, bbox)
 
 # -----------------------------------------------------------------
 
 # Define bounding box
-bbox = 1.1*np.array([[data.min_x, data.max_x], [data.min_y, data.max_y], [data.min_z, data.max_z]])
+#bbox = 1.1*np.array([[data.min_x, data.max_x], [data.min_y, data.max_y], [data.min_z, data.max_z]])
 
 # -----------------------------------------------------------------
+
+#print(data.valid_x.shape)
+#print(data.valid_y.shape)
+#print(data.valid_z.shape)
+#print(data.valid_values.shape)
+#x, y, z, values = data.valid_x, data.valid_y, data.valid_z, data.valid_values
 
 # Create the particle data set
 #dat = {"particle_position_x":data.x, "particle_position_y":data.y, "particle_position_z":data.z, "sfr":data.values}
-#dat = {"particle_position_x":data.x, "particle_position_y":data.y, "particle_position_z":data.z, "particle_mass":data.values}
-dat = {"particle_position_x":data.valid_x, "particle_position_y":data.valid_y, "particle_position_z":data.valid_z, ("io", "StarFormationRate"):data.valid_values}
-ds = yt.load_particles(dat, length_unit=parsec, bbox=bbox)
+#dat = {"particle_position_x":x, "particle_position_y":y, "particle_position_z":z, "particle_mass":values}
+#dat = {"particle_position_x":data.valid_x, "particle_position_y":data.valid_y, "particle_position_z":data.valid_z, ("io", "StarFormationRate"):data.valid_values}
+#ds = yt.load_particles(dat, length_unit=parsec, bbox=bbox, mass_unit=1e8*Msun, n_ref=256)
 
 # -----------------------------------------------------------------
 
-print(ds.field_list)
-print(ds.derived_field_list)
+#print(ds.field_list)
+#print(ds.derived_field_list)
 
 # -----------------------------------------------------------------
 
 #slc = yt.SlicePlot(ds, 2, ('deposit', 'all_cic'))
-yt.ParticlePlot(ds, "particle_position_x", "particle_position_y", z_fields=None)
+#slc.set_width((8, 'Mpc'))
+#slc.show_axes()
+#plt.show()
+#slc.show()
+#slc.save("test.pdf")
+
+#yt.ParticlePlot(ds, "particle_position_x", "particle_position_y", z_fields=None)
 
 # -----------------------------------------------------------------
+
+# load_amr_grids(grid_data, domain_dimensions,
+#                    bbox=None, sim_time=0.0, length_unit=None,
+#                    mass_unit=None, time_unit=None, velocity_unit=None,
+#                    magnetic_unit=None, periodicity=(True, True, True),
+#                    geometry="cartesian", refine_by=2, unit_system="cgs"):
+#     r"""Load a set of grids of data into yt as a
+#     :class:`~yt.frontends.stream.data_structures.StreamHandler`.
+#     This should allow a sequence of grids of varying resolution of data to be
+#     loaded directly into yt and analyzed as would any others.  This comes with
+#     several caveats:
+#
+#     * Units will be incorrect unless the unit system is explicitly specified.
+#     * Some functions may behave oddly, and parallelism will be
+#       disappointing or non-existent in most cases.
+#     * Particles may be difficult to integrate.
+#     * No consistency checks are performed on the index
+#
+#     Parameters
+#     ----------
+#
+#     grid_data : list of dicts
+#         This is a list of dicts. Each dict must have entries "left_edge",
+#         "right_edge", "dimensions", "level", and then any remaining entries are
+#         assumed to be fields. Field entries must map to an NDArray. The grid_data
+#         may also include a particle count. If no particle count is supplied, the
+#         dataset is understood to contain no particles. The grid_data will be
+#         modified in place and can't be assumed to be static.

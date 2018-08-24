@@ -207,6 +207,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ssfr_unit(self):
+        return "Msun/yr"
+
+    # -----------------------------------------------------------------
+
     @lazyfileproperty(Scatter2D, "m51_ssfr_funev_path", True, write=False)
     def m51_scatter(self):
 
@@ -318,18 +324,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_cells_path(self):
-        return fs.join(self.ssfr_funev_path, "cells.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_ssfr_funev_cells(self):
-        return fs.is_file(self.ssfr_funev_cells_path)
-
-    # -----------------------------------------------------------------
-
-    @property
     def cell_funev_path(self):
         return fs.join(self.cell_heating_path, "total_fractions.dat")
 
@@ -342,14 +336,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def cell_ssfr_path(self):
-        return fs.join(self.cell_sfr_path, "ssfr.dat")
+    def cell_ssfr_salim_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_salim.dat")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_cell_ssfr(self):
-        return fs.is_file(self.cell_ssfr_path)
+    def has_cell_ssfr_salim(self):
+        return fs.is_file(self.cell_ssfr_salim_path)
 
     # -----------------------------------------------------------------
 
@@ -366,14 +360,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def cell_ssfr(self):
-        return Data3D.from_file(self.cell_ssfr_path)
+    def cell_ssfr_salim(self):
+        return Data3D.from_file(self.cell_ssfr_salim_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def cell_ssfr_values(self):
-        return self.cell_ssfr.values
+    def cell_ssfr_salim_values(self):
+        return self.cell_ssfr_salim.values
 
     # -----------------------------------------------------------------
 
@@ -390,8 +384,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_unit(self):
-        return self.cell_ssfr.unit
+    def ssfr_salim_unit(self):
+        return self.cell_ssfr_salim.unit
 
     # -----------------------------------------------------------------
 
@@ -408,8 +402,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_cell_ssfr_mask(self):
-        return np.isfinite(self.cell_ssfr_values) * (self.cell_ssfr_values != 0)
+    def valid_cell_ssfr_salim_mask(self):
+        return np.isfinite(self.cell_ssfr_salim_values) * (self.cell_ssfr_salim_values != 0)
 
     # -----------------------------------------------------------------
 
@@ -420,25 +414,37 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_cell_mask(self):
-        return self.valid_cell_ssfr_mask * self.valid_cell_funev_mask
+    def valid_cell_mask_salim(self):
+        return self.valid_cell_ssfr_salim_mask * self.valid_cell_funev_mask
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_cell_ssfr_values(self):
-        return self.cell_ssfr_values[self.valid_cell_mask]
+    def valid_cell_ssfr_values_salim(self):
+        return self.cell_ssfr_salim_values[self.valid_cell_mask_salim]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_cell_funev_values(self):
-        return self.cell_funev_values[self.valid_cell_mask]
+    def valid_cell_funev_values_salim(self):
+        return self.cell_funev_values[self.valid_cell_mask_salim]
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(Scatter2D, "ssfr_funev_cells_path", True, write=False)
-    def ssfr_funev_cells(self):
+    @property
+    def ssfr_salim_funev_cells_path(self):
+        return fs.join(self.ssfr_funev_path, "cells_salim.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_salim_funev_cells(self):
+        return fs.is_file(self.ssfr_salim_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_salim_funev_cells_path", True, write=False)
+    def ssfr_salim_funev_cells(self):
 
         """
         This function ...
@@ -446,27 +452,187 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_cell_ssfr: raise IOError("The cell sSFR data is not present: run the SFR analysis first")
+        if not self.has_cell_ssfr_salim: raise IOError("The cell sSFR (Salim) data is not present: run the SFR analysis first")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Create and return
         #return Scatter2D.from_xy(self.cell_ssfr_values, self.cell_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values, self.valid_cell_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.valid_cell_ssfr_values_salim, self.valid_cell_funev_values_salim, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_ke_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_ke(self):
+        return fs.is_file(self.cell_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfr_ke(self):
+        return Data3D.from_file(self.cell_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_unit(self):
+        return self.cell_ssfr_ke.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_ke_values(self):
+        return self.cell_ssfr_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_ssfr_ke_mask(self):
+        return np.isfinite(self.cell_ssfr_ke_values) * (self.cell_ssfr_ke_values != 0)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_funev_mask(self):
+        return np.isfinite(self.cell_funev_values) * (self.cell_funev_values != 0)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mask_ke(self):
+        return self.valid_cell_ssfr_ke_mask * self.valid_cell_funev_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_ssfr_values_ke(self):
+        return self.cell_ssfr_ke_values[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_funev_values_ke(self):
+        return self.cell_funev_values[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_path(self):
+        return fs.join(self.ssfr_funev_path, "cells_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_ke_funev_cells(self):
+        return fs.is_file(self.ssfr_ke_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_ke_funev_cells_path", True, write=False)
+    def ssfr_ke_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_cell_ssfr_ke: raise IOError("The cell sSFR (K&E) data is not present: run the SFR analysis first")
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Create and return
+        return Scatter2D.from_xy(self.valid_cell_ssfr_values_ke, self.valid_cell_funev_values_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_mappings_ke_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_mappings_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_mappings_ke(self):
+        return fs.is_file(self.cell_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfr_mappings_ke(self):
+        return Data3D.from_file(self.cell_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_unit(self):
+        return self.cell_ssfr_mappings_ke.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_mappings_ke_values(self):
+        return self.cell_ssfr_mappings_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_ssfr_mappings_ke_mask(self):
+        return np.isfinite(self.cell_ssfr_mappings_ke_values) * (self.cell_ssfr_mappings_ke_values != 0)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mask_mappings_ke(self):
+        return self.valid_cell_ssfr_mappings_ke_mask * self.valid_cell_funev_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_ssfr_values_mappings_ke(self):
+        return self.cell_ssfr_mappings_ke_values[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_funev_values_mappings_ke(self):
+        return self.cell_funev_values[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_path(self):
+        return fs.join(self.ssfr_funev_path, "cells_mappings_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_mappings_ke_funev_cells(self):
+        return fs.is_file(self.ssfr_mappings_ke_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_mappings_ke_funev_cells_path", True, write=False)
+    def ssfr_mappings_ke_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR (MAPPINGS + K&E) data is not present: run the SFR analysis first")
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Create and return
+        return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings_ke, self.valid_cell_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     # sSFR-Funev pixel scatter data
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_funev_pixels_path(self):
-        return fs.join(self.ssfr_funev_path, "pixels.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_ssfr_funev_pixels(self):
-        return fs.is_file(self.ssfr_funev_pixels_path)
-
     # -----------------------------------------------------------------
 
     @property
@@ -500,32 +666,32 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def pixel_ssfr_path(self):
-        return fs.join(self.projected_sfr_path, "ssfr_earth.fits")
+    def pixel_ssfr_salim_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_salim_earth.fits")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_pixel_ssfr(self):
-        return fs.is_file(self.pixel_ssfr_path)
+    def has_pixel_ssfr_salim(self):
+        return fs.is_file(self.pixel_ssfr_salim_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def pixel_ssfr(self):
-        return Frame.from_file(self.pixel_ssfr_path)
+    def pixel_ssfr_salim(self):
+        return Frame.from_file(self.pixel_ssfr_salim_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def pixel_ssfr_values(self):
-        return self.pixel_ssfr.values
+    def pixel_ssfr_salim_values(self):
+        return self.pixel_ssfr_salim.values
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_pixel_ssfr_mask(self):
-        return np.isfinite(self.pixel_ssfr_values) * (self.pixel_ssfr_values != 0)
+    def valid_pixel_ssfr_salim_mask(self):
+        return np.isfinite(self.pixel_ssfr_salim_values) * (self.pixel_ssfr_salim_values != 0)
 
     # -----------------------------------------------------------------
 
@@ -536,25 +702,37 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_pixel_mask(self):
-        return self.valid_pixel_ssfr_mask * self.valid_pixel_funev_mask
+    def valid_pixel_mask_salim(self):
+        return self.valid_pixel_ssfr_salim_mask * self.valid_pixel_funev_mask
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_pixel_ssfr_values(self):
-        return self.pixel_ssfr_values[self.valid_pixel_mask]
+    def valid_pixel_ssfr_values_salim(self):
+        return self.pixel_ssfr_salim_values[self.valid_pixel_mask_salim]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_pixel_funev_values(self):
-        return self.pixel_funev_values[self.valid_pixel_mask]
+    def valid_pixel_funev_values_salim(self):
+        return self.pixel_funev_values[self.valid_pixel_mask_salim]
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(Scatter2D, "ssfr_funev_pixels_path", True, write=False)
-    def ssfr_funev_pixels(self):
+    @property
+    def ssfr_salim_funev_pixels_path(self):
+        return fs.join(self.ssfr_funev_path, "pixels_salim.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_salim_funev_pixels(self):
+        return fs.is_file(self.ssfr_salim_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_salim_funev_pixels_path", True, write=False)
+    def ssfr_salim_funev_pixels(self):
 
         """
         This function ...
@@ -562,25 +740,203 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        if not self.has_pixel_ssfr: raise IOError("The sSFR frame is not present: run the SFR analysis first")
+        if not self.has_pixel_ssfr_salim: raise IOError("The sSFR (Salim) frame is not present: run the SFR analysis first")
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
         #return Scatter2D.from_xy(self.pixel_ssfr_values, self.pixel_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
-        return Scatter2D.from_xy(self.valid_pixel_ssfr_values, self.valid_pixel_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_salim, self.valid_pixel_funev_values_salim, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_ke_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_ke_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr_ke(self):
+        return fs.is_file(self.pixel_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_ke(self):
+        return Frame.from_file(self.pixel_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_ke_values(self):
+        return self.pixel_ssfr_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_ssfr_ke_mask(self):
+        return np.isfinite(self.pixel_ssfr_ke_values) * (self.pixel_ssfr_ke_values != 0)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_mask_ke(self):
+        return self.valid_pixel_ssfr_ke_mask * self.valid_pixel_funev_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_ssfr_values_ke(self):
+        return self.pixel_ssfr_ke_values[self.valid_pixel_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_funev_values_ke(self):
+        return self.pixel_funev_values[self.valid_pixel_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_pixels_path(self):
+        return fs.join(self.ssfr_funev_path, "pixels_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_ke_funev_pixels(self):
+        return fs.is_file(self.ssfr_ke_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_ke_funev_pixels_path", True, write=False)
+    def ssfr_ke_funev_pixels(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_pixel_ssfr_ke: raise IOError("The sSFR (K&E) frame is not present: run the SFR analysis first")
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Create and return
+        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_ke, self.valid_pixel_funev_values_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_mappings_ke_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_mappings_ke_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr_mappings_ke(self):
+        return fs.is_file(self.pixel_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_mappings_ke(self):
+        return Frame.from_file(self.pixel_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_mappings_ke_values(self):
+        return self.pixel_ssfr_mappings_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_ssfr_mappings_ke_mask(self):
+        return np.isfinite(self.pixel_ssfr_mappings_ke_values) * (self.pixel_ssfr_mappings_ke_values != 0)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_mask_mappings_ke(self):
+        return self.valid_pixel_ssfr_mappings_ke_mask * self.valid_pixel_funev_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_ssfr_values_mappings_ke(self):
+        return self.pixel_ssfr_mappings_ke_values[self.valid_pixel_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_pixel_funev_values_mappings_ke(self):
+        return self.pixel_funev_values[self.valid_pixel_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_pixels_path(self):
+        return fs.join(self.ssfr_funev_path, "pixels_mappings_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_mappings_ke_funev_pixels(self):
+        return fs.is_file(self.ssfr_mappings_ke_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "ssfr_mappings_ke_funev_pixels_path", True, write=False)
+    def ssfr_mappings_ke_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_pixel_ssfr_mappings_ke: raise IOError("The sSFR (MAPPINGS + K&E) frame is not present: run the SFR analysis first")
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Create and return
+        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
-    def do_ssfr_funev_cells(self):
-        return self.has_cell_ssfr and self.has_cell_funev
+    def do_ssfr_salim_funev_cells(self):
+        return self.has_cell_ssfr_salim and self.has_cell_funev
 
     # -----------------------------------------------------------------
 
     @property
-    def do_ssfr_funev_pixels(self):
-        return self.has_pixel_ssfr and self.has_pixel_funev
+    def do_ssfr_salim_funev_pixels(self):
+        return self.has_pixel_ssfr_salim and self.has_pixel_funev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_ssfr_ke_funev_cells(self):
+        return self.has_cell_ssfr_ke and self.has_cell_funev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_ssfr_ke_funev_pixels(self):
+        return self.has_pixel_ssfr_ke and self.has_pixel_funev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_ssfr_mappings_ke_funev_cells(self):
+        return self.has_cell_ssfr_mappings_ke and self.has_cell_funev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_ssfr_mappings_ke_funev_pixels(self):
+        return self.has_pixel_ssfr_mappings_ke and self.has_pixel_funev
 
     # -----------------------------------------------------------------
 
@@ -609,11 +965,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Writing the sSFR to Funev scatter data ...")
 
-        # Write the sSFR to Funev cell scatter data
-        if self.do_write_ssfr_funev_cells: self.write_ssfr_funev_cells()
+        # Salim
+        self.write_ssfr_salim_funev()
 
-        # Write the sSFR to Funev pixel scatter data
-        if self.do_write_ssfr_funev_pixels: self.write_ssfr_funev_pixels()
+        # K&E
+        self.write_ssfr_ke_funev()
+
+        # MAPPINGS + K&E
+        self.write_ssfr_mappings_ke_funev()
 
         # Write the M51 scatter data
         if self.do_write_m51_ssfr_funev: self.write_m51_ssfr_funev()
@@ -622,14 +981,31 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if self.do_write_m31_ssfr_funev: self.write_m31_ssfr_funev()
 
     # -----------------------------------------------------------------
+    # SALIM
+    # -----------------------------------------------------------------
 
-    @property
-    def do_write_ssfr_funev_cells(self):
-        return self.do_ssfr_funev_cells and not self.has_ssfr_funev_cells
+    def write_ssfr_salim_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the sSFR to Funev cell scatter data
+        if self.do_write_ssfr_salim_funev_cells: self.write_ssfr_salim_funev_cells()
+
+        # Write the sSFR to Funev pixel scatter data
+        if self.do_write_ssfr_salim_funev_pixels: self.write_ssfr_salim_funev_pixels()
 
     # -----------------------------------------------------------------
 
-    def write_ssfr_funev_cells(self):
+    @property
+    def do_write_ssfr_salim_funev_cells(self):
+        return self.do_ssfr_salim_funev_cells and not self.has_ssfr_salim_funev_cells
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_salim_funev_cells(self):
 
         """
         This function ...
@@ -640,17 +1016,17 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         log.info("Writing the sSFR to Funev dust cell scatter data ...")
 
         # Write
-        self.ssfr_funev_cells.saveto(self.ssfr_funev_cells_path)
+        self.ssfr_salim_funev_cells.saveto(self.ssfr_salim_funev_cells_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_write_ssfr_funev_pixels(self):
-        return self.do_ssfr_funev_pixels and not self.has_ssfr_funev_pixels
+    def do_write_ssfr_salim_funev_pixels(self):
+        return self.do_ssfr_salim_funev_pixels and not self.has_ssfr_salim_funev_pixels
 
     # -----------------------------------------------------------------
 
-    def write_ssfr_funev_pixels(self):
+    def write_ssfr_salim_funev_pixels(self):
 
         """
         This fnction ...
@@ -658,11 +1034,131 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Writing the sSFR to Funev pixel scatter data ...")
+        log.info("Writing the sSFR (Salim) to Funev pixel scatter data ...")
 
         # Write
-        self.ssfr_funev_pixels.saveto(self.ssfr_funev_pixels_path)
+        self.ssfr_salim_funev_pixels.saveto(self.ssfr_salim_funev_pixels_path)
 
+    # -----------------------------------------------------------------
+    # KENNICUTT & EVANS
+    # -----------------------------------------------------------------
+
+    def write_ssfr_ke_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        self.write_ssfr_ke_funev_cells()
+
+        # Pixels
+        self.write_ssfr_ke_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ssfr_ke_funev_cells(self):
+        return self.do_ssfr_ke_funev_cells and not self.has_ssfr_ke_funev_cells
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_ke_funev_cells(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sSFR (K&E) to Funev cell scatter data ...")
+
+        # Write
+        self.ssfr_ke_funev_cells.saveto(self.ssfr_ke_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ssfr_ke_funev_pixels(self):
+        return self.do_ssfr_ke_funev_pixels and not self.has_ssfr_ke_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_ke_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sSFR (K&E) to Funev pixel scatter data ...")
+
+        # Write
+        self.ssfr_ke_funev_pixels.saveto(self.ssfr_ke_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+    # MAPPINGS + KENNICUTT & EVANS
+    # -----------------------------------------------------------------
+
+    def write_ssfr_mappings_ke_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        self.write_ssfr_mappings_ke_funev_cells()
+
+        # Pixels
+        self.write_ssfr_mappings_ke_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ssfr_mappings_ke_funev_cells(self):
+        return self.do_ssfr_mappings_ke_funev_cells and not self.has_ssfr_mappings_ke_funev_cells
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_mappings_ke_funev_cells(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sSFR (MAPPINGS + K&E) to Funev cell scatter data ...")
+
+        # Write
+        self.ssfr_mappings_ke_funev_cells.saveto(self.ssfr_mappings_ke_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_ssfr_mappings_ke_funev_pixels(self):
+        return self.do_ssfr_mappings_ke_funev_pixels and not self.has_ssfr_mappings_ke_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_mappings_ke_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sSFR (MAPPINGS + K&E) to Funev pixel scatter data ...")
+
+        # Write
+        self.ssfr_mappings_ke_funev_pixels.saveto(self.ssfr_mappings_ke_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+    # M51
     # -----------------------------------------------------------------
 
     @property
@@ -684,6 +1180,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Write
         self.m51_scatter.saveto(self.m51_ssfr_funev_path)
 
+    # -----------------------------------------------------------------
+    # M31
     # -----------------------------------------------------------------
 
     @property
@@ -732,34 +1230,52 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Inform the user
         log.info("Plotting the sSFR to Funev scatter data ...")
 
+        # Salim
+        self.plot_ssfr_salim_funev()
+
+        # K&E
+        self.plot_ssfr_ke_funev()
+
+        # MAPPINGS + K&E
+        self.plot_ssfr_mappings_ke_funev()
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_salim_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Cells
-        if self.do_plot_ssfr_funev_cells: self.plot_ssfr_funev_cells()
+        if self.do_plot_ssfr_salim_funev_cells: self.plot_ssfr_salim_funev_cells()
 
         # Pixels
-        if self.do_plot_ssfr_funev_pixels: self.plot_ssfr_funev_pixels()
+        if self.do_plot_ssfr_salim_funev_pixels: self.plot_ssfr_salim_funev_pixels()
 
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_cells_plot_path(self):
-        return fs.join(self.ssfr_funev_path, "cells.pdf")
+    def ssfr_salim_funev_cells_plot_path(self):
+        return fs.join(self.ssfr_funev_path, "cells_salim.pdf")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_ssfr_funev_cells_plot(self):
-        return fs.is_file(self.ssfr_funev_cells_plot_path)
+    def has_ssfr_salim_funev_cells_plot(self):
+        return fs.is_file(self.ssfr_salim_funev_cells_plot_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_plot_ssfr_funev_cells(self):
-        return self.do_ssfr_funev_cells and not self.has_ssfr_funev_cells_plot
+    def do_plot_ssfr_salim_funev_cells(self):
+        return self.do_ssfr_salim_funev_cells and not self.has_ssfr_salim_funev_cells_plot
 
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_cells_scatters(self):
+    def ssfr_salim_funev_cells_scatters(self):
 
         """
         This function ...
@@ -767,7 +1283,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         scatters = OrderedDict()
-        scatters[self.galaxy_name + " (cells)"] = self.ssfr_funev_cells
+        scatters[self.galaxy_name + " (cells)"] = self.ssfr_salim_funev_cells
         scatters[m51_name] = self.m51_scatter
         scatters[m31_name] = self.m31_scatter
         return scatters
@@ -775,7 +1291,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_cells_scatter_paths(self):
+    def ssfr_salim_funev_cells_scatter_paths(self):
 
         """
         This function ...
@@ -783,7 +1299,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         scatters = OrderedDict()
-        scatters[self.galaxy_name + " (cells)"] = self.ssfr_funev_cells_path
+        scatters[self.galaxy_name + " (cells)"] = self.ssfr_salim_funev_cells_path
         scatters[m51_name] = self.m51_ssfr_funev_path
         scatters[m31_name] = self.m31_ssfr_funev_path
         return scatters
@@ -791,8 +1307,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_cells_title(self):
-        return "Correlation between sSFR and Funev of dust cells"
+    def ssfr_salim_funev_cells_title(self):
+        return "Correlation between sSFR (Salim) and Funev of dust cells"
 
     # -----------------------------------------------------------------
 
@@ -808,7 +1324,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_ssfr_funev_cells(self):
+    def plot_ssfr_salim_funev_cells(self):
 
         """
         This function ...
@@ -816,41 +1332,41 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Plotting the sSFR to Funev dust cell scatter data ...")
+        log.info("Plotting the sSFR (Salim) to Funev dust cell scatter data ...")
 
         # Plot using TOPCAT's STILTS
-        if self.config.topcat: plot_stilts(self.ssfr_funev_cells_scatter_paths, self.ssfr_name, self.funev_name,
+        if self.config.topcat: plot_stilts(self.ssfr_salim_funev_cells_scatter_paths, self.ssfr_name, self.funev_name,
                                            self.ssfr_description, self.funev_description,
-                                           title=self.ssfr_funev_cells_title, path=self.ssfr_funev_cells_plot_path,
+                                           title=self.ssfr_salim_funev_cells_title, path=self.ssfr_salim_funev_cells_plot_path,
                                            ylimits=self.funev_limits, xlog=True)
 
         # Plot using Matplotlib
-        else: plot_scatters(self.ssfr_funev_cells_scatters, title=self.ssfr_funev_cells_title, xlog=True,
-                      path=self.ssfr_funev_cells_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits,
+        else: plot_scatters(self.ssfr_salim_funev_cells_scatters, title=self.ssfr_salim_funev_cells_title, xlog=True,
+                      path=self.ssfr_salim_funev_cells_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits,
                       density=True)
 
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_pixels_plot_path(self):
-        return fs.join(self.ssfr_funev_path, "pixels.pdf")
+    def ssfr_salim_funev_pixels_plot_path(self):
+        return fs.join(self.ssfr_funev_path, "pixels_salim.pdf")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_ssfr_funev_pixels_plot(self):
-        return fs.is_file(self.ssfr_funev_pixels_plot_path)
+    def has_ssfr_salim_funev_pixels_plot(self):
+        return fs.is_file(self.ssfr_salim_funev_pixels_plot_path)
 
     # -----------------------------------------------------------------
 
     @property
-    def do_plot_ssfr_funev_pixels(self):
-        return self.do_ssfr_funev_pixels and not self.has_ssfr_funev_pixels_plot
+    def do_plot_ssfr_salim_funev_pixels(self):
+        return self.do_ssfr_salim_funev_pixels and not self.has_ssfr_salim_funev_pixels_plot
 
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_pixels_scatters(self):
+    def ssfr_salim_funev_pixels_scatters(self):
 
         """
         This function ...
@@ -858,7 +1374,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         scatters = OrderedDict()
-        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_funev_pixels
+        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_salim_funev_pixels
         scatters[m51_name] = self.m51_scatter
         scatters[m31_name] = self.m31_scatter
         return scatters
@@ -866,7 +1382,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_pixels_scatter_paths(self):
+    def ssfr_salim_funev_pixels_scatter_paths(self):
 
         """
         This function ...
@@ -874,7 +1390,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         scatters = OrderedDict()
-        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_funev_pixels_path
+        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_salim_funev_pixels_path
         scatters[m51_name] = self.m51_ssfr_funev_path
         scatters[m31_name] = self.m31_ssfr_funev_path
         return scatters
@@ -882,12 +1398,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_funev_pixels_title(self):
-        return "Correlation between sSFR and Funev of model pixels"
+    def ssfr_salim_funev_pixels_title(self):
+        return "Correlation between sSFR (Salim) and Funev of model pixels"
 
     # -----------------------------------------------------------------
 
-    def plot_ssfr_funev_pixels(self):
+    def plot_ssfr_salim_funev_pixels(self):
 
         """
         This function ...
@@ -895,17 +1411,358 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Inform the user
-        log.info("Plotting the sSFR to Funev pixel scatter data ...")
+        log.info("Plotting the sSFR (Salim) to Funev pixel scatter data ...")
 
         # Plot using TOPCAT's STILTS
-        if self.config.topcat: plot_stilts(self.ssfr_funev_pixels_scatter_paths, self.ssfr_name, self.funev_name,
+        if self.config.topcat: plot_stilts(self.ssfr_salim_funev_pixels_scatter_paths, self.ssfr_name, self.funev_name,
                                            self.ssfr_description, self.funev_description,
-                                           title=self.ssfr_funev_cells_title, path=self.ssfr_funev_pixels_plot_path,
+                                           title=self.ssfr_salim_funev_pixels_title, path=self.ssfr_salim_funev_pixels_plot_path,
                                            ylimits=self.funev_limits, xlog=True)
 
         # Plot using Matplotlib
-        else: plot_scatters(self.ssfr_funev_pixels_scatters, title=self.ssfr_funev_pixels_title, xlog=True,
-                      path=self.ssfr_funev_pixels_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits,
+        else: plot_scatters(self.ssfr_salim_funev_pixels_scatters, title=self.ssfr_salim_funev_pixels_title, xlog=True,
+                      path=self.ssfr_salim_funev_pixels_plot_path, xlimits=self.ssfr_limits, ylimits=self.funev_limits,
                       density=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_ssfr_ke_funev_cells(self):
+        return self.do_ssfr_ke_funev_cells and not self.has_ssfr_ke_funev_cells_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_ssfr_ke_funev_pixels(self):
+        return self.do_ssfr_ke_funev_pixels and not self.has_ssfr_ke_funev_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_ke_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_plot_ssfr_ke_funev_cells: self.plot_ssfr_ke_funev_cells()
+
+        # Pixels
+        if self.do_plot_ssfr_ke_funev_pixels: self.plot_ssfr_ke_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_plot_path(self):
+        return fs.join(self.ssfr_funev_path, "cells_ke.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_ke_funev_cells_plot(self):
+        return fs.is_file(self.ssfr_ke_funev_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_scatters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.ssfr_ke_funev_cells
+        scatters[m51_name] = self.m51_scatter
+        scatters[m31_name] = self.m31_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_scatter_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.ssfr_ke_funev_cells_path
+        scatters[m51_name] = self.m51_ssfr_funev_path
+        scatters[m31_name] = self.m31_ssfr_funev_path
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_title(self):
+        return "Correlation between sSFR (K&E) and Funev of dust cells"
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_ke_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the sSFR (K&E) to Funev cell scatter data ...")
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat: plot_stilts(self.ssfr_ke_funev_cells_scatter_paths, self.ssfr_name, self.funev_name,
+                                            self.ssfr_description, self.funev_description,
+                                            title=self.ssfr_ke_funev_cells_title, path=self.ssfr_ke_funev_cells_plot_path,
+                                            ylimits=self.funev_limits, xlog=True)
+
+        # Plot using Matplotlib
+        else: plot_scatters(self.ssfr_ke_funev_cells_scatters, title=self.ssfr_ke_funev_cells_title, xlog=True,
+                          path=self.ssfr_ke_funev_cells_plot_path, xlimits=self.ssfr_limits,
+                          ylimits=self.funev_limits,
+                          density=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_pixels_plot_path(self):
+        return fs.join(self.ssfr_funev_path, "pixels_ke.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_ke_funev_pixels_plot(self):
+        return fs.is_file(self.ssfr_ke_funev_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_pixels_scatters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_ke_funev_pixels
+        scatters[m51_name] = self.m51_scatter
+        scatters[m31_name] = self.m31_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_pixels_scatter_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_ke_funev_pixels_path
+        scatters[m51_name] = self.m51_ssfr_funev_path
+        scatters[m31_name] = self.m31_ssfr_funev_path
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_pixels_title(self):
+        return "Correlation between sSFR (K&E) and Funev of model pixels"
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_ke_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat: plot_stilts(self.ssfr_ke_funev_pixels_scatter_paths, self.ssfr_name, self.funev_name,
+                                           self.ssfr_description, self.funev_description,
+                                           title=self.ssfr_ke_funev_pixels_title, path=self.ssfr_ke_funev_pixels_plot_path,
+                                           ylimits=self.funev_limits, xlog=True)
+
+        # Plot using Matplotlib
+        else: plot_scatters(self.ssfr_ke_funev_pixels_scatters, title=self.ssfr_ke_funev_pixels_title, xlog=True,
+                          path=self.ssfr_ke_funev_pixels_plot_path, xlimits=self.ssfr_limits,
+                          ylimits=self.funev_limits,
+                          density=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_ssfr_mappings_ke_funev_cells(self):
+        return self.do_ssfr_mappings_ke_funev_cells and not self.has_ssfr_mappings_ke_funev_cells_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_ssfr_mappings_ke_funev_pixels(self):
+        return self.do_ssfr_mappings_ke_funev_pixels and not self.has_ssfr_mappings_ke_funev_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_mappings_ke_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_plot_ssfr_mappings_ke_funev_cells: self.plot_ssfr_mappings_ke_funev_cells()
+
+        # Pixels
+        if self.do_plot_ssfr_mappings_ke_funev_pixels: self.plot_ssfr_mappings_ke_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_plot_path(self):
+        return fs.join(self.ssfr_funev_path, "cells_mappings_ke.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_mappings_ke_funev_cells_plot(self):
+        return fs.is_file(self.ssfr_mappings_ke_funev_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_scatters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.ssfr_mappings_ke_funev_cells
+        scatters[m51_name] = self.m51_scatter
+        scatters[m31_name] = self.m31_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_scatter_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.ssfr_mappings_ke_funev_cells_path
+        scatters[m51_name] = self.m51_ssfr_funev_path
+        scatters[m31_name] = self.m31_ssfr_funev_path
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_title(self):
+        return "Correlation between sSFR (MAPPINGS + K&E) and Funev of dust cells"
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_mappings_ke_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat: plot_stilts(self.ssfr_mappings_ke_funev_cells_scatter_paths, self.ssfr_name, self.funev_name,
+                                            self.ssfr_description, self.funev_description,
+                                            title=self.ssfr_mappings_ke_funev_cells_title, path=self.ssfr_mappings_ke_funev_cells_plot_path,
+                                            ylimits=self.funev_limits, xlog=True)
+
+        # Plot using Matplotlib
+        else: plot_scatters(self.ssfr_mappings_ke_funev_cells_scatters, title=self.ssfr_mappings_ke_funev_cells_title, xlog=True,
+                              path=self.ssfr_mappings_ke_funev_cells_plot_path, xlimits=self.ssfr_limits,
+                              ylimits=self.funev_limits,
+                              density=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_pixels_plot_path(self):
+        return fs.join(self.ssfr_funev_path, "pixels_mappings_ke.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_mappings_ke_funev_pixels_plot(self):
+        return fs.is_file(self.ssfr_mappings_ke_funev_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_pixels_scatters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_mappings_ke_funev_pixels
+        scatters[m51_name] = self.m51_scatter
+        scatters[m31_name] = self.m31_scatter
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_pixels_scatter_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.ssfr_mappings_ke_funev_pixels_path
+        scatters[m51_name] = self.m51_ssfr_funev_path
+        scatters[m31_name] = self.m31_ssfr_funev_path
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_pixels_title(self):
+        return "Correlation between sSFR (MAPPINGS + K&E) and Funev of model pixels"
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_mappings_ke_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat: plot_stilts(self.ssfr_mappings_ke_funev_pixels_scatter_paths, self.ssfr_name, self.funev_name,
+                                        self.ssfr_description, self.funev_description,
+                                        title=self.ssfr_mappings_ke_funev_pixels_title, path=self.ssfr_mappings_ke_funev_pixels_plot_path,
+                                        ylimits=self.funev_limits, xlog=True)
+
+        # Plot using Matplotlib
+        else: plot_scatters(self.ssfr_mappings_ke_funev_pixels_scatters, title=self.ssfr_mappings_ke_funev_pixels_title, xlog=True,
+                              path=self.ssfr_mappings_ke_funev_pixels_plot_path, xlimits=self.ssfr_limits,
+                              ylimits=self.funev_limits,
+                              density=True)
 
 # -----------------------------------------------------------------

@@ -1206,7 +1206,7 @@ class SFRAnalyser(AnalysisRunComponent):
         self.write_cell()
 
         # Cell maps
-        self.write_cell_maps()
+        if self.config.project: self.write_cell_maps()
 
     # -----------------------------------------------------------------
 
@@ -2131,7 +2131,7 @@ class SFRAnalyser(AnalysisRunComponent):
         self.plot_projected()
 
         # Cell maps
-        self.plot_cell_maps()
+        if self.config.project: self.plot_cell_maps()
 
     # -----------------------------------------------------------------
 

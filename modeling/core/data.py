@@ -129,11 +129,11 @@ class Data3D(object):
         if unit is None: unit = table.get_column_unit(column_name)
 
         # Get the data
-        x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit)
-        y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit)
-        z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit)
-        values = table.get_column_array(column_name, unit=unit)
-        weights = table.get_column_array(weight_name.capitalize()) if weight_name.capitalize() in table.colnames else None
+        x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit, masked=False)
+        y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit, masked=False)
+        z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit, masked=False)
+        values = table.get_column_array(column_name, unit=unit, masked=False)
+        weights = table.get_column_array(weight_name.capitalize(), masked=False) if weight_name.capitalize() in table.colnames else None
 
         # Get the description
         description = table.meta["description"] if "description" in table.meta else None
@@ -910,6 +910,24 @@ class Data3D(object):
 
         if add_unit and self.has_length_unit: return QuantityRange(self.min_x, self.max_x, unit=self.length_unit)
         else: return RealRange(self.min_x, self.max_x)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def x_span(self):
+        return self.x_range().span
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def y_span(self):
+        return self.y_range().span
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def z_span(self):
+        return self.z_range().span
 
     # -----------------------------------------------------------------
 

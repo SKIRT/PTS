@@ -1827,12 +1827,13 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_column_array(self, colname, unit=None):
+    def get_column_array(self, colname, unit=None, masked=True):
 
         """
         This function ...
         :param colname:
         :param unit:
+        :param masked:
         :return:
         """
 
@@ -1856,11 +1857,14 @@ class SmartTable(Table):
             conversion_factor = get_conversion_factor(self.get_column_unit(colname), unit, parse=False)
 
             # Return
-            return self[colname].data * conversion_factor
+            if masked: return self[colname].data * conversion_factor
+            else: return np.asarray(self[colname].data) * conversion_factor
 
         # No unit
         elif unit is not None: raise ValueError("Unit of column is not defined")
-        else: return self[colname].data
+        else:
+            if masked: return self[colname].data # masked array
+            else: return np.asarray(self[colname].data) # asarray to make regular array
 
     # -----------------------------------------------------------------
 
