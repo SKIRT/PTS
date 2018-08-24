@@ -345,7 +345,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @property
     def projected_ssfr_salim_faceon_path(self):
-        return fs.join(self.projected_path, "ssfr_faceon.fits")
+        return fs.join(self.projected_path, "ssfr_salim_faceon.fits")
 
     # -----------------------------------------------------------------
 
@@ -377,7 +377,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @property
     def has_projected_ssfr_ke_earth(self):
-        return fs.join(self.projected_ssfr_ke_earth_path)
+        return fs.is_file(self.projected_ssfr_ke_earth_path)
 
     # -----------------------------------------------------------------
 
