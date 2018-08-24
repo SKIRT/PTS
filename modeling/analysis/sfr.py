@@ -1928,10 +1928,12 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Writing the maps of the cell star formation rates ...")
 
         # Star formation rate
-        self.write_cell_sfr_maps()
+        # NO: MAP OF SFR DATA IS INCORRECT BECAUSE IT TAKES THE AVERAGE OF CELL VALUES
+        #self.write_cell_sfr_maps()
 
         # Stellar mass
-        if self.do_write_cell_mass_map: self.write_cell_mass_map()
+        # NO: MAP OF STELLAR MASS DATA IS INCORRECT BECAUSE IT TAKES THE AVERAGE OF CELL VALUES
+        #if self.do_write_cell_mass_map: self.write_cell_mass_map()
 
         # Specific star formation rate
         self.write_cell_ssfr_maps()
@@ -2247,6 +2249,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_projected_sfr_ke_earth(self):
+        return not self.has_projected_sfr_ke_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_sfr_ke_faceon(self):
+        return not self.has_projected_sfr_ke_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
     def plot_projected_sfr_ke(self):
 
         """
@@ -2255,10 +2269,10 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Earth
-        self.plot_projected_sfr_ke_earth()
+        if self.do_plot_projected_sfr_ke_earth: self.plot_projected_sfr_ke_earth()
 
         # Faceon
-        self.plot_projected_sfr_ke_faceon()
+        if self.do_plot_projected_sfr_ke_faceon: self.plot_projected_sfr_ke_faceon()
 
     # -----------------------------------------------------------------
 
@@ -2308,6 +2322,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_projected_sfr_mappings_ke_earth(self):
+        return not self.has_projected_sfr_mappings_ke_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_sfr_mappings_ke_faceon(self):
+        return not self.has_projected_sfr_mappings_ke_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
     def plot_projected_sfr_mappings_ke(self):
 
         """
@@ -2316,10 +2342,10 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Earth
-        self.plot_projected_sfr_mappings_ke_earth()
+        if self.do_plot_projected_sfr_mappings_ke_earth: self.plot_projected_sfr_mappings_ke_earth()
 
         # Faceon
-        self.plot_projected_sfr_mappings_ke_faceon()
+        if self.do_plot_projected_sfr_mappings_ke_faceon: self.plot_projected_sfr_mappings_ke_faceon()
 
     # -----------------------------------------------------------------
 
@@ -2445,18 +2471,6 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def do_plot_projected_ssfr_earth(self):
-        return not self.has_projected_ssfr_earth_map_plot
-
-    # -----------------------------------------------------------------
-
-    @property
-    def do_plot_projected_ssfr_faceon(self):
-        return not self.has_projected_ssfr_faceon_map_plot
-
-    # -----------------------------------------------------------------
-
-    @property
     def ssfr_limits(self):
         return (1e-13, 1e-9,)
 
@@ -2469,27 +2483,57 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Salim
+        self.plot_projected_ssfr_salim()
+
+        # K&E
+        self.plot_projected_ssfr_ke()
+
+        # MAPPINGS + K&E
+        self.plot_projected_ssfr_mappings_ke()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_salim_earth(self):
+        return not self.has_projected_ssfr_salim_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_salim_faceon(self):
+        return not self.has_projected_ssfr_salim_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_salim(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
         # Earth
-        if self.do_plot_projected_ssfr_earth: self.plot_projected_ssfr_earth()
+        if self.do_plot_projected_ssfr_salim_earth: self.plot_projected_ssfr_salim_earth()
 
         # Faceon
-        if self.do_plot_projected_ssfr_faceon: self.plot_projected_ssfr_faceon()
+        if self.do_plot_projected_ssfr_salim_faceon: self.plot_projected_ssfr_salim_faceon()
 
     # -----------------------------------------------------------------
 
     @property
-    def projected_ssfr_earth_map_plot_path(self):
-        return fs.join(self.projected_path, "ssfr_earth.pdf")
+    def projected_ssfr_salim_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_salim_earth.pdf")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_projected_ssfr_earth_map_plot(self):
-        return fs.is_file(self.projected_ssfr_earth_map_plot_path)
+    def has_projected_ssfr_salim_earth_map_plot(self):
+        return fs.is_file(self.projected_ssfr_salim_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
-    def plot_projected_ssfr_earth(self):
+    def plot_projected_ssfr_salim_earth(self):
 
         """
         This function ...
@@ -2497,23 +2541,23 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_earth_map, path=self.projected_ssfr_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        plot_map(self.ssfr_salim_earth_map, path=self.projected_ssfr_salim_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
     # -----------------------------------------------------------------
 
     @property
-    def projected_ssfr_faceon_map_plot_path(self):
-        return fs.join(self.projected_path, "ssfr_faceon.pdf")
+    def projected_ssfr_salim_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_salim_faceon.pdf")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_projected_ssfr_faceon_map_plot(self):
-        return fs.is_file(self.projected_ssfr_faceon_map_plot_path)
+    def has_projected_ssfr_salim_faceon_map_plot(self):
+        return fs.is_file(self.projected_ssfr_salim_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
-    def plot_projected_ssfr_faceon(self):
+    def plot_projected_ssfr_salim_faceon(self):
 
         """
         This function ...
@@ -2521,7 +2565,156 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_faceon_map, path=self.projected_ssfr_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        plot_map(self.ssfr_salim_faceon_map, path=self.projected_ssfr_salim_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_ke_earth(self):
+        return not self.has_projected_ssfr_ke_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_ke_faceon(self):
+        return not self.has_projected_ssfr_ke_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_ke(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_projected_ssfr_ke_earth: self.plot_projected_ssfr_ke_earth()
+
+        # Faceon
+        if self.do_plot_projected_ssfr_ke_faceon: self.plot_projected_ssfr_ke_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_ke_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_ke_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_ke_earth_map_plot(self):
+        return fs.is_file(self.projected_ssfr_ke_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_ke_earth(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_ke_earth_map, path=self.projected_ssfr_ke_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_ke_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_ke_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_ke_faceon_map_plot(self):
+        return fs.is_file(self.projected_ssfr_ke_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_ke_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_ke_faceon_map, path=self.projected_ssfr_ke_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_mappings_ke_earth(self):
+        return not self.has_projected_ssfr_mappings_ke_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_mappings_ke_faceon(self):
+        return not self.has_projected_ssfr_mappings_ke_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_mappings_ke(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_projected_ssfr_mappings_ke_earth: self.plot_projected_ssfr_mappings_ke_earth()
+
+        # Faceon
+        if self.do_plot_projected_ssfr_mappings_ke_faceon: self.plot_projected_ssfr_mappings_ke_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_mappings_ke_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_mappings_ke_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_mappings_ke_earth_map_plot(self):
+        return fs.is_file(self.projected_ssfr_mappings_ke_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_mappings_ke_earth(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_mappings_ke_earth_map, path=self.projected_ssfr_mappings_ke_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_mappings_ke_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_mappings_ke_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_mappings_ke_faceon_map_plot(self):
+        return fs.is_file(self.projected_ssfr_mappings_ke_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_mappings_ke_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.ssfr_mappings_ke_faceon_map, path=self.projected_ssfr_mappings_ke_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
     # -----------------------------------------------------------------
 
@@ -2542,10 +2735,12 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Plotting the maps of the cell star formation rates ...")
 
         # Star formation rate
-        self.plot_cell_sfr_maps()
+        # NO: MAP OF STELLAR MASS DATA IS INCORRECT BECAUSE IT TAKES THE AVERAGE OF CELL VALUES
+        #self.plot_cell_sfr_maps()
 
         # Stellar mass
-        if self.do_plot_cell_mass_map: self.plot_cell_mass_map()
+        # NO: MAP OF STELLAR MASS DATA IS INCORRECT BECAUSE IT TAKES THE AVERAGE OF CELL VALUES
+        #if self.do_plot_cell_mass_map: self.plot_cell_mass_map()
 
         # Specific star formation rate
         self.plot_cell_ssfr_maps()
