@@ -17,13 +17,14 @@ from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty, memoize_method, lazyfileproperty
-from ....magic.core.frame import Frame
+from ....magic.core.image import Image
 from ....magic.core.datacube import DataCube
 from ....magic.core.list import uniformize
 from ....core.units.parsing import parse_quantity
 from ....core.basics.curve import WavelengthCurve
 from ....magic.tools import plotting
 from ...core.data import SpectralData3D
+from ...projection.data import project_data
 
 # -----------------------------------------------------------------
 
@@ -159,6 +160,24 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @property
     def ionizing_simulations(self):
         return self.model.sfr_simulations
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_projection(self):
+        return self.analysis_run.earth_projection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_projection(self):
+        return self.analysis_run.faceon_projection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_projection(self):
+        return self.analysis_run.edgeon_projection
 
     # -----------------------------------------------------------------
     # EARTH
@@ -1034,6 +1053,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                               name=self.total_spectral_absorption_name, description=self.total_spectral_absorption_description)
 
     # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_total_absorption_data_for_filter(self, fltr):
+        return self.total_spectral_absorption_data.get_data3d_for_wavelength(fltr.wavelength)
+
+    # -----------------------------------------------------------------
     #   UNEVOLVED
     # -----------------------------------------------------------------
 
@@ -1072,6 +1097,52 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
                                               self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
                                               name=self.unevolved_spectral_absorption_name, description=self.unevolved_spectral_absorption_description)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_unevolved_absorption_data_for_filter(self, fltr):
+        return self.unevolved_spectral_absorption_data.get_data3d_for_wavelength(fltr.wavelength)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_unevolved_absorption_fraction_data_for_filter(self, fltr):
+        return self.get_unevolved_absorption_data_for_filter(fltr) / self.get_total_absorption_data_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_fractions_name(self):
+        return "Funev_absorption"
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_absorption_fraction_map_path_for_filter(self, fltr):
+        return fs.join(self.cells_path, "absorption_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_absorption_fraction_map_for_filter(self, fltr):
+        return fs.is_file(self.get_unevolved_absorption_fraction_map_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_unevolved_absorption_fraction_map_for_filter(self, fltr):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_unevolved_absorption_fraction_map_for_filter(fltr): return Image.from_file(self.get_unevolved_absorption_fraction_map_path_for_filter(fltr))
+        else:
+            name = self.absorption_fractions_name + "_" + str(fltr)
+            data = self.get_unevolved_absorption_fraction_data_for_filter(fltr)
+            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True)
+            #image.saveto(self.get_unevolved_absorption_fraction_map_path_for_filter(fltr))
+            return image
 
     # -----------------------------------------------------------------
     #   EVOLVED (OLD)
@@ -1712,6 +1783,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Write the curves
         self.write_curves()
 
+        # Write the maps
+        self.write_maps()
+
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
@@ -2113,6 +2187,427 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    def write_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps of the spectral heating ...")
+
+        # Absorption
+        self.write_maps_absorption()
+
+        # Emission
+        self.write_maps_emission()
+
+        # Absorption from 3D data
+        self.write_maps_absorption_data()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_spectral_maps_absorption_earth(self):
+        return self.do_cubes_earth_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_spectral_maps_absorption_faceon(self):
+        return self.do_cubes_faceon_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_spectral_maps_absorption_edgeon(self):
+        return self.do_cubes_edgeon_absorption
+
+    # -----------------------------------------------------------------
+
+    def write_maps_absorption(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the absorption maps for different filters ...")
+
+        # Earth
+        if self.do_write_spectral_maps_absorption_earth: self.write_spectral_maps_absorption_earth()
+
+        # Face-on
+        if self.do_write_spectral_maps_absorption_faceon: self.write_spectral_maps_absorption_faceon()
+
+        # Edge-on
+        if self.do_write_spectral_maps_absorption_edgeon: self.write_spectral_maps_absorption_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_spectral_map_absorption_earth(self, fltr):
+        frame = self.cube_earth_absorption_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
+        frame.set_meta("SPECCON", self.config.spectral_convolution)
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_map_absorption_earth_path(self, fltr):
+        return fs.join(self.maps_path, "earth_absorption_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_spectral_map_absorption_earth(self, fltr):
+        return fs.is_file(self.get_spectral_map_absorption_earth_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_spectral_maps_absorption_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing maps of the spectral heating by dust absorption from the earth projection ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if map exists
+            if self.has_spectral_map_absorption_earth(fltr): continue
+
+            # Get the map
+            frame = self.get_spectral_map_absorption_earth(fltr)
+
+            # Get the path
+            path = self.get_spectral_map_absorption_earth_path(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_spectral_map_absorption_faceon(self, fltr):
+        frame = self.cube_faceon_absorption_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
+        frame.set_meta("SPECCON", self.config.spectral_convolution)
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_map_absorption_faceon_path(self, fltr):
+        return fs.join(self.maps_path, "faceon_absorption_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_spectral_map_absorption_faceon(self, fltr):
+        return fs.is_file(self.get_spectral_map_absorption_faceon_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_spectral_maps_absorption_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing maps of the spectral heating by dust absorption from the faceon projection ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if map exists
+            if self.has_spectral_map_absorption_faceon(fltr): continue
+
+            # Get the map
+            frame = self.get_spectral_map_absorption_faceon(fltr)
+
+            # Get the path
+            path = self.get_spectral_map_absorption_faceon_path(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_spectral_map_absorption_edgeon(self, fltr):
+        frame = self.cube_edgeon_absorption_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
+        frame.set_meta("SPECCON", self.config.spectral_convolution)
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_map_absorption_edgeon_path(self, fltr):
+        return fs.join(self.maps_path, "edgeon_absorption_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_spectral_map_absorption_edgeon(self, fltr):
+        return fs.is_file(self.get_spectral_map_absorption_edgeon_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_spectral_maps_absorption_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing maps of the spectral heating by dust absorption from the edgeon projection ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if map exists
+            if self.has_spectral_map_absorption_edgeon(fltr): continue
+
+            # Get the map
+            frame = self.get_spectral_map_absorption_edgeon(fltr)
+
+            # Get the path
+            path = self.get_spectral_map_absorption_edgeon_path(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_spectral_maps_emission_earth(self):
+        return self.do_cubes_earth_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_spectral_maps_emission_edgeon(self):
+        return self.do_cubes_edgeon_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_spectral_maps_emission_faceon(self):
+        return self.do_cubes_faceon_emission
+
+    # -----------------------------------------------------------------
+
+    def write_maps_emission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the emission maps for different filters ...")
+
+        # Earth
+        if self.do_write_spectral_maps_emission_earth: self.write_spectral_maps_emission_earth()
+
+        # Face-on
+        if self.do_write_spectral_maps_emission_faceon: self.write_spectral_maps_emission_faceon()
+
+        # Edge-on
+        if self.do_write_spectral_maps_emission_edgeon: self.write_spectral_maps_emission_edgeon()
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_spectral_map_emission_earth(self, fltr):
+        return self.cube_earth_emission_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_map_emission_earth_path(self, fltr):
+        return fs.join(self.maps_path, "earth_emission_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_spectral_map_emission_earth(self, fltr):
+        return fs.is_file(self.get_spectral_map_emission_earth_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_spectral_maps_emission_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing maps of the spectral heating by dust emission from the earth projection ...")
+
+        # Loop over the filters
+        for fltr in self.config.emission_filters:
+
+            # Check if map exists
+            if self.has_spectral_map_emission_earth(fltr): continue
+
+            # Get the map
+            frame = self.get_spectral_map_emission_earth(fltr)
+
+            # Get the path
+            path = self.get_spectral_map_emission_earth_path(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_spectral_map_emission_faceon(self, fltr):
+        return self.cube_faceon_emission_fixed.frame_for_filter(fltr, convolve=False)
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_map_emission_faceon_path(self, fltr):
+        return fs.join(self.maps_path, "faceon_emission_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_spectral_map_emission_faceon(self, fltr):
+        return fs.is_file(self.get_spectral_map_emission_faceon_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_spectral_maps_emission_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing maps of the spectral heating by dust emission from the faceon projection ..")
+
+        # Loop over the filters
+        for fltr in self.config.emission_filters:
+
+            # Check if map exists
+            if self.has_spectral_map_emission_faceon(fltr): continue
+
+            # Get the map
+            frame = self.get_spectral_map_emission_faceon(fltr)
+
+            # Get the path
+            path = self.get_spectral_map_emission_faceon_path(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_spectral_map_emission_edgeon(self, fltr):
+        return self.cube_edgeon_emission_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
+
+    # -----------------------------------------------------------------
+
+    def get_spectral_map_emission_edgeon_path(self, fltr):
+        return fs.join(self.maps_path, "edgeon_emission_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_spectral_map_emission_edgeon(self, fltr):
+        return fs.is_file(self.get_spectral_map_emission_edgeon_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_spectral_maps_emission_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing maps of the spectral heating by dust emission from the edgeon projection ...")
+
+        # Loop over the filters
+        for fltr in self.config.emission_filters:
+
+            # Check if map exists
+            if self.has_spectral_map_emission_edgeon(fltr): continue
+
+            # Get the map
+            frame = self.get_spectral_map_emission_edgeon(fltr)
+
+            # Get the path
+            path = self.get_spectral_map_emission_edgeon_path(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    #def get_spectral_map_absorption_data(self, fltr):
+    #    return self.get_unevolved_absorption_fraction_map_for_filter(fltr).primary
+
+    # -----------------------------------------------------------------
+
+    #def get_spectral_ncells_absorption_data(self, fltr):
+    #    return self.get_unevolved_absorption_fraction_map_for_filter(fltr).frames["ncells"]
+
+    # -----------------------------------------------------------------
+
+    #def get_spectral_stddev_absorption_data(self, fltr):
+    #    return self.get_unevolved_absorption_fraction_map_for_filter(fltr).frames["stddev"]
+
+    # -----------------------------------------------------------------
+
+    #def get_spectral_map_absorption_data_path(self, fltr):
+    #    return fs.join(self.maps_path, "data_absorption_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    #def has_spectral_map_absorption_data(self, fltr):
+    #    return fs.is_file(self.get_spectral_map_absorption_data_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    # for plotting
+    def get_unevolved_absorption_fraction_frame_for_filter(self, fltr):
+        return self.get_unevolved_absorption_fraction_map_for_filter(fltr).primary
+
+    # -----------------------------------------------------------------
+
+    def write_maps_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps of dust absorption heating fraction from the 3D data for different filters ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if map exists
+            if self.has_unevolved_absorption_fraction_map_for_filter(fltr): continue
+
+            # Get the map
+            image = self.get_unevolved_absorption_fraction_map_for_filter(fltr)
+
+            # Get the path
+            path = self.get_unevolved_absorption_fraction_map_path_for_filter(fltr)
+
+            # Write
+            image.saveto(path)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -2183,6 +2678,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Emission
         self.plot_maps_emission()
 
+        # Absorption data
+        self.plot_maps_absorption_data()
+
     # -----------------------------------------------------------------
 
     def plot_maps_absorption(self):
@@ -2230,19 +2728,19 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     #   EMISSION
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_spectral_map_emission_earth(self, fltr):
-        return self.cube_earth_emission_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
-
-    # -----------------------------------------------------------------
-
-    def get_spectral_map_emission_earth_path(self, fltr):
+    def get_spectral_map_emission_earth_plot_path(self, fltr):
         return fs.join(self.maps_path, "earth_emission_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 
-    def has_spectral_map_emission_earth(self, fltr):
-        return fs.is_file(self.get_spectral_map_emission_earth_path(fltr))
+    def has_spectral_map_emission_earth_plot(self, fltr):
+        return fs.is_file(self.get_spectral_map_emission_earth_plot_path(fltr))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fraction_limits(self):
+        return (0,1,)
 
     # -----------------------------------------------------------------
 
@@ -2260,34 +2758,28 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for fltr in self.config.emission_filters:
 
             # Check if map exists
-            if self.has_spectral_map_emission_earth(fltr): continue
+            if self.has_spectral_map_emission_earth_plot(fltr): continue
 
             # Get the map
             frame = self.get_spectral_map_emission_earth(fltr)
 
             # Get the path
-            path = self.get_spectral_map_emission_earth_path(fltr)
+            path = self.get_spectral_map_emission_earth_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=(0,1,))
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
 
     # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_spectral_map_absorption_earth(self, fltr):
-        return self.cube_earth_absorption_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
-
-    # -----------------------------------------------------------------
-
-    def get_spectral_map_absorption_earth_path(self, fltr):
+    def get_spectral_map_absorption_earth_plot_path(self, fltr):
         return fs.join(self.maps_path, "earth_absorption_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 
-    def has_spectral_map_absorption_earth(self, fltr):
-        return fs.is_file(self.get_spectral_map_absorption_earth_path(fltr))
+    def has_spectral_map_absorption_earth_plot(self, fltr):
+        return fs.is_file(self.get_spectral_map_absorption_earth_plot_path(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2305,35 +2797,29 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for fltr in self.config.absorption_filters:
 
             # Check if map exists
-            if self.has_spectral_map_absorption_earth(fltr): continue
+            if self.has_spectral_map_absorption_earth_plot(fltr): continue
 
             # Get the map
             frame = self.get_spectral_map_absorption_earth(fltr)
 
             # Get the path
-            path = self.get_spectral_map_absorption_earth_path(fltr)
+            path = self.get_spectral_map_absorption_earth_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=(0,1,))
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
 
     # -----------------------------------------------------------------
     # FACEON
     #   EMISSION
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_spectral_map_emission_faceon(self, fltr):
-        return self.cube_faceon_emission_fixed.frame_for_filter(fltr, convolve=False)
-
-    # -----------------------------------------------------------------
-
-    def get_spectral_map_emission_faceon_path(self, fltr):
+    def get_spectral_map_emission_faceon_plot_path(self, fltr):
         return fs.join(self.maps_path, "faceon_emission_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 
-    def has_spectral_map_emission_faceon(self, fltr):
-        return fs.is_file(self.get_spectral_map_emission_faceon_path(fltr))
+    def has_spectral_map_emission_faceon_plot(self, fltr):
+        return fs.is_file(self.get_spectral_map_emission_faceon_plot_path(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2351,34 +2837,28 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for fltr in self.config.emission_filters:
 
             # Check if map exists
-            if self.has_spectral_map_emission_faceon(fltr): continue
+            if self.has_spectral_map_emission_faceon_plot(fltr): continue
 
             # Get the map
             frame = self.get_spectral_map_emission_faceon(fltr)
 
             # Get the path
-            path = self.get_spectral_map_emission_faceon_path(fltr)
+            path = self.get_spectral_map_emission_faceon_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=(0,1,))
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
 
     # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_spectral_map_absorption_faceon(self, fltr):
-        return self.cube_faceon_absorption_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
-
-    # -----------------------------------------------------------------
-
-    def get_spectral_map_absorption_faceon_path(self, fltr):
+    def get_spectral_map_absorption_faceon_plot_path(self, fltr):
         return fs.join(self.maps_path, "faceon_absorption_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 
-    def has_spectral_map_absorption_faceon(self, fltr):
-        return fs.is_file(self.get_spectral_map_absorption_faceon_path(fltr))
+    def has_spectral_map_absorption_faceon_plot(self, fltr):
+        return fs.is_file(self.get_spectral_map_absorption_faceon_plot_path(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2396,35 +2876,29 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for fltr in self.config.absorption_filters:
 
             # Check if map exists
-            if self.has_spectral_map_absorption_faceon(fltr): continue
+            if self.has_spectral_map_absorption_faceon_plot(fltr): continue
 
             # Get the map
             frame = self.get_spectral_map_absorption_faceon(fltr)
 
             # Get the path
-            path = self.get_spectral_map_absorption_faceon_path(fltr)
+            path = self.get_spectral_map_absorption_faceon_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=(0,1,))
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
 
     # -----------------------------------------------------------------
     # EDGEON
     #   EMISSION
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_spectral_map_emission_edgeon(self, fltr):
-        return self.cube_edgeon_emission_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
-
-    # -----------------------------------------------------------------
-
-    def get_spectral_map_emission_edgeon_path(self, fltr):
+    def get_spectral_map_emission_edgeon_plot_path(self, fltr):
         return fs.join(self.maps_path, "edgeon_emission_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 
-    def has_spectral_map_emission_edgeon(self, fltr):
-        return fs.is_file(self.get_spectral_map_emission_edgeon_path(fltr))
+    def has_spectral_map_emission_edgeon_plot(self, fltr):
+        return fs.is_file(self.get_spectral_map_emission_edgeon_plot_path(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2442,34 +2916,28 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for fltr in self.config.emission_filters:
 
             # Check if the map exists
-            if self.has_spectral_map_emission_edgeon(fltr): continue
+            if self.has_spectral_map_emission_edgeon_plot(fltr): continue
             
             # Get the map
             frame = self.get_spectral_map_emission_edgeon(fltr)
             
             # Get the path
-            path = self.get_spectral_map_emission_edgeon_path(fltr)
+            path = self.get_spectral_map_emission_edgeon_plot_path(fltr)
             
             # Plot
-            plotting.plot_map(frame, path=path, interval=(0,1,))
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
 
     # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
-    @memoize_method
-    def get_spectral_map_absorption_edgeon(self, fltr):
-        return self.cube_edgeon_absorption_fixed.frame_for_filter(fltr, convolve=self.config.spectral_convolution)
-
-    # -----------------------------------------------------------------
-
-    def get_spectral_map_absorption_edgeon_path(self, fltr):
+    def get_spectral_map_absorption_edgeon_plot_path(self, fltr):
         return fs.join(self.maps_path, "edgeon_absorption_" + str(fltr) + ".pdf")
 
     # -----------------------------------------------------------------
 
-    def has_spectral_map_absorption_edgeon(self, fltr):
-        return fs.is_file(self.get_spectral_map_absorption_edgeon_path(fltr))
+    def has_spectral_map_absorption_edgeon_plot(self, fltr):
+        return fs.is_file(self.get_spectral_map_absorption_edgeon_plot_path(fltr))
 
     # -----------------------------------------------------------------
 
@@ -2487,18 +2955,58 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for fltr in self.config.absorption_filters:
 
             # Check if the map exists
-            if self.has_spectral_map_absorption_edgeon(fltr): continue
+            if self.has_spectral_map_absorption_edgeon_plot(fltr): continue
 
             # Get the map
             frame = self.get_spectral_map_absorption_edgeon(fltr)
 
             # Get the path
-            path = self.get_spectral_map_absorption_edgeon_path(fltr)
+            path = self.get_spectral_map_absorption_edgeon_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=(0,1,))
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
 
     # -----------------------------------------------------------------
+    # ABSORPTION DATA MAPS
+    # -----------------------------------------------------------------
+
+    def get_unevolved_absorption_fraction_map_plot_path_for_filter(self, fltr):
+        return fs.join(self.cells_path, "absorption_" + str(fltr) + ".pdf")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_absorption_fraction_map_plot_for_filter(self, fltr):
+        return fs.is_file(self.get_unevolved_absorption_fraction_map_plot_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def plot_maps_absorption_data(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the maps of dust absorption heating fraction from the 3D data for different filters ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if map exists
+            if self.has_unevolved_absorption_fraction_map_plot_for_filter(fltr): continue
+
+            # Get the frame
+            frame = self.get_unevolved_absorption_fraction_frame_for_filter(fltr)
+
+            # Get the path
+            path = self.get_unevolved_absorption_fraction_map_plot_path_for_filter(fltr)
+
+            # Plot
+            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+
+    # -----------------------------------------------------------------
+    # CURVES
     # -----------------------------------------------------------------
 
     @property
@@ -2599,7 +3107,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def curve_earth_emission_plot_path(self):
-        return fs.join(self.curves_path, "earth.pdf")
+        return fs.join(self.curves_path, "earth_emission.pdf")
 
     # -----------------------------------------------------------------
 
@@ -2677,7 +3185,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def curve_faceon_emission_plot_path(self):
-        return fs.join(self.curves_path, "faceon.pdf")
+        return fs.join(self.curves_path, "faceon_emission.pdf")
 
     # -----------------------------------------------------------------
 
@@ -2743,7 +3251,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def curve_edgeon_emission_plot_path(self):
-        return fs.join(self.curves_path, "edgeon.pdf")
+        return fs.join(self.curves_path, "edgeon_emission.pdf")
 
     # -----------------------------------------------------------------
 

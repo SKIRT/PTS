@@ -25,12 +25,14 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.data import Data3D
 from pts.core.basics.log import log
+from pts.core.simulation.tree import get_cell_coordinates
 
 # -----------------------------------------------------------------
 
 # Create configuration
 definition = ConfigurationDefinition()
 definition.add_required("filename", "file_path", "3D data file path")
+definition.add_optional("tree", "file_path", "tree filepath")
 config = parse_arguments("render_data", definition)
 
 # -----------------------------------------------------------------
@@ -104,7 +106,9 @@ def plot(data, bbox):
 
 # Load the data
 data = Data3D.from_file(config.filename)
-x, y, z, values = data.valid_x, data.valid_y, data.valid_z, data.valid_values
+#_x, _y, _z, values = data.valid_x, data.valid_y, data.valid_z, data.valid_values
+_x, _y, _z, values = data.x, data.y, data.z, data.values
+
 #x, y, z, values = make_testdata()
 #values = np.ones(data.nx)
 #print(x.shape, type(x), x.mask, np.sum(x.mask))
@@ -114,8 +118,8 @@ x, y, z, values = data.valid_x, data.valid_y, data.valid_z, data.valid_values
 #print(x.shape, type(x))
 #print(y.shape, type(y))
 #print(z.shape, type(z))
-data, bbox = make_data(x, y, z, values)
-plot(data, bbox)
+#data, bbox = make_data(x, y, z, values)
+#plot(data, bbox)
 
 # -----------------------------------------------------------------
 
@@ -153,6 +157,40 @@ plot(data, bbox)
 #yt.ParticlePlot(ds, "particle_position_x", "particle_position_y", z_fields=None)
 
 # -----------------------------------------------------------------
+
+# grid_data = [dict(left_edge = [0.0, 0.0, 0.0],
+#               right_edge = [1.0, 1.0, 1.],
+#               level = 0,
+#               dimensions = [32, 32, 32],
+#               number_of_particles = 0),
+#          dict(left_edge = [0.25, 0.25, 0.25],
+#               right_edge = [0.75, 0.75, 0.75],
+#               level = 1,
+#               dimensions = [32, 32, 32],
+#               number_of_particles = 0)]
+
+#
+#for g in grid_data: g["density"] = (np.random.random(g["dimensions"])*2**g["level"], "g/cm**3")
+#ds = load_amr_grids(grid_data, [32, 32, 32], length_unit=1.0)
+
+#
+
+domain_dimensions = [32, 32, 32]
+
+# Get
+xmin, xmax, ymin, ymax, zmin, zmax = get_cell_coordinates(config.tree, read_method="pandas")
+
+ncells = len(xmin)
+#grid_data = []
+#for index in range(ncells):
+#cell = dict(left_edge=[xmin[index],ymin[index],zmin[index]], right_edge=[xmax[index],ymax[index],zmax[index]],
+#                dimensions=domain_dimensions, density=values[index], level=0)
+#    grid_data.append(cell)
+
+grid_data = dict(left_edge=[xmin,ymin,zmin], right_edge=[xmax,ymax,zmax], level=0, dimensions=domain_dimensions)
+
+bbox = None
+ds = yt.load_amr_grids(grid_data, domain_dimensions, bbox=bbox)
 
 # load_amr_grids(grid_data, domain_dimensions,
 #                    bbox=None, sim_time=0.0, length_unit=None,

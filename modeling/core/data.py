@@ -1503,6 +1503,32 @@ class SpectralData3D(object):
         return Data3D(self.name, self.x, self.y, self.z, array, length_unit=None, unit=self.unit, description=self.description,
                       wavelength=wavelength, distance=self.distance, solid_angle=self.solid_angle)
 
+    # -----------------------------------------------------------------`
+
+    def get_index_for_wavelength(self, wavelength, return_wavelength=False):
+
+        """
+        This function ...
+        :param wavelength:
+        :param return_wavelength:
+        :return:
+        """
+
+        return self.wavelength_grid.closest_wavelength_index(wavelength, return_wavelength=return_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def get_data3d_for_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        j = self.get_index_for_wavelength(wavelength)
+        return self.get_data3d(j)
+
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 

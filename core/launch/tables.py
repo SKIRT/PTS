@@ -22,7 +22,7 @@ from ..tools.utils import lazyproperty, memoize_method, memoize_method_reset
 from ..basics.table import SmartTable, property_type_to_builtin
 from ..tools import tables
 from ..simulation.remote import is_queued_status, is_finished_status, is_retrieved_status, is_running_status
-from ..simulation.remote import is_analysed_status, is_aborted_status, is_cancelled_status, is_crashed_status
+from ..simulation.remote import is_analysed_status, is_aborted_status, is_cancelled_status, is_crashed_status, is_unknown_status
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from .options import AnalysisOptions
 from ..simulation.definition import SingleSimulationDefinition
@@ -525,13 +525,6 @@ class SimulationStatusTable(SmartTable):
 
     @memoize_method_reset
     def is_retrieved(self, simulation_name):
-
-        """
-        This function ....
-        :param simulation_name:
-        :return:
-        """
-
         status = self.get_status(simulation_name)
         return is_retrieved_status(status)
 
@@ -539,13 +532,6 @@ class SimulationStatusTable(SmartTable):
 
     @memoize_method_reset
     def is_analysed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         status = self.get_status(simulation_name)
         return is_analysed_status(status)
 
@@ -553,13 +539,6 @@ class SimulationStatusTable(SmartTable):
 
     @memoize_method_reset
     def is_aborted(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         status = self.get_status(simulation_name)
         return is_aborted_status(status)
 
@@ -567,13 +546,6 @@ class SimulationStatusTable(SmartTable):
 
     @memoize_method_reset
     def is_cancelled(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         status = self.get_status(simulation_name)
         return is_cancelled_status(status)
 
@@ -581,39 +553,24 @@ class SimulationStatusTable(SmartTable):
 
     @memoize_method_reset
     def is_crashed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         status = self.get_status(simulation_name)
         return is_crashed_status(status)
 
     # -----------------------------------------------------------------
 
     def is_running_or_finished_or_aborted_or_crashed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.is_running(simulation_name) or self.is_finished(simulation_name) or self.is_aborted(simulation_name) or self.is_crashed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_failed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.is_aborted(simulation_name) or self.is_cancelled(simulation_name) or self.is_crashed(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_unknown_status(self, simulation_name):
+        status = self.get_status(simulation_name)
+        return is_unknown_status(status)
 
     # -----------------------------------------------------------------
 

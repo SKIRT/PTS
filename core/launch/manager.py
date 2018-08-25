@@ -4443,193 +4443,89 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def has_status(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "status" in self.__dict__
 
     # -----------------------------------------------------------------
 
     @property
     def screens(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remotes.screens
 
     # -----------------------------------------------------------------
 
     @property
     def jobs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remotes.jobs
 
     # -----------------------------------------------------------------
 
     def get_status(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.get_status(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_queued(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_queued(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_running(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_running(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_queued_or_running(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_queued_or_running(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_finished(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_finished(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_running_or_finished(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_running_or_finished(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_retrieved(self, simulation_name):
-
-        """
-        This function ....
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_retrieved(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_analysed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_analysed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_cancelled(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_cancelled(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_aborted(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_aborted(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_crashed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_crashed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_running_or_finished_or_aborted_or_crashed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_running_or_finished_or_aborted_or_crashed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_failed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_failed(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_unknown_status(self, simulation_name):
+        return self.status.has_unknown_status(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -10191,6 +10087,7 @@ class SimulationManager(InteractiveConfigurable):
         definition.add_flag("new_logging", "adapt the logging options", False)
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
+        definition.add_optional("screen_or_job", "string", "specifies whether to launch in screen or job if this information is unavailable (missing execution handle)")
 
         # Return
         return definition
@@ -10214,11 +10111,13 @@ class SimulationManager(InteractiveConfigurable):
 
         # Check simulation
         if not self.is_failed(simulation_name):
+            #print(self.get_status(simulation_name))
             if config.finished and self.is_finished(simulation_name):
                 log.info("Simulation '" + simulation_name + "' is already finished, removing local and remote output and undoing analysis ...")
                 if self.is_retrieved(simulation_name): self.unretrieve_simulation(simulation_name)
                 self.clear_simulation_output_remote(simulation_name)
                 self.unanalyse_simulation(simulation_name)
+            elif self.has_unknown_status(simulation_name): log.warning("The current status of simulation '" + simulation_name + "' is unknown")
             else: raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
 
         # Set the options
@@ -10228,11 +10127,13 @@ class SimulationManager(InteractiveConfigurable):
         scheduling_options = config.scheduling
 
         # Relaunch the simulation
-        self.relaunch_simulation(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
+        self.relaunch_simulation(simulation_name, parallelization=parallelization, logging_options=logging_options, 
+                                 scheduling_options=scheduling_options, screen_or_job=config.screen_or_job)
 
     # -----------------------------------------------------------------
 
-    def relaunch_simulation(self, simulation_name, parallelization=None, logging_options=None, scheduling_options=None):
+    def relaunch_simulation(self, simulation_name, parallelization=None, logging_options=None, scheduling_options=None,
+                            screen_or_job=None):
 
         """
         This function ...
@@ -10240,17 +10141,24 @@ class SimulationManager(InteractiveConfigurable):
         :param parallelization:
         :param logging_options:
         :param scheduling_options:
+        :param screen_or_job:
         :return:
         """
 
         # Debugging
         log.debug("Relaunching simulation '" + simulation_name + "' ...")
 
+        # Screen or job?
+        if screen_or_job is None:
+            if self.is_screen_execution(simulation_name): screen_or_job = "screen"
+            elif self.is_job_execution(simulation_name): screen_or_job = "job"
+            else: raise NotImplementedError("Execution handle not supported")
+
         # Screen
-        if self.is_screen_execution(simulation_name): self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
+        if screen_or_job == "screen": self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
 
         # Job
-        elif self.is_job_execution(simulation_name): self.relaunch_simulation_job(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
+        elif screen_or_job == "job": self.relaunch_simulation_job(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
 
         # Not supported
         else: raise NotImplementedError("Execution handle not supported")

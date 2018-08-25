@@ -3547,13 +3547,14 @@ def file_nbits(path):
 
 # -----------------------------------------------------------------
 
-def get_columns(filepath, method="numpy", dtype=None):
+def get_columns(filepath, method="numpy", dtype=None, indices=None):
 
     """
     This function ...
     :param filepath:
     :param method:
     :param dtype:
+    :param indices:
     :return:
     """
 
@@ -3566,15 +3567,20 @@ def get_columns(filepath, method="numpy", dtype=None):
     if method == "numpy":
 
         import numpy as np
-        columns = np.loadtxt(filepath, unpack=True, ndmin=2, dtype=dtype)
+        columns = np.loadtxt(filepath, unpack=True, ndmin=2, dtype=dtype, usecols=indices)
 
     # Using Pandas
     elif method == "pandas":
 
         import pandas as pd
-        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, dtype=dtype)
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, dtype=dtype, usecols=indices)
+        #print(df)
         ncolumns = len(df.columns)
-        columns = [df[index].values for index in range(ncolumns)]
+        #print("ncols", ncolumns)
+        if indices is not None: column_indices = indices
+        else: column_indices = range(ncolumns)
+        columns = [df[index].values for index in column_indices]
+        #columns = [df.columns[index] for index in range(ncolumns)]
 
     # Invalid
     else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")

@@ -93,6 +93,31 @@ class SFRAnalyser(AnalysisRunComponent):
         # Call the setup function of the base class
         super(SFRAnalyser, self).setup()
 
+        # Replot?
+        if self.config.replot:
+            self.config.replot_projected = True
+            self.config.replot_cell_maps = True
+
+        # Replot projected
+        if self.config.replot_projected:
+            self.config.replot_projected_sfr = True
+            self.config.replot_projected_mass = True
+            self.config.replot_projected_ssfr = True
+
+        # Replot SFR
+        if self.config.replot_projected_sfr:
+            fs.remove_file(self.projected_sfr_salim_earth_map_plot_path)
+            fs.remove_file(self.projected_sfr_salim_faceon_map_plot_path)
+
+            fs.remove_file(self.projected_sfr_ke_earth_map_plot_path)
+            fs.remove_file(self.projected_sfr_ke_faceon_map_plot_path)
+
+            fs.remove_file(self.projected_sfr_mappings_ke_earth_map_plot_path)
+            fs.remove_file(self.projected_sfr_mappings_ke_faceon_map_plot_path)
+
+        # Replot mass
+        # Replot sSFR
+
     # -----------------------------------------------------------------
 
     @property

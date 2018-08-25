@@ -558,3 +558,57 @@ class DustGridTreeDistribution(Distribution):
         return total
 
 # -----------------------------------------------------------------
+
+def get_cell_coordinates(tree_filepath, read_method="numpy"):
+
+    """
+    This function ...
+    :param tree_filepath:
+    :param read_method:
+    :return:
+    """
+
+    import numpy as np
+
+    # Get the number of cells
+    ncells = get_nleaves(tree_filepath)
+
+    # Initialize arrays
+    x_min = np.full((ncells,), np.nan)
+    x_max = np.full((ncells,), np.nan)
+    y_min = np.full((ncells,), np.nan)
+    y_max = np.full((ncells,), np.nan)
+    z_min = np.full((ncells,), np.nan)
+    z_max = np.full((ncells,), np.nan)
+
+    # Read columns
+    indices, xmin, xmax, ymin, ymax, zmin, zmax = fs.get_columns(tree_filepath, indices=[1,2,3,4,5,6,7], method=read_method)
+
+    #print(indices)
+    #print(xmin)
+    #print(xmax)
+    #print(ymin)
+    #print(ymax)
+    #print(zmin)
+    #print(zmax)
+
+    # Loop over the tree nodes
+    for i in range(len(indices)):
+
+        # Not a leaf?
+        index = indices[i]
+        if index == - 1: continue
+        #print(index)
+
+        # Add
+        x_min[index] = xmin[i]
+        x_max[index] = xmax[i]
+        y_min[index] = ymin[i]
+        y_max[index] = ymax[i]
+        z_min[index] = zmin[i]
+        z_max[index] = zmax[i]
+
+    # Return
+    return x_min, x_max, y_min, y_max, z_min, z_max
+
+# -----------------------------------------------------------------
