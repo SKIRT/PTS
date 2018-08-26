@@ -1500,8 +1500,8 @@ class SpectralData3D(object):
         wavelength = self.get_wavelength(j)
 
         # Create Data3D
-        return Data3D(self.name, self.x, self.y, self.z, array, length_unit=None, unit=self.unit, description=self.description,
-                      wavelength=wavelength, distance=self.distance, solid_angle=self.solid_angle)
+        return Data3D(self.name, self.x, self.y, self.z, array, length_unit=self.length_unit, unit=self.unit,
+                      description=self.description, wavelength=wavelength, distance=self.distance, solid_angle=self.solid_angle)
 
     # -----------------------------------------------------------------`
 

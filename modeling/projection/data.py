@@ -76,7 +76,7 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
 # -----------------------------------------------------------------
 
 def project_data(name, data, projection, return_stddev=False, return_ncells=False, description=None, as_image=False,
-                 height=None, width=None):
+                 height=None, width=None, cell_based=False):
 
     """
     This function ...
@@ -89,6 +89,7 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     :param as_image:
     :param height:
     :param width:
+    :param cell_based:
     :return:
     """
 
@@ -108,7 +109,7 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     # Create the projections object
     projections = DataProjections(data, name=name, description=description, faceon=faceon, edgeon=edgeon,
                                   projection_faceon=faceon_projection, projection_edgeon=edgeon_projection,
-                                  faceon_height=height, edgeon_width=width)
+                                  faceon_height=height, edgeon_width=width, cell_based=cell_based)
 
     # Get the projected map
     if faceon: frame = projections.faceon
@@ -263,7 +264,7 @@ class DataProjections(object):
     def __init__(self, data, name=None, projection_faceon=None, projection_edgeon=None,
                  faceon=True, edgeon=True, description=None, distance=None, faceon_height=None, edgeon_width=None,
                  faceon_spacing="mean", edgeon_spacing="mean", faceon_spacing_factor=1., edgeon_spacing_factor=1.,
-                 logfreq=100):
+                 logfreq=100, cell_based=False):
 
         """
         The constructor ...
@@ -283,6 +284,7 @@ class DataProjections(object):
         :param faceon_spacing_factor:
         :param edgeon_spacing_factor:
         :param logfreq:
+        :param cell_based:
         """
 
         # Set the data
@@ -330,8 +332,8 @@ class DataProjections(object):
         self.edgeon_ncells = None
 
         # Create?
-        if faceon: self.project_faceon(logfreq=logfreq)
-        if edgeon: self.project_edgeon(logfreq=logfreq)
+        if faceon: self.project_faceon(logfreq=logfreq, cell_based=cell_based)
+        if edgeon: self.project_edgeon(logfreq=logfreq, cell_based=cell_based)
 
     # -----------------------------------------------------------------
 
@@ -354,6 +356,12 @@ class DataProjections(object):
     @property
     def has_weights(self):
         return self.data.has_weights
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ncoordinates(self):
+        return len(self.x)
 
     # -----------------------------------------------------------------
 
@@ -1127,6 +1135,24 @@ class DataProjections(object):
         return np.linspace(self.faceon_pixel_x_min_value, self.faceon_pixel_x_max_value, num=self.faceon_nx)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_x_edges(self):
+        return np.linspace(self.faceon_x_min_value, self.faceon_x_max_value, num=self.faceon_nx+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_x_left_edges(self):
+        return self.faceon_pixel_x_edges[:-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_x_right_edges(self):
+        return self.faceon_pixel_x_edges[1:]
+
+    # -----------------------------------------------------------------
     # FACEON PIXEL Y COORDINATES
     # -----------------------------------------------------------------
 
@@ -1148,7 +1174,42 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def project_faceon(self, logfreq=100):
+    @lazyproperty
+    def faceon_pixel_y_edges(self):
+        return np.linspace(self.faceon_y_min_value, self.faceon_y_max_value, num=self.faceon_ny+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_y_left_edges(self):
+        return self.faceon_pixel_y_edges[:-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_pixel_y_right_edges(self):
+        return self.faceon_pixel_y_edges[1:]
+
+    # -----------------------------------------------------------------
+
+    def project_faceon(self, logfreq=100, cell_based=False):
+
+        """
+        This function ...
+        :param logfreq:
+        :param cell_based:
+        :return:
+        """
+
+        # Cell-based
+        if cell_based: self.project_faceon_cells(logfreq=logfreq*100)
+
+        # Cell
+        else: self.project_faceon_pixels(logfreq=logfreq)
+
+    # -----------------------------------------------------------------
+
+    def project_faceon_pixels(self, logfreq=100):
 
         """
         This function ...
@@ -1157,7 +1218,7 @@ class DataProjections(object):
         """
 
         # Inform the user
-        log.info("Creating the face-on map ...")
+        log.info("Creating the face-on map (pixel-based) ...")
 
         # Initialize maps
         self.faceon = Frame.initialize_nans(self.faceon_shape, unit=self.unit)
@@ -1228,6 +1289,90 @@ class DataProjections(object):
                 #y += self.faceon_pixelscale_value_y
 
                 index += 1
+
+    # -----------------------------------------------------------------
+
+    def get_faceon_pixel_index(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        # Check
+        mask_x = (self.faceon_pixel_x_left_edges < x) * (x < self.faceon_pixel_x_right_edges)
+        mask_y = (self.faceon_pixel_y_left_edges < y) * (y < self.faceon_pixel_y_right_edges)
+
+        # Get indices
+        indices_x = np.where(mask_x)[0]
+        indices_y = np.where(mask_y)[0]
+        nx = len(indices_x)
+        ny = len(indices_y)
+
+        # Should be single or None
+        if nx == 0 or ny == 0: return None, None
+
+        if nx > 1: raise RuntimeError("Something went wrong")
+        if ny > 1: raise RuntimeError("Something went wrong")
+
+        # Return
+        return indices_x[0], indices_y[0]
+
+    # -----------------------------------------------------------------
+
+    def project_faceon_cells(self, logfreq=10000):
+
+        """
+        This function ...
+        :param logfreq:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the face-on map (cell-based) ...")
+
+        # Initialize maps
+        self.faceon = Frame.initialize_zeroes(self.faceon_shape, unit=self.unit)
+        self.faceon_stddev = Frame.initialize_nans(self.faceon_shape, unit=self.unit)
+        self.faceon_ncells = Frame.initialize_zeroes(self.faceon_shape)
+
+        # Set the pixelscale and the coordinate info
+        self.faceon.pixelscale = self.faceon_pixelscale
+        self.faceon.distance = self.faceon_distance
+        self.faceon.metadata.update(self.faceon_metadata)
+
+        # Show progress bar
+        with Bar(label='', expected_size=self.ncoordinates, every=100, add_datetime=True) as bar:
+
+            # Loop over the cells
+            for index in range(self.ncoordinates):
+
+                # Get coordinates
+                x = self.x[index]
+                y = self.y[index]
+                value = self.values[index]
+                #if value == 0: continue
+
+                # Get the pixel coordinates
+                #for i, j in self.get_faceon_pixel_indices(x, y):
+                i, j = self.get_faceon_pixel_index(x, y)
+                if i is None: continue
+
+                # Debugging
+                if index % logfreq == 0:
+                    log.debug("Calculating projected value from cell " + str(index) + " of " + str(self.ncoordinates) + " (" + tostr(float(index) / self.ncoordinates * 100, decimal_places=1, round=True) + "%) ...")
+                    log.debug("Cell position: x = " + tostr(x) + " " + tostr(self.length_unit) + ", y = " + tostr(y) + " " + tostr(self.length_unit))
+                    log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
+
+                #  Set fraction
+                self.faceon[j, i] += value
+                #self.faceon_stddev[j, i] = fraction_stddev
+                self.faceon_ncells[j, i] += 1
+
+        # Normalize
+        self.faceon /= self.faceon_ncells # make average
 
     # -----------------------------------------------------------------
 
@@ -1473,6 +1618,24 @@ class DataProjections(object):
         return np.linspace(self.edgeon_pixel_y_min_value, self.edgeon_pixel_y_max_value, num=self.edgeon_ny)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_y_edges(self):
+        return np.linspace(self.edgeon_y_min_value, self.edgeon_y_max_value, num=self.edgeon_ny+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_y_left_edges(self):
+        return self.edgeon_pixel_y_edges[:-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_y_right_edges(self):
+        return self.edgeon_pixel_y_edges[1:]
+
+    # -----------------------------------------------------------------
     # EDGEON PIXEL Z COORDINATES
     # -----------------------------------------------------------------
 
@@ -1494,7 +1657,42 @@ class DataProjections(object):
 
     # -----------------------------------------------------------------
 
-    def project_edgeon(self, logfreq=100):
+    @lazyproperty
+    def edgeon_pixel_z_edges(self):
+        return np.linspace(self.edgeon_z_min_value, self.edgeon_z_max_value, num=self.edgeon_nz+1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_z_left_edges(self):
+        return self.edgeon_pixel_z_edges[:-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_pixel_z_right_edges(self):
+        return self.edgeon_pixel_z_edges[1:]
+
+    # -----------------------------------------------------------------
+
+    def project_edgeon(self, logfreq=100, cell_based=False):
+
+        """
+        This function ...
+        :param logfreq:
+        :param cell_based:
+        :return:
+        """
+
+        # Cell-based
+        if cell_based: self.project_edgeon_cells(logfreq=logfreq*100)
+
+        # Cell
+        else: self.project_edgeon_pixels(logfreq=logfreq)
+
+    # -----------------------------------------------------------------
+
+    def project_edgeon_pixels(self, logfreq=100):
 
         """
         This function ...
@@ -1503,7 +1701,7 @@ class DataProjections(object):
         """
 
         # Inform the user
-        log.info("Creating the edge-on map ...")
+        log.info("Creating the edge-on map (pixel-based) ...")
 
         # Initialize maps
         self.edgeon = Frame.initialize_nans(self.edgeon_shape, unit=self.unit)
@@ -1569,5 +1767,88 @@ class DataProjections(object):
                 #y += self.edgeon_pixelscale_value_y
                 #z += self.edgeon_pixelscale_value_z
                 index += 1
+
+    # -----------------------------------------------------------------
+
+    def get_edgeon_pixel_index(self, y, z):
+
+        """
+        This function ...
+        :param y:
+        :param z:
+        :return:
+        """
+
+        # Check
+        mask_y = (self.edgeon_pixel_y_left_edges < y) * (y < self.edgeon_pixel_y_right_edges)
+        mask_z = (self.edgeon_pixel_z_left_edges < z) * (z < self.edgeon_pixel_z_right_edges)
+
+        # Get indices
+        indices_y = np.where(mask_y)[0]
+        indices_z = np.where(mask_z)[0]
+        ny = len(indices_y)
+        nz = len(indices_z)
+
+        # Should be single or None
+        if ny == 0 or nz == 0: return None, None
+
+        if ny > 1: raise RuntimeError("Something went wrong")
+        if nz > 1: raise RuntimeError("Something went wrong")
+
+        # Return
+        return indices_y[0], indices_z[0]
+
+    # -----------------------------------------------------------------
+
+    def project_edgeon_cells(self, logfreq=10000):
+
+        """
+        This function ...
+        :param logfreq:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the edge-on map (cell-based) ...")
+
+        # Initialize maps
+        self.edgeon = Frame.initialize_zeroes(self.edgeon_shape, unit=self.unit)
+        self.edgeon_stddev = Frame.initialize_nans(self.edgeon_shape, unit=self.unit)
+        self.edgeon_ncells = Frame.initialize_zeroes(self.edgeon_shape)
+
+        # Set the pixelscale and the coordinate info
+        self.edgeon.pixelscale = self.edgeon_pixelscale
+        self.edgeon.distance = self.edgeon_distance
+        self.edgeon.metadata.update(self.edgeon_metadata)
+
+        # Show progress bar
+        with Bar(label='', expected_size=self.ncoordinates, every=100, add_datetime=True) as bar:
+
+            # Loop over the cells
+            for index in range(self.ncoordinates):
+
+                # Get coordinates
+                y = self.y[index]
+                z = self.z[index]
+                value = self.values[index]
+                # if value == 0: continue
+
+                # Get the pixel coordinates
+                i, j = self.get_edgeon_pixel_index(y, z)
+                if i is None: continue
+
+                # Debugging
+                if index % logfreq == 0:
+                    log.debug("Calculating projected value from cell " + str(index) + " of " + str(self.ncoordinates) + " (" + tostr(float(index) / self.ncoordinates * 100, decimal_places=1, round=True) + "%) ...")
+                    log.debug("Cell position: y = " + tostr(y) + " " + tostr(self.length_unit) + ", z = " + tostr(z) + " " + tostr(self.length_unit))
+                    log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
+
+                #  Set fraction
+                self.edgeon[j, i] += value
+                # self.faceon_stddev[j, i] = fraction_stddev
+                self.edgeon_ncells[j, i] += 1
+
+        # Normalize
+        self.edgeon /= self.edgeon_ncells  # make average
 
 # -----------------------------------------------------------------

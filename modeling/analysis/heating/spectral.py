@@ -1140,7 +1140,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         else:
             name = self.absorption_fractions_name + "_" + str(fltr)
             data = self.get_unevolved_absorption_fraction_data_for_filter(fltr)
-            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True)
+            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True, cell_based=True)
             #image.saveto(self.get_unevolved_absorption_fraction_map_path_for_filter(fltr))
             return image
 

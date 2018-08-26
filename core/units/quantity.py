@@ -961,8 +961,9 @@ def get_value_and_unit(value):
         unit = getattr(value, "unit")
 
         # Get value
-        if hasattr(value, "value"): value = value.value
-        elif hasattr(value, "data"): value = value.data
+        if hasattr(value, "value"): value = value.value # for quantity
+        elif hasattr(value, "data"): value = value.data # for Frame
+        elif hasattr(value, "values"): value = value.values # for Data3D
         else: pass  # assume using value is OK ...
 
     # No unit
