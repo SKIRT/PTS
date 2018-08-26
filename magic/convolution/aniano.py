@@ -337,17 +337,22 @@ class AnianoKernels(Kernels):
         if has_variable_fwhm(from_filter):
 
             # Check whether FWHM is specified
-            if from_fwhm is None: raise ValueError("When convolving an SDSS image, the FWHM of that image must be specified")
+            if from_fwhm is None: raise ValueError("The FWHM of that image must be specified")
 
             # Set model
             # ARE THERE OTHER FILTERS FOR WHICH IT SHOULD BE BIGAUSS?
-            if isinstance(from_filter, BroadBandFilter) and from_filter.is_sdss: from_model = "BiGauss"
-            elif isinstance(from_filter, NarrowBandFilter) and from_filter.is_halpha: from_model = "BiGauss"
-            elif from_model is None: from_model = "Gauss" # default is Gauss
+            #if isinstance(from_filter, BroadBandFilter) and from_filter.is_sdss: from_model = "BiGauss"
+            #elif isinstance(from_filter, NarrowBandFilter) and from_filter.is_halpha: from_model = "BiGauss"
+            #elif from_model is None: from_model = "Gauss" # default is Gauss
 
             # Determine aniano name for the FWHM
             fwhm_arcsec = from_fwhm.to("arcsec").value
             #aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+
+            # Determine Gauss or BiGauss
+            if from_model is None:
+                if fwhm_arcsec <= 2.5: from_model = "BiGauss"
+                else: fwhm_arcsec = "Gauss"
 
             # Under 10
             if int(round(fwhm_arcsec)) < 10: aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec)
@@ -363,20 +368,25 @@ class AnianoKernels(Kernels):
         else: from_psf_name = aniano_names[str(from_filter)]
 
         # For variable FWHM of image with target resolution
-        if has_variable_fwhm(to_filter): # Is SDSS or 2MASS
+        if has_variable_fwhm(to_filter):
 
             # Check whether FWHM is specified
-            if to_fwhm is None: raise ValueError("When convolving to the resolution of a SDSS image, the FWHM of that image must be specified")
+            if to_fwhm is None: raise ValueError("The FWHM of that image must be specified")
 
             # Set model
             # ARE THERE OTHER FILTERS FOR WHICH IT SHOULD BE BIGAUSS?
-            if isinstance(to_filter, BroadBandFilter) and to_filter.is_sdss: to_model = "BiGauss"
-            elif isinstance(to_filter, NarrowBandFilter) and to_filter.is_halpha: to_model = "BiGauss"
-            elif to_model is None: to_model = "Gauss" # default is Gauss
+            #if isinstance(to_filter, BroadBandFilter) and to_filter.is_sdss: to_model = "BiGauss"
+            #elif isinstance(to_filter, NarrowBandFilter) and to_filter.is_halpha: to_model = "BiGauss"
+            #elif to_model is None: to_model = "Gauss" # default is Gauss
 
             # Determine aniano name for the FWHM
             fwhm_arcsec = to_fwhm.to("arcsec").value
             #aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)
+
+            # Determine Gauss or BiGauss
+            if to_model is None:
+                if fwhm_arcsec <= 2.5: to_model = "BiGauss"
+                else: to_model = "Gauss"
 
             # Under 10
             if int(round(fwhm_arcsec)) < 10: aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)
