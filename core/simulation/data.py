@@ -387,6 +387,32 @@ class SimulationData(object):
         return SkirtTable.from_file(self.spectral_absorption_path)
 
     # -----------------------------------------------------------------
+    # SPECTRAL EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def has_spectral_emission(self):
+        return self.output.has_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_emission_path(self):
+        return self.output.single_spectral_emission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def valid_spectral_emission(self):
+        return is_valid(self.spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_emission(self):
+        return SkirtTable.from_file(self.spectral_emission_path)
+
+    # -----------------------------------------------------------------
     # WAVELENGTHS
     # -----------------------------------------------------------------
 

@@ -2052,6 +2052,19 @@ def get_nlines(path):
 
 # -----------------------------------------------------------------
 
+def get_nlines_noheader(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Return
+    return get_nlines(path) - get_nheader_lines(path)
+
+# -----------------------------------------------------------------
+
 def get_text(path):
 
     """
@@ -2323,6 +2336,11 @@ def get_header_lines(filepath):
 
 # -----------------------------------------------------------------
 
+def get_nheader_lines(filepath):
+    return len(get_header_lines(filepath))
+
+# -----------------------------------------------------------------
+
 def get_first_header_line(filepath):
 
     """
@@ -2368,11 +2386,12 @@ def get_header_labels(filepath):
 
 # -----------------------------------------------------------------
 
-def get_column_names(filepath):
+def get_column_names(filepath, lower=False):
 
     """
     This function ...
     :param filepath:
+    :param lower:
     :return:
     """
 
@@ -2382,12 +2401,15 @@ def get_column_names(filepath):
     # Only one line: return splitted first line
     if nlines == 1:
 
+        #print("1")
+
         #splitted = lines[0].split()
         splitted = strings.split_except_within_round_brackets(lines[0])
         # Sanitize
         names = []
         for part in splitted:
             #print(part)
+
             if "[" in part and "]" in part:
 
                 if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
@@ -2400,16 +2422,20 @@ def get_column_names(filepath):
         final_names = []
         for index in range(len(names)):
             name = names[index]
-            print(name)
+            #print(name)
             if strings.is_wrapped_by_round_brackets(name):
                 nname = name[1:-1]
                 if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
                 final_names[-1] += "(" + nname + ")"
             else: final_names.append(name)
 
-        return final_names
+        # Set the names
+        column_names = final_names
 
     elif strings.any_startswith(lines, "column"):
+
+        #print("2")
+        #print(lines)
 
         colnames = dict()
         for line in lines:
@@ -2418,23 +2444,71 @@ def get_column_names(filepath):
             if ":" in line: name = line.split(":")[1].strip()
             else: name = line.split(str(colno))[1].strip()
             colnames[colno] = name
+
         minno = min(colnames.keys())
         maxno = max(colnames.keys())
+
         first_is_one = minno == 1
         if first_is_one: ncolumns = maxno
         else: ncolumns = maxno - 1
+
         #print(ncolumns)
         names = [None] * ncolumns
         #print(maxno)
+
+        # Fill in column names
         for colno in colnames:
+
             if first_is_one: new_colno = colno - 1
             else: new_colno = colno
             #print(new_colno, colnames[colno])
-            names[new_colno] = colnames[colno]
-        return names
+
+            name, unit = _get_name_and_unit(colnames[colno])
+            #print(name, unit)
+            #names[new_colno] = colnames[colno]
+            names[new_colno] = name
+
+        #return names
+        column_names = names
 
     # Return splitted last line of the header
-    else: return lines[-1].split()
+    else:
+
+        #print("3")
+        #return lines[-1].split()
+        column_names = lines[-1].split()
+
+    # Return the names
+    if lower: return [name.lower() for name in column_names]
+    else: return column_names
+
+# -----------------------------------------------------------------
+
+def _get_name_and_unit(name_and_unit, capitalize=False):
+
+    """
+    This function ...
+    :param name_and_unit:
+    :param capitalize:
+    :return:
+    """
+
+    if "(" in name_and_unit and ")" in name_and_unit:
+
+        before = name_and_unit.split(" (")[0] # before unit
+        after = name_and_unit.split(" (")[1].split(")")[1] # after unit
+        name = before.capitalize() + after if capitalize else before + after
+        unit = name_and_unit.split(" (")[1].split(")")[0]
+        if "dimensionless" in unit: unit = None
+
+    else:
+        name = name_and_unit.capitalize() if capitalize else name_and_unit
+        unit = None
+
+    if ", i.e." in name: name = name.split(", i.e.")[0]
+
+    # Return
+    return name, unit
 
 # -----------------------------------------------------------------
 
@@ -3561,7 +3635,7 @@ def get_columns(filepath, method="numpy", dtype=None, indices=None):
     from ..basics.log import log
 
     # Debugging
-    log.debug("Reading data ...")
+    log.debug("Reading data (this can take while) ...")
 
     # Using NumPy
     if method == "numpy":
@@ -3605,7 +3679,7 @@ def get_2d_data(filepath, method="numpy", dtype=None, columns=None, base="column
     from ..basics.log import log
 
     # Debugging
-    log.debug("Reading data ...")
+    log.debug("Reading data (this can take a while) ...")
 
     # Using NumPy
     if method == "numpy":
@@ -3624,7 +3698,9 @@ def get_2d_data(filepath, method="numpy", dtype=None, columns=None, base="column
     else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
 
     # Return the data
-    return data
+    if base == "column": return data.transpose()
+    elif base == "row": return data
+    else: raise ValueError("Invalid base: mus be 'column' or 'row'")
 
 # -----------------------------------------------------------------
 
@@ -3642,7 +3718,7 @@ def get_column(filepath, index, dtype, method="numpy"):
     from ..basics.log import log
 
     # Debugging
-    log.debug("Reading data ...")
+    log.debug("Reading data (this can take while) ...")
 
     # Using NumPy
     if method == "numpy":
@@ -3677,7 +3753,7 @@ def get_row(filepath, index):
     from ..basics.log import log
 
     # Debugging
-    log.debug("Reading data ...")
+    log.debug("Reading data (this can take a while) ...")
 
     import pandas as pd
     df = pd.read_csv(filepath, sep=" ", comment="#", header=None, skiprows=lambda i: i != index)

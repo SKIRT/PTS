@@ -3078,6 +3078,19 @@ def get_common_property_type(values):
 
 # -----------------------------------------------------------------
 
+def parse_pts_header_file(filepath):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    header = fs.get_header_lines(filepath)
+    return parse_pts_header(header)
+
+# -----------------------------------------------------------------
+
 def parse_pts_header(header):
 
     """

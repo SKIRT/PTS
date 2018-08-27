@@ -1007,7 +1007,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
     # 3D (CELL) DATA
-    #   TOTAL
+    #   TOTAL: ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -1048,9 +1048,16 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return SpectralData3D.from_table_file(self.total_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
-                                              self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
-                                              name=self.total_spectral_absorption_name, description=self.total_spectral_absorption_description)
+        # With full xyz data saved in file
+        #return SpectralData3D.from_table_file(self.total_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
+        #                                      self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
+        #                                      name=self.total_spectral_absorption_name, description=self.total_spectral_absorption_description)
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.total_contribution_spectral_absorption_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
+                                              name=self.total_spectral_absorption_name, description=self.total_spectral_absorption_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1059,7 +1066,138 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.total_spectral_absorption_data.get_data3d_for_wavelength(fltr.wavelength)
 
     # -----------------------------------------------------------------
-    #   UNEVOLVED
+    #   TOTAL: EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_name(self):
+        return "Lem_lambda_total"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the total model"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_path(self):
+        return fs.join(self.cells_path, "total_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_spectral_emission(self):
+        return fs.is_file(self.total_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "total_spectral_emission_path", True, write=True)
+    def total_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.total_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
+                                              name=self.total_spectral_emission_name, description=self.total_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   EVOLVED (OLD): ABSORPTION
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_spectral_absorption_name(self):
+        return "Labs_lambda_evolved"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_spectral_absorption_description(self):
+        return "Absorbed spectral luminosities in each dust cell for the evolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_spectral_absorption_path(self):
+        return fs.join(self.cells_path, "evolved_absorption.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_evolved_spectral_absorption(self):
+        return fs.is_file(self.evolved_spectral_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "evolved_spectral_absorption_path", True, write=True)
+    def evolved_spectral_absorption_data(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # With full xyz data saved in file
+        # return SpectralData3D.from_table_file(self.old_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
+        #                                      self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
+        #                                      name=self.evolved_spectral_absorption_name, description=self.evolved_spectral_absorption_description)
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.old_contribution_spectral_absorption_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit, name=self.evolved_spectral_absorption_name,
+                                              description=self.evolved_spectral_absorption_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+    # -----------------------------------------------------------------
+    #   EVOLVED (OLD): EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_spectral_emission_name(self):
+        return "Lem_lambda_evolved"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the evolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_spectral_emission_path(self):
+        return fs.join(self.cells_path, "evolved_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_evolved_spectral_emission(self):
+        return fs.is_file(self.evolved_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "evolved_spectral_emission_path", True, write=True)
+    def evolved_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.old_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                              length_unit=self.length_unit, name=self.evolved_spectral_emission_name,
+                                              description=self.evolved_spectral_emission_description, xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    #   UNEVOLVED: ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -1094,9 +1232,16 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
-                                              self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
-                                              name=self.unevolved_spectral_absorption_name, description=self.unevolved_spectral_absorption_description)
+        # With full xyz data saved in file
+        #return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
+        #                                      self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
+        #                                      name=self.unevolved_spectral_absorption_name, description=self.unevolved_spectral_absorption_description)
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_absorption_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
+                                              name=self.unevolved_spectral_absorption_name, description=self.unevolved_spectral_absorption_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1110,6 +1255,50 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     def get_unevolved_absorption_fraction_data_for_filter(self, fltr):
         return self.get_unevolved_absorption_data_for_filter(fltr) / self.get_total_absorption_data_for_filter(fltr)
 
+    # -----------------------------------------------------------------
+    #   UNEVOLVED: EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_name(self):
+        return "Lem_lambda_unevolved"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_description(self):
+        return "Emission spectrum in each dust cell for the unevolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_path(self):
+        return fs.join(self.cells_path, "unevolved_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_emission(self):
+        return fs.is_file(self.unevolved_spectral_emission_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(SpectralData3D, "unevolved_spectral_emission_path", True, write=True)
+    def unevolved_spectral_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # With external xyz
+        return SpectralData3D.from_table_file(self.unevolved_contribution_spectral_emission_filepath, self.cell_x_coordinates_colname,
+                                              self.cell_y_coordinates_colname, self.cell_z_coordinates_colname, length_unit=self.length_unit,
+                                              name=self.unevolved_spectral_emission_name, description=self.unevolved_spectral_emission_description,
+                                              xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+    # CURVES FROM SPECTRAL 3D DATA
     # -----------------------------------------------------------------
 
     @property
@@ -1323,12 +1512,13 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def fix_map(self, frame, ncells):
+    def fix_map(self, frame, ncells, replace_nans=True):
 
         """
         This function ...
         :param frame:
         :param ncells:
+        :param replace_nans:
         :return:
         """
 
@@ -1344,11 +1534,14 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Get mask
         where = ncells.where_smaller_than(self.config.min_ncells)
 
+        # Replace NaNs to zero that have to stay NaNs (don't interpolate)
+        if replace_nans: interpolated[do_nans] = 0.0
+
         # Put pixels to NaN
         interpolated.replace_by_nans(where)
 
         # Interpolate nans
-        interpolated.interpolate_nans(sigma=2., error_on_max=False)
+        interpolated.interpolate_nans(sigma=2., error_on_max=replace_nans)
         interpolated.replace_by_nans(do_nans)
 
         # Return the interpolated frame
@@ -1381,46 +1574,6 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             frame = self.get_unevolved_absorption_fraction_frame_for_filter(fltr)
             ncells = self.get_unevolved_absorption_fraction_ncells_for_filter(fltr)
             return self.fix_map(frame, ncells)
-
-    # -----------------------------------------------------------------
-    #   EVOLVED (OLD)
-    # -----------------------------------------------------------------
-
-    @property
-    def evolved_spectral_absorption_name(self):
-        return "Labs_lambda_evolved"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def evolved_spectral_absorption_description(self):
-        return "Absorbed spectral luminosities in each dust cell for the evolved stellar populations"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def evolved_spectral_absorption_path(self):
-        return fs.join(self.cells_path, "evolved_absorption.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_evolved_spectral_absorption(self):
-        return fs.is_file(self.evolved_spectral_absorption_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyfileproperty(SpectralData3D, "evolved_spectral_absorption_path", True, write=True)
-    def evolved_spectral_absorption_data(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        return SpectralData3D.from_table_file(self.old_contribution_spectral_absorption_filepath, self.cell_x_coordinates,
-                                              self.cell_y_coordinates, self.cell_z_coordinates, length_unit=self.length_unit,
-                                              name=self.evolved_spectral_absorption_name, description=self.evolved_spectral_absorption_description)
 
     # -----------------------------------------------------------------
     # SIMULATION CUBES

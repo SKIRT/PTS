@@ -82,6 +82,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
     # TOTAL SIMULATION
+    #   GENERAL
     # -----------------------------------------------------------------
 
     @property
@@ -144,7 +145,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
-    # ABSORPTION
+    #   ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -179,7 +180,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
-    # SPECTRAL ABSORPTION
+    #   SPECTRAL ABSORPTION & EMISSION
     # -----------------------------------------------------------------
 
     @property
@@ -187,6 +188,13 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.total_contribution_data.spectral_absorption_path
 
     # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_spectral_emission_filepath(self):
+        return self.total_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+    #   LOGFILES
     # -----------------------------------------------------------------
 
     @property
@@ -199,6 +207,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def total_contribution_logfile(self):
         return LogFile.from_file(self.total_contribution_logfile_path)
 
+    # -----------------------------------------------------------------
+    #   DATACUBES & SEDs
     # -----------------------------------------------------------------
 
     @property
@@ -225,6 +235,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
     # OLD SIMULATION
+    #   GENERAL
     # -----------------------------------------------------------------
 
     @property
@@ -263,7 +274,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.old_simulation_data
 
     # -----------------------------------------------------------------
-    # ABSORPTION
+    #   ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -298,7 +309,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.old_contribution_absorption_data[self.old_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
-    # SPECTRAL ABSORPTION
+    #   SPECTRAL ABSORPTION & EMISSION
     # -----------------------------------------------------------------
 
     @property
@@ -306,6 +317,13 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.old_contribution_data.spectral_absorption_path
 
     # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_spectral_emission_filepath(self):
+        return self.old_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+    #   LOGFILES
     # -----------------------------------------------------------------
 
     @property
@@ -318,6 +336,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def old_contribution_logfile(self):
         return LogFile.from_file(self.old_contribution_logfile_path)
 
+    # -----------------------------------------------------------------
+    #   DATACUBES & SEDs
     # -----------------------------------------------------------------
 
     @property
@@ -344,6 +364,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
     # YOUNG SIMULATION
+    #   GENERAL
     # -----------------------------------------------------------------
 
     @property
@@ -382,7 +403,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.young_simulation_data
 
     # -----------------------------------------------------------------
-    # ABSORPTION
+    #   ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -417,7 +438,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.young_contribution_absorption_data[self.young_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
-    # SPECTRAL ABSORPTION
+    #   SPECTRAL ABSORPTION & EMISSION
     # -----------------------------------------------------------------
 
     @property
@@ -425,6 +446,13 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.young_contribution_data.spectral_absorption_path
 
     # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_spectral_emission_filepath(self):
+        return self.young_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+    #   LOGFILES
     # -----------------------------------------------------------------
 
     @property
@@ -437,6 +465,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def young_contribution_logfile(self):
         return LogFile.from_file(self.young_contribution_logfile_path)
 
+    # -----------------------------------------------------------------
+    #   DATACUBES & SEDs
     # -----------------------------------------------------------------
 
     @property
@@ -463,6 +493,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
     # IONIZING (SFR) SIMULATION
+    #   GENERAL
     # -----------------------------------------------------------------
 
     @property
@@ -501,7 +532,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.sfr_simulation_data
 
     # -----------------------------------------------------------------
-    # ABSORPTION
+    #   ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -536,7 +567,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.ionizing_contribution_absorption_data[self.ionizing_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
-    # SPECTRAL ABSORPTION
+    #   SPECTRAL ABSORPTION & EMISSION
     # -----------------------------------------------------------------
 
     @property
@@ -544,6 +575,13 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.ionizing_contribution_data.spectral_absorption_path
 
     # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_spectral_emission_filepath(self):
+        return self.ionizing_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+    #   LOGFILES
     # -----------------------------------------------------------------
 
     @property
@@ -556,6 +594,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def ionizing_contribution_logfile(self):
         return LogFile.from_file(self.ionizing_contribution_logfile_path)
 
+    # -----------------------------------------------------------------
+    #   DATACUBES & SEDs
     # -----------------------------------------------------------------
 
     @property
@@ -582,6 +622,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
     # UNEVOLVED SIMULATION
+    #   GENERAL
     # -----------------------------------------------------------------
 
     @property
@@ -620,7 +661,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return self.model.unevolved_simulation_data
 
     # -----------------------------------------------------------------
-    # ABSORPTION
+    #   ABSORPTION
     # -----------------------------------------------------------------
 
     @property
@@ -655,14 +696,21 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         return np.asarray(self.unevolved_contribution_absorption_data[self.unevolved_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
-    # SPECTRAL ABSORPTION
+    #   SPECTRAL ABSORPTION & EMISSION
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_spectral_absorption_filepath(self):
         return self.unevolved_contribution_data.spectral_absorption_path
 
+    #  -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_spectral_emission_filepath(self):
+        return self.unevolved_contribution_data.spectral_emission_path
+
     # -----------------------------------------------------------------
+    #   LOGFILES
     # -----------------------------------------------------------------
 
     @property
@@ -675,6 +723,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def unevolved_contribution_logfile(self):
         return LogFile.from_file(self.unevolved_contribution_logfile_path)
 
+    # -----------------------------------------------------------------
+    #   DATACUBES & SEDs
     # -----------------------------------------------------------------
 
     @property

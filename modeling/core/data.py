@@ -36,6 +36,8 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.data.sed import SED
 from ...core.tools.parsing import real_list
 from ...core.basics.curve import WavelengthCurve
+from ...core.tools.progress import Bar
+from ...core.basics.table import parse_pts_header_file
 
 # -----------------------------------------------------------------
 
@@ -1475,15 +1477,17 @@ class SpectralData3D(object):
         """
 
         # Get the column arrays
-        columns = fs.get_columns(self.filepath)
+        columns = fs.get_columns(self.filepath, method=method)
 
         #self.spectral_data = [None for _ in range(self.ncoordinates)]  # rows
         #self.spatial_data = [None for _ in range(self.nwavelengths)]  # columns
 
         # Set the spatial data (column for each wavelength)
-        self.spatial_data = columns
+        if spatial: self.spatial_data = columns
 
-        # Set the spectral data (row for
+        # Set the spectral data (row for each dust cell)
+        # THIS IS A VIEW AND NOT A COPY: VERY EFFICIENT -> both representations read from inherently the same data
+        if spectral: self.spectral_data = columns.transpose()
 
     # -----------------------------------------------------------------
     # SPECTRAL (FOR A COORDINATE)
@@ -1617,36 +1621,44 @@ class SpectralData3D(object):
         # Initialize the curve
         curve = WavelengthCurve(y_name=name, y_unit=self.unit, y_description=description)
 
+        # Get the wavelength indices
+        indices = self.wavelength_indices(min_wavelength, max_wavelength)
+        nwavelengths = len(indices)
+
         # Show progress bar
+        with Bar(label='', expected_size=nwavelengths, every=1, add_datetime=True) as bar:
 
-        # Loop over the wavelengths
-        for index in self.wavelength_indices(min_wavelength, max_wavelength):
+            # Loop over the wavelengths
+            for index in indices:
 
-            # Get the wavelength
-            wavelength = self.wavelength_grid[index]
+                # Show progress
+                bar.show(float(index + 1))
 
-            # Get the data array (all-cell data for this wavelength)
-            array = self.get_spatial_array(index)
-            if inverse_mask is not None:
-                array = array[inverse_mask]
-                if weights is not None: weights = weights[inverse_mask]
+                # Get the wavelength
+                wavelength = self.wavelength_grid[index]
 
-            # Filter out NaNs and infs
-            finite = np.isfinite(array)
-            array = array[finite]
-            if weights is not None: weights = weights[finite]
+                # Get the data array (all-cell data for this wavelength)
+                array = self.get_spatial_array(index)
+                if inverse_mask is not None:
+                    array = array[inverse_mask]
+                    if weights is not None: weights = weights[inverse_mask]
 
-            # Calculate the value
-            if measure == "sum": y_value = np.sum(array)
-            elif measure == "mean": y_value = np.nanmean(array)
-            elif measure == "median": y_value = np.nanmedian(array)
-            elif measure == "stddev": y_value = np.nanstd(array)
-            elif measure == "max": y_value = np.nanmax(array)
-            elif measure == "min": y_value = np.nanmin(array)
-            else: raise ValueError("Invalid value for 'measure'")
+                # Filter out NaNs and infs
+                finite = np.isfinite(array)
+                array = array[finite]
+                if weights is not None: weights = weights[finite]
 
-            # Add an entry to the curve
-            curve.add_point(wavelength, y_value)
+                # Calculate the value
+                if measure == "sum": y_value = np.sum(array)
+                elif measure == "mean": y_value = np.nanmean(array)
+                elif measure == "median": y_value = np.nanmedian(array)
+                elif measure == "stddev": y_value = np.nanstd(array)
+                elif measure == "max": y_value = np.nanmax(array)
+                elif measure == "min": y_value = np.nanmin(array)
+                else: raise ValueError("Invalid value for 'measure'")
+
+                # Add an entry to the curve
+                curve.add_point(wavelength, y_value)
 
         # Return the curve
         return curve
@@ -1686,7 +1698,7 @@ class SpectralData3D(object):
         #else:
 
         # Set columns
-        if self.has_xyz_file: columns = [[], [], []]
+        if self.has_xyz_file: columns = [np.array([], dtype=float), np.array([], dtype=float), np.array([], dtype=float)]
         else: columns = [self.x, self.y, self.z]
 
         names = [x_coordinate_name, y_coordinate_name, z_coordinate_name]
@@ -1754,59 +1766,72 @@ class SpectralData3D(object):
         # Debugging
         log.debug("Loading the spectral 3D data in table format from '" + path + "' ...")
 
-        # Read the table
-        table = SmartTable.from_file(path, method="pandas")
-
-        # Get the units
-        length_unit = table.get_column_unit(x_coordinate_name.capitalize())
+        # Check the number of lines
+        nlines = fs.get_nlines_noheader(path)
+        if nlines == 0:
+            column_names, column_types, column_units, meta = parse_pts_header_file(path)
+            length_unit = column_units[x_coordinate_name.capitalize()]
+            table = None
+        else:
+            # Read the table
+            table = SmartTable.from_file(path, method="pandas")
+            meta = table.meta
+            # Get the unit
+            length_unit = table.get_column_unit(x_coordinate_name.capitalize())
 
         # Get the xyz data from other file
-        if "xyz_filepath" in table.meta:
+        if "xyz_filepath" in meta:
 
             # Get filepath
-            xyz_filepath = table.meta["xyz_filepath"]
-            x_colname = table.meta["x_colname"]
-            y_colname = table.meta["y_colname"]
-            z_colname = table.meta["z_colname"]
+            xyz_filepath = meta["xyz_filepath"]
+            x_colname = meta["x_colname"]
+            y_colname = meta["y_colname"]
+            z_colname = meta["z_colname"]
+
+            # Debugging
+            log.debug("Loading the xyz coordinate information from '" + xyz_filepath + "' ...")
 
             # Load x y z
-            xyz_colnames = fs.get_column_names(xyz_filepath)
-            x_index = xyz_colnames.index(x_colname)
-            y_index = xyz_colnames.index(y_colname)
-            z_index = xyz_colnames.index(z_colname)
-            x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index])
+            xyz_colnames = fs.get_column_names(xyz_filepath, lower=True)
+            #print(xyz_colnames)
+            x_index = xyz_colnames.index(x_colname.lower())
+            y_index = xyz_colnames.index(y_colname.lower())
+            z_index = xyz_colnames.index(z_colname.lower())
+            x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index], method="pandas")
 
         # Get xyz data from columns
         else:
+
+            if table is None: raise IOError("Invalid file: no data and xyz file not defined")
             xyz_filepath = None
             x_colname, y_colname, z_colname = "x", "y", "z" # default
-            x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit)
-            y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit)
-            z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit)
+            x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit, masked=False)
+            y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit, masked=False)
+            z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit, masked=False)
         #values = table.get_column_array(column_name, unit=unit)
         #weights = table.get_column_array(weight_name.capitalize()) if weight_name.capitalize() in table.colnames else None
 
         # Get the name description, and unit
-        name = table.meta["name"]
-        description = table.meta["description"] if "description" in table.meta else None
-        unit = table.meta["unit"] if "unit" in table.meta else None
+        name = meta["name"]
+        description = meta["description"] if "description" in meta else None
+        unit = meta["unit"] if "unit" in meta else None
 
         # Get the conversion info
-        distance = table.meta["distance"] if "distance" in table.meta else None
-        solid_angle = table.meta["solid_angle"] if "solid_angle" in table.meta else None
+        distance = meta["distance"] if "distance" in meta else None
+        solid_angle = meta["solid_angle"] if "solid_angle" in meta else None
 
         # Get the filepath
-        filepath = table.meta["filepath"]
+        filepath = meta["filepath"]
 
         # Get the wavelengths
-        wavelengths = real_list(table.meta["wavelengths"])
-        wavelength_unit = table.meta["wavelength_unit"]
+        wavelengths = real_list(meta["wavelengths"])
+        wavelength_unit = meta["wavelength_unit"]
         wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit=wavelength_unit)
 
         # Create
-        # name, x, y, z, wavelength_grid, filepath, length_unit=None, unit=None, description=None, distance=None, solid_angle=None
         data = cls(name, x, y, z, wavelength_grid, filepath, length_unit=length_unit, unit=unit, description=description,
-                   distance=distance, solid_angle=solid_angle, xyz_filepath=xyz_filepath, x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
+                   distance=distance, solid_angle=solid_angle, xyz_filepath=xyz_filepath,
+                   x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 
         # Set the path
         data.path = path
