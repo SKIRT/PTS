@@ -1260,10 +1260,10 @@ class SpectralData3D(object):
             z_colname = z
 
             # Get x y z arrays
-            xyz_colnames = fs.get_column_names(xyz_filepath)
-            x_index = xyz_colnames.index(x_colname)
-            y_index = xyz_colnames.index(y_colname)
-            z_index = xyz_colnames.index(z_colname)
+            xyz_colnames = fs.get_column_names(xyz_filepath, lower=True)
+            x_index = xyz_colnames.index(x_colname.lower())
+            y_index = xyz_colnames.index(y_colname.lower())
+            z_index = xyz_colnames.index(z_colname.lower())
             x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index])
 
         # No xyz filepath
@@ -1480,7 +1480,7 @@ class SpectralData3D(object):
         log.debug("Loading all 3D spectral data from '" + self.filepath + "': this can take while ...")
 
         # Get the column arrays
-        columns = fs.get_columns(self.filepath, method=method)
+        columns = fs.get_2d_data(self.filepath, method=method)
 
         #self.spectral_data = [None for _ in range(self.ncoordinates)]  # rows
         #self.spatial_data = [None for _ in range(self.nwavelengths)]  # columns
