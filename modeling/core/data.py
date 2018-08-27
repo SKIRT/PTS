@@ -1476,6 +1476,9 @@ class SpectralData3D(object):
         :return:
         """
 
+        # Debugging
+        log.debug("Loading all 3D spectral data from '" + self.filepath + "': this can take while ...")
+
         # Get the column arrays
         columns = fs.get_columns(self.filepath, method=method)
 
@@ -1600,7 +1603,7 @@ class SpectralData3D(object):
     # -----------------------------------------------------------------
 
     def get_spectral_curve(self, name, measure="sum", description=None, min_wavelength=None, max_wavelength=None,
-                           mask=None, weights=None):
+                           mask=None, weights=None, load_all=True):
 
         """
         This function ...
@@ -1611,6 +1614,7 @@ class SpectralData3D(object):
         :param max_wavelength:
         :param mask:
         :param weights:
+        :param load_all:
         :return:
         """
 
@@ -1624,6 +1628,9 @@ class SpectralData3D(object):
         # Get the wavelength indices
         indices = self.wavelength_indices(min_wavelength, max_wavelength)
         nwavelengths = len(indices)
+
+        # Load all data from file
+        if load_all: self.load_data()
 
         # Show progress bar
         with Bar(label='', expected_size=nwavelengths, every=1, add_datetime=True) as bar:
