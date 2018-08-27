@@ -3590,6 +3590,44 @@ def get_columns(filepath, method="numpy", dtype=None, indices=None):
 
 # -----------------------------------------------------------------
 
+def get_2d_data(filepath, method="numpy", dtype=None, columns=None, base="column"):
+
+    """
+    Thisn function ...
+    :param filepath:
+    :param method:
+    :param dtype:
+    :param columns:
+    :param base:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data ...")
+
+    # Using NumPy
+    if method == "numpy":
+
+        import numpy as np
+        data = np.loadtxt(filepath, ndmin=2, dtype=dtype, usecols=columns)
+
+    # Using pandas
+    elif method == "pandas":
+
+        import pandas as pd
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, dtype=dtype, usecols=columns)
+        data = df.values
+
+    # Invalid
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+
+    # Return the data
+    return data
+
+# -----------------------------------------------------------------
+
 def get_column(filepath, index, dtype, method="numpy"):
 
     """

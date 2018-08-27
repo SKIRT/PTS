@@ -71,12 +71,13 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
                   unit=unit, description=description)
 
     # Create projection
-    return project_data(name, data, projection, return_stddev=return_stddev, return_ncells=return_ncells, description=description)
+    return project_data(name, data, projection, return_stddev=return_stddev, return_ncells=return_ncells,
+                        description=description, as_image=as_image)
 
 # -----------------------------------------------------------------
 
 def project_data(name, data, projection, return_stddev=False, return_ncells=False, description=None, as_image=False,
-                 height=None, width=None, cell_based=False):
+                 height=None, width=None, cell_based=True): # default for 'cell_based' was False before
 
     """
     This function ...
@@ -154,7 +155,7 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
 # -----------------------------------------------------------------
 
 def project_faceon(name, data, return_stddev=False, return_ncells=False, description=None, spacing="mean",
-                   spacing_factor=1., height=None, as_image=False):
+                   spacing_factor=1., height=None, as_image=False, cell_based=True):
 
     """
     This function ...
@@ -167,12 +168,14 @@ def project_faceon(name, data, return_stddev=False, return_ncells=False, descrip
     :param spacing_factor:
     :param height:
     :param as_image:
+    :param cell_based:
     :return:
     """
 
     # Create the projections object
     projections = DataProjections(data, name=name, description=description, faceon=True, edgeon=False,
-                                  faceon_spacing=spacing, faceon_spacing_factor=spacing_factor, faceon_height=height)
+                                  faceon_spacing=spacing, faceon_spacing_factor=spacing_factor, faceon_height=height,
+                                  cell_based=cell_based)
 
     # Get results
     frame = projections.faceon
@@ -205,7 +208,7 @@ def project_faceon(name, data, return_stddev=False, return_ncells=False, descrip
 # -----------------------------------------------------------------
 
 def project_edgeon(name, data, return_stddev=False, return_ncells=False, description=None, spacing="mean",
-                   spacing_factor=1., width=None, as_image=False):
+                   spacing_factor=1., width=None, as_image=False, cell_based=True):
 
     """
     This function ...
@@ -218,12 +221,14 @@ def project_edgeon(name, data, return_stddev=False, return_ncells=False, descrip
     :param spacing_factor:
     :param width:
     :param as_image:
+    :param cell_based:
     :return:
     """
 
     # Create the projections object
     projections = DataProjections(data, name=name, description=description, faceon=False, edgeon=True,
-                                  edgeon_spacing=spacing, edgeon_spacing_factor=spacing_factor, edgeon_width=width)
+                                  edgeon_spacing=spacing, edgeon_spacing_factor=spacing_factor, edgeon_width=width,
+                                  cell_based=cell_based)
 
     # Get results
     frame = projections.edgeon
@@ -264,7 +269,7 @@ class DataProjections(object):
     def __init__(self, data, name=None, projection_faceon=None, projection_edgeon=None,
                  faceon=True, edgeon=True, description=None, distance=None, faceon_height=None, edgeon_width=None,
                  faceon_spacing="mean", edgeon_spacing="mean", faceon_spacing_factor=1., edgeon_spacing_factor=1.,
-                 logfreq=100, cell_based=False):
+                 logfreq=100, cell_based=True): # default of 'cell_based' was False before
 
         """
         The constructor ...
@@ -1234,12 +1239,7 @@ class DataProjections(object):
         with Bar(label='', expected_size=self.faceon_npixels, every=1, add_datetime=True) as bar:
 
             # Loop over the pixels of the map
-            #x = self.faceon_x_min_value
-            #y = self.faceon_y_min_value
             index = 0
-            #for i, j in sequences.multirange(self.faceon_nx, self.faceon_ny):
-            #for i in range(self.faceon_nx):
-            #for j in range(self.faceon_ny):
             for i, x, j, y in sequences.iterate_enumerated_combinations(self.faceon_pixel_x_coordinates, self.faceon_pixel_y_coordinates):
 
                 # Debugging
@@ -1283,11 +1283,7 @@ class DataProjections(object):
                     self.faceon[j, i] = fraction
                     self.faceon_stddev[j, i] = fraction_stddev
 
-                # NO!
-                # Increment the x and y coordinate with one pixelsize
-                #x += self.faceon_pixelscale_value_x
-                #y += self.faceon_pixelscale_value_y
-
+                # Increment the absolute pixel index
                 index += 1
 
     # -----------------------------------------------------------------
@@ -1354,6 +1350,9 @@ class DataProjections(object):
                 y = self.y[index]
                 value = self.values[index]
                 #if value == 0: continue
+
+                # Show progress
+                bar.show(float(index + 1))
 
                 # Get the pixel coordinates
                 #for i, j in self.get_faceon_pixel_indices(x, y):
@@ -1717,10 +1716,7 @@ class DataProjections(object):
         with Bar(label='', expected_size=self.edgeon_npixels, every=1, add_datetime=True) as bar:
 
             # Loop over the pixels of the map
-            #y = self.edgeon_y_min_value
-            #z = self.edgeon_z_min_value
             index = 0
-            #for i, j in sequences.multirange(self.edgeon_ny, self.edgeon_nz):
             for i, y, j, z in sequences.iterate_enumerated_combinations(self.edgeon_pixel_y_coordinates, self.edgeon_pixel_z_coordinates):
 
                 # Debugging
@@ -1730,7 +1726,6 @@ class DataProjections(object):
                     log.debug("Pixel index: (" + str(i) + ", " + str(j) + ")")
 
                 # Show progress
-                #progress = int(float(index + 1) / float(self.faceon_npixels))
                 bar.show(float(index+1))
 
                 # Get the indices
@@ -1763,9 +1758,7 @@ class DataProjections(object):
                     self.edgeon[j, i] = fraction
                     self.edgeon_stddev[j, i] = fraction_stddev
 
-                # Increment the y and z coordinate with one pixelsize
-                #y += self.edgeon_pixelscale_value_y
-                #z += self.edgeon_pixelscale_value_z
+                # Increment the absolute pixel index
                 index += 1
 
     # -----------------------------------------------------------------
@@ -1832,6 +1825,9 @@ class DataProjections(object):
                 z = self.z[index]
                 value = self.values[index]
                 # if value == 0: continue
+
+                # Show progress
+                bar.show(float(index + 1))
 
                 # Get the pixel coordinates
                 i, j = self.get_edgeon_pixel_index(y, z)

@@ -1199,12 +1199,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_absorbed_scattering_correction_factor(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_scattered_cube_faceon and self.has_intrinsic_stellar_cube_faceon
 
     # -----------------------------------------------------------------
@@ -1235,12 +1229,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_observed_cube_absorbed_uncorrected(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube_faceon and self.has_direct_cube_faceon and self.has_scattered_cube_faceon
 
     # -----------------------------------------------------------------
@@ -1270,12 +1258,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_observed_cube_absorbed(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_faceon_observed_cube_absorbed_uncorrected and self.has_faceon_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
@@ -1305,12 +1287,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_observed_cube_absorbed_alternative_uncorrected(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube_faceon and self.has_faceon_observed_stellar_cube
 
     # -----------------------------------------------------------------
@@ -1341,12 +1317,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_absorbed_scattering_correction_term(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube_faceon and self.has_direct_cube_faceon and self.has_scattered_cube_faceon
 
     # -----------------------------------------------------------------
@@ -1380,12 +1350,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_observed_cube_absorbed_alternative(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_observed_cube_absorbed_alternative_uncorrected and self.has_faceon_absorbed_scattering_correction_term and self.has_faceon_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
@@ -1429,12 +1393,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_absorbed_scattering_correction_factor(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_scattered_cube_edgeon and self.has_intrinsic_stellar_cube_edgeon
 
     # -----------------------------------------------------------------
@@ -1465,12 +1423,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_observed_cube_absorbed_uncorrected(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube_edgeon and self.has_direct_cube_edgeon and self.has_scattered_cube_edgeon
 
     # -----------------------------------------------------------------
@@ -1500,12 +1452,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_observed_cube_absorbed(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_edgeon_observed_cube_absorbed_uncorrected and self.has_edgeon_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
@@ -1535,12 +1481,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_observed_cube_absorbed_alternative_uncorrected(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube_edgeon and self.has_edgeon_observed_stellar_cube
 
     # -----------------------------------------------------------------
@@ -1571,12 +1511,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_absorbed_scattering_correction_term(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube_edgeon and self.has_direct_cube_edgeon and self.has_scattered_cube_edgeon
 
     # -----------------------------------------------------------------
@@ -1610,12 +1544,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_observed_cube_absorbed_alternative(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_observed_cube_absorbed_alternative_uncorrected and self.has_edgeon_absorbed_scattering_correction_term and self.has_edgeon_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
@@ -1660,396 +1588,206 @@ class ComponentSimulations(object):
 
     @property
     def observed_cube_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[earth_name][dust_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_cube_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[faceon_name][dust_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_cube_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[edgeon_name][dust_contribution]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_cube_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_cube_dust - self.observed_cube_dust_scattered
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_observed_cube_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.faceon_observed_cube_dust - self.faceon_observed_cube_dust_scattered
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_observed_cube_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edgeon_observed_cube_dust - self.edgeon_observed_cube_dust_scattered
 
     # -----------------------------------------------------------------
 
     @property
     def observed_cube_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[earth_name][dust_scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_cube_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[faceon_name][dust_scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_cube_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[edgeon_name][dust_scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def observed_cube_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_cube_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[faceon_name][transparent_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_cube_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[edgeon_name][transparent_contribution]
 
+    # -----------------------------------------------------------------
+    # DUST CELL PROPERTIES
     # -----------------------------------------------------------------
 
     @property
     def has_cell_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.has_cell_properties
 
     # -----------------------------------------------------------------
 
     @property
     def cell_volumes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_volumes
 
     # -----------------------------------------------------------------
 
     @property
     def cell_dust_densities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_dust_densities
 
     # -----------------------------------------------------------------
 
     @property
     def cell_mass_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_mass_fractions
 
     # -----------------------------------------------------------------
 
     @property
     def cell_optical_depths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_optical_depths
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_x_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_x_coordinates
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_y_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_y_coordinates
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_z_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_z_coordinates
 
+    # -----------------------------------------------------------------
+    # DUST GRID STRUCTURE
     # -----------------------------------------------------------------
 
     @property
     def has_grid_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.has_grid_files
 
     # -----------------------------------------------------------------
 
     @property
     def grid_xy_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.grid_xy_filepath
 
     # -----------------------------------------------------------------
 
     @property
     def grid_xz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.grid_xz_filepath
 
     # -----------------------------------------------------------------
 
     @property
     def grid_yz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.grid_yz_filepath
 
     # -----------------------------------------------------------------
 
     @property
     def grid_xyz_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.grid_xyz_filepath
 
     # -----------------------------------------------------------------
 
     @property
     def has_cell_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.has_cell_stellar_density
 
     # -----------------------------------------------------------------
 
     @property
     def cell_stellar_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.cell_stellar_density
 
+    # -----------------------------------------------------------------
+    # SEDs
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_other_observed_sed_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_other_observed_sed_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_edgeon(self):
-
-        """
-        This function ..
-        :return:
-        """
-
         return self.has_other_observed_sed_contributions_edgeon
 
+    # -----------------------------------------------------------------
+    # CUBES
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------

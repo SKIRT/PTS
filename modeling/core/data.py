@@ -35,6 +35,7 @@ from ...core.units.parsing import parse_unit as u
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.data.sed import SED
 from ...core.tools.parsing import real_list
+from ...core.basics.curve import WavelengthCurve
 
 # -----------------------------------------------------------------
 
@@ -1114,7 +1115,7 @@ class SpectralData3D(object):
     """
 
     def __init__(self, name, x, y, z, wavelength_grid, filepath, length_unit=None, unit=None, description=None,
-                 distance=None, solid_angle=None):
+                 distance=None, solid_angle=None, xyz_filepath=None, x_colname="x", y_colname="y", z_colname="z"):
 
         """
         The constructor ...
@@ -1127,6 +1128,10 @@ class SpectralData3D(object):
         :param description:
         :param distance:
         :param solid_angle:
+        :param xyz_filepath:
+        :param x_colname:
+        :param y_colname:
+        :param z_colname:
         """
 
         # Set the name and description for the data
@@ -1144,6 +1149,14 @@ class SpectralData3D(object):
         # Set data filepath
         self.filepath = filepath
 
+        # Set the xyz filepath
+        self.xyz_filepath = xyz_filepath
+
+        # Set the xyz column names
+        self.x_colname = x_colname
+        self.y_colname = y_colname
+        self.z_colname = z_colname
+
         # Set unit of the data and length unit
         self.length_unit = u(length_unit) if length_unit is not None else None
         self.unit = u(unit) if unit is not None else None
@@ -1156,8 +1169,8 @@ class SpectralData3D(object):
         self.check()
 
         # Initialize data structures
-        self.spectral_data = [None for _ in range(self.ncoordinates)]
-        self.spatial_data = [None for _ in range(self.nwavelengths)]
+        self.spectral_data = [None for _ in range(self.ncoordinates)] # rows
+        self.spatial_data = [None for _ in range(self.nwavelengths)] # columns
 
         # Path
         self.path = None
@@ -1182,8 +1195,14 @@ class SpectralData3D(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_xyz_file(self):
+        return self.xyz_filepath is not None and fs.is_file(self.xyz_filepath)
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def from_table_file(cls, path, x, y, z, length_unit=None, name=None, description=None):
+    def from_table_file(cls, path, x, y, z, length_unit=None, name=None, description=None, xyz_filepath=None):
 
         """
         This function ...
@@ -1194,6 +1213,7 @@ class SpectralData3D(object):
         :param length_unit:
         :param name:
         :param description:
+        :param xyz_filepath:
         :return:
         """
 
@@ -1224,8 +1244,32 @@ class SpectralData3D(object):
         # Create wavelength grid
         wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths)
 
+        # Set x, y, z
+        if xyz_filepath is not None:
+
+            # Check
+            if not types.is_string_type(x): raise ValueError("If xyz filepath is given, 'x' must be name of x coordinates column")
+            if not types.is_string_type(y): raise ValueError("If xyz filepath is given, 'y' must be name of y coordinates column")
+            if not types.is_string_type(z): raise ValueError("If xyz filepath is given, 'z' must be name of z coordinates column")
+
+            # Set colnames
+            x_colname = x
+            y_colname = y
+            z_colname = z
+
+            # Get x y z arrays
+            xyz_colnames = fs.get_column_names(xyz_filepath)
+            x_index = xyz_colnames.index(x_colname)
+            y_index = xyz_colnames.index(y_colname)
+            z_index = xyz_colnames.index(z_colname)
+            x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index])
+
+        # No xyz filepath
+        else: x_colname, y_colname, z_colname = "x", "y", "z" # default
+
         # Return
-        return cls(name, x, y, z, wavelength_grid, path, length_unit=length_unit, unit=unit, description=description)
+        return cls(name, x, y, z, wavelength_grid, path, length_unit=length_unit, unit=unit, description=description,
+                   xyz_filepath=xyz_filepath, x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 
     # -----------------------------------------------------------------
 
@@ -1334,15 +1378,6 @@ class SpectralData3D(object):
     # -----------------------------------------------------------------
 
     def wavelengths(self, unit=None, asarray=False, add_unit=True):
-
-        """
-        This function ...
-        :param unit:
-        :param asarray:
-        :param add_unit:
-        :return:
-        """
-
         return self.wavelength_grid.wavelengths(unit=unit, asarray=asarray, add_unit=add_unit)
 
     # -----------------------------------------------------------------
@@ -1426,6 +1461,31 @@ class SpectralData3D(object):
         return self.wavelength_indices(min_wavelength=min_wavelength, max_wavelength=max_wavelength, include_min=include_min, include_max=include_max)
 
     # -----------------------------------------------------------------
+    # ALL DATA
+    # -----------------------------------------------------------------
+
+    def load_data(self, method="pandas", spatial=True, spectral=True):
+
+        """
+        This function ...
+        :param method:
+        :param spatial:
+        :param spectral:
+        :return:
+        """
+
+        # Get the column arrays
+        columns = fs.get_columns(self.filepath)
+
+        #self.spectral_data = [None for _ in range(self.ncoordinates)]  # rows
+        #self.spatial_data = [None for _ in range(self.nwavelengths)]  # columns
+
+        # Set the spatial data (column for each wavelength)
+        self.spatial_data = columns
+
+        # Set the spectral data (row for
+
+    # -----------------------------------------------------------------
     # SPECTRAL (FOR A COORDINATE)
     # -----------------------------------------------------------------
 
@@ -1481,7 +1541,11 @@ class SpectralData3D(object):
         :return: 
         """
 
-        return fs.get_column(self.filepath, j, float)
+        # Read the data
+        if self.has_spatial_array(j): self.spatial_data[j] = fs.get_column(self.filepath, j, float)
+
+        # Return
+        return self.spatial_data[j]
 
     # -----------------------------------------------------------------
 
@@ -1530,6 +1594,64 @@ class SpectralData3D(object):
         return self.get_data3d(j)
 
     # -----------------------------------------------------------------
+
+    def get_spectral_curve(self, name, measure="sum", description=None, min_wavelength=None, max_wavelength=None,
+                           mask=None, weights=None):
+
+        """
+        This function ...
+        :param name:
+        :param measure:
+        :param description:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param mask:
+        :param weights:
+        :return:
+        """
+
+        # Determine the mask
+        if mask is not None: inverse_mask = np.logical_not(mask)
+        else: inverse_mask = None
+
+        # Initialize the curve
+        curve = WavelengthCurve(y_name=name, y_unit=self.unit, y_description=description)
+
+        # Show progress bar
+
+        # Loop over the wavelengths
+        for index in self.wavelength_indices(min_wavelength, max_wavelength):
+
+            # Get the wavelength
+            wavelength = self.wavelength_grid[index]
+
+            # Get the data array (all-cell data for this wavelength)
+            array = self.get_spatial_array(index)
+            if inverse_mask is not None:
+                array = array[inverse_mask]
+                if weights is not None: weights = weights[inverse_mask]
+
+            # Filter out NaNs and infs
+            finite = np.isfinite(array)
+            array = array[finite]
+            if weights is not None: weights = weights[finite]
+
+            # Calculate the value
+            if measure == "sum": y_value = np.sum(array)
+            elif measure == "mean": y_value = np.nanmean(array)
+            elif measure == "median": y_value = np.nanmedian(array)
+            elif measure == "stddev": y_value = np.nanstd(array)
+            elif measure == "max": y_value = np.nanmax(array)
+            elif measure == "min": y_value = np.nanmin(array)
+            else: raise ValueError("Invalid value for 'measure'")
+
+            # Add an entry to the curve
+            curve.add_point(wavelength, y_value)
+
+        # Return the curve
+        return curve
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def save(self):
@@ -1560,7 +1682,13 @@ class SpectralData3D(object):
         log.debug("Saving the spectral 3D data in table format to '" + path + "' ...")
 
         # Set the columns
-        columns = [self.x, self.y, self.z]
+        #if self.has_xyz_file:
+        #else:
+
+        # Set columns
+        if self.has_xyz_file: columns = [[], [], []]
+        else: columns = [self.x, self.y, self.z]
+
         names = [x_coordinate_name, y_coordinate_name, z_coordinate_name]
         #if self.has_weights:
         #    columns.append(self.weights)
@@ -1571,6 +1699,7 @@ class SpectralData3D(object):
 
         # Set units
         units = [self.length_unit, self.length_unit, self.length_unit]
+
         #if self.has_weights: units.append(None)
 
         # Debugging
@@ -1593,6 +1722,13 @@ class SpectralData3D(object):
 
         # Set the data filepath
         table.meta["filepath"] = self.filepath
+
+        # Set the XYZ filepath
+        if self.has_xyz_file:
+            table.meta["xyz_filepath"] = self.xyz_filepath
+            table.meta["x_colname"] = self.x_colname
+            table.meta["y_colname"] = self.y_colname
+            table.meta["z_colname"] = self.z_colname
 
         # Set the wavelengths
         table.meta["wavelength_unit"] = self.wavelength_unit
@@ -1624,10 +1760,29 @@ class SpectralData3D(object):
         # Get the units
         length_unit = table.get_column_unit(x_coordinate_name.capitalize())
 
-        # Get the data
-        x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit)
-        y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit)
-        z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit)
+        # Get the xyz data from other file
+        if "xyz_filepath" in table.meta:
+
+            # Get filepath
+            xyz_filepath = table.meta["xyz_filepath"]
+            x_colname = table.meta["x_colname"]
+            y_colname = table.meta["y_colname"]
+            z_colname = table.meta["z_colname"]
+
+            # Load x y z
+            xyz_colnames = fs.get_column_names(xyz_filepath)
+            x_index = xyz_colnames.index(x_colname)
+            y_index = xyz_colnames.index(y_colname)
+            z_index = xyz_colnames.index(z_colname)
+            x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index])
+
+        # Get xyz data from columns
+        else:
+            xyz_filepath = None
+            x_colname, y_colname, z_colname = "x", "y", "z" # default
+            x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit)
+            y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit)
+            z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit)
         #values = table.get_column_array(column_name, unit=unit)
         #weights = table.get_column_array(weight_name.capitalize()) if weight_name.capitalize() in table.colnames else None
 
@@ -1650,7 +1805,8 @@ class SpectralData3D(object):
 
         # Create
         # name, x, y, z, wavelength_grid, filepath, length_unit=None, unit=None, description=None, distance=None, solid_angle=None
-        data = cls(name, x, y, z, wavelength_grid, filepath, length_unit=length_unit, unit=unit, description=description, distance=distance, solid_angle=solid_angle)
+        data = cls(name, x, y, z, wavelength_grid, filepath, length_unit=length_unit, unit=unit, description=description,
+                   distance=distance, solid_angle=solid_angle, xyz_filepath=xyz_filepath, x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 
         # Set the path
         data.path = path

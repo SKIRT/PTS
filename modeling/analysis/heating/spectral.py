@@ -18,8 +18,8 @@ from ....core.tools import filesystem as fs
 from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty, memoize_method, lazyfileproperty
 from ....magic.core.image import Image
+from ....magic.core.frame import Frame
 from ....magic.core.datacube import DataCube
-from ....magic.core.list import uniformize
 from ....core.units.parsing import parse_quantity
 from ....core.basics.curve import WavelengthCurve
 from ....magic.tools import plotting
@@ -1113,6 +1113,183 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def total_absorption_luminosity_name(self):
+        return "Absorption luminosity (total)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_absorption_luminosity_description(self):
+        return "Absorption luminosity in dust cells for the total simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_absorption_curve_path(self):
+        return fs.join(self.cells_path, "total_curve.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_spectral_absorption_curve(self):
+        return fs.is_file(self.total_spectral_absorption_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "total_spectral_absorption_curve_path", True, write=True)
+    def total_spectral_absorption_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_spectral_absorption_data.get_spectral_curve(self.total_absorption_luminosity_name, measure="sum",
+                                                                      description=self.total_absorption_luminosity_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_absorption_luminosity_name(self):
+        return "Absorption luminosity (unevolved)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_absorption_luminosity_description(self):
+        return "Absorption luminosity in dust cells for the unevolved simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_absorption_curve_path(self):
+        return fs.join(self.cells_path, "unevolved_curve.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_absorption_curve(self):
+        return fs.is_file(self.unevolved_spectral_absorption_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "unevolved_spectral_absorption_curve_path", True, write=True)
+    def unevolved_spectral_absorption_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_spectral_absorption_data.get_spectral_curve(self.unevolved_absorption_luminosity_name, measure="sum",
+                                                                          description=self.unevolved_absorption_luminosity_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_absorption_fraction_curve_path(self):
+        return fs.join(self.curves_path, "cells_absorption.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_absorption_fraction_curve(self):
+        return fs.is_file(self.unevolved_spectral_absorption_fraction_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_absorption_fraction_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_absorption_fraction_description(self):
+        return "Fraction of dust absorption attributed by unevolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_absorption_curve_wavelengths(self):
+        return self.unevolved_spectral_absorption_curve.wavelengths(unit=self.wavelength_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_absorption_curve_unit(self):
+        return self.unevolved_spectral_absorption_curve.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_absorption_curve_values(self):
+        return self.total_spectral_absorption_curve.values(unit=self.spectral_absorption_curve_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_absorption_curve_values(self):
+        return self.unevolved_spectral_absorption_curve.values(unit=self.spectral_absorption_curve_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty("WavelengthCurve", "unevolved_spectral_absorption_fraction_curve_path", True, write=False)
+    def unevolved_spectral_absorption_fraction_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get wavelengths and values
+        wavelengths = self.spectral_absorption_curve_wavelengths
+        fractions = self.unevolved_spectral_absorption_curve_values / self.total_spectral_absorption_curve_values
+
+        # Create the curve and return
+        return WavelengthCurve.from_wavelengths_and_values(self.unevolved_absorption_fraction_name, wavelengths, fractions,
+                                                           wavelength_unit=self.wavelength_unit, description=self.unevolved_absorption_fraction_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_spectral_absorption_fraction_curve_values(self):
+        return self.unevolved_spectral_absorption_fraction_curve.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_absorption_fraction_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_absorption_fraction_description(self):
+        return "Fraction of dust absorption attributed by evolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evolved_spectral_absorption_fraction_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get wavelengths and values
+        wavelengths = self.spectral_absorption_curve_wavelengths
+        fractions = 1. - self.unevolved_spectral_absorption_fraction_curve_values
+
+        # Create the curve and return
+        return WavelengthCurve.from_wavelengths_and_values(self.evolved_absorption_fraction_name, wavelengths, fractions,
+                                                           description=self.evolved_absorption_fraction_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
     def absorption_fractions_name(self):
         return "Funev_absorption"
 
@@ -1143,6 +1320,67 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True, cell_based=True)
             #image.saveto(self.get_unevolved_absorption_fraction_map_path_for_filter(fltr))
             return image
+
+    # -----------------------------------------------------------------
+
+    def fix_map(self, frame, ncells):
+
+        """
+        This function ...
+        :param frame:
+        :param ncells:
+        :return:
+        """
+
+        # Copy
+        interpolated = frame.copy()
+
+        # Get outside nans
+        outside_nans = interpolated.nans.largest()
+        not_nans = outside_nans.inverse()
+        not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
+        do_nans = not_nans.largest().inverse()
+
+        # Get mask
+        where = ncells.where_smaller_than(self.config.min_ncells)
+
+        # Put pixels to NaN
+        interpolated.replace_by_nans(where)
+
+        # Interpolate nans
+        interpolated.interpolate_nans(sigma=2., error_on_max=False)
+        interpolated.replace_by_nans(do_nans)
+
+        # Return the interpolated frame
+        return interpolated
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_absorption_fraction_map_fixed_path_for_filter(self, fltr):
+        return fs.join(self.cells_path, "absorption_" + str(fltr) + "_fixed.fits")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_absorption_fraction_map_fixed_for_filter(self, fltr):
+        return fs.is_file(self.get_unevolved_absorption_fraction_map_fixed_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    @memoize_method
+    def get_unevolved_absorption_fraction_map_fixed_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        if self.has_unevolved_absorption_fraction_map_fixed_for_filter(fltr): return Frame.from_file(self.get_unevolved_absorption_fraction_map_fixed_path_for_filter(fltr))
+        else:
+            #name = self.absorption_fractions_name + "_" + str(fltr) + "_fixed"
+            frame = self.get_unevolved_absorption_fraction_frame_for_filter(fltr)
+            ncells = self.get_unevolved_absorption_fraction_ncells_for_filter(fltr)
+            return self.fix_map(frame, ncells)
 
     # -----------------------------------------------------------------
     #   EVOLVED (OLD)
@@ -2041,6 +2279,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Emission
         self.write_curves_emission()
 
+        # Emission data
+        self.write_curves_emission_data()
+
+        # Absorption data
+        self.write_curves_absorption_data()
+
     # -----------------------------------------------------------------
 
     def write_curves_absorption(self):
@@ -2097,6 +2341,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Writing the curve of dust emission from the earth projection ...")
+
         # Save
         self.curve_earth_emission.saveto(self.curve_earth_emission_path)
 
@@ -2113,6 +2360,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
+
+        # Debugging
+        log.debug("Writing the curve of dust absorption from the earth projection ...")
 
         # Save
         self.curve_earth_absorption.saveto(self.curve_earth_absorption_path)
@@ -2131,6 +2381,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Writing the curve of dust emission from the faceon projection ...")
+
         # Save
         self.curve_faceon_emission.saveto(self.curve_faceon_emission_path)
 
@@ -2147,6 +2400,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         This function ...
         :return:
         """
+
+        # Debugging
+        log.debug("Writing the curve of dust absorption from the faceon projection ...")
 
         # Save
         self.curve_faceon_absorption.saveto(self.curve_faceon_absorption_path)
@@ -2165,6 +2421,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Writing the curve of dust emission from the edgeon projection ...")
+
         # Save
         self.curve_edgeon_emission.saveto(self.curve_edgeon_emission_path)
 
@@ -2182,8 +2441,38 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
+        # Debugging
+        log.debug("Writing the curve of dust absorption from the edgeon projection ...")
+
         # Save
         self.curve_edgeon_absorption.saveto(self.curve_edgeon_absorption_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curves_emission_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Writing the curve of dust emission from the cell data ...")
+
+    # -----------------------------------------------------------------
+
+    def write_curves_absorption_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Writing the curve of dust absorption from the cell data ...")
+
+        # Save
+        self.unevolved_spectral_absorption_curve.saveto(self.unevolved_spectral_absorption_curve_path)
 
     # -----------------------------------------------------------------
 
@@ -2205,6 +2494,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Absorption from 3D data
         self.write_maps_absorption_data()
+
+        # Absorption from 3D data, fixed
+        self.write_maps_absorption_data_fixed()
+
+        # Absorption differences
+        self.write_maps_absorption_differences()
 
     # -----------------------------------------------------------------
 
@@ -2550,34 +2845,19 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    #def get_spectral_map_absorption_data(self, fltr):
-    #    return self.get_unevolved_absorption_fraction_map_for_filter(fltr).primary
-
-    # -----------------------------------------------------------------
-
-    #def get_spectral_ncells_absorption_data(self, fltr):
-    #    return self.get_unevolved_absorption_fraction_map_for_filter(fltr).frames["ncells"]
-
-    # -----------------------------------------------------------------
-
-    #def get_spectral_stddev_absorption_data(self, fltr):
-    #    return self.get_unevolved_absorption_fraction_map_for_filter(fltr).frames["stddev"]
-
-    # -----------------------------------------------------------------
-
-    #def get_spectral_map_absorption_data_path(self, fltr):
-    #    return fs.join(self.maps_path, "data_absorption_" + str(fltr) + ".fits")
-
-    # -----------------------------------------------------------------
-
-    #def has_spectral_map_absorption_data(self, fltr):
-    #    return fs.is_file(self.get_spectral_map_absorption_data_path(fltr))
-
-    # -----------------------------------------------------------------
-
     # for plotting
     def get_unevolved_absorption_fraction_frame_for_filter(self, fltr):
         return self.get_unevolved_absorption_fraction_map_for_filter(fltr).primary
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_absorption_fraction_ncells_for_filter(self, fltr):
+        return self.get_unevolved_absorption_fraction_map_for_filter(fltr).frames["ncells"]
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_absorption_fraction_stddev_for_filter(self, fltr):
+        return self.get_unevolved_absorption_fraction_map_for_filter(fltr).frames["stddev"]
 
     # -----------------------------------------------------------------
 
@@ -2605,6 +2885,76 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
             # Write
             image.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_maps_absorption_data_fixed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the fixed maps of dust absorption heating fraction from the 3D data for different filters ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if fixed map exists
+            if self.has_unevolved_absorption_fraction_map_fixed_for_filter(fltr): continue
+
+            # Get the map
+            frame = self.get_unevolved_absorption_fraction_map_fixed_for_filter(fltr)
+
+            # Get the path
+            path = self.get_unevolved_absorption_fraction_map_fixed_path_for_filter(fltr)
+
+            # Write
+            frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def get_unevolved_absorption_fraction_differences_path_for_filter(self, fltr):
+        return fs.join(self.cells_path, "differences_absorption_" + str(fltr) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def has_unevolved_absorption_fraction_differences_for_filter(self, fltr):
+        return fs.is_file(self.get_unevolved_absorption_fraction_differences_path_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def write_maps_absorption_differences(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the difference between the dust heating fraction maps from the 3D data and the projected face-on view ...")
+
+        # Loop over the filters
+        for fltr in self.config.absorption_filters:
+
+            # Check if difference map exists
+            if self.has_unevolved_absorption_fraction_differences_for_filter(fltr): continue
+
+            # Get the projected map
+            projected_map = self.get_spectral_map_absorption_faceon(fltr)
+
+            # Get the map from the data
+            data_map = self.get_unevolved_absorption_fraction_frame_for_filter(fltr)
+
+            # Calculate ratio
+            ratio = data_map / projected_map
+
+            # Get the path
+            path = self.get_unevolved_absorption_fraction_differences_path_for_filter(fltr)
+
+            # Write ratio
+            ratio.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2997,7 +3347,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             if self.has_unevolved_absorption_fraction_map_plot_for_filter(fltr): continue
 
             # Get the frame
-            frame = self.get_unevolved_absorption_fraction_frame_for_filter(fltr)
+            #frame = self.get_unevolved_absorption_fraction_frame_for_filter(fltr)
+            frame = self.get_unevolved_absorption_fraction_map_fixed_for_filter(fltr)
 
             # Get the path
             path = self.get_unevolved_absorption_fraction_map_plot_path_for_filter(fltr)
@@ -3060,6 +3411,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Emission
         self.plot_curves_emission()
+
+        # Absorption data
+        self.plot_curves_absorption_data()
 
     # -----------------------------------------------------------------
 
@@ -3140,7 +3494,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the earth projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_earth_emission, path=self.curve_earth_emission_plot_path, xlog=True, y_label=self.curves_emission_y_label)
+        plotting.plot_curves(self.curves_earth_emission, path=self.curve_earth_emission_plot_path, xlog=True,
+                             y_label=self.curves_emission_y_label, ylimits=self.curve_ylimits)
 
     # -----------------------------------------------------------------
 
@@ -3168,6 +3523,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def curve_ylimits(self):
+        return (0,1,)
+
+    # -----------------------------------------------------------------
+
     def plot_curve_earth_absorption(self):
 
         """
@@ -3179,7 +3540,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the earth projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, xlog=True, y_label=self.curves_absorption_y_label)
+        plotting.plot_curves(self.curves_earth_absorption, path=self.curve_earth_absorption_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
 
     # -----------------------------------------------------------------
 
@@ -3212,7 +3574,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the face-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_faceon_emission, path=self.curve_faceon_emission_plot_path, xlog=True, y_label=self.curves_emission_y_label)
+        plotting.plot_curves(self.curves_faceon_emission, path=self.curve_faceon_emission_plot_path, xlog=True,
+                             y_label=self.curves_emission_y_label, ylimits=self.curve_ylimits)
 
     # -----------------------------------------------------------------
 
@@ -3245,7 +3608,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the face-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, xlog=True, y_label=self.curves_absorption_y_label)
+        plotting.plot_curves(self.curves_faceon_absorption, path=self.curve_faceon_absorption_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
 
     # -----------------------------------------------------------------
 
@@ -3278,7 +3642,8 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust emission from the edge-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_edgeon_emission, path=self.curve_edgeon_emission_plot_path, xlog=True, y_label=self.curves_emission_y_label)
+        plotting.plot_curves(self.curves_edgeon_emission, path=self.curve_edgeon_emission_plot_path, xlog=True,
+                             y_label=self.curves_emission_y_label, ylimits=self.curve_ylimits)
 
     # -----------------------------------------------------------------
 
@@ -3311,7 +3676,36 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the curve of the spectral heating by dust absorption from the edge-on projection ...")
 
         # Plot
-        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True, y_label=self.curves_absorption_y_label)
+        plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_absorption_data(self):
+        return {unevolved_name: self.unevolved_spectral_absorption_fraction_curve, evolved_name: self.evolved_spectral_absorption_fraction_curve}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_absorption_data_plot_path(self):
+        return fs.join(self.curves_path, "absorption_cells.pdf")
+
+    # -----------------------------------------------------------------
+
+    def plot_curves_absorption_data(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # Inform the user
+        log.info("Plotting the curve of the spectral heating by dust absorption from the cell data ...")
+
+        # Plot
+        plotting.plot_curves(self.curves_absorption_data, path=self.curve_absorption_data_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
 
 # -----------------------------------------------------------------
 

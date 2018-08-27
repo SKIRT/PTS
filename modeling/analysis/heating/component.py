@@ -128,6 +128,12 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_properties_path(self):
+        return self.total_contribution_cell_properties_filepath
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_properties(self):
         return self.total_contribution_data.cell_properties
 
@@ -751,6 +757,40 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_coordinates_filepath(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # SKIRT7
+        if self.total_contribution_data.has_absorption: return self.total_contribution_absorption_filepath
+
+        # SKIRT8
+        else: return self.cell_properties_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_x_coordinates_colname(self):
+        return "X coordinate of cell center"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_y_coordinates_colname(self):
+        return "Y coordinate of cell center"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_z_coordinates_colname(self):
+        return "Z coordinate of cell center"
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_x_coordinates(self):
 
         """
@@ -759,7 +799,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         # SKIRT7
-        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data["X coordinate of cell center"])
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_x_coordinates_colname])
 
         # SKIRT8
         else: return self.model.cell_x_coordinates
@@ -775,7 +815,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         # SKIRT7
-        if self.total_contribution_data.has_absorption : return np.asarray(self.total_contribution_absorption_data["Y coordinate of cell center"])
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_y_coordinates_colname])
 
         # SKIRT8
         else: return self.model.cell_y_coordinates
@@ -791,7 +831,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         # SKIRT7
-        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data["Z coordinate of cell center"])
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_z_coordinates_colname])
 
         # SKIRT8
         else: return self.model.cell_z_coordinates

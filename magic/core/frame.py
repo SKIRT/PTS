@@ -200,24 +200,12 @@ class Frame(NDDataArray):
 
     @property
     def shape(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PixelShape.from_tuple(super(Frame, self).shape)
 
     # -----------------------------------------------------------------
 
     @property
     def filter_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return str(self.filter) if self.filter is not None else None
 
     # -----------------------------------------------------------------
@@ -246,13 +234,6 @@ class Frame(NDDataArray):
 
     @psf_filter.setter
     def psf_filter(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
         if types.is_string_type(value): value = parse_filter(value)
         self._psf_filter = value
 
@@ -260,12 +241,6 @@ class Frame(NDDataArray):
 
     @property
     def psf_filter_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return str(self.psf_filter) if self.psf_filter is not None else None
 
     # -----------------------------------------------------------------
@@ -287,62 +262,30 @@ class Frame(NDDataArray):
 
     @fwhm.setter
     def fwhm(self, value):
-
-        """
-        This function ...
-        :param value: 
-        :return: 
-        """
-
         self._fwhm = value
 
     # -----------------------------------------------------------------
 
     @property
     def has_fwhm(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fwhm is not None
 
     # -----------------------------------------------------------------
 
     @property
     def data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._data
 
     # -----------------------------------------------------------------
 
     @NDDataArray.wcs.setter
     def wcs(self, wcs):
-
-        """
-        This function ...
-        :param wcs:
-        :return:
-        """
-
         self._wcs = wcs
 
     # -----------------------------------------------------------------
 
     @property
     def has_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wcs is not None
 
     # -----------------------------------------------------------------
@@ -2350,6 +2293,12 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def initialize_ones(cls, *args, **kwargs):
+        return cls.ones(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def zeros(cls, shape, wcs=None, filter=None, unit=None):
 
         """
@@ -2363,6 +2312,12 @@ class Frame(NDDataArray):
         # Create a new frame
         new = cls(np.zeros(shape), wcs=wcs, filter=filter, unit=unit)
         return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize_zeroes(cls, *args, **kwargs):
+        return cls.zeros(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2631,6 +2586,28 @@ class Frame(NDDataArray):
         """
 
         return Cutout.cutout(self, position, radius)
+
+    # -----------------------------------------------------------------
+
+    def flip_horizontally(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._data = np.fliplr(self._data)
+
+    # -----------------------------------------------------------------
+
+    def flip_vertically(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._data = np.flipud(self._data)
 
     # -----------------------------------------------------------------
 

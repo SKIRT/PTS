@@ -66,12 +66,6 @@ def write_cache_path(directory_path, cache_path):
 # -----------------------------------------------------------------
 
 def get_all_output_cwd(**kwargs):
-
-    """
-    This function ...
-    :return:
-    """
-
     return get_all_output(fs.cwd(), **kwargs)
 
 # -----------------------------------------------------------------
@@ -112,101 +106,41 @@ def get_all_output(path, out_name="out", extr_name="extr", plot_name="plot", mis
 # -----------------------------------------------------------------
 
 def get_output_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return SimulationOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_output(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return SimulationOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_extraction_output_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return ExtractionOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_extraction(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return ExtractionOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_plotting_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return PlottingOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_plotting(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return PlottingOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_misc_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return MiscOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_misc(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return MiscOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
@@ -216,6 +150,7 @@ output_types = Map()
 output_types.isrf = "isrf"
 output_types.absorption = "abs"
 output_types.spectral_absorption = "specabs"
+output_types.spectral_emission = "specem"
 output_types.temperature = "temp"
 output_types.seds = "sed"
 output_types.images = "image"
@@ -249,6 +184,7 @@ output_type_choices = dict()
 output_type_choices[output_types.isrf] = "interstellar radiation field strength"
 output_type_choices[output_types.absorption] = "absorption luminosities"
 output_type_choices[output_types.spectral_absorption] = "absorption spectra"
+output_type_choices[output_types.spectral_emission] = "emission spectra"
 output_type_choices[output_types.temperature] = "temperature"
 output_type_choices[output_types.seds] = "all SEDs"
 output_type_choices[output_types.images] = "all datacubes"
@@ -296,6 +232,9 @@ def get_output_type(filename):
 
     ## Spectral absorption
     elif filename.endswith("_ds_specabs.dat"): return output_types.spectral_absorption
+
+    ## Spectral emission
+    elif filename.endswith("_ds_specem.dat"): return output_types.spectral_emission
 
     ## Temperature
     elif "_ds_temp" in filename and filename.endswith(".fits"): return output_types.temperature
@@ -1585,6 +1524,8 @@ class SimulationOutput(Output):
         return self.get_single_file(self._output_types.absorption)
 
     # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def nspectral_absorption(self):
@@ -1614,6 +1555,40 @@ class SimulationOutput(Output):
     def single_spectral_absorption(self):
         return self.get_single_file(self._output_types.spectral_absorption)
 
+    # -----------------------------------------------------------------
+    # SPECTRAL EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def nspectral_emission(self):
+        return self.get_nfiles(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_spectral_emission(self):
+        return self.has_files(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_spectral_emission(self):
+        return self.has_single_file(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_emission(self):
+        return self.get_files(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_spectral_emission(self):
+        return self.get_single_file(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+    # TEMPERATURE
     # -----------------------------------------------------------------
 
     @property

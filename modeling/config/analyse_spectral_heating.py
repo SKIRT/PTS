@@ -38,3 +38,9 @@ definition.add_optional("absorption_filters", "lazy_broad_band_filter_list", "fi
 definition.add_flag("spectral_convolution", "use spectral convolution for maps from the cubes", False)
 
 # -----------------------------------------------------------------
+
+# For creating interpolated maps
+definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated maps of the heating fraction", 5)
+definition.add_optional("not_nans_dilation_radius", "positive_real", "radius for dilating not-nans", 3)
+
+# -----------------------------------------------------------------
