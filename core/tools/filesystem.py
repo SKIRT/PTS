@@ -3635,7 +3635,7 @@ def get_columns(filepath, method="numpy", dtype=None, indices=None):
     from ..basics.log import log
 
     # Debugging
-    log.debug("Reading data (this can take while) ...")
+    log.debug("Reading data (this can take a while) ...")
 
     # Using NumPy
     if method == "numpy":
@@ -3718,7 +3718,7 @@ def get_column(filepath, index, dtype, method="numpy"):
     from ..basics.log import log
 
     # Debugging
-    log.debug("Reading data (this can take while) ...")
+    log.debug("Reading data (this can take a while) ...")
 
     # Using NumPy
     if method == "numpy":

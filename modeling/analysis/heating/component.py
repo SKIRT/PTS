@@ -190,8 +190,20 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_contribution_spectral_absorption(self):
+        return self.total_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_contribution_spectral_emission_filepath(self):
         return self.total_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_contribution_spectral_emission(self):
+        return self.total_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   LOGFILES
@@ -319,8 +331,20 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_contribution_spectral_absorption(self):
+        return self.old_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_contribution_spectral_emission_filepath(self):
         return self.old_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_contribution_spectral_emission(self):
+        return self.old_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   LOGFILES
@@ -448,8 +472,20 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_contribution_spectral_absorption(self):
+        return self.young_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_contribution_spectral_emission_filepath(self):
         return self.young_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_contribution_spectral_emission(self):
+        return self.young_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   LOGFILES
@@ -577,8 +613,20 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_ionizing_contribution_spectral_absorption(self):
+        return self.ionizing_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_contribution_spectral_emission_filepath(self):
         return self.ionizing_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_contribution_spectral_emission(self):
+        return self.ionizing_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   LOGFILES
@@ -703,11 +751,23 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
     def unevolved_contribution_spectral_absorption_filepath(self):
         return self.unevolved_contribution_data.spectral_absorption_path
 
-    #  -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_contribution_spectral_absorption(self):
+        return self.unevolved_contribution_data.has_spectral_absorption
+
+    # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_spectral_emission_filepath(self):
         return self.unevolved_contribution_data.spectral_emission_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_contribution_spectral_emission(self):
+        return self.unevolved_contribution_data.has_spectral_emission
 
     # -----------------------------------------------------------------
     #   LOGFILES

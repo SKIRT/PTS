@@ -1509,8 +1509,8 @@ class SpectralData3D(object):
         :return: 
         """
 
-        # Read the data
-        if self.has_spectral_array(i): self.spectral_data[i] = fs.get_row(self.filepath, i)
+        # Read the data if necessary
+        if not self.has_spectral_array(i): self.spectral_data[i] = fs.get_row(self.filepath, i)
 
         # Return
         return self.spectral_data[i]
@@ -1548,8 +1548,8 @@ class SpectralData3D(object):
         :return: 
         """
 
-        # Read the data
-        if self.has_spatial_array(j): self.spatial_data[j] = fs.get_column(self.filepath, j, float)
+        # Read the data if necessary
+        if not self.has_spatial_array(j): self.spatial_data[j] = fs.get_column(self.filepath, j, float)
 
         # Return
         return self.spatial_data[j]
