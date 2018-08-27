@@ -1220,12 +1220,13 @@ class SpectralData3D(object):
         """
 
         # Load the header
-        names = fs.get_column_names(path)
+        names, column_units = fs.get_column_names(path, return_units=True)
+        #print(names)
+        #print(column_units)
 
         # Get wavelengths
         wavelengths = []
         if strings.all_contains(names, "for lambda = "):
-
             # Loop over the lines
             for colname in names:
                 wavelength_string = colname.split("for lambda = ")[1]
@@ -1233,15 +1234,22 @@ class SpectralData3D(object):
                 wavelengths.append(wavelength)
 
         # Load the data
+        #print(wavelengths)
         #if name is None:
         common_name = strings.common_part(*names)
         if "for lambda =" in common_name: common_name = common_name.split("for lambda =")[0].strip()
-        if common_name.endswith(")"):
-            common_name, unit_string = strings.split_at_last(common_name[:-1], "(")
-            common_name.strip()
+        #print(common_name)
+        #if common_name.endswith(")"):
+        #    common_name, unit_string = strings.split_at_last(common_name[:-1], "(")
+        #    common_name.strip()
+        #    unit = u(unit_string)
+        #else: unit = None
+        if sequences.all_none(column_units): unit = None
+        else:
+            unit_string = sequences.get_all_equal_value(column_units)
             unit = u(unit_string)
-        else: unit = None
         if name is None: name = common_name
+        #print("UNIT:", unit)
 
         # Create wavelength grid
         wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths)
@@ -1631,6 +1639,9 @@ class SpectralData3D(object):
 
         # Load all data from file
         if load_all: self.load_data()
+
+        # Debugging
+        log.debug("Creating curve by combining spatial data for each wavelength ...")
 
         # Show progress bar
         with Bar(label='', expected_size=nwavelengths, every=1, add_datetime=True) as bar:

@@ -241,6 +241,10 @@ input_replacements["TiB"] = "TB"
 
 # -----------------------------------------------------------------
 
+dimensionless_unit_strings = ["dimensionless", "fraction", "dimless", "none", "None", "no", "no_unit", "scalar", "n.a."]
+
+# -----------------------------------------------------------------
+
 def get_physical_type(unit_string):
 
     """
@@ -292,7 +296,10 @@ def clean_unit_string(string):
     for key in input_replacements:
         string = string.replace(key, input_replacements[key])
     if string.count("(") == 1 and string.count(")") == 1 and string.startswith("(") and string.endswith(")"): string = string[1:-1]
-    return string
+
+    # Return
+    if string in dimensionless_unit_strings: return ""
+    else: return string
 
 # -----------------------------------------------------------------
 

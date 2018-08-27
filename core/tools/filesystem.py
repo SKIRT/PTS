@@ -2386,14 +2386,17 @@ def get_header_labels(filepath):
 
 # -----------------------------------------------------------------
 
-def get_column_names(filepath, lower=False):
+def get_column_names(filepath, lower=False, return_units=False):
 
     """
     This function ...
     :param filepath:
     :param lower:
+    :param return_units:
     :return:
     """
+
+    from ..units.utils import clean_unit_string
 
     lines = get_header_lines(filepath)
     nlines = len(lines)
@@ -2407,6 +2410,8 @@ def get_column_names(filepath, lower=False):
         splitted = strings.split_except_within_round_brackets(lines[0])
         # Sanitize
         names = []
+        column_units = []
+        #print(splitted)
         for part in splitted:
             #print(part)
 
@@ -2415,23 +2420,36 @@ def get_column_names(filepath, lower=False):
                 if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
                 else: names.append(part.split("[")[0].strip())
 
+                unit = part.split("[")[1].split("]")[0]
+                unit = clean_unit_string(unit)
+                if unit == "": unit = None
+                #print(unit)
+                column_units.append(unit)
+
             elif strings.is_wrapped_by_squared_brackets(part): pass # this is just the unit of the previous column name
             else: names.append(part)
+
+        #print(names)
 
         # Check
         final_names = []
         for index in range(len(names)):
+
             name = names[index]
             #print(name)
-            if strings.is_wrapped_by_round_brackets(name):
+
+            if strings.is_wrapped_by_round_brackets(name): # this part of a formula e.g. log10(F_X) of the previous column
+
                 nname = name[1:-1]
                 if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
                 final_names[-1] += "(" + nname + ")"
+
             else: final_names.append(name)
 
         # Set the names
         column_names = final_names
 
+    # Header has lines stating the column index and names
     elif strings.any_startswith(lines, "column"):
 
         #print("2")
@@ -2453,7 +2471,8 @@ def get_column_names(filepath, lower=False):
         else: ncolumns = maxno - 1
 
         #print(ncolumns)
-        names = [None] * ncolumns
+        column_names = [None] * ncolumns
+        column_units = [None] * ncolumns
         #print(maxno)
 
         # Fill in column names
@@ -2464,12 +2483,12 @@ def get_column_names(filepath, lower=False):
             #print(new_colno, colnames[colno])
 
             name, unit = _get_name_and_unit(colnames[colno])
+            if unit is not None: unit = clean_unit_string(unit)
+            if unit == "": unit = None
             #print(name, unit)
             #names[new_colno] = colnames[colno]
-            names[new_colno] = name
-
-        #return names
-        column_names = names
+            column_names[new_colno] = name #if remove_units else colnames[colno]
+            column_units[new_colno] = unit
 
     # Return splitted last line of the header
     else:
@@ -2477,9 +2496,13 @@ def get_column_names(filepath, lower=False):
         #print("3")
         #return lines[-1].split()
         column_names = lines[-1].split()
+        column_units = [None] * len(column_names)
 
-    # Return the names
-    if lower: return [name.lower() for name in column_names]
+    # Make lowercase
+    if lower: column_names = [name.lower() for name in column_names]
+
+    # Return
+    if return_units: return column_names, column_units
     else: return column_names
 
 # -----------------------------------------------------------------
@@ -2493,12 +2516,21 @@ def _get_name_and_unit(name_and_unit, capitalize=False):
     :return:
     """
 
-    if "(" in name_and_unit and ")" in name_and_unit:
+    #if "(" in name_and_unit and ")" in name_and_unit:
+    if name_and_unit.count("(") == 1 and name_and_unit.count(")") == 1:
 
         before = name_and_unit.split(" (")[0] # before unit
-        after = name_and_unit.split(" (")[1].split(")")[1] # after unit
+        after = name_and_unit.split(")")[1] # after unit
         name = before.capitalize() + after if capitalize else before + after
         unit = name_and_unit.split(" (")[1].split(")")[0]
+        if "dimensionless" in unit: unit = None
+
+    elif name_and_unit.count("[") == 1 and name_and_unit.count("]") == 1:
+
+        before = name_and_unit.split(" [")[0] # before unit
+        after = name_and_unit.split("]")[1] # after unit
+        name = before.capitalize() + after if capitalize else before + after
+        unit = name_and_unit.split(" [")[1].split("]")[0]
         if "dimensionless" in unit: unit = None
 
     else:

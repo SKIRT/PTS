@@ -1189,12 +1189,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # INTERPOLATED MAPS
     # -----------------------------------------------------------------
 
-    def interpolate_map(self, frame, ncells):
+    def interpolate_map(self, frame, ncells, replace_nans=True):
 
         """
         This function ...
         :param frame:
         :param ncells:
+        :param replace_nans:
         :return:
         """
 
@@ -1216,9 +1217,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Get mask
         where = ncells.where_smaller_than(self.config.min_ncells)
+        where = where * do_nans.inverse()  # don't interpolate outside (where ncells = 0)
 
         # plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
         # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+
+        # Replace NaNs to zero that have to stay NaNs (don't interpolate)
+        if replace_nans: interpolated[do_nans] = 0.0
 
         # Put pixels to NaN
         interpolated.replace_by_nans(where)
@@ -1227,7 +1232,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # exit()
 
         # Interpolate nans
-        interpolated.interpolate_nans(sigma=2., error_on_max=False)
+        interpolated.interpolate_nans(sigma=2., error_on_max=replace_nans)
         interpolated.replace_by_nans(do_nans)
 
         # Return the interpolated frame

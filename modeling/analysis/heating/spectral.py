@@ -1449,6 +1449,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def total_spectral_absorption_curve_values(self):
+        #print(self.total_spectral_absorption_curve.unit, self.spectral_absorption_curve_unit)
         return self.total_spectral_absorption_curve.values(unit=self.spectral_absorption_curve_unit, asarray=True)
 
     # -----------------------------------------------------------------
@@ -1596,29 +1597,38 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Copy
-        interpolated = frame.copy()
+        fixed = frame.copy()
+
+        # Replace invalid values by NaN
+        fixed.replace_negatives_by_nans()
+        fixed.replace_infs_by_nans()
+        fixed.replace_by_nans_where_greater_than(1.1)
+        fixed.cutoff_greater(1.)
 
         # Get outside nans
-        outside_nans = interpolated.nans.largest()
+        outside_nans = fixed.nans.largest()
         not_nans = outside_nans.inverse()
         not_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
         do_nans = not_nans.largest().inverse()
 
         # Get mask
         where = ncells.where_smaller_than(self.config.min_ncells)
+        where = where * do_nans.inverse() # don't interpolate outside (where ncells = 0)
 
         # Replace NaNs to zero that have to stay NaNs (don't interpolate)
-        if replace_nans: interpolated[do_nans] = 0.0
+        if replace_nans: fixed[do_nans] = 0.0
+        #plotting.plot_mask(where, title="where")
+        #plotting.plot_mask(do_nans, title="other")
 
         # Put pixels to NaN
-        interpolated.replace_by_nans(where)
+        fixed.replace_by_nans(where)
 
         # Interpolate nans
-        interpolated.interpolate_nans(sigma=2., error_on_max=replace_nans)
-        interpolated.replace_by_nans(do_nans)
+        fixed.interpolate_nans(sigma=2., error_on_max=replace_nans)
+        fixed.replace_by_nans(do_nans)
 
         # Return the interpolated frame
-        return interpolated
+        return fixed
 
     # -----------------------------------------------------------------
 
