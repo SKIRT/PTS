@@ -628,6 +628,60 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                                            wavelength_unit=self.wavelength_unit)
 
     # -----------------------------------------------------------------
+
+    @property
+    def curve_earth_absorption_seds_path(self):
+        return fs.join(self.curves_path, "earth_absorption_seds.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_earth_absorption_seds(self):
+        return fs.is_file(self.curve_earth_absorption_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "curve_earth_absorption_seds_path", True, write=False)
+    def curve_earth_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # LOOKING IN ABSORBED STELLAR WAVELENGTHS
+        return 0.5 * (self.unevolved_dust_absorption_sed_earth + (self.total_dust_absorption_sed_earth
+                - self.evolved_dust_absorption_sed_earth)) / self.total_dust_absorption_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_absorption_seds_wavelengths(self):
+        return self.curve_earth_absorption_seds.wavelengths(asarray=True, unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_absorption_seds_values(self):
+        return self.curve_earth_absorption_seds.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_absorption_evolved_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthCurve.from_wavelengths_and_values(self.curve_earth_absorption_evolved_name,
+                                                           self.curve_earth_absorption_seds_wavelengths,
+                                                           1. - self.curve_earth_absorption_seds_values,
+                                                           description=self.curve_earth_absorption_evolved_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
     #   FACEON
     # -----------------------------------------------------------------
 
@@ -706,6 +760,60 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                                            wavelength_unit=self.wavelength_unit)
 
     # -----------------------------------------------------------------
+
+    @property
+    def curve_faceon_absorption_seds_path(self):
+        return fs.join(self.curves_path, "faceon_absorption_seds.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_faceon_absorption_seds(self):
+        return fs.is_file(self.curve_faceon_absorption_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "curve_faceon_absorption_seds_path", True, write=False)
+    def curve_faceon_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # LOOKING IN ABSORBED STELLAR WAVELENGTHS
+        return 0.5 * (self.unevolved_dust_absorption_sed_faceon + (self.total_dust_absorption_sed_faceon
+                - self.evolved_dust_absorption_sed_faceon)) / self.total_dust_absorption_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon_absorption_seds_wavelengths(self):
+        return self.curve_faceon_absorption_seds.wavelengths(asarray=True, unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon_absorption_seds_values(self):
+        return self.curve_faceon_absorption_seds.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon_absorption_evolved_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthCurve.from_wavelengths_and_values(self.curve_faceon_absorption_evolved_name,
+                                                           self.curve_faceon_absorption_seds_wavelengths,
+                                                           1. - self.curve_faceon_absorption_seds_values,
+                                                           description=self.curve_faceon_absorption_evolved_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
     #   EDGEON
     # -----------------------------------------------------------------
 
@@ -780,6 +888,60 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return WavelengthCurve.from_wavelengths_and_values(self.curve_edgeon_absorption_evolved_name,
                                                            self.curve_edgeon_absorption_wavelengths,
                                                            1. - self.curve_edgeon_absorption_values,
+                                                           description=self.curve_edgeon_absorption_evolved_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_edgeon_absorption_seds_path(self):
+        return fs.join(self.curves_path, "edgeon_absorption_seds.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_edgeon_absorption_seds(self):
+        return fs.is_file(self.curve_edgeon_absorption_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "curve_edgeon_absorption_seds_path", True, write=False)
+    def curve_edgeon_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # LOOKING IN ABSORBED STELLAR WAVELENGTHS
+        return 0.5 * (self.unevolved_dust_absorption_sed_edgeon + (self.total_dust_absorption_sed_edgeon
+                - self.evolved_dust_absorption_sed_edgeon)) / self.total_dust_absorption_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon_absorption_seds_wavelengths(self):
+        return self.curve_edgeon_absorption_seds.wavelengths(asarray=True, unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon_absorption_seds_values(self):
+        return self.curve_edgeon_absorption_seds.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon_absorption_evolved_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthCurve.from_wavelengths_and_values(self.curve_edgeon_absorption_evolved_name,
+                                                           self.curve_edgeon_absorption_seds_wavelengths,
+                                                           1. - self.curve_edgeon_absorption_seds_values,
                                                            description=self.curve_edgeon_absorption_evolved_description,
                                                            wavelength_unit=self.wavelength_unit)
 
@@ -863,6 +1025,58 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                                            wavelength_unit=self.wavelength_unit)
 
     # -----------------------------------------------------------------
+
+    @property
+    def curve_earth_emission_seds_path(self):
+        return fs.join(self.curves_path, "earth_emission_seds.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_earth_emission_seds(self):
+        return fs.is_file(self.curve_earth_emission_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "curve_earth_emission_seds_path", True, write=False)
+    def curve_earth_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # LOOKING IN DUST EMISSION WAVELENGTHS
+        return 0.5 * (self.unevolved_dust_emission_sed_earth + (self.total_dust_emission_sed_earth -
+                    self.evolved_dust_emission_sed_earth)) / self.total_dust_emission_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_emission_seds_wavelengths(self):
+        return self.curve_earth_emission_seds.wavelengths(asarray=True, unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_emission_seds_values(self):
+        return self.curve_earth_emission_seds.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_earth_emission_evolved_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthCurve.from_wavelengths_and_values(self.curve_earth_emission_evolved_name, self.curve_earth_emission_seds_wavelengths,
+                                                           1. - self.curve_earth_emission_seds_values, description=self.curve_earth_emission_evolved_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
     #   FACEON
     # -----------------------------------------------------------------
 
@@ -941,6 +1155,60 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                                            wavelength_unit=self.wavelength_unit)
 
     # -----------------------------------------------------------------
+
+    @property
+    def curve_faceon_emission_seds_path(self):
+        return fs.join(self.curves_path, "faceon_emission_seds.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_faceon_emission_seds(self):
+        return fs.is_file(self.curve_faceon_emission_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "curve_faceon_emission_seds_path")
+    def curve_faceon_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # LOOKING IN DUST EMISSION WAVELENGTHS
+        return 0.5 * (self.unevolved_dust_emission_sed_faceon + (self.total_dust_emission_sed_faceon -
+                self.evolved_dust_emission_sed_faceon)) / self.total_dust_emission_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon_emission_seds_wavelengths(self):
+        return self.curve_faceon_emission_seds.wavelengths(asarray=True, unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon_emission_seds_values(self):
+        return self.curve_faceon_emission_seds.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_faceon_emission_evolved_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthCurve.from_wavelengths_and_values(self.curve_faceon_emission_evolved_name,
+                                                           self.curve_faceon_emission_seds_wavelengths,
+                                                           1. - self.curve_faceon_emission_seds_values,
+                                                           description=self.curve_faceon_emission_evolved_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
     #   EDGEON
     # -----------------------------------------------------------------
 
@@ -1014,6 +1282,60 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         return WavelengthCurve.from_wavelengths_and_values(self.curve_edgeon_emission_evolved_name, self.curve_edgeon_emission_wavelengths,
                                                            1. - self.curve_edgeon_emission_values,
+                                                           description=self.curve_edgeon_emission_evolved_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_edgeon_emission_seds_path(self):
+        return fs.join(self.curves_path, "edgeon_emission_seds.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_edgeon_emission_seds(self):
+        return fs.is_file(self.curve_edgeon_emission_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "curve_egeon_emission_seds_path", True, write=False)
+    def curve_edgeon_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # LOOKING IN DUST EMISSION WAVELENGTHS
+        return 0.5 * (self.unevolved_dust_emission_sed_edgeon + (self.total_dust_emission_sed_edgeon -
+                self.evolved_dust_emission_sed_edgeon)) / self.total_dust_emission_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon_emission_seds_wavelengths(self):
+        return self.curve_edgeon_emission_seds.wavelengths(asarray=True, unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon_emission_seds_values(self):
+        return self.curve_edgeon_emission_seds.values(asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curve_edgeon_emission_evolved_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthCurve.from_wavelengths_and_values(self.curve_edgeon_emission_evolved_name,
+                                                           self.curve_edgeon_emission_seds_wavelengths,
+                                                           1. - self.curve_edgeon_emission_seds_values,
                                                            description=self.curve_edgeon_emission_evolved_description,
                                                            wavelength_unit=self.wavelength_unit)
 
@@ -1347,7 +1669,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def total_spectral_absorption_curve_path(self):
-        return fs.join(self.cells_path, "total_curve.dat")
+        return fs.join(self.cells_path, "total_curve_absorption.dat")
 
     # -----------------------------------------------------------------
 
@@ -1369,6 +1691,45 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                                                       description=self.total_absorption_luminosity_description)
 
     # -----------------------------------------------------------------
+    #   TOTAL: EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def total_emission_luminosity_name(self):
+        return "Emission luminosity (total)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the total simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_curve_path(self):
+        return fs.join(self.cells_path, "total_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_spectral_emission_curve(self):
+        return fs.is_file(self.total_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "total_spectral_emission_curve_path", True, write=True)
+    def total_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.total_spectral_emission_data.get_spectral_curve(self.total_emission_luminosity_name, measure="sum",
+                                                                    description=self.total_emission_luminosity_description)
+
+    # -----------------------------------------------------------------
     #   UNEVOLVED: ABSORPTION
     # -----------------------------------------------------------------
 
@@ -1386,7 +1747,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def unevolved_spectral_absorption_curve_path(self):
-        return fs.join(self.cells_path, "unevolved_curve.dat")
+        return fs.join(self.cells_path, "unevolved_curve_absorption.dat")
 
     # -----------------------------------------------------------------
 
@@ -1406,6 +1767,45 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         return self.unevolved_spectral_absorption_data.get_spectral_curve(self.unevolved_absorption_luminosity_name, measure="sum",
                                                                           description=self.unevolved_absorption_luminosity_description)
+
+    # -----------------------------------------------------------------
+    #   UNEVOLVED: EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_emission_luminosity_name(self):
+        return "Emission luminosity (unevolved)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_emission_luminosity_description(self):
+        return "Emission luminosity in dust cells for the unevolved simulation"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_curve_path(self):
+        return fs.join(self.cells_path, "unevolved_curve_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_emission_curve(self):
+        return fs.is_file(self.unevolved_spectral_emission_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(WavelengthCurve, "unevolved_spectral_emission_curve_path", True, write=True)
+    def unevolved_spectral_emission_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unevolved_spectral_emission_data.get_spectral_curve(self.unevolved_emission_luminosity_name, measure="sum",
+                                                                        description=self.unevolved_emission_luminosity_description)
 
     # -----------------------------------------------------------------
     #   UNEVOLVED: ABSORPTION FRACTION
@@ -1483,6 +1883,81 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.unevolved_spectral_absorption_fraction_curve.values(asarray=True)
 
     # -----------------------------------------------------------------
+    #   UNEVOLVED: EMISSION FRACTION
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_fraction_curve_path(self):
+        return fs.join(self.curves_path, "cells_emission.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_spectral_emission_fraction_curve(self):
+        return fs.is_file(self.unevolved_spectral_emission_fraction_curve_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_emission_fraction_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_emission_fraction_description(self):
+        return "Fraction of dust emission attributed by unevolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_emission_curve_wavelengths(self):
+        return self.unevolved_spectral_emission_curve.wavelengths(unit=self.wavelength_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_emission_curve_unit(self):
+        return self.unevolved_spectral_emission_curve.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_spectral_emission_curve_values(self):
+        return self.total_spectral_emission_curve.values(unit=self.spectral_emission_curve_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_spectral_emission_curve_values(self):
+        return self.unevolved_spectral_emission_curve.values(unit=self.spectral_emission_curve_unit, asarray=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty("WavelengthCurve", "unevolved_spectral_emission_fraction_curve_path", True, write=False)
+    def unevolved_spectral_emission_fraction_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get wavelengths and values
+        wavelengths = self.spectral_emission_curve_wavelengths
+        fractions = self.unevolved_spectral_emission_curve_values / self.total_spectral_emission_curve_values
+
+        # Create the curve and return
+        return WavelengthCurve.from_wavelengths_and_values(self.unevolved_emission_fraction_name, wavelengths,
+                                                           fractions, wavelength_unit=self.wavelength_unit,
+                                                           description=self.unevolved_emission_fraction_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_spectral_emission_fraction_curve_values(self):
+        return self.unevolved_spectral_emission_fraction_curve.values(asarray=True)
+
+    # -----------------------------------------------------------------
     #   EVOLVED: ABSORPTION
     # -----------------------------------------------------------------
 
@@ -1516,6 +1991,39 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
                                                            wavelength_unit=self.wavelength_unit)
 
     # -----------------------------------------------------------------
+    #   EVOLVED: EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_emission_fraction_name(self):
+        return "Heating fraction"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_emission_fraction_description(self):
+        return "Fraction of dust emission attributed by evolved stellar populations"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def evolved_spectral_emission_fraction_curve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get wavelengths and values
+        wavelengths = self.spectral_emission_curve_wavelengths
+        fractions = 1. - self.unevolved_spectral_emission_fraction_curve_values
+
+        # Create the curve and return
+        return WavelengthCurve.from_wavelengths_and_values(self.evolved_emission_fraction_name, wavelengths, fractions,
+                                                           description=self.evolved_emission_fraction_description,
+                                                           wavelength_unit=self.wavelength_unit)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -1546,7 +2054,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         else:
             name = self.absorption_fractions_name + "_" + str(fltr)
             data = self.get_unevolved_absorption_fraction_data_for_filter(fltr)
-            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True, cell_based=True)
+            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True) # cell_based=True # NOW DEFAULT
             #image.saveto(self.get_unevolved_absorption_fraction_map_path_for_filter(fltr))
             return image
 
@@ -1581,7 +2089,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         else:
             name = self.emission_fractions_name + "_" + str(fltr)
             data = self.get_unevolved_emission_fraction_data_for_filter(fltr)
-            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True, cell_based=True)
+            image = project_data(name, data, self.faceon_projection, return_stddev=True, return_ncells=True, as_image=True) #cell_based=True # NOW DEFAULT
             return image
 
     # -----------------------------------------------------------------
@@ -1616,7 +2124,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         where = where * do_nans.inverse() # don't interpolate outside (where ncells = 0)
 
         # Replace NaNs to zero that have to stay NaNs (don't interpolate)
-        if replace_nans: fixed[do_nans] = 0.0
+        if replace_nans:
+            fixed[do_nans] = 0.0
+            do_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
         #plotting.plot_mask(where, title="where")
         #plotting.plot_mask(do_nans, title="other")
 
@@ -1686,14 +2196,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             return self.fix_map(frame, ncells)
 
     # -----------------------------------------------------------------
-    # SIMULATION CUBES
+    # SIMULATION CUBES & SEDS
     #   EARTH
     #     EMISSION
+    # -----------------------------------------------------------------
+    # 1. Old
     # -----------------------------------------------------------------
 
     @property
     def old_dust_emission_cube_earth(self):
         return self.model.old_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_dust_emission_sed_earth(self):
+        return self.model.observed_old_dust_sed_earth
 
     # -----------------------------------------------------------------
 
@@ -1704,8 +2222,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_emission_sed_earth(self):
+        return self.model.has_observed_old_dust_sed_earth
+
+    # -----------------------------------------------------------------
+    # 2. Young
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_emission_cube_earth(self):
         return self.model.young_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_dust_emission_sed_earth(self):
+        return self.model.observed_young_dust_sed_earth
 
     # -----------------------------------------------------------------
 
@@ -1716,8 +2248,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_emission_sed_earth(self):
+        return self.model.has_observed_young_dust_sed_earth
+
+    # -----------------------------------------------------------------
+    # 3. Ionizing
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_dust_emission_cube_earth(self):
         return self.model.sfr_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_dust_emission_sed_earth(self):
+        return self.model.observed_sfr_dust_sed_earth
 
     # -----------------------------------------------------------------
 
@@ -1728,16 +2274,38 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_ionizing_dust_emission_sed_earth(self):
+        return self.model.has_observed_sfr_dust_sed_earth
+
+    # -----------------------------------------------------------------
+    # 4. Unevolved
+    # -----------------------------------------------------------------
+
+    @property
     def has_young_and_ionizing_dust_emission_cube_earth(self):
         return self.has_young_dust_emission_cube_earth and self.has_ionizing_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_emission_sed_earth(self):
+        return self.has_young_dust_emission_sed_earth and self.has_ionizing_dust_emission_sed_earth
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_dust_emission_cube_earth(self):
         if self.model.has_unevolved_dust_luminosity_cube_earth: return self.model.unevolved_dust_luminosity_cube_earth
-        elif self.has_young_and_ionizing_dust_emission_cube_earth: return self.young_dust_emission_cube_earth + self.ionizing_dust_emission_cube_earth
+        elif self.has_young_and_ionizing_dust_emission_cube_earth: return self.young_dust_emission_cube_earth + self.ionizing_dust_emission_cube_earth # IS THIS EVEN CORRECT?? DUST EMISSION IS NOT LINEAR!
         else: raise IOError("Cannot obtain a cube of the dust emission from unevolved stars in the earth projection")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_dust_emission_sed_earth(self):
+        if self.model.has_observed_unevolved_dust_sed_earth: return self.model.observed_unevolved_dust_sed_earth
+        elif self.has_young_and_ionizing_dust_emission_sed_earth: return self.young_dust_emission_sed_earth + self.ionizing_dust_emission_sed_earth # IS THIS EVEN CORRECT?? DUST EMISSION IS NOT LINEAR!
+        else: raise IOError("Cannot obtain an SED of the dust emission from unevolved stars in the earth projection")
 
     # -----------------------------------------------------------------
 
@@ -1748,8 +2316,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_emission_sed_earth(self):
+        return self.model.has_observed_unevolved_dust_sed_earth or self.has_young_and_ionizing_dust_emission_sed_earth
+
+    # -----------------------------------------------------------------
+    # 5. Evolved ( == old)
+    # -----------------------------------------------------------------
+
+    @property
     def evolved_dust_emission_cube_earth(self):
         return self.old_dust_emission_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_emission_sed_earth(self):
+        return self.old_dust_emission_sed_earth
 
     # -----------------------------------------------------------------
 
@@ -1760,8 +2342,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_evolved_dust_emission_sed_earth(self):
+        return self.has_old_dust_emission_sed_earth
+
+    # -----------------------------------------------------------------
+    # 6. Total
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_emission_cube_earth(self):
         return self.model.total_dust_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_emission_sed_earth(self):
+        return self.model.observed_total_dust_sed
 
     # -----------------------------------------------------------------
 
@@ -1772,11 +2368,25 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_emission_sed_earth(self):
+        return self.model.has_observed_total_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_dust_emission_cubes_earth(self):
         return self.has_unevolved_dust_emission_cube_earth and self.has_total_dust_emission_cube_earth and self.has_evolved_dust_emission_cube_earth
 
     # -----------------------------------------------------------------
+
+    @property
+    def has_dust_emission_seds_earth(self):
+        return self.has_unevolved_dust_emission_sed_earth and self.has_total_dust_emission_sed_earth and self.has_evolved_dust_emission_sed_earth
+
+    # -----------------------------------------------------------------
     #     ABSORPTION
+    # -----------------------------------------------------------------
+    # 1. Old
     # -----------------------------------------------------------------
 
     @property
@@ -1786,9 +2396,23 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def old_dust_absorption_sed_earth(self):
+        return self.model.old_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_old_dust_absorption_cube_earth(self):
         return self.model.has_old_absorbed_diffuse_stellar_luminosity_cube_earth
 
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_dust_absorption_sed_earth(self):
+        return self.model.has_old_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+    # 2. Young
     # -----------------------------------------------------------------
 
     @property
@@ -1804,6 +2428,20 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def young_dust_absorption_sed_earth(self):
+        return self.model.young_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_dust_absorption_sed_earth(self):
+        return self.model.has_young_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+    # 3. Ionizing
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_dust_absorption_cube_earth(self):
         return self.model.sfr_absorbed_diffuse_stellar_luminosity_cube_earth
 
@@ -1816,6 +2454,20 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ionizing_dust_absorption_sed_earth(self):
+        return self.model.sfr_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_dust_absorption_sed_earth(self):
+        return self.model.has_sfr_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+    # 4. Unevolved
+    # -----------------------------------------------------------------
+
+    @property
     def has_young_and_ionizing_dust_absorption_cube_earth(self):
         return self.has_young_dust_absorption_cube_earth and self.has_ionizing_dust_absorption_cube_earth
 
@@ -1824,7 +2476,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     @lazyproperty
     def unevolved_dust_absorption_cube_earth(self):
         if self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_earth: return self.model.unevolved_absorbed_diffuse_stellar_luminosity_cube_earth
-        elif self.has_young_and_ionizing_dust_absorption_cube_earth: return self.young_dust_absorption_cube_earth + self.ionizing_dust_absorption_cube_earth
+        elif self.has_young_and_ionizing_dust_absorption_cube_earth: return self.young_dust_absorption_cube_earth + self.ionizing_dust_absorption_cube_earth # ABSORPTION IS LINEAR SO OK
         else: raise IOError("Cannot obtain a cube of the dust absorption from unevolved stars in the earth projection")
 
     # -----------------------------------------------------------------
@@ -1833,6 +2485,28 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     def has_unevolved_dust_absorption_cube_earth(self):
         return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_earth or self.has_young_and_ionizing_dust_absorption_cube_earth
 
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_absorption_sed_earth(self):
+        return self.has_young_dust_absorption_sed_earth and self.has_ionizing_dust_absorption_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_dust_absorption_sed_earth(self):
+        if self.model.has_unevolved_absorbed_diffuse_stellar_sed_earth: return self.model.unevolved_absorbed_diffuse_stellar_sed_earth
+        elif self.has_young_and_ionizing_dust_absorption_sed_earth: return self.young_dust_absorption_sed_earth + self.ionizing_dust_absorption_sed_earth
+        else: raise IOError("Cannot obtain an SED of the dust absorption from unevolved stars in the earth projection")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_dust_absorption_sed_earth(self):
+        return self.model.has_unevolved_absorbed_diffuse_stellar_sed_earth or self.has_young_and_ionizing_dust_absorption_sed_earth
+
+    # -----------------------------------------------------------------
+    # 5. Evolved ( == old)
     # -----------------------------------------------------------------
 
     @property
@@ -1845,6 +2519,20 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     def has_evolved_dust_absorption_cube_earth(self):
         return self.has_old_dust_absorption_cube_earth
 
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_absorption_sed_earth(self):
+        return self.old_dust_absorption_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_evolved_dust_absorption_sed_earth(self):
+        return self.has_old_dust_absorption_sed_earth
+
+    # -----------------------------------------------------------------
+    # 6. Total
     # -----------------------------------------------------------------
 
     @property
@@ -1864,13 +2552,39 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         return self.has_unevolved_dust_absorption_cube_earth and self.has_total_dust_absorption_cube_earth and self.has_evolved_dust_absorption_cube_earth
 
     # -----------------------------------------------------------------
+
+    @property
+    def total_dust_absorption_sed_earth(self):
+        return self.model.total_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_dust_absorption_sed_earth(self):
+        return self.model.has_total_absorbed_diffuse_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_absorption_seds_earth(self):
+        return self.has_unevolved_dust_absorption_sed_earth and self.has_total_dust_absorption_sed_earth and self.has_evolved_dust_absorption_cube_earth
+
+    # -----------------------------------------------------------------
     #   FACEON
     #     EMISSION
+    # -----------------------------------------------------------------
+    # 1. Old
     # -----------------------------------------------------------------
 
     @property
     def old_dust_emission_cube_faceon(self):
         return self.model.old_dust_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_dust_emission_sed_faceon(self):
+        return self.model.observed_old_dust_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1881,8 +2595,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_emission_sed_faceon(self):
+        return self.model.has_observed_old_dust_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 2. Young
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_emission_cube_faceon(self):
         return self.model.young_dust_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_dust_emission_sed_faceon(self):
+        return self.model.observed_young_dust_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1893,8 +2621,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_emission_sed_faceon(self):
+        return self.model.has_observed_young_dust_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 3. Ionizing
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_dust_emission_cube_faceon(self):
         return self.model.sfr_dust_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_dust_emission_sed_faceon(self):
+        return self.model.observed_sfr_dust_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1905,16 +2647,38 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_ionizing_dust_emission_sed_faceon(self):
+        return self.model.has_observed_sfr_dust_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 4. Unevolved
+    # -----------------------------------------------------------------
+
+    @property
     def has_young_and_ionizing_dust_emission_cube_faceon(self):
         return self.has_young_dust_emission_cube_faceon and self.has_ionizing_dust_emission_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_emission_sed_faceon(self):
+        return self.has_young_dust_emission_sed_faceon and self.has_ionizing_dust_emission_sed_faceon
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_dust_emission_cube_faceon(self):
         if self.model.has_unevolved_dust_luminosity_cube_faceon: return self.model.unevolved_dust_luminosity_cube_faceon
-        elif self.has_young_and_ionizing_dust_emission_cube_faceon: return self.young_dust_emission_cube_faceon + self.ionizing_dust_emission_cube_faceon
+        elif self.has_young_and_ionizing_dust_emission_cube_faceon: return self.young_dust_emission_cube_faceon + self.ionizing_dust_emission_cube_faceon # IS THIS CORRECT?? NOT LINEAR
         else: raise IOError("Cannot obtain a cube of the dust emission from unevolved stars in the faceon projection")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_dust_emission_sed_faceon(self):
+        if self.model.has_observed_unevolved_dust_sed_faceon: return self.model.unevolved_dust_sed_faceon
+        elif self.has_young_and_ionizing_dust_emission_sed_faceon: return self.young_dust_emission_sed_faceon + self.ionizing_dust_emission_sed_faceon
+        else: raise IOError("Cannot obtain an SED of the dust emission from unevolved stars in the faceon projection")
 
     # -----------------------------------------------------------------
 
@@ -1925,8 +2689,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_emission_sed_faceon(self):
+        return self.has_young_dust_emission_sed_earth and self.has_ionizing_dust_emission_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 5. Evolved ( == old)
+    # -----------------------------------------------------------------
+
+    @property
     def evolved_dust_emission_cube_faceon(self):
         return self.old_dust_emission_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_emission_sed_faceon(self):
+        return self.old_dust_emission_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1937,8 +2715,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_evolved_dust_emission_sed_faceon(self):
+        return self.has_old_dust_emission_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 6. Total
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_emission_cube_faceon(self):
         return self.model.total_dust_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_emission_sed_faceon(self):
+        return self.model.observed_total_dust_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1949,16 +2741,36 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_emission_sed_faceon(self):
+        return self.model.has_observed_total_dust_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_dust_emission_cubes_faceon(self):
         return self.has_unevolved_dust_emission_cube_faceon and self.has_total_dust_emission_cube_faceon and self.has_evolved_dust_emission_cube_faceon
 
     # -----------------------------------------------------------------
+
+    @property
+    def has_dust_emission_seds_faceon(self):
+        return self.has_unevolved_dust_emission_sed_faceon and self.has_total_dust_emission_sed_faceon and self.has_evolved_dust_emission_sed_faceon
+
+    # -----------------------------------------------------------------
     #     ABSORPTION
+    # -----------------------------------------------------------------
+    # 1. Old
     # -----------------------------------------------------------------
 
     @property
     def old_dust_absorption_cube_faceon(self):
         return self.model.old_absorbed_diffuse_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_dust_absorption_sed_faceon(self):
+        return self.model.old_absorbed_diffuse_stellar_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1969,8 +2781,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_absorption_sed_faceon(self):
+        return self.model.has_old_absorbed_diffuse_stellar_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 2. Young
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_absorption_cube_faceon(self):
         return self.model.young_absorbed_diffuse_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_dust_absorption_sed_faceon(self):
+        return self.model.young_absorbed_diffuse_stellar_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1981,8 +2807,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_absorption_sed_faceon(self):
+        return self.model.has_young_absorbed_diffuse_stellar_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 3. Ionizing
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_dust_absorption_cube_faceon(self):
         return self.model.sfr_absorbed_diffuse_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_dust_absorption_sed_faceon(self):
+        return self.model.sfr_absorbed_diffuse_stellar_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -1993,8 +2833,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_ionizing_dust_absorption_sed_faceon(self):
+        return self.model.has_sfr_absorbed_diffuse_stellar_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 4. Unevolved
+    # -----------------------------------------------------------------
+
+    @property
     def has_young_and_ionizing_dust_absorption_cube_faceon(self):
         return self.has_young_dust_absorption_cube_faceon and self.has_ionizing_dust_absorption_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_absorption_sed_faceon(self):
+        return self.has_young_dust_absorption_sed_faceon and self.has_ionizing_dust_absorption_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -2006,6 +2860,14 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unevolved_dust_absorption_sed_faceon(self):
+        if self.model.has_unevolved_absorbed_diffuse_stellar_sed_faceon: return self.model.unevolved_absorbed_diffuse_stellar_sed_faceon
+        elif self.has_young_and_ionizing_dust_absorption_sed_faceon: return self.young_dust_absorption_sed_faceon + self.ionizing_dust_absorption_sed_faceon # LINEAR
+        else: raise IOError("Cannot obtain an SED of the dust absorption from unevolved stars in the faceon projection")
+
+    # -----------------------------------------------------------------
+
     @property
     def has_unevolved_dust_absorption_cube_faceon(self):
         return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_faceon or self.has_young_and_ionizing_dust_absorption_cube_faceon
@@ -2013,8 +2875,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_absorption_sed_faceon(self):
+        return self.model.has_unevolved_absorbed_diffuse_stellar_sed_faceon or self.has_young_and_ionizing_dust_absorption_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 5. Evolved ( == old)
+    # -----------------------------------------------------------------
+
+    @property
     def evolved_dust_absorption_cube_faceon(self):
         return self.old_dust_absorption_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_absorption_sed_faceon(self):
+        return self.old_dust_absorption_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -2025,8 +2901,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_evolved_dust_absorption_sed_faceon(self):
+        return self.has_old_dust_absorption_sed_faceon
+
+    # -----------------------------------------------------------------
+    # 6. Total
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_absorption_cube_faceon(self):
         return self.model.total_absorbed_diffuse_stellar_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_absorption_sed_faceon(self):
+        return self.model.total_absorbed_diffuse_stellar_sed_faceon
 
     # -----------------------------------------------------------------
 
@@ -2037,17 +2927,37 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_absorption_sed_faceon(self):
+        return self.model.has_total_absorbed_diffuse_stellar_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_dust_absorption_cubes_faceon(self):
         return self.has_unevolved_dust_absorption_cube_faceon and self.has_total_dust_absorption_cube_faceon and self.has_evolved_dust_absorption_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_absorption_seds_faceon(self):
+        return self.has_unevolved_dust_absorption_sed_faceon and self.has_total_dust_absorption_sed_faceon and self.has_evolved_dust_absorption_sed_faceon
 
     # -----------------------------------------------------------------
     #   EDGEON
     #     EMISSION
     # -----------------------------------------------------------------
+    # 1. Old
+    # -----------------------------------------------------------------
 
     @property
     def old_dust_emission_cube_edgeon(self):
         return self.model.old_dust_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_dust_emission_sed_edgeon(self):
+        return self.model.observed_old_dust_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2058,8 +2968,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_emission_sed_edgeon(self):
+        return self.model.has_observed_old_dust_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 2. Young
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_emission_cube_edgeon(self):
         return self.model.young_dust_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_dust_emission_sed_edgeon(self):
+        return self.model.observed_young_dust_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2070,8 +2994,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_emission_sed_edgeon(self):
+        return self.model.has_observed_young_dust_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 3. Ionizing
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_dust_emission_cube_edgeon(self):
         return self.model.sfr_dust_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_dust_emission_sed_edgeon(self):
+        return self.model.observed_sfr_dust_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2082,8 +3020,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_ionizing_dust_emission_sed_edgeon(self):
+        return self.model.has_observed_sfr_dust_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 4. Unevolved
+    # -----------------------------------------------------------------
+
+    @property
     def has_young_and_ionizing_dust_emission_cube_edgeon(self):
         return self.has_young_dust_emission_cube_edgeon and self.has_ionizing_dust_emission_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_emission_sed_edgeon(self):
+        return self.has_young_dust_emission_sed_edgeon and self.has_ionizing_dust_emission_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2095,6 +3047,14 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unevolved_dust_emission_sed_edgeon(self):
+        if self.model.has_observed_unevolved_dust_sed_edgeon: return self.model.observed_unevolved_dust_sed_edgeon
+        elif self.has_young_and_ionizing_dust_emission_sed_edgeon: return self.young_dust_emission_sed_edgeon + self.ionizing_dust_emission_sed_edgeon
+        else: raise IOError("Cannot obtain an SED of the dust emission from unevolved stars in the edgeon projection")
+
+    # -----------------------------------------------------------------
+
     @property
     def has_unevolved_dust_emission_cube_edgeon(self):
         return self.has_young_dust_emission_cube_edgeon and self.has_ionizing_dust_emission_cube_edgeon
@@ -2102,8 +3062,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_emission_sed_edgeon(self):
+        return self.has_young_dust_emission_sed_edgeon and self.has_ionizing_dust_emission_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 5. Evolved ( == old)
+    # -----------------------------------------------------------------
+
+    @property
     def evolved_dust_emission_cube_edgeon(self):
         return self.old_dust_emission_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_emission_sed_edgeon(self):
+        return self.old_dust_emission_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2114,8 +3088,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_evolved_dust_emission_sed_edgeon(self):
+        return self.has_old_dust_emission_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 6. Total
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_emission_cube_edgeon(self):
         return self.model.total_dust_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_emission_sed_edgeon(self):
+        return self.model.observed_total_dust_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2126,16 +3114,36 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_emission_sed_edgeon(self):
+        return self.model.has_observed_total_dust_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_dust_emission_cubes_edgeon(self):
         return self.has_unevolved_dust_emission_cube_edgeon and self.has_total_dust_emission_cube_edgeon and self.has_evolved_dust_emission_cube_edgeon
 
     # -----------------------------------------------------------------
+
+    @property
+    def has_dust_emission_seds_edgeon(self):
+        return self.has_unevolved_dust_emission_sed_edgeon and self.has_total_dust_emission_sed_edgeon and self.has_evolved_dust_emission_sed_edgeon
+
+    # -----------------------------------------------------------------
     #     ABSORPTION
+    # -----------------------------------------------------------------
+    # 1. Old
     # -----------------------------------------------------------------
 
     @property
     def old_dust_absorption_cube_edgeon(self):
         return self.model.old_absorbed_diffuse_stellar_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_dust_absorption_sed_edgeon(self):
+        return self.model.old_absorbed_diffuse_stellar_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2146,8 +3154,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_old_dust_absorption_sed_edgeon(self):
+        return self.model.has_old_absorbed_diffuse_stellar_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 2. Young
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_absorption_cube_edgeon(self):
         return self.model.young_absorbed_diffuse_stellar_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_dust_absorption_sed_edgeon(self):
+        return self.model.young_absorbed_diffuse_stellar_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2158,8 +3180,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_young_dust_absorption_sed_edgeon(self):
+        return self.model.has_young_absorbed_diffuse_stellar_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 3. Ionizing
+    # -----------------------------------------------------------------
+
+    @property
     def ionizing_dust_absorption_cube_edgeon(self):
         return self.model.sfr_absorbed_diffuse_stellar_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_dust_absorption_sed_edgeon(self):
+        return self.model.sfr_absorbed_diffuse_stellar_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2170,8 +3206,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_ionizing_dust_absorption_sed_edgeon(self):
+        return self.model.has_sfr_absorbed_diffuse_stellar_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 4. Unevolved
+    # -----------------------------------------------------------------
+
+    @property
     def has_young_and_ionizing_dust_absorption_cube_edgeon(self):
         return self.has_young_dust_absorption_cube_edgeon and self.has_ionizing_dust_absorption_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_and_ionizing_dust_absorption_sed_edgeon(self):
+        return self.has_young_dust_absorption_sed_edgeon and self.has_ionizing_dust_absorption_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2183,6 +3233,14 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def unevolved_dust_absorption_sed_edgeon(self):
+        if self.model.has_unevolved_absorbed_diffuse_stellar_sed_edgeon: return self.model.unevolved_absorbed_diffuse_stellar_sed_edgeon
+        elif self.has_young_and_ionizing_dust_absorption_sed_edgeon: return self.young_dust_absorption_sed_edgeon + self.ionizing_dust_absorption_sed_edgeon
+        else: raise IOError("Cannot obtain an SED of the dust absorption from unevolved stars in the edgeon projection")
+
+    # -----------------------------------------------------------------
+
     @property
     def has_unevolved_dust_absorption_cube_edgeon(self):
         return self.model.has_unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon or self.has_young_and_ionizing_dust_absorption_cube_edgeon
@@ -2190,8 +3248,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_unevolved_dust_absorption_sed_edgeon(self):
+        return self.model.has_unevolved_absorbed_diffuse_stellar_sed_edgeon or self.has_young_and_ionizing_dust_absorption_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 5. Evolved ( == old)
+    # -----------------------------------------------------------------
+
+    @property
     def evolved_dust_absorption_cube_edgeon(self):
         return self.old_dust_absorption_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evolved_dust_absorption_sed_edgeon(self):
+        return self.old_dust_absorption_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2202,8 +3274,22 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_evolved_dust_absorption_sed_edgeon(self):
+        return self.has_old_dust_absorption_sed_edgeon
+
+    # -----------------------------------------------------------------
+    # 6. Total
+    # -----------------------------------------------------------------
+
+    @property
     def total_dust_absorption_cube_edgeon(self):
         return self.model.total_absorbed_diffuse_stellar_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_dust_absorption_sed_edgeon(self):
+        return self.model.total_absorbed_diffuse_stellar_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -2214,8 +3300,20 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
     # -----------------------------------------------------------------
 
     @property
+    def has_total_dust_absorption_sed_edgeon(self):
+        return self.model.has_total_absorbed_diffuse_stellar_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_dust_absorption_cubes_edgeon(self):
         return self.has_unevolved_dust_absorption_cube_edgeon and self.has_total_dust_absorption_cube_edgeon and self.has_evolved_dust_absorption_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_absorption_seds_edgeon(self):
+        return self.has_unevolved_dust_absorption_sed_edgeon and self.has_total_dust_absorption_sed_edgeon and self.has_evolved_dust_absorption_sed_edgeon
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -2542,6 +3640,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Emission
         self.write_curves_emission()
 
+        # Absorption from SEDs
+        self.write_curves_absorption_seds()
+
+        # Emission from SEDs (to be expected equal)
+        self.write_curves_emission_seds()
+
         # Emission data
         if self.do_emission_data: self.write_curves_emission_data()
 
@@ -2712,6 +3816,114 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_curve_earth_absorption_seds(self):
+        return not self.has_curve_earth_absorption_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_faceon_absorption_seds(self):
+        return not self.has_curve_faceon_absorption_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_edgeon_absorption_seds(self):
+        return not self.has_curve_edgeon_absorption_seds
+
+    # -----------------------------------------------------------------
+
+    def write_curves_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the absorption curves from SEDs ...")
+
+        # Earth
+        if self.do_write_curve_earth_absorption_seds: self.write_curve_earth_absorption_seds()
+
+        # Face-on
+        if self.do_write_curve_faceon_absorption_seds: self.write_curve_faceon_absorption_seds()
+
+        # Edge-on
+        if self.do_write_curve_edgeon_absorption_seds: self.write_curve_edgeon_absorption_seds()
+
+    # -----------------------------------------------------------------
+
+    def write_curve_earth_absorption_seds(self):
+        self.curve_earth_absorption_seds.saveto(self.curve_earth_absorption_seds_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_faceon_absorption_seds(self):
+        self.curve_faceon_absorption_seds.saveto(self.curve_faceon_absorption_seds_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_edgeon_absorption_seds(self):
+        self.curve_edgeon_absorption_seds.saveto(self.curve_edgeon_absorption_seds_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_earth_emission_seds(self):
+        return not self.has_curve_earth_emission_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_faceon_emission_seds(self):
+        return not self.has_curve_faceon_emission_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_curve_edgeon_emission_seds(self):
+        return not self.has_curve_edgeon_emission_seds
+
+    # -----------------------------------------------------------------
+
+    def write_curves_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the emission curves from SEDs ...")
+
+        # Earth
+        if self.do_write_curve_earth_emission_seds: self.write_curve_earth_emission_seds()
+
+        # Face-on
+        if self.do_write_curve_faceon_emission_seds: self.write_curve_faceon_emission_seds()
+
+        # Edge-on
+        if self.do_write_curve_edgeon_emission_seds: self.write_curve_edgeon_emission_seds()
+
+    # -----------------------------------------------------------------
+
+    def write_curve_earth_emission_seds(self):
+        self.curve_earth_emission_seds.saveto(self.curve_earth_emission_seds_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_faceon_emission_seds(self):
+        self.curve_faceon_emission_seds.saveto(self.curve_faceon_emission_seds_path)
+
+    # -----------------------------------------------------------------
+
+    def write_curve_edgeon_emission_seds(self):
+        self.curve_edgeon_emission_seds.saveto(self.curve_edgeon_emission_seds_path)
+
+    # -----------------------------------------------------------------
+
     def write_curves_emission_data(self):
 
         """
@@ -2721,6 +3933,9 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # Debugging
         log.debug("Writing the curve of dust emission from the cell data ...")
+
+        # Save
+        self.unevolved_spectral_emission_curve.saveto(self.unevolved_spectral_emission_curve_path)
 
     # -----------------------------------------------------------------
 
@@ -3868,6 +5083,12 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Emission
         self.plot_curves_emission()
 
+        # Absorption from SEDs
+        self.plot_curves_absorption_seds()
+
+        # Emission from SEDs
+        self.plot_curves_emission_seds()
+
         # Absorption data
         if self.do_absorption_data: self.plot_curves_absorption_data()
 
@@ -4137,6 +5358,270 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Plot
         plotting.plot_curves(self.curves_edgeon_absorption, path=self.curve_edgeon_absorption_plot_path, xlog=True,
                              y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_earth_absorption_seds(self):
+        return not self.has_curve_earth_absorption_seds_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_faceon_absorption_seds(self):
+        return not self.has_curve_faceon_absorption_seds_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_edgeon_absorption_seds(self):
+        return not self.has_curve_edgeon_absorption_seds_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_curves_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the absorption curves from SEDs ...")
+
+        # Earth
+        if self.do_plot_curve_earth_absorption_seds: self.plot_curve_earth_absorption_seds()
+
+        # Face-on
+        if self.do_plot_curve_faceon_absorption_seds: self.plot_curve_faceon_absorption_seds()
+
+        # Edge-on
+        if self.do_plot_curve_edgeon_absorption_seds: self.plot_curve_edgeon_absorption_seds()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_earth_absorption_seds(self):
+        return {unevolved_name: self.curve_earth_absorption_seds, evolved_name: self.curve_earth_absorption_evolved_seds}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_earth_absorption_seds_plot_path(self):
+        return fs.join(self.curves_path, "earth_absorption_seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_earth_absorption_seds_plot(self):
+        return fs.is_file(self.curve_earth_absorption_seds_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_curve_earth_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plotting.plot_curves(self.curves_earth_absorption_seds, path=self.curve_earth_absorption_seds_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_faceon_absorption_seds(self):
+        return {unevolved_name: self.curve_faceon_absorption_seds, evolved_name: self.curve_faceon_absorption_evolved_seds}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_faceon_absorption_seds_plot_path(self):
+        return fs.join(self.curves_path, "faceon_absorption_seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_faceon_absorption_seds_plot(self):
+        return fs.is_file(self.curve_faceon_absorption_seds_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_curve_faceon_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plotting.plot_curves(self.curves_faceon_absorption_seds, path=self.curve_faceon_absorption_seds_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_edgeon_absorption_seds(self):
+        return {unevolved_name: self.curve_edgeon_absorption_seds, evolved_name: self.curve_edgeon_absorption_evolved_seds}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_edgeon_absorption_seds_plot_path(self):
+        return fs.join(self.curves_path, "edgeon_absorption_seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_edgeon_absorption_seds_plot(self):
+        return fs.is_file(self.curve_edgeon_absorption_seds_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_curve_edgeon_absorption_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plotting.plot_curves(self.curves_edgeon_absorption_seds, path=self.curve_edgeon_absorption_seds_plot_path, xlog=True,
+                             y_label=self.curves_absorption_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_earth_emission_seds(self):
+        return not self.has_curve_earth_emission_seds_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_faceon_emission_seds(self):
+        return not self.has_curve_faceon_emission_seds_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_curve_edgeon_emission_seds(self):
+        return not self.has_curve_edgeon_emission_seds_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_curves_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the emission curves from SEDs ...")
+
+        # Earth
+        if self.do_plot_curve_earth_emission_seds: self.plot_curve_earth_emission_seds()
+
+        # Face-on
+        if self.do_plot_curve_faceon_emission_seds: self.plot_curve_faceon_emission_seds()
+
+        # Edge-on
+        if self.do_plot_curve_edgeon_emission_seds: self.plot_curve_edgeon_emission_seds()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_earth_emission_seds(self):
+        return {unevolved_name: self.curve_earth_emission_seds, evolved_name: self.curve_earth_emission_evolved_seds}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_earth_emission_seds_plot_path(self):
+        return fs.join(self.curves_path, "earth_emission_seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_earth_emission_seds_plot(self):
+        return fs.is_file(self.curve_earth_emission_seds_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_curve_earth_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plotting.plot_curves(self.curves_earth_emission_seds, path=self.curve_earth_emission_seds_plot_path, xlog=True,
+                             y_label=self.curves_emission_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_faceon_emission_seds(self):
+        return {unevolved_name: self.curve_faceon_emission_seds, evolved_name: self.curve_faceon_emission_evolved_seds}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_faceon_emission_seds_plot_path(self):
+        return fs.join(self.curves_path, "faceon_emission_seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_faceon_emission_seds_plot(self):
+        return fs.is_file(self.curve_faceon_emission_seds_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_curve_faceon_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plotting.plot_curves(self.curves_faceon_emission_seds, path=self.curve_faceon_emission_seds_plot_path, xlog=True,
+                             y_label=self.curves_emission_y_label, ylimits=self.curve_ylimits)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def curves_edgeon_emission_seds(self):
+        return {unevolved_name: self.curve_edgeon_emission_seds, evolved_name: self.curve_edgeon_emission_evolved_seds}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def curve_edgeon_emission_seds_plot_path(self):
+        return fs.join(self.curves_path, "edgeon_emission_seds.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curve_edgeon_emission_seds_plot(self):
+        return fs.is_file(self.curve_edgeon_emission_seds_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_curve_edgeon_emission_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plotting.plot_curves(self.curves_edgeon_emission_seds, path=self.curve_edgeon_emission_seds_plot_path, xlog=True,
+                             y_label=self.curves_emission_y_label, ylimits=self.curve_ylimits)
 
     # -----------------------------------------------------------------
 

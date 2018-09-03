@@ -1337,13 +1337,49 @@ class RTModel(object):
 
     @property
     def observed_total_dust_sed(self):
-        return self.total_simulations.observed_dust_sed
+        return self.observed_total_dust_sed_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_total_dust_sed(self):
+        return self.has_observed_total_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_dust_sed_earth(self):
+        return self.total_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_dust_sed_earth(self):
         return self.total_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_dust_sed_faceon(self):
+        return self.total_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_dust_sed_faceon(self):
+        return self.total_simulations.has_faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_dust_sed_edgeon(self):
+        return self.total_simulations.edgeon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_dust_sed_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_dust_sed
 
     # -----------------------------------------------------------------
     # OLD BULGE SIMULATIONS
@@ -1766,13 +1802,49 @@ class RTModel(object):
 
     @property
     def observed_old_dust_sed(self):
-        return self.old_simulations.observed_dust_sed
+        return self.observed_old_dust_sed_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_old_dust_sed(self):
+        return self.has_observed_old_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_dust_sed_earth(self):
+        return self.old_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_dust_sed_earth(self):
         return self.old_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_dust_sed_faceon(self):
+        return self.old_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_dust_sed_faceon(self):
+        return self.old_simulations.has_faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_dust_sed_edgeon(self):
+        return self.old_simulations.edgeon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_dust_sed_edgeon(self):
+        return self.old_simulations.has_edgeon_observed_dust_sed
 
     # -----------------------------------------------------------------
     # YOUNG SIMULATIONS
@@ -1907,13 +1979,49 @@ class RTModel(object):
 
     @property
     def observed_young_dust_sed(self):
-        return self.young_simulations.observed_dust_sed
+        return self.observed_young_dust_sed_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_young_dust_sed(self):
+        return self.has_observed_young_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_dust_sed_earth(self):
+        return self.young_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_dust_sed_earth(self):
         return self.young_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_dust_sed_faceon(self):
+        return self.young_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_dust_sed_faceon(self):
+        return self.young_simulations.has_faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_young_dust_sed_edgeon(self):
+        return self.young_simulations.edgeon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_dust_sed_edgeon(self):
+        return self.young_simulations.has_edgeon_observed_dust_sed
 
     # -----------------------------------------------------------------
     # SFR
@@ -2062,13 +2170,49 @@ class RTModel(object):
 
     @property
     def observed_sfr_dust_sed(self):
-        return self.sfr_simulations.observed_dust_sed
+        return self.observed_sfr_dust_sed_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_sfr_dust_sed(self):
+        return self.has_observed_sfr_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_dust_sed_earth(self):
+        return self.sfr_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_dust_sed_earth(self):
         return self.sfr_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_dust_sed_faceon(self):
+        return self.sfr_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_dust_sed_faceon(self):
+        return self.sfr_simulations.has_faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sfr_dust_sed_edgeon(self):
+        return self.sfr_simulations.edgeon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_dust_sed_edgeon(self):
+        return self.sfr_simulations.has_edgeon_observed_sed
 
     # -----------------------------------------------------------------
 
@@ -2280,13 +2424,49 @@ class RTModel(object):
 
     @property
     def observed_unevolved_dust_sed(self):
-        return self.unevolved_simulations.observed_dust_sed
+        return self.observed_unevolved_dust_sed_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_unevolved_dust_sed(self):
+        return self.has_observed_unevolved_dust_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_dust_sed_earth(self):
+        return self.unevolved_simulations.observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_dust_sed_earth(self):
         return self.unevolved_simulations.has_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_dust_sed_faceon(self):
+        return self.unevolved_simulations.faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_dust_sed_faceon(self):
+        return self.unevolved_simulations.has_faceon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_dust_sed_edgeon(self):
+        return self.unevolved_simulations.edgeon_observed_dust_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_dust_sed_edgeon(self):
+        return self.unevolved_simulations.has_edgeon_observed_dust_sed
 
     # -----------------------------------------------------------------
     # PROJECTION PROPERTIES
@@ -2842,8 +3022,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def total_absorbed_diffuse_stellar_sed_earth(self):
+        return self.total_simulations.has_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.total_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorbed_diffuse_stellar_sed_earth(self):
+        return self.total_simulations.has_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -2854,8 +3046,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def total_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.total_simulations.faceon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
         return self.total_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.total_simulations.has_faceon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -2866,8 +3070,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def total_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.total_simulations.edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def total_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.total_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3388,8 +3604,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_absorbed_diffuse_stellar_sed_earth(self):
+        return self.old_simulations.observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.old_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorbed_diffuse_stellar_sed_earth(self):
+        return self.old_simulations.has_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3400,8 +3628,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.old_simulations.faceon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
         return self.old_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.old_simulations.has_faceon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3412,8 +3652,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.old_simulations.edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.old_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.old_simulations.has_edgeon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3570,8 +3822,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_absorbed_diffuse_stellar_sed_earth(self):
+        return self.young_simulations.observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.young_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorbed_diffuse_stellar_sed_earth(self):
+        return self.young_simulations.has_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3582,8 +3846,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.young_simulations.faceon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
         return self.young_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.young_simulations.has_faceon_observed_cube_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3594,8 +3870,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.young_simulations.edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.young_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.young_simulations.has_edgeon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3752,8 +4040,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_absorbed_diffuse_stellar_sed_earth(self):
+        return self.sfr_simulations.has_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.sfr_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_absorbed_diffuse_stellar_sed_earth(self):
+        return self.sfr_simulations.has_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3764,8 +4064,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.sfr_simulations.faceon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
         return self.sfr_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.sfr_simulations.has_faceon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3776,8 +4088,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.sfr_simulations.edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.sfr_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.sfr_simulations.has_edgeon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3934,8 +4258,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def unevolved_absorbed_diffuse_stellar_sed_earth(self):
+        return self.unevolved_simulations.observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_absorbed_diffuse_stellar_luminosity_cube_earth(self):
         return self.unevolved_simulations.observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_absorbed_diffuse_stellar_sed_earth(self):
+        return self.unevolved_simulations.has_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3946,8 +4282,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def unevolved_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.unevolved_simulations.faceon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_absorbed_diffuse_stellar_luminosity_cube_faceon(self):
         return self.unevolved_simulations.faceon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_absorbed_diffuse_stellar_sed_faceon(self):
+        return self.unevolved_simulations.has_faceon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 
@@ -3958,8 +4306,20 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def unevolved_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.unevolved_simulations.edgeon_observed_sed_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_absorbed_diffuse_stellar_luminosity_cube_edgeon(self):
         return self.unevolved_simulations.edgeon_observed_cube_absorbed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_absorbed_diffuse_stellar_sed_edgeon(self):
+        return self.unevolved_simulations.has_edgeon_observed_sed_absorbed
 
     # -----------------------------------------------------------------
 

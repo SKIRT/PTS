@@ -70,36 +70,18 @@ class ComponentSimulations(object):
 
     @property
     def has_earth_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.earth_wcs is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed is not None
 
     # -----------------------------------------------------------------
 
     @property
     def distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed.distance
 
     # -----------------------------------------------------------------
@@ -120,12 +102,6 @@ class ComponentSimulations(object):
 
     @property
     def observed_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_observed: return None
         else: return self.observed.output_path
 
@@ -133,12 +109,6 @@ class ComponentSimulations(object):
 
     @property
     def observed_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_observed: return None
         else: return self.observed.output
 
@@ -146,12 +116,6 @@ class ComponentSimulations(object):
 
     @property
     def observed_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_observed: return None
         else: return self.observed.data
 
@@ -159,168 +123,84 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed and self.observed.has_output
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_output and self.observed_data.has_any
 
     # -----------------------------------------------------------------
 
     @property
     def has_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed and self.has_observed_output and self.observed_data.has_seds
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed and self.has_observed_output and self.observed_data.has_images
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_intrinsic_sed_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_intrinsic_sed_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_intrinsic_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube_faceon
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_intrinsic_cube_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube_edgeon
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_sed.wavelength_grid()
 
     # -----------------------------------------------------------------
@@ -329,276 +209,138 @@ class ComponentSimulations(object):
 
     @property
     def observed_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.sed_paths_instruments[earth_name]
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_sed_orientations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.observed_data.sed_paths_instruments) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_sed_orientation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return faceon_name in self.observed_data.sed_paths_instruments
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_observed_sed_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_sed_orientation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return edgeon_name in self.observed_data.sed_paths_instruments
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_sed(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.has_edgeon_observed_sed_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.sed_paths_instruments[faceon_name]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.sed_paths_instruments[edgeon_name]
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[faceon_name][total_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[edgeon_name][total_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_sed_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and len(self.observed_data.seds[earth_name]) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_sed_contributions_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and len(self.observed_data.seds[faceon_name]) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_sed_contributions_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and len(self.observed_data.seds[edgeon_name]) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_transparent_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_other_observed_sed_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[earth_name][direct_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[earth_name][scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[earth_name][dust_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[faceon_name][dust_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_sed_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[edgeon_name][dust_contribution]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_sed_dust_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_sed_dust - self.observed_sed_dust_scattered
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed_dust_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[earth_name][dust_scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed_transparent(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.seds[earth_name][transparent_contribution]
 
     # -----------------------------------------------------------------
@@ -607,376 +349,220 @@ class ComponentSimulations(object):
 
     @property
     def observed_cube_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.image_paths_instruments[earth_name]
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_cube_orientations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.observed_data.image_paths_instruments) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_observed_cube_orientation(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return earth_name in self.observed_data.image_paths_instruments
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_observed_cube(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_earth_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_cube_orientation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return faceon_name in self.observed_data.image_paths_instruments
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_cube_orientation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return edgeon_name in self.observed_data.image_paths_instruments
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_edgeon_observed_cube_orientation
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_cube_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.image_paths_instruments[faceon_name]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_cube_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.image_paths_instruments[edgeon_name]
 
     # -----------------------------------------------------------------
 
     @property
     def observed_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[earth_name][total_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_observed_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[faceon_name][total_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_observed_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[edgeon_name][total_contribution]
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_cube_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and self.has_earth_observed_cube and len(self.observed_data.images[earth_name]) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_cube_contributions_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and self.has_faceon_observed_cube and len(self.observed_data.images[faceon_name]) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_other_observed_cube_contributions_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and self.has_edgeon_observed_cube and len(self.observed_data.images[edgeon_name]) > 1
 
     # -----------------------------------------------------------------
 
     @property
     def has_transparent_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and self.has_earth_observed_cube and self.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_transparent_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and self.has_faceon_observed_cube and self.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_transparent_cube_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_data and self.has_edgeon_observed_cube and self.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def observed_cube_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[earth_name][direct_contribution]
 
     # -----------------------------------------------------------------
 
     @property
+    def faceon_observed_sed_direct(self):
+        return self.observed_data.seds[faceon_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def faceon_observed_cube_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[faceon_name][direct_contribution]
 
     # -----------------------------------------------------------------
 
     @property
+    def edgeon_observed_sed_direct(self):
+        return self.observed_data.seds[edgeon_name][direct_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def edgeon_observed_cube_direct(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[edgeon_name][direct_contribution]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_direct_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_cube_direct.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_direct_frame_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.faceon_observed_cube_direct.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_direct_frame_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edgeon_observed_cube_direct.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def observed_cube_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[earth_name][scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
+    def faceon_observed_sed_scattered(self):
+        return self.observed_data.seds[faceon_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def faceon_observed_cube_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[faceon_name][scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @property
+    def edgeon_observed_sed_scattered(self):
+        return self.observed_data.seds[edgeon_name][scattered_contribution]
+
+    # -----------------------------------------------------------------
+
+    @property
     def edgeon_observed_cube_scattered(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_data.images[edgeon_name][scattered_contribution]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_scattered_frame(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
         return self.observed_cube_scattered.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_scattered_frame_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.faceon_observed_cube_scattered.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_scattered_frame_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edgeon_observed_cube_scattered.integrate()
 
     # -----------------------------------------------------------------
     # ABSORPTION EARTH
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_sed(self):
+        return self.has_full_sed
+
     # -----------------------------------------------------------------
 
     @property
@@ -986,8 +572,28 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_direct_sed(self):
+        return self.has_full_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_direct_cube(self):
         return self.has_full_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def absorbed_scattering_correction_factor_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scattered = self.observed_sed_scattered
+        transparent = self.intrinsic_stellar_sed
+        return 1. + scattered / transparent
 
     # -----------------------------------------------------------------
 
@@ -1009,14 +615,29 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_absorbed_scattering_correction_factor_sed(self):
+        return self.has_intrinsic_stellar_sed and self.has_scattered_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_absorbed_scattering_correction_factor(self):
+        return self.has_intrinsic_stellar_cube and self.has_scattered_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed_absorbed_uncorrected(self):
 
         """
-        Thisf unction ...
+        This function ...
         :return:
         """
 
-        return self.has_intrinsic_stellar_cube and self.has_scattered_cube
+        intrinsic = self.intrinsic_stellar_sed
+        direct = self.observed_sed_direct
+        scattered = self.observed_sed_scattered
+        return intrinsic - direct - scattered
 
     # -----------------------------------------------------------------
 
@@ -1037,14 +658,28 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_observed_sed_absorbed_uncorrected(self):
+        return self.has_intrinsic_stellar_sed and self.has_direct_sed and self.has_scattered_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_observed_cube_absorbed_uncorrected(self):
+        return self.has_intrinsic_stellar_cube and self.has_direct_cube and self.has_scattered_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed_absorbed(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.has_intrinsic_stellar_cube and self.has_direct_cube and self.has_scattered_cube
+        absorbed = self.observed_sed_absorbed_uncorrected
+        correction = self.absorbed_scattering_correction_factor_sed
+        return absorbed * correction
 
     # -----------------------------------------------------------------
 
@@ -1065,13 +700,13 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_observed_sed_absorbed(self):
+        return self.has_observed_sed_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_observed_cube_absorbed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_cube_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
@@ -1094,12 +729,6 @@ class ComponentSimulations(object):
 
     @property
     def has_absorbed_scattering_correction_term(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube and self.has_direct_cube and self.has_scattered_cube
 
     # -----------------------------------------------------------------
@@ -1122,12 +751,6 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_cube_absorbed_alternative_uncorrected(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_intrinsic_stellar_cube and self.has_observed_stellar_cube
 
     # -----------------------------------------------------------------
@@ -1150,16 +773,16 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_cube_absorbed_alternative(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_cube_absorbed_alternative_uncorrected and self.has_absorbed_scattering_correction_term and self.has_absorbed_scattering_correction_factor
 
     # -----------------------------------------------------------------
     # ABSORPTION FACE-ON
+    # -----------------------------------------------------------------
+
+    @property
+    def has_scattered_sed_faceon(self):
+        return self.has_full_sed_faceon
+
     # -----------------------------------------------------------------
 
     @property
@@ -1169,8 +792,22 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_direct_sed_faceon(self):
+        return self.has_full_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_direct_cube_faceon(self):
         return self.has_full_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_absorbed_scattering_correction_factor_sed(self):
+        scattered = self.faceon_observed_sed_scattered
+        transparent = self.intrinsic_stellar_sed # ISOTROPIC
+        return 1. + scattered / transparent
 
     # -----------------------------------------------------------------
 
@@ -1198,8 +835,23 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_faceon_absorbed_scattering_correction_factor_sed(self):
+        return self.has_scattered_sed_faceon and self.has_intrinsic_stellar_sed
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_faceon_absorbed_scattering_correction_factor(self):
         return self.has_scattered_cube_faceon and self.has_intrinsic_stellar_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_sed_absorbed_uncorrected(self):
+        intrinsic = self.intrinsic_stellar_sed # isotropic
+        direct = self.faceon_observed_sed_direct
+        scattered = self.faceon_observed_sed_scattered
+        return intrinsic - direct - scattered
 
     # -----------------------------------------------------------------
 
@@ -1228,8 +880,22 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_faceon_observed_sed_absorbed_uncorrected(self):
+        return self.has_intrinsic_stellar_sed and self.has_direct_sed_faceon and self.has_scattered_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_faceon_observed_cube_absorbed_uncorrected(self):
         return self.has_intrinsic_stellar_cube_faceon and self.has_direct_cube_faceon and self.has_scattered_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_observed_sed_absorbed(self):
+        absorbed = self.faceon_observed_sed_absorbed_uncorrected
+        correction = self.faceon_absorbed_scattering_correction_factor_sed
+        return absorbed * correction
 
     # -----------------------------------------------------------------
 
@@ -1253,6 +919,12 @@ class ComponentSimulations(object):
 
         # Return
         return absorbed * correction
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_observed_sed_absorbed(self):
+        return self.has_faceon_observed_sed_absorbed_uncorrected and self.has_faceon_absorbed_scattering_correction_factor_sed
 
     # -----------------------------------------------------------------
 
@@ -1357,14 +1029,34 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_scattered_sed_edgeon(self):
+        return self.has_full_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_scattered_cube_edgeon(self):
         return self.has_full_cube_edgeon
 
     # -----------------------------------------------------------------
 
     @property
+    def has_direct_sed_edgeon(self):
+        return self.has_full_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_direct_cube_edgeon(self):
         return self.has_full_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_absorbed_scattering_correction_factor_sed(self):
+        scattered = self.edgeon_observed_sed_scattered
+        transparent = self.intrinsic_stellar_sed # ISOTROPIC
+        return 1. + scattered / transparent
 
     # -----------------------------------------------------------------
 
@@ -1392,8 +1084,23 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_edgeon_absorbed_scattering_correction_factor_sed(self):
+        return self.has_scattered_sed_edgeon and self.has_intrinsic_stellar_sed # intrinsic = isotropic
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_edgeon_absorbed_scattering_correction_factor(self):
         return self.has_scattered_cube_edgeon and self.has_intrinsic_stellar_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_sed_absorbed_uncorrected(self):
+        intrinsic = self.intrinsic_stellar_sed # ISOTROPIC
+        direct = self.edgeon_observed_sed_direct
+        scattered = self.edgeon_observed_sed_scattered
+        return intrinsic - direct - scattered
 
     # -----------------------------------------------------------------
 
@@ -1422,8 +1129,22 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_edgeon_observed_sed_absorbed_uncorrected(self):
+        return self.has_intrinsic_stellar_sed and self.has_direct_sed_edgeon and self.has_scattered_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_edgeon_observed_cube_absorbed_uncorrected(self):
         return self.has_intrinsic_stellar_cube_edgeon and self.has_direct_cube_edgeon and self.has_scattered_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_observed_sed_absorbed(self):
+        absorbed = self.edgeon_observed_sed_absorbed_uncorrected
+        correction = self.edgeon_absorbed_scattering_correction_factor_sed
+        return absorbed * correction
 
     # -----------------------------------------------------------------
 
@@ -1447,6 +1168,12 @@ class ComponentSimulations(object):
 
         # Return
         return absorbed * correction
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_observed_sed_absorbed(self):
+        return self.has_edgeon_observed_sed_absorbed_uncorrected and self.has_edgeon_absorbed_scattering_correction_factor_sed
 
     # -----------------------------------------------------------------
 
@@ -2130,12 +1857,6 @@ class ComponentSimulations(object):
     #@lazyproperty
     @property
     def intrinsic_stellar_sed(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         #return self.intrinsic_sed.splice(max_wavelength=stellar_dust_sed_split_wavelength)
         #return self.get_stellar_part(self.intrinsic_sed)
         return self.intrinsic_sed
@@ -2144,12 +1865,6 @@ class ComponentSimulations(object):
 
     @property
     def intrinsic_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.intrinsic_cube.splice(max_wavelength=stellar_dust_sed_split_wavelength)
         #return self.get_stellar_part(self.intrinsic_cube)
         return self.intrinsic_cube
@@ -2158,288 +1873,144 @@ class ComponentSimulations(object):
 
     @property
     def intrinsic_stellar_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.faceon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_stellar_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_faceon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_intrinsic_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_stellar_cube_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def intrinsic_stellar_cube_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edgeon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_stellar_cube_edgeon(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_edgeon_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_intrinsic_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_stellar_cube_edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_bolometric_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_cube.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_bolometric_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_cube
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_bolometric_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_cube.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_bolometric_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_bolometric_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_stellar_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_stellar_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_stellar_cube.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_stellar_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_stellar_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_cube
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_stellar_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_stellar_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_stellar_cube.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_stellar_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_stellar_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
@@ -2602,384 +2173,192 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed and self.has_intrinsic_dust_sed) or self.has_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed_faceon and self.has_intrinsic_dust_sed) or self.has_faceon_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed_edgeon and self.has_intrinsic_dust_sed) or self.has_edgeon_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_full_sed or (self.has_observed_sed and self.has_intrinsic_dust_sed)
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_full_sed_faceon or (self.has_faceon_observed_sed and self.has_intrinsic_dust_sed)
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_full_sed_edgeon or (self.has_edgeon_observed_sed and self.has_intrinsic_dust_sed)
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube and self.has_intrinsic_dust_cube) or self.has_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube_faceon and self.has_faceon_intrinsic_dust_cube) or self.has_faceon_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube_edgeon and self.has_edgeon_intrinsic_dust_cube) or self.has_edgeon_observed_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_diffuse_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_full_cube or (self.has_observed_cube and self.has_intrinsic_dust_cube)
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_diffuse_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_full_cube_faceon or (self.has_faceon_observed_cube and self.has_faceon_intrinsic_dust_cube)
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_diffuse_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_full_cube_edgeon or (self.has_edgeon_observed_cube and self.has_edgeon_intrinsic_dust_cube)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_dust_part(self.intrinsic_sed, full=True)
 
     # ----------------------------------------------------------------
 
     @property
     def faceon_intrinsic_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_dust_sed # INTRINSIC = ISOTROPIC
 
     # ----------------------------------------------------------------
 
     @property
     def edgeon_intrinsic_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_dust_sed # INTRINSIC = ISOTROPIC
 
     # ----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_dust_part(self.intrinsic_cube, full=True)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_intrinsic_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_dust_part(self.faceon_intrinsic_cube, full=True)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_intrinsic_dust_cube(self):
-
-        """
-        Thisfunctino ...
-        :return:
-        """
-
         return self.get_dust_part(self.edgeon_intrinsic_cube, full=True)
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_intrinsic_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_dust_sed # INTRINSIC = ISOTROPIC
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_intrinsic_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_dust_sed  # INTRINSIC = ISOTROPIC
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_intrinsic_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_intrinsic_dust_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube_edgeon
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_dust_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observed_dust_cube.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_dust_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_dust_cube
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def intrinsic_dust_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_dust_cube.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_dust_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_dust_cube
 
     # -----------------------------------------------------------------
@@ -3015,24 +2394,12 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_photometry(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_observed_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_cube
 
     # -----------------------------------------------------------------
@@ -3068,24 +2435,12 @@ class ComponentSimulations(object):
 
     @property
     def has_intrinsic_photometry(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_cube
 
     # -----------------------------------------------------------------
@@ -3169,24 +2524,12 @@ class ComponentSimulations(object):
 
     @property
     def has_bolometric_attenuation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_stellar_luminosity and self.has_intrinsic_bolometric_luminosity #self.has_intrinsic_stellar_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def has_bolometric_attenuation_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_stellar_frame
 
     # -----------------------------------------------------------------
@@ -3238,24 +2581,12 @@ class ComponentSimulations(object):
 
     @property
     def has_attenuation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_sed and self.has_intrinsic_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_attenuation_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_observed_cube and self.has_intrinsic_cube
 
 # -----------------------------------------------------------------

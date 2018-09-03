@@ -1223,7 +1223,9 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # plotting.plot_mask(self.map_interpolated.nans, title="nans")
 
         # Replace NaNs to zero that have to stay NaNs (don't interpolate)
-        if replace_nans: interpolated[do_nans] = 0.0
+        if replace_nans:
+            interpolated[do_nans] = 0.0
+            do_nans.disk_dilate(radius=self.config.not_nans_dilation_radius)
 
         # Put pixels to NaN
         interpolated.replace_by_nans(where)
