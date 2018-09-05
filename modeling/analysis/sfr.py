@@ -37,12 +37,16 @@ cell_name = "cell"
 # -----------------------------------------------------------------
 
 salim_name = "Salim"
+ke_name = "K&E"
+mappings_name = "Mappings"
 mappings_ke_name = "Mappings and K&E"
 
 # -----------------------------------------------------------------
 
 methods = OrderedDict()
 methods[salim_name] = "Salim conversion from intrinsic FUV luminosity of unevolved stars"
+methods[ke_name] = "Kennicutt & Evans conversion from intrinsic FUV luminosity of unevolved stars"
+methods[mappings_name] = "MAPPINGS SFR of ionizing stars"
 methods[mappings_ke_name] = "MAPPINGS SFR of ionizing stars + Kennicutt & Evans conversion from intrinsic FUV luminosity of young stars"
 
 # -----------------------------------------------------------------
@@ -111,6 +115,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
             fs.remove_file(self.projected_sfr_ke_earth_map_plot_path)
             fs.remove_file(self.projected_sfr_ke_faceon_map_plot_path)
+
+            fs.remove_file(self.projected_sfr_mappings_earth_map_plot_path)
+            fs.remove_file(self.projected_sfr_mappings_faceon_map_plot_path)
 
             fs.remove_file(self.projected_sfr_mappings_ke_earth_map_plot_path)
             fs.remove_file(self.projected_sfr_mappings_ke_faceon_map_plot_path)
@@ -238,7 +245,57 @@ class SFRAnalyser(AnalysisRunComponent):
         return self.model.total_star_formation_rate_map_faceon_ke
 
     # -----------------------------------------------------------------
-    #   3. MAPPINGS + KENNICUTT & EVANS
+    #   3. MAPPINGS
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_sfr_mappings_earth_path(self):
+        return fs.join(self.projected_path, "sfr_mappings_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_sfr_mappings_earth(self):
+        return fs.is_file(self.projected_sfr_mappings_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_sfr_mappings_earth_path", True, write=False)
+    def sfr_mappings_earth_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.star_formation_rate_map_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_sfr_mappings_faceon_path(self):
+        return fs.join(self.projected_path, "sfr_mappings_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_sfr_mappings_faceon(self):
+        return fs.is_file(self.projected_sfr_mappings_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_sfr_mappings_faceon_path", True, write=False)
+    def sfr_mappings_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model.star_formation_rate_map_faceon
+
+    # -----------------------------------------------------------------
+    #   4. MAPPINGS + KENNICUTT & EVANS
     # -----------------------------------------------------------------
 
     @property
@@ -441,7 +498,59 @@ class SFRAnalyser(AnalysisRunComponent):
         return self.model.total_ssfr_map_faceon_ke
 
     # -----------------------------------------------------------------
-    #   3. MAPPINGS + KENNICUTT & EVANS
+    #   3. MAPPINGS
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_mappings_earth_path(self):
+        return fs.join(self.projected_path, "ssfr_mappings_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_mappings_earth(self):
+        return fs.is_file(self.projected_ssfr_mappings_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_ssfr_mappings_earth_path", True, write=False)
+    def ssfr_mappings_earth_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sfr, stellar_mass = uniformize(self.sfr_mappings_earth_map, self.stellar_mass_earth_map, convert=False)
+        return sfr / stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_mappings_faceon_path(self):
+        return fs.join(self.projected_path, "ssfr_mappings_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_mappings_faceon(self):
+        return fs.is_file(self.projected_ssfr_mappings_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_ssfr_mappings_faceon_path", True, write=False)
+    def ssfr_mappings_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sfr, stellar_mass = uniformize(self.sfr_mappings_faceon_map, self.stellar_mass_faceon_map, convert=False)
+        return sfr / stellar_mass
+
+    # -----------------------------------------------------------------
+    #   4. MAPPINGS + KENNICUTT & EVANS
     # -----------------------------------------------------------------
 
     @property
@@ -799,6 +908,42 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sfr_mappings_values(self):
+        return self.sfr_cell_normalized_mass * self.sfr_msun_yr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_mappings_path(self):
+        return fs.join(self.cell_path, "sfr_mappings.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_mappings(self):
+        return fs.is_file(self.cell_sfr_mappings_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_sfr_mappings_path", True, write=False)
+    def sfr_mappings_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the cell star formation rate (MAPPINGS) ...")
+
+        # Create
+        return Data3D(self.sfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      self.sfr_mappings_values, length_unit=self.length_unit, unit="Msun/yr",
+                      description=self.sfr_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @property
     def cell_sfr_mappings_ke_path(self):
         return fs.join(self.cell_path, "sfr_mappings_ke.dat")
@@ -808,12 +953,6 @@ class SFRAnalyser(AnalysisRunComponent):
     @property
     def has_cell_sfr_mappings_ke(self):
         return fs.is_file(self.cell_sfr_mappings_ke_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_mappings_values(self):
-        return self.sfr_cell_normalized_mass * self.sfr_msun_yr
 
     # -----------------------------------------------------------------
 
@@ -975,6 +1114,57 @@ class SFRAnalyser(AnalysisRunComponent):
         # Create the data
         return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.cell_ssfrs_ke,
                       length_unit=self.length_unit, unit=self.ssfr_ke_unit, description=self.ssfr_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfrs_mappings(self):
+        return self.sfr_mappings_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_mappings_unit(self):
+        return self.sfr_mappings_data.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfrs_mappings(self):
+        return self.cell_sfrs_mappings / self.cell_masses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_mappings_unit(self):
+        return self.sfr_mappings_unit / self.stellar_mass_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_mappings_path(self):
+        return fs.join(self.cell_path, "ssfr_mappings.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_mappings(self):
+        return fs.is_file(self.cell_ssfr_mappings_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_ssfr_mappings_path", True, write=False)
+    def ssfr_mappings_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the data
+        return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      self.cell_ssfrs_mappings, length_unit=self.length_unit, unit=self.ssfr_mappings_unit, description=self.ssfr_description,
+                      distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1190,6 +1380,30 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_ssfr_mappings_map_path(self):
+        return fs.join(self.cell_path, "ssfr_mappings_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_mappings_map(self):
+        return fs.is_file(self.cell_ssfr_mappings_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "cell_ssfr_mappings_map_path", True, write=False)
+    def ssfr_mappings_data_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return project_data(self.ssfr_name, self.ssfr_mappings_data, self.faceon_projection, description=self.ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_ssfr_mappings_ke_map_path(self):
         return fs.join(self.cell_path, "ssfr_mappings_ke_faceon.fits")
 
@@ -1286,6 +1500,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # K&E
         self.write_projected_sfr_ke()
+
+        # MAPPINGS
+        self.write_projected_sfr_mappings()
 
         # MAPPINGS + K&E
         self.write_projected_sfr_mappings_ke()
@@ -1389,6 +1606,55 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         self.sfr_ke_faceon_map.saveto(self.projected_sfr_ke_faceon_path)
+
+    # -----------------------------------------------------------------
+    
+    @property
+    def do_write_projected_sfr_mappings_earth(self):
+        return not self.has_projected_sfr_mappings_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_sfr_mappings_faceon(self):
+        return not self.has_projected_sfr_mappings_faceon
+
+    # -----------------------------------------------------------------
+
+    def write_projected_sfr_mappings(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # Earth
+        if self.do_write_projected_sfr_mappings_earth: self.write_projected_sfr_mappings_earth()
+        
+        # Faceon
+        if self.do_write_projected_sfr_mappings_faceon: self.write_projected_sfr_mappings_faceon()
+        
+    # -----------------------------------------------------------------
+
+    def write_projected_sfr_mappings_earth(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        self.sfr_mappings_earth_map.saveto(self.projected_sfr_mappings_earth_path)
+        
+    # -----------------------------------------------------------------
+
+    def write_projected_sfr_mappings_faceon(self):
+
+        """
+        This function ...
+        :return: 
+        """
+        
+        self.sfr_mappings_faceon_map.saveto(self.projected_sfr_mappings_faceon_path)
 
     # -----------------------------------------------------------------
 
@@ -1505,6 +1771,9 @@ class SFRAnalyser(AnalysisRunComponent):
         # K&E
         self.write_projected_ssfr_ke()
 
+        # MAPPINGS
+        self.write_projected_ssfr_mappings()
+
         # MAPPINGS + K&E
         self.write_projected_ssfr_mappings_ke()
 
@@ -1607,6 +1876,55 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         self.ssfr_ke_faceon_map.saveto(self.projected_ssfr_ke_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_mappings_earth(self):
+        return not self.has_projected_ssfr_mappings_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_mappings_faceon(self):
+        return not self.has_projected_ssfr_mappings_faceon
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_projected_ssfr_mappings_earth: self.write_projected_ssfr_mappings_earth()
+
+        # Faceon
+        if self.do_write_projected_ssfr_mappings_faceon: self.write_projected_ssfr_mappings_faceon()
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_mappings_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ssfr_mappings_earth_map.saveto(self.projected_ssfr_mappings_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_mappings_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ssfr_mappings_faceon_map.saveto(self.projected_ssfr_mappings_faceon_path)
 
     # -----------------------------------------------------------------
 
@@ -1772,6 +2090,12 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_cell_sfr_mappings(self):
+        return not self.has_cell_sfr_mappings
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_cell_sfr_mappings_ke(self):
         return not self.has_cell_sfr_mappings_ke
 
@@ -1792,6 +2116,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # K&E
         if self.do_write_cell_sfr_ke: self.write_cell_sfr_ke()
+
+        # MAPPINGS
+        if self.do_write_cell_sfr_mappings: self.write_cell_sfr_mappings()
 
         # MAPPINGS + K&E
         if self.do_write_cell_sfr_mappings_ke: self.write_cell_sfr_mappings_ke()
@@ -1819,6 +2146,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Write
         self.sfr_ke_data.saveto(self.cell_sfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cell_sfr_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.sfr_mappings_data.saveto(self.cell_sfr_mappings_path)
 
     # -----------------------------------------------------------------
 
@@ -1874,6 +2213,12 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_cell_ssfr_mappings(self):
+        return not self.has_cell_ssfr_mappings
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_cell_ssfr_mappings_ke(self):
         return not self.has_cell_ssfr_mappings_ke
 
@@ -1894,6 +2239,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # K&E
         if self.do_write_cell_ssfr_ke: self.write_cell_ssfr_ke()
+
+        # MAPPINGS
+        if self.do_write_cell_ssfr_mappings: self.write_cell_ssfr_mappings()
 
         # MAPPINGS + K&E
         if self.do_write_cell_ssfr_mappings_ke: self.write_cell_ssfr_mappings_ke()
@@ -1921,6 +2269,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Write
         self.ssfr_ke_data.saveto(self.cell_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cell_ssfr_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.ssfr_mappings_data.saveto(self.cell_ssfr_mappings_path)
 
     # -----------------------------------------------------------------
 
@@ -2080,6 +2440,12 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_cell_ssfr_mappings_map(self):
+        return not self.has_cell_ssfr_mappings_map
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_cell_ssfr_mappings_ke_map(self):
         return not self.has_cell_ssfr_mappings_ke_map
 
@@ -2100,6 +2466,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # K&E
         if self.do_write_cell_ssfr_ke_map: self.write_cell_ssfr_ke_map()
+
+        # MAPPINGS
+        if self.do_write_cell_ssfr_mappings_map: self.write_cell_ssfr_mappings_map()
 
         # MAPPINGS + K&E
         if self.do_write_cell_ssfr_mappings_ke_map: self.write_cell_ssfr_mappings_ke_map()
@@ -2127,6 +2496,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Write
         self.ssfr_ke_data_faceon_map.saveto(self.cell_ssfr_ke_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cell_ssfr_mappings_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.ssfr_mappings_data_faceon_map.saveto(self.cell_ssfr_mappings_map_path)
 
     # -----------------------------------------------------------------
 
@@ -2193,6 +2574,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # K&E
         self.plot_projected_sfr_ke()
+
+        # MAPPINGS
+        self.plot_projected_sfr_mappings()
 
         # MAPPINGS + K&E
         self.plot_projected_sfr_mappings_ke()
@@ -2344,6 +2728,79 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         plot_map(self.sfr_ke_faceon_map, path=self.projected_sfr_ke_faceon_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_sfr_mappings_earth(self):
+        return not self.has_projected_sfr_mappings_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_sfr_mappings_faceon(self):
+        return not self.has_projected_sfr_mappings_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_sfr_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_plot_projected_sfr_mappings_earth: self.plot_projected_sfr_mappings_earth()
+
+        # Faceon
+        if self.do_plot_projected_sfr_mappings_faceon: self.plot_projected_sfr_mappings_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_sfr_mappings_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "sfr_mappings_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_sfr_mappings_earth_map_plot(self):
+        return fs.is_file(self.projected_sfr_mappings_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_sfr_mappings_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.sfr_mappings_earth_map, path=self.projected_sfr_mappings_earth_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_sfr_mappings_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "sfr_mappings_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_sfr_mappings_faceon_map_plot(self):
+        return fs.is_file(self.projected_sfr_mappings_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_sfr_mappings_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plot_map(self.sfr_mappings_faceon_map, path=self.projected_sfr_mappings_faceon_map_plot_path, cmap="inferno", colorbar=True)
 
     # -----------------------------------------------------------------
 
@@ -2514,6 +2971,9 @@ class SFRAnalyser(AnalysisRunComponent):
         # K&E
         self.plot_projected_ssfr_ke()
 
+        # MAPPINGS
+        self.plot_projected_ssfr_mappings()
+
         # MAPPINGS + K&E
         self.plot_projected_ssfr_mappings_ke()
 
@@ -2666,6 +3126,15 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Plot
         plot_map(self.ssfr_ke_faceon_map, path=self.projected_ssfr_ke_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -2917,6 +3386,12 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_plot_cell_ssfr_mappings_map(self):
+        return not self.has_cell_ssfr_mappings_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_plot_cell_ssfr_mappings_ke_map(self):
         return not self.has_cell_ssfr_mappings_ke_map_plot
 
@@ -2934,6 +3409,9 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # K&E
         if self.do_plot_cell_ssfr_ke_map: self.plot_cell_ssfr_ke_map()
+
+        # MAPPINGS
+        if self.do_plot_cell_ssfr_mappings_map: self.plot_cell_ssfr_mappings_map()
 
         # MAPPINGS + K&E
         if self.do_plot_cell_ssfr_mappings_ke_map: self.plot_cell_ssfr_mappings_ke_map()
@@ -2985,6 +3463,30 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Plot
         plot_map(self.ssfr_ke_data_faceon_map, path=self.cell_ssfr_ke_map_plot_path, cmap="inferno", colorbar=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_mappings_map_plot_path(self):
+        return fs.join(self.cell_path, "ssfr_mappings_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_mappings_map_plot(self):
+        return fs.is_file(self.cell_ssfr_mappings_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_cell_ssfr_mappings_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_mappings_data_faceon_map, path=self.cell_ssfr_mappings_map_plot_path, cmap="inferno", colorbar=True)
 
     # -----------------------------------------------------------------
 
