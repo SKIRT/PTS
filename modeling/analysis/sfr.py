@@ -110,20 +110,69 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Replot SFR
         if self.config.replot_projected_sfr:
-            fs.remove_file(self.projected_sfr_salim_earth_map_plot_path)
-            fs.remove_file(self.projected_sfr_salim_faceon_map_plot_path)
 
-            fs.remove_file(self.projected_sfr_ke_earth_map_plot_path)
-            fs.remove_file(self.projected_sfr_ke_faceon_map_plot_path)
+            # Salim
+            if self.has_projected_sfr_salim_earth_map_plot: fs.remove_file(self.projected_sfr_salim_earth_map_plot_path)
+            if self.has_projected_sfr_salim_faceon_map_plot: fs.remove_file(self.projected_sfr_salim_faceon_map_plot_path)
 
-            fs.remove_file(self.projected_sfr_mappings_earth_map_plot_path)
-            fs.remove_file(self.projected_sfr_mappings_faceon_map_plot_path)
+            # K&E
+            if self.has_projected_sfr_ke_earth_map_plot: fs.remove_file(self.projected_sfr_ke_earth_map_plot_path)
+            if self.has_projected_sfr_ke_faceon_map_plot: fs.remove_file(self.projected_sfr_ke_faceon_map_plot_path)
 
-            fs.remove_file(self.projected_sfr_mappings_ke_earth_map_plot_path)
-            fs.remove_file(self.projected_sfr_mappings_ke_faceon_map_plot_path)
+            # MAPPINGS
+            if self.has_projected_sfr_mappings_earth_map_plot: fs.remove_file(self.projected_sfr_mappings_earth_map_plot_path)
+            if self.has_projected_sfr_mappings_faceon_map_plot: fs.remove_file(self.projected_sfr_mappings_faceon_map_plot_path)
+
+            # MAPPINGS + K&E
+            if self.has_projected_sfr_mappings_ke_earth_map_plot: fs.remove_file(self.projected_sfr_mappings_ke_earth_map_plot_path)
+            if self.has_projected_sfr_mappings_ke_faceon_map_plot: fs.remove_file(self.projected_sfr_mappings_ke_faceon_map_plot_path)
 
         # Replot mass
+        if self.config.replot_projected_mass:
+
+            if self.has_projected_mass_earth_map_plot: fs.remove_file(self.projected_mass_earth_map_plot_path)
+            if self.has_projected_mass_faceon_map_plot: fs.remove_file(self.projected_mass_faceon_map_plot_path)
+        
         # Replot sSFR
+        if self.config.replot_projected_ssfr:
+
+            # Salim
+            if self.has_projected_ssfr_salim_earth_map_plot: fs.remove_file(self.projected_ssfr_salim_earth_map_plot_path)
+            if self.has_projected_ssfr_salim_faceon_map_plot: fs.remove_file(self.projected_ssfr_salim_faceon_map_plot_path)
+
+            # K&E
+            if self.has_projected_ssfr_ke_earth_map_plot: fs.remove_file(self.projected_ssfr_ke_earth_map_plot_path)
+            if self.has_projected_ssfr_ke_faceon_map_plot: fs.remove_file(self.projected_ssfr_ke_faceon_map_plot_path)
+
+            # MAPPINGS
+            if self.has_projected_ssfr_mappings_earth_map_plot: fs.remove_file(self.projected_ssfr_mappings_earth_map_plot_path)
+            if self.has_projected_ssfr_mappings_faceon_map_plot: fs.remove_file(self.projected_ssfr_mappings_faceon_map_plot_path)
+
+            # MAPPINGS + K&E
+            if self.has_projected_ssfr_mappings_ke_earth_map_plot: fs.remove_file(self.projected_ssfr_mappings_ke_earth_map_plot_path)
+            if self.has_projected_ssfr_mappings_ke_faceon_map_plot: fs.remove_file(self.projected_ssfr_mappings_ke_faceon_map_plot_path)
+
+        # Replot cell maps
+        if self.config.replot_cell_maps:
+
+            #self.config.replot_cell_sfr_maps = True
+            #self.config.replot_cell_mass_maps = True
+            self.config.replot_cell_ssfr_maps = True
+
+        # Cell sSFR maps
+        if self.config.replot_cell_ssfr_maps:
+
+            # Salim
+            if self.has_cell_ssfr_salim_map_plot: fs.remove_file(self.cell_ssfr_salim_map_plot_path)
+
+            # K&E
+            if self.has_cell_ssfr_ke_map_plot: fs.remove_file(self.cell_ssfr_ke_map_plot_path)
+
+            # MAPPINGS
+            if self.has_cell_ssfr_mappings_map_plot: fs.remove_file(self.cell_ssfr_mappings_map_plot_path)
+
+            # MAPPINGS + K&E
+            if self.has_cell_ssfr_mappings_ke_map_plot: fs.remove_file(self.cell_ssfr_mappings_ke_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2541,6 +2590,12 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ssfr_limits(self):
+        return (1e-13,1e-9,)
+
+    # -----------------------------------------------------------------
+
     def plot_projected(self):
 
         """
@@ -2952,12 +3007,6 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def ssfr_limits(self):
-        return (1e-13, 1e-9,)
-
-    # -----------------------------------------------------------------
-
     def plot_projected_ssfr(self):
 
         """
@@ -3129,12 +3178,80 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_plot_projected_ssfr_mappings_earth(self):
+        return not self.has_projected_ssfr_mappings_earth_map_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_projected_ssfr_mappings_faceon(self):
+        return not self.has_projected_ssfr_mappings_faceon_map_plot
+
+    # -----------------------------------------------------------------
+
     def plot_projected_ssfr_mappings(self):
 
         """
         This function ...
         :return:
         """
+
+        # Earth
+        if self.do_plot_projected_ssfr_mappings_earth: self.plot_projected_ssfr_mappings_earth()
+
+        # Faceon
+        if self.do_plot_projected_ssfr_mappings_faceon: self.plot_projected_ssfr_mappings_faceon()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_mappings_earth_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_mappings_earth.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_mappings_earth_map_plot(self):
+        return fs.is_file(self.projected_ssfr_mappings_earth_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_mappings_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_mappings_earth_map, path=self.projected_ssfr_mappings_earth_map_plot_path,
+                 cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_mappings_faceon_map_plot_path(self):
+        return fs.join(self.projected_path, "ssfr_mappings_faceon.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_mappings_faceon_map_plot(self):
+        return fs.is_file(self.projected_ssfr_mappings_faceon_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_projected_ssfr_mappings_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot
+        plot_map(self.ssfr_mappings_faceon_map, path=self.projected_ssfr_mappings_faceon_map_plot_path,
+                 cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
     # -----------------------------------------------------------------
 
@@ -3438,7 +3555,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_salim_data_faceon_map, path=self.cell_ssfr_salim_map_plot_path, cmap="inferno", colorbar=True)
+        plot_map(self.ssfr_salim_data_faceon_map, path=self.cell_ssfr_salim_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
     # -----------------------------------------------------------------
 
@@ -3462,7 +3579,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_ke_data_faceon_map, path=self.cell_ssfr_ke_map_plot_path, cmap="inferno", colorbar=True)
+        plot_map(self.ssfr_ke_data_faceon_map, path=self.cell_ssfr_ke_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
     # -----------------------------------------------------------------
 
@@ -3486,7 +3603,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_data_faceon_map, path=self.cell_ssfr_mappings_map_plot_path, cmap="inferno", colorbar=True)
+        plot_map(self.ssfr_mappings_data_faceon_map, path=self.cell_ssfr_mappings_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
     # -----------------------------------------------------------------
 
@@ -3510,6 +3627,6 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_ke_data_faceon_map, path=self.cell_ssfr_mappings_ke_map_plot_path, cmap="inferno", colorbar=True)
+        plot_map(self.ssfr_mappings_ke_data_faceon_map, path=self.cell_ssfr_mappings_ke_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
 
 # -----------------------------------------------------------------
