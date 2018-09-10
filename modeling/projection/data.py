@@ -77,7 +77,7 @@ def project_3d(name, x_coordinates, y_coordinates, z_coordinates, values, projec
 # -----------------------------------------------------------------
 
 def project_data(name, data, projection, return_stddev=False, return_ncells=False, description=None, as_image=False,
-                 height=None, width=None, cell_based=True): # default for 'cell_based' was False before
+                 height=None, width=None, cell_based=True, interpolate=False): # default for 'cell_based' was False before
 
     """
     This function ...
@@ -91,6 +91,7 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     :param height:
     :param width:
     :param cell_based:
+    :param interpolate:
     :return:
     """
 
@@ -119,24 +120,29 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
     if frame is None: raise RuntimeError("Something went wrong: projected frame not created")
 
     # Get the stddev
-    if return_stddev:
-        if faceon: stddev_frame = projections.faceon_stddev
-        elif edgeon: stddev_frame = projections.edgeon_stddev
-        else: raise RuntimeError("Something went wrong")
-    else: stddev_frame = None
+    #if return_stddev:
+    if faceon: stddev_frame = projections.faceon_stddev
+    elif edgeon: stddev_frame = projections.edgeon_stddev
+    else: raise RuntimeError("Something went wrong")
+    #else: stddev_frame = None
 
     # Get the ncells
-    if return_ncells:
-        if faceon: ncells_frame = projections.faceon_ncells
-        elif edgeon: ncells_frame = projections.edgeon_ncells
-        else: raise RuntimeError("Something went wrong")
-    else: ncells_frame = None
+    #if return_ncells:
+    if faceon: ncells_frame = projections.faceon_ncells
+    elif edgeon: ncells_frame = projections.edgeon_ncells
+    else: raise RuntimeError("Something went wrong")
+    #else: ncells_frame = None
+
+    # Create interpolated version?
+    original_frame = frame
+    if interpolate: frame = create_interpolated_map(frame, ncells_frame)
 
     # Return as image
     if as_image:
 
         # Create the image
         image = Image.from_frame(frame, name=name)
+        if interpolate: image.add_frame(original_frame, name="original")
         if return_stddev: image.add_frame(stddev_frame, name="stddev")
         if return_ncells: image.add_frame(ncells_frame, name="ncells")
 
@@ -151,6 +157,87 @@ def project_data(name, data, projection, return_stddev=False, return_ncells=Fals
             else: return frame, stddev_frame
         elif return_ncells: return frame, ncells_frame
         else: return frame
+
+# -----------------------------------------------------------------
+
+def create_interpolated_map(frame, ncells=None, min_ncells=10, replace_nans=True, interpolate_below=None, interpolate_above=None,
+                            not_nans_dilation_radius=3., kernel_sigma=2.):
+
+    """
+    This function ...
+    :param frame:
+    :param ncells:
+    :param min_ncells:
+    :param replace_nans:
+    :param interpolate_below:
+    :param interpolate_above:
+    :param not_nans_dilation_radius:
+    :param kernel_sigma:
+    :return:
+    """
+
+    # Copy
+    interpolated = frame.copy()
+
+    #from ...magic.tools import plotting
+
+    # Get outside nans
+    outside_nans = interpolated.nans.largest()
+    not_nans = outside_nans.inverse()
+
+    #plotting.plot_mask(not_nans, title="not nans")
+
+    not_nans.disk_dilate(radius=not_nans_dilation_radius)
+
+    #plotting.plot_mask(not_nans, title="not nans (2)")
+
+    do_nans = not_nans.largest().inverse()
+
+    #plotting.plot_mask(do_nans, title="do nans")
+
+    # Get mask
+    #
+    #where = where * do_nans.inverse()  # don't interpolate outside (where ncells = 0)
+
+    # Interpolate based on ncells
+    if ncells is not None: where = ncells.where_smaller_than(min_ncells)
+
+    # Interpolate NaNs
+    else: where = interpolated.nans #+ interpolated.where_smaller_than(1e-12)
+
+    # Mask below?
+    if interpolate_below is not None: where = where + interpolated.where_smaller_than(interpolate_below)
+
+    # Mask above?
+    if interpolate_above is not None: where = where + interpolated.where_greater_than(interpolate_above)
+
+    # Create mask of where to interpolate
+    where = where * do_nans.inverse()
+
+    #plotting.plot_mask(where, title="where")
+    # plotting.plot_mask(where, title="where smaller than " + str(self.config.min_ncells))
+    # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+
+    # Replace NaNs to zero that have to stay NaNs (don't interpolate)
+    if replace_nans:
+        interpolated[do_nans] = 0.0
+        do_nans.disk_dilate(radius=not_nans_dilation_radius)
+        #plotting.plot_mask(do_nans, title="do nans")
+
+    # Put pixels to NaN
+    interpolated.replace_by_nans(where)
+
+    # plotting.plot_mask(self.map_interpolated.nans, title="nans")
+    # exit()
+
+    #plotting.plot_frame(interpolated)
+
+    # Interpolate nans
+    interpolated.interpolate_nans(sigma=kernel_sigma, error_on_max=replace_nans)
+    interpolated.replace_by_nans(do_nans)
+
+    # Return the interpolated frame
+    return interpolated
 
 # -----------------------------------------------------------------
 

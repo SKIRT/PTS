@@ -21,6 +21,7 @@ from .component import AnalysisComponent, AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...magic.core.frame import Frame
+from ...magic.core.image import Image
 from ...core.tools.utils import lazyproperty, lazyfileproperty
 from ..core.data import Data3D
 from ..projection.data import project_data
@@ -1406,14 +1407,20 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(Frame, "cell_ssfr_salim_map_path", True, write=False)
+    @lazyfileproperty(Image, "cell_ssfr_salim_map_path", True, write=False)
     def ssfr_salim_data_faceon_map(self):
 
         """
         map of the cell specific star formation rate
         """
 
-        return project_data(self.ssfr_name, self.ssfr_salim_data, self.faceon_projection, description=self.ssfr_description)
+        return project_data(self.ssfr_name, self.ssfr_salim_data, self.faceon_projection, description=self.ssfr_description, interpolate=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_salim_data_faceon_frame(self):
+        return self.ssfr_salim_data_faceon_map.primary
 
     # -----------------------------------------------------------------
 
@@ -1429,7 +1436,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(Frame, "cell_ssfr_ke_map_path", True, write=False)
+    @lazyfileproperty(Image, "cell_ssfr_ke_map_path", True, write=False)
     def ssfr_ke_data_faceon_map(self):
 
         """
@@ -1437,7 +1444,13 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return project_data(self.ssfr_name, self.ssfr_ke_data, self.faceon_projection, description=self.ssfr_description)
+        return project_data(self.ssfr_name, self.ssfr_ke_data, self.faceon_projection, description=self.ssfr_description, interpolate=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_data_faceon_frame(self):
+        return self.ssfr_ke_data_faceon_map.primary
 
     # -----------------------------------------------------------------
 
@@ -1461,7 +1474,13 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return project_data(self.ssfr_name, self.ssfr_mappings_data, self.faceon_projection, description=self.ssfr_description)
+        return project_data(self.ssfr_name, self.ssfr_mappings_data, self.faceon_projection, description=self.ssfr_description, interpolate=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_data_faceon_frame(self):
+        return self.ssfr_mappings_data_faceon_map.primary
 
     # -----------------------------------------------------------------
 
@@ -1485,7 +1504,13 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return project_data(self.ssfr_name, self.ssfr_mappings_ke_data, self.faceon_projection, description=self.ssfr_description)
+        return project_data(self.ssfr_name, self.ssfr_mappings_ke_data, self.faceon_projection, description=self.ssfr_description, interpolate=True, as_image=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_data_faceon_frame(self):
+        return self.ssfr_mappings_ke_data_faceon_map.primary
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -2605,7 +2630,8 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @property
     def sfr_limits(self):
-        return (1e-6*self.sfr_msun_yr, 1e-3*self.sfr_msun_yr,)
+        #return (1e-6*self.sfr_msun_yr, 1e-3*self.sfr_msun_yr,) # not per solid angle
+        return (1e-8*self.sfr_msun_yr, 1e-5*self.sfr_msun_yr,)
 
     # -----------------------------------------------------------------
 
@@ -2646,8 +2672,11 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Create frame per pixel (angular) area
+        converted = frame / frame.pixel_solid_angle.to("arcsec2").value
+
         # Plot
-        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.sfr_limits, scale="log", background_color="black")
+        plot_map(converted, path=path, cmap="inferno", colorbar=True, interval=self.sfr_limits, scale="log", background_color="black", title="Star formation rate (Msun / yr / arcsec2)")
 
     # -----------------------------------------------------------------
 
@@ -2660,7 +2689,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(frame, path=path, cmap="inferno", colorbar=True, scale="log", background_color="black")
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, scale="log", background_color="black", title="Stellar mass")
 
     # -----------------------------------------------------------------
 
@@ -2674,7 +2703,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.ssfr_limits, scale="log", background_color="black") # bg color is for invalid pixels (NaN)
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.ssfr_limits, scale="log", background_color="black", title="Specific star formation rate (1/yr)") # bg color is for invalid pixels (NaN)
 
     # -----------------------------------------------------------------
 
@@ -3614,7 +3643,8 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        self.plot_ssfr_map(self.ssfr_salim_data_faceon_map, self.cell_ssfr_salim_map_plot_path)
+        #self.plot_ssfr_map(self.ssfr_salim_data_faceon_map, self.cell_ssfr_salim_map_plot_path)
+        self.plot_ssfr_map(self.ssfr_salim_data_faceon_frame, self.cell_ssfr_salim_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3638,7 +3668,8 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        self.plot_ssfr_map(self.ssfr_ke_data_faceon_map, self.cell_ssfr_ke_map_plot_path)
+        #self.plot_ssfr_map(self.ssfr_ke_data_faceon_map, self.cell_ssfr_ke_map_plot_path)
+        self.plot_ssfr_map(self.ssfr_ke_data_faceon_frame, self.cell_ssfr_ke_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3662,7 +3693,8 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        self.plot_ssfr_map(self.ssfr_mappings_data_faceon_map, self.cell_ssfr_mappings_map_plot_path)
+        #self.plot_ssfr_map(self.ssfr_mappings_data_faceon_map, self.cell_ssfr_mappings_map_plot_path)
+        self.plot_ssfr_map(self.ssfr_mappings_data_faceon_frame, self.cell_ssfr_mappings_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3686,6 +3718,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        self.plot_ssfr_map(self.ssfr_mappings_ke_data_faceon_map, self.cell_ssfr_mappings_ke_map_plot_path)
+        #self.plot_ssfr_map(self.ssfr_mappings_ke_data_faceon_map, self.cell_ssfr_mappings_ke_map_plot_path)
+        self.plot_ssfr_map(self.ssfr_mappings_ke_data_faceon_frame, self.cell_ssfr_mappings_ke_map_plot_path)
 
 # -----------------------------------------------------------------

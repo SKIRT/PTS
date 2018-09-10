@@ -2531,3 +2531,37 @@ def pairs(sequence):
     return list(combinations(sequence, 2))
 
 # -----------------------------------------------------------------
+
+def indices_in(sequence, elements):
+
+    """
+    This function ...
+    :param sequence:
+    :param elements:
+    :return:
+    """
+
+    indices = []
+    for index in range(len(sequence)):
+        item = sequence[index]
+        if item in elements: indices.append(index)
+    return indices
+
+# -----------------------------------------------------------------
+
+def indices_not_in(sequence, elements):
+
+    """
+    This function ...
+    :param sequence:
+    :param elements:
+    :return:
+    """
+
+    indices = []
+    for index in range(len(sequence)):
+        item = sequence[index]
+        if item not in elements: indices.append(index)
+    return indices
+
+# -----------------------------------------------------------------

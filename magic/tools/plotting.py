@@ -1054,7 +1054,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
                                normalize_in=normalize_in, soft_min=soft_min, soft_max=soft_max,
                                soft_min_scaling=soft_min_scaling, soft_max_scaling=soft_max_scaling,
                                symmetric_method=symmetric_method, check_around_zero=check_around_zero, wcs=wcs)
-    print(vmin, vmax, scale)
+    #print(vmin, vmax, scale)
 
     # Get the normalization
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)
@@ -1121,7 +1121,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 # -----------------------------------------------------------------
 
 def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-             contours_color="white", path=None, background_color=None):
+             contours_color="white", path=None, background_color=None, title=None):
 
     """
     This function ...
@@ -1135,6 +1135,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     :param contours_color:
     :param path:
     :param background_color:
+    :param title:
     :return:
     """
 
@@ -1144,10 +1145,11 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
         # Plot with contours
         plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
                             data_cmap=cmap, plot_data=True, nlevels=ncontours,
-                            single_colour=contours_color, path=path, background_color=background_color)
+                            single_colour=contours_color, path=path, background_color=background_color, title=title)
 
     # No contours
-    else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path, background_color=background_color)
+    else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
+                     background_color=background_color, title=title)
 
 # -----------------------------------------------------------------
 

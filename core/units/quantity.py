@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import astronomical modules
 from astropy.units import Quantity
 from astropy.coordinates import Angle
@@ -798,6 +801,20 @@ def multiply_with_units(value, unit, other, other_unit=None):
 
 # -----------------------------------------------------------------
 
+def float_division(a, b):
+
+    """
+    This function ...
+    :param a:
+    :param b:
+    :return:
+    """
+
+    if b == 0: return math.copysign(float("inf"), a)
+    else: return float(a) / float(b)
+
+# -----------------------------------------------------------------
+
 def divide_with_units(value, unit, other, other_unit=None):
 
     """
@@ -821,7 +838,7 @@ def divide_with_units(value, unit, other, other_unit=None):
     if types.is_real_or_integer(other):
 
         # Determine value and unit
-        new_value = value / float(other)
+        new_value = float_division(value, other)
         new_unit = unit
 
     # Divide by unit
@@ -873,22 +890,22 @@ def divide_with_units(value, unit, other, other_unit=None):
         if isinstance(new_unit, PhotometricUnit):
 
             if new_unit.has_scale:
-                new_value = value / other.value * new_unit.scale_factor
+                new_value = float_division(value, other.value) * new_unit.scale_factor
                 new_unit = new_unit.reduced_root  # without scale
             else:
-                new_value = value / other.value
+                new_value = float_division(value, other.value)
                 new_unit = new_unit.reduced
 
         # Not photometric, but still unit
         elif types.is_unit(new_unit):
 
-            new_value = value / other.value * new_unit.scale
+            new_value = float_division(value, other.value) * new_unit.scale
             new_unit._scale = 1
 
         # NOT A UNIT: UNITS DIVIDED AWAY?
         elif types.is_real_or_integer(new_unit):
 
-            new_value = value / other.value * new_unit
+            new_value = float_division(value, other.value) * new_unit
             new_unit = None
 
         # Invalid new unit

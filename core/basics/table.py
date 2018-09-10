@@ -345,6 +345,9 @@ class SmartTable(Table):
         # Always used masked tables
         kwargs["masked"] = True
 
+        if "names" in kwargs: kwargs.pop("names")
+        if "units" in kwargs: kwargs.pop("units")
+
         # Call the constructor of the base class
         super(SmartTable, self).__init__(*args, **kwargs)
 
@@ -404,9 +407,9 @@ class SmartTable(Table):
         nrows = len(columns[0])
 
         # Get options
-        names = kwargs.pop("names", None)
-        units = kwargs.pop("units", None)
-        dtypes = kwargs.pop("dtypes", None)
+        names = kwargs.get("names", None) # not pop, so appears in constructor (of e.g. Relation) as well
+        units = kwargs.get("units", None) # not pop, so appears in constructor (of e.g. Relation) as well
+        dtypes = kwargs.pop("dtypes", None) ### not pop, so appears in constructor (of e.g. Relation) as well
         descriptions = kwargs.pop("descriptions", None)
         as_columns = kwargs.pop("as_columns", False)
         meta = kwargs.pop("meta", {})
@@ -525,6 +528,7 @@ class SmartTable(Table):
                 #super(SmartTable, table).add_row(row)
                 #print(row)
                 #print([table.column_unit(colname) for colname in table.colnames])
+                print("ROW", row)
                 SmartTable.add_row(table, row)
 
         # Set meta info
@@ -2555,24 +2559,12 @@ class SmartTable(Table):
 
     @property
     def column_names(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.colnames
 
     # -----------------------------------------------------------------
 
     @property
     def units(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         units = []
         for name in self.column_names: units.append(self.column_unit(name))
         return units
@@ -2580,16 +2572,22 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @property
+    def column_units(self):
+        return self.units
+
+    # -----------------------------------------------------------------
+
+    @property
     def unit_strings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         strings = []
         for name in self.column_names: strings.append(self.column_unit_string(name))
         return strings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def column_unit_strings(self):
+        return self.unit_strings
 
     # -----------------------------------------------------------------
 

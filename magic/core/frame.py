@@ -2143,12 +2143,6 @@ class Frame(NDDataArray):
 
     @property
     def pixel_solid_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.angular_pixelarea
 
     # -----------------------------------------------------------------

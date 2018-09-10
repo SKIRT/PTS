@@ -368,8 +368,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_sfr_salim_path(self):
+        return fs.join(self.cell_sfr_path, "sfr_salim.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_cell_ssfr_salim(self):
         return fs.is_file(self.cell_ssfr_salim_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_salim(self):
+        return fs.is_file(self.cell_sfr_salim_path)
 
     # -----------------------------------------------------------------
 
@@ -391,9 +403,21 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def cell_sfr_salim(self):
+        return Data3D.from_file(self.cell_sfr_salim_path)
+
+    # -----------------------------------------------------------------
+
     @property
     def cell_ssfr_salim_values(self):
         return self.cell_ssfr_salim.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_salim_values(self):
+        return self.cell_sfr_salim.values
 
     # -----------------------------------------------------------------
 
@@ -412,6 +436,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def ssfr_salim_unit(self):
         return self.cell_ssfr_salim.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_salim_unit(self):
+        return self.cell_sfr_salim.unit
 
     # -----------------------------------------------------------------
 
@@ -457,6 +487,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_sfr_values_salim(self):
+        return self.cell_sfr_salim_values[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_salim_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_salim.dat")
@@ -466,6 +502,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def has_ssfr_salim_funev_cells(self):
         return fs.is_file(self.ssfr_salim_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_salim_cells_aux(self):
+        return {"sfr": self.valid_cell_sfr_values_salim}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_salim_cells_aux_units(self):
+        return {"sfr": self.sfr_salim_unit}
 
     # -----------------------------------------------------------------
 
@@ -483,7 +531,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Create and return
         #return Scatter2D.from_xy(self.cell_ssfr_values, self.cell_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_salim, self.valid_cell_funev_values_salim, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.valid_cell_ssfr_values_salim, self.valid_cell_funev_values_salim,
+                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit,
+                                 x_description=self.ssfr_description, y_description=self.funev_description,
+                                 aux=self.ssfr_salim_cells_aux, aux_units=self.ssfr_salim_cells_aux_units) # auxilary axes
 
     # -----------------------------------------------------------------
     #   K&E
@@ -496,14 +547,32 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_sfr_ke_path(self):
+        return fs.join(self.cell_sfr_path, "sfr_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_cell_ssfr_ke(self):
         return fs.is_file(self.cell_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_ke(self):
+        return fs.is_file(self.cell_sfr_ke_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_ssfr_ke(self):
         return Data3D.from_file(self.cell_ssfr_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_ke(self):
+        return Data3D.from_file(self.cell_sfr_ke_path)
 
     # -----------------------------------------------------------------
 
@@ -516,6 +585,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_ssfr_ke_values(self):
         return self.cell_ssfr_ke.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_ke_values(self):
+        return self.cell_sfr_ke.values
 
     # -----------------------------------------------------------------
 
@@ -549,6 +624,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_sfr_values_ke(self):
+        return self.cell_sfr_ke_values[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_ke_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_ke.dat")
@@ -574,7 +655,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Create and return
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_ke, self.valid_cell_funev_values_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.valid_cell_ssfr_values_ke, self.valid_cell_funev_values_ke,
+                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit,
+                                 x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     #   MAPPINGS
@@ -587,14 +670,32 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_sfr_mappings_path(self):
+        return fs.join(self.cell_sfr_path, "sfr_mappings.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_cell_ssfr_mappings(self):
         return fs.is_file(self.cell_ssfr_mappings_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_mappings(self):
+        return fs.is_file(self.cell_sfr_mappings_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_ssfr_mappings(self):
         return Data3D.from_file(self.cell_ssfr_mappings_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_mappings(self):
+        return Data3D.from_file(self.cell_sfr_mappings_path)
 
     # -----------------------------------------------------------------
 
@@ -607,6 +708,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_ssfr_mappings_values(self):
         return self.cell_ssfr_mappings.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_mappings_values(self):
+        return self.cell_sfr_mappings.values
 
     # -----------------------------------------------------------------
 
@@ -631,6 +738,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def valid_cell_funev_values_mappings(self):
         return self.cell_funev_values[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_sfr_values_mappings(self):
+        return self.cell_sfr_mappings_values[self.valid_cell_mask_mappings]
 
     # -----------------------------------------------------------------
 
@@ -674,14 +787,32 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def cell_sfr_mappings_ke_path(self):
+        return fs.join(self.cell_sfr_path, "sfr_mappings_ke.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_cell_ssfr_mappings_ke(self):
         return fs.is_file(self.cell_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_mappings_ke(self):
+        return fs.is_file(self.cell_sfr_mappings_ke_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_ssfr_mappings_ke(self):
         return Data3D.from_file(self.cell_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_mappings_ke(self):
+        return Data3D.from_file(self.cell_sfr_mappings_ke_path)
 
     # -----------------------------------------------------------------
 
@@ -694,6 +825,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_ssfr_mappings_ke_values(self):
         return self.cell_ssfr_mappings_ke.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_mappings_ke_values(self):
+        return self.cell_sfr_mappings_ke.values
 
     # -----------------------------------------------------------------
 
@@ -718,6 +855,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def valid_cell_funev_values_mappings_ke(self):
         return self.cell_funev_values[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_sfr_values_mappings_ke(self):
+        return self.cell_sfr_mappings_ke_values[self.valid_cell_mask_mappings_ke]
 
     # -----------------------------------------------------------------
 
@@ -746,7 +889,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Create and return
-        return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings_ke, self.valid_cell_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings_ke, self.valid_cell_funev_values_mappings_ke,
+                                 x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit,
+                                 x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     # sSFR-Funev pixel scatter data
