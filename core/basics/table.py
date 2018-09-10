@@ -345,7 +345,7 @@ class SmartTable(Table):
         # Always used masked tables
         kwargs["masked"] = True
 
-        if "names" in kwargs: kwargs.pop("names")
+        #if "names" in kwargs: kwargs.pop("names")
         if "units" in kwargs: kwargs.pop("units")
 
         # Call the constructor of the base class

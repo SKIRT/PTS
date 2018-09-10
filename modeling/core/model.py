@@ -8000,36 +8000,18 @@ class RTModel(object):
 
     @property
     def dust_map_shape(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_map_wcs.shape
 
     # -----------------------------------------------------------------
 
     @property
     def dust_map_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_map_wcs.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def diffuse_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.diffuse_dust_mass_map_earth
 
     # -----------------------------------------------------------------
@@ -8093,84 +8075,42 @@ class RTModel(object):
 
     @property
     def has_diffuse_dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return True
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_diffuse_dust_mass and self.has_sfr_dust_mass
 
     # -----------------------------------------------------------------
 
     @property
     def has_diffuse_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_diffuse_dust_mass_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_diffuse_dust_mass_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_map_earth and self.has_diffuse_dust_mass
 
     # -----------------------------------------------------------------
 
     @property
     def has_diffuse_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_map_edgeon and self.has_diffuse_dust_mass
 
     # -----------------------------------------------------------------
 
     @property
     def has_diffuse_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_map_faceon and self.has_diffuse_dust_mass
 
     # -----------------------------------------------------------------
 
     @property
     def dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_mass_map_earth
 
     # -----------------------------------------------------------------
@@ -8232,48 +8172,24 @@ class RTModel(object):
 
     @property
     def has_dust_mass_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_mass_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_mass_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_diffuse_dust_mass_map_earth and self.has_sfr_dust_mass_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_diffuse_dust_mass_map_faceon and self.has_sfr_dust_mass_map_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_total_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_diffuse_dust_mass_map_edgeon and self.has_sfr_dust_mass_map_edgeon
 
     # -----------------------------------------------------------------
@@ -8356,96 +8272,48 @@ class RTModel(object):
 
     @property
     def old_bulge_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def old_bulge_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_projections.earth
 
     # -----------------------------------------------------------------
 
     @property
     def old_bulge_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
     def old_bulge_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_projections.edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_old_bulge_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return True
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return True
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return True
 
     # -----------------------------------------------------------------
@@ -8467,72 +8335,36 @@ class RTModel(object):
 
     @property
     def old_disk_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_disk_map # just the input map
 
     # -----------------------------------------------------------------
 
     @property
     def old_disk_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_disk_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
     def old_disk_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_disk_projections.edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_disk_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_old_disk_map
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_disk_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_old_disk_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_disk_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_old_disk_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
@@ -8554,72 +8386,36 @@ class RTModel(object):
 
     @property
     def young_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_map # just the input map
 
     # -----------------------------------------------------------------
 
     @property
     def young_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
     def young_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_projections.edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def has_young_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_young_map
 
     # -----------------------------------------------------------------
 
     @property
     def has_young_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_young_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
 
     @property
     def has_young_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_young_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
@@ -8640,72 +8436,36 @@ class RTModel(object):
 
     @property
     def sfr_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_map # just the input map
 
     # -----------------------------------------------------------------
 
     @property
     def sfr_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
     def sfr_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_projections.edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def has_sfr_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_sfr_map
 
     # -----------------------------------------------------------------
 
     @property
     def has_sfr_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_sfr_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
 
     @property
     def has_sfr_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_sfr_map # if we have the input map, we can deproject it
 
     # -----------------------------------------------------------------
@@ -8726,72 +8486,36 @@ class RTModel(object):
 
     @property
     def dust_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_map # just the input map
 
     # -----------------------------------------------------------------
 
     @property
     def dust_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
     def dust_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_projections.edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_map_earth(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.has_dust_map
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_map # if there is an input map, we can deproject it
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_map # if there is an input map, we can deproject it
 
     # -----------------------------------------------------------------
@@ -8814,24 +8538,12 @@ class RTModel(object):
 
     @property
     def old_bulge_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
     def old_bulge_sed_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
@@ -8854,24 +8566,12 @@ class RTModel(object):
 
     @property
     def old_disk_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_disk_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
     def old_disk_sed_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_disk_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
@@ -8894,24 +8594,12 @@ class RTModel(object):
 
     @property
     def young_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
     def young_sed_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
@@ -8934,24 +8622,12 @@ class RTModel(object):
 
     @property
     def sfr_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_component_sed.sed
 
     # -----------------------------------------------------------------
 
     @property
     def sfr_sed_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
@@ -8959,120 +8635,60 @@ class RTModel(object):
 
     @property
     def dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.observed_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.has_observed_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.observed_dust_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_simulations.has_observed_dust_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def intrinsic_dust_sed_sfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_simulations.intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_dust_sed_sfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sfr_simulations.has_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_sed - self.intrinsic_dust_sed_sfr
 
     # -----------------------------------------------------------------
 
     @property
     def has_diffuse_dust_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_dust_sed and self.has_intrinsic_dust_sed_sfr
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def diffuse_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.diffuse_dust_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_diffuse_dust_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_diffuse_dust_sed
 
     # -----------------------------------------------------------------
@@ -9174,14 +8790,14 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def total_ssfr(self):
-        return self.total_ssfr_map.average(add_unit=True)
+    def total_ssfr_salim(self):
+        return self.total_ssfr_map_salim.average(add_unit=True)
 
     # -----------------------------------------------------------------
 
     @property
-    def has_total_ssfr(self):
-        return self.has_total_ssfr_map
+    def has_total_ssfr_salim(self):
+        return self.has_total_ssfr_map_salim
 
     # -----------------------------------------------------------------
 
@@ -9228,7 +8844,7 @@ class RTModel(object):
         if self.has_total_stellar_mass: values[stellar_mass_name] = self.total_stellar_mass
 
         # Specific star formation rate
-        if self.has_total_ssfr: values[ssfr_name] = self.total_ssfr
+        if self.has_total_ssfr_salim: values[ssfr_name] = self.total_ssfr_salim
 
         # Return
         return values

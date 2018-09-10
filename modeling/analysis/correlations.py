@@ -43,6 +43,13 @@ ssfr_funev_name = "sSFR-Funev"
 
 # -----------------------------------------------------------------
 
+# Auxilary column names
+sfr_name = "SFR"
+dust_mass_name = "Dust mass"
+distance_center_name = "Distance from center"
+
+# -----------------------------------------------------------------
+
 class CorrelationsAnalyser(AnalysisRunComponent):
     
     """
@@ -157,65 +164,179 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return fs.join(self.sfr_path, "cell")
 
     # -----------------------------------------------------------------
-    # M51 DATA
+    # CELL PROPERTIESS
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_x_coordinates(self):
+        return self.model.cell_x_coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_y_coordinates(self):
+        return self.model.cell_y_coordinates
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_z_coordinates(self):
+        return self.model.cell_z_coordinates
+
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def m51_column_names(self):
+    def cell_radii(self):
+        return np.sqrt(self.cell_x_coordinates**2 + self.cell_y_coordinates**2 + self.cell_z_coordinates**2)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def length_unit(self):
+        return "pc"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_volumes(self):
+        return self.model.cell_volumes # is array
+
+    # -----------------------------------------------------------------
+    # DUST MASS
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass_unit(self):
+        return "Msun"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_diffuse_dust_mass_fractions(self):
+        return self.model.cell_mass_fractions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def diffuse_dust_mass_scalar(self):
+        return self.model.diffuse_dust_mass.to(self.dust_mass_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_diffuse_dust_masses(self):
+        return self.cell_diffuse_dust_mass_fractions * self.diffuse_dust_mass_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_dust_mass_scalar(self):
+        return self.model.sfr_dust_mass.to(self.dust_mass_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_cell_stellar_density(self):
+        return self.model.sfr_cell_stellar_density # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_cell_normalized_mass(self):
+        values = self.sfr_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_dust_masses(self):
+        return self.sfr_cell_normalized_mass * self.sfr_dust_mass_scalar
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_mass_path(self):
+        return fs.join(self.correlations_path, "dust_mass.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_dust_mass(self):
+        return fs.is_file(self.cell_dust_mass_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass_name(self):
+        return "Mdust"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass_description(self):
+        return "Total dust mass"
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_dust_mass_path", True, write=True)
+    def cell_dust_mass_data(self):
 
         """
         This function ...
         :return:
         """
 
+        # Calculate total dust masses in cells
+        dust_masses = self.cell_diffuse_dust_masses + self.cell_sfr_dust_masses
+
+        # Create the data
+        return Data3D(self.dust_mass_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
+                      dust_masses, length_unit=self.length_unit, unit=self.dust_mass_unit,
+                      description=self.dust_mass_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_mass_values(self):
+        return self.cell_dust_mass_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_mass_unit(self):
+        return self.cell_dust_mass_data.unit
+
+    # -----------------------------------------------------------------
+    # M51 DATA
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def m51_column_names(self):
         return fs.get_column_names(m51_data_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def m51_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.loadtxt(m51_data_path, unpack=True)
 
     # -----------------------------------------------------------------
 
     @property
     def m51_log10_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.m51_data[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def m51_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 10**self.m51_log10_ssfr
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def m51_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 10**self.m51_data[1]
 
     # -----------------------------------------------------------------
@@ -255,60 +376,30 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def m31_column_names(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return fs.get_column_names(m31_data_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def m31_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.loadtxt(m31_data_path, unpack=True)
 
     # -----------------------------------------------------------------
 
     @property
     def m31_log10_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.m31_data[0]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def m31_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 10**self.m31_log10_ssfr
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def m31_fractions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.m31_data[1] / 100.
 
     # -----------------------------------------------------------------
@@ -493,6 +584,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_dust_mass_values_salim(self):
+        return self.cell_dust_mass_values[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_radii_salim(self):
+        return self.cell_radii[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_salim_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_salim.dat")
@@ -507,13 +610,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def ssfr_salim_cells_aux(self):
-        return {"sfr": self.valid_cell_sfr_values_salim}
+        return {sfr_name: self.valid_cell_sfr_values_salim, dust_mass_name: self.valid_cell_dust_mass_values_salim, distance_center_name: self.valid_cell_radii_salim}
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ssfr_salim_cells_aux_units(self):
-        return {"sfr": self.sfr_salim_unit}
+        return {sfr_name: self.sfr_salim_unit, dust_mass_name: self.cell_dust_mass_unit, distance_center_name: self.length_unit}
 
     # -----------------------------------------------------------------
 

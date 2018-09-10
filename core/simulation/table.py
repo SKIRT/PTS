@@ -139,12 +139,14 @@ class SkirtTable(SmartTable):
 
         # Get the data
         data, names, units = get_skirt_data(path, expected_nrows=expected_nrows, method=method)
+        #print(names, units)
 
         # Debugging
         log.debug("Creating the table ...")
 
         # Create a new table from the data
         table = cls(data=data, names=names, masked=True, copy=False)
+        #print(table.colnames)
 
         # SET THE DATA
         # Set mask for each column from None values
