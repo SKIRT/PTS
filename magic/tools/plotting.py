@@ -1033,6 +1033,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param aspect:
     :param symmetric_method:
     :param check_around_zero:
+    :param background_color:
     :return:
     """
 

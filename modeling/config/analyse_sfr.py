@@ -29,13 +29,22 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 
 # -----------------------------------------------------------------
 
-# Options
+# Plotting
 definition.add_flag("plot", "do plotting", True)
-definition.add_flag("replot", "replot all", False)
+definition.add_flag("replot", "replot all")
+definition.add_flag("replot_sfr", "replot all SFR maps")
+definition.add_flag("replot_mass", "replot all mass maps")
+definition.add_flag("replot_ssfr", "replot all sSFR maps")
+
+# Projected
 definition.add_flag("replot_projected", "replot projected", False)
 definition.add_flag("replot_projected_sfr", "replot projected SFR", False)
 definition.add_flag("replot_projected_mass", "replot projected mass", False)
 definition.add_flag("replot_projected_ssfr", "replot projected sSFR", False)
+
+# Cell maps
+definition.add_flag("replot_cell_maps", "replot cell maps", False)
+definition.add_flag("replot_cell_ssfr_maps", "replot cell sSFR maps", False)
 
 # -----------------------------------------------------------------
 

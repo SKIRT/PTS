@@ -108,6 +108,19 @@ class SFRAnalyser(AnalysisRunComponent):
             self.config.replot_projected_mass = True
             self.config.replot_projected_ssfr = True
 
+        # SFR
+        if self.config.replot_sfr:
+            self.config.replot_projected_sfr = True
+
+        # Mass
+        if self.config.replot_mass:
+            self.config.replot_projected_mass = True
+
+        # sSFR
+        if self.config.replot_ssfr:
+            self.config.replot_projected_ssfr = True
+            self.config.replot_cell_ssfr_maps = True
+
         # Replot SFR
         if self.config.replot_projected_sfr:
 
@@ -2592,13 +2605,14 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @property
     def sfr_limits(self):
-        return (1e-4*self.sfr_msun_yr, 1e-2*self.sfr_msun_yr,)
+        return (1e-6*self.sfr_msun_yr, 1e-3*self.sfr_msun_yr,)
 
     # -----------------------------------------------------------------
 
     @property
     def ssfr_limits(self):
-        return (1e-13, 1e-9,)
+        #return (1e-13, 1e-9,)
+        return (1e-14, 1e-10,)
 
     # -----------------------------------------------------------------
 
@@ -2633,7 +2647,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.sfr_limits, scale="log")
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.sfr_limits, scale="log", background_color="black")
 
     # -----------------------------------------------------------------
 
@@ -2646,7 +2660,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(frame, path, cmap="inferno", colorbar=True, scale="log")
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, scale="log", background_color="black")
 
     # -----------------------------------------------------------------
 
@@ -2660,7 +2674,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.ssfr_limits, scale="log")
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.ssfr_limits, scale="log", background_color="black") # bg color is for invalid pixels (NaN)
 
     # -----------------------------------------------------------------
 
