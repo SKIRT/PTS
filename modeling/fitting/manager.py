@@ -78,24 +78,12 @@ class GenerationManager(SimulationManager, FittingComponent):
 
     @lazyproperty
     def generation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.fitting_run.generations_path, self.generation.name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def manage_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.fitting_run.generations_path, "manage__" + self.generation.name)
 
     # -----------------------------------------------------------------

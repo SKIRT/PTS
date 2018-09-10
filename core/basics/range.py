@@ -685,6 +685,22 @@ class IntegerRange(Range):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def limits(cls, values, inclusive=True):
+
+        """
+        This function ...
+        :param values:
+        :param inclusive:
+        :return:
+        """
+
+        min_value = int(min(values)) # if list of reals
+        max_value = int(math.ceil(max(values))) # if list of reals
+        return cls(min_value, max_value, inclusive=inclusive)
+
+    # -----------------------------------------------------------------
+
     @Range.min.setter
     def min(self, value):
 
@@ -825,6 +841,22 @@ class RealRange(Range):
 
         # Call the constructor of the base class
         super(RealRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def limits(cls, values, inclusive=True):
+
+        """
+        This function ...
+        :param values:
+        :param inclusive:
+        :return:
+        """
+
+        min_value = float(min(values)) # if list of ints
+        max_value = float(max(values)) # if list of ints
+        return cls(min_value, max_value, inclusive=inclusive)
 
     # -----------------------------------------------------------------
 

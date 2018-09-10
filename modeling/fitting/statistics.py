@@ -845,48 +845,24 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     @lazyproperty
     def modeling_environment(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_modeling_environment(self.config.path)
 
     # -----------------------------------------------------------------
 
     @property
     def clipped_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def truncated_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.truncated_sed
 
     # -----------------------------------------------------------------
 
     @property
     def asymptotic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.asymptotic_sed
 
     # -----------------------------------------------------------------
@@ -932,120 +908,66 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     @lazyproperty
     def fitting_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.fitting_runs
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_runs.load(self.config.run)
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.fitting_filters
 
     # -----------------------------------------------------------------
 
     @property
     def parameter_ranges(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.free_parameter_ranges
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_ranges_generations(self):
+        ranges = OrderedDict()
+        for generation_name in self.generation_names: ranges[generation_name] = self.get_generation(generation_name).parameter_ranges
+        return ranges
 
     # -----------------------------------------------------------------
 
     @property
     def parameter_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.parameter_ranges.keys()
 
     # -----------------------------------------------------------------
 
     @property
     def parameter_units(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.parameter_units
 
     # -----------------------------------------------------------------
 
     def get_parameter_unit(self, label):
-
-        """
-        Thisf unction ...
-        :param label:
-        :return:
-        """
-
         return self.parameter_units[label]
 
     # -----------------------------------------------------------------
 
     def has_parameter_unit(self, label):
-
-        """
-        This function ...
-        :param label:
-        :return:
-        """
-
         return self.get_parameter_unit(label) is not None
 
     # -----------------------------------------------------------------
 
     @property
     def initial_parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.first_guess_parameter_values
 
     # -----------------------------------------------------------------
 
     @property
     def grid_settings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.grid_settings
 
     # -----------------------------------------------------------------
@@ -1073,36 +995,18 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     @property
     def timing_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.timing_table
 
     # -----------------------------------------------------------------
 
     @property
     def memory_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.memory_table
 
     # -----------------------------------------------------------------
 
     @property
     def generation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fitting_run.generation_names
 
     # -----------------------------------------------------------------
@@ -2160,15 +2064,9 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
 
     @memoize_method
     def get_unique_parameter_values(self, generation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :return:
-        """
-
+        return self.get_generation(generation_name).unique_parameter_values
         # Create list of unique values for each free parameter
-        return self.get_parameters_table(generation_name).unique_parameter_values
+        #return self.get_parameters_table(generation_name).unique_parameter_values
 
     # -----------------------------------------------------------------
 
@@ -2518,11 +2416,15 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Debugging
         log.debug("Showing best " + str(nsimulations) + " simulations for generation '" + generation_name + "' ...")
 
+        # Get unique parameter values for generation
+        unique_values = self.get_unique_parameter_values_scalar(generation_name)
+
         # Show ranges
         print("")
         print("Parameter ranges:")
         print("")
-        for label in self.parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges[label]))
+        #for label in self.parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges[label]))
+        for label in self.parameter_labels: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.parameter_ranges_generations[generation_name][label]))
 
         # Get the simulation names
         simulation_names = self.get_best_simulation_names(generation_name, nsimulations=nsimulations)
@@ -2530,9 +2432,6 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         # Get chi squared values and parameters of the best simulations
         chi_squared_values = self.get_best_simulations_chi_squared_values(generation_name, nsimulations=nsimulations)
         parameters = self.get_best_simulations_parameters(generation_name, nsimulations=nsimulations)
-
-        # Get unique parameter values for generation
-        unique_values = self.get_unique_parameter_values_scalar(generation_name)
 
         # Show
         show_best_simulations_impl(simulation_names, chi_squared_values, parameters, self.parameter_units, unique_values, self.parameter_scales, self.initial_parameter_values)
@@ -3169,7 +3068,7 @@ class FittingStatistics(InteractiveConfigurable, FittingComponent):
         """
 
         # Get
-        generation_simulation_name_a, generation_simulation_name_b = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_parameters_definition, **kwargs)
+        generation_simulation_name_a, generation_simulation_name_b, config = self.get_two_generation_simulation_names_and_config_from_command(command, self.compare_parameters_definition, **kwargs)
 
         # Compare
         self.compare_parameters(generation_simulation_name_a, generation_simulation_name_b)

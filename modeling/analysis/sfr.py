@@ -2591,8 +2591,14 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_limits(self):
+        return (1e-4*self.sfr_msun_yr, 1e-2*self.sfr_msun_yr,)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ssfr_limits(self):
-        return (1e-13,1e-9,)
+        return (1e-13, 1e-9,)
 
     # -----------------------------------------------------------------
 
@@ -2614,6 +2620,47 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Specific star formation rate
         self.plot_projected_ssfr()
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_map(self, frame, path):
+
+        """
+        This function ...
+        :param frame:
+        :param path:
+        :return:
+        """
+
+        # Plot
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.sfr_limits, scale="log")
+
+    # -----------------------------------------------------------------
+
+    def plot_mass_map(self, frame, path):
+
+        """
+        Thisn function ...
+        :param frame:
+        :param path:
+        :return:
+        """
+
+        plot_map(frame, path, cmap="inferno", colorbar=True, scale="log")
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_map(self, frame, path):
+
+        """
+        This function ...
+        :param frame:
+        :param path:
+        :return:
+        """
+
+        # Plot
+        plot_map(frame, path=path, cmap="inferno", colorbar=True, interval=self.ssfr_limits, scale="log")
 
     # -----------------------------------------------------------------
 
@@ -2685,7 +2732,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.sfr_salim_earth_map, path=self.projected_sfr_salim_earth_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_salim_earth_map, self.projected_sfr_salim_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2709,7 +2756,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.sfr_salim_faceon_map, path=self.projected_sfr_salim_faceon_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_salim_faceon_map, self.projected_sfr_salim_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2759,7 +2806,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.sfr_ke_earth_map, path=self.projected_sfr_ke_earth_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_ke_earth_map, self.projected_sfr_ke_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2782,7 +2829,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.sfr_ke_faceon_map, path=self.projected_sfr_ke_faceon_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_ke_faceon_map, self.projected_sfr_ke_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2832,7 +2879,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.sfr_mappings_earth_map, path=self.projected_sfr_mappings_earth_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_mappings_earth_map, self.projected_sfr_mappings_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2855,7 +2902,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.sfr_mappings_faceon_map, path=self.projected_sfr_mappings_faceon_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_mappings_faceon_map, self.projected_sfr_mappings_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2905,7 +2952,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.sfr_mappings_ke_earth_map, path=self.projected_sfr_mappings_ke_earth_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_mappings_ke_earth_map, self.projected_sfr_mappings_ke_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2928,7 +2975,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.sfr_mappings_ke_faceon_map, path=self.projected_sfr_mappings_ke_faceon_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_sfr_map(self.sfr_mappings_ke_faceon_map, self.projected_sfr_mappings_ke_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2979,7 +3026,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.stellar_mass_earth_map, path=self.projected_mass_earth_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_mass_map(self.stellar_mass_earth_map, self.projected_mass_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3003,7 +3050,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.stellar_mass_faceon_map, path=self.projected_mass_faceon_map_plot_path, cmap="inferno", colorbar=True)
+        self.plot_mass_map(self.stellar_mass_faceon_map, self.projected_mass_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3075,7 +3122,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_salim_earth_map, path=self.projected_ssfr_salim_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_salim_earth_map, self.projected_ssfr_salim_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3099,7 +3146,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_salim_faceon_map, path=self.projected_ssfr_salim_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_salim_faceon_map, self.projected_ssfr_salim_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3150,7 +3197,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_ke_earth_map, path=self.projected_ssfr_ke_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_ke_earth_map, self.projected_ssfr_ke_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3174,7 +3221,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_ke_faceon_map, path=self.projected_ssfr_ke_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_ke_faceon_map, self.projected_ssfr_ke_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3225,8 +3272,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_earth_map, path=self.projected_ssfr_mappings_earth_map_plot_path,
-                 cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_mappings_earth_map, self.projected_ssfr_mappings_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3250,8 +3296,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_faceon_map, path=self.projected_ssfr_mappings_faceon_map_plot_path,
-                 cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_mappings_faceon_map, self.projected_ssfr_mappings_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3302,7 +3347,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_ke_earth_map, path=self.projected_ssfr_mappings_ke_earth_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_mappings_ke_earth_map, self.projected_ssfr_mappings_ke_earth_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3325,7 +3370,7 @@ class SFRAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        plot_map(self.ssfr_mappings_ke_faceon_map, path=self.projected_ssfr_mappings_ke_faceon_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_mappings_ke_faceon_map, self.projected_ssfr_mappings_ke_faceon_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3555,7 +3600,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_salim_data_faceon_map, path=self.cell_ssfr_salim_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_salim_data_faceon_map, self.cell_ssfr_salim_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3579,7 +3624,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_ke_data_faceon_map, path=self.cell_ssfr_ke_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_ke_data_faceon_map, self.cell_ssfr_ke_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3603,7 +3648,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_data_faceon_map, path=self.cell_ssfr_mappings_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_mappings_data_faceon_map, self.cell_ssfr_mappings_map_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -3627,6 +3672,6 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Plot
-        plot_map(self.ssfr_mappings_ke_data_faceon_map, path=self.cell_ssfr_mappings_ke_map_plot_path, cmap="inferno", colorbar=True, interval=self.ssfr_limits)
+        self.plot_ssfr_map(self.ssfr_mappings_ke_data_faceon_map, self.cell_ssfr_mappings_ke_map_plot_path)
 
 # -----------------------------------------------------------------

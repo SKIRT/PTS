@@ -971,7 +971,7 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
     # String -> parse
     elif isinstance(interval, basestring):
 
-        print(interval)
+        #print(interval)
         from ...core.tools import parsing
         try: vmin, vmax = parsing.real_pair(interval)
         except ValueError: raise ValueError("Cannot interpret the interval")
@@ -1053,7 +1053,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
                                normalize_in=normalize_in, soft_min=soft_min, soft_max=soft_max,
                                soft_min_scaling=soft_min_scaling, soft_max_scaling=soft_max_scaling,
                                symmetric_method=symmetric_method, check_around_zero=check_around_zero, wcs=wcs)
-    #print(vmin, vmax, scale)
+    print(vmin, vmax, scale)
 
     # Get the normalization
     norm = get_normalization(scale, vmin, vmax, data=data, scale_parameter=scale_parameter)

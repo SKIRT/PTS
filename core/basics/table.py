@@ -456,7 +456,7 @@ class SmartTable(Table):
             # Determine the unit
             unit = None
             if units is not None:
-                if types.is_sequence(units): unit = units[index]
+                if types.is_sequence_or_tuple(units): unit = units[index]
                 elif types.is_dictionary(units):
                     if name in units: unit = units[name]
                     else: unit = None

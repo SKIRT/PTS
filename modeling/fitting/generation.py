@@ -2728,24 +2728,12 @@ class Generation(object):
 
     @lazyproperty
     def unique_parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.parameters_table.unique_parameter_values
 
     # -----------------------------------------------------------------
 
     @property
     def chi_squared_table_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, "chi_squared.dat")
 
     # -----------------------------------------------------------------
@@ -2758,36 +2746,18 @@ class Generation(object):
 
     @lazyproperty
     def chi_squared_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ChiSquaredTable.from_file(self.chi_squared_table_path)
 
     # -----------------------------------------------------------------
 
     @property
     def best_simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.chi_squared_table.best_simulation_name
 
     # -----------------------------------------------------------------
 
     @property
     def worst_simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.chi_squared_table.worst_simulation_name
 
     # -----------------------------------------------------------------
@@ -2951,85 +2921,47 @@ class Generation(object):
 
     @property
     def optimizer_input_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.path, "input")
 
     # -----------------------------------------------------------------
 
     @property
+    def has_optimizer_input(self):
+        return fs.is_directory(self.optimizer_input_path) and not fs.is_empty(self.optimizer_input_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def optimizer_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_input(self.optimizer_input_path)
 
     # -----------------------------------------------------------------
 
     @property
     def parameter_minima_scalar(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.optimizer_input["minima"]
 
     # -----------------------------------------------------------------
 
     @property
     def parameter_maxima_scalar(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.optimizer_input["maxima"]
 
     # -----------------------------------------------------------------
 
     def unit_for_parameter(self, label):
-
-        """
-        This function ...
-        :param label:
-        :return:
-        """
-
         return self.parameters_table.unit_for(label)
 
     # -----------------------------------------------------------------
 
     @property
     def parameter_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         ## SORTED JUST AS IN FITTINGRUN !!
         return sorted(self.parameters_table.parameter_labels)
 
     # -----------------------------------------------------------------
 
     def index_for_parameter(self, label):
-
-        """
-        This function ...
-        :param label:
-        :return:
-        """
-
         return self.parameter_labels.index(label)
 
     # -----------------------------------------------------------------
@@ -3098,8 +3030,49 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # PREVIOUS
+        #return self.parameter_ranges_optimizer()
+
+        # Initialize dict
+        ranges = OrderedDict()
+
+        # Loop over the parameters
+        for label in self.parameter_labels:
+
+            # Get unique values
+            unique_values = self.unique_parameter_values[label]
+
+            # Quantity
+            unit = self.unit_for_parameter(label)
+            if unit is not None: _range = QuantityRange.limits(unique_values)
+
+            # Scalar int
+            elif self.parameter_base_types[label] == "integer": _range = IntegerRange.limits(unique_values)
+
+            # Scalar real
+            elif self.parameter_base_types[label] == "real": _range = RealRange.limits(unique_values)
+
+            # Invalid
+            else: raise ValueError("Unrecognized base type: " + self.parameter_base_types[label])
+
+            # Add the range
+            ranges[label] = _range
+
+        # Return
+        return ranges
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_ranges_optimizer(self):
 
         """
         This function ...
@@ -3125,7 +3098,7 @@ class Generation(object):
             # Scalar value
             else:
 
-                base_type = self.parameter_base_types
+                base_type = self.parameter_base_types[label]
                 if base_type == "integer": range = IntegerRange(min_value, max_value)
                 elif base_type == "real": range = RealRange(min_value, max_value)
                 else: raise ValueError("Unrecognized base type: " + base_type)

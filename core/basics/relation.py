@@ -124,7 +124,7 @@ class Relation(SmartTable):
             units = kwargs.get("units")
 
             from ..tools import types
-            if types.is_sequence(units):
+            if types.is_sequence_or_tuple(units):
                 x_unit = units[0]
                 y_unit = units[1]
             elif types.is_dictionary(units):
