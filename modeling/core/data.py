@@ -55,7 +55,7 @@ class Data3D(object):
     """
 
     def __init__(self, name, x, y, z, values, weights=None, length_unit=None, unit=None, description=None, distance=None,
-                 wavelength=None, solid_angle=None):
+                 wavelength=None, solid_angle=None, xyz_filepath=None, x_colname="x", y_colname="y", z_colname="z"):
 
         """
         The constructor ...
@@ -70,6 +70,10 @@ class Data3D(object):
         :param distance:
         :param wavelength:
         :param solid_angle:
+        :param xyz_filepath:
+        :param x_colname:
+        :param y_colname:
+        :param z_colname:
         """
 
         # Set the name and description for the data
@@ -80,6 +84,14 @@ class Data3D(object):
         self.x = x
         self.y = y
         self.z = z
+
+        # Set the xyz filepath
+        self.xyz_filepath = xyz_filepath
+
+        # Set the xyz column names
+        self.x_colname = x_colname
+        self.y_colname = y_colname
+        self.z_colname = z_colname
 
         # Set values
         self.values = values
@@ -105,6 +117,39 @@ class Data3D(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_values(cls, name, values, x, y, z, xyz_filepath=None, weights=None, unit=None, length_unit=None,
+                    description=None, distance=None, wavelength=None, solid_angle=None):
+
+        """
+        This function ...
+        :param name:
+        :param values:
+        :param x:
+        :param y:
+        :param z:
+        :param xyz_filepath:
+        :param weights:
+        :param unit:
+        :param length_unit:
+        :param description:
+        :param distance:
+        :param wavelength:
+        :param solid_angle:
+        :return:
+        """
+
+        # Get x, y, z (load from file if necessary)
+        if length_unit is None: x, y, z, x_colname, y_colname, z_colname, length_unit = get_xyz(x, y, z, filepath=xyz_filepath, return_unit=True)
+        else: x, y, z, x_colname, y_colname, z_colname = get_xyz(x, y, z, filepath=xyz_filepath)
+
+        # Create and return
+        return cls(name, x, y, z, values, weights=weights, length_unit=None, unit=unit, description=description,
+                   distance=distance, wavelength=wavelength, solid_angle=solid_angle, xyz_filepath=xyz_filepath,
+                   x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path, length_unit=None, unit=None, return_table=False):
 
         """
@@ -121,6 +166,7 @@ class Data3D(object):
 
         # Read the table
         table = SmartTable.from_file(path, method="pandas")
+        meta = table.meta
 
         # Find the name of the variable
         standard_column_names = [x_coordinate_name.capitalize(), y_coordinate_name.capitalize(), z_coordinate_name.capitalize(), weight_name.capitalize()]
@@ -131,24 +177,46 @@ class Data3D(object):
         if length_unit is None: length_unit = table.get_column_unit(x_coordinate_name.capitalize())
         if unit is None: unit = table.get_column_unit(column_name)
 
-        # Get the data
-        x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit, masked=False)
-        y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit, masked=False)
-        z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit, masked=False)
+        # Get the xyz data from other file
+        if "xyz_filepath" in meta:
+
+            # Get filepath
+            xyz_filepath = meta["xyz_filepath"]
+            x_colname = meta["x_colname"]
+            y_colname = meta["y_colname"]
+            z_colname = meta["z_colname"]
+
+            # Load x, y, z
+            x, y, z = load_xyz(xyz_filepath, x_colname, y_colname, z_colname)
+
+        # Get xyz data from columns
+        else:
+
+            # Set default
+            xyz_filepath = None
+            x_colname, y_colname, z_colname = "x", "y", "z"  # default
+
+            # Get the data
+            x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit, masked=False)
+            y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit, masked=False)
+            z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit, masked=False)
+
+        # Get the values and weights (if present)
         values = table.get_column_array(column_name, unit=unit, masked=False)
         weights = table.get_column_array(weight_name.capitalize(), masked=False) if weight_name.capitalize() in table.colnames else None
 
         # Get the description
-        description = table.meta["description"] if "description" in table.meta else None
+        description = meta["description"] if "description" in meta else None
 
         # Get the conversion info
-        distance = table.meta["distance"] if "distance" in table.meta else None
-        wavelength = table.meta["wavelength"] if "wavelength" in table.meta else None
-        solid_angle = table.meta["solid_angle"] if "solid_angle" in table.meta else None
+        distance = meta["distance"] if "distance" in meta else None
+        wavelength = meta["wavelength"] if "wavelength" in meta else None
+        solid_angle = meta["solid_angle"] if "solid_angle" in meta else None
 
         # Create
         data = cls(name, x, y, z, values, weights=weights, length_unit=length_unit, unit=unit, description=description,
-                   distance=distance, wavelength=wavelength, solid_angle=solid_angle)
+                   distance=distance, wavelength=wavelength, solid_angle=solid_angle, xyz_filepath=xyz_filepath,
+                   x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 
         # Set the path
         data.path = path
@@ -220,12 +288,6 @@ class Data3D(object):
     # -----------------------------------------------------------------
 
     def __len__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nvalues
 
     # -----------------------------------------------------------------
@@ -250,6 +312,12 @@ class Data3D(object):
 
         # Check weights
         if self.has_weights and self.nvalues != self.nweights: raise ValueError("Number of weights must be equal to number of values")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_xyz_file(self):
+        return self.xyz_filepath is not None and fs.is_file(self.xyz_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1036,19 +1104,25 @@ class Data3D(object):
         # Debugging
         log.debug("Saving the 3D data in table format to '" + path + "' ...")
 
-        # Set the columns
-        columns = [self.x, self.y, self.z, self.values]
-        names = [x_coordinate_name, y_coordinate_name, z_coordinate_name, self.name]
+        # Set columns
+        if self.has_xyz_file:
+            columns = [self.values]
+            names = [self.name]
+            units = [self.unit]
+        else:
+            # Set the columns
+            columns = [self.x, self.y, self.z, self.values]
+            names = [x_coordinate_name, y_coordinate_name, z_coordinate_name, self.name]
+            units = [self.length_unit, self.length_unit, self.length_unit, self.unit]
+
+        # Add weights column?
         if self.has_weights:
             columns.append(self.weights)
             columns.append(weight_name)
+            units.append(None)
 
         # Capitalize column names
         names = [name.capitalize() for name in names]
-
-        # Set units
-        units = [self.length_unit, self.length_unit, self.length_unit, self.unit]
-        if self.has_weights: units.append(None)
 
         # Debugging
         log.debug("Creating table ...")
@@ -1066,6 +1140,14 @@ class Data3D(object):
         if self.has_distance: table.meta["distance"] = self.distance
         if self.has_wavelength: table.meta["wavelength"] = self.wavelength
         if self.has_solid_angle: table.meta["solid_angle"] = self.solid_angle
+
+        # Set the XYZ filepath
+        if self.has_xyz_file:
+            table.meta["xyz_filepath"] = self.xyz_filepath
+            table.meta["x_colname"] = self.x_colname
+            table.meta["y_colname"] = self.y_colname
+            table.meta["z_colname"] = self.z_colname
+            if self.length_unit is not None: table.meta["length_unit"] = self.length_unit
 
         # Save the table
         table.saveto(path)
@@ -1254,28 +1336,9 @@ class SpectralData3D(object):
         # Create wavelength grid
         wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths)
 
-        # Set x, y, z
-        if xyz_filepath is not None:
-
-            # Check
-            if not types.is_string_type(x): raise ValueError("If xyz filepath is given, 'x' must be name of x coordinates column")
-            if not types.is_string_type(y): raise ValueError("If xyz filepath is given, 'y' must be name of y coordinates column")
-            if not types.is_string_type(z): raise ValueError("If xyz filepath is given, 'z' must be name of z coordinates column")
-
-            # Set colnames
-            x_colname = x
-            y_colname = y
-            z_colname = z
-
-            # Get x y z arrays
-            xyz_colnames = fs.get_column_names(xyz_filepath, lower=True)
-            x_index = xyz_colnames.index(x_colname.lower())
-            y_index = xyz_colnames.index(y_colname.lower())
-            z_index = xyz_colnames.index(z_colname.lower())
-            x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index])
-
-        # No xyz filepath
-        else: x_colname, y_colname, z_colname = "x", "y", "z" # default
+        # Get x, y, z (load from file if necessary)
+        if length_unit is None: x, y, z, x_colname, y_colname, z_colname, length_unit = get_xyz(x, y, z, filepath=xyz_filepath, return_unit=True)
+        else: x, y, z, x_colname, y_colname, z_colname = get_xyz(x, y, z, filepath=xyz_filepath)
 
         # Return
         return cls(name, x, y, z, wavelength_grid, path, length_unit=length_unit, unit=unit, description=description,
@@ -1339,12 +1402,6 @@ class SpectralData3D(object):
 
     @property
     def conversion_info(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         info = dict()
         if self.has_distance: info["distance"] = self.distance
         if self.has_solid_angle: info["solid_angle"] = self.solid_angle
@@ -1711,10 +1768,6 @@ class SpectralData3D(object):
         # Debugging
         log.debug("Saving the spectral 3D data in table format to '" + path + "' ...")
 
-        # Set the columns
-        #if self.has_xyz_file:
-        #else:
-
         # Set columns
         if self.has_xyz_file: columns = [np.array([], dtype=float), np.array([], dtype=float), np.array([], dtype=float)]
         else: columns = [self.x, self.y, self.z]
@@ -1722,7 +1775,7 @@ class SpectralData3D(object):
         names = [x_coordinate_name, y_coordinate_name, z_coordinate_name]
         #if self.has_weights:
         #    columns.append(self.weights)
-        #    columns.append(weight_name)
+        #    names.append(weight_name)
 
         # Capitalize column names
         names = [name.capitalize() for name in names]
@@ -1806,16 +1859,8 @@ class SpectralData3D(object):
             y_colname = meta["y_colname"]
             z_colname = meta["z_colname"]
 
-            # Debugging
-            log.debug("Loading the xyz coordinate information from '" + xyz_filepath + "' ...")
-
-            # Load x y z
-            xyz_colnames = fs.get_column_names(xyz_filepath, lower=True)
-            #print(xyz_colnames)
-            x_index = xyz_colnames.index(x_colname.lower())
-            y_index = xyz_colnames.index(y_colname.lower())
-            z_index = xyz_colnames.index(z_colname.lower())
-            x, y, z = fs.get_columns(xyz_filepath, dtype=float, indices=[x_index, y_index, z_index], method="pandas")
+            # Load x, y, z
+            x, y, z = load_xyz(xyz_filepath, x_colname, y_colname, z_colname)
 
         # Get xyz data from columns
         else:
@@ -1826,6 +1871,7 @@ class SpectralData3D(object):
             x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit, masked=False)
             y = table.get_column_array(y_coordinate_name.capitalize(), unit=length_unit, masked=False)
             z = table.get_column_array(z_coordinate_name.capitalize(), unit=length_unit, masked=False)
+
         #values = table.get_column_array(column_name, unit=unit)
         #weights = table.get_column_array(weight_name.capitalize()) if weight_name.capitalize() in table.colnames else None
 
@@ -1856,5 +1902,75 @@ class SpectralData3D(object):
 
         # Return the data
         return data
+
+# -----------------------------------------------------------------
+
+def load_xyz(filepath, x_colname, y_colname, z_colname, return_unit=False, method="pandas"):
+
+    """
+    This function ...
+    :param filepath:
+    :param x_colname:
+    :param y_colname:
+    :param z_colname:
+    :param return_unit:
+    :param method:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Loading the xyz coordinate information from '" + filepath + "' ...")
+
+    # Get table file column names
+    xyz_colnames, xyz_units = fs.get_column_names(filepath, lower=True, return_units=True)
+
+    # Get indices of x, y, z columns
+    x_index = xyz_colnames.index(x_colname.lower())
+    y_index = xyz_colnames.index(y_colname.lower())
+    z_index = xyz_colnames.index(z_colname.lower())
+
+    # Load columns from file
+    x, y, z = fs.get_columns(filepath, dtype=float, indices=[x_index, y_index, z_index], method=method)
+
+    # Return
+    if return_unit: return x, y, z, sequences.get_all_equal_value(xyz_units, ignore_none=True)
+    else: return x, y, z
+
+# -----------------------------------------------------------------
+
+def get_xyz(x, y, z, filepath=None, return_unit=False):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :param z:
+    :param filepath:
+    :param return_unit:
+    :return:
+    """
+
+    # Filepath is given
+    if filepath is not None:
+
+        # Check
+        if not types.is_string_type(x): raise ValueError("If xyz filepath is given, 'x' must be name of x coordinates column")
+        if not types.is_string_type(y): raise ValueError("If xyz filepath is given, 'y' must be name of y coordinates column")
+        if not types.is_string_type(z): raise ValueError("If xyz filepath is given, 'z' must be name of z coordinates column")
+
+        # Set colnames
+        x_colname = x
+        y_colname = y
+        z_colname = z
+
+        # Read the x, y, and z data
+        x, y, z, unit = load_xyz(filepath, x_colname, y_colname, z_colname, return_unit=True)
+
+    # No xyz filepath
+    else: x_colname, y_colname, z_colname, unit = "x", "y", "z", None  # default
+
+    # Return
+    if return_unit: return x, y, z, x_colname, y_colname, z_colname, unit
+    else: return x, y, z, x_colname, y_colname, z_colname
 
 # -----------------------------------------------------------------

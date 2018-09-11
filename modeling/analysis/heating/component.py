@@ -16,23 +16,11 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..component import AnalysisComponent
+from ..component import AnalysisRunComponent, earth_name, faceon_name
 from ....core.tools import filesystem as fs
-from ....core.basics.log import log
 from ....core.tools.utils import lazyproperty
-from ....core.simulation.output import SimulationOutput
 from ....core.simulation.logfile import LogFile
-from ....core.simulation.data import SimulationData
 from ....core.tools import sequences
-
-# -----------------------------------------------------------------
-
-total = "total"
-old = "old"
-young = "young"
-ionizing = "ionizing"
-unevolved = "unevolved"
-contributions = [total, old, young, ionizing, unevolved]
 
 # -----------------------------------------------------------------
 
@@ -42,8 +30,8 @@ spectral_dirname = "spectral"
 
 # -----------------------------------------------------------------
 
-class DustHeatingAnalysisComponent(AnalysisComponent):
-    
+class DustHeatingAnalysisComponent(AnalysisRunComponent):
+
     """
     This class...
     """
@@ -58,9 +46,6 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
         # Call the constructor of the base class
         super(DustHeatingAnalysisComponent, self).__init__(*args, **kwargs)
-
-        # The analysis run
-        self.analysis_run = None
 
     # -----------------------------------------------------------------
 
@@ -82,102 +67,8 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
     # TOTAL SIMULATION
-    #   GENERAL
+    #   ABSORPTION: SEE ANALYSISRUNCOMPONENT
     # -----------------------------------------------------------------
-
-    @property
-    def total_contribution_simulation_path(self):
-        #return self.analysis_run.heating_simulation_path_for_contribution(total)
-        return self.analysis_run.simulation_path_for_contribution(total)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_contribution_ski_path(self):
-        #return self.analysis_run.heating_ski_path_for_contribution(total)
-        return self.analysis_run.ski_path_for_contribution(total)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_contribution_output_path(self):
-        #return self.analysis_run.heating_output_path_for_contribution(total)
-        return self.analysis_run.output_path_for_contribution(total)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def total_contribution_output(self):
-        #return SimulationOutput.from_directory(self.total_contribution_output_path, self.galaxy_name)
-        return self.model.total_simulation_output
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def total_contribution_data(self):
-        #return SimulationData.from_output(self.total_contribution_output)
-        return self.model.total_simulation_data
-
-    # -----------------------------------------------------------------
-
-    @property
-    def total_contribution_cell_properties_filepath(self):
-        return self.total_contribution_data.cell_properties_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_properties_path(self):
-        return self.total_contribution_cell_properties_filepath
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_properties(self):
-        return self.total_contribution_data.cell_properties
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def cell_mass_fractions(self):
-        return np.asarray(self.cell_properties["Mass fraction"])
-
-    # -----------------------------------------------------------------
-    #   ABSORPTION
-    # -----------------------------------------------------------------
-
-    @property
-    def total_contribution_absorption_filepath(self):
-        return self.total_contribution_data.absorption_path
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_contribution_absorption_data(self):
-        if self.total_contribution_data.has_absorption: return self.total_contribution_data.absorption
-        elif self.total_contribution_data.has_isrf: return self.total_contribution_data.isrf
-        else: raise IOError("No absorption data")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_contribution_absorption_column_name(self):
-        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
-        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.colnames)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_contribution_absorption_unit(self):
-        return self.total_contribution_absorption_data.column_unit(self.total_contribution_absorption_column_name)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def total_contribution_absorption_luminosities(self):
-        return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
 
     # -----------------------------------------------------------------
     #   SPECTRAL ABSORPTION & EMISSION
@@ -225,67 +116,28 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def total_contribution_total_datacube(self):
-        return self.total_contribution_data.images["earth"]["total"]
+        return self.total_contribution_data.images[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_faceon_datacube(self):
-        return self.total_contribution_data.images["faceon"]["total"]
+        return self.total_contribution_data.images[faceon_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_sed(self):
-        return self.total_contribution_data.seds["earth"]["total"]
+        return self.total_contribution_data.seds[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def total_contribution_total_faceon_sed(self):
-        return self.total_contribution_data.seds["faceon"]["total"]
+        return self.total_contribution_data.seds[faceon_name]["total"]
 
     # -----------------------------------------------------------------
     # OLD SIMULATION
-    #   GENERAL
-    # -----------------------------------------------------------------
-
-    @property
-    def old_contribution_simulation_path(self):
-        #return self.analysis_run.heating_simulation_path_for_contribution(old)
-        return self.analysis_run.simulation_path_for_contribution(old)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_contribution_ski_path(self):
-        #return self.analysis_run.heating_ski_path_for_contribution(old)
-        return self.analysis_run.ski_path_for_contribution(old)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_contribution_output_path(self):
-        #return self.analysis_run.heating_output_path_for_contribution(old)
-        return self.analysis_run.output_path_for_contribution(old)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def old_contribution_output(self):
-        #return SimulationOutput.from_directory(self.old_contribution_output_path, self.galaxy_name)
-        return self.model.old_simulation_output
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def old_contribution_data(self):
-        #return SimulationData.from_output(self.old_contribution_output)
-        return self.model.old_simulation_data
-
-    # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
@@ -366,67 +218,28 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def old_contribution_total_datacube(self):
-        return self.old_contribution_data.images["earth"]["total"]
+        return self.old_contribution_data.images[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_faceon_datacube(self):
-        return self.old_contribution_data.images["faceon"]["total"]
+        return self.old_contribution_data.images[faceon_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_sed(self):
-        return self.old_contribution_data.seds["earth"]["total"]
+        return self.old_contribution_data.seds[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def old_contribution_total_faceon_sed(self):
-        return self.old_contribution_data.seds["faceon"]["total"]
+        return self.old_contribution_data.seds[faceon_name]["total"]
 
     # -----------------------------------------------------------------
     # YOUNG SIMULATION
-    #   GENERAL
-    # -----------------------------------------------------------------
-
-    @property
-    def young_contribution_simulation_path(self):
-        #return self.analysis_run.heating_simulation_path_for_contribution(young)
-        return self.analysis_run.simulation_path_for_contribution(young)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_contribution_ski_path(self):
-        #return self.analysis_run.heating_ski_path_for_contribution(young)
-        return self.analysis_run.ski_path_for_contribution(young)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_contribution_output_path(self):
-        #return self.analysis_run.heating_output_path_for_contribution(young)
-        return self.analysis_run.output_path_for_contribution(young)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def young_contribution_output(self):
-        #return SimulationOutput.from_directory(self.young_contribution_output_path, self.galaxy_name)
-        return self.model.young_simulation_output
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def young_contribution_data(self):
-        #return SimulationData.from_output(self.young_contribution_output)
-        return self.model.young_simulation_data
-
-    # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
@@ -507,67 +320,28 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def young_contribution_total_datacube(self):
-        return self.young_contribution_data.images["earth"]["total"]
+        return self.young_contribution_data.images[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_faceon_datacube(self):
-        return self.young_contribution_data.images["faceon"]["total"]
+        return self.young_contribution_data.images[faceon_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_sed(self):
-        return self.young_contribution_data.seds["earth"]["total"]
+        return self.young_contribution_data.seds[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def young_contribution_total_faceon_sed(self):
-        return self.young_contribution_data.seds["faceon"]["total"]
+        return self.young_contribution_data.seds[faceon_name]["total"]
 
     # -----------------------------------------------------------------
     # IONIZING (SFR) SIMULATION
-    #   GENERAL
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_contribution_simulation_path(self):
-        #return self.analysis_run.heating_simulation_path_for_contribution(ionizing)
-        return self.analysis_run.simulation_path_for_contribution(young)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_contribution_ski_path(self):
-        #return self.analysis_run.heating_ski_path_for_contribution(ionizing)
-        return self.analysis_run.ski_path_for_contribution(ionizing)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_contribution_output_path(self):
-        #return self.analysis_run.heating_output_path_for_contribution(ionizing)
-        return self.analysis_run.output_path_for_contribution(ionizing)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def ionizing_contribution_output(self):
-        #return SimulationOutput.from_directory(self.ionizing_contribution_output_path, self.galaxy_name)
-        return self.model.sfr_simulation_output
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def ionizing_contribution_data(self):
-        #return SimulationData.from_output(self.ionizing_contribution_output)
-        return self.model.sfr_simulation_data
-
-    # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
@@ -648,67 +422,28 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def ionizing_contribution_total_datacube(self):
-        return self.ionizing_contribution_data.images["earth"]["total"]
+        return self.ionizing_contribution_data.images[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_faceon_datacube(self):
-        return self.ionizing_contribution_data.images["faceon"]["total"]
+        return self.ionizing_contribution_data.images[faceon_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_sed(self):
-        return self.ionizing_contribution_data.seds["earth"]["total"]
+        return self.ionizing_contribution_data.seds[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_contribution_total_faceon_sed(self):
-        return self.ionizing_contribution_data.seds["faceon"]["total"]
+        return self.ionizing_contribution_data.seds[faceon_name]["total"]
 
     # -----------------------------------------------------------------
     # UNEVOLVED SIMULATION
-    #   GENERAL
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_contribution_simulation_path(self):
-        #return self.analysis_run.heating_simulation_path_for_contribution(unevolved)
-        return self.analysis_run.simulation_path_for_contribution(unevolved)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_contribution_ski_path(self):
-        #return self.analysis_run.heating_ski_path_for_contribution(unevolved)
-        return self.analysis_run.ski_path_for_contribution(unevolved)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def unevolved_contribution_output_path(self):
-        #return self.analysis_run.heating_output_path_for_contribution(unevolved)
-        return self.analysis_run.output_path_for_contribution(unevolved)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def unevolved_contribution_output(self):
-        #return SimulationOutput.from_directory(self.unevolved_contribution_output_path)
-        return self.model.unevolved_simulation_output
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    @property
-    def unevolved_contribution_data(self):
-        #return SimulationData.from_output(self.unevolved_contribution_output)
-        return self.model.unevolved_simulation_data
-
-    # -----------------------------------------------------------------
     #   ABSORPTION
     # -----------------------------------------------------------------
 
@@ -789,161 +524,30 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     @property
     def unevolved_contribution_total_datacube(self):
-        return self.unevolved_contribution_data.images["earth"]["total"]
+        return self.unevolved_contribution_data.images[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_faceon_datacube(self):
-        return self.unevolved_contribution_data.images["faceon"]["total"]
+        return self.unevolved_contribution_data.images[faceon_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_sed(self):
-        return self.unevolved_contribution_data.seds["earth"]["total"]
+        return self.unevolved_contribution_data.seds[earth_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_contribution_total_faceon_sed(self):
-        return self.unevolved_contribution_data.seds["faceon"]["total"]
-
-    # -----------------------------------------------------------------
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(DustHeatingAnalysisComponent, self).setup(**kwargs)
-
-        # Load the analysis run
-        self.load_run()
-
-    # -----------------------------------------------------------------
-
-    def load_run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the analysis run " + self.config.run + " ...")
-
-        # Get the run
-        self.analysis_run = self.get_run(self.config.run)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis_run.model
+        return self.unevolved_contribution_data.seds[faceon_name]["total"]
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.wavelength_grid
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_coordinates_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # SKIRT7
-        if self.total_contribution_data.has_absorption: return self.total_contribution_absorption_filepath
-
-        # SKIRT8
-        else: return self.cell_properties_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_x_coordinates_colname(self):
-        return "X coordinate of cell center"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_y_coordinates_colname(self):
-        return "Y coordinate of cell center"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_z_coordinates_colname(self):
-        return "Z coordinate of cell center"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_x_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # SKIRT7
-        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_x_coordinates_colname])
-
-        # SKIRT8
-        else: return self.model.cell_x_coordinates
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_y_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # SKIRT7
-        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_y_coordinates_colname])
-
-        # SKIRT8
-        else: return self.model.cell_y_coordinates
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_z_coordinates(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # SKIRT7
-        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_z_coordinates_colname])
-
-        # SKIRT8
-        else: return self.model.cell_z_coordinates
 
 # -----------------------------------------------------------------

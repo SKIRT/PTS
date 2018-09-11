@@ -643,13 +643,15 @@ def all_different(lst, ignore_none=False, ignore=None):
 
 # -----------------------------------------------------------------
 
-def all_equal(lst, ignore_none=False, ignore=None):
+def all_equal(lst, ignore_none=False, ignore=None, allow_empty=False, empty_value=True):
 
     """
     This function ...
     :param lst:
     :param ignore_none:
     :param ignore:
+    :param allow_empty:
+    :param empty_value:
     :return:
     """
 
@@ -659,14 +661,18 @@ def all_equal(lst, ignore_none=False, ignore=None):
 
     if first is None and ignore_none:
         try: first = find_first_not_none(lst, ignore=ignore)
-        except: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
+        except:
+            if allow_empty: return empty_value
+            else: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
 
     # ELIF because ignore is also passed to find_first_not_none
     elif ignore is not None and first == ignore:
         try:
             if ignore_none: first = find_first_not_none(lst, ignore=ignore)
             else: first = find_first(lst, ignore=ignore)
-        except: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
+        except:
+            if allow_empty: return empty_value
+            else: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
 
     #print(first)
 
@@ -703,8 +709,8 @@ def get_all_equal_value(sequence, ignore_none=False, ignore=None, return_none=Fa
     :return:
     """
 
-    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore):
-        if return_none: return None
+    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore, allow_empty=True, empty_value=False): # if empty, return False
+        if return_none or all_none(sequence): return None
         else: raise ValueError("Not all equal: " + str(sequence))
     else:
         if ignore_none: return find_first_not_none(sequence, ignore=ignore)

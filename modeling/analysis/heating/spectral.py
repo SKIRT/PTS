@@ -4640,6 +4640,38 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fraction_limits(self):
+        return (0,1,)
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_map(self, frame, path):
+
+        """
+        This function ...
+        :param frame:
+        :param path:
+        :return:
+        """
+
+        plotting.plot_map(frame, path=path, interval=self.fraction_limits, background_color="black")
+
+    # -----------------------------------------------------------------
+
+    def plot_emission_map(self, frame, path):
+
+        """
+        This function ...
+        :param frame:
+        :param path:
+        :return:
+        """
+
+        plotting.plot_map(frame, path=path, interval=self.fraction_limits, background_color="black")
+
+    # -----------------------------------------------------------------
+
     def plot_maps(self):
 
         """
@@ -4719,12 +4751,6 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def fraction_limits(self):
-        return (0,1,)
-
-    # -----------------------------------------------------------------
-
     def plot_spectral_maps_emission_earth(self):
 
         """
@@ -4748,7 +4774,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_spectral_map_emission_earth_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_emission_map(frame, path)
 
     # -----------------------------------------------------------------
     #   ABSORPTION
@@ -4787,7 +4813,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_spectral_map_absorption_earth_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_absorption_map(frame, path)
 
     # -----------------------------------------------------------------
     # FACEON
@@ -4827,7 +4853,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_spectral_map_emission_faceon_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_emission_map(frame, path)
 
     # -----------------------------------------------------------------
     #   ABSORPTION
@@ -4866,7 +4892,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_spectral_map_absorption_faceon_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_absorption_map(frame, path)
 
     # -----------------------------------------------------------------
     # EDGEON
@@ -4906,7 +4932,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_spectral_map_emission_edgeon_plot_path(fltr)
             
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_emission_map(frame, path)
 
     # -----------------------------------------------------------------
     #   ABSORPTION
@@ -4945,7 +4971,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_spectral_map_absorption_edgeon_plot_path(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_absorption_map(frame, path)
 
     # -----------------------------------------------------------------
     # ABSORPTION DATA MAPS
@@ -4985,7 +5011,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_unevolved_absorption_fraction_map_plot_path_for_filter(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_absorption_map(frame, path)
 
     # -----------------------------------------------------------------
     # EMISSION DATA MAPS
@@ -5025,7 +5051,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
             path = self.get_unevolved_emission_fraction_map_plot_path_for_filter(fltr)
 
             # Plot
-            plotting.plot_map(frame, path=path, interval=self.fraction_limits)
+            self.plot_emission_map(frame, path)
 
     # -----------------------------------------------------------------
     # CURVES

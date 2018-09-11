@@ -26,6 +26,7 @@ from ...core.basics.scatter import Scatter2D
 from ..core.data import Data3D
 from ...magic.core.frame import Frame
 from ...magic.tools.plotting import plot_scatters, plot_stilts
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -47,6 +48,8 @@ ssfr_funev_name = "sSFR-Funev"
 sfr_name = "SFR"
 dust_mass_name = "Dust mass"
 distance_center_name = "Distance from center"
+bulge_disk_ratio_name = "Bulge disk ratio"
+#fuv_ratio_name = "FUV ratio"
 
 # -----------------------------------------------------------------
 
@@ -167,24 +170,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # CELL PROPERTIESS
     # -----------------------------------------------------------------
 
-    @property
-    def cell_x_coordinates(self):
-        return self.model.cell_x_coordinates
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_y_coordinates(self):
-        return self.model.cell_y_coordinates
-
-    # -----------------------------------------------------------------
-
-    @property
-    def cell_z_coordinates(self):
-        return self.model.cell_z_coordinates
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def cell_radii(self):
         return np.sqrt(self.cell_x_coordinates**2 + self.cell_y_coordinates**2 + self.cell_z_coordinates**2)
@@ -193,13 +178,100 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def length_unit(self):
-        return "pc"
+        return u("pc")
+
+    # -----------------------------------------------------------------
+    # I1 LUMINOSITY / BULGE DISK RATIO
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def i1_luminosity_unit(self):
+        return u("W/micron")
 
     # -----------------------------------------------------------------
 
     @property
-    def cell_volumes(self):
-        return self.model.cell_volumes # is array
+    def bulge_intrinsic_i1_luminosity(self):
+        return self.model.intrinsic_i1_luminosity_old_bulge
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_intrinsic_i1_luminosity_scalar(self):
+        return self.bulge_intrinsic_i1_luminosity.to(self.i1_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_intrinsic_i1_luminosity(self):
+        return self.model.intrinsic_i1_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_intrinsic_i1_luminosity_scalar(self):
+        return self.disk_intrinsic_i1_luminosity.to(self.i1_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_i1_luminosities(self):
+        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_i1_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_i1_luminosities(self):
+        return self.disk_cell_normalized_mass * self.disk_intrinsic_i1_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_cell_i1_luminosities(self):
+        return self.bulge_cell_i1_luminosities + self.disk_cell_i1_luminosities
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_bd_ratio_path(self):
+        return fs.join(self.correlations_path, "bd_ratio.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bd_ratio_name(self):
+        return "BD_I1"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bd_ratio_description(self):
+        return "Ratio of bulge and disk I1 luminosity"
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_bd_ratio_path", True, write=True)
+    def cell_bd_ratio_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate ratios in cells
+        ratios = self.bulge_cell_i1_luminosities / self.disk_cell_i1_luminosities
+
+        # Create the data with external xyz
+        return Data3D.from_values(self.bd_ratio_name, ratios, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.bd_ratio_description,
+                                  xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_bd_ratios(self):
+        return self.cell_bd_ratio_data.values
 
     # -----------------------------------------------------------------
     # DUST MASS
@@ -207,7 +279,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def dust_mass_unit(self):
-        return "Msun"
+        return u("Msun")
 
     # -----------------------------------------------------------------
 
@@ -232,20 +304,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def sfr_dust_mass_scalar(self):
         return self.model.sfr_dust_mass.to(self.dust_mass_unit).value
-
-    # -----------------------------------------------------------------
-
-    @property
-    def sfr_cell_stellar_density(self):
-        return self.model.sfr_cell_stellar_density # is array
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sfr_cell_normalized_mass(self):
-        values = self.sfr_cell_stellar_density * self.cell_volumes
-        values /= np.sum(values)
-        return values
 
     # -----------------------------------------------------------------
 
@@ -290,10 +348,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Calculate total dust masses in cells
         dust_masses = self.cell_diffuse_dust_masses + self.cell_sfr_dust_masses
 
-        # Create the data
-        return Data3D(self.dust_mass_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      dust_masses, length_unit=self.length_unit, unit=self.dust_mass_unit,
-                      description=self.dust_mass_description, distance=self.galaxy_distance)
+        # Create the data with external xyz
+        return Data3D.from_values(self.dust_mass_name, dust_masses, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, unit=self.dust_mass_unit,
+                                  description=self.dust_mass_description, xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
 
@@ -355,7 +414,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_unit(self):
-        return "Msun/yr"
+        return u("Msun/yr")
 
     # -----------------------------------------------------------------
 
@@ -596,6 +655,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_bd_ratios_salim(self):
+        return self.cell_bd_ratios[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_salim_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_salim.dat")
@@ -610,7 +675,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def ssfr_salim_cells_aux(self):
-        return {sfr_name: self.valid_cell_sfr_values_salim, dust_mass_name: self.valid_cell_dust_mass_values_salim, distance_center_name: self.valid_cell_radii_salim}
+        return {sfr_name: self.valid_cell_sfr_values_salim, dust_mass_name: self.valid_cell_dust_mass_values_salim, distance_center_name: self.valid_cell_radii_salim, bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim}
 
     # -----------------------------------------------------------------
 
@@ -633,7 +698,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Create and return
-        #return Scatter2D.from_xy(self.cell_ssfr_values, self.cell_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
         return Scatter2D.from_xy(self.valid_cell_ssfr_values_salim, self.valid_cell_funev_values_salim,
                                  x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit,
                                  x_description=self.ssfr_description, y_description=self.funev_description,
