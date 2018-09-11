@@ -2402,52 +2402,7 @@ def get_column_names(filepath, lower=False, return_units=False):
     nlines = len(lines)
 
     # Only one line: return splitted first line
-    if nlines == 1:
-
-        #print("1")
-
-        #splitted = lines[0].split()
-        splitted = strings.split_except_within_round_brackets(lines[0])
-        # Sanitize
-        names = []
-        column_units = []
-        #print(splitted)
-        for part in splitted:
-            #print(part)
-
-            if "[" in part and "]" in part:
-
-                if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
-                else: names.append(part.split("[")[0].strip())
-
-                unit = part.split("[")[1].split("]")[0]
-                unit = clean_unit_string(unit)
-                if unit == "": unit = None
-                #print(unit)
-                column_units.append(unit)
-
-            elif strings.is_wrapped_by_squared_brackets(part): pass # this is just the unit of the previous column name
-            else: names.append(part)
-
-        #print(names)
-
-        # Check
-        final_names = []
-        for index in range(len(names)):
-
-            name = names[index]
-            #print(name)
-
-            if strings.is_wrapped_by_round_brackets(name): # this part of a formula e.g. log10(F_X) of the previous column
-
-                nname = name[1:-1]
-                if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
-                final_names[-1] += "(" + nname + ")"
-
-            else: final_names.append(name)
-
-        # Set the names
-        column_names = final_names
+    if nlines == 1: column_names, column_units = _get_column_names_from_line(lines[0], return_units=True)
 
     # Header has lines stating the column index and names
     elif strings.any_startswith(lines, "column"):
@@ -2495,8 +2450,10 @@ def get_column_names(filepath, lower=False, return_units=False):
 
         #print("3")
         #return lines[-1].split()
-        column_names = lines[-1].split()
-        column_units = [None] * len(column_names)
+        #column_names = lines[-1].split()
+        #column_units = [None] * len(column_names)
+
+        column_names, column_units = _get_column_names_from_line(lines[-1], return_units=True)
 
     # Make lowercase
     if lower: column_names = [name.lower() for name in column_names]
@@ -2504,6 +2461,64 @@ def get_column_names(filepath, lower=False, return_units=False):
     # Return
     if return_units: return column_names, column_units
     else: return column_names
+
+# -----------------------------------------------------------------
+
+def _get_column_names_from_line(line, return_units=False):
+
+    """
+    This function ...
+    :param line:
+    :param return_units:
+    :return:
+    """
+
+    from ..units.utils import clean_unit_string
+
+    # splitted = lines[0].split()
+    splitted = strings.split_except_within_round_brackets_and_double_quotes(line, add_quotes=False)
+    #print(splitted)
+    # Sanitize
+    names = []
+    column_units = []
+    # print(splitted)
+    for part in splitted:
+        # print(part)
+
+        if "[" in part and "]" in part:
+
+            if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
+            else: names.append(part.split("[")[0].strip())
+
+            unit = part.split("[")[1].split("]")[0]
+            unit = clean_unit_string(unit)
+            if unit == "": unit = None
+            # print(unit)
+            column_units.append(unit)
+
+        elif strings.is_wrapped_by_squared_brackets(part): pass  # this is just the unit of the previous column name
+        else: names.append(part)
+
+    # print(names)
+
+    # Check
+    final_names = []
+    for index in range(len(names)):
+
+        name = names[index]
+        # print(name)
+
+        if strings.is_wrapped_by_round_brackets(name):  # this part of a formula e.g. log10(F_X) of the previous column
+
+            nname = name[1:-1]
+            if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
+            final_names[-1] += "(" + nname + ")"
+
+        else: final_names.append(name)
+
+    # Return the names
+    if return_units: return final_names, column_units
+    else: return final_names
 
 # -----------------------------------------------------------------
 

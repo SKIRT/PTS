@@ -309,59 +309,30 @@ class Frame(NDDataArray):
 
     @property
     def has_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit is not None
 
     # -----------------------------------------------------------------
 
     @property
     def is_photometric(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_unit and isinstance(self.unit, PhotometricUnit)
 
     # -----------------------------------------------------------------
 
     @property
     def has_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distance is not None
 
     # -----------------------------------------------------------------
 
     @property
     def filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._filter
 
     # -----------------------------------------------------------------
 
     @filter.setter
     def filter(self, fltr):
-
-        """
-        This function ...
-        """
-
         if fltr is None: self._filter = None
         else: self._filter = parse_filter(fltr)
 
@@ -369,24 +340,12 @@ class Frame(NDDataArray):
 
     @property
     def has_filter(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.filter is not None
 
     # -----------------------------------------------------------------
 
     @property
     def is_broad_band(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ...core.filter.broad import BroadBandFilter
         return self.filter is not None and isinstance(self.filter, BroadBandFilter)
 
@@ -394,12 +353,6 @@ class Frame(NDDataArray):
 
     @property
     def is_narrow_band(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ...core.filter.narrow import NarrowBandFilter
         return self.filter is not None and isinstance(self.filter, NarrowBandFilter)
 

@@ -244,72 +244,36 @@ class PhotometricQuantity(Quantity):
 
     @property
     def base_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.base_unit
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.wavelength_unit
 
     # -----------------------------------------------------------------
 
     @property
     def frequency_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.frequency_unit
 
     # -----------------------------------------------------------------
 
     @property
     def distance_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.distance_unit
 
     # -----------------------------------------------------------------
 
     @property
     def extent_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.extent_unit
 
     # -----------------------------------------------------------------
 
     @property
     def solid_angle_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.solid_angle_unit
 
     # -----------------------------------------------------------------
@@ -327,144 +291,72 @@ class PhotometricQuantity(Quantity):
 
     @property
     def physical_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.physical_type
 
     # -----------------------------------------------------------------
 
     @property
     def base_physical_type(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.base_physical_type
 
     # -----------------------------------------------------------------
 
     @property
     def base_symbol(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.base_symbol
 
     # -----------------------------------------------------------------
 
     @property
     def symbol(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.symbol
 
     # -----------------------------------------------------------------
 
     @property
     def density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.density
 
     # -----------------------------------------------------------------
 
     @property
     def brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.brightness
 
     # -----------------------------------------------------------------
 
     @property
     def spectral_density_type(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.unit.spectral_density_type
 
     # -----------------------------------------------------------------
 
     @property
     def is_spectral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_spectral_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_bolometric(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
         return self.unit.is_bolometric
 
     # -----------------------------------------------------------------
 
     @property
     def is_wavelength_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_wavelength_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_frequency_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_frequency_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_neutral_density(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return self.unit.is_neutral_density
 
     # -----------------------------------------------------------------

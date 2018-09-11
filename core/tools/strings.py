@@ -679,7 +679,7 @@ def split_except_within_round_brackets(text, add_brackets=True):
     """
     This function ...
     :param text:
-    :param add_pattern:
+    :param add_brackets:
     :return:
     """
 
@@ -734,6 +734,65 @@ def split_except_within_left_right(text, left, right, add_pattern=True):
             else: parts.append(item)
         else:
             for a in item.split(): parts.append(a)
+    return parts
+
+# -----------------------------------------------------------------
+
+def split_except_within_round_brackets_and_double_quotes(text, add_brackets=True, add_quotes=True):
+
+    """
+    This function ...
+    :param text:
+    :param add_brackets:
+    :param add_quotes:
+    :return:
+    """
+
+    return split_except_within_left_right_and_double_quotes(text, "(", ")", add_pattern=add_brackets, add_quotes=add_quotes)
+
+# -----------------------------------------------------------------
+
+def split_except_within_left_right_and_double_quotes(text, left, right, add_pattern=True, add_quotes=True):
+
+    """
+    This function ...
+    :param text:
+    :param left:
+    :param right:
+    :param add_pattern:
+    :param add_quotes:
+    :return:
+    """
+
+    parts = []
+
+    opened_quotes = False
+
+    lst = text.replace(left, right).split(right)
+
+    for i, item in enumerate(lst):
+
+        if i % 2:
+            if add_pattern: part = left + item + right
+            else: part = item
+            #print(1, part)
+            parts.append(part)
+
+        else:
+            for a in item.split():
+                #print(2, a)
+                if opened_quotes:
+                    if a.endswith('"'):
+                        opened_quotes = False
+                        if add_quotes: parts[-1] += " " + a
+                        else: parts[-1] += " " + a[:-1]
+                    else: parts[-1] += " " + a
+                else:
+                    if a.startswith('"'):
+                        opened_quotes = True
+                        if add_quotes: parts.append(a)
+                        else: parts.append(a[1:])
+                    else: parts.append(a)
     return parts
 
 # -----------------------------------------------------------------

@@ -528,7 +528,7 @@ class SmartTable(Table):
                 #super(SmartTable, table).add_row(row)
                 #print(row)
                 #print([table.column_unit(colname) for colname in table.colnames])
-                print("ROW", row)
+                #print("ROW", row)
                 SmartTable.add_row(table, row)
 
         # Set meta info
@@ -956,48 +956,22 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     def remove_other_columns(self, names):
-
-        """
-        This function ...
-        :param names:
-        :return:
-        """
-
         remove_names = sequences.get_other(self.column_names, names)
         self.remove_columns(remove_names)
 
     # -----------------------------------------------------------------
 
     def remove_all_columns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         self.remove_columns(self.column_names)
 
     # -----------------------------------------------------------------
 
     def remove_all_rows(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         self.remove_rows(range(self.nrows))
 
     # -----------------------------------------------------------------
 
     def get_column_index(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         for index in range(len(self.column_info)):
             if self.column_info[index][0] == column_name: return index
         return None
@@ -1005,13 +979,6 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     def get_column_dtype(self, column_name):
-
-        """
-        Thisf unction ...
-        :param column_name:
-        :return:
-        """
-
         index = self.get_column_index(column_name)
         if index is None: raise ValueError("No column '" + column_name + "'")
         return self.column_info[index][1]
@@ -1019,61 +986,26 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     def get_column_array_dtype(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         return self[column_name].dtype
 
     # -----------------------------------------------------------------
 
     def get_column_array_dtype_string(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         return str(self.get_column_array_dtype(column_name))
 
     # -----------------------------------------------------------------
 
     def is_string_column(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         return self.get_column_array_dtype_string(column_name).startswith("|S")
 
     # -----------------------------------------------------------------
 
     def get_string_column_size(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         return int(self.get_column_array_dtype_string(column_name).split("S")[1])
 
     # -----------------------------------------------------------------
 
     def get_column_unit(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         index = self.get_column_index(column_name)
         if index is None: raise ValueError("No column '" + column_name + "'")
         return self.column_info[index][2]
@@ -1081,13 +1013,6 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     def get_column_description(self, column_name):
-
-        """
-        This function ...
-        :param column_name:
-        :return:
-        """
-
         index = self.get_column_index(column_name)
         if index is None: raise ValueError("No column '" + column_name + "'")
         return self.column_info[index][3]
@@ -1107,9 +1032,14 @@ class SmartTable(Table):
         """
 
         if types.is_string_type(unit): unit = u(unit)
-
         if index is not None: self.column_info.insert(index, (name, dtype, unit, description))
         else: self.column_info.append((name, dtype, unit, description))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def column_info_names(self):
+        return [info[0] for info in self.column_info]
 
     # -----------------------------------------------------------------
 
@@ -1684,11 +1614,11 @@ class SmartTable(Table):
         :return:
         """
 
+        from ..units.unit import get_converted_value
+
         scalar_values = []
 
-        #print(values)
-        #print(self.column_info)
-
+        # Loop over the column values
         for i, value in enumerate(values):
 
             # Get the column name
@@ -1697,30 +1627,15 @@ class SmartTable(Table):
             # If this value has a unit, we have to make sure it is converted into the proper column unit
             if hasattr(value, "unit"):
 
-                #print(self.column_info)
-
-                #print(value, colname)
-
                 column_unit = self.column_unit(colname)
-                #print(colname, self.column_type(colname), column_unit)
-                #column_unit = self.column_info[i][2]
                 assert column_unit is not None
 
-                # Quantity with photometric unit
-                if isinstance(value.unit, PhotometricUnit):
+                # Get the conversion info for this column
+                if conversion_info is not None and colname in conversion_info: conv_info = conversion_info[colname]
+                else: conv_info = dict()
 
-                    # Get the conversion info for this column
-                    if conversion_info is not None and colname in conversion_info: conv_info = conversion_info[colname]
-                    else: conv_info = dict()
-
-                    # Determine the conversion factor
-                    factor = value.unit.conversion_factor(column_unit, **conv_info)
-
-                    # Multiply with the conversion factor
-                    scalar_value = value.value * factor
-
-                # Quantity with regular Astropy Unit
-                else: scalar_value = value.to(column_unit).value
+                # Get converted scalar value
+                scalar_value = get_converted_value(value, column_unit, conversion_info=conv_info)
 
                 # Add the value
                 scalar_values.append(scalar_value)
@@ -1745,14 +1660,12 @@ class SmartTable(Table):
 
         for i, value in enumerate(values):
 
-            if isinstance(value, list):
-
+            #if isinstance(value, list):
+            if types.is_sequence_or_tuple(values):
                 column_type = self.column_info[i][1]
-
                 if len(value) == 0: converted_value = None
                 elif column_type == str: converted_value = ",".join(map(str, value))
                 else: raise ValueError("Cannot have a list element in the row at the column that is not of string type")
-
             else: converted_value = value
 
             converted_values.append(converted_value)
@@ -1938,14 +1851,6 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     def is_masked_value(self, colname, index):
-
-        """
-        This function ...
-        :param colname:
-        :param index:
-        :return:
-        """
-
         return self[colname].mask[index]
 
     # -----------------------------------------------------------------
@@ -1997,13 +1902,25 @@ class SmartTable(Table):
         # Setup if necessary
         if len(self.colnames) == 0: self._setup()
 
-        #print(len(self.colnames))
-        #print(len(values))
-
-        # CHECK TYPES BEFORE RESIZE STRING COLUMNS?
-
         # Resize string columns for the new values
         self._resize_string_columns(values)
+
+        # Get cleaned values
+        values, mask = self._prepare_row_values(values, conversion_info=conversion_info)
+
+        # Add the row
+        super(SmartTable, self).add_row(values, mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def _prepare_row_values(self, values, conversion_info=None):
+
+        """
+        This function ...
+        :param values:
+        :param conversion_info:
+        :return:
+        """
 
         # Strip units
         values = self._strip_units(values, conversion_info=conversion_info)
@@ -2027,8 +1944,125 @@ class SmartTable(Table):
                 elif self.is_boolean_type(colname): new_values.append(False)
                 else: raise ValueError("Unknown column type for '" + colname + "'")
 
-        # Add the row
-        super(SmartTable, self).add_row(new_values, mask=mask)
+        # Return the new values
+        return new_values, mask
+
+    # -----------------------------------------------------------------
+
+    def add_col(self, name, values, dtype=None, unit=None, description=None, as_column=False):
+
+        """
+        This function ...
+        :param name:
+        :param values:
+        :param dtype:
+        :param unit:
+        :param description:
+        :param as_column: for LARGE columns (big arrays)
+        :return:
+        """
+
+        # Determine dtype
+        to_string = []
+        if dtype is None:
+            if as_column:
+                coltype = values.dtype.name
+                column_type = dtype_name_to_column_type(coltype)
+                dtype = column_type_to_builtin(column_type)
+            else:
+                ptype = get_common_property_type(values)
+                dtype, needs_tostring = property_type_to_builtin(ptype, return_tostring=True)
+                if needs_tostring: to_string.append(name)
+
+        # Determine unit
+        if unit is None:
+            if as_column: pass
+            # Determine unit from quantities
+            else: unit = get_common_unit(values)
+
+        # Column info
+        if description is None: description = "no description"
+        self.add_column_info(name, dtype, unit, description)
+
+        # Directly use values as column?
+        if as_column:
+            if len(to_string) > 0: raise ValueError("Cannot add data as columns if some columns have complex types")
+            column = MaskedColumn(name=name, data=values, dtype=dtype, unit=unit, copy=False)
+
+        # Prepare first
+        else:
+
+            # Prepare values
+            values, mask = self._prepare_column_values(values, name)
+
+            # Add
+            column = MaskedColumn(name=name, data=values, mask=mask, unit=unit)
+
+        # Add to table
+        self.add_column(column)
+
+    # -----------------------------------------------------------------
+
+    def _prepare_column_values(self, values, index_or_name, conversion_info=None):
+
+        """
+        This function ...
+        :param values:
+        :param index_or_name:
+        :param conversion_info:
+        :return:
+        """
+
+        from ..units.unit import get_converted_value
+
+        # Get the conversion info for this column
+        if conversion_info is None: conversion_info = dict()
+
+        # Get column name
+        if types.is_string_type(index_or_name): colname, index = index_or_name, self.column_info_names.index(index_or_name)
+        elif types.is_integer_type(index_or_name): colname, index = self.colnames[index_or_name], index_or_name
+        else: raise ValueError("Invalid type for 'index_or_name'")
+
+        # Initialize list for new values
+        new_values = []
+        mask = []
+        for value in values:
+
+            # If this value has a unit, we have to make sure it is converted into the proper column unit
+            if hasattr(value, "unit"):
+
+                column_unit = self.column_unit(colname)
+                assert column_unit is not None
+
+                # Get converted scalar value
+                converted_value = get_converted_value(value, column_unit, conversion_info=conversion_info)
+
+            # Value is a sequence (or tuple)
+            elif types.is_sequence_or_tuple(value):
+
+                column_type = self.column_info[index][1]
+                if len(value) == 0: converted_value = None
+                elif column_type == str: converted_value = ",".join(map(str, value))
+                else: raise ValueError("Cannot have a list element in the row at the column that is not of string type")
+
+            # Other kind of values
+            else: converted_value = value
+
+            if converted_value is None:
+
+                if self.is_string_type(colname): new_values.append("")
+                elif self.is_real_type(colname): new_values.append(0.)
+                elif self.is_integer_type(colname): new_values.append(0)
+                elif self.is_boolean_type(colname): new_values.append(False)
+                else: raise ValueError("Unknown column type for '" + colname + "'")
+                mask.append(True)
+
+            else:
+                new_values.append(converted_value)
+                mask.append(False)
+
+        # Return the new values and mask
+        return new_values, mask
 
     # -----------------------------------------------------------------
 
@@ -2610,24 +2644,12 @@ class SmartTable(Table):
 
     @property
     def ncolumns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.column_names)
 
     # -----------------------------------------------------------------
 
     @property
     def nrows(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self)
 
     # -----------------------------------------------------------------

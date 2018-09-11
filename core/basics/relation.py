@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import copy
 
+# Import astronomical modules
+from astropy.table import MaskedColumn
+
 # Import the relevant PTS classes and modules
 from .table import SmartTable
 from ..tools import arrays
@@ -98,7 +101,13 @@ class Relation(SmartTable):
 
                 aux_names = names[2:]
                 naux = len(aux_names)
-                aux_units = units[2:] if units is not None else [None] * naux
+                #print(units)
+                if units is not None:
+                    from . import containers
+                    if isinstance(units, dict): aux_units = containers.sequence_from_dict(units, aux_names, none_if_not_contains=True)
+                    else: aux_units = units[2:]
+                else: aux_units = [None] * naux
+                #aux_units = units[2:] if units is not None else [None] * naux
 
                 # Add column info for auxilary axes
                 for name, unit in zip(aux_names, aux_units): self.add_column_info(name, float, unit, "auxilary axis")
@@ -324,6 +333,26 @@ class Relation(SmartTable):
     def naux(self):
         if self.has_errors: return self.ncolumns - 4
         else: return self.ncolumns - 2
+
+    # -----------------------------------------------------------------
+
+    def add_aux(self, name, values, unit=None, description=None, as_column=False):
+
+        """
+        This function ...
+        :param name:
+        :param values:
+        :param unit:
+        :param description:
+        :param as_column:
+        :return:
+        """
+
+        # Add column info
+        if description is None: description = "auxilary axis"
+
+        # Add
+        self.add_col(name, values, dtype=float, unit=unit, description=description, as_column=as_column)
 
     # -----------------------------------------------------------------
 

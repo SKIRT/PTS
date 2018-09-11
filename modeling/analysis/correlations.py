@@ -27,6 +27,7 @@ from ..core.data import Data3D
 from ...magic.core.frame import Frame
 from ...magic.tools.plotting import plot_scatters, plot_stilts
 from ...core.units.parsing import parse_unit as u
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -50,6 +51,13 @@ dust_mass_name = "Dust mass"
 distance_center_name = "Distance from center"
 bulge_disk_ratio_name = "Bulge disk ratio"
 #fuv_ratio_name = "FUV ratio"
+#fuv_h_name =
+#fuv_i1_name =
+aux_colnames = [sfr_name, dust_mass_name, distance_center_name, bulge_disk_ratio_name]
+
+# -----------------------------------------------------------------
+
+ssfr_funev_base_colnames = ["sSFR", "Funev"]
 
 # -----------------------------------------------------------------
 
@@ -668,20 +676,52 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_salim_funev_cells_colnames(self):
+        return fs.get_column_names(self.ssfr_salim_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_salim_funev_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.ssfr_salim_funev_cells_colnames, ssfr_funev_base_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_salim_funev_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.ssfr_salim_funev_cells_aux_colnames, aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ssfr_salim_funev_cells(self):
-        return fs.is_file(self.ssfr_salim_funev_cells_path)
+        if fs.is_file(self.ssfr_salim_funev_cells_path):
+            if not self.ssfr_salim_funev_cells_has_all_aux_columns:
+                colnames = self.ssfr_salim_funev_cells_aux_colnames
+                if sfr_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_salim, self.sfr_salim_unit, as_column=True)
+                if dust_mass_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_salim, self.cell_dust_mass_unit, as_column=True)
+                if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
+                if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
+                self.ssfr_salim_funev_cells.save() # save
+            return True
+        else: return False
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ssfr_salim_cells_aux(self):
-        return {sfr_name: self.valid_cell_sfr_values_salim, dust_mass_name: self.valid_cell_dust_mass_values_salim, distance_center_name: self.valid_cell_radii_salim, bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim}
+        return {sfr_name: self.valid_cell_sfr_values_salim,
+                dust_mass_name: self.valid_cell_dust_mass_values_salim,
+                distance_center_name: self.valid_cell_radii_salim,
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim}
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ssfr_salim_cells_aux_units(self):
-        return {sfr_name: self.sfr_salim_unit, dust_mass_name: self.cell_dust_mass_unit, distance_center_name: self.length_unit}
+        return {sfr_name: self.sfr_salim_unit,
+                dust_mass_name: self.cell_dust_mass_unit,
+                distance_center_name: self.length_unit}
 
     # -----------------------------------------------------------------
 

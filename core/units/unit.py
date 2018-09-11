@@ -3928,3 +3928,39 @@ def get_conversion_factor(from_unit, to_unit, distance=None, wavelength=None, so
     return factor
 
 # -----------------------------------------------------------------
+
+def get_converted_value(quantity, to_unit, distance=None, wavelength=None, solid_angle=None, silent=False, parse=True, conversion_info=None):
+
+    """
+    This function ...
+    :param quantity:
+    :param to_unit:
+    :param distance:
+    :param wavelength:
+    :param solid_angle:
+    :param silent:
+    :param parse:
+    :param conversion_info:
+    :return:
+    """
+
+    # Get conversion factor
+    factor = get_conversion_factor(quantity.unit, to_unit, distance=distance, wavelength=wavelength, solid_angle=solid_angle, silent=silent, parse=parse, conversion_info=conversion_info)
+
+    # Return the value in the target unit
+    return quantity.value * factor
+
+    # FROM SMARTTABLE>_STRIP_UNITS
+    # Quantity with photometric unit
+    #if isinstance(value.unit, PhotometricUnit):
+    #    # Get the conversion info for this column
+    #    if conversion_info is not None and colname in conversion_info: conv_info = conversion_info[colname]
+    #    else: conv_info = dict()
+    #    # Determine the conversion factor
+    #    factor = value.unit.conversion_factor(column_unit, **conv_info)
+    #    # Multiply with the conversion factor
+    #    scalar_value = value.value * factor
+    ## Quantity with regular Astropy Unit
+    #else: scalar_value = value.to(column_unit).value
+
+# -----------------------------------------------------------------
