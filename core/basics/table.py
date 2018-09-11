@@ -1661,7 +1661,7 @@ class SmartTable(Table):
         for i, value in enumerate(values):
 
             #if isinstance(value, list):
-            if types.is_sequence_or_tuple(values):
+            if types.is_sequence_or_tuple(value):
                 column_type = self.column_info[i][1]
                 if len(value) == 0: converted_value = None
                 elif column_type == str: converted_value = ",".join(map(str, value))
