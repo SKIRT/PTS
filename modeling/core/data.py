@@ -1932,8 +1932,13 @@ def load_xyz(filepath, x_colname, y_colname, z_colname, return_unit=False, metho
     # Load columns from file
     x, y, z = fs.get_columns(filepath, dtype=float, indices=[x_index, y_index, z_index], method=method)
 
+    # Get actual x, y, and z units
+    x_unit = xyz_units[x_index]
+    y_unit = xyz_units[y_index]
+    z_unit = xyz_units[z_index]
+
     # Return
-    if return_unit: return x, y, z, sequences.get_all_equal_value(xyz_units, ignore_none=True)
+    if return_unit: return x, y, z, sequences.get_all_equal_value([x_unit, y_unit, z_unit], ignore_none=True)
     else: return x, y, z
 
 # -----------------------------------------------------------------
