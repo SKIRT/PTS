@@ -752,7 +752,8 @@ def split_except_within_round_brackets_and_double_quotes(text, add_brackets=True
 
 # -----------------------------------------------------------------
 
-def split_except_within_left_right_and_double_quotes(text, left, right, add_pattern=True, add_quotes=True):
+# DOESN'T WORK WHEN ( is attached to previous word: will be splitted apart e.g. "aa(b b)" will be "aa", "(b b)"
+def split_except_within_left_right_and_double_quotes_old(text, left, right, add_pattern=True, add_quotes=True):
 
     """
     This function ...
@@ -793,6 +794,96 @@ def split_except_within_left_right_and_double_quotes(text, left, right, add_patt
                         if add_quotes: parts.append(a)
                         else: parts.append(a[1:])
                     else: parts.append(a)
+    return parts
+
+# -----------------------------------------------------------------
+
+def split_except_within_left_right_and_double_quotes(text, left, right, add_pattern=True, add_quotes=True):
+
+    """
+    This function ...
+    :param text:
+    :param left:
+    :param right:
+    :param add_pattern:
+    :param add_quotes:
+    :return:
+    """
+
+    # TEST WHETHER LEFT AND RIGHT ARE SINGLE CHARACTERS!
+
+    parts = []
+
+    opened_as_new = False
+    new_word = True
+    opened_leftright = False
+    opened_quotes = False
+
+    # Loop over the letters
+    for letter in text:
+
+        if letter == left:
+
+            opened_leftright = True
+
+            # Add left?
+            if new_word:
+                opened_as_new = True
+                if add_pattern: parts.append(left)
+                else: parts.append("") # empty string to start
+                new_word = False
+            else:
+                opened_as_new = False
+                parts[-1] += left
+
+        elif letter == right:
+
+            if not opened_leftright: raise RuntimeError("Encountered '" + right + "' without '" + left + "'")
+            opened_leftright = False
+
+            # Add right?
+            if (not opened_as_new) or add_pattern: parts[-1] += right
+
+        elif letter == double_quote:
+
+            # Now close quotes
+            if opened_quotes:
+
+                opened_quotes = False
+
+                # Add quote?
+                if (not opened_as_new) or add_quotes: parts[-1] += '"'
+
+            # Now open quotes
+            else:
+
+                opened_quotes = True
+
+                # Add quote?
+                if new_word:
+                    opened_as_new = True
+                    if add_quotes: parts.append('"')
+                    else: parts.append("") # empty string to start
+                    new_word = False
+                else:
+                    opened_as_new = False
+                    parts[-1] += '"'
+
+        # Split
+        elif letter == " ":
+
+            if opened_quotes or opened_leftright: parts[-1] += letter # add the space when inside quotes or left/right
+            else: new_word = True
+
+        # Start new word
+        elif new_word:
+            parts.append(letter)
+            new_word = False
+
+        #
+        else: parts[-1] += letter
+
+    # Return
     return parts
 
 # -----------------------------------------------------------------

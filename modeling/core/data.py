@@ -173,8 +173,7 @@ class Data3D(object):
         column_name = sequences.get_single_other(table.column_names, standard_column_names, none="error", method="error")
         name = column_name.lower()
 
-        # Get the units
-        if length_unit is None: length_unit = table.get_column_unit(x_coordinate_name.capitalize())
+        # Get the unit of the values
         if unit is None: unit = table.get_column_unit(column_name)
 
         # Get the xyz data from other file
@@ -189,12 +188,18 @@ class Data3D(object):
             # Load x, y, z
             x, y, z = load_xyz(xyz_filepath, x_colname, y_colname, z_colname)
 
+            # Get length unit
+            if length_unit is None and "length_unit" in meta: length_unit = meta["length_unit"]
+
         # Get xyz data from columns
         else:
 
             # Set default
             xyz_filepath = None
             x_colname, y_colname, z_colname = "x", "y", "z"  # default
+
+            # Get length unit
+            if length_unit is None: length_unit = table.get_column_unit(x_coordinate_name.capitalize())
 
             # Get the data
             x = table.get_column_array(x_coordinate_name.capitalize(), unit=length_unit, masked=False)

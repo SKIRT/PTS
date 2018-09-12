@@ -3190,7 +3190,11 @@ def parse_pts_header(header):
     # Get column units
     column_units = dict()
     unit_string = header[-2]
-    unit_strings = unit_string.split()
+    #unit_strings = unit_string.split()
+    #print(unit_strings, column_names)
+    unit_strings = strings.split_except_within_round_brackets_and_double_quotes(unit_string)
+    #print(unit_strings, len(unit_strings))
+    #print(column_names, len(column_names))
     assert len(unit_strings) == len(column_names)
 
     for unit_string, colname in zip(unit_strings, column_names):

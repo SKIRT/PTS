@@ -42,18 +42,25 @@ m31_name = "M31"
 
 # Names for correlations
 ssfr_funev_name = "sSFR-Funev"
+temperature_funev_name = "Temperature-Funev"
 
 # -----------------------------------------------------------------
 
 # Auxilary column names
-sfr_name = "SFR"
-dust_mass_name = "Dust mass"
+#sfr_name = "SFR"
+sfr_density_name = "vSFR"
+#dust_mass_name = "Dust mass"
+dust_density_name = "Dust density"
 distance_center_name = "Distance from center"
 bulge_disk_ratio_name = "Bulge disk ratio"
 #fuv_ratio_name = "FUV ratio"
 #fuv_h_name =
 #fuv_i1_name =
-aux_colnames = [sfr_name, dust_mass_name, distance_center_name, bulge_disk_ratio_name]
+#temperature_name =
+#mean_age_name =
+
+#aux_colnames = [sfr_name, dust_mass_name, distance_center_name, bulge_disk_ratio_name]
+aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name]
 
 # -----------------------------------------------------------------
 
@@ -184,9 +191,15 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def length_unit(self):
         return u("pc")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def volume_unit(self):
+        return self.length_unit**3
 
     # -----------------------------------------------------------------
     # I1 LUMINOSITY / BULGE DISK RATIO
@@ -373,6 +386,62 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_dust_mass_unit(self):
         return self.cell_dust_mass_data.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_density_path(self):
+        return fs.join(self.correlations_path, "dust_density.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_dust_density(self):
+        return fs.is_file(self.cell_dust_density_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_density_name(self):
+        return "Rho_dust"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_density_description(self):
+        return "Total dust density"
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_dust_density_path", True, write=True)
+    def cell_dust_density_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values and unit
+        densities = self.cell_dust_mass_values / self.cell_volumes
+        unit = self.cell_dust_mass_unit / self.volume_unit
+
+        # Create the data with external xyz
+        return Data3D.from_values(self.dust_density_name, densities, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, unit=unit, description=self.dust_density_description,
+                                  xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_densities(self):
+        return self.cell_dust_density_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_dust_density_unit(self):
+        return self.cell_dust_density_data.unit
 
     # -----------------------------------------------------------------
     # M51 DATA
@@ -579,6 +648,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def cell_sfr_densities_salim(self):
+        return self.cell_sfr_salim_values / self.cell_volumes
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_name(self):
         return "sSFR"
@@ -600,6 +675,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def sfr_salim_unit(self):
         return self.cell_sfr_salim.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_density_salim_unit(self):
+        return self.sfr_salim_unit / self.volume_unit
 
     # -----------------------------------------------------------------
 
@@ -652,8 +733,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def valid_cell_sfr_densities_salim(self):
+        return self.cell_sfr_densities_salim[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def valid_cell_dust_mass_values_salim(self):
         return self.cell_dust_mass_values[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_densities_salim(self):
+        return self.cell_dust_densities[self.valid_cell_mask_salim]
 
     # -----------------------------------------------------------------
 
@@ -698,8 +791,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if fs.is_file(self.ssfr_salim_funev_cells_path):
             if not self.ssfr_salim_funev_cells_has_all_aux_columns:
                 colnames = self.ssfr_salim_funev_cells_aux_colnames
-                if sfr_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_salim, self.sfr_salim_unit, as_column=True)
-                if dust_mass_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_salim, self.cell_dust_mass_unit, as_column=True)
+                #if sfr_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_salim, self.sfr_salim_unit, as_column=True)
+                #if dust_mass_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_salim, self.cell_dust_mass_unit, as_column=True)
+                if sfr_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_salim, self.sfr_density_salim_unit, as_column=True)
+                if dust_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_salim, self.cell_dust_density_unit, as_column=True)
                 if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
                 self.ssfr_salim_funev_cells.save() # save
@@ -710,8 +805,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def ssfr_salim_cells_aux(self):
-        return {sfr_name: self.valid_cell_sfr_values_salim,
-                dust_mass_name: self.valid_cell_dust_mass_values_salim,
+        return {#sfr_name: self.valid_cell_sfr_values_salim,
+                #dust_mass_name: self.valid_cell_dust_mass_values_salim,
+                sfr_density_name: self.valid_cell_sfr_densities_salim,
+                dust_density_name: self.valid_cell_dust_densities_salim,
                 distance_center_name: self.valid_cell_radii_salim,
                 bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim}
 
@@ -719,8 +816,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def ssfr_salim_cells_aux_units(self):
-        return {sfr_name: self.sfr_salim_unit,
-                dust_mass_name: self.cell_dust_mass_unit,
+        return {#sfr_name: self.sfr_salim_unit,
+                #dust_mass_name: self.cell_dust_mass_unit,
+                sfr_density_name: self.sfr_density_salim_unit,
+                dust_density_name: self.cell_dust_density_unit,
                 distance_center_name: self.length_unit}
 
     # -----------------------------------------------------------------
@@ -790,6 +889,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_ke_unit(self):
+        return self.cell_sfr_ke.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_density_ke_unit(self):
+        return self.sfr_ke_unit / self.volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_ssfr_ke_values(self):
         return self.cell_ssfr_ke.values
 
@@ -798,6 +909,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_sfr_ke_values(self):
         return self.cell_sfr_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_densities_ke(self):
+        return self.cell_sfr_ke_values / self.cell_volumes
 
     # -----------------------------------------------------------------
 
@@ -837,6 +954,36 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_sfr_densities_ke(self):
+        return self.cell_sfr_densities_ke[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_mass_values_ke(self):
+        return self.cell_dust_mass_values[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_densities_ke(self):
+        return self.cell_dust_densities[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_radii_ke(self):
+        return self.cell_radii[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_bd_ratios_ke(self):
+        return self.cell_bd_ratios[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_ke_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_ke.dat")
@@ -844,8 +991,58 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_ke_funev_cells_colnames(self):
+        return fs.get_column_names(self.ssfr_ke_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.ssfr_ke_funev_cells_colnames, ssfr_funev_base_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_ke_funev_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.ssfr_ke_funev_cells_aux_colnames, aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ssfr_ke_funev_cells(self):
-        return fs.is_file(self.ssfr_ke_funev_cells_path)
+        if fs.is_file(self.ssfr_ke_funev_cells_path):
+            if not self.ssfr_ke_funev_cells_has_all_aux_columns:
+                colnames = self.ssfr_ke_funev_cells_aux_colnames
+                #if sfr_name not in colnames: self.ssfr_ke_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_ke, self.sfr_ke_unit, as_column=True)
+                #if dust_mass_name not in colnames: self.ssfr_ke_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_ke, self.cell_dust_mass_unit, as_column=True)
+                if sfr_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_ke, self.sfr_density_ke_unit, as_column=True)
+                if dust_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_ke, self.cell_dust_density_unit, as_column=True)
+                if distance_center_name not in colnames: self.ssfr_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_ke, self.length_unit, as_column=True)
+                if bulge_disk_ratio_name not in colnames: self.ssfr_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_ke, as_column=True)
+                self.ssfr_ke_funev_cells.save() # save
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_ke_cells_aux(self):
+        return {#sfr_name: self.valid_cell_sfr_values_ke,
+                #dust_mass_name: self.valid_cell_dust_mass_values_ke,
+                sfr_density_name: self.valid_cell_sfr_densities_ke,
+                dust_density_name: self.valid_cell_dust_densities_ke,
+                distance_center_name: self.valid_cell_radii_ke,
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_ke}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_ke_cells_aux_units(self):
+        return {#sfr_name: self.sfr_ke_unit,
+                #dust_mass_name: self.cell_dust_mass_unit,
+                sfr_density_name: self.sfr_density_ke_unit,
+                dust_density_name: self.cell_dust_density_unit,
+                distance_center_name: self.length_unit}
 
     # -----------------------------------------------------------------
 
@@ -864,7 +1061,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Create and return
         return Scatter2D.from_xy(self.valid_cell_ssfr_values_ke, self.valid_cell_funev_values_ke,
                                  x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_ke_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+                                 x_description=self.ssfr_description, y_description=self.funev_description,
+                                 aux=self.ssfr_ke_cells_aux, aux_units=self.ssfr_ke_cells_aux_units)  # auxilary axes
 
     # -----------------------------------------------------------------
     #   MAPPINGS
@@ -913,6 +1111,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_mappings_unit(self):
+        return self.cell_sfr_mappings.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_density_mappings_unit(self):
+        return self.sfr_mappings_unit / self.volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_ssfr_mappings_values(self):
         return self.cell_ssfr_mappings.values
 
@@ -921,6 +1131,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_sfr_mappings_values(self):
         return self.cell_sfr_mappings.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_densities_mappings(self):
+        return self.cell_sfr_mappings_values / self.cell_volumes
 
     # -----------------------------------------------------------------
 
@@ -954,6 +1170,36 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_sfr_densities_mappings(self):
+        return self.cell_sfr_densities_mappings[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_mass_values_mappings(self):
+        return self.cell_dust_mass_values[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_densities_mappings(self):
+        return self.cell_dust_densities[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_radii_mappings(self):
+        return self.cell_radii[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_bd_ratios_mappings(self):
+        return self.cell_bd_ratios[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_mappings_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_mappings.dat")
@@ -961,8 +1207,58 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_mappings_funev_cells_colnames(self):
+        return fs.get_column_names(self.ssfr_mappings_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_funev_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.ssfr_mappings_funev_cells_colnames, ssfr_funev_base_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_funev_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.ssfr_mappings_funev_cells_aux_colnames, aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ssfr_mappings_funev_cells(self):
-        return fs.is_file(self.ssfr_mappings_funev_cells_path)
+        if fs.is_file(self.ssfr_mappings_funev_cells_path):
+            if not self.ssfr_mappings_funev_cells_has_all_aux_columns:
+                colnames = self.ssfr_mappings_funev_cells_aux_colnames
+                #if sfr_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_mappings, self.sfr_mappings_unit, as_column=True)
+                #if dust_mass_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_mappings, self.cell_dust_mass_unit, as_column=True)
+                if sfr_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_mappings, self.sfr_density_mappings_unit, as_column=True)
+                if dust_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings, self.cell_dust_density_unit, as_column=True)
+                if distance_center_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings, self.length_unit, as_column=True)
+                if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings, as_column=True)
+                self.ssfr_mappings_funev_cells.save() # save
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_mappings_cells_aux(self):
+        return {#sfr_name: self.valid_cell_sfr_values_mappings,
+                #dust_mass_name: self.valid_cell_dust_mass_values_mappings,
+                sfr_density_name: self.valid_cell_sfr_densities_mappings,
+                dust_density_name: self.valid_cell_dust_densities_mappings,
+                distance_center_name: self.valid_cell_radii_mappings,
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_mappings_cells_aux_units(self):
+        return {#sfr_name: self.sfr_mappings_unit,
+                #dust_mass_name: self.cell_dust_mass_unit,
+                sfr_density_name: self.sfr_density_mappings_unit,
+                dust_density_name: self.cell_dust_density_unit,
+                distance_center_name: self.length_unit}
 
     # -----------------------------------------------------------------
 
@@ -981,7 +1277,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Create and return
         return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings, self.valid_cell_funev_values_mappings,
                                  x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+                                 x_description=self.ssfr_description, y_description=self.funev_description,
+                                 aux=self.ssfr_mappings_cells_aux, aux_units=self.ssfr_mappings_cells_aux_units)
 
     # -----------------------------------------------------------------
     #   MAPPINGS + K&E
@@ -1030,6 +1327,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_mappings_ke_unit(self):
+        return self.cell_sfr_mappings_ke.unit
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_density_mappings_ke_unit(self):
+        return self.sfr_mappings_ke_unit / self.volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
     def cell_ssfr_mappings_ke_values(self):
         return self.cell_ssfr_mappings_ke.values
 
@@ -1038,6 +1347,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_sfr_mappings_ke_values(self):
         return self.cell_sfr_mappings_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_densities_mappings_ke(self):
+        return self.cell_sfr_mappings_ke_values / self.cell_volumes
 
     # -----------------------------------------------------------------
 
@@ -1071,6 +1386,36 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_sfr_densities_mappings_ke(self):
+        return self.cell_sfr_densities_mappings_ke[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_mass_values_mappings_ke(self):
+        return self.cell_dust_mass_values[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_dust_densities_mappings_ke(self):
+        return self.cell_dust_densities[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_radii_mappings_ke(self):
+        return self.cell_radii[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_bd_ratios_mappings_ke(self):
+        return self.cell_bd_ratios[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_mappings_ke_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_mappings_ke.dat")
@@ -1078,8 +1423,58 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def ssfr_mappings_ke_funev_cells_colnames(self):
+        return fs.get_column_names(self.ssfr_mappings_ke_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.ssfr_mappings_ke_funev_cells_colnames, ssfr_funev_base_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_mappings_ke_funev_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.ssfr_mappings_ke_funev_cells_aux_colnames, aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_ssfr_mappings_ke_funev_cells(self):
-        return fs.is_file(self.ssfr_mappings_ke_funev_cells_path)
+        if fs.is_file(self.ssfr_mappings_ke_funev_cells_path):
+            if not self.ssfr_mappings_ke_funev_cells_has_all_aux_columns:
+                colnames = self.ssfr_mappings_ke_funev_cells_aux_colnames
+                #if sfr_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_mappings_ke, self.sfr_mappings_ke_unit, as_column=True)
+                #if dust_mass_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(dust_mass_name, self.valid_cell_dust_mass_values_mappings_ke, self.cell_dust_mass_unit, as_column=True)
+                if sfr_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(sfr_density_name, self.valid_cell_sfr_densities_mappings_ke, self.sfr_density_mappings_ke_unit, as_column=True)
+                if dust_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings_ke, self.cell_dust_density_unit, as_column=True)
+                if distance_center_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings_ke, self.length_unit, as_column=True)
+                if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings_ke, as_column=True)
+                self.ssfr_mappings_ke_funev_cells.save() # save
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_mappings_ke_cells_aux(self):
+        return {#sfr_name: self.valid_cell_sfr_values_mappings_ke,
+                #dust_mass_name: self.valid_cell_dust_mass_values_mappings_ke,
+                sfr_density_name: self.valid_cell_sfr_densities_mappings_ke,
+                dust_density_name: self.valid_cell_dust_densities_mappings_ke,
+                distance_center_name: self.valid_cell_radii_mappings_ke,
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings_ke}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_mappings_ke_cells_aux_units(self):
+        return {#sfr_name: self.sfr_mappings_ke_unit,
+                #dust_mass_name: self.cell_dust_mass_unit,
+                sfr_density_name: self.sfr_density_mappings_ke_unit,
+                dust_density_name: self.cell_dust_density_unit,
+                distance_center_name: self.length_unit}
 
     # -----------------------------------------------------------------
 
@@ -1098,7 +1493,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Create and return
         return Scatter2D.from_xy(self.valid_cell_ssfr_values_mappings_ke, self.valid_cell_funev_values_mappings_ke,
                                  x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+                                 x_description=self.ssfr_description, y_description=self.funev_description,
+                                 aux=self.ssfr_mappings_ke_cells_aux, aux_units=self.ssfr_mappings_ke_cells_aux_units)
 
     # -----------------------------------------------------------------
     # sSFR-Funev pixel scatter data
@@ -1458,6 +1854,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
+    # Temperature-Funev
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def temperature_funev_path(self):
+        return fs.create_directory_in(self.correlations_path, temperature_funev_name)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -1520,6 +1924,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # sSFR Funev scatter data
         self.write_ssfr_funev()
+
+        # Temperature Funev scatter data
+        #self.write_temperature_funev()
 
     # -----------------------------------------------------------------
 
@@ -1834,6 +2241,88 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         self.m31_scatter.saveto(self.m31_ssfr_funev_path)
 
     # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_temperature_funev_cells(self):
+        return not self.has_temperature_funev_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_temperature_funev_pixels(self):
+        return not self.has_temperature_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_temperature_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_temperature_funev_cells: self.write_temperature_funev_cells()
+
+        # Pixels
+        if self.do_write_temperature_funev_pixels: self.write_temperature_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_cells_path(self):
+        return fs.join(self.temperature_funev_path, "cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_funev_cells(self):
+        return fs.is_file(self.temperature_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_temperature_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the temperature to Funev dust cell scatter data ...")
+
+        # Write
+        self.temperature_funev_cells.saveto(self.temperature_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_pixels_path(self):
+        return fs.join(self.temperature_funev_path, "pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_funev_pixels(self):
+        return fs.is_file(self.temperature_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    def write_temperature_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the temperature to Funev pixel scatter data ...")
+
+        # Write
+        self.temperature_funev_pixels.saveto(self.temperature_funev_pixels_path)
+
+    # -----------------------------------------------------------------
 
     def plot(self):
 
@@ -1847,6 +2336,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Plot
         self.plot_ssfr_funev()
+
+        # Plot
+        self.plot_temperature_funev()
 
     # -----------------------------------------------------------------
 
@@ -2535,5 +3027,97 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                               path=self.ssfr_mappings_ke_funev_pixels_plot_path, xlimits=self.ssfr_limits,
                               ylimits=self.funev_limits,
                               density=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_temperature_funev_cells(self):
+        return not self.has_temperature_funev_cells_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_temperature_funev_pixels(self):
+        return not self.has_temperature_funev_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_temperature_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        # Cells
+        if self.do_plot_temperature_funev_cells: self.plot_temperature_funev_cells()
+        
+        # Pixels
+        if self.do_plot_temperature_funev_pixels: self.plot_temperature_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_cells_plot_path(self):
+        return fs.join(self.temperature_funev_path, "cells.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_funev_cells_plot(self):
+        return fs.is_file(self.temperature_funev_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_temperature_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.temperature_funev_cells_scatter_paths, self.temperature_name, self.funev_name,
+                        self.temperature_description, self.funev_description,
+                        title=self.temperature_funev_cells_title, path=self.temperature_funev_cells_plot_path,
+                        ylimits=self.funev_limits, xlog=True, xlimits=self.temperature_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_pixels_plot_path(self):
+        return fs.join(self.temperature_funev_path, "pixels.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_funev_pixels_plot(self):
+        return fs.is_file(self.temperature_funev_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_temperature_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.temperature_funev_pixels_scatter_paths, self.temperature_name, self.funev_name,
+                        self.temperature_description, self.funev_description,
+                        title=self.temperature_funev_pixels_title,
+                        path=self.temperature_funev_pixels_plot_path,
+                        ylimits=self.funev_limits, xlog=True, xlimits=self.temperature_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------

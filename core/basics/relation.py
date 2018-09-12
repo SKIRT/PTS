@@ -184,7 +184,7 @@ class Relation(SmartTable):
             column_names = [kwargs["x_name"], kwargs["y_name"]] + aux.keys()
             aux_units = kwargs.pop("aux_units", None)
             if aux_units is None: aux_units = [None] * naux
-            else: aux_units = sequence_from_dict(aux_units, aux.keys()) # in the order of the aux columns
+            else: aux_units = sequence_from_dict(aux_units, aux.keys(), none_if_not_contains=True) # in the order of the aux columns
             column_units = [kwargs["x_unit"], kwargs["y_unit"]] + aux_units
             kwargs["names"] = column_names
             kwargs["units"] = column_units
