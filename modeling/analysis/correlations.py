@@ -56,9 +56,10 @@ bulge_disk_ratio_name = "Bulge disk ratio"
 #fuv_ratio_name = "FUV ratio"
 #fuv_h_name =
 #fuv_i1_name =
-#temperature_name =
-#mean_age_name =
+temperature_name = "Dust temperature"
+mean_age_name = "Mean stellar age"
 
+# Auxilary column names for sSFR-Funev scatter data
 #aux_colnames = [sfr_name, dust_mass_name, distance_center_name, bulge_disk_ratio_name]
 aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name]
 

@@ -144,85 +144,42 @@ class SingleSimulationDefinition(SimulationDefinition):
 
     @property
     def base_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.ski_path)
 
     # -----------------------------------------------------------------
 
     @property
     def prefix(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.strip_extension(fs.name(self.ski_path))
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ski(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SkiFile(self.ski_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nwavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #print(self.input_path)
         return self.ski.nwavelengthsfile(self.input_path) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dustlib_dimension(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.ski.dustlib_dimension()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def uses_dust_grid_tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ski.filetreegrid()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid_tree_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.uses_dust_grid_tree: return None
         else: return self.ski.treegridfile(self.input_path)
 
@@ -230,12 +187,6 @@ class SingleSimulationDefinition(SimulationDefinition):
 
     @lazyproperty
     def dust_grid_tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.uses_dust_grid_tree: return None
         else: return DustGridTree.from_file(self.dust_grid_tree_path)
 
@@ -243,12 +194,6 @@ class SingleSimulationDefinition(SimulationDefinition):
 
     @lazyproperty
     def ndust_cells(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         if self.ski.treegrid_notfile(): return None # number of cells cannot be defined
         elif self.ski.filetreegrid(): return get_nleaves(self.dust_grid_tree_path) #return self.dust_grid_tree.nleaves
         else: return self.ski.ncells()

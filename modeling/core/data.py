@@ -557,7 +557,8 @@ class Data3D(object):
         # Return the resulting data
         return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
                               unit=self.unit, description=self.description, distance=self.distance,
-                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+                              wavelength=self.wavelength, solid_angle=self.solid_angle, xyz_filepath=self.xyz_filepath,
+                              x_colname=self.x_colname, y_colname=self.y_colname, z_colname=self.z_colname)
 
     # -----------------------------------------------------------------
 
@@ -587,7 +588,8 @@ class Data3D(object):
         # Return the resulting data
         return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
                               unit=self.unit, description=self.description, distance=self.distance,
-                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+                              wavelength=self.wavelength, solid_angle=self.solid_angle, xyz_filepath=self.xyz_filepath,
+                              x_colname=self.x_colname, y_colname=self.y_colname, z_colname=self.z_colname)
 
     # -----------------------------------------------------------------
 
@@ -617,7 +619,8 @@ class Data3D(object):
         # Return the resulting data
         return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
                               unit=new_unit, description=self.description, distance=self.distance,
-                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+                              wavelength=self.wavelength, solid_angle=self.solid_angle, xyz_filepath=self.xyz_filepath,
+                              x_colname=self.x_colname, y_colname=self.y_colname, z_colname=self.z_colname)
 
     # -----------------------------------------------------------------
 
@@ -647,7 +650,8 @@ class Data3D(object):
         # Return the resulting data
         return self.__class__(self.name, self.x, self.y, self.z, new_values, weights=weights, length_unit=self.length_unit,
                               unit=new_unit, description=self.description, distance=self.distance,
-                              wavelength=self.wavelength, solid_angle=self.solid_angle)
+                              wavelength=self.wavelength, solid_angle=self.solid_angle, xyz_filepath=self.xyz_filepath,
+                              x_colname=self.x_colname, y_colname=self.y_colname, z_colname=self.z_colname)
 
     # -----------------------------------------------------------------
 
@@ -814,34 +818,6 @@ class Data3D(object):
         return get_conversion_factor(self.unit, to_unit, parse=False, silent=silent, distance=distance,
                                      wavelength=wavelength, solid_angle=solid_angle, conversion_info=self.conversion_info)
 
-        # # The data has a photometric unit
-        # if self.is_photometric:
-        #
-        #     # Check that the target unit is also photometric
-        #     if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the data is")
-        #
-        #     # Set the conversion info
-        #     #conversion_info = dict()
-        #     conversion_info = self.conversion_info
-        #     if distance is not None: conversion_info["distance"] = distance
-        #     if wavelength is not None: conversion_info["wavelength"] = wavelength
-        #     if solid_angle is not None: conversion_info["solid_angle"] = solid_angle
-        #
-        #     # Calculate the conversion factor
-        #     factor = self.unit.conversion_factor(to_unit, silent=silent, **conversion_info)
-        #
-        # # The data does not have a photometric unit
-        # else:
-        #
-        #     # Check whether target unit is also not photometric
-        #     if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the data is not")
-        #
-        #     # Calculate the conversion factor
-        #     factor = self.unit.to(to_unit, silent=True)
-        #
-        # # Return
-        # return factor
-
     # -----------------------------------------------------------------
 
     def where(self, value):
@@ -876,12 +852,6 @@ class Data3D(object):
 
     @lazyproperty
     def absolute_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.abs(self.values)
 
     # -----------------------------------------------------------------

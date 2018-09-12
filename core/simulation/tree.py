@@ -19,8 +19,35 @@ from ..basics.range import QuantityRange
 from ..tools.utils import lazyproperty
 from ..basics.distribution import Distribution
 from ..tools import filesystem as fs
+from ..basics.table import SmartTable
+from ..basics.log import log
+from ..tools.progress import Bar
 
 # -----------------------------------------------------------------
+
+# column 1: node ID
+# column 2: dust cell index
+# column 3: minimum x coordinate of the node (pc)
+# column 4: maximum x coordinate of the node (pc)
+# column 5: minimum y coordinate of the node (pc)
+# column 6: maximum y coordinate of the node (pc)
+# column 7: minimum z coordinate of the node (pc)
+# column 8: maximum z coordinate of the node (pc)
+# column 9: ID of the father node
+# column 10: ID of child node 0
+# column 11: ID of child node 1
+# column 12: ID of child node 2
+# column 13: ID of child node 3
+# column 14: ID of child node 4
+# column 15: ID of child node 5
+# column 16: ID of child node 6
+# column 17: ID of child node 7
+
+original_column_names = ["node ID", "dust cell index", "minimum x coordinate of the node", "maximum x coordinate of the node",
+                         "minimum y coordinate of the node", "maximum y coordinate of the node",
+                         "minimum z coordinate of the node", "maximum z coordinate of the node",
+                         "ID of the father node", "ID of child node 0", "ID of child node 1", "ID of child node 2",
+                         "ID of child node 3", "ID of child node 4", "ID of child node 5", "ID of child node 6", "ID of child node 7"]
 
 column_names = ["ID",  "Cell index", "Min x", "Max x", "Min y", "Max y", "Min z", "Max z", "Parent ID", "Child 0 ID", "Child 1 ID", "Child 2 ID", "Child 3 ID", "Child 4 ID", "Child 5 ID", "Child 6 ID", "Child 7 ID"]
 
@@ -143,12 +170,6 @@ class DustGridTree(object):
 
     @property
     def nchildren_per_node(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         for node in self.nodes:
             if node.nchildren != 0: return node.nchildren
         return None
@@ -157,12 +178,6 @@ class DustGridTree(object):
 
     @property
     def tree_type(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         if self.nchildren_per_node == 2: return "bintree"
         elif self.nchildren_per_node == 8: return "octtree"
         else: raise ValueError("Invalid number of children per node: " + str(self.nchildren_per_node))
@@ -171,24 +186,12 @@ class DustGridTree(object):
 
     @property
     def nnodes(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
         return len(self.nodes)
 
     # -----------------------------------------------------------------
 
     @property
     def nleaves(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         nchildless = 0
         for node in self.nodes:
             if node.nchildren == 0: nchildless += 1
@@ -198,57 +201,36 @@ class DustGridTree(object):
 
     @lazyproperty
     def root(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.nodes[0]
 
     # -----------------------------------------------------------------
 
     @property
     def x_range(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.root.x_range
 
     # -----------------------------------------------------------------
 
     @property
     def y_range(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.root.y_range
 
     # -----------------------------------------------------------------
 
     @property
     def z_range(self):
-
-        """"
-        This function ...
-        """
-
         return self.root.z_range
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_table(cls, table, units):
+    def from_table(cls, table, units, fix_column_names=True):
 
         """
         This function ...
         :param table:
+        :param units:
+        :param fix_column_names:
         :return:
         """
 
@@ -258,68 +240,67 @@ class DustGridTree(object):
         # Create the tree
         tree = cls()
 
-        # column 1: node ID
-        # column 2: dust cell index
-        # column 3: minimum x coordinate of the node (pc)
-        # column 4: maximum x coordinate of the node (pc)
-        # column 5: minimum y coordinate of the node (pc)
-        # column 6: maximum y coordinate of the node (pc)
-        # column 7: minimum z coordinate of the node (pc)
-        # column 8: maximum z coordinate of the node (pc)
-        # column 9: ID of the father node
-        # column 10: ID of child node 0
-        # column 11: ID of child node 1
-        # column 12: ID of child node 2
-        # column 13: ID of child node 3
-        # column 14: ID of child node 4
-        # column 15: ID of child node 5
-        # column 16: ID of child node 6
-        # column 17: ID of child node 7
-
         # Rename the columns
-        for index in range(len(table.colnames)):
+        if fix_column_names:
+            for index in range(len(table.colnames)):
 
-            column_name = "col" + str(index+1)
-            new_column_name = column_names[index]
-            table.rename_column(column_name, new_column_name)
+                column_name = "col" + str(index+1)
+                original_column_name = original_column_names[index]
+                new_column_name = column_names[index]
 
-        # Loop over the rows
-        for index in range(len(table)):
+                # Original column names have been read in
+                if original_column_name in table.colnames: table.rename_column(original_column_name, new_column_name)
 
-            # Get ID and index
-            id = table["ID"][index]
-            m = table["Cell index"][index]
-            if m == -1: m = None
+                # Column names are col0, col1, etc.
+                else: table.rename_column(column_name, new_column_name)
 
-            # Get extents
-            min_x = table["Min x"][index]
-            max_x = table["Max x"][index]
-            min_y = table["Min y"][index]
-            max_y = table["Max y"][index]
-            min_z = table["Min z"][index]
-            max_z = table["Max z"][index]
+        # Debugging
+        log.debug("Processing the tree nodes, this may take a while ...")
 
-            # Create ranges
-            x_range = QuantityRange(min_x, max_x, unit=length_unit)
-            y_range = QuantityRange(min_y, max_y, unit=length_unit)
-            z_range = QuantityRange(min_z, max_z, unit=length_unit)
+        # Show progress bar
+        nrows = len(table)
+        with Bar(label='', expected_size=nrows, every=1, add_datetime=True) as bar:
 
-            # Get parent
-            parent = table["Parent ID"][index]
-            if parent == -1: parent = None
+            # Loop over the rows
+            for index in range(len(table)):
 
-            # Get children
-            children = []
-            for j in range(8):
-                child_id = table["Child " + str(j) + " ID"][index]
-                if child_id == -1: break
-                else: children.append(child_id)
+                # Show progress
+                bar.show(float(index + 1))
 
-            # Create the node
-            node = TreeNode(id, m, x_range, y_range, z_range, parent, children)
+                # Get ID and index
+                id = table["ID"][index]
+                m = table["Cell index"][index]
+                if m == -1: m = None
 
-            # Add the node
-            tree.nodes.append(node)
+                # Get extents
+                min_x = table["Min x"][index]
+                max_x = table["Max x"][index]
+                min_y = table["Min y"][index]
+                max_y = table["Max y"][index]
+                min_z = table["Min z"][index]
+                max_z = table["Max z"][index]
+
+                # Create ranges
+                x_range = QuantityRange(min_x, max_x, unit=length_unit)
+                y_range = QuantityRange(min_y, max_y, unit=length_unit)
+                z_range = QuantityRange(min_z, max_z, unit=length_unit)
+
+                # Get parent
+                parent = table["Parent ID"][index]
+                if parent == -1: parent = None
+
+                # Get children
+                children = []
+                for j in range(8):
+                    child_id = table["Child " + str(j) + " ID"][index]
+                    if child_id == -1: break
+                    else: children.append(child_id)
+
+                # Create the node
+                node = TreeNode(id, m, x_range, y_range, z_range, parent, children)
+
+                # Add the node
+                tree.nodes.append(node)
 
         # Return the tree
         return tree
@@ -327,20 +308,23 @@ class DustGridTree(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, method="pandas"):
 
         """
         This function ...
         :param path:
+        :param method:
         :return:
         """
 
         # Load the table
-        table = tables.from_file(path, format="ascii")
+        if method == "astropy": table = tables.from_file(path, format="ascii")
+        else: table = SmartTable.from_file(path, method=method, format="csv")
 
         # Load the descriptions and the units
         # descriptions, units = textfile.get_descriptions_and_units(path)
         units = textfile.get_units(path)
+        #print(units)
 
         # Create
         tree = cls.from_table(table, units)
@@ -493,12 +477,6 @@ class DustGridTreeDistribution(Distribution):
 
     @property
     def min_level_index(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         for index in range(len(self)):
             if self.frequencies[index] != 0: return index
 
@@ -506,12 +484,6 @@ class DustGridTreeDistribution(Distribution):
 
     @property
     def max_level_index(self):
-
-        """
-        This fnuction ...
-        :return:
-        """
-
         for index in reversed(range(len(self))):
             if self.frequencies[index] != 0: return index
 
@@ -519,39 +491,18 @@ class DustGridTreeDistribution(Distribution):
 
     @property
     def min_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.values[self.min_level_index]
 
     # -----------------------------------------------------------------
 
     @property
     def max_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.values[self.max_level_index]
 
     # -----------------------------------------------------------------
 
     @property
     def ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #print("min level:", self.min_level_index)
-        #print("max level:", self.max_level_index)
-
         total = 0
         for index in range(self.min_level_index, self.max_level_index+1):
             total += self.frequencies[index]
@@ -583,14 +534,6 @@ def get_cell_coordinates(tree_filepath, read_method="numpy"):
 
     # Read columns
     indices, xmin, xmax, ymin, ymax, zmin, zmax = fs.get_columns(tree_filepath, indices=[1,2,3,4,5,6,7], method=read_method)
-
-    #print(indices)
-    #print(xmin)
-    #print(xmax)
-    #print(ymin)
-    #print(ymax)
-    #print(zmin)
-    #print(zmax)
 
     # Loop over the tree nodes
     for i in range(len(indices)):

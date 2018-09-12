@@ -413,6 +413,7 @@ class SmartTable(Table):
         descriptions = kwargs.pop("descriptions", None)
         as_columns = kwargs.pop("as_columns", False)
         meta = kwargs.pop("meta", {})
+        if meta is None: meta = {}
         #print("names", names)
 
         # Get tostr kwargs
@@ -1211,6 +1212,9 @@ class SmartTable(Table):
             if "ECSV" in first_line: format = "ecsv"
             elif "PTS data format" in first_line: format = "pts"
 
+        # More? ecsv as well?
+        allowed_numpy_pands_formats = ["pts", "csv"]
+
         # Read as lines and parse each line individually
         if method == "lines":
 
@@ -1225,11 +1229,10 @@ class SmartTable(Table):
         elif method == "pandas":
 
             # Check
-            if format != "pts": raise IOError("Reading through Pandas is currently only supported for PTS style tables")
+            if format not in allowed_numpy_pands_formats: raise IOError("Reading through Pandas is currently only supported for PTS style tables and CSV ASCII tables")
 
             # Read the header
-            header = fs.get_header_lines(path)
-            column_names, column_types, column_units, meta = parse_pts_header(header)
+            column_names, column_types, column_units, meta = parse_header_file(path, format)
 
             import pandas as pd
             df = pd.read_csv(path, sep=" ", comment="#", header=None)
@@ -1241,11 +1244,10 @@ class SmartTable(Table):
         elif method == "numpy":
 
             # Check
-            if format != "pts": raise IOError("Reading through NumPy is currently only supported for PTS style tables")
+            if format not in allowed_numpy_pands_formats: raise IOError("Reading through NumPy is currently only supported for PTS style tables and CSV ASCII tables")
 
             # Read the header
-            header = fs.get_header_lines(path)
-            column_names, column_types, column_units, meta = parse_pts_header(header)
+            column_names, column_types, column_units, meta = parse_header_file(path, format)
 
             columns = np.loadtxt(path, unpack=True)
             ncolumns = len(columns)
@@ -3095,6 +3097,29 @@ def get_common_property_type(values):
 
     # Return the common type
     return ptype
+
+# -----------------------------------------------------------------
+
+def parse_header_file(filepath, format):
+
+    """
+    This function ...
+    :param filepath:
+    :param format:
+    :return:
+    """
+
+    # PTS table format
+    if format == "pts": return parse_pts_header_file(filepath)
+
+    # CSV format
+    elif format == "csv":
+
+        column_names, column_units = fs.get_column_names(filepath, return_units=True)
+        return column_names, None, column_units, None
+
+    # Invalid format
+    else: raise ValueError("Invalid format")
 
 # -----------------------------------------------------------------
 

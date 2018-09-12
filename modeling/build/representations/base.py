@@ -77,36 +77,18 @@ class RepresentationBuilderBase(BuildComponent):
 
     @property
     def representation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.representation.name
 
     # -----------------------------------------------------------------
 
     @property
     def representation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.representation.path
 
     # -----------------------------------------------------------------
 
     @property
     def model_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.representation.model_name
 
     # -----------------------------------------------------------------

@@ -76,12 +76,6 @@ class Representation(object):
 
     @lazyproperty
     def dust_grid_tree(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return DustGridTree.from_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
@@ -102,35 +96,17 @@ class Representation(object):
 
     @lazyproperty
     def has_dust_grid_tree(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.is_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.earth_projection.pixelscale
 
     # -----------------------------------------------------------------
 
     def get_projection_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.projections_path, extension="proj", returns="dict")
 
     # -----------------------------------------------------------------
@@ -151,72 +127,36 @@ class Representation(object):
 
     @lazyproperty
     def earth_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return GalaxyProjection.from_file(self.earth_projection_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return EdgeOnProjection.from_file(self.edgeon_projection_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FaceOnProjection.from_file(self.faceon_projection_path)
 
     # -----------------------------------------------------------------
 
     @property
     def earth_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.earth_projection.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edgeon_projection.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.faceon_projection.pixelscale
 
     # -----------------------------------------------------------------
@@ -248,132 +188,66 @@ class Representation(object):
 
     @lazyproperty
     def sed_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SEDInstrument.from_file(self.sed_instrument_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FrameInstrument.from_file(self.frame_instrument_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def simple_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SimpleInstrument.from_file(self.simple_instrument_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_grid(self.dust_grid_path)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return type(self.dust_grid).__name__
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid_tree_distribution_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.grid_path, "tree_distribution.dat")
 
     # -----------------------------------------------------------------
 
     @property
     def has_dust_grid_tree_distribution(self):
-
-        """
-        Thisf ucntion ...
-        :return:
-        """
-
         return fs.is_file(self.dust_grid_tree_distribution_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid_tree_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return DustGridTreeDistribution.from_file(self.dust_grid_tree_distribution_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid_min_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_grid_tree_distribution.min_level
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid_max_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_grid_tree_distribution.max_level
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ndust_cells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_grid_tree_distribution.ncells
 
     # -----------------------------------------------------------------
@@ -402,48 +276,24 @@ class Representation(object):
 
     @property
     def representations_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.path)
 
     # -----------------------------------------------------------------
 
     @property
     def build_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directory_of(self.representations_path)
 
     # -----------------------------------------------------------------
 
     @property
     def modeling_path(self):
-
-        """
-        This function ....
-        :return:
-        """
-
         return fs.directory_of(self.build_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .suite import ModelSuite
         return ModelSuite.from_modeling_path(self.modeling_path)
 
@@ -475,12 +325,6 @@ class Representation(object):
 
     @property
     def galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.earth_projection.distance
 
     # -----------------------------------------------------------------
@@ -518,36 +362,18 @@ class Representation(object):
 
     @property
     def reference_deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.deprojections[self.reference_deprojection_name]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def reference_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.reference_deprojection.filepath
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def reference_map_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return CoordinateSystem.from_file(self.reference_map_path)
 
 # -----------------------------------------------------------------
