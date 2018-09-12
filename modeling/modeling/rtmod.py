@@ -573,6 +573,20 @@ class RTMod(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @memoize_method
+    def get_generation_path(self, fitting_run_name, name):
+
+        """
+        This function ...
+        :param fitting_run_name:
+        :param name:
+        :return:
+        """
+
+        return self.get_fitting_run(fitting_run_name).get_generation_path(name)
+
+    # -----------------------------------------------------------------
+
     def get_simulation_names(self, fitting_run_name, generation_name):
 
         """
@@ -1557,8 +1571,7 @@ class RTMod(InteractiveConfigurable):
         # From manage_generation
         import_names = ["lazy", "find_simulations", "find_remotes", "produce_missing", "check_paths", "correct_paths", "confirm_correction", "check_analysis"]
 
-        # Below: from manage_simulations
-
+        # Below: options from manage_simulations that we want the user to be able to control here in this context
         import_names.append("offline")
         import_names.append("dry")
         import_names.append("fix_success")
@@ -1587,6 +1600,15 @@ class RTMod(InteractiveConfigurable):
         # Change default
         definition.flags["fix_success"].default = True
 
+        # Write the simulation status to the generation directory
+        definition.add_flag("write_status", "write the status table", True)
+
+        # Use previous status
+        definition.add_flag("previous_status", "show the previous simulation status", False)
+
+        # Check status
+        definition.add_flag("check_status", "check the simulation status", True)
+
         # Return the definition
         return definition
 
@@ -1604,23 +1626,31 @@ class RTMod(InteractiveConfigurable):
         # Get fitting run name and generation name
         fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.manage_generation_definition, **kwargs)
 
+        # Use previous status?
+        if config.previous_status:
+            config.pop("previous_status")
+            status_filepath = fs.join(self.get_generation_path(fitting_run_name, generation_name), "status.dat")
+            if not fs.is_file(status_filepath): status_filepath = None # does not exist
+        else: status_filepath = None
+
         # Manage
-        self.manage_generation(fitting_run_name, generation_name, config=config)
+        self.manage_generation(fitting_run_name, generation_name, config=config, status_filepath=status_filepath)
 
     # -----------------------------------------------------------------
 
-    def manage_generation(self, fitting_run_name, generation_name, config=None):
+    def manage_generation(self, fitting_run_name, generation_name, config=None, status_filepath=None):
 
         """
         This function ...
         :param fitting_run_name:
         :param generation_name:
         :param config:
+        :param status_filepath:
         :return:
         """
 
         # Create the manager
-        manager = GenerationManager(config=config)
+        manager = GenerationManager(config=config, extend_config=True, check_required=False)
         manager.config.path = self.config.path
 
         # Set fitting run name and generation name
@@ -1629,6 +1659,9 @@ class RTMod(InteractiveConfigurable):
 
         # Set cache volume name
         manager.config.cache_volume = self.config.cache_volume
+
+        # Set status filepath
+        manager.config.status = status_filepath
 
         # Run the manager
         manager.run()
@@ -2134,11 +2167,14 @@ class RTMod(InteractiveConfigurable):
         definition.add_flag("fix_success", "check success flags in assignment table", True)
         definition.add_flag("check_analysis", "check analysis output", False)
 
-        # Write the status table
-        definition.add_flag("write_status", "write the status", False)
+        # Write the status table to the generation directory
+        definition.add_flag("write_status", "write the status", True)
 
         # Correct analysis status
         definition.add_flag("correct_status", "correct the status", True)
+
+        # Use previous
+        definition.add_flag("previous", "show previous status", False)
 
         # Return the definition
         return definition
@@ -2157,17 +2193,25 @@ class RTMod(InteractiveConfigurable):
         # Get generation and config
         fitting_run_name, generation_name, config = self.get_fitting_run_name_generation_name_and_config_from_command(command, self.show_generation_status_definition, **kwargs)
 
+        # Use previous status?
+        if config.previous:
+            status_filepath = fs.join(self.get_generation_path(fitting_run_name, generation_name), "status.dat")
+            if not fs.is_file(status_filepath): status_filepath = None  # does not exist
+        else: status_filepath = None
+
         # Show
-        self.show_generation_status(fitting_run_name, generation_name, config)
+        self.show_generation_status(fitting_run_name, generation_name, config, status_filepath=status_filepath)
 
     # -----------------------------------------------------------------
 
-    def show_generation_status(self, fitting_run_name, generation_name, config):
+    def show_generation_status(self, fitting_run_name, generation_name, config, status_filepath=None):
 
         """
         This function ...
         :param fitting_run_name:
         :param generation_name:
+        :param config:
+        :param status_filepath:
         :return:
         """
 
@@ -2195,6 +2239,9 @@ class RTMod(InteractiveConfigurable):
 
         # Not interactive
         manager.config.interactive = False
+
+        # Set the status table filepath
+        manager.config.status = status_filepath
 
         # Set the status command
         if config.extra is not None: status_command = "status " + ",".join(config.extra)

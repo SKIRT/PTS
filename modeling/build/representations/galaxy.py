@@ -72,22 +72,22 @@ class GalaxyRepresentationBuilder(RepresentationBuilderBase, GalaxyModelingCompo
         :return:
         """
 
-        # 2. Load the deprojections
+        # Load the deprojections
         self.load_deprojections()
 
-        # 6. Create the dust grid
+        # Create the dust grid
         if self.dust_grid is None: self.create_dust_grid()
 
-        # 4. Create the projections
+        # Create the projections
         self.create_projections()
 
-        # 5. Create the instruments
+        # Create the instruments
         self.create_instruments()
 
         # Build the dust grid
         self.build_dust_grid()
 
-        # 7. Writing
+        # Writing
         self.write()
 
     # -----------------------------------------------------------------

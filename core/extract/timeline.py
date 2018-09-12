@@ -26,11 +26,12 @@ from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
-def extract_timeline(simulation):
+def extract_timeline(simulation=None, log_files=None):
 
     """
     This function ...
     :param simulation:
+    :param log_files:
     :return:
     """
 
@@ -38,7 +39,7 @@ def extract_timeline(simulation):
     extractor = TimeLineExtractor()
 
     # Run the timeline extractor
-    extractor.run(simulation)
+    extractor.run(simulation=simulation, log_files=log_files)
 
     # Return the timeline
     return extractor.table
@@ -799,10 +800,12 @@ class TimeLineExtractor(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param args:
+        :param kwargs:
         :return:
         """
 
@@ -819,17 +822,17 @@ class TimeLineExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None):
+    def run(self, *args, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param output_path:
+        :param args:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, output_path=output_path)
+        self.setup(*args, **kwargs)
 
         # 2. Perform the extraction
         self.extract()
@@ -839,23 +842,41 @@ class TimeLineExtractor(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, output_path=None):
+    def setup(self, *args, **kwargs):
 
         """
         This funtion ...
-        :param simulation:
-        :param output_path:
+        :param args:
+        :param kwargs:
         :return:
         """
 
-        # Obtain the log files created by the simulation
-        self.log_files = simulation.logfiles()
+        # Simulation is passed
+        if kwargs.get("simulation", None) is not None:
+
+            # Obtain the log files created by the simulation
+            simulation = kwargs.pop("simulation")
+            log_files = simulation.logfiles()
+
+        # Log files are passed
+        elif kwargs.get("log_files", None) is not None: log_files = kwargs.pop("log_files")
+
+        # One log file is passed
+        elif kwargs.get("log_file", None) is not None: log_files = [kwargs.pop("log_file")]
+
+        # Not enough input
+        else: raise ValueError("Too little input")
+
+        # Set the log files
+        self.log_files = log_files
 
         # Check whether there are log files
         if not self.has_logfiles: raise ValueError("No log files found in simulation output")
 
         # Set the output path
-        self.output_path = output_path
+        #if len(args) > 0: output_path = args[1]
+        #else: output_path = kwargs.pop("output_path", None)
+        self.output_path = kwargs.pop("output_path", None)
 
     # -----------------------------------------------------------------
 

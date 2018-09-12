@@ -97,6 +97,7 @@ analyse_young_maps | -- | analysis.maps.young.YoungMapsAnalyser | arguments | An
 analyse_ionizing_maps | -- | analysis.maps.ionizing.IonizingMapsAnalyser | arguments | Analyse ionizing stellar maps derived from the simulated images
 analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
+analyse_spectral_heating | -- | analysis.heating.spectral.SpectralDustHeatingAnalyser | arguments | Analyse the spectral dust heating
 analyse_cell_energy | -- | analysis.energy.cell.CellEnergyAnalyser | arguments | Analyse the dust cell energy balance
 analyse_projected_energy | -- | analysis.energy.projected.ProjectedEnergyAnalyser | arguments | Analyse the projected energy balance
 analyse_sfr | -- | analysis.sfr.SFRAnalyser | arguments | Analyse the (specific) star formation rates

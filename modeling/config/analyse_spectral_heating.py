@@ -22,32 +22,25 @@ runs = AnalysisRuns(modeling_path)
 
 definition = definition.copy()
 
-# ANALYSIS RUN
+# ANALYSIS RUNS
 if runs.empty: warnings.warn("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
-else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.names)
+else: definition.add_positional_optional("run", "string", "name of the analysis run for which to analyse the projected heating", runs.last_name, runs.names)
 
 # -----------------------------------------------------------------
 
-# Plotting
-definition.add_flag("plot", "do plotting", True)
-definition.add_flag("replot", "replot all")
-definition.add_flag("replot_sfr", "replot all SFR maps")
-definition.add_flag("replot_mass", "replot all mass maps")
-definition.add_flag("replot_ssfr", "replot all sSFR maps")
-
-# Projected
-definition.add_flag("replot_projected", "replot projected", False)
-definition.add_flag("replot_projected_sfr", "replot projected SFR", False)
-definition.add_flag("replot_projected_mass", "replot projected mass", False)
-definition.add_flag("replot_projected_ssfr", "replot projected sSFR", False)
-
-# Cell maps
-definition.add_flag("replot_cell_maps", "replot cell maps", False)
-definition.add_flag("replot_cell_ssfr_maps", "replot cell sSFR maps", False)
+definition.add_optional("emission_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust emission", "W3,W4,MIPS 24mu,Herschel", convert_default=True)
+definition.add_optional("absorption_filters", "lazy_broad_band_filter_list", "filters for which to plot a map of the heating fraction by dust absorption", "GALEX,SDSS", convert_default=True)
 
 # -----------------------------------------------------------------
 
-definition.add_flag("project", "create and plot maps from the 3D data", True)
+# Convolution?
+definition.add_flag("spectral_convolution", "use spectral convolution for maps from the cubes", False)
+
+# -----------------------------------------------------------------
+
+# For creating interpolated maps
+definition.add_optional("min_ncells", "positive_integer", "minimum number of cells for eachn pixel of the interpolated maps of the heating fraction", 5)
+definition.add_optional("not_nans_dilation_radius", "positive_real", "radius for dilating not-nans", 3)
 
 # -----------------------------------------------------------------

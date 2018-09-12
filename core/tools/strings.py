@@ -679,7 +679,7 @@ def split_except_within_round_brackets(text, add_brackets=True):
     """
     This function ...
     :param text:
-    :param add_pattern:
+    :param add_brackets:
     :return:
     """
 
@@ -734,6 +734,156 @@ def split_except_within_left_right(text, left, right, add_pattern=True):
             else: parts.append(item)
         else:
             for a in item.split(): parts.append(a)
+    return parts
+
+# -----------------------------------------------------------------
+
+def split_except_within_round_brackets_and_double_quotes(text, add_brackets=True, add_quotes=True):
+
+    """
+    This function ...
+    :param text:
+    :param add_brackets:
+    :param add_quotes:
+    :return:
+    """
+
+    return split_except_within_left_right_and_double_quotes(text, "(", ")", add_pattern=add_brackets, add_quotes=add_quotes)
+
+# -----------------------------------------------------------------
+
+# DOESN'T WORK WHEN ( is attached to previous word: will be splitted apart e.g. "aa(b b)" will be "aa", "(b b)"
+def split_except_within_left_right_and_double_quotes_old(text, left, right, add_pattern=True, add_quotes=True):
+
+    """
+    This function ...
+    :param text:
+    :param left:
+    :param right:
+    :param add_pattern:
+    :param add_quotes:
+    :return:
+    """
+
+    parts = []
+
+    opened_quotes = False
+
+    lst = text.replace(left, right).split(right)
+
+    for i, item in enumerate(lst):
+
+        if i % 2:
+            if add_pattern: part = left + item + right
+            else: part = item
+            #print(1, part)
+            parts.append(part)
+
+        else:
+            for a in item.split():
+                #print(2, a)
+                if opened_quotes:
+                    if a.endswith('"'):
+                        opened_quotes = False
+                        if add_quotes: parts[-1] += " " + a
+                        else: parts[-1] += " " + a[:-1]
+                    else: parts[-1] += " " + a
+                else:
+                    if a.startswith('"'):
+                        opened_quotes = True
+                        if add_quotes: parts.append(a)
+                        else: parts.append(a[1:])
+                    else: parts.append(a)
+    return parts
+
+# -----------------------------------------------------------------
+
+def split_except_within_left_right_and_double_quotes(text, left, right, add_pattern=True, add_quotes=True):
+
+    """
+    This function ...
+    :param text:
+    :param left:
+    :param right:
+    :param add_pattern:
+    :param add_quotes:
+    :return:
+    """
+
+    # TEST WHETHER LEFT AND RIGHT ARE SINGLE CHARACTERS!
+
+    parts = []
+
+    opened_as_new = False
+    new_word = True
+    opened_leftright = False
+    opened_quotes = False
+
+    # Loop over the letters
+    for letter in text:
+
+        if letter == left:
+
+            opened_leftright = True
+
+            # Add left?
+            if new_word:
+                opened_as_new = True
+                if add_pattern: parts.append(left)
+                else: parts.append("") # empty string to start
+                new_word = False
+            else:
+                opened_as_new = False
+                parts[-1] += left
+
+        elif letter == right:
+
+            if not opened_leftright: raise RuntimeError("Encountered '" + right + "' without '" + left + "'")
+            opened_leftright = False
+
+            # Add right?
+            if (not opened_as_new) or add_pattern: parts[-1] += right
+
+        elif letter == double_quote:
+
+            # Now close quotes
+            if opened_quotes:
+
+                opened_quotes = False
+
+                # Add quote?
+                if (not opened_as_new) or add_quotes: parts[-1] += '"'
+
+            # Now open quotes
+            else:
+
+                opened_quotes = True
+
+                # Add quote?
+                if new_word:
+                    opened_as_new = True
+                    if add_quotes: parts.append('"')
+                    else: parts.append("") # empty string to start
+                    new_word = False
+                else:
+                    opened_as_new = False
+                    parts[-1] += '"'
+
+        # Split
+        elif letter == " ":
+
+            if opened_quotes or opened_leftright: parts[-1] += letter # add the space when inside quotes or left/right
+            else: new_word = True
+
+        # Start new word
+        elif new_word:
+            parts.append(letter)
+            new_word = False
+
+        #
+        else: parts[-1] += letter
+
+    # Return
     return parts
 
 # -----------------------------------------------------------------
@@ -1072,6 +1222,21 @@ def any_contains(lines, pattern):
     for line in lines:
         if pattern in line: return True
     return False
+
+# -----------------------------------------------------------------
+
+def all_contains(lines, pattern):
+
+    """
+    This function ...
+    :param lines:
+    :param pattern:
+    :return:
+    """
+
+    for line in lines:
+        if pattern not in line: return False
+    return True
 
 # -----------------------------------------------------------------
 
@@ -2039,9 +2204,9 @@ def common_part(*strings, **kwargs):
             else: return string
 
         for index in range(2,len(strings)):
-            print(string, strings[index])
+            #print(string, strings[index])
             string = longest_common_substring(string, strings[index])
-            print(string)
+            #print(string)
             if string == "":
                 if return_none: return None
                 else: return string

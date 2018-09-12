@@ -278,6 +278,7 @@ class Configurable(object):
         prompt_optional = kwargs.pop("prompt_optional", None)
         use_default = kwargs.pop("use_default", None)
         check_required = kwargs.pop("check_required", True)
+        extend_config = kwargs.pop("extend_config", False)
 
         from .configuration import get_config_for_class
 
@@ -287,7 +288,7 @@ class Configurable(object):
             assert isinstance(config, Map)
             return config
         else: return get_config_for_class(cls, config, interactive=interactive, cwd=cwd, prompt_optional=prompt_optional,
-                                          use_default=use_default, check_required=check_required)
+                                          use_default=use_default, check_required=check_required, extend_config=extend_config)
 
     # -----------------------------------------------------------------
 

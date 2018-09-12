@@ -66,12 +66,6 @@ def write_cache_path(directory_path, cache_path):
 # -----------------------------------------------------------------
 
 def get_all_output_cwd(**kwargs):
-
-    """
-    This function ...
-    :return:
-    """
-
     return get_all_output(fs.cwd(), **kwargs)
 
 # -----------------------------------------------------------------
@@ -112,101 +106,41 @@ def get_all_output(path, out_name="out", extr_name="extr", plot_name="plot", mis
 # -----------------------------------------------------------------
 
 def get_output_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return SimulationOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_output(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return SimulationOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_extraction_output_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return ExtractionOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_extraction(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return ExtractionOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_plotting_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return PlottingOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_plotting(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return PlottingOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_misc_cwd(ignore=None):
-
-    """
-    This function ...
-    :param ignore:
-    :return:
-    """
-
     return MiscOutput.from_cwd(ignore=ignore)
 
 # -----------------------------------------------------------------
 
 def get_misc(path, ignore=None):
-
-    """
-    This function ...
-    :param path:
-    :param ignore:
-    :return:
-    """
-
     return MiscOutput.from_directory(path, ignore=ignore)
 
 # -----------------------------------------------------------------
@@ -216,6 +150,7 @@ output_types = Map()
 output_types.isrf = "isrf"
 output_types.absorption = "abs"
 output_types.spectral_absorption = "specabs"
+output_types.spectral_emission = "specem"
 output_types.temperature = "temp"
 output_types.seds = "sed"
 output_types.images = "image"
@@ -249,6 +184,7 @@ output_type_choices = dict()
 output_type_choices[output_types.isrf] = "interstellar radiation field strength"
 output_type_choices[output_types.absorption] = "absorption luminosities"
 output_type_choices[output_types.spectral_absorption] = "absorption spectra"
+output_type_choices[output_types.spectral_emission] = "emission spectra"
 output_type_choices[output_types.temperature] = "temperature"
 output_type_choices[output_types.seds] = "all SEDs"
 output_type_choices[output_types.images] = "all datacubes"
@@ -296,6 +232,9 @@ def get_output_type(filename):
 
     ## Spectral absorption
     elif filename.endswith("_ds_specabs.dat"): return output_types.spectral_absorption
+
+    ## Spectral emission
+    elif filename.endswith("_ds_specem.dat"): return output_types.spectral_emission
 
     ## Temperature
     elif "_ds_temp" in filename and filename.endswith(".fits"): return output_types.temperature
@@ -1286,11 +1225,12 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix=""):
+    def to_string(self, line_prefix="", dense=False):
 
         """
         This function ...
         :param line_prefix:
+        :param dense:
         :return:
         """
 
@@ -1305,7 +1245,7 @@ class Output(object):
             if not self.has_files(output_type) and not self.has_directories(output_type): continue
 
             # Add title
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
             title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset
             if self.has_files(output_type):
                 nfiles = self.get_nfiles(output_type)
@@ -1319,7 +1259,7 @@ class Output(object):
             if self.has_files(output_type):
 
                 # Empty line
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
                 #print(self.files[output_type])
 
                 # Add paths
@@ -1330,16 +1270,16 @@ class Output(object):
             # Show directories for this type
             if self.has_directories(output_type):
 
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
                 lines.append(line_prefix + fmt.red + "directories:" + fmt.reset)
-                lines.append(line_prefix)
+                if not dense: lines.append(line_prefix)
                 for path in self.directories[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Other
         if self.has_other_files:
 
             # Empty line
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Get number of files
             nfiles = self.nother_files
@@ -1347,28 +1287,29 @@ class Output(object):
             # Add title
             title = fmt.green + fmt.underlined + "Other output" + fmt.reset + " (" + str(nfiles) + "):"
             lines.append(line_prefix + title)
-            lines.append(line_prefix)
+            if not dense: lines.append(line_prefix)
 
             # Add paths
             for path in self.other_files: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Add new line
-        lines.append(line_prefix)
+        if not dense: lines.append(line_prefix)
 
         # Return
         return "\n".join(lines)
 
     # -----------------------------------------------------------------
 
-    def show(self, line_prefix=""):
+    def show(self, line_prefix="", dense=False):
 
         """
         This function ...
         :param line_prefix:
+        :param dense:
         :return:
         """
 
-        print(self.to_string(line_prefix=line_prefix))
+        print(self.to_string(line_prefix=line_prefix, dense=dense))
 
 # -----------------------------------------------------------------
 
@@ -1583,6 +1524,8 @@ class SimulationOutput(Output):
         return self.get_single_file(self._output_types.absorption)
 
     # -----------------------------------------------------------------
+    # SPECTRAL ABSORPTION
+    # -----------------------------------------------------------------
 
     @property
     def nspectral_absorption(self):
@@ -1612,6 +1555,40 @@ class SimulationOutput(Output):
     def single_spectral_absorption(self):
         return self.get_single_file(self._output_types.spectral_absorption)
 
+    # -----------------------------------------------------------------
+    # SPECTRAL EMISSION
+    # -----------------------------------------------------------------
+
+    @property
+    def nspectral_emission(self):
+        return self.get_nfiles(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_spectral_emission(self):
+        return self.has_files(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_spectral_emission(self):
+        return self.has_single_file(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_emission(self):
+        return self.get_files(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_spectral_emission(self):
+        return self.get_single_file(self._output_types.spectral_emission)
+
+    # -----------------------------------------------------------------
+    # TEMPERATURE
     # -----------------------------------------------------------------
 
     @property

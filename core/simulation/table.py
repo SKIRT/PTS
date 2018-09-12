@@ -21,6 +21,8 @@ from ..units.unit import parse_unit
 from ..tools.utils import memoize_method, lazyproperty
 from ..tools import numbers
 from .wavelengthgrid import WavelengthGrid
+from ..basics.log import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -78,8 +80,6 @@ def is_valid(path):
         #raise TruncatedSKIRTTableError("The file only contains one line", path=path)
         return False
 
-    from ..tools import filesystem as fs
-
     # Get first ncolumn+1 rows of the file = the header
     header = fs.get_first_lines(path, number_of_columns + 1)
 
@@ -126,32 +126,42 @@ class SkirtTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, expected_nrows=None):
+    def from_file(cls, path, expected_nrows=None, method="numpy", set_masks=True):
 
         """
         This function ...
         :param path:
         :param expected_nrows:
+        :param method:
+        :param set_masks:
         :return:
         """
 
         # Get the data
-        data, names, units = get_skirt_data(path, expected_nrows=expected_nrows)
+        data, names, units = get_skirt_data(path, expected_nrows=expected_nrows, method=method)
+        #print(names, units)
+
+        # Debugging
+        log.debug("Creating the table ...")
 
         # Create a new table from the data
-        table = cls(data=data, names=names, masked=True)
+        table = cls(data=data, names=names, masked=True, copy=False)
+        #print(table.colnames)
 
         # SET THE DATA
         # Set mask for each column from None values
-        for column_index in range(len(names)):
-            table[names[column_index]].mask = [value is None for value in data[column_index]]
+        # Are there even None values? Data are Numpy arrays!
+        #for column_index in range(len(names)): table[names[column_index]].mask = [value is None for value in data[column_index]]
+        if set_masks:
+            # NEW, not even necessary?
+            # -> introduced as flag 'set_masks' to be able to turn this off
+            for column_index in range(len(names)): table[names[column_index]].mask = np.isnan(data[column_index])
 
         # Set the column units
-        for column_name in units:
-            table[column_name].unit = parse_unit(units[column_name])
+        for column_name in units: table[column_name].unit = parse_unit(units[column_name])
 
         # Initialize
-        initialize_table(table)
+        initialize_table(table, "SKIRT")
 
         # Return the table
         return table
@@ -283,7 +293,7 @@ class AbsorptionSpectraTable(SkirtTable):
         for column_name in units: table[new_names[column_name]].unit = parse_unit(units[column_name])
 
         # Initialize
-        initialize_table(table)
+        initialize_table(table, "Absorption spectra")
 
         # Return the table
         return table
@@ -446,131 +456,21 @@ class AbsorptionSpectraTable(SkirtTable):
 
 # -----------------------------------------------------------------
 
-# FOR ISRF:
-
-# def load_isrf(self):
-#
-#     """
-#     This function ...
-#     :return:
-#     """
-#
-#     # M81_ds_isrf.dat
-#
-#     # Mean field intensities for all dust cells with nonzero absorption
-#     # column 1: dust cell index
-#     # column 2: x coordinate of cell center (pc)
-#     # column 3: y coordinate of cell center (pc)
-#     # column 4: z coordinate of cell center (pc)
-#     # column 5: J_lambda (W/m3/sr) for lambda = 0.1 micron
-#     # column 6: J_lambda (W/m3/sr) for lambda = 0.121153 micron
-#     # column 7: J_lambda (W/m3/sr) for lambda = 0.14678 micron
-#     # column 8: J_lambda (W/m3/sr) for lambda = 0.177828 micron
-#     # column 9: J_lambda (W/m3/sr) for lambda = 0.215443 micron
-#     # column 10: J_lambda (W/m3/sr) for lambda = 0.261016 micron
-#     # column 11: J_lambda (W/m3/sr) for lambda = 0.316228 micron
-#     # column 12: J_lambda (W/m3/sr) for lambda = 0.383119 micron
-#     # column 13: J_lambda (W/m3/sr) for lambda = 0.464159 micron
-#     # column 14: J_lambda (W/m3/sr) for lambda = 0.562341 micron
-#     # column 15: J_lambda (W/m3/sr) for lambda = 0.681292 micron
-#     # column 16: J_lambda (W/m3/sr) for lambda = 0.825404 micron
-#     # column 17: J_lambda (W/m3/sr) for lambda = 1 micron
-#     # column 18: J_lambda (W/m3/sr) for lambda = 1.21153 micron
-#     # column 19: J_lambda (W/m3/sr) for lambda = 1.4678 micron
-#     # column 20: J_lambda (W/m3/sr) for lambda = 1.77828 micron
-#     # column 21: J_lambda (W/m3/sr) for lambda = 2.15443 micron
-#     # column 22: J_lambda (W/m3/sr) for lambda = 2.61016 micron
-#     # column 23: J_lambda (W/m3/sr) for lambda = 3.16228 micron
-#     # column 24: J_lambda (W/m3/sr) for lambda = 3.83119 micron
-#     # column 25: J_lambda (W/m3/sr) for lambda = 4.64159 micron
-#     # column 26: J_lambda (W/m3/sr) for lambda = 5.62341 micron
-#     # column 27: J_lambda (W/m3/sr) for lambda = 6.81292 micron
-#     # column 28: J_lambda (W/m3/sr) for lambda = 8.25404 micron
-#     # column 29: J_lambda (W/m3/sr) for lambda = 10 micron
-#
-#     # Determine the indices of the columns that have to be imported
-#     column_indices = [0,1,2,3]
-#     for i in range(4, 4 + self.nwavelengths): column_indices.append(i)
-#
-#     # Loop over the different contributions
-#     for contribution in contributions:
-#
-#         # Determine the path to the output directory of the simulation
-#         output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
-#
-#         # Determine the path to the ISFR data file
-#         isrf_path = fs.join(output_path, self.galaxy_name + "_ds_isrf.dat")
-#
-#         # Load the ISRF file
-#         columns = np.loadtxt(isrf_path, usecols=column_indices, unpack=True)
-#
-#         # columns[0]: dust cell index
-#         # columns[1]: x coordinate of cell center
-#         # columns[2]: y coordinate of cell center
-#         # columns[3]: z coordinate of cell center
-#         # columns[4 -> 4 + (nwavelengths - 1)]: J_lambda
-#
-#         # Integrate over the J_lambda values to get the total bolometric absorbed luminosity per cell
-#         luminosities = self.integrate_over_wavelengths(columns[4:4+self.nwavelengths])
-#
-#         #IDtot, x, y, z, Ltot = np.loadtxt(totISRFfile, usecols=(0, 1, 2, 3, 4,), unpack=True)
-#         #IDold, Lold = np.loadtxt(oldISRFfile, usecols=(0, 4,), unpack=True)
-#         #IDyng, Lyng = np.loadtxt(yngISRFfile, usecols=(0, 4,), unpack=True)
-#         #IDnew, Lnew = np.loadtxt(newISRFfile, usecols=(0, 4,), unpack=True)
-#
-#         # write out
-#         #writeLabsTot('Labs_tot.dat', IDtot, x, y, z, Ltot)
-#         #writeLabs('Labs_old.dat', IDold, Lold)
-#         #writeLabs('Labs_yng.dat', IDyng, Lyng)
-#         #writeLabs('Labs_new.dat', IDnew, Lnew)
-#
-# # -----------------------------------------------------------------
-#
-# def integrate_over_wavelengths(self, jlambdas):
-#
-#     """
-#     This function ...
-#     :param jlambdas:
-#     :return:
-#     """
-#
-#     lum_cells = []
-#
-#     # L = sum_lambda (j_lambda * d_lambda)
-#
-#     # Get the wavelength deltas
-#     deltas = self.wavelength_grid.deltas(asarray=True, unit="m") # deltas in meter
-#
-#     # Loop over all dust cells
-#     for i in range(jlambdas[0].size):
-#
-#         # Put the Jlambda values for this cell in an array
-#         jlambdas_cell = np.array([jlambdas[k][i] for k in range(len(jlambdas))])
-#
-#         # Calculate the luminosity
-#         #lum = np.sum(jlambdas_cell * MjySr_to_LsunMicron * deltas)
-#         lum = np.sum(jlambdas_cell * deltas) # if deltas are in meter, this is in W/m3/sr * m -> W/m2/sr
-#         #lum = np.sum(jlambdas_cell * deltas * ...)
-#
-#         # Add the luminosity to the list
-#         lum_cells.append(lum)
-#
-#     # Return the list of luminosities
-#     return lum_cells
-
-# -----------------------------------------------------------------
-
-def get_skirt_data(path, expected_nrows=None):
+def get_skirt_data(path, expected_nrows=None, method="numpy"):
 
     """
     This function ...
     :param path:
     :param expected_nrows:
+    :param method:
     :return:
     """
 
-    # Get the column data
-    columns = np.loadtxt(path, unpack=True, ndmin=2)
+    # Debugging
+    log.debug("Loading SKIRT table from '" + path + "' using " + method.capitalize() + " ...")
+
+    # Get the columns
+    columns = fs.get_columns(path, method=method)
 
     # Get number of columns and number of rows
     number_of_columns = len(columns)
@@ -590,6 +490,9 @@ def get_skirt_data(path, expected_nrows=None):
     data = []
     names = []
     units = dict()
+
+    # Debugging
+    log.debug("Reading header ...")
 
     # Get names and units
     with open(path) as table_file:

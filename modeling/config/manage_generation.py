@@ -31,8 +31,12 @@ if runs.empty: raise RuntimeError("No fitting runs are present")
 elif runs.has_single: definition.add_fixed("run", "name of the fitting run", runs.single_name)
 else: definition.add_required("run", "string", "name of the fitting run", choices=runs.names)
 
+# -----------------------------------------------------------------
+
 # Generation name
 definition.add_required("generation", "string", "generation name")
+
+# -----------------------------------------------------------------
 
 # Plotting
 definition.add_flag("plot_chisquared", "plot chi squared")
@@ -46,6 +50,7 @@ definition.add_flag("check_paths", "check simulation paths", False)
 definition.add_flag("correct_paths", "correct simulation paths instead of raising errors", False)
 definition.add_flag("confirm_correction", "confirm before correcting paths", False)
 definition.add_flag("check_analysis", "check analysis output", False)
+definition.add_flag("check_status", "check the simulation status", True)
 
 # Caching
 definition.add_optional("cache_volume", "string", "name of the volume to be used for caching")

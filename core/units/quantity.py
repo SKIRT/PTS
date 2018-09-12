@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import astronomical modules
 from astropy.units import Quantity
 from astropy.coordinates import Angle
@@ -20,7 +23,7 @@ from astropy.coordinates import Angle
 from ..tools import types
 from .parsing import parse_quantity, parse_unit, parse_photometric_unit
 from .stringify import represent_quantity
-from .unit import PhotometricUnit, divide_units, multiply_units
+from .unit import PhotometricUnit, divide_units, multiply_units, get_conversion_factor
 
 # -----------------------------------------------------------------
 
@@ -241,72 +244,36 @@ class PhotometricQuantity(Quantity):
 
     @property
     def base_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.base_unit
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.wavelength_unit
 
     # -----------------------------------------------------------------
 
     @property
     def frequency_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.frequency_unit
 
     # -----------------------------------------------------------------
 
     @property
     def distance_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.distance_unit
 
     # -----------------------------------------------------------------
 
     @property
     def extent_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.extent_unit
 
     # -----------------------------------------------------------------
 
     @property
     def solid_angle_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.solid_angle_unit
 
     # -----------------------------------------------------------------
@@ -324,144 +291,72 @@ class PhotometricQuantity(Quantity):
 
     @property
     def physical_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.physical_type
 
     # -----------------------------------------------------------------
 
     @property
     def base_physical_type(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.base_physical_type
 
     # -----------------------------------------------------------------
 
     @property
     def base_symbol(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.base_symbol
 
     # -----------------------------------------------------------------
 
     @property
     def symbol(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.unit.symbol
 
     # -----------------------------------------------------------------
 
     @property
     def density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.density
 
     # -----------------------------------------------------------------
 
     @property
     def brightness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.brightness
 
     # -----------------------------------------------------------------
 
     @property
     def spectral_density_type(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.unit.spectral_density_type
 
     # -----------------------------------------------------------------
 
     @property
     def is_spectral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_spectral_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_bolometric(self):
-
-        """
-        Thins function ...
-        :return:
-        """
-
         return self.unit.is_bolometric
 
     # -----------------------------------------------------------------
 
     @property
     def is_wavelength_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_wavelength_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_frequency_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_frequency_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_neutral_density(self):
-
-        """
-        Thisj function ...
-        :return:
-        """
-
         return self.unit.is_neutral_density
 
     # -----------------------------------------------------------------
@@ -580,7 +475,9 @@ def add_with_units(value, unit, other, other_unit=None, conversion_info=None):
         if other_unit is not None:
 
             if not has_unit: raise ValueError("First value has no unit")
-            conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            #conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            # from_unit, to_unit, distance=None, wavelength=None, solid_angle=None, silent=False, parse=True, conversion_info=None
+            conversion_factor = get_conversion_factor(other_unit, unit, conversion_info=conversion_info)
             new_value = value + conversion_factor * other
 
         # Without unit
@@ -639,7 +536,8 @@ def subtract_with_units(value, unit, other, other_unit=None, conversion_info=Non
 
             if not has_unit: raise ValueError("First value has no unit")
             #self._data -= value.converted_to(self.unit).data
-            conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            #conversion_factor = other_unit.conversion_factor(unit, **conversion_info)
+            conversion_factor = get_conversion_factor(other_unit, unit, conversion_info=conversion_info)
             new_value = value - conversion_factor * other
 
         # Without unit
@@ -795,6 +693,20 @@ def multiply_with_units(value, unit, other, other_unit=None):
 
 # -----------------------------------------------------------------
 
+def float_division(a, b):
+
+    """
+    This function ...
+    :param a:
+    :param b:
+    :return:
+    """
+
+    if b == 0: return math.copysign(float("inf"), a)
+    else: return float(a) / float(b)
+
+# -----------------------------------------------------------------
+
 def divide_with_units(value, unit, other, other_unit=None):
 
     """
@@ -818,7 +730,7 @@ def divide_with_units(value, unit, other, other_unit=None):
     if types.is_real_or_integer(other):
 
         # Determine value and unit
-        new_value = value / float(other)
+        new_value = float_division(value, other)
         new_unit = unit
 
     # Divide by unit
@@ -870,22 +782,22 @@ def divide_with_units(value, unit, other, other_unit=None):
         if isinstance(new_unit, PhotometricUnit):
 
             if new_unit.has_scale:
-                new_value = value / other.value * new_unit.scale_factor
+                new_value = float_division(value, other.value) * new_unit.scale_factor
                 new_unit = new_unit.reduced_root  # without scale
             else:
-                new_value = value / other.value
+                new_value = float_division(value, other.value)
                 new_unit = new_unit.reduced
 
         # Not photometric, but still unit
         elif types.is_unit(new_unit):
 
-            new_value = value / other.value * new_unit.scale
+            new_value = float_division(value, other.value) * new_unit.scale
             new_unit._scale = 1
 
         # NOT A UNIT: UNITS DIVIDED AWAY?
         elif types.is_real_or_integer(new_unit):
 
-            new_value = value / other.value * new_unit
+            new_value = float_division(value, other.value) * new_unit
             new_unit = None
 
         # Invalid new unit
@@ -958,8 +870,9 @@ def get_value_and_unit(value):
         unit = getattr(value, "unit")
 
         # Get value
-        if hasattr(value, "value"): value = value.value
-        elif hasattr(value, "data"): value = value.data
+        if hasattr(value, "value"): value = value.value # for quantity
+        elif hasattr(value, "data"): value = value.data # for Frame
+        elif hasattr(value, "values"): value = value.values # for Data3D
         else: pass  # assume using value is OK ...
 
     # No unit

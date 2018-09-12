@@ -631,9 +631,25 @@ class MaskBase(object):
         """
 
         from skimage import morphology
-
         structure = morphology.disk(radius, dtype=bool)
         self._data = ndimage.binary_dilation(self.data, structure, niterations)
+
+    # -----------------------------------------------------------------
+
+    def disk_erode(self, radius=5, niterations=1, erode_borders=True):
+
+        """
+        This function ...
+        :param radius:
+        :param niterations:
+        :param erode_borders:
+        :return:
+        """
+
+        border_value = 0 if erode_borders else 1
+        from skimage import morphology
+        structure = morphology.disk(radius, dtype=bool)
+        self._data = ndimage.binary_erosion(self.data, structure, niterations, border_value=border_value)
 
     # -----------------------------------------------------------------
 
@@ -648,6 +664,22 @@ class MaskBase(object):
 
         new = self.copy()
         new.disk_dilate(radius=radius, niterations=niterations)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def disk_eroded(self, radius=5, niterations=1, erode_borders=True):
+
+        """
+        This function ...
+        :param radius:
+        :param niterations:
+        :param erode_borders:
+        :return:
+        """
+
+        new = self.copy()
+        new.disk_erode(radius=radius, niterations=niterations, erode_borders=erode_borders)
         return new
 
     # -----------------------------------------------------------------

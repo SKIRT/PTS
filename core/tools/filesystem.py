@@ -1962,7 +1962,8 @@ def read_lines_filehandle(fh, newlines=False):
     """
 
     # Loop over the lines, cut off the end-of-line characters
-    for line in fh.readlines():
+    #for line in fh.readlines(): # MUCHHHHHH SLOWER: THIS LOADS EVERYTHING IN MEMORY FIRST!!!!!!!!
+    for line in fh:
         if newlines: yield line
         elif line.endswith("\n"): yield line[:-1]
         else: yield line # sometimes, the last line does not end on a newline character!
@@ -2048,6 +2049,19 @@ def get_nlines(path):
     command = "wc -l '" + path + "'"
     output = check_output(command, shell=True)
     return int(output.split()[0])
+
+# -----------------------------------------------------------------
+
+def get_nlines_noheader(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Return
+    return get_nlines(path) - get_nheader_lines(path)
 
 # -----------------------------------------------------------------
 
@@ -2322,6 +2336,11 @@ def get_header_lines(filepath):
 
 # -----------------------------------------------------------------
 
+def get_nheader_lines(filepath):
+    return len(get_header_lines(filepath))
+
+# -----------------------------------------------------------------
+
 def get_first_header_line(filepath):
 
     """
@@ -2367,48 +2386,29 @@ def get_header_labels(filepath):
 
 # -----------------------------------------------------------------
 
-def get_column_names(filepath):
+def get_column_names(filepath, lower=False, return_units=False):
 
     """
     This function ...
     :param filepath:
+    :param lower:
+    :param return_units:
     :return:
     """
+
+    from ..units.utils import clean_unit_string
 
     lines = get_header_lines(filepath)
     nlines = len(lines)
 
     # Only one line: return splitted first line
-    if nlines == 1:
+    if nlines == 1: column_names, column_units = _get_column_names_from_line(lines[0], return_units=True)
 
-        #splitted = lines[0].split()
-        splitted = strings.split_except_within_round_brackets(lines[0])
-        # Sanitize
-        names = []
-        for part in splitted:
-            #print(part)
-            if "[" in part and "]" in part:
-
-                if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
-                else: names.append(part.split("[")[0].strip())
-
-            elif strings.is_wrapped_by_squared_brackets(part): pass # this is just the unit of the previous column name
-            else: names.append(part)
-
-        # Check
-        final_names = []
-        for index in range(len(names)):
-            name = names[index]
-            print(name)
-            if strings.is_wrapped_by_round_brackets(name):
-                nname = name[1:-1]
-                if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
-                final_names[-1] += "(" + nname + ")"
-            else: final_names.append(name)
-
-        return final_names
-
+    # Header has lines stating the column index and names
     elif strings.any_startswith(lines, "column"):
+
+        #print("2")
+        #print(lines)
 
         colnames = dict()
         for line in lines:
@@ -2417,23 +2417,145 @@ def get_column_names(filepath):
             if ":" in line: name = line.split(":")[1].strip()
             else: name = line.split(str(colno))[1].strip()
             colnames[colno] = name
+
         minno = min(colnames.keys())
         maxno = max(colnames.keys())
+
         first_is_one = minno == 1
         if first_is_one: ncolumns = maxno
         else: ncolumns = maxno - 1
+
         #print(ncolumns)
-        names = [None] * ncolumns
+        column_names = [None] * ncolumns
+        column_units = [None] * ncolumns
         #print(maxno)
+
+        # Fill in column names
         for colno in colnames:
+
             if first_is_one: new_colno = colno - 1
             else: new_colno = colno
             #print(new_colno, colnames[colno])
-            names[new_colno] = colnames[colno]
-        return names
+
+            name, unit = _get_name_and_unit(colnames[colno])
+            if unit is not None: unit = clean_unit_string(unit)
+            if unit == "": unit = None
+            #print(name, unit)
+            #names[new_colno] = colnames[colno]
+            column_names[new_colno] = name #if remove_units else colnames[colno]
+            column_units[new_colno] = unit
 
     # Return splitted last line of the header
-    else: return lines[-1].split()
+    else:
+
+        #print("3")
+        #return lines[-1].split()
+        #column_names = lines[-1].split()
+        #column_units = [None] * len(column_names)
+
+        column_names, column_units = _get_column_names_from_line(lines[-1], return_units=True)
+
+    # Make lowercase
+    if lower: column_names = [name.lower() for name in column_names]
+
+    # Return
+    if return_units: return column_names, column_units
+    else: return column_names
+
+# -----------------------------------------------------------------
+
+def _get_column_names_from_line(line, return_units=False):
+
+    """
+    This function ...
+    :param line:
+    :param return_units:
+    :return:
+    """
+
+    from ..units.utils import clean_unit_string
+
+    # splitted = lines[0].split()
+    splitted = strings.split_except_within_round_brackets_and_double_quotes(line, add_quotes=False)
+    #print(splitted)
+    # Sanitize
+    names = []
+    column_units = []
+    # print(splitted)
+    for part in splitted:
+        # print(part)
+
+        if "[" in part and "]" in part:
+
+            if strings.is_wrapped_by_round_brackets(part): names.append(part.split("[")[0].strip() + ")")
+            else: names.append(part.split("[")[0].strip())
+
+            unit = part.split("[")[1].split("]")[0]
+            unit = clean_unit_string(unit)
+            if unit == "": unit = None
+            # print(unit)
+            column_units.append(unit)
+
+        elif strings.is_wrapped_by_squared_brackets(part): pass  # this is just the unit of the previous column name
+        else: names.append(part)
+
+    # print(names)
+
+    # Check
+    final_names = []
+    for index in range(len(names)):
+
+        name = names[index]
+        # print(name)
+
+        if strings.is_wrapped_by_round_brackets(name):  # this part of a formula e.g. log10(F_X) of the previous column
+
+            nname = name[1:-1]
+            if "[" in nname and "]" in nname: nname = nname.split("[")[1].split("]")[0]
+            final_names[-1] += "(" + nname + ")"
+
+        else: final_names.append(name)
+
+    # Return the names
+    if return_units: return final_names, column_units
+    else: return final_names
+
+# -----------------------------------------------------------------
+
+def _get_name_and_unit(name_and_unit, capitalize=False):
+
+    """
+    This function ...
+    :param name_and_unit:
+    :param capitalize:
+    :return:
+    """
+
+    #if "(" in name_and_unit and ")" in name_and_unit:
+    if name_and_unit.count("(") == 1 and name_and_unit.count(")") == 1:
+
+        before = name_and_unit.split(" (")[0] # before unit
+        after = name_and_unit.split(")")[1] # after unit
+        name = before.capitalize() + after if capitalize else before + after
+        unit = name_and_unit.split(" (")[1].split(")")[0]
+        if "dimensionless" in unit: unit = None
+
+    elif name_and_unit.count("[") == 1 and name_and_unit.count("]") == 1:
+
+        before = name_and_unit.split(" [")[0] # before unit
+        after = name_and_unit.split("]")[1] # after unit
+        name = before.capitalize() + after if capitalize else before + after
+        unit = name_and_unit.split(" [")[1].split("]")[0]
+        if "dimensionless" in unit: unit = None
+
+    else:
+        name = name_and_unit.capitalize() if capitalize else name_and_unit
+        unit = None
+
+    if ", i.e." in name: name = name.split(", i.e.")[0]
+
+    # Return
+    return name, unit
 
 # -----------------------------------------------------------------
 
@@ -3543,5 +3665,147 @@ def file_nbits(path):
     """
 
     return file_nbytes(path) * 8
+
+# -----------------------------------------------------------------
+
+def get_columns(filepath, method="numpy", dtype=None, indices=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param method:
+    :param dtype:
+    :param indices:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data (this can take a while) ...")
+
+    # Using NumPy
+    if method == "numpy":
+
+        import numpy as np
+        columns = np.loadtxt(filepath, unpack=True, ndmin=2, dtype=dtype, usecols=indices)
+
+    # Using Pandas
+    elif method == "pandas":
+
+        import pandas as pd
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, dtype=dtype, usecols=indices)
+        #print(df)
+        ncolumns = len(df.columns)
+        #print("ncols", ncolumns)
+        if indices is not None: column_indices = indices
+        else: column_indices = range(ncolumns)
+        columns = [df[index].values for index in column_indices]
+        #columns = [df.columns[index] for index in range(ncolumns)]
+
+    # Invalid
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+
+    # Return the columns
+    return columns
+
+# -----------------------------------------------------------------
+
+def get_2d_data(filepath, method="numpy", dtype=None, columns=None, base="column"):
+
+    """
+    Thisn function ...
+    :param filepath:
+    :param method:
+    :param dtype:
+    :param columns:
+    :param base:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data (this can take a while) ...")
+
+    # Using NumPy
+    if method == "numpy":
+
+        import numpy as np
+        data = np.loadtxt(filepath, ndmin=2, dtype=dtype, usecols=columns)
+
+    # Using pandas
+    elif method == "pandas":
+
+        import pandas as pd
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, dtype=dtype, usecols=columns)
+        data = df.values
+
+    # Invalid
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+
+    # Return the data
+    if base == "column": return data.transpose()
+    elif base == "row": return data
+    else: raise ValueError("Invalid base: mus be 'column' or 'row'")
+
+# -----------------------------------------------------------------
+
+def get_column(filepath, index, dtype, method="numpy"):
+
+    """
+    This function ...
+    :param filepath:
+    :param index:
+    :param dtype
+    :param method:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data (this can take a while) ...")
+
+    # Using NumPy
+    if method == "numpy":
+
+        import numpy as np
+        column = np.loadtxt(filepath, usecols=index, dtype=dtype)
+
+    # Using Pandas
+    elif method == "pandas":
+
+        import pandas as pd
+        df = pd.read_csv(filepath, sep=" ", comment="#", header=None, usecols=[index], dtype=dtype)
+        column = df[0].values
+
+    # Invalid
+    else: raise ValueError("Invalid method: must be 'numpy' or 'pandas'")
+
+    # Return the column
+    return column
+
+# -----------------------------------------------------------------
+
+def get_row(filepath, index):
+
+    """
+    This function ...
+    :param filepath:
+    :param index:
+    :return:
+    """
+
+    from ..basics.log import log
+
+    # Debugging
+    log.debug("Reading data (this can take a while) ...")
+
+    import pandas as pd
+    df = pd.read_csv(filepath, sep=" ", comment="#", header=None, skiprows=lambda i: i != index)
+
+    # Return the row as an array
+    return df.values[0]
 
 # -----------------------------------------------------------------

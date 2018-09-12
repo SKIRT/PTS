@@ -12,12 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from .context import AnalysisContext
 from ...core.tools.utils import lazyproperty
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -63,6 +67,15 @@ edgeon_name = "edgeon"
 
 # -----------------------------------------------------------------
 
+total = "total"
+old = "old"
+young = "young"
+ionizing = "ionizing"
+unevolved = "unevolved"
+contributions = [total, old, young, ionizing, unevolved]
+
+# -----------------------------------------------------------------
+
 class AnalysisComponent(GalaxyModelingComponent):
     
     """
@@ -102,108 +115,51 @@ class AnalysisComponent(GalaxyModelingComponent):
 
     @property
     def timing_table_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.context.timing_table_path
 
     # -----------------------------------------------------------------
 
     @property
     def memory_table_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.context.memory_table_path
 
     # -----------------------------------------------------------------
 
     @property
     def timing_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.context.timing_table
 
     # -----------------------------------------------------------------
 
     @property
     def memory_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.context.memory_table
 
     # -----------------------------------------------------------------
 
     @property
     def cached_table(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.context.cached_table
 
     # -----------------------------------------------------------------
 
     @property
     def analysis_run_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.context.analysis_run_names
 
     # -----------------------------------------------------------------
 
     def get_run_path(self, run_name):
-
-        """
-        This function ...
-        :param run_name:
-        :return:
-        """
-
         return self.context.get_run_path(run_name)
 
     # -----------------------------------------------------------------
 
     def get_run_info(self, run_name):
-
-        """
-        This function ...
-        :param run_name:
-        :return:
-        """
-
         return self.context.get_run_info(run_name)
 
     # -----------------------------------------------------------------
 
     def get_run(self, run_name):
-
-        """
-        This function ...
-        :param run_name:
-        :return:
-        """
-
         return self.context.get_run(run_name)
 
 # -----------------------------------------------------------------
@@ -216,444 +172,559 @@ class AnalysisRunComponent(AnalysisComponent):
 
     @lazyproperty
     def analysis_run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_run(self.config.run)
 
     # -----------------------------------------------------------------
 
     @property
     def model_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.model_name
 
     # -----------------------------------------------------------------
 
     @property
     def model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.model
 
     # -----------------------------------------------------------------
 
     @property
+    def cell_x_coordinates_colname(self):
+        return "X coordinate of cell center"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_y_coordinates_colname(self):
+        return "Y coordinate of cell center"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_z_coordinates_colname(self):
+        return "Z coordinate of cell center"
+
+    # -----------------------------------------------------------------
+    # TOTAL SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_simulation_path(self):
+        return self.analysis_run.simulation_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_ski_path(self):
+        return self.analysis_run.ski_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_output_path(self):
+        return self.analysis_run.output_path_for_contribution(total)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_output(self):
+        return self.model.total_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_data(self):
+        return self.model.total_simulation_data
+
+    # -----------------------------------------------------------------
+    # OLD SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_simulation_path(self):
+        return self.analysis_run.simulation_path_for_contribution(old)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_ski_path(self):
+        return self.analysis_run.ski_path_for_contribution(old)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_output_path(self):
+        return self.analysis_run.output_path_for_contribution(old)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_output(self):
+        return self.model.old_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_contribution_data(self):
+        return self.model.old_simulation_data
+
+    # -----------------------------------------------------------------
+    # YOUNG SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_simulation_path(self):
+        return self.analysis_run.simulation_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_ski_path(self):
+        return self.analysis_run.ski_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_output_path(self):
+        return self.analysis_run.output_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_output(self):
+        return self.model.young_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_contribution_data(self):
+        return self.model.young_simulation_data
+
+    # -----------------------------------------------------------------
+    # IONIZING (SFR) SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_simulation_path(self):
+        return self.analysis_run.simulation_path_for_contribution(young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_ski_path(self):
+        return self.analysis_run.ski_path_for_contribution(ionizing)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_output_path(self):
+        return self.analysis_run.output_path_for_contribution(ionizing)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_output(self):
+        return self.model.sfr_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_contribution_data(self):
+        return self.model.sfr_simulation_data
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_simulation_path(self):
+        return self.analysis_run.simulation_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_ski_path(self):
+        return self.analysis_run.ski_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_output_path(self):
+        return self.analysis_run.output_path_for_contribution(unevolved)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_output(self):
+        return self.model.unevolved_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_data(self):
+        return self.model.unevolved_simulation_data
+
+    # -----------------------------------------------------------------
+    # CELL PROPERTIES
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_cell_properties_filepath(self):
+        return self.total_contribution_data.cell_properties_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_properties_path(self):
+        return self.total_contribution_cell_properties_filepath
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_properties(self):
+        return self.total_contribution_data.cell_properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_mass_fractions(self):
+        return np.asarray(self.cell_properties["Mass fraction"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_volumes(self):
+        return self.model.cell_volumes  # is array
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_contribution_absorption_filepath(self):
+        return self.total_contribution_data.absorption_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_data(self):
+        if self.total_contribution_data.has_absorption: return self.total_contribution_data.absorption
+        elif self.total_contribution_data.has_isrf: return self.total_contribution_data.isrf
+        else: raise IOError("No absorption data")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_column_name(self):
+        abs_colnames = ["Absorbed bolometric luminosity", "Bolometric luminosity absorbed in cell"]
+        return sequences.find_single_in_both(abs_colnames, self.total_contribution_absorption_data.colnames)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_unit(self):
+        return self.total_contribution_absorption_data.column_unit(self.total_contribution_absorption_column_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_contribution_absorption_luminosities(self):
+        return np.asarray(self.total_contribution_absorption_data[self.total_contribution_absorption_column_name])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_coordinates_filepath(self):
+        if self.total_contribution_data.has_absorption: return self.total_contribution_absorption_filepath # SKIRT7
+        else: return self.cell_properties_path # SKIRT8
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_x_coordinates(self):
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_x_coordinates_colname]) # SKIRT7
+        else: return self.model.cell_x_coordinates # SKIRT8
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_y_coordinates(self):
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_y_coordinates_colname]) # SKIRT7
+        else: return self.model.cell_y_coordinates # SKIRT8
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_z_coordinates(self):
+        if self.total_contribution_data.has_absorption: return np.asarray(self.total_contribution_absorption_data[self.cell_z_coordinates_colname]) # SKIRT7
+        else: return self.model.cell_z_coordinates # SKIRT8
+
+    # -----------------------------------------------------------------
+    # DENSITY AND NORMALIZED MASS
+    #   YOUNG
+    # -----------------------------------------------------------------
+
+    @property
+    def young_cell_stellar_density(self):
+        return self.model.young_cell_stellar_density  # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_cell_normalized_mass(self):
+        values = self.young_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+    #   SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_cell_stellar_density(self):
+        return self.model.sfr_cell_stellar_density  # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_cell_normalized_mass(self):
+        values = self.sfr_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+    #   BULGE
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_cell_stellar_density(self):
+        return self.model.old_bulge_cell_stellar_density  # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_normalized_mass(self):
+        values = self.bulge_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+    #   DISK
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_cell_stellar_density(self):
+        return self.model.old_disk_cell_stellar_density  # is array
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_normalized_mass(self):
+        values = self.disk_cell_stellar_density * self.cell_volumes
+        values /= np.sum(values)
+        return values
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
     def properties_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.properties_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_path, "maps")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_total_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "total")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_total_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_total_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_total_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_total_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_total_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_total_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_bulge_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "bulge")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_bulge_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_bulge_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_bulge_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_bulge_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_bulge_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_bulge_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_disk_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "disk")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_disk_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_disk_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_disk_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_disk_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_disk_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_disk_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_old_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "old")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_old_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_old_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_old_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_old_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_old_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_old_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_young_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "young")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_young_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_young_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_young_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_young_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_young_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_young_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_sfr_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "sfr")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_sfr_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_sfr_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_sfr_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_sfr_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_sfr_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_sfr_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_unevolved_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "unevolved")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_unevolved_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_unevolved_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_unevolved_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_unevolved_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_unevolved_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_unevolved_path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_dust_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_path, "dust")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_dust_earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_dust_path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_dust_faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_dust_path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def properties_maps_dust_edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.properties_maps_dust_path, edgeon_name)
 
     # -----------------------------------------------------------------

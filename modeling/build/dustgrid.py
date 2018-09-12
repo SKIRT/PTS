@@ -136,19 +136,19 @@ class DustGridBuilder(Configurable):
         :return:
         """
 
-        # 2. Create the ski file
+        # Create the ski file
         self.create_ski()
 
-        # 3. Lauch the simulation
+        # Lauch the simulation
         self.launch()
 
-        # 4. Check
+        # Check
         if self.config.quality: self.get_quality()
 
-        # 5. Writing
+        # Writing
         if self.config.write: self.write()
 
-        # 6. Plotting
+        # Plotting
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -164,18 +164,12 @@ class DustGridBuilder(Configurable):
         # Call the setup function of the base class
         super(DustGridBuilder, self).setup(**kwargs)
 
-        # Determine path
-        #self.ski_path = self.output_path_file(skifilename)
-        # Determine output path
-        #self.out_path = self.output_path #self.output_path_directory("out")
-
         # Determine paths
         self.ski_path = fs.join(self.config.simulation_path, skifilename)
         self.out_path = self.config.simulation_path
 
         # Get model definition
         self.definition = kwargs.pop("definition")
-        #self.representation = kwargs.pop("representation")
         self.dust_grid = kwargs.pop("dust_grid")
 
     # -----------------------------------------------------------------
@@ -397,12 +391,6 @@ class DustGridBuilder(Configurable):
 
     @property
     def simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.launcher.simulation
 
     # -----------------------------------------------------------------
@@ -424,24 +412,12 @@ class DustGridBuilder(Configurable):
 
     @property
     def grid_xy_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.out_path, gridxy_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def geometry_xy_path(self):
-        
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.out_path, geometryxy_filename)
 
     # -----------------------------------------------------------------
@@ -787,96 +763,48 @@ class DustGridBuilder(Configurable):
 
     @lazyproperty
     def log_file(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return LogFile(self.log_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.log_file.dust_cells_tree
 
     # -----------------------------------------------------------------
 
     @property
     def ntree_nodes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.log_file.tree_nodes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def tree_leaf_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.log_file.tree_leaf_distribution
 
     # -----------------------------------------------------------------
 
     @property
     def tree_levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.log_file.tree_levels
 
     # -----------------------------------------------------------------
 
     @property
     def tree_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.out_path, tree_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.tree_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_tree: return None
         return DustGridTree.from_file(self.tree_path)
 

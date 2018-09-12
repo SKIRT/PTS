@@ -32,3 +32,12 @@ else: definition.add_positional_optional("run", "string", "name of the analysis 
 definition.add_flag("topcat", "make plots using topcat (STILTS)")
 
 # -----------------------------------------------------------------
+
+# Replot
+definition.add_flag("replot", "remake the plots")
+definition.add_flag("replot_ssfr_funev", "remake the sSFR-Funev correlation plots")
+definition.add_flag("replot_ssfr_salim_funev", "Salim")
+definition.add_flag("replot_ssfr_ke_funev", "K&E")
+definition.add_flag("replot_ssfr_mappings_ke_funev", "MAPPINGS + K&E")
+
+# -----------------------------------------------------------------

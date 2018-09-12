@@ -644,6 +644,10 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         if self.smile.supports_writing_spectral_absorption: self.ski.set_write_spectral_absorption()
         else: log.warning("Writing absorption spectra is not supported in your version of SKIRT")
 
+        # Write spectral emission
+        if self.smile.supports_writing_spectral_emission: self.ski.set_write_spectral_emission()
+        else: log.warning("Writing emission spectra is not supported in your version of SKIRT")
+
     # -----------------------------------------------------------------
 
     def create_ski_contributions(self):

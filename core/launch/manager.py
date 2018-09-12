@@ -237,6 +237,7 @@ show_commands[_status_command_name] = ("show_status", False, "show the simulatio
 show_commands[_runtimes_command_name] = ("show_runtimes_command", True, "show the simulation runtimes", "host_parallelization")
 show_commands[_memory_command_name] = ("show_memory_command", True, "show the simulation memory usages", "host_parallelization")
 show_commands[_cpu_command_name] = ("show_cpu_command", True, "show the CPU usage of the simulations", "simulations")
+show_commands[_timeline_command_name] = ("show_timeline_command", True, "show the timeline of a simulation", "simulation")
 
 # -----------------------------------------------------------------
 
@@ -930,108 +931,54 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def has_moving(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.move
 
     # -----------------------------------------------------------------
 
     @property
     def has_showing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.show and (self.config.show_assignment or self.config.show_status or self.config.show_runtimes or self.config.show_memory)
 
     # -----------------------------------------------------------------
 
     @property
     def has_plotting(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.plot and (self.config.plot_runtimes or self.config.plot_memory)
 
     # -----------------------------------------------------------------
 
     @property
     def has_writing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.write and (self.config.write_assignment or self.config.write_status or self.config.write_moved or self.config.write_relaunched or self.config.write_commands)
 
     # -----------------------------------------------------------------
 
     @property
     def has_analysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.analyse
 
     # -----------------------------------------------------------------
 
     @property
     def has_reanalysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.reanalysis is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_any(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_moving or self.has_showing or self.has_plotting or self.has_writing or self.has_analysis or self.has_reanalysis
 
     # -----------------------------------------------------------------
 
     @property
     def do_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.commands is not None and len(self.config.commands) > 0
 
     # -----------------------------------------------------------------
 
     @property
     def do_interactive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.interactive is None: return not self.has_any and not self.do_commands
         else: return self.config.interactive
 
@@ -1039,96 +986,48 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def do_moving(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.move
 
     # -----------------------------------------------------------------
 
     @property
     def do_launch(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.launcher.has_queued
 
     # -----------------------------------------------------------------
 
     @property
     def do_showing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.show
 
     # -----------------------------------------------------------------
 
     @property
     def do_writing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.write
 
     # -----------------------------------------------------------------
 
     @property
     def do_plotting(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.plot
 
     # -----------------------------------------------------------------
 
     @property
     def do_reanalysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.reanalyse is not None
 
     # -----------------------------------------------------------------
 
     @property
     def do_analysis(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.analyse
 
     # -----------------------------------------------------------------
 
     @property
     def do_caching(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.cache_output or self.config.cache_datacubes or self.config.cache_misc or self.config.cache_images
 
     # -----------------------------------------------------------------
@@ -2035,19 +1934,32 @@ class SimulationManager(InteractiveConfigurable):
 
         if self.has_local_log(simulation_name): return LogFile(self.get_local_log_path(simulation_name))
         elif self.has_remote_log(simulation_name): return LogFile.from_remote_file(self.get_remote_log_path(simulation_name), self.get_remote_for_simulation(simulation_name))
+        else: return None
 
     # -----------------------------------------------------------------
 
-    # @memoize_method
-    # def get_logfiles(self, simulation_name):
-    #
-    #     """
-    #     This function ...
-    #     :param simulation_name:
-    #     :return:
-    #     """
-    #
-    #     return self.get_simulation(simulation_name).logfiles()
+    @memoize_method
+    def get_logfiles(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # return self.get_simulation(simulation_name).logfiles()
+
+        # LOCAL
+        if self.has_local_log(simulation_name): return self.get_simulation(simulation_name).logfiles()
+
+        # REMOTE
+        elif self.has_remote_log(simulation_name):
+
+            remote = self.get_remote_for_simulation(simulation_name)
+            return [LogFile.from_remote_file(logfilepath, remote) for logfilepath in self.get_remote_log_paths(simulation_name)]
+
+        # Nothing
+        else: return []
 
     # -----------------------------------------------------------------
 
@@ -2318,6 +2230,23 @@ class SimulationManager(InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_remote_log_paths(self, simulation_name):
+        
+        """
+        This function ...
+        :param simulation_name: 
+        :return: 
+        """
+
+        # Get the simulation
+        simulation = self.get_simulation(simulation_name)
+
+        # Get paths
+        remote = self.get_remote_for_simulation(simulation_name)
+        return simulation.get_remote_log_file_paths(remote)
+
+    # -----------------------------------------------------------------
+
     def has_remote_log(self, simulation_name):
 
         """
@@ -2354,49 +2283,21 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def get_execution_handle(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).handle
 
     # -----------------------------------------------------------------
 
     def has_execution_handle(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.is_remote_simulation(simulation_name) and self.get_execution_handle(simulation_name) is not None
 
     # -----------------------------------------------------------------
 
     def is_screen_execution(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_execution_handle(simulation_name).is_screen
 
     # -----------------------------------------------------------------
 
     def is_job_execution(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_execution_handle(simulation_name).is_job
 
     # -----------------------------------------------------------------
@@ -2677,13 +2578,6 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def has_remote_job_script(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_remote_job_script_path(simulation_name) is not None
 
     # -----------------------------------------------------------------
@@ -2714,6 +2608,11 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def has_local_job_script(self, simulation_name):
+        return self.get_local_job_script_path(simulation_name) is not None
+
+    # -----------------------------------------------------------------
+
+    def find_remote_job_script_path(self, simulation_name):
 
         """
         This function ...
@@ -2721,7 +2620,14 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
-        return self.get_local_job_script_path(simulation_name) is not None
+        # Get base path
+        base_path = self.get_remote_base_path(simulation_name)
+
+        # Look for sh files
+        filepaths = self.get_remote_for_simulation(simulation_name).files_in_path(base_path, extension="sh")
+
+        # Return unique
+        return sequences.get_single(filepaths, method="none") # return None if there are multiple: we can't be sure of which one is the actual latest?
 
     # -----------------------------------------------------------------
 
@@ -2753,7 +2659,11 @@ class SimulationManager(InteractiveConfigurable):
             return SKIRTJobScript.from_remote_file(filepath, remote, host_id=host_id, cluster=cluster)
 
         # No job script is found
-        else: return None
+        else: #return None
+
+            filepath = self.find_remote_job_script_path(simulation_name)
+            if filepath is None: return None
+            else: return SKIRTJobScript.from_remote_file(filepath, remote, host_id=host_id, cluster=cluster)
 
     # -----------------------------------------------------------------
 
@@ -2838,161 +2748,88 @@ class SimulationManager(InteractiveConfigurable):
     # -----------------------------------------------------------------
 
     def get_simulation_extraction_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).extraction_path
 
     # -----------------------------------------------------------------
 
     def get_simulation_plotting_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).plotting_path
 
     # -----------------------------------------------------------------
 
     def get_simulation_misc_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).misc_path
 
     # -----------------------------------------------------------------
 
     @memoize_method
     def get_input(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).input
 
     # -----------------------------------------------------------------
 
     @memoize_method
     def get_remote_input(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         simulation = self.get_simulation(simulation_name)
         return simulation.get_remote_input(remote=self.get_remote(simulation.host_id))
 
     # -----------------------------------------------------------------
 
     def get_base_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).base_path
 
     # -----------------------------------------------------------------
 
     def get_remote_base_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).remote_simulation_path
 
     # -----------------------------------------------------------------
 
     def get_output_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).output_path
 
     # -----------------------------------------------------------------
 
     def get_remote_output_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).remote_output_path
 
     # -----------------------------------------------------------------
 
     def get_extraction_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).extraction_path
 
     # -----------------------------------------------------------------
 
+    def has_extraction_directory(self, simulation_name):
+        path = self.get_extraction_path(simulation_name)
+        return path is not None and fs.is_directory(path)
+
+    # -----------------------------------------------------------------
+
     def get_plotting_path(self, simulation_name):
-
-        """
-        THis function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).plotting_path
 
     # -----------------------------------------------------------------
 
+    def has_plotting_directory(self, simulation_name):
+        path = self.get_plotting_path(simulation_name)
+        return path is not None and fs.is_directory(path)
+
+    # -----------------------------------------------------------------
+
     def get_misc_path(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).misc_path
+
+    # -----------------------------------------------------------------
+
+    def has_misc_directory(self, simulation_name):
+        path = self.get_misc_path(simulation_name)
+        return path is not None and fs.is_directory(path)
 
     # -----------------------------------------------------------------
 
     @memoize_method_reset
     def get_output(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).output
 
     # -----------------------------------------------------------------
@@ -3095,115 +2932,54 @@ class SimulationManager(InteractiveConfigurable):
         return self.get_output(simulation_name).has_cached
 
     # -----------------------------------------------------------------
+    # EXTRACTION
+    # -----------------------------------------------------------------
 
     @memoize_method_reset
     def get_extraction_output(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_simulation(simulation_name).extraction_output
 
     # -----------------------------------------------------------------
 
     def reset_extraction_output(self, simulation_name):
-
-        """
-        Thisf unction ...
-        :param simulation_name:
-        :return:
-        """
-
         self.get_extraction_output._reset_for_args(simulation_name)
 
     # -----------------------------------------------------------------
 
     def get_nextraction_output(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return len(self.get_extraction_output(simulation_name))
 
     # -----------------------------------------------------------------
 
     def has_extraction_output(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
+        if not self.has_extraction_directory(simulation_name): return False
         return self.get_nextraction_output(simulation_name) > 0
 
     # -----------------------------------------------------------------
 
     def get_nextraction_files(self, simulation_name, otypes):
-
-        """
-        This function ...
-        :param simulation_name:
-        :param otypes:
-        :return:
-        """
-
         return self.get_extraction_output(simulation_name).get_nfiles_types(otypes)
 
     # -----------------------------------------------------------------
 
     def get_nextraction_directories(self, simulation_name, otypes):
-
-        """
-        This function ...
-        :param simulation_name:
-        :param otypes:
-        :return:
-        """
-
         return self.get_extraction_output(simulation_name).get_ndirectories_types(otypes)
 
     # -----------------------------------------------------------------
 
     def get_nextraction_files_and_directories(self, simulation_name, otypes):
-
-        """
-        This function ...
-        :param simulation_name:
-        :param otypes:
-        :return:
-        """
-
         return self.get_nextraction_files(simulation_name, otypes) + self.get_nextraction_directories(simulation_name, otypes)
 
     # -----------------------------------------------------------------
 
     def is_cached_extraction(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.get_extraction_output(simulation_name).has_cached
 
     # -----------------------------------------------------------------
+    # ANALYSIS
+    # -----------------------------------------------------------------
 
     def has_analysis_output(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.has_extraction_output(simulation_name) or self.has_plotting_output(simulation_name) or self.has_misc_output(simulation_name)
 
     # -----------------------------------------------------------------
@@ -3216,6 +2992,7 @@ class SimulationManager(InteractiveConfigurable):
         :return:
         """
 
+        if not self.has_extraction_output(simulation_name): return False
         extraction = self.get_extraction_output(simulation_name)
         return extraction.has_single_timeline
 
@@ -3237,7 +3014,9 @@ class SimulationManager(InteractiveConfigurable):
             return TimeLineTable.from_file(extraction.single_timeline)
 
         # Create timeline
-        else: return extract_timeline(self.get_simulation(simulation_name))
+        else: return extract_timeline(log_files=self.get_logfiles(simulation_name))
+
+        #return extract_timeline(self.get_simulation(simulation_name))
 
     # -----------------------------------------------------------------
 
@@ -4549,8 +4328,10 @@ class SimulationManager(InteractiveConfigurable):
         # Debugging
         log.debug("Creating simulation status table ...")
 
+        # TODO: show progress bar!
+
         # Loop over the simulations
-        for simulation_name in self.simulation_names:
+        for index, simulation_name in enumerate(self.simulation_names):
 
             # Get the simulation status
             simulation_status = self.get_simulation_status(simulation_name)
@@ -4662,193 +4443,89 @@ class SimulationManager(InteractiveConfigurable):
 
     @property
     def has_status(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "status" in self.__dict__
 
     # -----------------------------------------------------------------
 
     @property
     def screens(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remotes.screens
 
     # -----------------------------------------------------------------
 
     @property
     def jobs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.remotes.jobs
 
     # -----------------------------------------------------------------
 
     def get_status(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.get_status(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_queued(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_queued(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_running(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_running(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_queued_or_running(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_queued_or_running(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_finished(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_finished(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_running_or_finished(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_running_or_finished(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_retrieved(self, simulation_name):
-
-        """
-        This function ....
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_retrieved(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_analysed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_analysed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_cancelled(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_cancelled(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_aborted(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_aborted(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_crashed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_crashed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_running_or_finished_or_aborted_or_crashed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_running_or_finished_or_aborted_or_crashed(simulation_name)
 
     # -----------------------------------------------------------------
 
     def is_failed(self, simulation_name):
-
-        """
-        This function ...
-        :param simulation_name:
-        :return:
-        """
-
         return self.status.is_failed(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def has_unknown_status(self, simulation_name):
+        return self.status.has_unknown_status(simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -6424,6 +6101,8 @@ class SimulationManager(InteractiveConfigurable):
         # Print the simulation name
         print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ":")
         print("")
+        print("[LOCAL DIRECTORY: " + self.get_output_path(simulation_name) + "]")
+        print("")
 
         # Show the output
         output.show(line_prefix="  ")
@@ -6447,6 +6126,9 @@ class SimulationManager(InteractiveConfigurable):
 
         # Print the simulation name
         print(fmt.blue + fmt.underlined + simulation_name + fmt.reset + ":")
+        print("")
+        print("[REMOTE HOST: " + self.get_host_id_for_simulation(simulation_name) + "]")
+        print("[DIRECTORY: " + self.get_remote_output_path(simulation_name) + "]")
         print("")
 
         # Show the output
@@ -9647,7 +9329,9 @@ class SimulationManager(InteractiveConfigurable):
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
             # Debugging
-            log.debug("Caching '" + dirname + "' directory from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
+            from_name = fs.directory_of(relpath)
+            if from_name == "": from_name = fs.directory_of(dirpath)
+            log.debug("Caching '" + dirname + "' directory from '" + from_name + "' to '" + cache_directory_path + "' ...")
 
             # Copy the directory
             fs.copy_directory(dirpath, cache_directory_path, replace_files=True, replace_directories=False) # avoid replacing filed directories with empty ones
@@ -9693,7 +9377,9 @@ class SimulationManager(InteractiveConfigurable):
             if not fs.is_directory(cache_directory_path): fs.create_directory(cache_directory_path, recursive=True)
 
             # Debugging
-            log.debug("Caching '" + filename + "' file from '" + fs.directory_of(relpath) + "' to '" + cache_directory_path + "' ...")
+            from_name = fs.directory_of(relpath)
+            if from_name == "": from_name = fs.directory_of(filepath)
+            log.debug("Caching '" + filename + "' file from '" + from_name + "' to '" + cache_directory_path + "' ...")
 
             # Copy the file
             fs.copy_file(filepath, cache_directory_path)
@@ -10401,6 +10087,7 @@ class SimulationManager(InteractiveConfigurable):
         definition.add_flag("new_logging", "adapt the logging options", False)
         definition.import_section_from_composite_class("logging", "simulation logging options", LoggingOptions)
         definition.import_section_from_composite_class("scheduling", "simulation analysis options", SchedulingOptions)
+        definition.add_optional("screen_or_job", "string", "specifies whether to launch in screen or job if this information is unavailable (missing execution handle)")
 
         # Return
         return definition
@@ -10424,11 +10111,13 @@ class SimulationManager(InteractiveConfigurable):
 
         # Check simulation
         if not self.is_failed(simulation_name):
+            #print(self.get_status(simulation_name))
             if config.finished and self.is_finished(simulation_name):
                 log.info("Simulation '" + simulation_name + "' is already finished, removing local and remote output and undoing analysis ...")
                 if self.is_retrieved(simulation_name): self.unretrieve_simulation(simulation_name)
                 self.clear_simulation_output_remote(simulation_name)
                 self.unanalyse_simulation(simulation_name)
+            elif self.has_unknown_status(simulation_name): log.warning("The current status of simulation '" + simulation_name + "' is unknown")
             else: raise ValueError("Simulation '" + simulation_name + "' is running, finished or still queued")
 
         # Set the options
@@ -10438,11 +10127,13 @@ class SimulationManager(InteractiveConfigurable):
         scheduling_options = config.scheduling
 
         # Relaunch the simulation
-        self.relaunch_simulation(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
+        self.relaunch_simulation(simulation_name, parallelization=parallelization, logging_options=logging_options, 
+                                 scheduling_options=scheduling_options, screen_or_job=config.screen_or_job)
 
     # -----------------------------------------------------------------
 
-    def relaunch_simulation(self, simulation_name, parallelization=None, logging_options=None, scheduling_options=None):
+    def relaunch_simulation(self, simulation_name, parallelization=None, logging_options=None, scheduling_options=None,
+                            screen_or_job=None):
 
         """
         This function ...
@@ -10450,17 +10141,24 @@ class SimulationManager(InteractiveConfigurable):
         :param parallelization:
         :param logging_options:
         :param scheduling_options:
+        :param screen_or_job:
         :return:
         """
 
         # Debugging
         log.debug("Relaunching simulation '" + simulation_name + "' ...")
 
+        # Screen or job?
+        if screen_or_job is None:
+            if self.is_screen_execution(simulation_name): screen_or_job = "screen"
+            elif self.is_job_execution(simulation_name): screen_or_job = "job"
+            else: raise NotImplementedError("Execution handle not supported")
+
         # Screen
-        if self.is_screen_execution(simulation_name): self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
+        if screen_or_job == "screen": self.relaunch_simulation_screen(simulation_name, parallelization=parallelization, logging_options=logging_options)
 
         # Job
-        elif self.is_job_execution(simulation_name): self.relaunch_simulation_job(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
+        elif screen_or_job == "job": self.relaunch_simulation_job(simulation_name, parallelization=parallelization, logging_options=logging_options, scheduling_options=scheduling_options)
 
         # Not supported
         else: raise NotImplementedError("Execution handle not supported")
@@ -14087,6 +13785,50 @@ class SimulationManager(InteractiveConfigurable):
         print(" - average runtime: " + tostr(numbers.arithmetic_mean(*runtimes)) + " h")
         print(" - average CPU time: " + tostr(numbers.arithmetic_mean(*cputimes)) + " h")
         print(" - total CPU time: " + tostr(sequences.sum(cputimes)) + " h")
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_timeline_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get simulation name
+        simulation_name = self.get_simulation_name_from_command(command, **kwargs)
+
+        # Show
+        self.show_timeline(simulation_name)
+
+    # -----------------------------------------------------------------
+    
+    def show_timeline(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Get timeline
+        timeline = self.get_timeline_for_simulation(simulation_name)
+        #print(timeline)
+
+        # Show stuff
+        print("")
+        print(" - total runtime: " + tostr(timeline.total / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - setup time: " + tostr(timeline.setup / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - stellar emission time: " + tostr(timeline.stellar / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - spectra calculation time: " + tostr(timeline.spectra / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - dust emission time: " + tostr(timeline.dust / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - writing time: " + tostr(timeline.writing / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - communication time: " + tostr(timeline.communication / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - waiting time: " + tostr(timeline.waiting / 60., scientific=False, round=True, ndigits=2) + " min")
+        print(" - other time spent: " + tostr(timeline.other / 60., scientific=False, round=True, ndigits=2) + " min")
         print("")
 
     # -----------------------------------------------------------------

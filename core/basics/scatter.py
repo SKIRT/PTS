@@ -231,7 +231,8 @@ class Scatter2D(Scatter, Relation): # scatter (points, ranges), but also relatio
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_xy(cls, x, y, x_name=None, y_name=None, x_unit=None, y_unit=None, x_description=None, y_description=None):
+    def from_xy(cls, x, y, x_name=None, y_name=None, x_unit=None, y_unit=None, x_description=None, y_description=None,
+                aux=None, aux_units=None):
 
         """
         This function ...
@@ -243,11 +244,15 @@ class Scatter2D(Scatter, Relation): # scatter (points, ranges), but also relatio
         :param y_unit:
         :param x_description:
         :param y_description:
+        :param aux:
+        :param aux_units:
         :return:
         """
 
+        # Create and return
         return cls.from_columns(x, y, x_name=x_name, y_name=y_name, x_unit=x_unit, y_unit=y_unit,
-                                x_description=x_description, y_description=y_description, as_columns=True)
+                                x_description=x_description, y_description=y_description, as_columns=True,
+                                aux=aux, aux_units=aux_units)
 
 # -----------------------------------------------------------------
 

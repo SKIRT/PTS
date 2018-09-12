@@ -2710,6 +2710,7 @@ def convert_to_same_unit(*frames, **kwargs):
         unit = kwargs.pop("unit")
         #if types.is_string_type(unit): unit = u(unit, **kwargs) # not necessary: converted_to() of frame takes **kwargs
     else: unit = frames[0].unit
+    if unit is None: raise ValueError("Target unit is None")
 
     # Remove unit from kwargs (if None stays in), otherwise frame.converted_to call will crash
     if "unit" in kwargs: kwargs.pop("unit")
@@ -2744,7 +2745,7 @@ def convert_to_same_unit(*frames, **kwargs):
             converted = frame.copy()
 
         # Convert
-        else:
+        elif frame.unit is not None:
 
             # Debugging
             log.debug("Converting " + image_type + " " + print_name + "with unit " + tostr(frame.unit, add_physical_type=True) + " to " + tostr(unit, add_physical_type=True) + " ...")
@@ -2755,6 +2756,9 @@ def convert_to_same_unit(*frames, **kwargs):
                 if wavelength is not None: raise ValueError("Wavelength cannot be specified when datacubes/images are passed")
                 converted = frame.converted_to(unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict, silent=True)
             else: raise ValueError("Invalid argument of type '" + str(type(frame)) + "'")
+
+        # Unit is None
+        else: raise ValueError("Unit of frame " + print_name + "is not defined")
 
         # Set name
         if names is not None: converted.name = names[index]
@@ -3266,7 +3270,12 @@ def rebin_frame(name, frame, wcs, rebin_remote_threshold=None, session=None, in_
 
         conversion_factor = None
         original_unit = None
-        correction_factor = (wcs.pixelarea / frame.pixelarea).to("").value
+
+        #print(wcs.pixelarea, frame.pixel_solid_angle, frame.pixel_area)
+        if wcs.is_celestial: correction_factor = (wcs.pixelarea / frame.pixel_solid_angle).to("").value
+        elif wcs.is_physical: correction_factor = (wcs.pixelarea / frame.pixel_area).to("").value
+        else: raise ValueError("Uknown coordinate system type")
+
         #print(type(correction_factor))
         #exit()
 
@@ -4026,21 +4035,62 @@ def uniformize(*frames, **kwargs):
     if "no_pixelscale" not in kwargs: kwargs["no_pixelscale"] = "shape"
     #kwargs["distance"] = self.galaxy_distance
 
-    # Show frame info
-    #for frame in frames:
-    #    print(frame.name)
-    #    print(frame.unit)
-    #    #print(frame.wcs)
-    #    print(frame.pixelscale)
+    # Get rebin for which frames
+    do_rebin = True
+    rebin_indices = None
+    if "rebin" in kwargs:
+        rebin = kwargs.pop("rebin")
+        if types.is_integer_sequence_or_tuple(rebin): rebin_indices = rebin
+        elif types.is_boolean_type(rebin): do_rebin = rebin
+        else: raise ValueError("Invalid argument for 'rebin'")
+
+    # Get convolve for which frames
+    do_convolve = True
+    convolve_indices = None
+    if "convolve" in kwargs:
+        convolve = kwargs.pop("convolve")
+        if types.is_integer_sequence_or_tuple(convolve): convolve_indices = convolve
+        elif types.is_boolean_type(convolve): do_convolve = convolve
+        else: raise ValueError("Invalid argument for 'convolve'")
+
+    # Get convert for which frames
+    do_convert = True
+    convert_indices = None
+    if "convert" in kwargs:
+        convert = kwargs.pop("convert")
+        if types.is_integer_sequence_or_tuple(convert): convert_indices = convert
+        elif types.is_boolean_type(convert): do_convert = convert
+        else: raise ValueError("Invalid argument for 'convert'")
 
     # Rebin?
-    if kwargs.pop("rebin", True): frames = rebin_to_highest_pixelscale(*frames, **kwargs)
+    if do_rebin:
+        if rebin_indices is not None:
+
+            to_rebin_frames = sequences.subset(frames, rebin_indices)
+            rebinned_frames = rebin_to_highest_pixelscale(*to_rebin_frames, **kwargs)
+            sequences.put(rebinned_frames, frames, rebin_indices)
+
+        else: frames = rebin_to_highest_pixelscale(*frames, **kwargs)
 
     # Convolve?
-    if kwargs.pop("convolve", True): frames = convolve_to_highest_fwhm(*frames, **kwargs)
+    if do_convolve:
+        if convolve_indices is not None:
+
+            to_convolve_frames = sequences.subset(frames, convolve_indices)
+            convolved_frames = convolve_to_highest_fwhm(*to_convolve_frames, **kwargs)
+            sequences.put(convolved_frames, frames, convolve_indices)
+
+        else: frames = convolve_to_highest_fwhm(*frames, **kwargs)
 
     # Convert?
-    if kwargs.pop("convert", True): frames = convert_to_same_unit(*frames, **kwargs)
+    if do_convert:
+        if convert_indices is not None:
+
+            to_convert_frames = sequences.subset(frames, convert_indices)
+            converted_frames = convert_to_same_unit(*to_convert_frames, **kwargs)
+            sequences.put(converted_frames, frames, convert_indices)
+
+        else: frames = convert_to_same_unit(*frames, **kwargs)
 
     # Return the frames
     return frames

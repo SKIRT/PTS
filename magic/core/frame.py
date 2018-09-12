@@ -55,6 +55,7 @@ from ..basics.pixelscale import Pixelscale, PhysicalPixelscale, angular_or_physi
 from ..basics.vector import Pixel
 from ..region.region import PixelRegion, SkyRegion
 from ...core.units.quantity import add_with_units, subtract_with_units, multiply_with_units, divide_with_units, get_value_and_unit
+from ...core.tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
 
@@ -78,11 +79,6 @@ class AllZeroError(Exception):
 
 nan_value = float("nan")
 inf_value = float("inf")
-
-# -----------------------------------------------------------------
-
-nan_values = [float("nan"), np.NaN]
-inf_values = [float("inf"), float("-inf"), np.Inf, -np.Inf]
 zero_value = 0.0
 
 # -----------------------------------------------------------------
@@ -204,24 +200,12 @@ class Frame(NDDataArray):
 
     @property
     def shape(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return PixelShape.from_tuple(super(Frame, self).shape)
 
     # -----------------------------------------------------------------
 
     @property
     def filter_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return str(self.filter) if self.filter is not None else None
 
     # -----------------------------------------------------------------
@@ -250,13 +234,6 @@ class Frame(NDDataArray):
 
     @psf_filter.setter
     def psf_filter(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
         if types.is_string_type(value): value = parse_filter(value)
         self._psf_filter = value
 
@@ -264,12 +241,6 @@ class Frame(NDDataArray):
 
     @property
     def psf_filter_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return str(self.psf_filter) if self.psf_filter is not None else None
 
     # -----------------------------------------------------------------
@@ -291,62 +262,30 @@ class Frame(NDDataArray):
 
     @fwhm.setter
     def fwhm(self, value):
-
-        """
-        This function ...
-        :param value: 
-        :return: 
-        """
-
         self._fwhm = value
 
     # -----------------------------------------------------------------
 
     @property
     def has_fwhm(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fwhm is not None
 
     # -----------------------------------------------------------------
 
     @property
     def data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._data
 
     # -----------------------------------------------------------------
 
     @NDDataArray.wcs.setter
     def wcs(self, wcs):
-
-        """
-        This function ...
-        :param wcs:
-        :return:
-        """
-
         self._wcs = wcs
 
     # -----------------------------------------------------------------
 
     @property
     def has_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wcs is not None
 
     # -----------------------------------------------------------------
@@ -370,59 +309,30 @@ class Frame(NDDataArray):
 
     @property
     def has_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit is not None
 
     # -----------------------------------------------------------------
 
     @property
     def is_photometric(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_unit and isinstance(self.unit, PhotometricUnit)
 
     # -----------------------------------------------------------------
 
     @property
     def has_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distance is not None
 
     # -----------------------------------------------------------------
 
     @property
     def filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._filter
 
     # -----------------------------------------------------------------
 
     @filter.setter
     def filter(self, fltr):
-
-        """
-        This function ...
-        """
-
         if fltr is None: self._filter = None
         else: self._filter = parse_filter(fltr)
 
@@ -430,24 +340,12 @@ class Frame(NDDataArray):
 
     @property
     def has_filter(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.filter is not None
 
     # -----------------------------------------------------------------
 
     @property
     def is_broad_band(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ...core.filter.broad import BroadBandFilter
         return self.filter is not None and isinstance(self.filter, BroadBandFilter)
 
@@ -455,12 +353,6 @@ class Frame(NDDataArray):
 
     @property
     def is_narrow_band(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ...core.filter.narrow import NarrowBandFilter
         return self.filter is not None and isinstance(self.filter, NarrowBandFilter)
 
@@ -1261,471 +1153,328 @@ class Frame(NDDataArray):
         self._data = np.abs(self._data)
 
     # -----------------------------------------------------------------
+    # NANS
+    # -----------------------------------------------------------------
 
     @property
     def nans(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Mask(np.isnan(self.data), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
     @property
     def nans_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [Pixel(x, y) for y, x in np.transpose(np.where(self.nans))]
 
     # -----------------------------------------------------------------
 
     @property
     def nnans(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sum(self.nans.data)
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nnans(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return float(self.nnans) / self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def has_nans(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.any(self.nans.data)
 
     # -----------------------------------------------------------------
 
     @property
     def all_nans(self):
-
-        """
-        This function ...
-        """
-
         return np.all(self.nans.data)
 
+    # -----------------------------------------------------------------
+    # INFS
     # -----------------------------------------------------------------
 
     @property
     def infs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Mask(np.isinf(self.data), wcs=self.wcs.copy() if self.wcs is not None else None, pixelscale=self.pixelscale)
 
     # -----------------------------------------------------------------
 
     @property
     def infs_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [Pixel(x, y) for y, x in np.transpose(np.where(self.infs))]
 
     # -----------------------------------------------------------------
 
     @property
     def all_infs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.all(self.infs.data)
 
     # -----------------------------------------------------------------
 
     @property
     def ninfs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sum(self.infs.data)
 
     # -----------------------------------------------------------------
 
     @property
     def relative_ninfs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return float(self.ninfs) / self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def has_infs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.any(self.infs.data)
+
+    # -----------------------------------------------------------------
+    # INVALID
+    # -----------------------------------------------------------------
+
+    @property
+    def invalid(self):
+        return self.nans + self.infs
 
     # -----------------------------------------------------------------
 
     @property
+    def invalid_pixels(self):
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.invalid))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_invalid(self):
+        return np.all(self.invalid.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ninvalid(self):
+        return np.sum(self.invalid.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_ninvalid(self):
+        return float(self.ninvalid) / self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_invalid(self):
+        return np.any(self.invalid.data)
+
+    # -----------------------------------------------------------------
+    # VALID
+    # -----------------------------------------------------------------
+
+    @property
+    def valid(self):
+        return self.invalid.inverse()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def valid_pixels(self):
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.valid))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_valid(self):
+        return np.all(self.valid.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nvalid(self):
+        return np.sum(self.valid.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def relative_nvalid(self):
+        return float(self.nvalid) / self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_valid(self):
+        return np.any(self.valid.data)
+
+    # -----------------------------------------------------------------
+    # ZEROES
+    # -----------------------------------------------------------------
+
+    @property
     def zeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.where(zero_value)
 
     # -----------------------------------------------------------------
 
     @property
     def zeroes_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [Pixel(x, y) for y, x in np.transpose(np.where(self.zeroes))]
 
     # -----------------------------------------------------------------
 
     @property
     def all_zeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.all(self.zeroes.data)
 
     # -----------------------------------------------------------------
 
     @property
     def nzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sum(self.zeroes.data)
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return float(self.nzeroes) / self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def has_zeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.any(self.zeroes.data)
 
+    # -----------------------------------------------------------------
+    # NON-ZEROES
     # -----------------------------------------------------------------
 
     @property
     def nonzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.where_not(0.0)
 
     # -----------------------------------------------------------------
 
     @property
     def all_nonzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.all(self.nonzeroes.data)
 
     # -----------------------------------------------------------------
 
     @property
     def zeroes_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.where(self.zeroes)[1]
 
     # -----------------------------------------------------------------
 
     @property
     def zeroes_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.where(self.zeroes)[0]
 
     # -----------------------------------------------------------------
 
     @property
     def nonzeroes_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [Pixel(x, y) for y, x in np.transpose(np.nonzero(self._data))]
 
     # -----------------------------------------------------------------
 
     @property
     def nnonzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sum(self.nonzeroes.data)
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nnonzeroes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return float(self.nnonzeroes) / self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def nonzeroes_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.nonzero(self._data)[1]
 
     # -----------------------------------------------------------------
 
     @property
     def nonzeroes_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.nonzero(self._data)[0]
 
+    # -----------------------------------------------------------------
+    # NEGATIVES
     # -----------------------------------------------------------------
 
     @property
     def negatives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.where_smaller_than(zero_value)
 
     # -----------------------------------------------------------------
 
     @property
     def negatives_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [Pixel(x, y) for y, x in np.transpose(np.where(self.negatives))]
 
     # -----------------------------------------------------------------
 
     @property
     def nnegatives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sum(self.negatives.data)
 
     # -----------------------------------------------------------------
 
     @property
     def relative_nnegatives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return float(self.nnegatives) / self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def has_negatives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.any(self.negatives.data)
 
     # -----------------------------------------------------------------
 
     @property
     def all_negatives(self):
-
-        """
-        This function ...
-        """
-
         return np.all(self.negatives.data)
 
+    # -----------------------------------------------------------------
+    # POSITIVES
     # -----------------------------------------------------------------
 
     @property
     def positives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.where_greater_than(zero_value)
 
     # -----------------------------------------------------------------
 
     @property
     def positives_pixels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [Pixel(x, y) for y, x in np.transpose(np.where(self.positives))]
 
     # -----------------------------------------------------------------
 
     @property
     def npositives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.sum(self.positives.data)
 
     # -----------------------------------------------------------------
 
     @property
     def relative_npositives(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return float(self.npositives) / self.npixels
 
     # -----------------------------------------------------------------
 
     @property
     def has_positives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.any(self.positives.data)
 
     # -----------------------------------------------------------------
 
     @property
     def all_positives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return np.all(self.positives.data)
 
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def values_in(self, region_or_mask):
@@ -1820,24 +1569,12 @@ class Frame(NDDataArray):
 
     @property
     def min(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return np.nanmin(self.data)
 
     # -----------------------------------------------------------------
 
     @property
     def max(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return np.nanmax(self.data)
 
     # -----------------------------------------------------------------
@@ -2359,12 +2096,6 @@ class Frame(NDDataArray):
 
     @property
     def pixel_solid_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.angular_pixelarea
 
     # -----------------------------------------------------------------
@@ -2509,6 +2240,12 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def initialize_ones(cls, *args, **kwargs):
+        return cls.ones(*args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def zeros(cls, shape, wcs=None, filter=None, unit=None):
 
         """
@@ -2522,6 +2259,12 @@ class Frame(NDDataArray):
         # Create a new frame
         new = cls(np.zeros(shape), wcs=wcs, filter=filter, unit=unit)
         return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize_zeroes(cls, *args, **kwargs):
+        return cls.zeros(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -2790,6 +2533,28 @@ class Frame(NDDataArray):
         """
 
         return Cutout.cutout(self, position, radius)
+
+    # -----------------------------------------------------------------
+
+    def flip_horizontally(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._data = np.fliplr(self._data)
+
+    # -----------------------------------------------------------------
+
+    def flip_vertically(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._data = np.flipud(self._data)
 
     # -----------------------------------------------------------------
 
@@ -3904,7 +3669,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     def interpolate(self, region_or_mask, sigma=None, max_iterations=10, plot=False, not_converge="keep",
-                    min_max_in=None, smoothing_factor=None):
+                    min_max_in=None, smoothing_factor=None, replace_nans=None):
 
         """
         Thisfunction ...
@@ -3915,6 +3680,7 @@ class Frame(NDDataArray):
         :param not_converge:
         :param min_max_in:
         :param smoothing_factor:
+        :param interpolate_nans:
         :return:
         """
 
@@ -3923,7 +3689,9 @@ class Frame(NDDataArray):
 
         # Get a mask of the original NaN pixels
         original_nans = self.nans
+
         # Set originally NaN pixels to something else? zero?
+        if replace_nans: self[original_nans] = replace_nans
 
         # Set nans at masked pixels
         original_values = self[mask]
@@ -6238,5 +6006,9 @@ def regularize_frame(frame, absolute=False, dilate_nans=False, dilation_radius=5
     if no_positives: frame.replace_positives_by_zeroes()
     if cutoff_above is not None: frame.cutoff_greater(cutoff_above)
     if cutoff_below is not None: frame.cutoff_smaller(cutoff_below)
+
+# -----------------------------------------------------------------
+
+StaticFrame = create_lazified_class(Frame, "StaticFrame")
 
 # -----------------------------------------------------------------

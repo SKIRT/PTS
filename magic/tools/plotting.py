@@ -418,6 +418,7 @@ def plot_mask(mask, **kwargs):
     cmap = kwargs.pop("colormap", "Greys")
     xsize = kwargs.pop("xsize", 7)
     ysize = kwargs.pop("ysize", 7)
+    return_image = kwargs.pop("return_image", False)
 
     # Get the data
     if isinstance(mask, np.ndarray): maskdata = mask
@@ -465,18 +466,25 @@ def plot_mask(mask, **kwargs):
     if regions is not None:
         for patch in regions.to_mpl_patches(): axes.add_patch(patch)
 
-    # Show axes?
-    if not show_axes: plt.axis("off")
+    # Axes were not provided: we are supposed to create the whole figure thingy and close it
+    if not only_axes:
 
-    if title is not None: plt.title(title)
-    else: plt.title("Black means True")
+        # Show axis?
+        if not show_axes: plt.axis('off')
 
-    # Show or save
-    if path is None: plt.show()
-    else: plt.savefig(path, format=format, transparent=transparent)
+        # Add title
+        if title is not None: plt.title(title)
+        else: plt.title("Black means True")
 
-    # Close the figure
-    plt.close()
+        # Show or save as file
+        if path is None: plt.show()
+        else: plt.savefig(path, format=format, transparent=transparent)
+
+        # Close the figure
+        plt.close()
+
+    # Return the image?
+    if return_image: return image
 
 # -----------------------------------------------------------------
 
@@ -576,6 +584,84 @@ def plot_datacube(datacube, **kwargs):
 
     # Plot
     plot_cube(cube, **kwargs)
+
+# -----------------------------------------------------------------
+
+def plot_image_masks(image, **kwargs):
+
+    """
+    This function ...
+    :param image:
+    :param kwargs:
+    :return:
+    """
+
+    kwargs["labels"] = image.mask_names
+    plot_masks(image.masks, **kwargs)
+
+# -----------------------------------------------------------------
+
+def plot_masks(masks, **kwargs):
+
+    """
+    This function ...
+    :param masks:
+    :param kwargs:
+    :return:
+    """
+
+    # Get the number of planes
+    nmasks = len(masks)
+    xsize = masks[0].shape[1]
+    ysize = masks[0].shape[0]
+
+    # Get settings
+    labels = kwargs.pop("labels", None)
+    slider_name = kwargs.pop("slider_name", "Index")
+    if labels is not None and len(labels) != nmasks: raise ValueError("Number of labels must be equal to number of masks")
+    title = kwargs.pop("title", None)
+    show_axes = kwargs.pop("show_axes", True)
+
+    # Create figure
+    figsize = (5, 8)
+    figure = plt.figure(figsize=figsize)
+    gs = gridspec.GridSpec(2, 1, height_ratios=[10, 1])
+    axes = plt.subplot(gs[0])
+    sliderax = plt.subplot(gs[1])
+
+    # Plot first mask
+    image = plot_mask(masks[0], axes=axes, return_image=True)
+
+    # Show axis?
+    if not show_axes: axes.axis('off')
+
+    # Add title
+    if title is not None: axes.set_title(title)
+
+    # Add text
+    if labels is not None: t = axes.text(0.5 * xsize, 0.01 * ysize, labels[0], verticalalignment='bottom', horizontalalignment='center', color="white")
+    else: t = None
+
+    # Create slider
+    slider = DiscreteSlider(sliderax, slider_name, 0, nmasks - 1, increment=1, valinit=0)
+
+    # Create update function
+    def update(index):
+        image.set_data(masks[index])
+        if labels is not None: t.set_text(labels[index])
+        figure.canvas.draw_idle()
+
+    # Set update function
+    slider.on_changed(update)
+
+    # Tight layout
+    plt.tight_layout()
+
+    # Show
+    plt.show()
+
+    # Close the figure
+    plt.close()
 
 # -----------------------------------------------------------------
 
@@ -885,7 +971,7 @@ def get_vmin_vmax(data, interval="pts", around_zero=False, symmetric=False, norm
     # String -> parse
     elif isinstance(interval, basestring):
 
-        print(interval)
+        #print(interval)
         from ...core.tools import parsing
         try: vmin, vmax = parsing.real_pair(interval)
         except ValueError: raise ValueError("Cannot interpret the interval")
@@ -947,6 +1033,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     :param aspect:
     :param symmetric_method:
     :param check_around_zero:
+    :param background_color:
     :return:
     """
 
@@ -1034,7 +1121,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 # -----------------------------------------------------------------
 
 def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno", contours=False, ncontours=5,
-             contours_color="white", path=None, background_color=None):
+             contours_color="white", path=None, background_color=None, title=None):
 
     """
     This function ...
@@ -1048,6 +1135,7 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
     :param contours_color:
     :param path:
     :param background_color:
+    :param title:
     :return:
     """
 
@@ -1057,10 +1145,11 @@ def plot_map(frame, interval="pts", scale="linear", colorbar=True, cmap="inferno
         # Plot with contours
         plot_frame_contours(frame, interval=interval, scale=scale, colorbar=colorbar,
                             data_cmap=cmap, plot_data=True, nlevels=ncontours,
-                            single_colour=contours_color, path=path, background_color=background_color)
+                            single_colour=contours_color, path=path, background_color=background_color, title=title)
 
     # No contours
-    else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path, background_color=background_color)
+    else: plot_frame(frame, interval=interval, scale=scale, colorbar=colorbar, cmap=cmap, path=path,
+                     background_color=background_color, title=title)
 
 # -----------------------------------------------------------------
 
@@ -1488,8 +1577,8 @@ def get_multiple_xy(curves, return_labels=False):
     # Get the labels
     x_labels = [curve.x_name for curve in curves]
     y_labels = [curve.y_name for curve in curves]
-    x_label = sequences.get_single(x_labels)
-    y_label = sequences.get_single(y_labels)
+    x_label = sequences.get_single(x_labels, method="common")
+    y_label = sequences.get_single(y_labels, method="common")
 
     # Get the units
     x_units = [curve.x_unit for curve in curves]
@@ -1522,7 +1611,7 @@ def get_multiple_xy(curves, return_labels=False):
 
 def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-               ynonzero=False):
+               ynonzero=False, x_label=None, y_label=None):
 
     """
     This function ...
@@ -1539,11 +1628,15 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
     :param ynonnegative:
     :param xnonzero:
     :param ynonzero:
+    :param x_label:
+    :param y_label:
     :return:
     """
 
     # Get x, y and labels
-    x, y, x_label, y_label = get_xy(curve, return_labels=True)
+    x, y, _x_label, _y_label = get_xy(curve, return_labels=True)
+    if x_label is None: x_label = _x_label
+    if y_label is None: y_label = _y_label
 
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,
@@ -1554,7 +1647,7 @@ def plot_curve(curve, title=None, path=None, xlog=False, ylog=False, xlimits=Non
 
 def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=None, ylimits=None,
                 xpositive=False, ypositive=False, xnonnegative=False, ynonnegative=False, xnonzero=False,
-                ynonzero=False):
+                ynonzero=False, x_label=None, y_label=None):
 
     """
     This function ...
@@ -1571,11 +1664,15 @@ def plot_curves(curves, title=None, path=None, xlog=False, ylog=False, xlimits=N
     :param ynonnegative:
     :param xnonzero:
     :param ynonzero:
+    :param x_label:
+    :param y_label:
     :return:
     """
 
     # Get data
-    x, y, x_label, y_label = get_multiple_xy(curves, return_labels=True)
+    x, y, _x_label, _y_label = get_multiple_xy(curves, return_labels=True)
+    if x_label is None: x_label = _x_label
+    if y_label is None: y_label = _y_label
 
     # Plot
     plot_xy(x, y, title=title, path=path, x_label=x_label, y_label=y_label, xlog=xlog, ylog=ylog, connect=True,

@@ -32,6 +32,11 @@ min_inf = float("-inf")
 
 # -----------------------------------------------------------------
 
+nan_values = [float("nan"), np.NaN, np.nan]
+inf_values = [float("inf"), float("-inf"), np.Inf, -np.Inf, np.inf, -np.inf]
+
+# -----------------------------------------------------------------
+
 def is_multiple_of(number, other_number):
 
     """
@@ -180,6 +185,28 @@ def is_odd(integer):
 
 # -----------------------------------------------------------------
 
+def is_numpy_nan(value):
+    try: return np.isnan(value)
+    except TypeError: return False
+
+# -----------------------------------------------------------------
+
+def is_numpy_inf(value):
+    try: return np.isinf(value)
+    except TypeError: return False
+
+# -----------------------------------------------------------------
+
+def is_nan(value):
+    return value in nan_values or is_numpy_nan(value)
+
+# -----------------------------------------------------------------
+
+def is_inf(value):
+    return value in inf_values or is_numpy_inf(value)
+
+# -----------------------------------------------------------------
+
 def is_integer(value, absolute=True, rtol=1.e-5, atol=1.e-8):
 
     """
@@ -197,9 +224,10 @@ def is_integer(value, absolute=True, rtol=1.e-5, atol=1.e-8):
     #print(value - round(value))
 
     # Special values
-    if value == float("nan"): return False
-    if value == float("inf"): return False
-    if value == float("-inf"): return False
+    if is_nan(value): return False
+    if is_inf(value): return False
+
+    #print(value, type(value))
 
     # Regular value
     if absolute: return int(value) == value

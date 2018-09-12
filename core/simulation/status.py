@@ -28,6 +28,7 @@ from ..tools import terminal
 from ..tools import strings
 from ..tools import formatting as fmt
 from ..tools.sequences import contains_any
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -84,17 +85,20 @@ class SimulationStatus(object):
         # The status
         self.status = None
 
-        # The phase
-        self.phase = None
-
         # The simulation phase
         self.simulation_phase = None
 
+        # The phase and previous phase
+        self.phase = None
+        self.previous_phase = None
+
         # The stage (if applicable)
         self.stage = None
+        self.previous_stage = None
 
         # The cycle (if applicable)
         self.cycle = None
+        self.previous_cycle = None
 
         # The progress (if applicable)
         self.progress = None
@@ -191,6 +195,7 @@ class SimulationStatus(object):
         :return:
         """
 
+        # Start with status (e.g. running)
         string = self.status
 
         # Add phase
@@ -203,8 +208,14 @@ class SimulationStatus(object):
         if self.stage is not None: string += " stage " + str(self.stage + 1)
         if self.cycle is not None: string += " [cycle " + str(self.cycle) + "]"
 
+        # Add previous phase, stage cycle
+        if self.previous_phase is not None and self.phase == "spectra":
+            string += " after the " + phase_descriptions[self.previous_phase] + " phase"
+            if self.previous_stage is not None and self.previous_cycle is not None: string += " (stage " + str(self.previous_stage) + ", cycle " + str(self.previous_cycle) + ")"
+            elif self.previous_stage is not None: string += " (stage " + str(self.previous_stage) + ")"
+
         # Add progress
-        if self.progress is not None: string += " " + str(self.progress) + "%"
+        if self.progress is not None: string += " " + tostr(self.progress, round=True, decimal_places=1) + "%"
 
         # Return the string
         return string
@@ -556,6 +567,11 @@ class LogSimulationStatus(SimulationStatus):
         :return:
         """
 
+        # Set previous
+        self.previous_phase = self.phase
+        self.previous_stage = self.stage
+        self.previous_cycle = self.cycle
+
         # Clear everything
         self.status = None
         self.phase = None
@@ -816,6 +832,11 @@ class SpawnSimulationStatus(SimulationStatus):
         """
 
         break_after_next_line = False
+
+        # Set previous
+        self.previous_phase = self.phase
+        self.previous_stage = self.stage
+        self.previous_cycle = self.cycle
 
         # Clear everything
         self.status = None
@@ -1751,5 +1772,53 @@ def show_log_summary(lines, debug_output=False, ignore_output=default_ignore_out
             if extra is not None:
                 if last_extra is None or last_extra != extra: log.info(extra)
                 last_extra = extra
+
+# -----------------------------------------------------------------
+
+def get_status_from_last_log_line(line, nlibrary_entries=None):
+
+    """
+    This function ...
+    :param line:
+    :param nlibrary_entries:
+    :return:
+    """
+
+    # Stellar emission
+    if "Launched stellar emission photon packages" in line:
+
+        progress = float(line.split("packages:")[1].split("%")[0])
+        return "running: emission of stellar photons in the stellar emission phase " + tostr(progress, round=True, decimal_places=1) + "%"
+
+    # Emission spectra
+    elif "Calculating emission for library entry" in line:
+
+        if nlibrary_entries is not None:
+
+            entry = int(line.split("for library entry")[1].split("...")[0])
+            progress = float(entry)/nlibrary_entries * 100.
+            return "running: calculation of dust emission spectra " + tostr(progress, round=True, decimal_places=1) + "%"
+
+        else: return "running: calculation of dust emission spectra"
+
+    # Dust self-absorption
+    elif "Launched" in line and "dust self-absorption cycle" in line and "photon packages" in line:
+
+        # Get stage
+        stage_description = line.split("Launched")[1].split("dust self-absorption")[0].strip()
+        if stage_description == "first-stage": stage = 1
+        elif stage_description == "second-stage": stage = 2
+        elif stage_description == "last-stage": stage = 3
+        else: raise ValueError("Invalid dust self-absorption stage: " + stage_description)
+
+        # Get cycle and progress
+        cycle = int(line.split("cycle")[1].split("photon packages")[0])
+        progress = float(line.split("packages:")[1].split("%")[0])
+
+        # Return status
+        return "running: emission of dust photons in the dust self-absorption phase stage " + str(stage) + " [cycle " + str(cycle) + "] " + tostr(progress, round=True, decimal_places=1) + "%"
+
+    # Cannot interpret status
+    else: return None
 
 # -----------------------------------------------------------------

@@ -16,9 +16,17 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import copy
 
+# Import astronomical modules
+from astropy.table import MaskedColumn
+
 # Import the relevant PTS classes and modules
 from .table import SmartTable
 from ..tools import arrays
+
+# -----------------------------------------------------------------
+
+errormin_name = "Error-"
+errorplus_name = "Error+"
 
 # -----------------------------------------------------------------
 
@@ -64,7 +72,10 @@ class Relation(SmartTable):
             y_description = kwargs.pop("y_description", "y values")
             if y_description is None: y_description = "y values"
 
-        else: x_unit = y_unit = x_name = y_name = x_description = y_description = None
+            names = kwargs.pop("names", None)
+            units = kwargs.pop("units", None)
+
+        else: x_unit = y_unit = x_name = y_name = x_description = y_description = names = units = None
 
         # Call the constructor of the base class
         super(Relation, self).__init__(*args, **kwargs)
@@ -80,12 +91,34 @@ class Relation(SmartTable):
             self.x_name = x_name
             self.y_name = y_name
 
+            # Has auxilary axes?
+            #names = kwargs.pop("names", None)
+            #units = kwargs.pop("units", None)
+            #print(names, units)
+
+            # Auxilary axes?
+            if names is not None and len(names) > 2:
+
+                aux_names = names[2:]
+                naux = len(aux_names)
+                #print(units)
+                if units is not None:
+                    from . import containers
+                    if isinstance(units, dict): aux_units = containers.sequence_from_dict(units, aux_names, none_if_not_contains=True)
+                    else: aux_units = units[2:]
+                else: aux_units = [None] * naux
+                #aux_units = units[2:] if units is not None else [None] * naux
+
+                # Add column info for auxilary axes
+                for name, unit in zip(aux_names, aux_units): self.add_column_info(name, float, unit, "auxilary axis")
+
     # -----------------------------------------------------------------
 
-    def copy(self):
+    def copy(self, aux=True):
 
         """
         This function ...
+        :param aux:
         :return:
         """
 
@@ -119,12 +152,14 @@ class Relation(SmartTable):
             kwargs["x_name"] = x_name
             kwargs["y_name"] = y_name
 
+        #else: x_name, y_name = "x", "y"
+
         # x and y unit
         if kwargs.get("units", None) is not None:
             units = kwargs.get("units")
 
             from ..tools import types
-            if types.is_sequence(units):
+            if types.is_sequence_or_tuple(units):
                 x_unit = units[0]
                 y_unit = units[1]
             elif types.is_dictionary(units):
@@ -138,6 +173,23 @@ class Relation(SmartTable):
             kwargs["x_unit"] = x_unit
             kwargs["y_unit"] = y_unit
 
+        #else: x_unit = y_unit = None
+
+        # Add auxilary axes?
+        if kwargs.get("aux", None) is not None:
+            from .containers import sequence_from_dict
+            aux = kwargs.pop("aux")
+            naux = len(aux)
+            columns = list(columns) + aux.values()  # columns = [x, y] + aux.values()
+            column_names = [kwargs["x_name"], kwargs["y_name"]] + aux.keys()
+            aux_units = kwargs.pop("aux_units", None)
+            if aux_units is None: aux_units = [None] * naux
+            else: aux_units = sequence_from_dict(aux_units, aux.keys(), none_if_not_contains=True) # in the order of the aux columns
+            column_units = [kwargs["x_unit"], kwargs["y_unit"]] + aux_units
+            kwargs["names"] = column_names
+            kwargs["units"] = column_units
+        # else: #columns = [x, y]
+
         # x and y descriptions
         #if kwargs.get("descriptions", None) is not None:
         descriptions = kwargs.get("descriptions", ("no description", "no description"))
@@ -145,6 +197,8 @@ class Relation(SmartTable):
         y_description = descriptions[1]
         kwargs["x_description"] = x_description
         kwargs["y_description"] = y_description
+
+        #print(kwargs)
 
         # Use the base class implementation
         #print(kwargs)
@@ -225,53 +279,84 @@ class Relation(SmartTable):
 
     @property
     def x_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self[self.x_name].unit
 
     # -----------------------------------------------------------------
 
     @property
     def y_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self[self.y_name].unit
 
     # -----------------------------------------------------------------
 
     @property
     def x_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self[self.x_name]
 
     # -----------------------------------------------------------------
 
     @property
     def y_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self[self.y_name]
 
     # -----------------------------------------------------------------
 
-    def add_point(self, x_value, y_value, conversion_info=None, sort=False):
+    @property
+    def has_aux(self):
+        if self.has_errors: return self.ncolumns > 4
+        else: return self.ncolumns > 2
+
+    # -----------------------------------------------------------------
+
+    @property
+    def aux_indices(self):
+        from ..tools import sequences
+        if self.has_aux: return sequences.indices_not_in(self.column_names, [self.x_name, self.y_name, errormin_name, errorplus_name])
+        else: return []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def aux_names(self):
+        return [self.column_names[index] for index in self.aux_indices]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def aux_units(self):
+        units = self.column_units
+        return [units[index] for index in self.aux_indices]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def naux(self):
+        if self.has_errors: return self.ncolumns - 4
+        else: return self.ncolumns - 2
+
+    # -----------------------------------------------------------------
+
+    def add_aux(self, name, values, unit=None, description=None, as_column=False):
+
+        """
+        This function ...
+        :param name:
+        :param values:
+        :param unit:
+        :param description:
+        :param as_column:
+        :return:
+        """
+
+        # Add column info
+        if description is None: description = "auxilary axis"
+
+        # Add
+        self.add_col(name, values, dtype=float, unit=unit, description=description, as_column=as_column)
+
+    # -----------------------------------------------------------------
+
+    def add_point(self, x_value, y_value, conversion_info=None, sort=False, aux=None):
 
         """
         This function ...
@@ -279,11 +364,22 @@ class Relation(SmartTable):
         :param y_value:
         :param conversion_info:
         :param sort: DEFAULT IS FALSE HERE
+        :param aux:
         :return:
         """
 
         # Set values
         values = [x_value, y_value]
+
+        # Add aux values
+        if self.has_aux:
+            for aux_name in self.aux_names:
+                if aux is None or aux_name not in aux: aux_value = None
+                else: aux_value = aux[aux_name]
+                values.append(aux_value)
+
+        # No aux columns but aux is passed: error
+        elif aux is not None: raise ValueError("There are no aux columns")
 
         # Add a row
         self.add_row(values, conversion_info=conversion_info)
@@ -295,13 +391,7 @@ class Relation(SmartTable):
 
     @property
     def has_errors(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "Error-" in self.colnames and "Error+" in self.colnames
+        return errormin_name in self.colnames and errorplus_name in self.colnames
 
     # -----------------------------------------------------------------
 

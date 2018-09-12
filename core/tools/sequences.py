@@ -547,6 +547,21 @@ def all_zero(lst):
 
 # -----------------------------------------------------------------
 
+def has_identical_to(lst, value):
+
+    """
+    This function ...
+    :param lst:
+    :param value:
+    :return:
+    """
+
+    for item in lst:
+        if item is value: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def has_equal_to(lst, value):
 
     """
@@ -628,13 +643,15 @@ def all_different(lst, ignore_none=False, ignore=None):
 
 # -----------------------------------------------------------------
 
-def all_equal(lst, ignore_none=False, ignore=None):
+def all_equal(lst, ignore_none=False, ignore=None, allow_empty=False, empty_value=True):
 
     """
     This function ...
     :param lst:
     :param ignore_none:
     :param ignore:
+    :param allow_empty:
+    :param empty_value:
     :return:
     """
 
@@ -644,14 +661,18 @@ def all_equal(lst, ignore_none=False, ignore=None):
 
     if first is None and ignore_none:
         try: first = find_first_not_none(lst, ignore=ignore)
-        except: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
+        except:
+            if allow_empty: return empty_value
+            else: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
 
     # ELIF because ignore is also passed to find_first_not_none
     elif ignore is not None and first == ignore:
         try:
             if ignore_none: first = find_first_not_none(lst, ignore=ignore)
             else: first = find_first(lst, ignore=ignore)
-        except: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
+        except:
+            if allow_empty: return empty_value
+            else: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
 
     #print(first)
 
@@ -688,8 +709,8 @@ def get_all_equal_value(sequence, ignore_none=False, ignore=None, return_none=Fa
     :return:
     """
 
-    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore):
-        if return_none: return None
+    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore, allow_empty=True, empty_value=False): # if empty, return False
+        if return_none or all_none(sequence): return None
         else: raise ValueError("Not all equal: " + str(sequence))
     else:
         if ignore_none: return find_first_not_none(sequence, ignore=ignore)
@@ -1546,6 +1567,11 @@ def get_single(sequence, none="none", method="first"):
     else:
 
         if method == "first": return sequence[0]
+        elif method == "common": # common part (only for strings!)
+            from .strings import common_part
+            string = common_part(*sequence, return_none=True)
+            if string is None: return find_first_not_none(sequence, return_none=True) # no common part
+            else: return string
         elif method == "first_not_none": return find_first_not_none(sequence, return_none=True)
         elif method == "last": return sequence[-1]
         elif method == "none": return None
@@ -1762,6 +1788,24 @@ def random_subset(sequence, nsamples, avoid_duplication=False, ignore=None):
 
     import numpy as np
     return np.random.choice(sequence, nsamples, replace=not avoid_duplication, p=probabilities)
+
+# -----------------------------------------------------------------
+
+def put(these, into, indices):
+
+    """
+    This function ...
+    :param these:
+    :param into:
+    :param indices:
+    :return:
+    """
+
+    # Check
+    if len(these) != len(indices): raise ValueError("First argument must have equal length as indices")
+
+    # Loop
+    for this, index in zip(these, indices): into[index] = this
 
 # -----------------------------------------------------------------
 
@@ -2491,5 +2535,39 @@ def pairs(sequence):
     """
 
     return list(combinations(sequence, 2))
+
+# -----------------------------------------------------------------
+
+def indices_in(sequence, elements):
+
+    """
+    This function ...
+    :param sequence:
+    :param elements:
+    :return:
+    """
+
+    indices = []
+    for index in range(len(sequence)):
+        item = sequence[index]
+        if item in elements: indices.append(index)
+    return indices
+
+# -----------------------------------------------------------------
+
+def indices_not_in(sequence, elements):
+
+    """
+    This function ...
+    :param sequence:
+    :param elements:
+    :return:
+    """
+
+    indices = []
+    for index in range(len(sequence)):
+        item = sequence[index]
+        if item not in elements: indices.append(index)
+    return indices
 
 # -----------------------------------------------------------------

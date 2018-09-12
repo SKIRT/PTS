@@ -34,15 +34,17 @@ from ..config.evaluate_analysis import definition as evaluate_analysis_definitio
 from ...core.plot.attenuation import plot_attenuation_curve, plot_attenuation_curves
 from ..config.analyse_cell_heating import definition as analyse_cell_heating_definition
 from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
+from ..config.analyse_spectral_heating import definition as analyse_spectral_heating_definition
 from .heating.cell import CellDustHeatingAnalyser
 from .heating.projected import ProjectedDustHeatingAnalyser
+from .heating.spectral import SpectralDustHeatingAnalyser
 from ..config.analyse_properties import definition as analyse_properties_definition
 from .properties import PropertiesAnalyser
 from ..config.analyse_cell_energy import definition as analyse_cell_energy_definition
 from ..config.analyse_projected_energy import definition as analyse_projected_energy_definition
 from .energy.cell import CellEnergyAnalyser
 from .energy.projected import ProjectedEnergyAnalyser
-from ...magic.tools.plotting import plot_frame, plot_frame_contours
+from ...magic.tools.plotting import plot_frame, plot_frame_contours, plot_datacube
 from ...core.filter.filter import Filter, parse_filter
 from ...core.tools import types
 from ...magic.plot.imagegrid import StandardImageGridPlotter, ResidualImageGridPlotter
@@ -84,6 +86,8 @@ _status_command_name = "status"
 # Other commands
 _show_command_name = "show"
 _properties_command_name = "properties"
+_output_command_name = "output"
+_data_command_name = "data"
 _model_command_name = "model"
 
 # Plot commands
@@ -169,6 +173,10 @@ show_commands = OrderedDict()
 
 # Properties
 show_commands[_properties_command_name] = ("show_properties", False, "show the model properties", None)
+
+# Simulation output and data
+show_commands[_output_command_name] = ("show_output", False, "show the simulation output", None)
+show_commands[_data_command_name] = ("show_data", False, "show the simulation data available for the model", None)
 
 # -----------------------------------------------------------------
 
@@ -268,6 +276,7 @@ map_commands[_dust_name] = ("show_dust_map_command", True, "show a map of the du
 
 _cell_name = "cell"
 _projected_name = "projected"
+_spectral_name = "spectral"
 
 # -----------------------------------------------------------------
 
@@ -277,6 +286,7 @@ heating_commands = OrderedDict()
 # Cell and projected
 heating_commands[_cell_name] = ("analyse_cell_heating_command", True, "analyse the cell heating", None)
 heating_commands[_projected_name] = ("analyse_projected_heating_command", True, "analyse the projected heating", None)
+heating_commands[_spectral_name] = ("analyse_spectral_heating_command", True, "analyse the spectral heating", None)
 
 # -----------------------------------------------------------------
 
@@ -802,6 +812,114 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         print(fmt.cyan + fmt.underlined + "Derived parameter values of dust component:" + fmt.reset)
         print("")
         for label in self.derived_parameter_values_dust: print(" - " + fmt.bold + label + fmt.reset + ": " + tostr(self.derived_parameter_values_dust[label]))
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_output(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Showing the simulation output ...")
+
+        # TOTAL
+        print(fmt.blue + fmt.underlined + "TOTAL" + fmt.reset + ":")
+        print("")
+        self.total_output.show(line_prefix="  ", dense=True)
+        print("")
+
+        # BULGE
+        print(fmt.blue + fmt.underlined + "BULGE" + fmt.reset + ":")
+        print("")
+        self.bulge_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # DISK
+        print(fmt.blue + fmt.underlined + "DISK" + fmt.reset + ":")
+        print("")
+        self.disk_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # OLD
+        print(fmt.blue + fmt.underlined + "OLD" + fmt.reset + ":")
+        print("")
+        self.old_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # YOUNG
+        print(fmt.blue + fmt.underlined + "YOUNG" + fmt.reset + ":")
+        print("")
+        self.young_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # SFR
+        print(fmt.blue + fmt.underlined + "SFR" + fmt.reset + ":")
+        print("")
+        self.sfr_output.show(line_prefix="   ", dense=True)
+        print("")
+
+        # UNEVOLVED
+        print(fmt.blue + fmt.underlined + "UNEVOLVED" + fmt.reset + ":")
+        print("")
+        self.unevolved_output.show(line_prefix="   ", dense=True)
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def show_data(self, **kwargs):
+
+        """
+        This function ...
+        """
+
+        # Debugging
+        log.debug("Showing the available model data ...")
+
+        # TOTAL
+        print(fmt.blue + fmt.underlined + "TOTAL" + fmt.reset + ":")
+        print("")
+        self.total_data.show(line_prefix="  ", check_valid=False, dense=True)
+        print("")
+
+        # BULGE
+        print(fmt.blue + fmt.underlined + "BULGE" + fmt.reset + ":")
+        print("")
+        self.bulge_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # DISK
+        print(fmt.blue + fmt.underlined + "DISK" + fmt.reset + ":")
+        print("")
+        self.disk_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # OLD
+        print(fmt.blue + fmt.underlined + "OLD" + fmt.reset + ":")
+        print("")
+        self.old_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # YOUNG
+        print(fmt.blue + fmt.underlined + "YOUNG" + fmt.reset + ":")
+        print("")
+        self.young_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # SFR
+        print(fmt.blue + fmt.underlined + "SFR" + fmt.reset + ":")
+        print("")
+        self.sfr_data.show(line_prefix="   ", check_valid=False, dense=True)
+        print("")
+
+        # UNEVOLVED
+        print(fmt.blue + fmt.underlined + "UNEVOLVED" + fmt.reset + ":")
+        print("")
+        self.unevolved_data.show(line_prefix="   ", check_valid=False, dense=True)
         print("")
 
     # -----------------------------------------------------------------
@@ -2548,7 +2666,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #datacube = DataCube.from_file(path, wavelength_grid)
 
         # Plot
-        plotting.plot_datacube(datacube, title=instr_name, share_normalization=share_normalization, show_axes=False)
+        plot_datacube(datacube, title=instr_name, share_normalization=share_normalization, show_axes=False)
 
     # -----------------------------------------------------------------
 
@@ -2696,89 +2814,188 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         self.show_total_map(config.which, orientation=config.orientation)
 
     # -----------------------------------------------------------------
+    # TOTAL SIMULATION
+    # -----------------------------------------------------------------
 
     @property
     def total_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.total_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def total_simulation(self):
+        return self.model.total_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_output(self):
+        return self.model.total_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_data(self):
+        return self.model.total_simulation_data
+
+    # -----------------------------------------------------------------
+    # BULGE SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def bulge_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.bulge_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def bulge_simulation(self):
+        return self.model.bulge_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_output(self):
+        return self.model.bulge_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_data(self):
+        return self.model.bulge_simulation_data
+
+    # -----------------------------------------------------------------
+    # DISK SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def disk_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.disk_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def disk_simulation(self):
+        return self.model.disk_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_output(self):
+        return self.model.disk_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_data(self):
+        return self.model.disk_simulation_data
+
+    # -----------------------------------------------------------------
+    # OLD SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def old_simulations(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.model.old_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def old_simulation(self):
+        return self.model.old_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_output(self):
+        return self.model.old_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_data(self):
+        return self.model.old_simulation_data
+
+    # -----------------------------------------------------------------
+    # YOUNG SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def young_simulations(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.model.young_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def young_simulation(self):
+        return self.model.young_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_output(self):
+        return self.model.young_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_data(self):
+        return self.model.young_simulation_data
+
+    # -----------------------------------------------------------------
+    # SFR SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.sfr_simulations
 
     # -----------------------------------------------------------------
 
     @property
+    def sfr_simulation(self):
+        return self.model.sfr_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_output(self):
+        return self.model.sfr_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_data(self):
+        return self.model.sfr_simulation_data
+
+    # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
     def unevolved_simulations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.unevolved_simulations
 
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_simulation(self):
+        return self.model.unevolved_simulation
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_output(self):
+        return self.model.unevolved_simulation_output
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_data(self):
+        return self.model.unevolved_simulation_data
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     def show_total_map(self, which, orientation=earth_name):
@@ -3513,6 +3730,68 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create the analyser
         analyser = ProjectedDustHeatingAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_spectral_heating_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Change settings
+        definition.import_settings(analyse_spectral_heating_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_spectral_heating_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_spectral_heating_definition, **kwargs)
+
+        # Analyse
+        self.analyse_spectral_heating(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_spectral_heating(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the spectral heating ...")
+
+        # Create the analyser
+        analyser = SpectralDustHeatingAnalyser(config=config)
 
         # Set the modeling path
         analyser.config.path = self.config.path

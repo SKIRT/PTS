@@ -664,7 +664,9 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        return (self.pixelscale.x * self.pixelscale.y).to("sr")
+        if self.is_celestial: return (self.pixelscale.x * self.pixelscale.y).to("sr")
+        elif self.is_physical: return self.pixelscale.x * self.pixelscale.y
+        else: raise ValueError("Unknown coordinate system type")
 
     # -----------------------------------------------------------------
 
