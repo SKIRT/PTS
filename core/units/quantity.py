@@ -84,6 +84,34 @@ def zero_mass_density_quantity(): return 0.0 * parse_unit("kg/m3")
 
 # -----------------------------------------------------------------
 
+def is_scalar(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if types.is_real_type(value): return True
+    elif types.is_quantity(value): return value.unit == ""
+    else: raise ValueError("Value type not recognized: must be real value or quantity")
+
+# -----------------------------------------------------------------
+
+def get_scalar(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if types.is_real_type(value): return value
+    elif types.is_quantity(value): return value.value
+    else: raise ValueError("Value type not recognized: must be real value or quantity")
+
+# -----------------------------------------------------------------
+
 class PhotometricQuantity(Quantity):
     
     """

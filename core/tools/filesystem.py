@@ -450,6 +450,36 @@ def join(*args):
 
 # -----------------------------------------------------------------
 
+def get_filepath(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Construct path, check and return
+    path = join(*args)
+    if not is_file(path): raise IOError("File '" + path + "' does not exist")
+    return path
+
+# -----------------------------------------------------------------
+
+def get_dirpath(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Construct path, check and return
+    path = join(*args)
+    if not is_directory(path): raise IOError("Directory '" + path + "' does not exist")
+    return path
+
+# -----------------------------------------------------------------
+
 def file_or_directory(path):
 
     """

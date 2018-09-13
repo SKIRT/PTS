@@ -2215,3 +2215,58 @@ def common_part(*strings, **kwargs):
         return string
 
 # -----------------------------------------------------------------
+
+def get_substrings(text, startswith, endswith, only_shortest=False):
+
+    """
+    This function ...
+    :param text:
+    :param startswith:
+    :param endswith:
+    :param only_shortest:
+    :return:
+    """
+
+    substrings = []
+    indices = find_substring_indices(text, startswith)
+    for index in indices:
+
+        #substring = text[index:].split()[0]
+        substring = text[index:]
+
+        if only_shortest: substrings.append(substring.split(endswith)[0] + endswith)
+        else:
+            js = find_substring_indices(substring, endswith)
+            for j in js: substrings.append(substring[:j+len(endswith)])
+
+    # Return
+    return substrings
+
+# -----------------------------------------------------------------
+
+def get_substrings_startswith(text, pattern):
+
+    """
+    This function returns all substrings starting with a certain pattern, ending with whitespace
+    :param text:
+    :param pattern:
+    :return:
+    """
+
+    return [s[:-1] for s in get_substrings(text, pattern, " ", only_shortest=True)] # don't include the space
+
+# -----------------------------------------------------------------
+
+def get_words_startswith(text, pattern):
+
+    """
+    Thisfunction returns all words (whitespace before and after) starting with a certain pattern
+    :param text:
+    :param pattern:
+    :return:
+    """
+
+    #return re.findall(r'\b' + pattern + '\w+', text)
+    return [t for t in text.split() if t.startswith(pattern)]
+
+# -----------------------------------------------------------------

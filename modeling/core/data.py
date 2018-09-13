@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.tools.utils import lazyproperty, ForbiddenOperation
@@ -48,7 +49,138 @@ weight_name = "weight"
 
 # -----------------------------------------------------------------
 
-class Data3D(object):
+def load_data(filepath, **kwargs):
+
+    """
+    This function ...
+    :param filepath:
+    :param kwargs:
+    :return:
+    """
+
+    # Check whether spectral 3D data or regular 3D data
+    column_names, column_types, column_units, meta = parse_pts_header_file(filepath)
+    spectral = "wavelengths" in meta
+
+    # Open and return
+    if spectral: return SpectralData3D.from_file(filepath, **kwargs)
+    else: return Data3D.from_file(filepath, **kwargs)
+
+# -----------------------------------------------------------------
+
+class Data3DBase(object):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, name, x, y, z, length_unit=None, unit=None, description=None, distance=None, solid_angle=None,
+                 xyz_filepath=None, x_colname="x", y_colname="y", z_colname="z"):
+
+        """
+        The constructor ...
+        :param name:
+        :param x:
+        :param y:
+        :param z:
+        :param length_unit:
+        :param unit:
+        :param description:
+        :param distance:
+        :param solid_angle:
+        :param xyz_filepath:
+        :param x_colname:
+        :param y_colname:
+        :param z_colname:
+        """
+
+        # Set the name and description for the data
+        self.name = name
+        self.description = description
+
+        # Set coordinates
+        self.x = x
+        self.y = y
+        self.z = z
+
+        # Set the xyz filepath
+        self.xyz_filepath = xyz_filepath
+
+        # Set the xyz column names
+        self.x_colname = x_colname
+        self.y_colname = y_colname
+        self.z_colname = z_colname
+
+        # Set unit of the data and length unit
+        self.length_unit = u(length_unit) if length_unit is not None else None
+        self.unit = u(unit) if unit is not None else None
+
+        # Set conversion info
+        self.distance = distance
+        self.solid_angle = solid_angle
+
+        # Path
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def check(self):
+
+        """
+        Thisf unction has to be implemented in the derived classes
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_xyz_file(self):
+        return self.xyz_filepath is not None and fs.is_file(self.xyz_filepath)
+
+    # -----------------------------------------------------------------
+
+    def dereference(self):
+        self.xyz_filepath = None
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def saveto(self, path, update_path=True):
+
+        """
+        This function has to be implemented in the derived classes
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class Data3D(Data3DBase):
 
     """
     This class represents 3D data THAT IS STATIC! (not like a table, which is modifiable)
@@ -76,22 +208,10 @@ class Data3D(object):
         :param z_colname:
         """
 
-        # Set the name and description for the data
-        self.name = name
-        self.description = description
-
-        # Set coordinates
-        self.x = x
-        self.y = y
-        self.z = z
-
-        # Set the xyz filepath
-        self.xyz_filepath = xyz_filepath
-
-        # Set the xyz column names
-        self.x_colname = x_colname
-        self.y_colname = y_colname
-        self.z_colname = z_colname
+        # Call the constructor of the base class
+        super(Data3D, self).__init__(name, x, y, z, length_unit=length_unit, unit=unit, description=description,
+                                     distance=distance, solid_angle=solid_angle, xyz_filepath=xyz_filepath,
+                                     x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 
         # Set values
         self.values = values
@@ -99,20 +219,11 @@ class Data3D(object):
         # Set weights
         self.weights = weights
 
-        # Set units
-        self.length_unit = u(length_unit) if length_unit is not None else None
-        self.unit = u(unit) if unit is not None else None
-
         # Set conversion info
-        self.distance = distance
         self.wavelength = wavelength
-        self.solid_angle = solid_angle
 
         # Check sizes?
         self.check()
-
-        # Path
-        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -317,12 +428,6 @@ class Data3D(object):
 
         # Check weights
         if self.has_weights and self.nvalues != self.nweights: raise ValueError("Number of weights must be equal to number of values")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_xyz_file(self):
-        return self.xyz_filepath is not None and fs.is_file(self.xyz_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1052,21 +1157,6 @@ class Data3D(object):
 
     # -----------------------------------------------------------------
 
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether the path is valid
-        if self.path is None: raise RuntimeError("Path is not defined")
-
-        # Save
-        self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
     def saveto(self, path, update_path=True):
 
         """
@@ -1167,7 +1257,7 @@ def show_data_properties(data):
 
 # -----------------------------------------------------------------
 
-class SpectralData3D(object):
+class SpectralData3D(Data3DBase):
 
     """
     This function ...
@@ -1193,36 +1283,16 @@ class SpectralData3D(object):
         :param z_colname:
         """
 
-        # Set the name and description for the data
-        self.name = name
-        self.description = description
-
-        # Set coordinates
-        self.x = x
-        self.y = y
-        self.z = z
+        # Call the constructor of the base class
+        super(SpectralData3D, self).__init__(name, x, y, z, length_unit=length_unit, unit=unit, description=description,
+                                     distance=distance, solid_angle=solid_angle, xyz_filepath=xyz_filepath,
+                                     x_colname=x_colname, y_colname=y_colname, z_colname=z_colname)
 
         # Set wavelength grid
         self.wavelength_grid = wavelength_grid
 
         # Set data filepath
         self.filepath = filepath
-
-        # Set the xyz filepath
-        self.xyz_filepath = xyz_filepath
-
-        # Set the xyz column names
-        self.x_colname = x_colname
-        self.y_colname = y_colname
-        self.z_colname = z_colname
-
-        # Set unit of the data and length unit
-        self.length_unit = u(length_unit) if length_unit is not None else None
-        self.unit = u(unit) if unit is not None else None
-
-        # Set conversion info
-        self.distance = distance
-        self.solid_angle = solid_angle
 
         # Check sizes?
         self.check()
@@ -1251,12 +1321,6 @@ class SpectralData3D(object):
         # Check
         sizes = [self.nx, self.ny, self.nz, self.nrows]
         if not sequences.all_equal(sizes): raise ValueError("Sizes of data and file arrays are not equal")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_xyz_file(self):
-        return self.xyz_filepath is not None and fs.is_file(self.xyz_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1716,21 +1780,6 @@ class SpectralData3D(object):
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check whether the path is valid
-        if self.path is None: raise RuntimeError("Path is not defined")
-
-        # Save
-        self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
     def saveto(self, path, update_path=True):
 
         """
@@ -1801,7 +1850,7 @@ class SpectralData3D(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, **kwargs):
 
         """
         This function ...

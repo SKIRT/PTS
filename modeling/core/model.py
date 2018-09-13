@@ -9291,6 +9291,30 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cell_masses(self):
+        return self.total_simulations.cell_masses
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mass_unit(self):
+        return self.total_simulations.cell_mass_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperatures(self):
+        return self.total_simulations.cell_temperatures
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperature_unit(self):
+        return self.total_simulations.cell_temperature_unit
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def cell_x_coordinates(self):
         return self.total_simulations.cell_x_coordinates

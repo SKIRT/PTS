@@ -1417,6 +1417,30 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def cell_masses(self):
+        return self.observed.cell_masses
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mass_unit(self):
+        return self.observed.cell_mass_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperatures(self):
+        return self.observed.cell_temperatures
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperature_unit(self):
+        return self.observed.cell_temperature_unit
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def cell_x_coordinates(self):
         return self.observed.cell_x_coordinates

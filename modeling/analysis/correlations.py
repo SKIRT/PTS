@@ -183,7 +183,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return fs.join(self.sfr_path, "cell")
 
     # -----------------------------------------------------------------
-    # CELL PROPERTIESS
+    # CELL PROPERTIES
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -201,6 +201,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def volume_unit(self):
         return self.length_unit**3
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperatures(self):
+        return self.model.cell_temperatures
 
     # -----------------------------------------------------------------
     # I1 LUMINOSITY / BULGE DISK RATIO
@@ -565,6 +571,44 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                  x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
+    # NAMES AND DESCRIPTIONS
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_name(self):
+        return "sSFR"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_description(self):
+        return "specific star formation rate"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_name(self):
+        return "Tdust"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_description(self):
+        return "dust temperature"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_name(self):
+        return "Funev"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def funev_description(self):
+        return "fraction of dust heating by unevolved stars"
+
+    # -----------------------------------------------------------------
     # sSFR-Funev
     # -----------------------------------------------------------------
 
@@ -656,18 +700,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
-    def ssfr_name(self):
-        return "sSFR"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def funev_name(self):
-        return "Funev"
-
-    # -----------------------------------------------------------------
-
-    @property
     def ssfr_salim_unit(self):
         return self.cell_ssfr_salim.unit
 
@@ -682,18 +714,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @lazyproperty
     def sfr_density_salim_unit(self):
         return self.sfr_salim_unit / self.volume_unit
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ssfr_description(self):
-        return "specific star formation rate"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def funev_description(self):
-        return "fraction of dust heating by unevolved stars"
 
     # -----------------------------------------------------------------
 
@@ -1858,9 +1878,99 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # Temperature-Funev
     # -----------------------------------------------------------------
 
+    @property
+    def has_temperature_cells(self):
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_pixels(self):
+        return False # currently, I know no direct way of getting a temperature map for an instrument
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def temperature_funev_path(self):
         return fs.create_directory_in(self.correlations_path, temperature_funev_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_temperature_mask(self):
+        return self.cell_temperatures != 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mask_temperature_funev(self):
+        return self.valid_cell_temperature_mask * self.valid_cell_funev_mask
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_cells_path(self):
+        return fs.join(self.temperature_funev_path, "cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_funev_cells(self):
+        return fs.is_file(self.temperature_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "temperature_funev_cells_path", True, write=False)
+    def temperature_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        #if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR (MAPPINGS + K&E) data is not present: run the SFR analysis first")
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Get values
+        valid_cell_temperatures = self.cell_temperatures[self.valid_cell_mask_temperature_funev]
+        valid_cell_funev_values = self.cell_funev_values[self.valid_cell_mask_temperature_funev]
+
+        # Create and return
+        return Scatter2D.from_xy(valid_cell_temperatures, valid_cell_funev_values,
+                                 x_name=self.temperature_name, y_name=self.funev_name, x_unit=self.temperature_unit,
+                                 x_description=self.temperature_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_pixels_path(self):
+        return fs.join(self.temperature_funev_path, "pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_temperature_funev_pixels(self):
+        return fs.is_file(self.temperature_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "temperature_funev_pixels_path", True, write=False)
+    def temperature_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        #if not self.has_pixel_ssfr_mappings_ke: raise IOError("The sSFR (MAPPINGS + K&E) frame is not present: run the SFR analysis first")
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Create and return
+        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values,
+                                 x_name=self.temperature_name, y_name=self.funev_name, x_unit=self.temperature_unit,
+                                 x_description=self.temperature_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -1927,7 +2037,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         self.write_ssfr_funev()
 
         # Temperature Funev scatter data
-        #self.write_temperature_funev()
+        self.write_temperature_funev()
 
     # -----------------------------------------------------------------
 

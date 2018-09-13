@@ -241,7 +241,7 @@ class ComponentSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def cell_volumes(self):
         if "Volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Volume"])  # SKIRT 7
         elif "Cell volume" in self.cell_properties_columns: return np.asarray(self.cell_properties["Cell volume"])  # SKIRT 8
@@ -249,7 +249,7 @@ class ComponentSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def cell_dust_densities(self):
         if "Density" in self.cell_properties_columns: return np.asarray(self.cell_properties["Density"])  # SKIRT 7
         elif "Average dust density in cell" in self.cell_properties_columns: return np.asarray(self.cell_properties["Average dust density in cell"])  # SKIRT 8
@@ -257,15 +257,45 @@ class ComponentSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def cell_mass_fractions(self):
         return np.asarray(self.cell_properties["Mass fraction"])
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def cell_optical_depths(self):
         return np.asarray(self.cell_properties["Optical depth"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_temperature_table(self):
+        return self.data.cell_temperature
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_masses(self):
+        return np.asarray(self.cell_temperature_table["Dust mass in cell"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_mass_unit(self):
+        return self.cell_temperature_table.get_column_unit("Dust mass in cell")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_temperatures(self):
+        return np.asarray(self.cell_temperature_table["Indicative temperature in cell"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_temperature_unit(self):
+        return self.cell_temperature_table.get_column_unit("Indicative temperature in cell")
 
     # -----------------------------------------------------------------
     # COORDINATES

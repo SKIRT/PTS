@@ -260,6 +260,8 @@ class Curve(Relation):
         :return:
         """
 
+        from ..units.quantity import is_scalar, get_scalar
+
         # Check whether x name is the same
         if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
         x_name = self.x_name
@@ -281,6 +283,9 @@ class Curve(Relation):
             if x_a == x_b:
 
                 result = self.get_value(self.y_name, i) * other.get_value(other.y_name, j)
+
+                # Convert from dimensionless quantity to scalar if necessary
+                if is_scalar(result): result = get_scalar(result)
 
                 x_values.append(x_a)
                 y_values.append(result)
@@ -316,6 +321,8 @@ class Curve(Relation):
         :return:
         """
 
+        from ..units.quantity import is_scalar, get_scalar
+
         # Check whether x name is the same
         if self.x_name != other.x_name: raise ValueError("x name must be the same (" + str(self.x_name) + " and " + str(other.x_name) + ")")
         x_name = self.x_name
@@ -333,10 +340,13 @@ class Curve(Relation):
             x_a = self.get_value(self.x_name, i)
             x_b = other.get_value(other.x_name, j)
 
-            # Value is the same: add
+            # Value of x is the same
             if x_a == x_b:
 
                 result = self.get_value(self.y_name, i) / other.get_value(other.y_name, j)
+
+                # Convert from dimensionless quantity to scalar if necessary
+                if is_scalar(result): result = get_scalar(result)
 
                 x_values.append(x_a)
                 y_values.append(result)

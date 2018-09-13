@@ -1,0 +1,25 @@
+topcat -stilts plot2plane \
+   xpix=1228 ypix=559 \
+   xlog=true ylog=true xlabel=sSFR ylabel=Funev xcrowd=0.9998301109057076 ycrowd=0.9998301109057076 \
+   xmin=8.0E-15 xmax=1.1884160266660436E-9 ymin=0.001765238699265854 ymax=1 \
+   auxfunc=log auxmin=1 auxmax=589 \
+   auxvisible=true auxlabel='Bulge disk ratio' auxcrowd=0.9998301109057076 \
+   legend=true \
+   ifmt=ASCII icmd='select "$4 > 5e-12 & $5 > 0.5"' x=sSFR y=Funev \
+   layer_1=Mark \
+      in_1=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+      aux_1='Bulge disk ratio' \
+      shading_1=aux \
+      leglabel_1='2: sfr10Bulge' \
+   layer_2=LinearFit \
+      in_2=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/cells_mappings.dat \
+      color_2=orange \
+      leglabel_2='2: sfr10Bulge' \
+   layer_3=Mark \
+      in_3=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/m31.dat \
+      shading_3=auto color_3=magenta \
+      leglabel_3='3: All' \
+   layer_4=Mark \
+      in_4=/Users/samverstocken/MODELING/M81/analysis/new_lowres5/correlations/sSFR-Funev/m51.dat \
+      shading_4=auto color_4=blue \
+      leglabel_4='4: All' 
