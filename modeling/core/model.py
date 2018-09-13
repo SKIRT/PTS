@@ -551,7 +551,8 @@ class RTModel(object):
         # Load and return
         return MultiComponentSimulations.from_output_path(total_simulation_name, self.observed_total_output_path,
                                                           intrinsic_sed_paths=self.total_simulation_component_sed_paths,
-                                                          distance=self.distance, intrinsic_cubes=self.total_simulation_component_cubes,
+                                                          distance=self.distance,
+                                                          intrinsic_cubes=self.total_simulation_component_cubes,
                                                           intrinsic_cubes_faceon=self.total_simulation_component_cubes_faceon,
                                                           intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon,
                                                           earth_wcs=self.earth_wcs)
@@ -5191,7 +5192,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_stellar_mass_map_earth(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity_map_earth, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity_map_earth, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5203,7 +5204,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_stellar_mass_map_faceon(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity_map_faceon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity_map_faceon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5215,7 +5216,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_stellar_mass_map_edgeon(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity_map_edgeon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity_map_edgeon, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -8829,7 +8830,7 @@ class RTModel(object):
 
     @property
     def total_stellar_mass(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -8841,7 +8842,7 @@ class RTModel(object):
 
     @property
     def total_stellar_mass_intrinsic(self):
-        return oliver_stellar_mass(self.intrinsic_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -8946,7 +8947,7 @@ class RTModel(object):
 
     @property
     def bulge_stellar_mass(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -8958,7 +8959,7 @@ class RTModel(object):
 
     @property
     def bulge_stellar_mass_intrinsic(self):
-        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9020,7 +9021,7 @@ class RTModel(object):
 
     @property
     def disk_stellar_mass(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9032,7 +9033,7 @@ class RTModel(object):
 
     @property
     def disk_stellar_mass_intrinsic(self):
-        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9094,7 +9095,7 @@ class RTModel(object):
 
     @property
     def old_stellar_mass(self):
-        return oliver_stellar_mass(self.observed_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.observed_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9106,7 +9107,7 @@ class RTModel(object):
 
     @property
     def old_stellar_mass_intrinsic(self):
-        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -10131,13 +10132,14 @@ def get_oliver_stellar_mass_factor(hubble_type, hubble_subtype=None):
 
 # -----------------------------------------------------------------
 
-def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
+def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None, distance=None):
 
     """
     This function ...
     :param i1_luminosity:
     :param hubble_type:
     :param hubble_subtype:
+    :param distance:
     :return:
     """
 
@@ -10152,7 +10154,7 @@ def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
     # Frame
     if isinstance(i1_luminosity, Frame):
 
-        converted = i1_luminosity.converted_to("Lsun", density=True, wavelength=i1_wavelength)
+        converted = i1_luminosity.converted_to("Lsun", density=True, wavelength=i1_wavelength, distance=distance)
         converted *= oliver_factor
         converted.unit = "Msun"
         return converted
@@ -10160,11 +10162,11 @@ def oliver_stellar_mass(i1_luminosity, hubble_type, hubble_subtype=None):
     # 3D data
     elif isinstance(i1_luminosity, Data3D):
 
-        factor = i1_luminosity.unit.conversion_factor("Lsun", density=True, wavelength=i1_wavelength)
+        factor = i1_luminosity.unit.conversion_factor("Lsun", density=True, wavelength=i1_wavelength, distance=distance)
         factor *= oliver_factor
         return i1_luminosity.converted_by_factor(factor, "Msun", new_name="Mstar", new_description="Stellar mass (Oliver)")
 
     # Photometric quantity
-    else: return i1_luminosity.to("Lsun", density=True, wavelength=i1_wavelength).value * oliver_factor * u("Msun")
+    else: return i1_luminosity.to("Lsun", density=True, wavelength=i1_wavelength, distance=distance).value * oliver_factor * u("Msun")
 
 # -----------------------------------------------------------------
