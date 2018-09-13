@@ -4041,7 +4041,7 @@ class RTModel(object):
 
     @property
     def sfr_absorbed_diffuse_stellar_sed_earth(self):
-        return self.sfr_simulations.has_observed_sed_absorbed
+        return self.sfr_simulations.observed_sed_absorbed
 
     # -----------------------------------------------------------------
 

@@ -2381,18 +2381,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def temperature_funev_cells_path(self):
-        return fs.join(self.temperature_funev_path, "cells.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_temperature_funev_cells(self):
-        return fs.is_file(self.temperature_funev_cells_path)
-
-    # -----------------------------------------------------------------
-
     def write_temperature_funev_cells(self):
 
         """
@@ -2405,18 +2393,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Write
         self.temperature_funev_cells.saveto(self.temperature_funev_cells_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def temperature_funev_pixels_path(self):
-        return fs.join(self.temperature_funev_path, "pixels.dat")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_temperature_funev_pixels(self):
-        return fs.is_file(self.temperature_funev_pixels_path)
 
     # -----------------------------------------------------------------
 

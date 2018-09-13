@@ -25,12 +25,17 @@ from pts.core.tools import formatting as fmt
 from pts.core.tools import strings
 from pts.core.tools import sequences
 from pts.core.basics.log import log
+from pts.core.basics.plot import plotting_formats
 
 # -----------------------------------------------------------------
 
 # Load modeling environment
 environment = load_modeling_environment_cwd()
 runs = environment.analysis_runs
+
+# -----------------------------------------------------------------
+
+default_format = "png"
 
 # -----------------------------------------------------------------
 
@@ -41,6 +46,12 @@ definition = ConfigurationDefinition()
 if runs.empty: raise RuntimeError("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
 else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
+
+# Show?
+definition.add_flag("show", "show plot instead of writing")
+
+# Plotting format
+definition.add_optional("format", "string", "plotting format", default=default_format, choices=plotting_formats)
 
 # Get configuration
 config = parse_arguments("plot_correlations", definition)
@@ -180,11 +191,12 @@ for correlation_name, correlation_path in fs.directories_in_path(correlations_pa
             log.debug("Plotting " + name + " ...")
 
             # Determine plot filename
-            plot_filename = data_filename + ".pdf"
+            plot_filename = name + "." + config.format
             if fs.has_file(plot_path, plot_filename): continue # Plot already exists
 
             # Create new command
-            new_command = command.replace(full_original_data_filepath, data_filepath) + " out='" + plot_filename + "'"
+            new_command = command.replace(full_original_data_filepath, data_filepath)
+            if not config.show: new_command += " out='" + plot_filename + "'"
 
             #print(new_command)
 
