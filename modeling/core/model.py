@@ -3023,7 +3023,7 @@ class RTModel(object):
 
     @property
     def total_absorbed_diffuse_stellar_sed_earth(self):
-        return self.total_simulations.has_observed_sed_absorbed
+        return self.total_simulations.observed_sed_absorbed
 
     # -----------------------------------------------------------------
 

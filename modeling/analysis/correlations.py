@@ -209,6 +209,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return self.model.cell_temperatures
 
     # -----------------------------------------------------------------
+
+    @property
+    def temperature_unit(self):
+        return self.model.cell_temperature_unit
+
+    # -----------------------------------------------------------------
     # I1 LUMINOSITY / BULGE DISK RATIO
     # -----------------------------------------------------------------
 
@@ -1929,7 +1935,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        #if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR (MAPPINGS + K&E) data is not present: run the SFR analysis first")
+        if not self.has_temperature_cells: raise IOError("The cell temperature data is not present")
         if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
 
         # Get values
@@ -1964,11 +1970,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Checks
-        #if not self.has_pixel_ssfr_mappings_ke: raise IOError("The sSFR (MAPPINGS + K&E) frame is not present: run the SFR analysis first")
+        if not self.has_temperature_pixels: raise IOError("The temperature frame cannot be obtained")
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
+        valid_pixel_temperatures = valid_pixel_funev_values = None
+
         # Create and return
-        return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values,
+        return Scatter2D.from_xy(valid_pixel_temperatures, valid_pixel_funev_values,
                                  x_name=self.temperature_name, y_name=self.funev_name, x_unit=self.temperature_unit,
                                  x_description=self.temperature_description, y_description=self.funev_description)
 
@@ -2355,14 +2363,26 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_temperature_cells(self):
+        return self.has_temperature_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_temperature_pixels(self):
+        return self.has_temperature_pixels
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_write_temperature_funev_cells(self):
-        return not self.has_temperature_funev_cells
+        return self.do_temperature_cells and not self.has_temperature_funev_cells
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_temperature_funev_pixels(self):
-        return not self.has_temperature_funev_pixels
+        return self.do_temperature_pixels and not self.has_temperature_funev_pixels
 
     # -----------------------------------------------------------------
 
@@ -3119,13 +3139,19 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def do_plot_temperature_funev_cells(self):
-        return not self.has_temperature_funev_cells_plot
+        return self.do_temperature_cells and not self.has_temperature_funev_cells_plot
 
     # -----------------------------------------------------------------
 
     @property
     def do_plot_temperature_funev_pixels(self):
-        return not self.has_temperature_funev_pixels_plot
+        return self.do_temperature_pixels and not self.has_temperature_funev_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_limits(self):
+        return None
 
     # -----------------------------------------------------------------
 
@@ -3153,6 +3179,30 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def has_temperature_funev_cells_plot(self):
         return fs.is_file(self.temperature_funev_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_cells_title(self):
+        return "Correlation between dust temperature and Funev of dust cells"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_cells_scatters(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.temperature_funev_cells
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_cells_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.temperature_funev_cells_path
+        # no references (yet)
+        return scatters
 
     # -----------------------------------------------------------------
 
@@ -3185,6 +3235,30 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def has_temperature_funev_pixels_plot(self):
         return fs.is_file(self.temperature_funev_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_pixels_title(self):
+        return "Correlation between dust temperature and Funev of pixels"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_pixels_scatters(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.temperature_funev_pixels
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def temperature_funev_pixels_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.temperature_funev_pixels_path
+        # no references (yet)
+        return scatters
 
     # -----------------------------------------------------------------
 
