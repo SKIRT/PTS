@@ -124,11 +124,11 @@ for correlation_name, correlation_path in fs.directories_in_path(correlations_pa
         general_data_filepaths = None
 
         # At least one data file is a cells_xxx.dat one
-        if strings.any_startswith(correlation_data_filepaths, "cells"):
+        if strings.any_startswith(correlation_data_filepaths.keys(), "cells"):
 
             # Split in specific files and general files
-            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths, "cells")
-            cells_data_filepaths = strings.get_all_startswith(correlation_data_filepaths, "cells")
+            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths.keys(), "cells")
+            cells_data_filepaths = strings.get_all_startswith(correlation_data_filepaths.keys(), "cells")
 
             # Check
             if sequences.all_equal(cells_data_filepaths): the_data_filepath = cells_data_filepaths[0]
@@ -138,11 +138,11 @@ for correlation_name, correlation_path in fs.directories_in_path(correlations_pa
             mode = "cells"
 
         # At least one data file is a pixels_xxx.dat one
-        elif strings.any_startswith(correlation_data_filepaths, "pixels"):
+        elif strings.any_startswith(correlation_data_filepaths.keys(), "pixels"):
 
             # Split in specific files and general files
-            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths, "pixels")
-            pixels_data_filepaths = strings.get_all_startswith(correlation_data_filepaths, "pixels")
+            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths.keys(), "pixels")
+            pixels_data_filepaths = strings.get_all_startswith(correlation_data_filepaths.keys(), "pixels")
 
             # Check
             if sequences.all_equal(pixels_data_filepaths): the_data_filepath = pixels_data_filepaths[0]
@@ -154,26 +154,42 @@ for correlation_name, correlation_path in fs.directories_in_path(correlations_pa
         # No cells or pixels, but clearly one data file per plot (except for external)
         elif sequences.all_equal(correlation_data_filepaths):
 
-            the_data_filepath = correlation_data_filepaths[0]
+            the_data_filepath = correlation_data_filepaths.keys()[0]
             general_data_filepaths = []
             mode = "all"
 
         # We cannot know what to do
         else: raise RuntimeError("Don't know what to do")
 
+        # Set full reference data filepath
+        full_original_data_filepath = correlation_data_filepaths[the_data_filepath]
+
         # Set startswith
         startswith = mode if mode != "all" else None
 
         # Loop over the files
-        for data_filepath in fs.files_in_path(correlation_path, extension="dat", startswith=startswith):
+        for data_filename, data_filepath in fs.files_in_path(correlation_path, extension="dat", startswith=startswith, returns=["name", "path"]):
 
-            print(data_filepath)
+            #print(data_filename)
+            if mode == "all": name = data_filename
+            else:
+                if data_filename.startswith(mode + "_"): name = data_filename.split(mode + "_")[1]
+                else: name = data_filename
 
-        # Set output path
-        #command += " out='" + path + "'"
+            # Debugging
+            log.debug("Plotting " + name + " ...")
 
-        # Execute the plotting command
-        #terminal.execute(command, show_output=True, cwd=plot_path)
+            # Determine plot filename
+            plot_filename = data_filename + ".pdf"
+            if fs.has_file(plot_path, plot_filename): continue # Plot already exists
+
+            # Create new command
+            new_command = command.replace(full_original_data_filepath, data_filepath) + " out='" + plot_filename + "'"
+
+            #print(new_command)
+
+            # Execute the plotting command
+            terminal.execute(new_command, show_output=True, cwd=plot_path)
 
         #print(list(command))
         #exit()
