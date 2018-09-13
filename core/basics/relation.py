@@ -296,8 +296,20 @@ class Relation(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def x_array(self):
+        return np.asarray(self.x_data)
+
+    # -----------------------------------------------------------------
+
+    @property
     def y_data(self):
         return self[self.y_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_array(self):
+        return np.asarray(self.y_data)
 
     # -----------------------------------------------------------------
 

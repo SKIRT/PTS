@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import load_modeling_environment_cwd
@@ -20,6 +23,8 @@ from pts.core.tools import introspection
 from pts.core.tools import terminal
 from pts.core.tools import formatting as fmt
 from pts.core.tools import strings
+from pts.core.tools import sequences
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -54,41 +59,125 @@ correlation_plots_path = fs.join(introspection.pts_dat_dir("modeling"), "Correla
 
 # -----------------------------------------------------------------
 
-# Show
-for name, path in fs.directories_in_path(correlation_plots_path, returns=["name", "path"], sort=lambda name: int(name[0])):
+print("")
+
+# Loop over the different subdirectories of the correlations path
+for correlation_name, correlation_path in fs.directories_in_path(correlations_path, returns=["name", "path"]):
+
+    # Show correlation
+    print(fmt.bold + "CORRELATION: " + correlation_name.upper() + fmt.reset_bold)
+    print("")
+
+    # Correlation plots path
+    plots_reference_path = fs.join(correlation_plots_path, correlation_name)
+    if not fs.is_directory(plots_reference_path): continue # no plotting routines yet for this correlation
+
+    # Make plots path
+    plots_path = fs.create_directory_in(correlation_path, "plots")
 
     # Show
-    print(fmt.bold + name + fmt.reset_bold)
-    print("")
+    for reference_name, path in fs.directories_in_path(plots_reference_path, returns=["name", "path"], sort=lambda name: int(name[0])):
 
-    # Determine path to the file containing the stilts command
-    filepath = fs.get_filepath(path, "stilts.txt")
+        # Show
+        print("    " + fmt.bold + reference_name + fmt.reset_bold)
+        print("")
 
-    # Get text
-    #command = fs.get_text(filepath)
-    #for line in lines: print(line)
-    #print(command.replace("\\\n", ""))
+        # Determine path to the file containing the stilts command
+        filepath = fs.get_filepath(path, "stilts.txt")
 
-    # Get the original command
-    lines = fs.get_lines(filepath)
-    command = ""
-    for line in lines: command += line.split(" \\")[0].strip() + " "
+        # Get the original command
+        lines = fs.get_lines(filepath)
+        command = ""
+        for line in lines: command += line.split(" \\")[0].strip() + " "
 
-    data_filepaths = strings.get_substrings(command, "/Users", ".dat", only_shortest=True)
+        # Get filepaths
+        data_filepaths = strings.get_substrings(command, "/Users", ".dat", only_shortest=True)
 
-    #print(command)
-    #print(data_filepaths)
-    for data_filepath in data_filepaths:
+        # Split in internal and external
+        correlation_data_filepaths = OrderedDict()
+        external_data_filepaths = OrderedDict()
+        for data_filepath in data_filepaths:
+            if fs.contains_path(correlation_path, data_filepath):
+                rel_filepath = fs.relative_to(data_filepath, correlation_path)
+                correlation_data_filepaths[rel_filepath] = data_filepath
+            else:
+                rel_filepath = fs.relative_to(data_filepath, correlations_path)
+                external_data_filepaths[rel_filepath] = data_filepath
 
-        rel_filepath = fs.relative_to(data_filepath, correlations_path)
-        print(rel_filepath)
+        #print("    CORR", correlation_data_filepaths)
+        #print("    EXT", external_data_filepaths)
 
-    #print(list(command))
-    #exit()
+        # Only external files (e.g. bd_ratio.dat in cartesian space): skip
+        ncorrelation_files = len(correlation_data_filepaths)
+        nexternal_files = len(external_data_filepaths)
+        nfiles = ncorrelation_files + nexternal_files
+        if nfiles == 0: raise IOError("Something is wrong with command in '" + filepath + "': cannot find data filepaths")
+        if ncorrelation_files == 0:
+            log.warning("No correlation data files in '" + filepath + "' command: skipping ...")
+            continue
 
-    print("")
+        # Create directory within plots path for this reference plot
+        plot_path = fs.create_directory_in(plots_path, reference_name)
 
-    # Execute the plotting command
-    #terminal.execute(command)
+        mode = None
+        the_data_filepath = None
+        general_data_filepaths = None
+
+        # At least one data file is a cells_xxx.dat one
+        if strings.any_startswith(correlation_data_filepaths, "cells"):
+
+            # Split in specific files and general files
+            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths, "cells")
+            cells_data_filepaths = strings.get_all_startswith(correlation_data_filepaths, "cells")
+
+            # Check
+            if sequences.all_equal(cells_data_filepaths): the_data_filepath = cells_data_filepaths[0]
+            else: raise RuntimeError("Don't know what to do") # pairs of files are used for this plot (e.g. cells_a.dat and cells_b.dat)?
+
+            # Set mode
+            mode = "cells"
+
+        # At least one data file is a pixels_xxx.dat one
+        elif strings.any_startswith(correlation_data_filepaths, "pixels"):
+
+            # Split in specific files and general files
+            general_data_filepaths = strings.get_all_not_startswith(correlation_data_filepaths, "pixels")
+            pixels_data_filepaths = strings.get_all_startswith(correlation_data_filepaths, "pixels")
+
+            # Check
+            if sequences.all_equal(pixels_data_filepaths): the_data_filepath = pixels_data_filepaths[0]
+            else: raise RuntimeError("Don't know what to do") # pairs
+
+            # Set mode
+            mode = "pixels"
+
+        # No cells or pixels, but clearly one data file per plot (except for external)
+        elif sequences.all_equal(correlation_data_filepaths):
+
+            the_data_filepath = correlation_data_filepaths[0]
+            general_data_filepaths = []
+            mode = "all"
+
+        # We cannot know what to do
+        else: raise RuntimeError("Don't know what to do")
+
+        # Set startswith
+        startswith = mode if mode != "all" else None
+
+        # Loop over the files
+        for data_filepath in fs.files_in_path(correlation_path, extension="dat", startswith=startswith):
+
+            print(data_filepath)
+
+        # Set output path
+        #command += " out='" + path + "'"
+
+        # Execute the plotting command
+        #terminal.execute(command, show_output=True, cwd=plot_path)
+
+        #print(list(command))
+        #exit()
+
+        print("")
 
 # -----------------------------------------------------------------

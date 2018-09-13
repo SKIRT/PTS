@@ -1066,6 +1066,53 @@ def split_in_lines(string, length=60, as_list=False):
 
 # -----------------------------------------------------------------
 
+def get_first_startswith(strings, pattern):
+
+    """
+    This function ...
+    :param strings:
+    :param pattern:
+    :return:
+    """
+
+    for string in strings:
+        if string.startswith(pattern): return string
+    return None
+
+# -----------------------------------------------------------------
+
+def get_all_startswith(strings, pattern):
+
+    """
+    This function ...
+    :param strings:
+    :param pattern:
+    :return:
+    """
+
+    result = []
+    for string in strings:
+        if string.startswith(pattern): result.append(string)
+    return result
+
+# -----------------------------------------------------------------
+
+def get_all_not_startswith(strings, pattern):
+
+    """
+    This function ...
+    :param strings:
+    :param pattern:
+    :return:
+    """
+
+    result = []
+    for string in strings:
+        if not string.startswith(pattern): result.append(string)
+    return result
+
+# -----------------------------------------------------------------
+
 def get_startswith(line, patterns):
 
     """
