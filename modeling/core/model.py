@@ -9528,8 +9528,8 @@ class RTModel(object):
         for key in self.derived_parameter_values_old: values[key + old_suffix] = self.derived_parameter_values_old[key]
         for key in self.derived_parameter_values_young: values[key + young_suffix] = self.derived_parameter_values_young[key]
         for key in self.derived_parameter_values_sfr: values[key + sfr_suffix] = self.derived_parameter_values_sfr[key]
-        for key in self.derived_parameter_values_unevolved: values[key + unevolved_suffix] = self.derived_parameter_values_unevolved[sfr]
-        for key in self.derived_parameter_values_dust: values[key + dust_suffix] = self.derived_parameter_values_dust[sfr]
+        for key in self.derived_parameter_values_unevolved: values[key + unevolved_suffix] = self.derived_parameter_values_unevolved[key]
+        for key in self.derived_parameter_values_dust: values[key + dust_suffix] = self.derived_parameter_values_dust[key]
 
         # Return
         return values

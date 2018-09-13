@@ -2093,7 +2093,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Add options
         definition.add_positional_optional("orientation", "string", "orientation of the images", earth_name, choices=orientations)
         #definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="GALEX,SDSS,IRAC,Mips 24mu,Herschel", convert_default=True)
-        definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="FUV,NUV,I1,24mu,Pacs160,SPIRE350", convert_default=True)
+        definition.add_optional("filters", "lazy_broad_band_filter_list", "filters for which to plot images", default="FUV,NUV,I1,MIPS 24mu,Pacs160,SPIRE350", convert_default=True)
         definition.add_flag("residuals", "show residuals", True)
         definition.add_flag("distributions", "show residual distributions", True)
         definition.add_flag("from_evaluation", "use the images created in the evaluation step", None)
