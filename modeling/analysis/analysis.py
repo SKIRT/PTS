@@ -452,240 +452,120 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.parameter_values
 
     # -----------------------------------------------------------------
 
     @property
     def free_parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.free_parameter_values
 
     # -----------------------------------------------------------------
 
     @property
     def other_parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.other_parameter_values
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_total
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_bulge(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_bulge
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_disk(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_disk
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_old
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_young
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_sfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_sfr
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_unevolved(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_unevolved
 
     # -----------------------------------------------------------------
 
     @property
     def derived_parameter_values_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.derived_parameter_values_dust
 
     # -----------------------------------------------------------------
 
     @property
     def generation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.generation_name
 
     # -----------------------------------------------------------------
 
     @property
     def simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simulation_name
 
     # -----------------------------------------------------------------
 
     @property
     def chi_squared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.chi_squared
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_run_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.fitting_run_name
 
     # -----------------------------------------------------------------
 
     @property
     def fitting_run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.fitting_run
 
     # -----------------------------------------------------------------
 
     @property
     def from_fitting(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.from_fitting
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.wavelength_grid
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.dust_grid
 
     # -----------------------------------------------------------------

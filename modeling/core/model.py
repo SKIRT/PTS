@@ -45,6 +45,17 @@ from ...core.tools import types
 
 # -----------------------------------------------------------------
 
+total_suffix = " [TOTAL]"
+bulge_suffix = " [BULGE]"
+disk_suffix = " [DISK]"
+old_suffix = " [OLD]"
+young_suffix = " [YOUNG]"
+sfr_suffix = " [SFR]"
+unevolved_suffix = " [UNEVOLVED]"
+dust_suffix = " [DUST]"
+
+# -----------------------------------------------------------------
+
 # Names of derived model properties
 
 ## Total
@@ -59,9 +70,24 @@ diffuse_fabs_name = "Fraction of absorbed stellar luminosity by diffuse dust"
 fabs_name = "Fraction of absorbed stellar luminosity"
 bol_attenuation_name = "Total bolometric attenuation" # 5
 direct_stellar_lum_name = "Direct stellar luminosity"
-sfr_name = "Star formation rate"
+
+# Special: some total, some young, some sfr, some unevolved, some multiple
+sfr_salim_name = "Star formation rate (Salim)"
+sfr_ke_name = "Star formation rate (Kennicutt&Evans)"
+sfr_mappings_name = "Star formation rate (MAPPINGS)"
+sfr_mappings_ke_name = "Star formation rate (MAPPINGS+K&E)"
 stellar_mass_name = "Stellar mass"
-ssfr_name = "Specific star formation rate"
+stellar_mass_intrinsic_name = "Stellar mass (from intrinsic luminosity)"
+ssfr_salim_name = "Specific star formation rate (Salim)"
+ssfr_ke_name = "Specific star formation rate (Kennicutt&Evans)"
+ssfr_mappings_name = "Specific star formation rate (MAPPINGS)"
+ssfr_mappings_ke_name = "Specific star formation rate (MAPPINGS+K&E)"
+
+# (specific) star formation rates for total
+#sfr_salim_total_name = "Star formation rate (Salim, total)"
+#sfr_ke_total_name = "Star formation rate (Kennicutt&Evans, total)"
+#ssfr_salim_total_name = "Specific star formation rate (Salim, total)"
+#ssfr_ke_total_name = "Specific star formation rate (Kennicutt&Evans, total)"
 
 ## Old bulge
 obs_bulge_spec_lum_name = "Observed old stellar bulge specific luminosity" # 7
@@ -2618,7 +2644,7 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_sed_ski_path(self):
-        return fs.join(self.sfr_sed_path, sfr_name + ".ski")
+        return fs.join(self.sfr_sed_path, sfr_simulation_name + ".ski")
 
     # -----------------------------------------------------------------
 
@@ -8754,13 +8780,25 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def total_star_formation_rate(self):
+    def total_star_formation_rate_salim(self):
         return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity)
 
     # -----------------------------------------------------------------
 
     @property
-    def has_total_star_formation_rate(self):
+    def has_total_star_formation_rate_salim(self):
+        return self.has_intrinsic_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_star_formation_rate_ke(self):
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_ke(self):
         return self.has_intrinsic_fuv_luminosity
 
     # -----------------------------------------------------------------
@@ -8773,7 +8811,19 @@ class RTModel(object):
 
     @property
     def has_observed_i1_luminosity(self):
-        return True
+        return self.has_observed_total_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_i1_luminosity(self):
+        return self.intrinsic_total_sed.photometry_at(self.i1_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_i1_luminosity(self):
+        return self.has_intrinsic_total_sed
 
     # -----------------------------------------------------------------
 
@@ -8785,19 +8835,47 @@ class RTModel(object):
 
     @property
     def has_total_stellar_mass(self):
-        return True
+        return self.has_observed_i1_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_stellar_mass_intrinsic(self):
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_stellar_mass_intrinsic(self):
+        return self.has_intrinsic_i1_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def total_ssfr_salim(self):
-        return self.total_ssfr_map_salim.average(add_unit=True)
+        #return self.total_ssfr_map_salim.average(add_unit=True) # INCORRECT!
+        return self.total_star_formation_rate_salim / self.total_stellar_mass
 
     # -----------------------------------------------------------------
 
     @property
     def has_total_ssfr_salim(self):
-        return self.has_total_ssfr_map_salim
+        #return self.has_total_ssfr_map_salim
+        return self.has_total_star_formation_rate_salim and self.has_total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_ssfr_ke(self):
+        #return self.total_ssfr_map_ke.average(add_unit=True) # INCORRECT!
+        return self.total_star_formation_rate_ke / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_ssfr_ke(self):
+        #return self.has_total_ssfr_map_ke
+        return self.has_total_star_formation_rate_ke and self.has_total_stellar_mass
 
     # -----------------------------------------------------------------
 
@@ -8838,13 +8916,16 @@ class RTModel(object):
         if self.has_direct_stellar_luminosity: values[direct_stellar_lum_name] = self.direct_stellar_luminosity
 
         # Star formation rate
-        if self.has_total_star_formation_rate: values[sfr_name] = self.total_star_formation_rate
+        if self.has_total_star_formation_rate_salim: values[sfr_salim_name] = self.total_star_formation_rate_salim
+        if self.has_total_star_formation_rate_ke: values[sfr_ke_name] = self.total_star_formation_rate_ke
 
         # Stellar mass
         if self.has_total_stellar_mass: values[stellar_mass_name] = self.total_stellar_mass
+        if self.has_total_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name] = self.total_stellar_mass_intrinsic
 
         # Specific star formation rate
-        if self.has_total_ssfr_salim: values[ssfr_name] = self.total_ssfr_salim
+        if self.has_total_ssfr_salim: values[ssfr_salim_name] = self.total_ssfr_salim
+        if self.has_total_ssfr_ke: values[ssfr_ke_name] = self.total_ssfr_ke
 
         # Return
         return values
@@ -8860,6 +8941,30 @@ class RTModel(object):
     @property
     def has_direct_stellar_luminosity_old_bulge(self):
         return self.has_old_bulge_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_stellar_mass(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_stellar_mass(self):
+        return self.has_observed_i1_luminosity_old_bulge
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_stellar_mass_intrinsic(self):
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_stellar_mass_intrinsic(self):
+        return self.has_intrinsic_i1_luminosity_old_bulge
 
     # -----------------------------------------------------------------
 
@@ -8885,6 +8990,10 @@ class RTModel(object):
         if self.has_observed_i1_luminosity_old_bulge: values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
         if self.has_intrinsic_i1_luminosity_old_bulge: values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge  # part of parameter set
 
+        # Stellar mass
+        if self.has_bulge_stellar_mass: values[stellar_mass_name] = self.bulge_stellar_mass
+        if self.has_bulge_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name] = self.bulge_stellar_mass_intrinsic
+
         # Attenuation
         if self.has_i1_attenuation_old_bulge: values[bulge_spec_attenuation_name] = self.i1_attenuation_old_bulge
         if self.has_bolometric_attenuation_old_bulge: values[bulge_bol_attenuation_name] = self.bolometric_attenuation_old_bulge
@@ -8906,6 +9015,30 @@ class RTModel(object):
     @property
     def has_direct_stellar_luminosity_old_disk(self):
         return self.has_old_disk_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_stellar_mass(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_stellar_mass(self):
+        return self.has_observed_i1_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_stellar_mass_intrinsic(self):
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_stellar_mass_intrinsic(self):
+        return self.has_intrinsic_i1_luminosity_old_disk
 
     # -----------------------------------------------------------------
 
@@ -8931,6 +9064,10 @@ class RTModel(object):
         if self.has_observed_i1_luminosity_old_disk: values[obs_disk_spec_lum_name] = self.observed_i1_luminosity_old_disk
         if self.has_intrinsic_i1_luminosity_old_disk: values[intr_disk_spec_lum_name] = self.intrinsic_i1_luminosity_old_disk # part of parameter set
 
+        # Stellar mass
+        if self.has_disk_stellar_mass: values[stellar_mass_name] = self.disk_stellar_mass
+        if self.has_disk_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name] = self.disk_stellar_mass_intrinsic
+
         # Attenuation
         if self.has_i1_attenuation_old_disk: values[disk_spec_attenuation_name] = self.i1_attenuation_old_disk
         if self.has_bolometric_attenuation_old_disk: values[disk_bol_attenuation_name] = self.bolometric_attenuation_old_disk
@@ -8952,6 +9089,30 @@ class RTModel(object):
     @property
     def has_direct_stellar_luminosity_old(self):
         return self.has_old_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_mass(self):
+        return oliver_stellar_mass(self.observed_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_stellar_mass(self):
+        return self.has_observed_i1_luminosity_old
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_mass_intrinsic(self):
+        return oliver_stellar_mass(self.intrinsic_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_stellar_mass_intrinsic(self):
+        return self.has_intrinsic_i1_luminosity_old
 
     # -----------------------------------------------------------------
 
@@ -8977,6 +9138,10 @@ class RTModel(object):
         if self.has_observed_i1_luminosity_old: values[obs_old_spec_lum_name] = self.observed_i1_luminosity_old
         if self.has_intrinsic_i1_luminosity_old: values[intr_old_spec_lum_name] = self.intrinsic_i1_luminosity_old
 
+        # Stellar mass
+        if self.has_old_stellar_mass: values[stellar_mass_name] = self.old_stellar_mass
+        if self.has_old_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name] = self.old_stellar_mass_intrinsic
+
         # Attenuation
         if self.has_i1_attenuation_old: values[old_spec_attenuation_name] = self.i1_attenuation_old
         if self.has_bolometric_attenuation_old: values[old_bol_attenuation_name] = self.bolometric_attenuation_old
@@ -8998,6 +9163,54 @@ class RTModel(object):
     @property
     def has_direct_stellar_luminosity_young(self):
         return self.has_young_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_star_formation_rate_salim(self):
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_star_formation_rate_salim(self):
+        return self.has_intrinsic_fuv_luminosity_young
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_star_formation_rate_ke(self):
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_young)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_star_formation_rate_ke(self):
+        return self.has_intrinsic_fuv_luminosity_young
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_ssfr_salim(self):
+        return self.young_star_formation_rate_salim / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_ssfr_salim(self):
+        return self.has_young_star_formation_rate_salim and self.has_total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_ssfr_ke(self):
+        return self.young_star_formation_rate_ke / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_ssfr_ke(self):
+        return self.has_young_star_formation_rate_ke and self.has_total_stellar_mass
 
     # -----------------------------------------------------------------
 
@@ -9023,6 +9236,14 @@ class RTModel(object):
         if self.has_observed_fuv_luminosity_young: values[obs_young_spec_lum_name] = self.observed_fuv_luminosity_young
         if self.has_intrinsic_fuv_luminosity_young: values[intr_young_spec_lum_name] = self.intrinsic_fuv_luminosity_young # part of (free) parameter set
 
+        # Star formation rate
+        if self.has_young_star_formation_rate_salim: values[sfr_salim_name] = self.young_star_formation_rate_salim
+        if self.has_young_star_formation_rate_ke: values[sfr_ke_name] = self.young_star_formation_rate_ke
+
+        # Specific star formation rate
+        if self.has_young_ssfr_salim: values[ssfr_salim_name] = self.young_ssfr_salim
+        if self.has_young_ssfr_ke: values[ssfr_ke_name] = self.young_ssfr_ke
+
         # Attenuation
         if self.has_fuv_attenuation_young: values[young_spec_attenuation_name] = self.fuv_attenuation_young
         if self.has_bolometric_attenuation_young: values[young_bol_attenuation_name] = self.bolometric_attenuation_young
@@ -9044,6 +9265,30 @@ class RTModel(object):
     @property
     def has_direct_stellar_luminosity_sfr(self):
         return self.has_sfr_direct_stellar_luminosity_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_star_formation_rate_mappings(self):
+        return self.sfr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_star_formation_rate_mappings(self):
+        return self.has_sfr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_ssfr_mappings(self):
+        return self.sfr_star_formation_rate_mappings / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_ssfr_mappings(self):
+        return self.has_sfr_star_formation_rate_mappings and self.has_total_stellar_mass
 
     # -----------------------------------------------------------------
 
@@ -9070,7 +9315,10 @@ class RTModel(object):
         if self.has_intrinsic_fuv_luminosity_sfr: values[intr_sfr_spec_lum_name] = self.intrinsic_fuv_luminosity_sfr # part of the (free) parameter set
 
         # SFR
-        if self.has_sfr: values[sfr_name] = self.sfr
+        if self.has_sfr_star_formation_rate_mappings: values[sfr_mappings_name] = self.sfr_star_formation_rate_mappings
+
+        # Specific star formation rate
+        if self.has_sfr_ssfr_mappings: values[ssfr_mappings_name] = self.sfr_ssfr_mappings
 
         # Attenuation
         if self.has_fuv_attenuation_sfr: values[sfr_spec_attenuation_name] = self.fuv_attenuation_sfr
@@ -9116,14 +9364,74 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
-    def unevolved_star_formation_rate(self):
+    def unevolved_star_formation_rate_salim(self):
         return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
 
     # -----------------------------------------------------------------
 
     @property
-    def has_unevolved_star_formation_rate(self):
+    def has_unevolved_star_formation_rate_salim(self):
         return self.has_unevolved_intrinsic_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_star_formation_rate_ke(self):
+        return kennicutt_evans_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_star_formation_rate_ke(self):
+        return self.has_unevolved_intrinsic_fuv_luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_star_formation_rate_mappings_ke(self):
+        return self.sfr_star_formation_rate_mappings + self.young_star_formation_rate_ke
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_star_formation_rate_mappings_ke(self):
+        return self.has_sfr_star_formation_rate_mappings and self.has_young_star_formation_rate_ke
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_ssfr_salim(self):
+        return self.unevolved_star_formation_rate_salim / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_ssfr_salim(self):
+        return self.has_unevolved_star_formation_rate_salim and self.has_total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_ssfr_ke(self):
+        return self.unevolved_star_formation_rate_ke / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_ssfr_ke(self):
+        return self.has_unevolved_star_formation_rate_ke and self.has_total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_ssfr_mappings_ke(self):
+        return self.unevolved_star_formation_rate_mappings_ke / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_ssfr_mappings_ke(self):
+        return self.has_unevolved_star_formation_rate_mappings_ke and self.has_total_stellar_mass
 
     # -----------------------------------------------------------------
 
@@ -9150,7 +9458,14 @@ class RTModel(object):
         if self.has_intrinsic_fuv_luminosity_unevolved: values[intr_unevolved_spec_lum_name] = self.intrinsic_fuv_luminosity_unevolved
 
         # Star formation rate
-        if self.has_unevolved_star_formation_rate: values[sfr_name] = self.unevolved_star_formation_rate
+        if self.has_unevolved_star_formation_rate_salim: values[sfr_salim_name] = self.unevolved_star_formation_rate_salim
+        if self.has_unevolved_star_formation_rate_ke: values[sfr_ke_name] = self.unevolved_star_formation_rate_ke
+        if self.has_unevolved_star_formation_rate_mappings_ke: values[sfr_mappings_ke_name] = self.unevolved_star_formation_rate_mappings_ke
+
+        # Specific star formation rate
+        if self.has_unevolved_ssfr_salim: values[ssfr_salim_name] = self.unevolved_ssfr_salim
+        if self.has_unevolved_ssfr_ke: values[ssfr_ke_name] = self.unevolved_ssfr_ke
+        if self.has_unevolved_ssfr_mappings_ke: values[ssfr_mappings_ke_name] = self.unevolved_ssfr_mappings_ke
 
         # Attenuation
         if self.has_fuv_attenuation_unevolved: values[unevolved_spec_attenuation_name] = self.fuv_attenuation_unevolved
@@ -9197,14 +9512,119 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # Add values
-        values.update(self.derived_parameter_values_total)
-        values.update(self.derived_parameter_values_bulge)
-        values.update(self.derived_parameter_values_disk)
-        values.update(self.derived_parameter_values_old)
-        values.update(self.derived_parameter_values_young)
-        values.update(self.derived_parameter_values_sfr)
-        values.update(self.derived_parameter_values_unevolved)
+        # Add values: NOT like this, will overwrite keys!
+        #values.update(self.derived_parameter_values_total)
+        #values.update(self.derived_parameter_values_bulge)
+        #values.update(self.derived_parameter_values_disk)
+        #values.update(self.derived_parameter_values_old)
+        #values.update(self.derived_parameter_values_young)
+        #values.update(self.derived_parameter_values_sfr)
+        #values.update(self.derived_parameter_values_unevolved)
+
+        for key in self.derived_parameter_values_total: values[key + total_suffix] = self.derived_parameter_values_total[key]
+        for key in self.derived_parameter_values_bulge: values[key + bulge_suffix] = self.derived_parameter_values_bulge[key]
+        for key in self.derived_parameter_values_disk: values[key + disk_suffix] = self.derived_parameter_values_disk[key]
+        for key in self.derived_parameter_values_old: values[key + old_suffix] = self.derived_parameter_values_old[key]
+        for key in self.derived_parameter_values_young: values[key + young_suffix] = self.derived_parameter_values_young[key]
+        for key in self.derived_parameter_values_sfr: values[key + sfr_suffix] = self.derived_parameter_values_sfr[key]
+        for key in self.derived_parameter_values_unevolved: values[key + unevolved_suffix] = self.derived_parameter_values_unevolved[sfr]
+        for key in self.derived_parameter_values_dust: values[key + dust_suffix] = self.derived_parameter_values_dust[sfr]
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
+        # Total
+        if self.has_total_star_formation_rate_salim: values[sfr_salim_name + total_suffix] = self.total_star_formation_rate_salim
+        if self.has_total_star_formation_rate_ke: values[sfr_ke_name + total_suffix] = self.total_star_formation_rate_ke
+
+        # Young
+        if self.has_young_star_formation_rate_salim: values[sfr_salim_name] = self.young_star_formation_rate_salim
+        if self.has_young_star_formation_rate_ke: values[sfr_ke_name] = self.young_star_formation_rate_ke
+
+        # Sfr
+        if self.has_sfr_star_formation_rate_mappings: values[sfr_mappings_name] = self.sfr_star_formation_rate_mappings
+
+        # Unevolved
+        if self.has_unevolved_star_formation_rate_salim: values[sfr_salim_name] = self.unevolved_star_formation_rate_salim
+        if self.has_unevolved_star_formation_rate_ke: values[sfr_ke_name] = self.unevolved_star_formation_rate_ke
+        if self.has_unevolved_star_formation_rate_mappings_ke: values[sfr_mappings_ke_name] = self.unevolved_star_formation_rate_mappings_ke
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
+        # Total
+        if self.has_total_ssfr_salim: values[ssfr_salim_name + total_suffix] = self.total_ssfr_salim
+        if self.has_total_ssfr_ke: values[ssfr_ke_name + total_suffix] = self.total_ssfr_ke
+
+        # Young
+        if self.has_young_ssfr_salim: values[ssfr_salim_name] = self.young_ssfr_salim
+        if self.has_young_ssfr_ke: values[ssfr_ke_name] = self.young_ssfr_ke
+
+        # Sfr
+        if self.has_sfr_ssfr_mappings: values[ssfr_mappings_name] = self.sfr_ssfr_mappings
+
+        # Unevolved
+        if self.has_unevolved_ssfr_salim: values[ssfr_salim_name] = self.unevolved_ssfr_salim
+        if self.has_unevolved_ssfr_ke: values[ssfr_ke_name] = self.unevolved_ssfr_ke
+        if self.has_unevolved_ssfr_mappings_ke: values[ssfr_mappings_ke_name] = self.unevolved_ssfr_mappings_ke
+
+        # Return
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_mass_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        values = OrderedDict()
+
+        # Total
+        if self.has_total_stellar_mass: values[stellar_mass_name + total_suffix] = self.total_stellar_mass
+        if self.has_total_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name + total_suffix] = self.total_stellar_mass_intrinsic
+
+        # Bulge
+        if self.has_bulge_stellar_mass: values[stellar_mass_name + bulge_suffix] = self.bulge_stellar_mass
+        if self.has_bulge_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name + bulge_suffix] = self.bulge_stellar_mass_intrinsic
+
+        # Disk
+        if self.has_disk_stellar_mass: values[stellar_mass_name + disk_suffix] = self.disk_stellar_mass
+        if self.has_disk_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name + disk_suffix] = self.disk_stellar_mass_intrinsic
+
+        # Old
+        if self.has_old_stellar_mass: values[stellar_mass_name + old_suffix] = self.old_stellar_mass
+        if self.has_old_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name + old_suffix] = self.old_stellar_mass_intrinsic
 
         # Return
         return values

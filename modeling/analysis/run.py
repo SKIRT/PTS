@@ -79,6 +79,63 @@ contributions = [total, bulge, disk, old, young, ionizing, unevolved]
 
 # -----------------------------------------------------------------
 
+def get_analysis_run_cwd(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return get_analysis_run(fs.cwd(), name)
+
+# -----------------------------------------------------------------
+
+def get_analysis_run(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    # Get runs object
+    runs = AnalysisRuns(modeling_path)
+
+    # Return analysis run
+    return runs.load(name)
+
+# -----------------------------------------------------------------
+
+def get_analysis_model_cwd(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return get_analysis_model(fs.cwd(), name)
+
+# -----------------------------------------------------------------
+
+def get_analysis_model(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Get analysis run
+    run = get_analysis_run(modeling_path, name)
+
+    # Return model
+    return run.model
+
+# -----------------------------------------------------------------
+
 class AnalysisRunInfo(SimplePropertyComposite):
 
     """
@@ -226,84 +283,42 @@ class AnalysisRunBase(object):
 
     @property
     def name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.name
 
     # -----------------------------------------------------------------
 
     @property
     def generation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.generation_name
 
     # -----------------------------------------------------------------
 
     @property
     def simulation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.simulation_name
 
     # -----------------------------------------------------------------
 
     @property
     def model_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.model_name
 
     # -----------------------------------------------------------------
 
     @property
     def input_file_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, input_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def ski_file_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, self.galaxy_name + ".ski")
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_grid_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Set the path to the wavelength grid file
         return fs.join(self.path, wavelength_grid_filename)
 
@@ -311,24 +326,12 @@ class AnalysisRunBase(object):
 
     @property
     def nwavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Set the path to the dust grid file
         return fs.join(self.path, dust_grid_filename)
 
@@ -336,12 +339,6 @@ class AnalysisRunBase(object):
 
     @property
     def info_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Set the path to the analysis run info file
         return fs.join(self.path, info_filename)
 
@@ -349,624 +346,312 @@ class AnalysisRunBase(object):
 
     @property
     def config_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, config_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def heating_config_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.heating_path, config_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def launch_config_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, launch_config_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def total_simulation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
     @property
     def total_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
     @property
     def bulge_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(bulge)
 
     # -----------------------------------------------------------------
 
     @property
     def disk_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(disk)
 
     # -----------------------------------------------------------------
 
     @property
     def old_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(old)
 
     # -----------------------------------------------------------------
 
     @property
     def young_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(young)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(ionizing)
 
     # -----------------------------------------------------------------
 
     @property
     def unevolved_output_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_for_contribution(unevolved)
 
     # -----------------------------------------------------------------
 
     @property
     def total_logfile_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.logfile_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
     @property
     def total_extr_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.extraction_path_for_contribution(total)
 
     # -----------------------------------------------------------------
 
     @property
     def total_extract_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.total_extr_path
 
     # -----------------------------------------------------------------
 
     @property
     def progress_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.total_extr_path, "progress.dat")
 
     # -----------------------------------------------------------------
 
     @property
     def timeline_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.total_extr_path, "timeline.dat")
 
     #  -----------------------------------------------------------------
 
     @property
     def memory_path(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return fs.join(self.total_extr_path, "memory.dat")
 
     # -----------------------------------------------------------------
 
     @property
     def total_plot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.total_simulation_path, plot_name)
 
     # -----------------------------------------------------------------
 
     @property
     def total_misc_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.total_simulation_path, misc_name)
 
     # -----------------------------------------------------------------
 
     @property
     def evaluation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, evaluation_name)
 
     # -----------------------------------------------------------------
 
     @property
     def contributions_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, contributions_name)
 
     # -----------------------------------------------------------------
 
     @property
     def properties_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, properties_name)
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, attenuation_name)
 
     # -----------------------------------------------------------------
 
     @property
     def colours_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, colours_name)
 
     # -----------------------------------------------------------------
 
     @property
     def colours_observed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.colours_path, "observed")
 
     # -----------------------------------------------------------------
 
     @property
     def colours_simulated_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.colours_path, "simulated")
 
     # -----------------------------------------------------------------
 
     @property
     def colours_residuals_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.colours_path, "residuals")
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def colour_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def residuals_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, residuals_name)
 
     # -----------------------------------------------------------------
 
     @property
     def maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def colour_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, colour_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def colour_maps_name(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return fs.name(self.colour_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ssfr_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, ssfr_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def ssfr_maps_name(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return fs.name(self.ssfr_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def tir_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, tir_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def tir_maps_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.tir_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, attenuation_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def attenuation_maps_name(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return fs.name(self.attenuation_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def old_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, old_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def old_maps_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.old_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, dust_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_maps_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.dust_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def young_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, young_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def young_maps_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.name(self.young_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.maps_path, ionizing_maps_name)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_maps_name(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return fs.name(self.ionizing_maps_path)
 
     # -----------------------------------------------------------------
 
     @property
     def heating_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, heating_name)
 
     # -----------------------------------------------------------------
 
     @property
     def energy_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, energy_name)
 
     # -----------------------------------------------------------------
 
     @property
     def sfr_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, sfr_name)
 
     # -----------------------------------------------------------------
 
     @property
     def correlations_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, correlations_name)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid_build_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, dust_grid_build_name)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid_simulation_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.dust_grid_build_path, "out")
 
     # -----------------------------------------------------------------
@@ -1032,12 +717,6 @@ class AnalysisRunBase(object):
 
     @property
     def analysis_run_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.name
 
     # -----------------------------------------------------------------
@@ -1063,36 +742,18 @@ class AnalysisRunBase(object):
 
     @abstractproperty
     def has_dust_grid_simulation_logfile(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def dust_grid_simulation_logfile(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def dust_grid_tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
@@ -1152,336 +813,168 @@ class AnalysisRunBase(object):
 
     @abstractproperty
     def has_maps_young(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def nyoung_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_tir(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def ntir_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_ssfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def nssfr_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def nold_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_ionizing(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def nionizing_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_dust(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def ndust_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_colours(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def ncolour_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_maps_attenuation(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def nattenuation_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def has_maps(self):
-
-        """
-        This unction ...
-        :return:
-        """
-
         return self.has_maps_attenuation or self.has_maps_colours or self.has_maps_dust or self.has_maps_ionizing or self.has_maps_old or self.has_maps_ssfr or self.has_maps_tir or self.has_maps_young
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_heating(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def simulated_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.total_output_path, self.simulation_prefix + "_earth_sed.dat")
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_simulated_sed(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def simulated_fluxes_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.total_misc_path, self.simulation_prefix + "_earth_fluxes.dat")
 
     # -----------------------------------------------------------------
 
     @abstractproperty
     def has_simulated_fluxes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         pass
 
     # -----------------------------------------------------------------
 
     @property
     def simulation_prefix(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_name
 
     # -----------------------------------------------------------------
 
     @property
     def simulated_datacube_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.total_output_path, self.galaxy_name + "_earth_total.fits")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_fluxes_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.evaluation_path, "fluxes")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_images_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.evaluation_path, "images")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_image_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.evaluation_images_path, returns="name", extension="fits", not_contains="error")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_image_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name) for name in self.evaluation_image_names]
 
     # -----------------------------------------------------------------
@@ -1524,36 +1017,18 @@ class AnalysisRunBase(object):
 
     @lazyproperty
     def evaluation_proper_images_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.evaluation_path, "proper_images")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_proper_image_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.evaluation_proper_images_path, returns="name", extension="fits")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_proper_image_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name) for name in self.evaluation_proper_image_names]
 
     # -----------------------------------------------------------------
@@ -1596,36 +1071,18 @@ class AnalysisRunBase(object):
 
     @lazyproperty
     def evaluation_residuals_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.evaluation_path, "residuals")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_residuals_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.evaluation_residuals_path, returns="name", extension="fits")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_residuals_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name) for name in self.evaluation_residuals_names]
 
     # -----------------------------------------------------------------
@@ -1668,36 +1125,18 @@ class AnalysisRunBase(object):
 
     @lazyproperty
     def evaluation_proper_residuals_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.evaluation_path, "proper_residuals")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_proper_residuals_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.evaluation_proper_residuals_path, returns="name", extension="fits")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_proper_residuals_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name) for name in self.evaluation_proper_residuals_names]
 
     # -----------------------------------------------------------------
@@ -1717,7 +1156,7 @@ class AnalysisRunBase(object):
     def get_evaluation_proper_residuals_path_for_filter(self, fltr):
 
         """
-        Thisf unction ...
+        This function ...
         :param fltr:
         :return:
         """
@@ -1740,24 +1179,12 @@ class AnalysisRunBase(object):
 
     @lazyproperty
     def evaluation_residuals_distribution_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.evaluation_proper_residuals_path, returns="name", extension="dat")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_residuals_distributions_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name.split("_distribution")[0]) for name in self.evaluation_residuals_distribution_names]
 
     # -----------------------------------------------------------------
@@ -1800,24 +1227,12 @@ class AnalysisRunBase(object):
 
     @lazyproperty
     def evaluation_proper_residuals_distribution_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.evaluation_proper_residuals_path, returns="name", extension="dat")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def evaluation_proper_residuals_distribution_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [parse_filter(name.split("_distribution")[0]) for name in self.evaluation_proper_residuals_distribution_names]
 
     # -----------------------------------------------------------------
