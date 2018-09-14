@@ -3669,6 +3669,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_disk_direct_stellar_sed(self):
+        return self.old_disk_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_direct_stellar_sed(self):
+        return self.has_old_disk_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_direct_stellar_sed_earth(self):
+        return self.disk_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_direct_stellar_sed_earth(self):
+        return self.disk_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_direct_stellar_sed_faceon(self):
+        return self.disk_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_direct_stellar_sed_faceon(self):
+        return self.disk_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_direct_stellar_sed_edgeon(self):
+        return self.disk_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_direct_stellar_sed_edgeon(self):
+        return self.disk_simulations.has_direct_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def disk_dust_luminosity_cube_earth(self):
         return self.disk_simulations.observed_dust_cube
 
@@ -4015,6 +4063,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_direct_stellar_sed(self):
+        return self.young_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_sed(self):
+        return self.has_young_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_direct_stellar_sed_earth(self):
+        return self.young_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_sed_earth(self):
+        return self.young_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_direct_stellar_sed_faceon(self):
+        return self.young_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_sed_faceon(self):
+        return self.young_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_direct_stellar_sed_edgeon(self):
+        return self.young_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_direct_stellar_sed_edgeon(self):
+        return self.young_simulations.has_direct_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_dust_luminosity_cube_earth(self):
         return self.young_simulations.observed_dust_cube
 
@@ -4233,6 +4329,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_direct_stellar_sed(self):
+        return self.sfr_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_sed(self):
+        return self.has_sfr_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_direct_stellar_sed_earth(self):
+        return self.sfr_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_sed_earth(self):
+        return self.sfr_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_direct_stellar_sed_faceon(self):
+        return self.sfr_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_sed_faceon(self):
+        return self.sfr_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_direct_stellar_sed_edgeon(self):
+        return self.sfr_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_direct_stellar_sed_edgeon(self):
+        return self.sfr_simulations.has_direct_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_dust_luminosity_cube_earth(self):
         return self.sfr_simulations.observed_dust_cube
 
@@ -4447,6 +4591,54 @@ class RTModel(object):
     @property
     def has_unevolved_direct_stellar_luminosity_cube_edgeon(self):
         return self.unevolved_simulations.has_full_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_direct_stellar_sed(self):
+        return self.unevolved_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_sed(self):
+        return self.has_unevolved_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_direct_stellar_sed_earth(self):
+        return self.unevolved_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_sed_earth(self):
+        return self.unevolved_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_direct_stellar_sed_faceon(self):
+        return self.unevolved_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_sed_faceon(self):
+        return self.unevolved_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_direct_stellar_sed_edgeon(self):
+        return self.unevolved_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_direct_stellar_sed_edgeon(self):
+        return self.unevolved_simulations.has_direct_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -5111,6 +5303,54 @@ class RTModel(object):
         return self.has_total_direct_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_sed(self):
+        return self.total_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_sed(self):
+        return self.has_total_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_sed_earth(self):
+        return self.total_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_sed_earth(self):
+        return self.total_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_sed_faceon(self):
+        return self.total_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_sed_faceon(self):
+        return self.total_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_direct_stellar_sed_edgeon(self):
+        return self.total_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_direct_stellar_sed_edgeon(self):
+        return self.total_simulations.has_direct_sed_edgeon
+
+    # -----------------------------------------------------------------
     # 12. INTRINSIC FUV LUMINOSITY
     # -----------------------------------------------------------------
 
@@ -5604,175 +5844,67 @@ class RTModel(object):
 
     @lazyproperty
     def old_bulge_intrinsic_i1_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old bulge map
-        frame = self.old_bulge_map_earth.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
-
-        # Return the frame
-        return frame
+        return self.old_bulge_map_earth.normalized(to=self.intrinsic_i1_luminosity_old_bulge)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_bulge_intrinsic_i1_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old bulge map
-        frame = self.old_bulge_map_faceon.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
-
-        # Return the frame
-        return frame
+        return self.old_bulge_map_faceon.normalized(to=self.intrinsic_i1_luminosity_old_bulge)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_bulge_intrinsic_i1_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old bulge map
-        frame = self.old_bulge_map_edgeon.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
-
-        # Return the frame
-        return frame
+        return self.old_bulge_map_edgeon.normalized(to=self.intrinsic_i1_luminosity_old_bulge)
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_intrinsic_i1_luminosity_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_old_bulge_intrinsic_i1_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_intrinsic_i1_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_i1_luminosity_old_bulge and self.has_old_bulge_map_earth
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_intrinsic_i1_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_i1_luminosity_old_bulge and self.has_old_bulge_map_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_old_bulge_intrinsic_i1_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_i1_luminosity_old_bulge and self.has_old_bulge_map_edgeon
 
     # -----------------------------------------------------------------
 
     @property
     def old_bulge_bolometric_luminosity_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_bulge_bolometric_luminosity_map_earth
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_bulge_bolometric_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old bulge map
-        frame = self.old_bulge_map_earth.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
-
-        # Return the frame
-        return frame
+        return self.old_bulge_map_earth.normalized(to=self.intrinsic_i1_luminosity_old_bulge)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_bulge_bolometric_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old bulge map
-        frame = self.old_bulge_map_faceon.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
-
-        # Return the frame
-        return frame
+        return self.old_bulge_map_faceon.normalized(to=self.intrinsic_i1_luminosity_old_bulge)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_bulge_bolometric_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old bulge map
-        frame = self.old_bulge_map_edgeon.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_bulge)
-
-        # Return the frame
-        return frame
+        return self.old_bulge_map_edgeon.normalized(to=self.intrinsic_i1_luminosity_old_bulge)
 
     # -----------------------------------------------------------------
 
@@ -5845,6 +5977,54 @@ class RTModel(object):
     @property
     def has_old_bulge_direct_stellar_luminosity_map_edgeon(self):
         return self.has_bulge_direct_stellar_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_direct_stellar_sed(self):
+        return self.old_bulge_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_direct_stellar_sed(self):
+        return self.has_old_bulge_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_direct_stellar_sed_earth(self):
+        return self.bulge_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_direct_stellar_sed_earth(self):
+        return self.bulge_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_direct_stellar_sed_faceon(self):
+        return self.bulge_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_direct_stellar_sed_faceon(self):
+        return self.bulge_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_direct_stellar_sed_edgeon(self):
+        return self.bulge_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_direct_stellar_sed_edgeon(self):
+        return self.bulge_simulations.has_direct_sed_edgeon
 
     # -----------------------------------------------------------------
 
@@ -6016,58 +6196,19 @@ class RTModel(object):
 
     @lazyproperty
     def old_disk_intrinsic_i1_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old disk map
-        frame = self.old_disk_map_earth.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.old_disk_map_earth.normalized(to=self.intrinsic_i1_luminosity_old_disk)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_disk_intrinsic_i1_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old disk map
-        frame = self.old_disk_map_faceon.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.old_disk_map_faceon.normalized(to=self.intrinsic_i1_luminosity_old_disk)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_disk_intrinsic_i1_luminosity_map_edgeon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Get the old disk map
-        frame = self.old_disk_map_edgeon.copy()
-
-        # Normalize to the I1 specific luminosity
-        frame.normalize(to=self.intrinsic_i1_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.old_disk_map_edgeon.normalized(to=self.intrinsic_i1_luminosity_old_disk)
 
     # -----------------------------------------------------------------
 
@@ -6109,20 +6250,7 @@ class RTModel(object):
 
     @lazyproperty
     def old_disk_bolometric_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old disk map
-        frame = self.old_disk_map_earth.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.old_disk_map_earth.normalized(to=self.intrinsic_bolometric_luminosity_old_disk)
 
     # -----------------------------------------------------------------
 
@@ -6134,20 +6262,7 @@ class RTModel(object):
 
     @lazyproperty
     def old_disk_bolometric_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old disk map
-        frame = self.old_disk_map_faceon.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.old_disk_map_faceon.normalized(to=self.intrinsic_bolometric_luminosity_old_disk)
 
     # -----------------------------------------------------------------
 
@@ -6159,20 +6274,7 @@ class RTModel(object):
 
     @lazyproperty
     def old_disk_bolometric_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the old disk map
-        frame = self.old_disk_map_edgeon.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_old_disk)
-
-        # Return the frame
-        return frame
+        return self.old_disk_map_edgeon.normalized(to=self.intrinsic_bolometric_luminosity_old_disk)
 
     # -----------------------------------------------------------------
 
@@ -6425,6 +6527,54 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_direct_stellar_sed(self):
+        return self.old_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_direct_stellar_sed(self):
+        return self.has_old_direct_stellar_sed_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_direct_stellar_sed_earth(self):
+        return self.old_simulations.observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_direct_stellar_sed_earth(self):
+        return self.old_simulations.has_direct_sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_direct_stellar_sed_faceon(self):
+        return self.old_simulations.faceon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_direct_stellar_sed_faceon(self):
+        return self.old_simulations.has_direct_sed_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_direct_stellar_sed_edgeon(self):
+        return self.old_simulations.edgeon_observed_sed_direct
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_direct_stellar_sed_edgeon(self):
+        return self.old_simulations.has_direct_sed_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_i1_luminosity_map(self):
         return self.old_i1_luminosity_map_earth
 
@@ -6642,58 +6792,19 @@ class RTModel(object):
 
     @lazyproperty
     def young_intrinsic_fuv_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the young stellar map
-        frame = self.young_map_earth.copy()
-
-        # Normalize to the FUV luminosity
-        frame.normalize(to=self.intrinsic_fuv_luminosity_young)
-
-        # Return the frame
-        return frame
+        return self.young_map_earth.normalized(to=self.intrinsic_fuv_luminosity_young)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_intrinsic_fuv_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the young stellar map
-        frame = self.young_map_faceon.copy()
-
-        # Normalize to the FUV luminosity
-        frame.normalize(to=self.intrinsic_fuv_luminosity_young)
-
-        # Return the frame
-        return frame
+        return self.young_map_faceon.normalized(to=self.intrinsic_fuv_luminosity_young)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_intrinsic_fuv_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the young stellar map
-        frame = self.young_map_edgeon.copy()
-
-        # Normalize to the FUV luminosity
-        frame.normalize(to=self.intrinsic_fuv_luminosity_young)
-
-        # Return the frame
-        return frame
+        return self.young_map_edgeon.normalized(to=self.intrinsic_fuv_luminosity_young)
 
     # -----------------------------------------------------------------
 
@@ -6731,58 +6842,19 @@ class RTModel(object):
 
     @lazyproperty
     def young_bolometric_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the young stellar map
-        frame = self.young_map_earth.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
-
-        # Return the frame
-        return frame
+        return self.young_map_earth.normalized(to=self.intrinsic_bolometric_luminosity_young)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_bolometric_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the young stellar map
-        frame = self.young_map_faceon.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
-
-        # Return the frame
-        return frame
+        return self.young_map_faceon.normalized(to=self.intrinsic_bolometric_luminosity_young)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_bolometric_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the young stellar map
-        frame = self.young_map_edgeon.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_young)
-
-        # Return the frame
-        return frame
+        return self.young_map_edgeon.normalized(to=self.intrinsic_bolometric_luminosity_young)
 
     # -----------------------------------------------------------------
 
@@ -7141,58 +7213,19 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_intrinsic_fuv_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_earth.copy()
-
-        # Normalize to the FUV luminosity
-        frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_earth.normalized(to=self.intrinsic_fuv_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_intrinsic_fuv_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_faceon.copy()
-
-        # Normalize to the FUV luminosity
-        frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_faceon.normalized(to=self.intrinsic_fuv_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_intrinsinc_fuv_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_edgeon.copy()
-
-        # Normalize to the FUV luminosity
-        frame.normalize(to=self.intrinsic_fuv_luminosity_sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_edgeon.normalized(to=self.intrinsic_fuv_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
@@ -7228,58 +7261,19 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_bolometric_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_earth.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_earth.normalized(to=self.intrinsic_bolometric_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_bolometric_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_faceon.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_faceon.normalized(to=self.intrinsic_bolometric_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_bolometric_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_edgeon.copy()
-
-        # Normalize to the bolometric luminosity
-        frame.normalize(to=self.intrinsic_bolometric_luminosity_sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_edgeon.normalized(to=self.intrinsic_bolometric_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
@@ -7411,58 +7405,19 @@ class RTModel(object):
 
     @lazyproperty
     def star_formation_rate_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_earth.copy()
-
-        # Normalize to the star formation rate
-        frame.normalize(to=self.sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_earth.normalized(to=self.sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def star_formation_rate_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_faceon.copy()
-
-        # Normalize to the star formation rate
-        frame.normalize(to=self.sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_faceon.normalized(to=self.sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def star_formation_rate_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_edgeon.copy()
-
-        # Normalize to the star formation rate
-        frame.normalize(to=self.sfr)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_edgeon.normalized(to=self.sfr)
 
     # -----------------------------------------------------------------
 
@@ -7498,58 +7453,19 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_dust_mass_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_earth.copy()
-
-        # Normalize to the SF dust mass
-        frame.normalize(to=self.sfr_dust_mass)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_earth.normalized(to=self.sfr_dust_mass)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_faceon.copy()
-
-        # Normalize to the SF dust mass
-        frame.normalize(to=self.sfr_dust_mass)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_faceon.normalized(to=self.sfr_dust_mass)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_edgeon.copy()
-
-        # Normalize to the SF dust mass
-        frame.normalize(to=self.sfr_dust_mass)
-
-        # Return the frame
-        return frame
+        return self.sfr_map_edgeon.normalized(to=self.sfr_dust_mass)
 
     # -----------------------------------------------------------------
 
@@ -7585,58 +7501,19 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_stellar_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_earth.copy()
-
-        # Normalize
-        frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
-
-        # Return
-        return frame
+        return self.sfr_map_earth.normalized(to=self.intrinsic_stellar_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_stellar_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_faceon.copy()
-
-        # Normalize
-        frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
-
-        # Return
-        return frame
+        return self.sfr_map_faceon.normalized(to=self.intrinsic_stellar_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_stellar_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_edgeon.copy()
-
-        # Normalize
-        frame.normalize(to=self.intrinsic_stellar_luminosity_sfr)
-
-        # Return
-        return frame
+        return self.sfr_map_edgeon.normalized(to=self.intrinsic_stellar_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
@@ -7672,58 +7549,19 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_intrinsic_dust_luminosity_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_earth.copy()
-
-        # Normalize
-        frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
-
-        # Return
-        return frame
+        return self.sfr_map_earth.normalized(to=self.intrinsic_dust_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_intrinsic_dust_luminosity_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_faceon.copy()
-
-        # Normalize
-        frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
-
-        # Return
-        return frame
+        return self.sfr_map_faceon.normalized(to=self.intrinsic_dust_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_intrinsic_dust_luminosity_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the SF map
-        frame = self.sfr_map_edgeon.copy()
-
-        # Normalize
-        frame.normalize(to=self.intrinsic_dust_luminosity_sfr)
-
-        # Return
-        return frame
+        return self.sfr_map_edgeon.normalized(to=self.intrinsic_dust_luminosity_sfr)
 
     # -----------------------------------------------------------------
 
@@ -8247,58 +8085,19 @@ class RTModel(object):
 
     @lazyproperty
     def diffuse_dust_mass_map_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the dust map
-        frame = self.dust_map_earth.copy()
-
-        # Normalize to the dust mass
-        frame.normalize(to=self.diffuse_dust_mass)
-
-        # Return the frame
-        return frame
+        return self.dust_map_earth.normalized(to=self.diffuse_dust_mass)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def diffuse_dust_mass_map_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the dust map
-        frame = self.dust_map_faceon.copy()
-
-        # Normalize to the dust mass
-        frame.normalize(to=self.diffuse_dust_mass)
-
-        # Return the frame
-        return frame
+        return self.dust_map_faceon.normalized(to=self.diffuse_dust_mass)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def diffuse_dust_mass_map_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the dust map
-        frame = self.dust_map_edgeon.copy()
-
-        # Normalize to the dust mass
-        frame.normalize(to=self.diffuse_dust_mass)
-
-        # Return the frame
-        return frame
+        return self.dust_map_edgeon.normalized(to=self.diffuse_dust_mass)
 
     # -----------------------------------------------------------------
 
@@ -8922,15 +8721,17 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def absorbed_diffuse_stellar_luminosity(self):
-        return self.total_absorbed_diffuse_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.total_absorbed_diffuse_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.total_absorbed_diffuse_stellar_sed_earth.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_absorbed_diffuse_stellar_luminosity(self):
-        return self.has_total_absorbed_diffuse_stellar_luminosity_map
+        #return self.has_total_absorbed_diffuse_stellar_luminosity_map
+        return self.has_total_absorbed_diffuse_stellar_sed_earth
 
     # -----------------------------------------------------------------
 
@@ -8958,21 +8759,24 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity(self):
-        return self.total_direct_stellar_luminosity_map.sum()
+        #return self.total_direct_stellar_luminosity_map.sum()
+        return self.total_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity(self):
-        return self.has_total_direct_stellar_luminosity_map
+        #return self.has_total_direct_stellar_luminosity_map
+        return self.has_total_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
     @property
     def intrinsic_fuv_luminosity(self):
-        return self.intrinsic_fuv_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.intrinsic_fuv_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.intrinsic_total_sed.photometry_at(self.fuv_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 
@@ -8982,7 +8786,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_star_formation_rate_salim(self):
         return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity)
 
@@ -8994,7 +8798,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_star_formation_rate_ke(self):
         return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity)
 
@@ -9030,7 +8834,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_stellar_mass(self):
         return oliver_stellar_mass(self.observed_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9042,7 +8846,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_stellar_mass_intrinsic(self):
         return oliver_stellar_mass(self.intrinsic_i1_luminosity, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9135,19 +8939,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity_old_bulge(self):
-        return self.old_bulge_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.old_bulge_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.old_bulge_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_old_bulge(self):
-        return self.has_old_bulge_direct_stellar_luminosity_map
+        #return self.has_old_bulge_direct_stellar_luminosity_map
+        return self.has_old_bulge_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_stellar_mass(self):
         return oliver_stellar_mass(self.observed_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9159,7 +8965,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_stellar_mass_intrinsic(self):
         return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_bulge, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9209,19 +9015,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity_old_disk(self):
-        return self.old_disk_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.old_disk_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.old_disk_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_old_disk(self):
-        return self.has_old_disk_direct_stellar_luminosity_map
+        #return self.has_old_disk_direct_stellar_luminosity_map
+        return self.has_old_disk_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def disk_stellar_mass(self):
         return oliver_stellar_mass(self.observed_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9233,7 +9041,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def disk_stellar_mass_intrinsic(self):
         return oliver_stellar_mass(self.intrinsic_i1_luminosity_old_disk, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9283,19 +9091,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity_old(self):
-        return self.old_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.old_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.old_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_old(self):
-        return self.has_old_direct_stellar_luminosity_map
+        #return self.has_old_direct_stellar_luminosity_map
+        return self.has_old_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stellar_mass(self):
         return oliver_stellar_mass(self.observed_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9307,7 +9117,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stellar_mass_intrinsic(self):
         return oliver_stellar_mass(self.intrinsic_i1_luminosity_old, hubble_type=self.hubble_type, hubble_subtype=self.hubble_subtype, distance=self.distance)
 
@@ -9357,19 +9167,21 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity_young(self):
-        return self.young_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.young_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.young_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_young(self):
-        return self.has_young_direct_stellar_luminosity_map
+        #return self.has_young_direct_stellar_luminosity_map
+        return self.has_young_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_star_formation_rate_salim(self):
         return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_young)
 
@@ -9381,7 +9193,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_star_formation_rate_ke(self):
         return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_young)
 
@@ -9459,15 +9271,17 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity_sfr(self):
-        return self.sfr_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.sfr_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.sfr_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_sfr(self):
-        return self.has_sfr_direct_stellar_luminosity_map
+        #return self.has_sfr_direct_stellar_luminosity_map
+        return self.has_sfr_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
@@ -9542,15 +9356,17 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def direct_stellar_luminosity_unevolved(self):
-        return self.unevolved_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        #return self.unevolved_direct_stellar_luminosity_map.sum(add_unit=True, per_area="error")
+        return self.unevolved_direct_stellar_sed.integrate()
 
     # -----------------------------------------------------------------
 
     @property
     def has_direct_stellar_luminosity_unevolved(self):
-        return self.has_unevolved_direct_stellar_luminosity_map
+        #return self.has_unevolved_direct_stellar_luminosity_map
+        return self.has_unevolved_direct_stellar_sed
 
     # -----------------------------------------------------------------
 
@@ -9566,7 +9382,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def unevolved_star_formation_rate_salim(self):
         return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
 
@@ -9578,7 +9394,7 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def unevolved_star_formation_rate_ke(self):
         return kennicutt_evans_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
 
