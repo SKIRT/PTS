@@ -9949,7 +9949,7 @@ def salim_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
     # Photometric quantity
     elif types.is_quantity(fuv_luminosity):
         if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance) * salim * u("Msun/yr")
+        return fuv_luminosity.to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance).value * salim * u("Msun/yr")
 
     # Array
     elif types.is_array_like(fuv_luminosity):

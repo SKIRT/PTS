@@ -635,8 +635,9 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         #if self.config.isrf: self.ski.set_write_isrf()
 
         # Write absorption
-        if not self.smile.supports_writing_absorption: raise RuntimeError("Writing absorption luminosities is not supported in your version of SKIRT")
-        if self.skirt7: self.ski.set_write_absorption()
+        if self.skirt7:
+            if not self.smile.supports_writing_absorption: raise RuntimeError("Writing absorption luminosities is not supported in your version of SKIRT7")
+            self.ski.set_write_absorption()
         elif self.skirt8: self.ski.set_write_isrf()
         else: raise ValueError("Invalid SKIRT version: " + str(self.local_skirt_version))
 
