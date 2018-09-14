@@ -5420,7 +5420,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_earth_salim(self):
-        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_earth)
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_earth, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5434,7 +5434,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_faceon_salim(self):
-        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_faceon)
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_faceon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5448,7 +5448,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_edgeon_salim(self):
-        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon)
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5475,7 +5475,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_earth_kennicutt(self):
-        return kennicutt_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_earth)
+        return kennicutt_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_earth, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5489,7 +5489,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_faceon_kennicutt(self):
-        return kennicutt_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_faceon)
+        return kennicutt_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_faceon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5503,7 +5503,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_edgeon_kennicutt(self):
-        return kennicutt_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon)
+        return kennicutt_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5530,7 +5530,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_earth_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_earth)
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_earth, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5544,7 +5544,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_faceon_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_faceon)
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_faceon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -5558,7 +5558,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_map_edgeon_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon)
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_map_edgeon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7048,7 +7048,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_map_earth_salim(self):
-        return salim_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_earth)
+        return salim_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_earth, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7062,7 +7062,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_map_faceon_salim(self):
-        return salim_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_faceon)
+        return salim_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_faceon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7076,7 +7076,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_map_edgeon_salim(self):
-        return salim_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_edgeon)
+        return salim_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_edgeon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7103,7 +7103,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_map_earth_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_earth)
+        return kennicutt_evans_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_earth, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7117,7 +7117,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_map_faceon_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_faceon)
+        return kennicutt_evans_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_faceon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7131,7 +7131,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_map_edgeon_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_edgeon)
+        return kennicutt_evans_fuv_to_sfr(self.young_intrinsic_fuv_luminosity_map_edgeon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7738,7 +7738,7 @@ class RTModel(object):
 
     @lazyproperty
     def unevolved_star_formation_rate_map_earth(self):
-        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_earth)
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_earth, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7750,7 +7750,7 @@ class RTModel(object):
 
     @lazyproperty
     def unevolved_star_formation_rate_map_faceon(self):
-        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_faceon)
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_faceon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -7762,7 +7762,7 @@ class RTModel(object):
 
     @lazyproperty
     def unevolved_star_formation_rate_map_edgeon(self):
-        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_edgeon)
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity_map_edgeon, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -8788,7 +8788,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_salim(self):
-        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity)
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -8800,7 +8800,7 @@ class RTModel(object):
 
     @lazyproperty
     def total_star_formation_rate_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity)
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9183,7 +9183,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_salim(self):
-        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_young)
+        return salim_fuv_to_sfr(self.intrinsic_fuv_luminosity_young, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9195,7 +9195,7 @@ class RTModel(object):
 
     @lazyproperty
     def young_star_formation_rate_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_young)
+        return kennicutt_evans_fuv_to_sfr(self.intrinsic_fuv_luminosity_young, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9384,7 +9384,7 @@ class RTModel(object):
 
     @lazyproperty
     def unevolved_star_formation_rate_salim(self):
-        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
+        return salim_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9396,7 +9396,7 @@ class RTModel(object):
 
     @lazyproperty
     def unevolved_star_formation_rate_ke(self):
-        return kennicutt_evans_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity)
+        return kennicutt_evans_fuv_to_sfr(self.unevolved_intrinsic_fuv_luminosity, distance=self.distance)
 
     # -----------------------------------------------------------------
 
@@ -9531,15 +9531,7 @@ class RTModel(object):
         # Initialize
         values = OrderedDict()
 
-        # Add values: NOT like this, will overwrite keys!
-        #values.update(self.derived_parameter_values_total)
-        #values.update(self.derived_parameter_values_bulge)
-        #values.update(self.derived_parameter_values_disk)
-        #values.update(self.derived_parameter_values_old)
-        #values.update(self.derived_parameter_values_young)
-        #values.update(self.derived_parameter_values_sfr)
-        #values.update(self.derived_parameter_values_unevolved)
-
+        # Add values
         for key in self.derived_parameter_values_total: values[key + total_suffix] = self.derived_parameter_values_total[key]
         for key in self.derived_parameter_values_bulge: values[key + bulge_suffix] = self.derived_parameter_values_bulge[key]
         for key in self.derived_parameter_values_disk: values[key + disk_suffix] = self.derived_parameter_values_disk[key]
@@ -9570,16 +9562,16 @@ class RTModel(object):
         if self.has_total_star_formation_rate_ke: values[sfr_ke_name + total_suffix] = self.total_star_formation_rate_ke
 
         # Young
-        if self.has_young_star_formation_rate_salim: values[sfr_salim_name] = self.young_star_formation_rate_salim
-        if self.has_young_star_formation_rate_ke: values[sfr_ke_name] = self.young_star_formation_rate_ke
+        if self.has_young_star_formation_rate_salim: values[sfr_salim_name + young_suffix] = self.young_star_formation_rate_salim
+        if self.has_young_star_formation_rate_ke: values[sfr_ke_name + young_suffix] = self.young_star_formation_rate_ke
 
         # Sfr
-        if self.has_sfr_star_formation_rate_mappings: values[sfr_mappings_name] = self.sfr_star_formation_rate_mappings
+        if self.has_sfr_star_formation_rate_mappings: values[sfr_mappings_name + sfr_suffix] = self.sfr_star_formation_rate_mappings
 
         # Unevolved
-        if self.has_unevolved_star_formation_rate_salim: values[sfr_salim_name] = self.unevolved_star_formation_rate_salim
-        if self.has_unevolved_star_formation_rate_ke: values[sfr_ke_name] = self.unevolved_star_formation_rate_ke
-        if self.has_unevolved_star_formation_rate_mappings_ke: values[sfr_mappings_ke_name] = self.unevolved_star_formation_rate_mappings_ke
+        if self.has_unevolved_star_formation_rate_salim: values[sfr_salim_name + unevolved_suffix] = self.unevolved_star_formation_rate_salim
+        if self.has_unevolved_star_formation_rate_ke: values[sfr_ke_name + unevolved_suffix] = self.unevolved_star_formation_rate_ke
+        if self.has_unevolved_star_formation_rate_mappings_ke: values[sfr_mappings_ke_name + unevolved_suffix] = self.unevolved_star_formation_rate_mappings_ke
 
         # Return
         return values
@@ -9602,16 +9594,16 @@ class RTModel(object):
         if self.has_total_ssfr_ke: values[ssfr_ke_name + total_suffix] = self.total_ssfr_ke
 
         # Young
-        if self.has_young_ssfr_salim: values[ssfr_salim_name] = self.young_ssfr_salim
-        if self.has_young_ssfr_ke: values[ssfr_ke_name] = self.young_ssfr_ke
+        if self.has_young_ssfr_salim: values[ssfr_salim_name + young_suffix] = self.young_ssfr_salim
+        if self.has_young_ssfr_ke: values[ssfr_ke_name + young_suffix] = self.young_ssfr_ke
 
         # Sfr
-        if self.has_sfr_ssfr_mappings: values[ssfr_mappings_name] = self.sfr_ssfr_mappings
+        if self.has_sfr_ssfr_mappings: values[ssfr_mappings_name + sfr_suffix] = self.sfr_ssfr_mappings
 
         # Unevolved
-        if self.has_unevolved_ssfr_salim: values[ssfr_salim_name] = self.unevolved_ssfr_salim
-        if self.has_unevolved_ssfr_ke: values[ssfr_ke_name] = self.unevolved_ssfr_ke
-        if self.has_unevolved_ssfr_mappings_ke: values[ssfr_mappings_ke_name] = self.unevolved_ssfr_mappings_ke
+        if self.has_unevolved_ssfr_salim: values[ssfr_salim_name + unevolved_suffix] = self.unevolved_ssfr_salim
+        if self.has_unevolved_ssfr_ke: values[ssfr_ke_name + unevolved_suffix] = self.unevolved_ssfr_ke
+        if self.has_unevolved_ssfr_mappings_ke: values[ssfr_mappings_ke_name + unevolved_suffix] = self.unevolved_ssfr_mappings_ke
 
         # Return
         return values
@@ -9814,12 +9806,13 @@ salim = 1.08e-28 # 200
 
 # -----------------------------------------------------------------
 
-def kennicutt_evans_fuv_to_sfr(fuv_luminosity, unit=None):
+def kennicutt_evans_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
 
     """
     This function ...
     :param fuv_luminosity:
     :param unit:
+    :param distance:
     :return:
     """
 
@@ -9836,7 +9829,7 @@ def kennicutt_evans_fuv_to_sfr(fuv_luminosity, unit=None):
 
         if unit is not None: raise ValueError("Cannot specify unit")
 
-        converted = fuv_luminosity.converted_to("erg/s", density=True, wavelength=fuv_wavelength)
+        converted = fuv_luminosity.converted_to("erg/s", density=True, wavelength=fuv_wavelength, distance=distance)
         converted *= calibration
         converted.unit = "Msun/yr"
         return converted
@@ -9846,20 +9839,20 @@ def kennicutt_evans_fuv_to_sfr(fuv_luminosity, unit=None):
 
         if unit is not None: raise ValueError("Cannot specify unit")
 
-        factor = fuv_luminosity.unit.conversion_factor("erg/s", density=True, wavelength=fuv_wavelength)
+        factor = fuv_luminosity.unit.conversion_factor("erg/s", density=True, wavelength=fuv_wavelength, distance=distance)
         factor *= calibration
         return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt & Evans)")
 
     # Photometric quantity
     elif types.is_quantity(fuv_luminosity):
         if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s", density=True).value * calibration * u("Msun/yr")
+        return fuv_luminosity.to("erg/s", density=True, wavelength=fuv_wavelength, distance=distance).value * calibration * u("Msun/yr")
 
     # Array
     elif types.is_array_like(fuv_luminosity):
 
         if unit is None: raise ValueError("Unit is not specified")
-        factor = unit.conversion_factor("erg/s", density=True, wavelength=fuv_wavelength)
+        factor = unit.conversion_factor("erg/s", density=True, wavelength=fuv_wavelength, distance=distance)
         factor *= calibration
         return fuv_luminosity * factor
 
@@ -9868,12 +9861,13 @@ def kennicutt_evans_fuv_to_sfr(fuv_luminosity, unit=None):
 
 # -----------------------------------------------------------------
 
-def kennicutt_fuv_to_sfr(fuv_luminosity, unit=None):
+def kennicutt_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
 
     """
     This function ...
     :param fuv_luminosity:
     :param unit:
+    :param distance:
     :return:
     """
 
@@ -9887,7 +9881,7 @@ def kennicutt_fuv_to_sfr(fuv_luminosity, unit=None):
 
         if unit is not None: raise ValueError("Cannot specify unit")
 
-        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength)
+        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
         converted *= kennicutt
         converted.unit = "Msun/yr"
         return converted
@@ -9897,19 +9891,19 @@ def kennicutt_fuv_to_sfr(fuv_luminosity, unit=None):
 
         if unit is not None: raise ValueError("Cannot specify unit")
 
-        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
         factor *= kennicutt
         return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt)")
 
     # Photometric quantity
     elif types.is_quantity(fuv_luminosity):
         if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s/Hz").value * kennicutt * u("Msun/yr")
+        return fuv_luminosity.to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance).value * kennicutt * u("Msun/yr")
 
     # Array
     elif types.is_array_like(fuv_luminosity):
         if unit is None: raise ValueError("Unit is not specified")
-        factor = unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor = unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
         factor *= kennicutt
         return fuv_luminosity * factor
 
@@ -9918,12 +9912,13 @@ def kennicutt_fuv_to_sfr(fuv_luminosity, unit=None):
 
 # -----------------------------------------------------------------
 
-def salim_fuv_to_sfr(fuv_luminosity, unit=None):
+def salim_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
 
     """
     This function ...
     :param fuv_luminosity:
     :param unit:
+    :param distance:
     :return:
     """
 
@@ -9937,7 +9932,7 @@ def salim_fuv_to_sfr(fuv_luminosity, unit=None):
 
         if unit is not None: raise ValueError("Cannot specify unit")
 
-        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength)
+        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
         converted *= salim
         converted.unit = "Msun/yr"
         return converted
@@ -9947,19 +9942,19 @@ def salim_fuv_to_sfr(fuv_luminosity, unit=None):
 
         if unit is not None: raise ValueError("Cannot specify unit")
 
-        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
         factor *= salim
         return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Salim)")
 
     # Photometric quantity
     elif types.is_quantity(fuv_luminosity):
         if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s/Hz") * salim * u("Msun/yr")
+        return fuv_luminosity.to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance) * salim * u("Msun/yr")
 
     # Array
     elif types.is_array_like(fuv_luminosity):
         if unit is None: raise ValueError("Unit is not specified")
-        factor = unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength)
+        factor = unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
         factor *= salim
         return fuv_luminosity * factor
 
