@@ -1459,6 +1459,7 @@ class SimplePropertyComposite(object):
 
         # Inform the user
         log.debug("Loading " + cls.__name__ + " from '" + path + "' ...")
+        #if cls.__name__ == "DeprojectionModel3D": raise ValueError("Test")
 
         # Initialize dictionary to contain the properties
         properties = dict()

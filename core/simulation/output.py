@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import warnings
 from abc import ABCMeta, abstractproperty
 from collections import defaultdict
 
@@ -357,6 +358,30 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Flags
+        self.has_cached_files = False
+        self.has_cached_directories = False
+
+        # Dictionary of filepaths
+        self.files = defaultdict(list)
+
+        # Dictionary of directory paths
+        self.directories = defaultdict(list)
+
+        # Set directory
+        if kwargs.get("directory", None) is not None: self.directory = kwargs.pop("directory")
+        if kwargs.get("root_directory", None) is not None: self.root_directory = kwargs.pop("root_directory")
+
+    # -----------------------------------------------------------------
+
     @staticmethod
     def get_type(filename, directory=None):
 
@@ -503,33 +528,8 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
-
-        """
-        The constructor ...
-        :param args:
-        """
-
-        # Flags
-        self.has_cached_files = False
-        self.has_cached_directories = False
-
-        # Dictionary of filepaths
-        self.files = defaultdict(list)
-
-        # Dictionary of directory paths
-        self.directories = defaultdict(list)
-
-    # -----------------------------------------------------------------
-
     @property
     def has_cached(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_cached_files or self.has_cached_directories
 
     # -----------------------------------------------------------------
@@ -780,6 +780,12 @@ class Output(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_directory(self):
+        return self.directory is not None
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def root_directory(self):
 
@@ -791,6 +797,12 @@ class Output(object):
         dirpath = fs.common_directory(self.all_paths)
         if dirpath == "": return None # no single common directory (different at the very root level of the filesystem (e.g. scattered acros disk and external volume)
         else: return dirpath
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_root_directory(self):
+        return self.root_directory is not None
 
     # -----------------------------------------------------------------
 
@@ -808,60 +820,30 @@ class Output(object):
 
     @lazyproperty
     def nother_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.files[other_name])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def nother_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.directories[other_name])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_other_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return other_name in self.files and self.nother_files > 0
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def has_other_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return other_name in self.directories and self.nother_directories > 0
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def other_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_other_files: return []
         else: return self.files[other_name]
 
@@ -869,12 +851,6 @@ class Output(object):
 
     @lazyproperty
     def other_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_other_directories: return []
         else: return self.directories[other_name]
 
@@ -913,12 +889,6 @@ class Output(object):
 
     @lazyproperty
     def all_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return list(self.__iter__())
 
     # -----------------------------------------------------------------
@@ -1070,12 +1040,6 @@ class Output(object):
 
     @property
     def loose_file_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.all_file_paths_not_in_directory
 
     # -----------------------------------------------------------------
@@ -1153,12 +1117,6 @@ class Output(object):
     # -----------------------------------------------------------------
 
     def __len__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.nfiles + self.ndirectories
         return self.nfiles
 
@@ -1166,12 +1124,6 @@ class Output(object):
 
     @lazyproperty
     def output_type_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._output_types.values()
 
     # -----------------------------------------------------------------
@@ -1215,22 +1167,19 @@ class Output(object):
     # -----------------------------------------------------------------
 
     def __str__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.to_string()
 
     # -----------------------------------------------------------------
 
-    def to_string(self, line_prefix="", dense=False):
+    def to_string(self, line_prefix="", dense=False, formatting=True, descriptions=True, absolute=False):
 
         """
         This function ...
         :param line_prefix:
         :param dense:
+        :param formatting:
+        :param descriptions:
+        :param absolute:
         :return:
         """
 
@@ -1244,9 +1193,17 @@ class Output(object):
             # Skip?
             if not self.has_files(output_type) and not self.has_directories(output_type): continue
 
-            # Add title
+            # Whitespace
             if not dense: lines.append(line_prefix)
-            title = fmt.green + fmt.underlined + self._output_type_choices[output_type].capitalize() + fmt.reset
+
+            # Set label
+            if descriptions: label = self._output_type_choices[output_type].capitalize()
+            else: label = output_type
+
+            # Set title
+            if formatting: title = fmt.green + fmt.underlined + label + fmt.reset
+            else: title = label
+
             if self.has_files(output_type):
                 nfiles = self.get_nfiles(output_type)
                 title += " (" + str(nfiles) + ")"
@@ -1263,7 +1220,9 @@ class Output(object):
                 #print(self.files[output_type])
 
                 # Add paths
-                for path in self.files[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
+                for path in self.files[output_type]:
+                    if absolute: lines.append(line_prefix + " - " + path)
+                    else: lines.append(line_prefix + " - " + self.relative_path(path))
 
             #print(output_type, self.has_directories(output_type))
 
@@ -1273,7 +1232,9 @@ class Output(object):
                 if not dense: lines.append(line_prefix)
                 lines.append(line_prefix + fmt.red + "directories:" + fmt.reset)
                 if not dense: lines.append(line_prefix)
-                for path in self.directories[output_type]: lines.append(line_prefix + " - " + self.relative_path(path))
+                for path in self.directories[output_type]:
+                    if absolute: lines.append(line_prefix + " - " + path)
+                    else: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Other
         if self.has_other_files:
@@ -1284,13 +1245,22 @@ class Output(object):
             # Get number of files
             nfiles = self.nother_files
 
+            # Set label
+            if descriptions: label = "Other output"
+            else: label = other_name
+
+            # Set title
+            if formatting: title = fmt.green + fmt.underlined + label + fmt.reset + " (" + str(nfiles) + "):"
+            else: title = label + " (" + str(nfiles) + "):"
+
             # Add title
-            title = fmt.green + fmt.underlined + "Other output" + fmt.reset + " (" + str(nfiles) + "):"
             lines.append(line_prefix + title)
             if not dense: lines.append(line_prefix)
 
             # Add paths
-            for path in self.other_files: lines.append(line_prefix + " - " + self.relative_path(path))
+            for path in self.other_files:
+                if absolute: lines.append(line_prefix + " - " + path)
+                else: lines.append(line_prefix + " - " + self.relative_path(path))
 
         # Add new line
         if not dense: lines.append(line_prefix)
@@ -1310,6 +1280,82 @@ class Output(object):
         """
 
         print(self.to_string(line_prefix=line_prefix, dense=dense))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        # Read lines
+        lines = fs.get_lines(filepath)
+
+        directory = None
+        root_directory = None
+        for line in lines:
+            if not line.startswith("#"): break
+            key = line.split("# ")[1].split(":")[0]
+            if key == "directory": directory = line.split(": ")[1]
+            elif key == "root directory": root_directory = line.split(": ")[1]
+            else: raise IOError("Something went wrong reading the file")
+
+        # Create output object
+        output = cls(directory=directory, root_directory=root_directory)
+
+        # Add files
+        output_type = None
+        for line in lines:
+            if line.startswith("#"): continue
+
+            # New output type
+            if "(" in line and line.endswith("):"): output_type = line.split(" (")[0]
+
+            # Filename(path)
+            elif line.startswith(" - "):
+
+                filepath = line.split(" - ")[1]
+                if root_directory is not None: filepath = fs.absolute_or_in(filepath, root_directory)
+                output.files[output_type].append(filepath)
+
+            # Invalid
+            else: raise IOError("Invalid line: '" + line + "'")
+
+        # Return
+        return output
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, filepath, relative=None):
+
+        """
+        This function ...
+        :param filepath:
+        :param relative:
+        :return:
+        """
+
+        # Relative
+        if relative is None: relative = self.has_root_directory
+
+        # With relative paths
+        if relative:
+
+            text = self.to_string(dense=True, formatting=False, descriptions=False)
+            header = []
+            if self.has_directory: header.append("# directory: " + self.directory)
+            if self.has_root_directory: header.append("# root directory: " + self.root_directory)
+            text = "\n".join(header) + "\n" + text
+
+        # With absolute paths
+        else: text = self.to_string(dense=True, formatting=False, descriptions=False, absolute=True)
+
+        # Write
+        fs.write_text(filepath, text)
 
 # -----------------------------------------------------------------
 
@@ -1334,13 +1380,34 @@ class SimulationOutput(Output):
         """
 
         # Call the constructor of the base class
-        super(SimulationOutput, self).__init__()
+        super(SimulationOutput, self).__init__(**kwargs)
 
-        if kwargs.get("prefix",None) is not None:
+        # Get prefix
+        if kwargs.get("prefix", None) is not None:
             self.prefix = kwargs.pop("prefix")
-            self.load_files(*args, get_prefix=False)
+            if len(args) > 0: self.load_files(*args, get_prefix=False)
+
         # Load the file paths, set the simulation prefix
-        else: self.prefix = self.load_files(*args, get_prefix=True)
+        elif len(args) > 0: self.prefix = self.load_files(*args, get_prefix=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def prefixes(self):
+        prefixes = []
+        for filepath in self.all_file_paths:
+            filename = fs.name(filepath)
+            prefixes.append(filename.split("_")[0])
+        return prefixes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def prefix(self):
+        try: return sequences.most_present_value(self.prefixes)
+        except ValueError:
+            warnings.warn("Could not determine the simulation prefix from the output files.")
+            return None
 
     # -----------------------------------------------------------------
 
@@ -2143,6 +2210,12 @@ class SimulationOutput(Output):
     def single_parameters(self):
         return self.get_single_file(self._output_types.parameters)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def parameters_xml(self):
+        return sequences.find_unique_endswith(self.parameters, "xml")
+
 # -----------------------------------------------------------------
 
 # The various extraction output types
@@ -2193,15 +2266,16 @@ class ExtractionOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
         :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ExtractionOutput, self).__init__()
+        super(ExtractionOutput, self).__init__(**kwargs)
 
         # Load the file paths
         self.load_files(*args)
@@ -2422,15 +2496,16 @@ class PlottingOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
         :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(PlottingOutput, self).__init__()
+        super(PlottingOutput, self).__init__(**kwargs)
 
         # Load the file paths
         self.load_files(*args)
@@ -2643,16 +2718,17 @@ class MiscOutput(Output):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, files, directories):
+    def __init__(self, files, directories, **kwargs):
 
         """
         This function ...
-        :param args:
+        :param files:
         :param directories:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(MiscOutput, self).__init__()
+        super(MiscOutput, self).__init__(**kwargs)
 
         # Load the file paths
         self.load_files(*files)

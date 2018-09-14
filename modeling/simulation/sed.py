@@ -142,49 +142,25 @@ class ComponentSED(object):
 
     @property
     def has_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.wavelength_grid is not None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.path, "out")
 
     # -----------------------------------------------------------------
 
     @property
-    def has_old_bulge_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
+    def has_sed(self):
         return fs.has_files_in_path(self.out_path, extension="dat", endswith="_sed")
 
     # -----------------------------------------------------------------
 
     @property
     def has_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.has_old_bulge_sed
+        return self.has_sed
 
     # -----------------------------------------------------------------
 
@@ -221,24 +197,12 @@ class ComponentSED(object):
 
     @property
     def has_skifile(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.ski_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ski_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, self.name + ".ski")
 
     # -----------------------------------------------------------------
@@ -261,48 +225,24 @@ class ComponentSED(object):
 
     @property
     def has_component_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "model" in self.component and self.component.model is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_component_deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return "deprojection" in self.component and self.component.deprojection is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_component_model or self.has_component_deprojection
 
     # -----------------------------------------------------------------
 
     @property
     def model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_component_model: return self.component.model
         elif self.has_component_deprojection: return self.component.deprojection
         else: return None
@@ -311,24 +251,12 @@ class ComponentSED(object):
 
     @property
     def has_deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_model and isinstance(self.model, DeprojectionModel3D)
 
     # -----------------------------------------------------------------
 
     @property
     def deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_deprojection: return self.model
         else: return None
 
@@ -336,12 +264,6 @@ class ComponentSED(object):
 
     @lazyproperty
     def distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_deprojection: return None
         else: return self.deprojection.distance
 
@@ -349,24 +271,12 @@ class ComponentSED(object):
 
     @property
     def has_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distance is not None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_deprojection: return None
         else: return self.deprojection.inclination
 
@@ -374,24 +284,12 @@ class ComponentSED(object):
 
     @property
     def has_inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.inclination is not None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if not self.has_deprojection: return None
         else: return self.deprojection.position_angle
 
@@ -399,12 +297,6 @@ class ComponentSED(object):
 
     @property
     def has_position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.position_angle is not None
 
     # -----------------------------------------------------------------
@@ -500,36 +392,18 @@ class ComponentSED(object):
 
     @lazyproperty
     def output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation.output
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sed_filepath(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output.single_sed
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sed(self):
-
-        """
-        This fnuction ...
-        :return:
-        """
-
         return SED.from_skirt(self.sed_filepath)
 
 # -----------------------------------------------------------------

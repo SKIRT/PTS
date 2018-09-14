@@ -34,13 +34,14 @@ class MultiComponentSimulations(ComponentSimulations):
     Objects of this class describe the simulation(s) of a radiative transfer model containing of multiple stellar components.
     """
 
-    def __init__(self, name, observed, intrinsic_seds=None, intrinsic_cubes=None, intrinsic_cubes_faceon=None,
+    def __init__(self, name, observed, component_simulations, intrinsic_seds=None, intrinsic_cubes=None, intrinsic_cubes_faceon=None,
                  intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
 
         """
         This function ...
         :param name:
         :param observed:
+        :param component_simulations:
         :param intrinsic_seds:
         :param intrinsic_cubes:
         :param intrinsic_cubes_faceon:
@@ -52,25 +53,29 @@ class MultiComponentSimulations(ComponentSimulations):
         # Call the constructor of the base class
         super(MultiComponentSimulations, self).__init__(name, observed, distance=distance, earth_wcs=earth_wcs)
 
-        # Set the SEDs of the components
-        self.intrinsic_seds = intrinsic_seds
+        # The component simulations
+        self.component_simulations = component_simulations
 
-        # Set the datacubes of the components
-        self.intrinsic_cubes = intrinsic_cubes
-        self.intrinsic_cubes_faceon = intrinsic_cubes_faceon
-        self.intrinsic_cubes_edgeon = intrinsic_cubes_edgeon
+        # Set the SEDs of the components, if passed
+        if intrinsic_seds is not None: self.intrinsic_seds = intrinsic_seds
+
+        # Set the datacubes of the components, if passed
+        if intrinsic_cubes is not None: self.intrinsic_cubes = intrinsic_cubes
+        if intrinsic_cubes_faceon is not None: self.intrinsic_cubes_faceon = intrinsic_cubes_faceon
+        if intrinsic_cubes_edgeon is not None: self.intrinsic_cubes_edgeon = intrinsic_cubes_edgeon
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_output_path(cls, name, observed, intrinsic_sed_paths=None, intrinsic_seds=None, intrinsic_cube_paths=None,
-                         intrinsic_cubes=None, intrinsic_cube_faceon_paths=None, intrinsic_cubes_faceon=None,
-                         intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
+    def from_output_path(cls, name, observed_path, component_simulations, intrinsic_sed_paths=None, intrinsic_seds=None,
+                         intrinsic_cube_paths=None, intrinsic_cubes=None, intrinsic_cube_faceon_paths=None,
+                         intrinsic_cubes_faceon=None, intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
 
         """
         This function ...
         :param name:
-        :param observed:
+        :param observed_path:
+        :param component_simulations:
         :param intrinsic_sed_paths:
         :param intrinsic_seds:
         :param intrinsic_cube_paths:
@@ -85,7 +90,72 @@ class MultiComponentSimulations(ComponentSimulations):
         """
 
         # Load observed simulation
-        observed = ObservedComponentSimulation.from_output_path(observed, earth_wcs=earth_wcs)
+        observed = ObservedComponentSimulation.from_output_path(observed_path, earth_wcs=earth_wcs)
+
+        # Create and return
+        return cls.from_observed(name, observed, component_simulations=component_simulations, intrinsic_sed_paths=intrinsic_sed_paths, intrinsic_seds=intrinsic_seds,
+                         intrinsic_cube_paths=intrinsic_cube_paths, intrinsic_cubes=intrinsic_cubes, intrinsic_cube_faceon_paths=intrinsic_cube_faceon_paths,
+                         intrinsic_cubes_faceon=intrinsic_cubes_faceon, intrinsic_cube_edgeon_paths=intrinsic_cube_edgeon_paths, intrinsic_cubes_edgeon=intrinsic_cubes_edgeon,
+                         distance=distance, earth_wcs=earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_output(cls, name, observed_output, component_simulations, intrinsic_sed_paths=None, intrinsic_seds=None,
+                     intrinsic_cube_paths=None, intrinsic_cubes=None, intrinsic_cube_faceon_paths=None,
+                     intrinsic_cubes_faceon=None, intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
+
+        """
+        This function ...
+        :param name:
+        :param observed_output:
+        :param component_simulations:
+        :param intrinsic_sed_paths:
+        :param intrinsic_seds:
+        :param intrinsic_cube_paths:
+        :param intrinsic_cubes:
+        :param intrinsic_cube_faceon_paths:
+        :param intrinsic_cubes_faceon:
+        :param intrinsic_cube_edgeon_paths:
+        :param intrinsic_cubes_edgeon:
+        :param distance:
+        :param earth_wcs:
+        :return:
+        """
+
+        # Load observed simulation
+        observed = ObservedComponentSimulation.from_output(observed_output, earth_wcs=earth_wcs)
+
+        # Create and return
+        return cls.from_observed(name, observed, component_simulations=component_simulations, intrinsic_sed_paths=intrinsic_sed_paths, intrinsic_seds=intrinsic_seds,
+                         intrinsic_cube_paths=intrinsic_cube_paths, intrinsic_cubes=intrinsic_cubes, intrinsic_cube_faceon_paths=intrinsic_cube_faceon_paths,
+                         intrinsic_cubes_faceon=intrinsic_cubes_faceon, intrinsic_cube_edgeon_paths=intrinsic_cube_edgeon_paths, intrinsic_cubes_edgeon=intrinsic_cubes_edgeon,
+                         distance=distance, earth_wcs=earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_observed(cls, name, observed, component_simulations, intrinsic_sed_paths=None, intrinsic_seds=None,
+                     intrinsic_cube_paths=None, intrinsic_cubes=None, intrinsic_cube_faceon_paths=None,
+                     intrinsic_cubes_faceon=None, intrinsic_cube_edgeon_paths=None, intrinsic_cubes_edgeon=None, distance=None, earth_wcs=None):
+
+        """
+        This function ...
+        :param name:
+        :param observed:
+        :param component_simulations:
+        :param intrinsic_sed_paths:
+        :param intrinsic_seds:
+        :param intrinsic_cube_paths:
+        :param intrinsic_cubes:
+        :param intrinsic_cube_faceon_paths:
+        :param intrinsic_cubes_faceon:
+        :param intrinsic_cube_edgeon_paths:
+        :param intrinsic_cubes_edgeon:
+        :param distance:
+        :param earth_wcs:
+        :return:
+        """
 
         # Load intrinsic SEDs
         if intrinsic_seds is not None:
@@ -138,7 +208,7 @@ class MultiComponentSimulations(ComponentSimulations):
         else: intrinsic_cubes_edgeon = None
 
         # Create and return
-        return cls(name, observed, intrinsic_seds=intrinsic_seds, intrinsic_cubes=intrinsic_cubes,
+        return cls(name, observed, component_simulations, intrinsic_seds=intrinsic_seds, intrinsic_cubes=intrinsic_cubes,
                    intrinsic_cubes_faceon=intrinsic_cubes_faceon, intrinsic_cubes_edgeon=intrinsic_cubes_edgeon,
                    distance=distance, earth_wcs=earth_wcs)
 
@@ -146,17 +216,44 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @property
     def component_names(self):
+        #if self.has_intrinsic_seds: return self.intrinsic_seds.keys()
+        #elif self.has_intrinsic_cubes: return self.intrinsic_cubes.keys()
+        #elif self.has_intrinsic_cubes_faceon: return self.intrinsic_cubes_faceon.keys()
+        #elif self.has_intrinsic_cubes_edgeon: return self.intrinsic_cubes_edgeon.keys()
+        #else: raise ValueError("Component names are not defined")
+        return self.component_simulations.keys()
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        if self.has_intrinsic_seds: return self.intrinsic_seds.keys()
-        elif self.has_intrinsic_cubes: return self.intrinsic_cubes.keys()
-        elif self.has_intrinsic_cubes_faceon: return self.intrinsic_cubes_faceon.keys()
-        elif self.has_intrinsic_cubes_edgeon: return self.intrinsic_cubes_edgeon.keys()
-        else: raise ValueError("Component names are not defined")
+    @lazyproperty
+    def intrinsic_seds(self):
+        seds = OrderedDict()
+        for name in self.component_names: seds[name] = self.component_simulations[name].intrinsic_sed
+        return seds
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_cubes(self):
+        cubes = OrderedDict()
+        for name in self.component_names: cubes[name] = self.component_simulations[name].intrinsic_cube
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_cubes_faceon(self):
+        cubes = OrderedDict()
+        for name in self.component_names: cubes[name] = self.component_simulations[name].faceon_intrinsic_cube
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_cubes_edgeon(self):
+        cubes = OrderedDict()
+        for name in self.component_names: cubes[name] = self.component_simulations[name].edgeon_intrinsic_cube
+        return cubes
 
     # -----------------------------------------------------------------
 
@@ -228,30 +325,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_intrinsic_cube(self):
-        if self.has_transparent_cube: return True
-        elif self.has_intrinsic_cubes: return True
-        else: return False
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_cube_faceon(self):
-        if self.has_transparent_cube_faceon: return True
-        elif self.has_intrinsic_cubes_faceon: return True
-        else: return False
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_intrinsic_cube_edgeon(self):
-        if self.has_transparent_cube_edgeon: return True
-        elif self.has_intrinsic_cubes_edgeon: return True
-        else: return False
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def intrinsic_sed(self):
 
@@ -273,9 +346,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @lazyproperty
     def intrinsic_cubes_uniformized(self):
-        #for key in self.intrinsic_cubes:
-        #    cube = self.intrinsic_cubes[key]
-        #    print(key, cube.wcs)
         return uniformize(*self.intrinsic_cubes.values())
 
     # -----------------------------------------------------------------
@@ -296,6 +366,12 @@ class MultiComponentSimulations(ComponentSimulations):
 
         # Cannot be calculated
         else: raise ValueError("Intrinsic datacube cannot be calculated")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_cube(self):
+        return self.has_transparent_cube or self.has_intrinsic_cubes
 
     # -----------------------------------------------------------------
 
@@ -331,6 +407,12 @@ class MultiComponentSimulations(ComponentSimulations):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_intrinsic_cube_faceon(self):
+        return self.has_transparent_cube_faceon or self.has_intrinsic_cubes_faceon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def edgeon_intrinsic_sed(self):
         # ISOTROPIC RADIATION
@@ -360,5 +442,11 @@ class MultiComponentSimulations(ComponentSimulations):
 
         # Cannot be calculated
         else: raise ValueError("Intrinsic datacube from the edge-on orientation cannot be calculated")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_cube_edgeon(self):
+        return self.has_transparent_cube_edgeon or self.has_intrinsic_cubes_edgeon
 
 # -----------------------------------------------------------------

@@ -199,6 +199,30 @@ class ComponentSimulations(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_native_intrinsic_cube(self):
+        return self.has_transparent_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_native_intrinsic_cube_faceon(self):
+        return self.has_transparent_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_native_intrinsic_cube_edgeon(self):
+        return self.has_transparent_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_native_intrinsic_cubes(self):
+        return self.has_native_intrinsic_cube and self.has_native_intrinsic_cube_faceon and self.has_native_intrinsic_cube_edgeon
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def wavelength_grid(self):
         return self.observed_sed.wavelength_grid()

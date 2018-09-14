@@ -94,6 +94,66 @@ class SingleComponentSimulations(ComponentSimulations):
                 log.warning("Intrinsic simulation has not been performed: no output files")
                 intrinsic = None
 
+        # Return
+        return cls.from_simulations(name, observed, intrinsic, distance=distance, map_earth_path=map_earth_path, map_earth=map_earth,
+                          map_faceon_path=map_faceon_path, map_faceon=map_faceon, map_edgeon_path=map_edgeon_path, map_edgeon=map_edgeon, earth_wcs=earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_output(cls, name, observed_output, intrinsic_output=None, distance=None, map_earth_path=None, map_earth=None,
+                          map_faceon_path=None, map_faceon=None, map_edgeon_path=None, map_edgeon=None, earth_wcs=None):
+
+        """
+        This function ...
+        :param name:
+        :param observed_output:
+        :param intrinsic_output:
+        :param distance:
+        :param map_earth_path:
+        :param map_earth:
+        :param map_faceon_path:
+        :param map_faceon:
+        :param map_edgeon_path:
+        :param map_edgeon:
+        :param earth_wcs:
+        :return:
+        """
+
+        # Create observed simulation
+        observed = ObservedComponentSimulation.from_output(observed_output, earth_wcs=earth_wcs)
+
+        # Create intrinsic simulation
+        if intrinsic_output is not None: intrinsic = IntrinsicComponentSimulation.from_output(intrinsic_output)
+        else: intrinsic = None
+
+        # Return
+        return cls.from_simulations(name, observed, intrinsic, distance=distance, map_earth_path=map_earth_path,
+                                    map_earth=map_earth, map_faceon_path=map_faceon_path, map_faceon=map_faceon,
+                                    map_edgeon_path=map_edgeon_path, map_edgeon=map_edgeon, earth_wcs=earth_wcs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_simulations(cls, name, observed, intrinsic=None, distance=None, map_earth_path=None, map_earth=None,
+                          map_faceon_path=None, map_faceon=None, map_edgeon_path=None, map_edgeon=None, earth_wcs=None):
+
+        """
+        This function ...
+        :param name:
+        :param observed:
+        :param intrinsic:
+        :param distance
+        :param map_earth_path:
+        :param map_earth:
+        :param map_faceon_path:
+        :param map_faceon:
+        :param map_edgeon_path:
+        :param map_edgeon:
+        :param earth_wcs:
+        :return:
+        """
+
         # Load earth map
         if map_earth is not None:
             if map_earth_path is not None: raise ValueError("Cannot specify both map_earth and map_earth_path")

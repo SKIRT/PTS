@@ -43,6 +43,7 @@ from ..simulation.sed import ComponentSED
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import types
 from ...core.basics.log import log
+from ...core.simulation.output import SimulationOutput
 
 # -----------------------------------------------------------------
 
@@ -209,6 +210,7 @@ contributions = [total_contribution, direct_contribution, scattered_contribution
 # -----------------------------------------------------------------
 
 components_name = "components"
+output_filename = "output.txt"
 
 # -----------------------------------------------------------------
 
@@ -594,12 +596,106 @@ class RTModel(object):
             cube.saveto(filepath)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_evolved_component_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dict
+        simulations = OrderedDict()
+
+        # If both bulge and disk simulations have native intrinsic cubes (i.e. full instrument cubes for each of the three instruments)
+        if self.bulge_simulations.has_native_intrinsic_cubes and self.disk_simulations.has_native_intrinsic_cubes:
+
+            simulations[bulge_component_name] = self.bulge_simulations
+            simulations[disk_component_name] = self.disk_simulations
+
+        # If the old simulation has native intrinsic cubes?
+        else: 
+
+            # Check whether old simulation has native intrinsic cubes (transparent cubes)
+            if not self.old_simulations.has_native_intrinsic_cubes: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent cubes will not be available")
+
+            # Add old as component regardless (to define all components of the total simulation)
+            simulations[evolved_component_name] = self.old_simulations
+
+        # Return the simulations
+        return simulations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_unevolved_component_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dict
+        simulations = OrderedDict()
+
+        # If both young and sfr simulations have native intrinsic cubes (i.e. full instrument cubes for each of the three instruments)
+        if self.young_simulations.has_native_intrinsic_cubes and self.sfr_simulations.has_native_intrinsic_cubes:
+
+            simulations[young_component_name] = self.young_simulations
+            simulations[ionizing_component_name] = self.sfr_simulations
+
+        # If the unevolved simulation has native intrinsic cubes?
+        else:
+
+            # Check whether the unevolved simulation has native intrinsic cubes (transparent cubes)
+            if not self.unevolved_simulations.has_native_intrinsic_cubes: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent cubes will not be available")
+
+            # Add unevolved as component regardless (to define all components of the total simulation)
+            simulations[unevolved_component_name] = self.unevolved_simulations
+
+        # Return the simulations
+        return simulations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_component_simulations(self):
+        return OrderedDict(self.total_simulation_evolved_component_simulations.items() + self.total_simulation_unevolved_component_simulations.items())
+
+    # -----------------------------------------------------------------
     # TOTAL SIMULATIONS
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_total_simulation_path(self):
         return fs.directory_of(self.observed_total_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_total_simulation_output_filepath(self):
+        return fs.join(self.observed_total_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_total_simulation_output_file(self):
+        return fs.is_file(self.observed_total_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_total_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_total_output_path)
+        output.saveto(self.observed_total_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_total_simulation_output(self):
+        if not self.has_observed_total_simulation_output_file: return self.create_observed_total_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_total_simulation_output_filepath)
 
     # -----------------------------------------------------------------
 
@@ -611,23 +707,20 @@ class RTModel(object):
         :return:
         """
 
+        # Previously:
+        # intrinsic_cube_paths=self.total_simulation_component_cube_paths,
+        # intrinsic_cube_faceon_paths=self.total_simulation_component_cube_paths_faceon,
+        # intrinsic_cube_edgeon_paths=self.total_simulation_component_cube_paths_edgeon,
+
         # Load and return
-        return MultiComponentSimulations.from_output_path(total_simulation_name, self.observed_total_output_path,
-                                                          intrinsic_sed_paths=self.total_simulation_component_sed_paths,
-                                                          distance=self.distance,
-                                                          #intrinsic_cubes=self.total_simulation_component_cubes,
-                                                          #intrinsic_cubes_faceon=self.total_simulation_component_cubes_faceon,
-                                                          #intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon,
-                                                          intrinsic_cube_paths=self.total_simulation_component_cube_paths,
-                                                          intrinsic_cube_faceon_paths=self.total_simulation_component_cube_paths_faceon,
-                                                          intrinsic_cube_edgeon_paths=self.total_simulation_component_cube_paths_edgeon,
-                                                          earth_wcs=self.earth_wcs)
+        return MultiComponentSimulations.from_output(total_simulation_name, self.observed_total_simulation_output, self.total_simulation_component_simulations,
+                                                          intrinsic_sed_paths=self.total_simulation_component_sed_paths, distance=self.distance, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_simulation(self):
-        #return self.total_simulations.observed
+        #return self.total_simulations.observed # SLOWER? more loading of files
         return ObservedComponentSimulation.from_output_path(self.observed_total_output_path, total_simulation_name, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
@@ -652,6 +745,32 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def observed_bulge_simulation_output_filepath(self):
+        return fs.join(self.observed_bulge_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_bulge_simulation_output_file(self):
+        return fs.is_file(self.observed_bulge_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_bulge_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_bulge_output_path)
+        output.saveto(self.observed_bulge_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_bulge_simulation_output(self):
+        if not self.has_observed_bulge_simulation_output_file: return self.create_observed_bulge_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_bulge_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def bulge_simulations(self):
 
@@ -664,10 +783,10 @@ class RTModel(object):
         sed = self.old_bulge_component_sed
 
         # Load and return
-        return SingleComponentSimulations.from_output_paths(bulge_simulation_name, observed=self.observed_bulge_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance,
-                                                            map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon,
-                                                            map_edgeon=self.old_bulge_map_edgeon, earth_wcs=self.earth_wcs)
+        return SingleComponentSimulations.from_output(bulge_simulation_name, self.observed_bulge_simulation_output,
+                                                        intrinsic_output=sed.output, distance=self.distance,
+                                                        map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon,
+                                                        map_edgeon=self.old_bulge_map_edgeon, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -698,6 +817,32 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def observed_disk_simulation_output_filepath(self):
+        return fs.join(self.observed_disk_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_disk_simulation_output_file(self):
+        return fs.is_file(self.observed_disk_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_disk_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_disk_output_path)
+        output.saveto(self.observed_disk_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_disk_simulation_output(self):
+        if not self.has_observed_disk_simulation_output_file: return self.create_observed_disk_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_disk_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def disk_simulations(self):
 
@@ -710,8 +855,8 @@ class RTModel(object):
         sed = self.old_disk_component_sed
 
         # Load and return
-        return SingleComponentSimulations.from_output_paths(disk_simulation_name, observed=self.observed_disk_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance,
+        return SingleComponentSimulations.from_output(disk_simulation_name, self.observed_disk_simulation_output,
+                                                            intrinsic_output=sed.output, distance=self.distance,
                                                             map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon,
                                                             map_edgeon=self.old_disk_map_edgeon, earth_wcs=self.earth_wcs)
 
@@ -894,12 +1039,61 @@ class RTModel(object):
             cube.saveto(filepath)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dict
+        simulations = OrderedDict()
+
+        # If both bulge and disk simulations have native intrinsic cubes (i.e. full instrument cubes for each of the three instruments)
+        if not (self.bulge_simulations.has_native_intrinsic_cubes and self.disk_simulations.has_native_intrinsic_cubes): warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent cubes will not be available")
+
+        # Add simulations regardless
+        simulations[bulge_component_name] = self.bulge_simulations
+        simulations[disk_component_name] = self.disk_simulations
+
+        # Return the simulations
+        return simulations
+
+    # -----------------------------------------------------------------
     # OLD SIMULATIONS
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_old_simulation_path(self):
         return fs.directory_of(self.observed_old_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_old_simulation_output_filepath(self):
+        return fs.join(self.observed_old_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_old_simulation_output_file(self):
+        return fs.is_file(self.observed_old_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_old_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_old_output_path)
+        output.saveto(self.observed_old_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_simulation_output(self):
+        if not self.has_observed_old_simulation_output_file: return self.create_observed_old_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_old_simulation_output_filepath)
 
     # -----------------------------------------------------------------
 
@@ -911,17 +1105,15 @@ class RTModel(object):
         :return:
         """
 
+        # Previously:
+        #intrinsic_cube_paths = self.old_simulation_component_cube_paths,
+        #intrinsic_cube_faceon_paths = self.old_simulation_component_cube_paths_faceon,
+        #intrinsic_cube_edgeon_paths = self.old_simulation_component_cube_paths_edgeon,
+
         # Load and return
-        return MultiComponentSimulations.from_output_path(old_simulation_name, self.observed_old_output_path,
-                                                          intrinsic_sed_paths=self.old_simulation_component_sed_paths,
-                                                          distance=self.distance,
-                                                          #intrinsic_cubes=self.old_simulation_component_cubes,
-                                                          #intrinsic_cubes_faceon=self.old_simulation_component_cubes_faceon,
-                                                          #intrinsic_cubes_edgeon=self.old_simulation_component_cubes_edgeon,
-                                                          intrinsic_cube_paths=self.old_simulation_component_cube_paths,
-                                                          intrinsic_cube_faceon_paths=self.old_simulation_component_cube_paths_faceon,
-                                                          intrinsic_cube_edgeon_paths=self.old_simulation_component_cube_paths_edgeon,
-                                                          earth_wcs=self.earth_wcs)
+        return MultiComponentSimulations.from_output(old_simulation_name, self.observed_old_simulation_output, self.old_simulation_component_simulations,
+                                                      intrinsic_sed_paths=self.old_simulation_component_sed_paths,
+                                                      distance=self.distance, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -952,6 +1144,32 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def observed_young_simulation_output_filepath(self):
+        return fs.join(self.observed_young_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_young_simulation_output_file(self):
+        return fs.is_file(self.observed_young_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_young_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_young_output_path)
+        output.saveto(self.observed_young_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_simulation_output(self):
+        if not self.has_observed_young_simulation_output_file: return self.create_observed_young_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_young_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def young_simulations(self):
 
@@ -964,8 +1182,8 @@ class RTModel(object):
         sed = self.young_component_sed
 
         # Load and return
-        return SingleComponentSimulations.from_output_paths(young_simulation_name, observed=self.observed_young_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance,
+        return SingleComponentSimulations.from_output(young_simulation_name, self.observed_young_simulation_output,
+                                                            intrinsic_output=sed.output, distance=self.distance,
                                                             map_earth=self.young_map_earth, map_faceon=self.young_map_faceon,
                                                             map_edgeon=self.young_map_edgeon, earth_wcs=self.earth_wcs)
 
@@ -998,6 +1216,32 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def observed_sfr_simulation_output_filepath(self):
+        return fs.join(self.observed_sfr_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_sfr_simulation_output_file(self):
+        return fs.is_file(self.observed_sfr_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_sfr_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_sfr_output_path)
+        output.saveto(self.observed_sfr_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sfr_simulation_output(self):
+        if not self.has_observed_sfr_simulation_output_file: return self.create_observed_sfr_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_sfr_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def sfr_simulations(self):
 
@@ -1010,8 +1254,8 @@ class RTModel(object):
         sed = self.sfr_component_sed
 
         # Load and return
-        return SingleComponentSimulations.from_output_paths(sfr_simulation_name, observed=self.observed_sfr_output_path,
-                                                            intrinsic=sed.out_path, distance=self.distance,
+        return SingleComponentSimulations.from_output(sfr_simulation_name, self.observed_sfr_simulation_output,
+                                                            intrinsic_output=sed.output, distance=self.distance,
                                                             map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon,
                                                             map_edgeon=self.sfr_map_edgeon, earth_wcs=self.earth_wcs)
 
@@ -1215,12 +1459,61 @@ class RTModel(object):
             cube.saveto(filepath)
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_simulations(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Initialize dict
+        simulations = OrderedDict()
+
+        # If both young and sfr simulations have native intrinsic cubes (i.e. full instrument cubes for each of the three instruments)
+        if not (self.young_simulations.has_native_intrinsic_cubes and self.sfr_simulations.has_native_intrinsic_cubes): warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent cubes will not be available")
+
+        # Add simulations regardless (to define which are the unevolved components)
+        simulations[young_component_name] = self.young_simulations
+        simulations[ionizing_component_name] = self.sfr_simulations
+
+        # Return the simulations
+        return simulations
+
+    # -----------------------------------------------------------------
     # UNEVOLVED SIMULATIONS
     # -----------------------------------------------------------------
 
     @lazyproperty
     def observed_unevolved_simulation_path(self):
         return fs.directory_of(self.observed_unevolved_output_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_unevolved_simulation_output_filepath(self):
+        return fs.join(self.observed_unevolved_simulation_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_unevolved_simulation_output_file(self):
+        return fs.is_file(self.observed_unevolved_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_observed_unevolved_simulation_output_file(self):
+        output = SimulationOutput.from_directory(self.observed_unevolved_output_path)
+        output.saveto(self.observed_unevolved_simulation_output_filepath)
+        return output
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_simulation_output(self):
+        if not self.has_observed_unevolved_simulation_output_file: return self.create_observed_unevolved_simulation_output_file()
+        else: return SimulationOutput.from_file(self.observed_unevolved_simulation_output_filepath)
 
     # -----------------------------------------------------------------
 
@@ -1232,17 +1525,15 @@ class RTModel(object):
         :return:
         """
 
+        # Previously:
+        #intrinsic_cube_paths = self.unevolved_simulation_component_cube_paths,
+        #intrinsic_cube_faceon_paths = self.unevolved_simulation_component_cube_paths_faceon,
+        #intrinsic_cube_edgeon_paths = self.unevolved_simulation_component_cube_paths_edgeon,
+
         # Load and return
-        return MultiComponentSimulations.from_output_path(unevolved_simulation_name, self.observed_unevolved_output_path,
-                                                          intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths,
-                                                          distance=self.distance,
-                                                          #intrinsic_cubes=self.unevolved_simulation_component_cubes,
-                                                          #intrinsic_cubes_faceon=self.unevolved_simulation_component_cubes_faceon,
-                                                          #intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon,
-                                                          intrinsic_cube_paths=self.unevolved_simulation_component_cube_paths,
-                                                          intrinsic_cube_faceon_paths=self.unevolved_simulation_component_cube_paths_faceon,
-                                                          intrinsic_cube_edgeon_paths=self.unevolved_simulation_component_cube_paths_edgeon,
-                                                          earth_wcs=self.earth_wcs)
+        return MultiComponentSimulations.from_output(unevolved_simulation_name, self.observed_unevolved_simulation_output, self.unevolved_simulation_component_simulations,
+                                                      intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths,
+                                                      distance=self.distance, earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 

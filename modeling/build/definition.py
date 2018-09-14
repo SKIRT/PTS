@@ -98,72 +98,34 @@ class ModelDefinition(object):
 
     @lazyproperty
     def own_stellar_component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directories_in_path(self.stellar_path, returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def own_dust_component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.directories_in_path(self.dust_path, returns="name")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def stellar_component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.stellar_paths.keys()
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_paths.keys()
 
     # -----------------------------------------------------------------
 
     def is_stellar_component(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
         return name in self.stellar_component_names
 
     # -----------------------------------------------------------------
 
     def is_dust_component(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
         return name in self.dust_component_names
 
     # -----------------------------------------------------------------
@@ -230,24 +192,12 @@ class ModelDefinition(object):
 
     @lazyproperty
     def own_stellar_map_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.stellar_path, recursive=True, exact_name="map", extension="fits")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def own_dust_map_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.dust_path, recursive=True, exact_name="map", extension="fits")
 
     # -----------------------------------------------------------------
@@ -286,166 +236,84 @@ class ModelDefinition(object):
 
     @lazyproperty
     def paths_in_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.files_in_path(self.input_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def input_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.paths_in_input + self.stellar_map_paths + self.dust_map_paths
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def models_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.directory_of(self.path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def models_table_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.models_path, "models.dat")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def models_table(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return ModelsTable.from_file(self.models_table_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def maps_table_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.models_path, "maps.dat")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def maps_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ModelMapsTable.from_file(self.maps_table_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def original_old_map_name(self):
-
-        """
-        This property ...
-        """
-
         return self.maps_table.old_stars_map_name_for_model(self.name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def original_young_map_name(self):
-
-        """
-        This property ...
-        """
-
         return self.maps_table.young_stars_map_name_for_model(self.name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def original_ionizing_map_name(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.maps_table.ionizing_stars_map_name_for_model(self.name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def original_dust_map_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.maps_table.dust_map_name_for_model(self.name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def description(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.models_table.description_for_model(self.name)
 
     # -----------------------------------------------------------------
 
     @property
     def old_stars_map_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return basic_old_map_name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_stars_component_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.name(fs.directory_of(self.old_stars_map_path))
 
     # -----------------------------------------------------------------
@@ -470,12 +338,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def old_stars_map_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.stars import old_component_name
         return self.get_stellar_component_map_path(old_component_name)
 
@@ -483,36 +345,18 @@ class ModelDefinition(object):
 
     @property
     def young_stars_map_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return basic_young_map_name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_component_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.name(fs.directory_of(self.young_stars_map_path))
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_map_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.stars import young_component_name
         return self.get_stellar_component_map_path(young_component_name)
 
@@ -520,36 +364,18 @@ class ModelDefinition(object):
 
     @property
     def ionizing_stars_map_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return basic_ionizing_map_name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_stars_component_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.name(fs.directory_of(self.ionizing_stars_map_path))
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_stars_map_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.stars import ionizing_component_name
         return self.get_stellar_component_map_path(ionizing_component_name)
 
@@ -557,24 +383,12 @@ class ModelDefinition(object):
 
     @property
     def dust_map_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return basic_dust_map_name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_map_component_name(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.name(fs.directory_of(self.dust_map_path))
 
     # -----------------------------------------------------------------
@@ -599,12 +413,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def dust_map_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.dust import disk_component_name
         return self.get_dust_component_map_path(disk_component_name)
 
@@ -612,132 +420,66 @@ class ModelDefinition(object):
 
     @lazyproperty
     def old_stars_map_wcs(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return CoordinateSystem.from_file(self.old_stars_map_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_map_wcs(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return CoordinateSystem.from_file(self.young_stars_map_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_stars_map_wcs(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return CoordinateSystem.from_file(self.ionizing_stars_map_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_map_wcs(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return CoordinateSystem.from_file(self.dust_map_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_map_names(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [self.old_stars_map_name, self.young_stars_map_name, self.ionizing_stars_map_name, self.dust_map_name]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_component_names(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [self.old_stars_component_name, self.young_stars_component_name, self.ionizing_stars_component_name, self.dust_map_component_name]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_map_paths(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [self.old_stars_map_path, self.young_stars_map_path, self.ionizing_stars_map_path, self.dust_map_path]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_stellar_map_names(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [self.old_stars_map_name, self.young_stars_map_name, self.ionizing_stars_map_name]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_stellar_component_names(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [self.old_stars_component_name, self.young_stars_component_name, self.ionizing_stars_component_name]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_stellar_map_paths(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return [self.old_stars_map_path, self.young_stars_map_path, self.ionizing_stars_map_path]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def basic_component_names_dict(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         names = dict()
         for name, component_name in zip(self.basic_map_names, self.basic_component_names): names[name] = component_name
         return names
@@ -827,12 +569,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def basic_dust_map_wcs(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.dust_map_wcs
 
     # -----------------------------------------------------------------
@@ -864,12 +600,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def basic_maps_minimum_average_pixelscale(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         coordinate_systems = self.basic_map_wcs_list
         return coordinate_systems.min_pixelscale
 
@@ -877,12 +607,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def basic_maps_maximum_average_pixelscale(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         coordinate_systems = self.basic_map_wcs_list
         return coordinate_systems.max_pixelscale
 
@@ -890,12 +614,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def basic_stellar_maps_minimum_average_pixelscale(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         coordinate_systems = self.basic_stellar_map_wcs_list
         return coordinate_systems.min_pixelscale
 
@@ -903,12 +621,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def basic_stellar_maps_maximum_average_pixelscale(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         coordinate_systems = self.basic_stellar_map_wcs_list
         return coordinate_systems.max_pixelscale
 
@@ -916,24 +628,12 @@ class ModelDefinition(object):
 
     @lazyproperty
     def basic_dust_map_average_pixelscale(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.basic_dust_map_wcs.average_pixelscale
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def bulge_component_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .models.stars import bulge_component_name
         return self.stellar_paths[bulge_component_name]
 
@@ -941,12 +641,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def old_stars_component_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.stars import old_component_name
         return self.stellar_paths[old_component_name]
 
@@ -954,12 +648,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def young_stars_component_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.stars import young_component_name
         return self.stellar_paths[young_component_name]
 
@@ -967,12 +655,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def ionizing_stars_component_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.stars import ionizing_component_name
         return self.stellar_paths[ionizing_component_name]
 
@@ -980,12 +662,6 @@ class ModelDefinition(object):
 
     @lazyproperty
     def dust_component_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         from .models.dust import disk_component_name
         return self.dust_paths[disk_component_name]
 
@@ -993,132 +669,66 @@ class ModelDefinition(object):
 
     @lazyproperty
     def bulge_parameters_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.bulge_component_path, parameters_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_stars_parameters_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.old_stars_component_path, parameters_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_parameters_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.young_stars_component_path, parameters_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_stars_parameters_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.ionizing_stars_component_path, parameters_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_parameters_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.dust_component_path, parameters_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def bulge_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return open_mapping(self.bulge_parameters_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_stars_parameters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return open_mapping(self.old_stars_parameters_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_parameters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return open_mapping(self.young_stars_parameters_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_stars_parameters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return open_mapping(self.ionizing_stars_parameters_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.old_stars_age)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return create_bruzual_charlot_sed(metallicity=self.metallicity, age=self.young_stars_age)
 
     # -----------------------------------------------------------------
@@ -1147,12 +757,6 @@ class ModelDefinition(object):
 
     @property
     def ionizing_stars_pressure(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.pressure
 
     # -----------------------------------------------------------------
@@ -1176,12 +780,6 @@ class ModelDefinition(object):
 
     @property
     def ionizing_stars_covering_factor(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.covering_factor
 
     # -----------------------------------------------------------------
@@ -1205,12 +803,6 @@ class ModelDefinition(object):
 
     @property
     def ionizing_stars_compactness(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.compactness
 
     # -----------------------------------------------------------------
@@ -1234,132 +826,66 @@ class ModelDefinition(object):
 
     @lazyproperty
     def ionizing_mappings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Mappings(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor, sfr=self.ionizing_stars_sfr)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_mappings_normalized(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Mappings(self.metallicity, self.ionizing_stars_compactness, self.ionizing_stars_pressure, self.ionizing_stars_covering_factor)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_mappings.sed
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_sed_normalized(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_mappings_normalized.sed
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_parameters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return open_mapping(self.dust_parameters_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def bulge_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.bulge_parameters.luminosity
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def bulge_normalization_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return parse_filter(self.bulge_parameters.filter)
 
     # -----------------------------------------------------------------
 
     @property
     def bulge_normalization_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.bulge_parameters.wavelength
 
     # -----------------------------------------------------------------
 
     @property
     def bulge_neutral_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.bulge_parameters.neutral_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def bulge_fluxdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.bulge_parameters.fluxdensity
 
     # -----------------------------------------------------------------
 
     @property
     def old_stars_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_parameters.luminosity
 
     # -----------------------------------------------------------------
@@ -1383,72 +909,36 @@ class ModelDefinition(object):
 
     @lazyproperty
     def old_stars_normalization_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return parse_filter(self.old_stars_parameters.filter)
 
     # -----------------------------------------------------------------
 
     @property
     def old_stars_normalization_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_parameters.wavelength
 
     # -----------------------------------------------------------------
 
     @property
     def old_stars_neutral_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_parameters.neutral_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def old_stars_fluxdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_parameters.old_stars_fluxdensity
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_stars_age(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_parameters.age * u("Gyr")
 
     # -----------------------------------------------------------------
 
     @property
     def young_stars_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_stars_parameters.luminosity
 
     # -----------------------------------------------------------------
@@ -1472,72 +962,36 @@ class ModelDefinition(object):
 
     @lazyproperty
     def young_stars_normalization_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return parse_filter(self.young_stars_parameters.filter)
 
     # -----------------------------------------------------------------
 
     @property
     def young_stars_normalization_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_stars_parameters.wavelength
 
     # -----------------------------------------------------------------
 
     @property
     def young_stars_neutral_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_stars_parameters.neutral_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def young_stars_fluxdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_stars_parameters.fluxdensity
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_age(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.young_stars_parameters.age * u("Gyr")
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_stars_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.luminosity
 
     # -----------------------------------------------------------------
@@ -1561,60 +1015,30 @@ class ModelDefinition(object):
 
     @lazyproperty
     def ionizing_stars_normalization_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return parse_filter(self.ionizing_stars_parameters.filter)
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_stars_normalization_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.wavelength
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_stars_neutral_luminosity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.neutral_luminosity
 
     # -----------------------------------------------------------------
 
     @property
     def ionizing_stars_fluxdensity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ionizing_stars_parameters.fluxdensity
 
     # -----------------------------------------------------------------
 
     @property
     def dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_parameters.mass
 
     # -----------------------------------------------------------------
@@ -1638,12 +1062,6 @@ class ModelDefinition(object):
 
     @property
     def old_stars_scaleheight(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.old_stars_parameters.scale_height
 
     # -----------------------------------------------------------------
@@ -1667,12 +1085,6 @@ class ModelDefinition(object):
 
     @property
     def young_stars_scaleheight(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.young_stars_parameters.scale_height
 
     # -----------------------------------------------------------------
@@ -1696,12 +1108,6 @@ class ModelDefinition(object):
 
     @property
     def ionizing_stars_scaleheight(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.ionizing_stars_parameters.scale_height
 
     # -----------------------------------------------------------------
@@ -1725,12 +1131,6 @@ class ModelDefinition(object):
 
     @property
     def dust_scaleheight(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.dust_parameters.scale_height
 
     # -----------------------------------------------------------------
@@ -1754,48 +1154,24 @@ class ModelDefinition(object):
 
     @lazyproperty
     def old_stars_deprojection_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.old_stars_component_path, deprojection_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def young_stars_deprojection_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.young_stars_component_path, deprojection_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ionizing_stars_deprojection_path(self):
-
-        """
-        Tihs function ...
-        :return: 
-        """
-
         return fs.join(self.ionizing_stars_component_path, deprojection_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_deprojection_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return fs.join(self.dust_component_path, deprojection_filename)
 
     # -----------------------------------------------------------------
@@ -1874,12 +1250,6 @@ class ModelDefinition(object):
 
     @property
     def distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_deprojection.galaxy_distance
 
     # -----------------------------------------------------------------
@@ -1921,12 +1291,6 @@ class ModelDefinition(object):
 
     @property
     def inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_deprojection.inclination
 
     # -----------------------------------------------------------------
@@ -1966,12 +1330,6 @@ class ModelDefinition(object):
 
     @property
     def position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_deprojection.position_angle
 
     # -----------------------------------------------------------------
@@ -2011,12 +1369,6 @@ class ModelDefinition(object):
 
     @property
     def metallicity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.old_stars_parameters.metallicity
 
     # -----------------------------------------------------------------
@@ -2045,50 +1397,26 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_stars_deprojection(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return DeprojectionModel3D.from_file(self.old_stars_deprojection_path)
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_stars_deprojection(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return DeprojectionModel3D.from_file(self.young_stars_deprojection_path)
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ionizing_stars_deprojection(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return DeprojectionModel3D.from_file(self.ionizing_stars_deprojection_path)
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def dust_deprojection(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
         return DeprojectionModel3D.from_file(self.dust_deprojection_path)
 
     # -----------------------------------------------------------------
@@ -2445,60 +1773,30 @@ class ModelDefinition(object):
 
     @lazyproperty
     def normalization_center_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.center for fltr in self.normalization_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def normalization_effective_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.effective for fltr in self.normalization_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def normalization_pivot_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.pivot for fltr in self.normalization_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def normalization_mean_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.mean for fltr in self.normalization_filters]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def normalization_peak_wavelengths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [fltr.peak for fltr in self.normalization_filters]
 
 # -----------------------------------------------------------------
