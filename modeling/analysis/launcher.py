@@ -707,84 +707,42 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
 
     @property
     def sed_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.sed_earth_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def simple_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simple_earth_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def full_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.full_earth_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def simple_faceon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simple_faceon_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def full_faceon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.full_faceon_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def simple_edgeon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.simple_edgeon_instrument
 
     # -----------------------------------------------------------------
 
     @property
     def full_edgeon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.analysis_run.full_edgeon_instrument
 
     # -----------------------------------------------------------------

@@ -42,6 +42,7 @@ from ..projection.model import ComponentProjections
 from ..simulation.sed import ComponentSED
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import types
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 
@@ -207,6 +208,10 @@ contributions = [total_contribution, direct_contribution, scattered_contribution
 
 # -----------------------------------------------------------------
 
+components_name = "components"
+
+# -----------------------------------------------------------------
+
 class RTModel(object):
 
     """
@@ -347,6 +352,8 @@ class RTModel(object):
             setattr(self, name, value)
 
     # -----------------------------------------------------------------
+    # TOTAL SIMULATION INTRINSIC SEDS
+    # -----------------------------------------------------------------
 
     @property
     def intrinsic_sed_path_old_bulge(self):
@@ -393,151 +400,207 @@ class RTModel(object):
         return seds
 
     # -----------------------------------------------------------------
+    # TOTAL SIMULATION INTRINSIC CUBES
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_evolved_component_cubes(self):
+        cubes = OrderedDict()
+        if self.bulge_simulations.has_intrinsic_cube and self.disk_simulations.has_intrinsic_cube:
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
+        elif self.old_simulations.has_intrinsic_cube: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_earth # old
+        else: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent earth cube will not be available")
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_unevolved_component_cubes(self):
+        cubes = OrderedDict()
+        if self.young_simulations.has_intrinsic_cube and self.sfr_simulations.has_intrinsic_cube:
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
+        elif self.unevolved_simulations.has_intrinsic_cube: cubes[unevolved_component_name] = self.unevolved_intrinsic_stellar_luminosity_cube_earth
+        else: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent earth cube will not be available")
+        return cubes
+
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def total_simulation_component_cubes(self):
+        return OrderedDict(self.total_simulation_evolved_component_cubes.items() + self.total_simulation_unevolved_component_cubes.items())
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        # Initialize dictionary
+    @lazyproperty
+    def total_simulation_evolved_component_cubes_faceon(self):
         cubes = OrderedDict()
+        if self.bulge_simulations.has_intrinsic_cube_faceon and self.disk_simulations.has_intrinsic_cube_faceon:
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
+        elif self.old_simulations.has_intrinsic_cube_faceon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_faceon
+        else: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent faceon cube will not be available")
+        return cubes
 
-        ## EVOLVED
+    # -----------------------------------------------------------------
 
-        # Bulge & disk?
-        if self.bulge_simulations.has_intrinsic_cube and self.disk_simulations.has_intrinsic_cube:
-
-            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
-            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
-
-        # Old?
-        elif self.old_simulations.has_intrinsic_cube: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_earth
-
-        # Not enough data
-        else: #raise ValueError("Not enough simulation data")
-            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent earth cube will not be available")
-            return None
-
-        ## UNEVOLVED
-
-        # Young & ionizing?
-        if self.young_simulations.has_intrinsic_cube and self.sfr_simulations.has_intrinsic_cube:
-
-            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
-            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
-
-        # Unevolved?
-        elif self.unevolved_simulations.has_intrinsic_cube: cubes[unevolved_component_name] = self.unevolved_intrinsic_stellar_luminosity_cube_earth
-
-        # Not enough data
-        else: #raise ValueError("Not enough simulation data")
-            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent earth cube will not be available")
-            return None
-
-        # Return
+    @lazyproperty
+    def total_simulation_unevolved_component_cubes_faceon(self):
+        cubes = OrderedDict()
+        if self.young_simulations.has_intrinsic_cube_faceon and self.sfr_simulations.has_intrinsic_cube_faceon:
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
+        elif self.unevolved_simulations.has_intrinsic_cube_faceon: cubes[unevolved_component_name] = self.unevolved_intrinsic_stellar_luminosity_cube_faceon
+        else: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent faceon cube will not be available")
         return cubes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_simulation_component_cubes_faceon(self):
+        return OrderedDict(self.total_simulation_evolved_component_cubes_faceon.items() + self.total_simulation_unevolved_component_cubes.items())
 
-        """
-        This function ...
-        :return:
-        """
+    # -----------------------------------------------------------------
 
-        # Initialie dictionary
+    @lazyproperty
+    def total_simulation_evolved_component_cubes_edgeon(self):
         cubes = OrderedDict()
+        if self.bulge_simulations.has_intrinsic_cube_edgeon and self.disk_simulations.has_intrinsic_cube_edgeon:
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+        elif self.old_simulations.has_intrinsic_cube_edgeon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_edgeon
+        else: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent edgeon cube will not be available")
+        return cubes
 
-        ## EVOLVED
+    # -----------------------------------------------------------------
 
-        # Bulge @ disk?
-        if self.bulge_simulations.has_intrinsic_cube_faceon and self.disk_simulations.has_intrinsic_cube_faceon:
-
-            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
-            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
-
-        # Old?
-        elif self.old_simulations.has_intrinsic_cube_faceon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_faceon
-
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent faceon cube will not be available")
-            return None
-
-        ## UNEVOLVED
-
-        # Young & ionizing?
-        if self.young_simulations.has_intrinsic_cube_faceon and self.sfr_simulations.has_intrinsic_cube_faceon:
-
-            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
-            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
-
-        # Unevolved?
-        elif self.unevolved_simulations.has_intrinsic_cube_faceon: cubes[unevolved_component_name] = self.unevolved_intrinsic_stellar_luminosity_cube_faceon
-
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent faceon cube will not be available")
-            return None
-
-        # Return
+    @lazyproperty
+    def total_simulation_unevolved_component_cubes_edgeon(self):
+        cubes = OrderedDict()
+        if self.young_simulations.has_intrinsic_cube_edgeon and self.sfr_simulations.has_intrinsic_cube_edgeon:
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+        elif self.unevolved_simulations.has_intrinsic_cube_edgeon: cubes[unevolved_component_name] = self.unevolved_intrinsic_stellar_luminosity_cube_edgeon
+        else: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent edgeon cube will not be available")
         return cubes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def total_simulation_component_cubes_edgeon(self):
+        return OrderedDict(self.total_simulation_evolved_component_cubes_edgeon.items() + self.total_simulation_unevolved_component_cubes_edgeon.items())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_components_path(self):
+        return fs.create_directory_in(self.observed_total_simulation_path, components_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_components_path_earth(self):
+        return fs.create_directory_in(self.total_simulation_components_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_components_path_faceon(self):
+        return fs.create_directory_in(self.total_simulation_components_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_components_path_edgeon(self):
+        return fs.create_directory_in(self.total_simulation_components_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_component_cube_paths(self):
+        if fs.is_empty(self.total_simulation_components_path_earth): self.create_total_simulation_component_cubes_earth()
+        return fs.files_in_path(self.total_simulation_components_path_earth, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_component_cube_paths_faceon(self):
+        if fs.is_empty(self.total_simulation_components_path_faceon): self.create_total_simulation_component_cubes_faceon()
+        return fs.files_in_path(self.total_simulation_components_path_faceon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_simulation_component_cube_paths_edgeon(self):
+        if fs.is_empty(self.total_simulation_components_path_edgeon): self.create_total_simulation_component_cubes_edgeon()
+        return fs.files_in_path(self.total_simulation_components_path_edgeon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    def create_total_simulation_component_cubes_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        # Initialize dictionary
-        cubes = OrderedDict()
+        # Debugging
+        log.debug("Creating the cubes of the components of the total simulation from the earth projection (this is a one-time process) ...")
 
-        ## EVOLVED
+        # Loop over the components
+        for component_name in self.total_simulation_component_cubes:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.total_simulation_components_path_earth, component_name + ".fits")
+            cube = self.total_simulation_component_cubes[component_name]
+            cube.saveto(filepath)
 
-        # Bulge & disk?
-        if self.bulge_simulations.has_intrinsic_cube_edgeon and self.disk_simulations.has_intrinsic_cube_edgeon:
+    # -----------------------------------------------------------------
 
-            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
-            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+    def create_total_simulation_component_cubes_faceon(self):
 
-        # Old?
-        elif self.old_simulations.has_intrinsic_cube_edgeon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_edgeon
+        """
+        This function ...
+        :return:
+        """
 
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the total simulation, the transparent edgeon cube will not be available")
-            return None
+        # Debugging
+        log.debug("Creating the cubes of the components of the total simulation from the faceon projection (this is a one-time process) ...")
 
-        ## UNEVOLVED
+        # Loop over the components
+        for component_name in self.total_simulation_component_cubes_faceon:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.total_simulation_components_path_faceon, component_name + ".fits")
+            cube = self.total_simulation_component_cubes_faceon[component_name]
+            cube.saveto(filepath)
 
-        # Young & ionizing?
-        if self.young_simulations.has_intrinsic_cube_edgeon and self.sfr_simulations.has_intrinsic_cube_edgeon:
+    # -----------------------------------------------------------------
 
-            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
-            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+    def create_total_simulation_component_cubes_edgeon(self):
 
-        # Unevolved?
-        elif self.unevolved_simulations.has_intrinsic_cube_edgeon: cubes[unevolved_component_name] = self.unevolved_intrinsic_stellar_luminosity_cube_edgeon
+        """
+        This function ...
+        :return:
+        """
 
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the total simulation, the transparent edgeon cube will not be available")
-            return None
+        # Debugging
+        log.debug("Creating the cubes of the components of the total simulation from the edgeon projection (this is a one-time process) ...")
 
-        # Return
-        return cubes
+        # Loop over the components
+        for component_name in self.total_simulation_component_cubes_edgeon:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.total_simulation_components_path_edgeon, component_name + ".fits")
+            cube = self.total_simulation_component_cubes_edgeon[component_name]
+            cube.saveto(filepath)
 
     # -----------------------------------------------------------------
     # TOTAL SIMULATIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_total_simulation_path(self):
+        return fs.directory_of(self.observed_total_output_path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -552,9 +615,12 @@ class RTModel(object):
         return MultiComponentSimulations.from_output_path(total_simulation_name, self.observed_total_output_path,
                                                           intrinsic_sed_paths=self.total_simulation_component_sed_paths,
                                                           distance=self.distance,
-                                                          intrinsic_cubes=self.total_simulation_component_cubes,
-                                                          intrinsic_cubes_faceon=self.total_simulation_component_cubes_faceon,
-                                                          intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon,
+                                                          #intrinsic_cubes=self.total_simulation_component_cubes,
+                                                          #intrinsic_cubes_faceon=self.total_simulation_component_cubes_faceon,
+                                                          #intrinsic_cubes_edgeon=self.total_simulation_component_cubes_edgeon,
+                                                          intrinsic_cube_paths=self.total_simulation_component_cube_paths,
+                                                          intrinsic_cube_faceon_paths=self.total_simulation_component_cube_paths_faceon,
+                                                          intrinsic_cube_edgeon_paths=self.total_simulation_component_cube_paths_edgeon,
                                                           earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
@@ -581,6 +647,12 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_bulge_simulation_path(self):
+        return fs.directory_of(self.observed_bulge_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def bulge_simulations(self):
 
         """
@@ -588,7 +660,7 @@ class RTModel(object):
         :return:
         """
 
-        # To run the simulation
+        # To run the intrinsic SED simulation
         sed = self.old_bulge_component_sed
 
         # Load and return
@@ -621,6 +693,12 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_disk_simulation_path(self):
+        return fs.directory_of(self.observed_disk_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def disk_simulations(self):
 
         """
@@ -628,7 +706,7 @@ class RTModel(object):
         :return:
         """
 
-        # To run the simulation
+        # To run the intrinsic SED simulation
         sed = self.old_disk_component_sed
 
         # Load and return
@@ -657,6 +735,7 @@ class RTModel(object):
         return self.disk_simulation.data
 
     # -----------------------------------------------------------------
+    # OLD SIMULATION INTRINSIC SEDs
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -678,113 +757,150 @@ class RTModel(object):
         return seds
 
     # -----------------------------------------------------------------
+    # OLD SIMULATION INTRINSIC CUBES
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def old_simulation_component_cubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize dictionary for the cubes
         cubes = OrderedDict()
-
-        ## EVOLVED
-
-        # Bulge & disk?
         if self.bulge_simulations.has_intrinsic_cube and self.disk_simulations.has_intrinsic_cube:
-
             cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
             cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
-
-        # Add
-        #cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_earth
-        #cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_earth
-
-        # Return
+        else: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent cube will not be available")
         return cubes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_simulation_component_cubes_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize dictionary
         cubes = OrderedDict()
-
-        ## EVOLVED
-
-        # Bulge & disk?
         if self.bulge_simulations.has_intrinsic_cube_faceon and self.disk_simulations.has_intrinsic_cube_faceon:
-
             cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
             cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
-
-        # Old?
-        # elif self.old_simulations.has_intrinsic_cube_edgeon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_edgeon
-
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent faceon cube will not be available")
-            return None
-
-        # Initialize dictionary for the cubes
-        #cubes = OrderedDict()
-
-        # Add
-        #cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_faceon
-        #cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_faceon
-
-        # Return
+        else: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent faceon cube will not be available")
         return cubes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def old_simulation_component_cubes_edgeon(self):
+        cubes = OrderedDict()
+        if self.bulge_simulations.has_intrinsic_cube_edgeon and self.disk_simulations.has_intrinsic_cube_edgeon:
+            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
+            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+        else: warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent edgeon cube will not be available")
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_components_path(self):
+        return fs.create_directory_in(self.observed_old_simulation_path, components_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_components_path_earth(self):
+        return fs.create_directory_in(self.old_simulation_components_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_components_path_faceon(self):
+        return fs.create_directory_in(self.old_simulation_components_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_components_path_edgeon(self):
+        return fs.create_directory_in(self.old_simulation_components_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_cube_paths(self):
+        if fs.is_empty(self.old_simulation_components_path_earth): self.create_old_simulation_component_cubes_earth()
+        return fs.files_in_path(self.old_simulation_components_path_earth, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_cube_paths_faceon(self):
+        if fs.is_empty(self.old_simulation_components_path_faceon): self.create_old_simulation_component_cubes_faceon()
+        return fs.files_in_path(self.old_simulation_components_path_faceon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_simulation_component_cube_paths_edgeon(self):
+        if fs.is_empty(self.old_simulation_components_path_edgeon): self.create_old_simulation_component_cubes_edgeon()
+        return fs.files_in_path(self.old_simulation_components_path_edgeon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    def create_old_simulation_component_cubes_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        # Initialize dictionary
-        cubes = OrderedDict()
+        # Debugging
+        log.debug("Creating the cubes of the components of the old simulation from the earth projection (this is a one-time process) ...")
 
-        ## EVOLVED
+        # Loop over the components
+        for component_name in self.old_simulation_component_cubes:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.old_simulation_components_path_earth, component_name + ".fits")
+            cube = self.old_simulation_component_cubes[component_name]
+            cube.saveto(filepath)
 
-        # Bulge & disk?
-        if self.bulge_simulations.has_intrinsic_cube_edgeon and self.disk_simulations.has_intrinsic_cube_edgeon:
+    # -----------------------------------------------------------------
 
-            cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
-            cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+    def create_old_simulation_component_cubes_faceon(self):
 
-        # Old?
-        #elif self.old_simulations.has_intrinsic_cube_edgeon: cubes[evolved_component_name] = self.old_intrinsic_stellar_luminosity_cube_edgeon
+        """
+        This function ...
+        :return:
+        """
 
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the evolved intrinsic components. If no full cubes are available for the old simulation, the transparent edgeon cube will not be available")
-            return None
+        # Debugging
+        log.debug("Creating the cubes of the components of the old simulation from the faceon projection (this is a one-time process) ...")
 
-        # Initialize dictionary for the cubes
-        #cubes = OrderedDict()
+        # Loop over the components
+        for component_name in self.old_simulation_component_cubes_faceon:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.old_simulation_components_path_faceon, component_name + ".fits")
+            cube = self.old_simulation_component_cubes_faceon[component_name]
+            cube.saveto(filepath)
 
-        # Add
-        #cubes[bulge_component_name] = self.bulge_intrinsic_stellar_luminosity_cube_edgeon
-        #cubes[disk_component_name] = self.disk_intrinsic_stellar_luminosity_cube_edgeon
+    # -----------------------------------------------------------------
 
-        # Return
-        return cubes
+    def create_old_simulation_component_cubes_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the cubes of the components of the old simulation from the edgeon projection (this is a one-time process) ...")
+
+        # Loop over the components
+        for component_name in self.old_simulation_component_cubes_edgeon:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.old_simulation_components_path_edgeon, component_name + ".fits")
+            cube = self.old_simulation_component_cubes_edgeon[component_name]
+            cube.saveto(filepath)
 
     # -----------------------------------------------------------------
     # OLD SIMULATIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_old_simulation_path(self):
+        return fs.directory_of(self.observed_old_output_path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -798,9 +914,13 @@ class RTModel(object):
         # Load and return
         return MultiComponentSimulations.from_output_path(old_simulation_name, self.observed_old_output_path,
                                                           intrinsic_sed_paths=self.old_simulation_component_sed_paths,
-                                                          distance=self.distance, intrinsic_cubes=self.old_simulation_component_cubes,
-                                                          intrinsic_cubes_faceon=self.old_simulation_component_cubes_faceon,
-                                                          intrinsic_cubes_edgeon=self.old_simulation_component_cubes_edgeon,
+                                                          distance=self.distance,
+                                                          #intrinsic_cubes=self.old_simulation_component_cubes,
+                                                          #intrinsic_cubes_faceon=self.old_simulation_component_cubes_faceon,
+                                                          #intrinsic_cubes_edgeon=self.old_simulation_component_cubes_edgeon,
+                                                          intrinsic_cube_paths=self.old_simulation_component_cube_paths,
+                                                          intrinsic_cube_faceon_paths=self.old_simulation_component_cube_paths_faceon,
+                                                          intrinsic_cube_edgeon_paths=self.old_simulation_component_cube_paths_edgeon,
                                                           earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
@@ -824,6 +944,12 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
     # YOUNG SIMULATIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_young_simulation_path(self):
+        return fs.directory_of(self.observed_young_output_path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -867,6 +993,12 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_sfr_simulation_path(self):
+        return fs.directory_of(self.observed_sfr_output_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_simulations(self):
 
         """
@@ -903,6 +1035,7 @@ class RTModel(object):
         return self.sfr_simulation.data
 
     # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATION INTRINSIC SEDs
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -924,106 +1057,171 @@ class RTModel(object):
         return seds
 
     # -----------------------------------------------------------------
+    # UNEVOLVED SIMULATION INTRINSIC CUBES
+    # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_simulation_component_cubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize dictionary
         cubes = OrderedDict()
-
-        # Add
-        #cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
-        #cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
-
-        ## UNEVOLVED
-
-        # Young & ionizing?
         if self.young_simulations.has_intrinsic_cube and self.sfr_simulations.has_intrinsic_cube:
-
             cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_earth
             cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_earth
-
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent cube will not be available")
-            return None
-
-        # Return
+        else: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent cube will not be available")
         return cubes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_simulation_component_cubes_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize dictionary
         cubes = OrderedDict()
-
-        # Add
-        #cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
-        #cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
-
-        ## UNEVOLVED
-
-        # Young & ionizing?
         if self.young_simulations.has_intrinsic_cube_faceon and self.sfr_simulations.has_intrinsic_cube_faceon:
-
             cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_faceon
             cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_faceon
-
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent faceon cube will not be available")
-            return None
-
-        # Return
+        else: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent faceon cube will not be available")
         return cubes
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def unevolved_simulation_component_cubes_edgeon(self):
+        cubes = OrderedDict()
+        if self.young_simulations.has_intrinsic_cube_edgeon and self.sfr_simulations.has_intrinsic_cube_edgeon:
+            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
+            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+        else: warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent edgeon cube will not be available")
+        return cubes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_components_path(self):
+        return fs.create_directory_in(self.observed_unevolved_simulation_path, components_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_components_path_earth(self):
+        return fs.create_directory_in(self.unevolved_simulation_components_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_components_path_faceon(self):
+        return fs.create_directory_in(self.unevolved_simulation_components_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_components_path_edgeon(self):
+        return fs.create_directory_in(self.unevolved_simulation_components_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cube_paths(self):
+        if fs.is_empty(self.unevolved_simulation_components_path_earth): self.create_unevolved_simulation_component_cubes_earth()
+        return fs.files_in_path(self.unevolved_simulation_components_path_earth, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cube_paths_faceon(self):
+        if fs.is_empty(self.unevolved_simulation_components_path_faceon): self.create_unevolved_simulation_component_cubes_faceon()
+        return fs.files_in_path(self.unevolved_simulation_components_path_faceon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cube_paths_edgeon(self):
+        if fs.is_empty(self.unevolved_simulation_components_path_edgeon): self.create_unevolved_simulation_component_cubes_edgeon()
+        return fs.files_in_path(self.unevolved_simulation_components_path_edgeon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cube_paths(self):
+        if fs.is_empty(self.unevolved_simulation_components_path_earth): self.create_unevolved_simulation_component_cubes_earth()
+        return fs.files_in_path(self.unevolved_simulation_components_path_earth, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cube_paths_faceon(self):
+        if fs.is_empty(self.unevolved_simulation_components_path_faceon): self.create_unevolved_simulation_component_cubes_faceon()
+        return fs.files_in_path(self.unevolved_simulation_components_path_faceon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_simulation_component_cube_paths_edgeon(self):
+        if fs.is_empty(self.unevolved_simulation_components_path_edgeon): self.create_unevolved_simulation_component_cubes_edgeon()
+        return fs.files_in_path(self.unevolved_simulation_components_path_edgeon, extension="fits", returns="dict")
+
+    # -----------------------------------------------------------------
+
+    def create_unevolved_simulation_component_cubes_earth(self):
 
         """
         This function ...
         :return:
         """
 
-        # Initialize dictionary
-        cubes = OrderedDict()
+        # Debugging
+        log.debug("Creating the cubes of the components of the unevolved simulation from the earth projection (this is a one-time process) ...")
 
-        # Add
-        #cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
-        #cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+        # Loop over the components
+        for component_name in self.unevolved_simulation_component_cubes:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.unevolved_simulation_components_path_earth, component_name + ".fits")
+            cube = self.unevolved_simulation_component_cubes[component_name]
+            cube.saveto(filepath)
 
-        ## UNEVOLVED
+    # -----------------------------------------------------------------
 
-        # Young & ionizing?
-        if self.young_simulations.has_intrinsic_cube_edgeon and self.sfr_simulations.has_intrinsic_cube_edgeon:
+    def create_unevolved_simulation_component_cubes_faceon(self):
 
-            cubes[young_component_name] = self.young_intrinsic_stellar_luminosity_cube_edgeon
-            cubes[ionizing_component_name] = self.sfr_intrinsic_stellar_luminosity_cube_edgeon
+        """
+        This function ...
+        :return:
+        """
 
-        # Not enough data
-        else:
-            warnings.warn("Not enough simulation data from the unevolved intrinsic components. If no full cubes are available for the unevolved simulation, the transparent edgeon cube will not be available")
-            return None
+        # Debugging
+        log.debug("Creating the cubes of the components of the unevolved simulation from the earth projection (this is a one-time process) ...")
 
-        # Return
-        return cubes
+        # Loop over the components
+        for component_name in self.unevolved_simulation_component_cubes_faceon:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.unevolved_simulation_components_path_faceon, component_name + ".fits")
+            cube = self.unevolved_simulation_component_cubes_faceon[component_name]
+            cube.saveto(filepath)
+
+    # -----------------------------------------------------------------
+
+    def create_unevolved_simulation_component_cubes_edgeon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating the cubes of the components of the unevolved simulation from the earth projection (this is a one-time process) ...")
+
+        # Loop over the components
+        for component_name in self.unevolved_simulation_component_cubes_edgeon:
+            log.debug("Creating the " + component_name + " component cube ...")
+            filepath = fs.join(self.unevolved_simulation_components_path_edgeon, component_name + ".fits")
+            cube = self.unevolved_simulation_component_cubes_edgeon[component_name]
+            cube.saveto(filepath)
 
     # -----------------------------------------------------------------
     # UNEVOLVED SIMULATIONS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_unevolved_simulation_path(self):
+        return fs.directory_of(self.observed_unevolved_output_path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1037,9 +1235,13 @@ class RTModel(object):
         # Load and return
         return MultiComponentSimulations.from_output_path(unevolved_simulation_name, self.observed_unevolved_output_path,
                                                           intrinsic_sed_paths=self.unevolved_simulation_component_sed_paths,
-                                                          distance=self.distance, intrinsic_cubes=self.unevolved_simulation_component_cubes,
-                                                          intrinsic_cubes_faceon=self.unevolved_simulation_component_cubes_faceon,
-                                                          intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon,
+                                                          distance=self.distance,
+                                                          #intrinsic_cubes=self.unevolved_simulation_component_cubes,
+                                                          #intrinsic_cubes_faceon=self.unevolved_simulation_component_cubes_faceon,
+                                                          #intrinsic_cubes_edgeon=self.unevolved_simulation_component_cubes_edgeon,
+                                                          intrinsic_cube_paths=self.unevolved_simulation_component_cube_paths,
+                                                          intrinsic_cube_faceon_paths=self.unevolved_simulation_component_cube_paths_faceon,
+                                                          intrinsic_cube_edgeon_paths=self.unevolved_simulation_component_cube_paths_edgeon,
                                                           earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------

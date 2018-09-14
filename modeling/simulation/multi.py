@@ -24,6 +24,7 @@ from ...magic.core.datacube import DataCube
 from .simulations import ComponentSimulations
 from .simulation import ObservedComponentSimulation
 from ...magic.core.list import uniformize
+from ...core.tools.utils import LazyDictionary
 
 # -----------------------------------------------------------------
 
@@ -98,12 +99,14 @@ class MultiComponentSimulations(ComponentSimulations):
         if intrinsic_cubes is not None:
             if intrinsic_cube_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
         elif intrinsic_cube_paths is not None:
-            if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
-            intrinsic_cubes = OrderedDict()
+            #if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
+            #intrinsic_cubes = OrderedDict()
+            intrinsic_cubes = LazyDictionary(DataCube.from_file, distance=distance, wcs=earth_wcs)
             for component_name in intrinsic_cube_paths:
                 if component_name not in intrinsic_seds: raise ValueError("SED of component '" + component_name + "' is not loaded")
                 wavelength_grid = intrinsic_seds[component_name].wavelength_grid() # create wavelength grid from SED
-                intrinsic_cubes[component_name] = DataCube.from_file(intrinsic_cube_paths[component_name], wavelength_grid=wavelength_grid, wcs=earth_wcs)
+                #intrinsic_cubes[component_name] = DataCube.from_file(intrinsic_cube_paths[component_name], wavelength_grid=wavelength_grid, wcs=earth_wcs)
+                intrinsic_cubes.set(component_name, intrinsic_cube_paths[component_name], wavelength_grid=wavelength_grid)
         else: intrinsic_cubes = None
 
         # Load intrinsic faceon cubes
@@ -111,11 +114,13 @@ class MultiComponentSimulations(ComponentSimulations):
             if intrinsic_cube_faceon_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
         elif intrinsic_cube_faceon_paths is not None:
             if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
-            intrinsic_cubes_faceon = OrderedDict()
+            #intrinsic_cubes_faceon = OrderedDict()
+            intrinsic_cubes_faceon = LazyDictionary(DataCube.from_file, distance=distance)
             for component_name in intrinsic_cube_faceon_paths:
                 if component_name not in intrinsic_seds: raise ValueError("SED of component '" + component_name + "' is not loaded")
                 wavelength_grid = intrinsic_seds[component_name].wavelength_grid() # create wavelength grid
-                intrinsic_cubes_faceon[component_name] = DataCube.from_file(intrinsic_cube_faceon_paths[component_name], wavelength_grid=wavelength_grid)
+                #intrinsic_cubes_faceon[component_name] = DataCube.from_file(intrinsic_cube_faceon_paths[component_name], wavelength_grid=wavelength_grid)
+                intrinsic_cubes_faceon.set(component_name, intrinsic_cube_faceon_paths[component_name], wavelength_grid=wavelength_grid)
         else: intrinsic_cubes_faceon = None
 
         # Load intrinsic edgeon cubes
@@ -123,11 +128,13 @@ class MultiComponentSimulations(ComponentSimulations):
             if intrinsic_cube_edgeon_paths is not None: raise ValueError("Cannot specify both intrinsic cubes and intrinsic cube paths")
         elif intrinsic_cube_edgeon_paths is not None:
             if intrinsic_seds is None: raise ValueError("When passing the filepaths of datacubes, the filepaths of corresponding simulated SEDs also have to be specified (for the wavelength grid)")
-            intrinsic_cubes_edgeon = OrderedDict()
+            #intrinsic_cubes_edgeon = OrderedDict()
+            intrinsic_cubes_edgeon = LazyDictionary(DataCube.from_file, distance=distance)
             for component_name in intrinsic_cube_edgeon_paths:
                 if component_name not in intrinsic_seds: raise ValueError("SED of component '" + component_name + "' is not loaded")
                 wavelength_grid = intrinsic_seds[component_name].wavelength_grid() # create wavelength grid
-                intrinsic_cubes_edgeon[component_name] = DataCube.from_file(intrinsic_cube_edgeon_paths[component_name], wavelength_grid=wavelength_grid)
+                #intrinsic_cubes_edgeon[component_name] = DataCube.from_file(intrinsic_cube_edgeon_paths[component_name], wavelength_grid=wavelength_grid)
+                intrinsic_cubes_edgeon.set(component_name, intrinsic_cube_edgeon_paths[component_name], wavelength_grid=wavelength_grid)
         else: intrinsic_cubes_edgeon = None
 
         # Create and return
@@ -155,108 +162,54 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @property
     def nintrinsic_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.intrinsic_seds)
 
     # -----------------------------------------------------------------
 
     @property
     def nintrinsic_cubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.intrinsic_cubes)
 
     # -----------------------------------------------------------------
 
     @property
     def nintrinsic_cubes_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.intrinsic_cubes_faceon)
 
     # -----------------------------------------------------------------
 
     @property
     def nintrinsic_cubes_edgeon(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return len(self.intrinsic_cubes_edgeon)
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_seds is not None and self.nintrinsic_seds > 0
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_cubes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_cubes is not None and self.nintrinsic_cubes > 0
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_cubes_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_cubes_faceon is not None and self.nintrinsic_cubes_faceon > 0
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_cubes_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.intrinsic_cubes_edgeon is not None and self.nintrinsic_cubes_edgeon > 0
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_transparent_sed: return True
         elif self.has_intrinsic_seds: return True
         else: return False
@@ -265,36 +218,18 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @property
     def has_intrinsic_sed_faceon(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed # INTRINSIC = ISOTROPIC
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_sed_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_intrinsic_sed # INTRINSIC = ISOTROPIC
 
     # -----------------------------------------------------------------
 
     @property
     def has_intrinsic_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_transparent_cube: return True
         elif self.has_intrinsic_cubes: return True
         else: return False
@@ -303,12 +238,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @property
     def has_intrinsic_cube_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_transparent_cube_faceon: return True
         elif self.has_intrinsic_cubes_faceon: return True
         else: return False
@@ -317,12 +246,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @property
     def has_intrinsic_cube_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.has_transparent_cube_edgeon: return True
         elif self.has_intrinsic_cubes_edgeon: return True
         else: return False
@@ -350,12 +273,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @lazyproperty
     def intrinsic_cubes_uniformized(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         #for key in self.intrinsic_cubes:
         #    cube = self.intrinsic_cubes[key]
         #    print(key, cube.wcs)
@@ -384,12 +301,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @lazyproperty
     def faceon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # ISOTROPIC RADIATION
         return self.intrinsic_sed
 
@@ -397,12 +308,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @lazyproperty
     def faceon_intrinsic_cubes_uniformized(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return uniformize(*self.intrinsic_cubes_faceon.values())
 
     # -----------------------------------------------------------------
@@ -428,12 +333,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @lazyproperty
     def edgeon_intrinsic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # ISOTROPIC RADIATION
         return self.intrinsic_sed
 
@@ -441,12 +340,6 @@ class MultiComponentSimulations(ComponentSimulations):
 
     @lazyproperty
     def edgeon_intrinsic_cubes_uniformized(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return uniformize(*self.intrinsic_cubes_edgeon.values())
 
     # -----------------------------------------------------------------
