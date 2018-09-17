@@ -2618,32 +2618,6 @@ class Frame(NDDataArray):
         return get_conversion_factor(self.unit, to_unit, parse=False, silent=silent, distance=distance,
                                      wavelength=wavelength, conversion_info=self.conversion_info)
 
-        # # This frame has a photometric unit
-        # if self.is_photometric:
-        #
-        #     # Check that the target unit is also photometric
-        #     if not isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is not photometric, while the frame is")
-        #
-        #     # Set the conversion info
-        #     conversion_info = self.conversion_info
-        #     if distance is not None: conversion_info["distance"] = distance
-        #     if wavelength is not None: conversion_info["wavelength"] = wavelength
-        #
-        #     # Calculate the conversion factor
-        #     factor = self.unit.conversion_factor(to_unit, silent=silent, **conversion_info)
-        #
-        # # This frame does not have a photometric unit
-        # else:
-        #
-        #     # Check whether target unit is also not photometric
-        #     if isinstance(to_unit, PhotometricUnit): raise ValueError("Target unit is photometric, while the frame is not")
-        #
-        #     # Calculate the conversion factor
-        #     factor = self.unit.to(to_unit, silent=True)
-        #
-        # # Return
-        # return factor
-
     # -----------------------------------------------------------------
 
     def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False,

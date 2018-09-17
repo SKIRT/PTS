@@ -228,6 +228,28 @@ class Data3D(Data3DBase):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_other(cls, other, **kwargs):
+
+        """
+        This function ...
+        :param other:
+        :param kwargs:
+        :return:
+        """
+
+        # Create new
+        new = cls(other.name, other.x, other.y, other.z, other.values, weights=other.weights, length_unit=other.length_unit, unit=other.unit, description=other.description, distance=other.distance,
+                 wavelength=other.wavelength, solid_angle=other.solid_angle, xyz_filepath=other.xyz_filepath, x_colname=other.x_colname, y_colname=other.y_colname, z_colname=other.z_colname)
+
+        # Set attributes
+        for key in kwargs: setattr(new, key, kwargs[key])
+
+        # Return
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_values(cls, name, values, x, y, z, xyz_filepath=None, weights=None, unit=None, length_unit=None,
                     description=None, distance=None, wavelength=None, solid_angle=None):
 

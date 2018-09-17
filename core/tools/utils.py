@@ -72,6 +72,20 @@ class LazyDictionary(OrderedDict):
 
     # -----------------------------------------------------------------
 
+    def set_kwargs(self, name, **kwargs):
+
+        """
+        This function ...
+        :param name:
+        :param kwargs:
+        :return:
+        """
+
+        if name not in self.kwargs: self.kwargs[name] = dict()
+        self.kwargs[name].update(**kwargs)
+
+    # -----------------------------------------------------------------
+
     def get_raw(self, name):
 
         """

@@ -176,9 +176,9 @@ class Relation(SmartTable):
         #else: x_unit = y_unit = None
 
         # Add auxilary axes?
-        if kwargs.get("aux", None) is not None:
+        aux = kwargs.pop("aux", None)
+        if aux is not None:
             from .containers import sequence_from_dict
-            aux = kwargs.pop("aux")
             naux = len(aux)
             columns = list(columns) + aux.values()  # columns = [x, y] + aux.values()
             column_names = [kwargs["x_name"], kwargs["y_name"]] + aux.keys()
@@ -189,6 +189,7 @@ class Relation(SmartTable):
             kwargs["names"] = column_names
             kwargs["units"] = column_units
         # else: #columns = [x, y]
+        if "aux_units" in kwargs: kwargs.pop("aux_units")
 
         # x and y descriptions
         #if kwargs.get("descriptions", None) is not None:

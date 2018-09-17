@@ -148,12 +148,6 @@ class ComponentProjections(object):
 
     @property
     def has_deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return isinstance(self.model, DeprojectionModel3D)
 
     # -----------------------------------------------------------------
@@ -173,12 +167,6 @@ class ComponentProjections(object):
 
     @property
     def has_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.has_deprojection and self.deprojection.has_map
 
     # -----------------------------------------------------------------
@@ -198,12 +186,6 @@ class ComponentProjections(object):
 
     @property
     def has_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.has_deprojection and self.distance is not None
         return self.distance is not None
 
@@ -237,12 +219,6 @@ class ComponentProjections(object):
 
     @property
     def has_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         #return self.has_map and self.wcs is not None
         return self.wcs is not None
 
@@ -263,12 +239,6 @@ class ComponentProjections(object):
 
     @property
     def has_inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.inclination is not None
 
     # -----------------------------------------------------------------
@@ -288,12 +258,6 @@ class ComponentProjections(object):
 
     @property
     def has_position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.position_angle is not None
 
     # -----------------------------------------------------------------
@@ -313,12 +277,6 @@ class ComponentProjections(object):
 
     @property
     def has_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.center is not None
 
     # -----------------------------------------------------------------
@@ -345,12 +303,6 @@ class ComponentProjections(object):
 
     @property
     def has_scaleheight(self):
-
-        """
-        Thisnf unction ...
-        :return:
-        """
-
         return self.scaleheight is not None
 
     # -----------------------------------------------------------------
@@ -406,144 +358,72 @@ class ComponentProjections(object):
 
     @property
     def has_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_earth is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_faceon is not None
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_edgeon is not None
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def earth_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.path, earth_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def earth_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.earth_path, "out")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.path, faceon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.faceon_path, "out")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.path, edgeon_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_out_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.edgeon_path, "out")
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_simulation(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return fs.has_files_in_path(self.earth_out_path, extension="fits")
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.has_files_in_path(self.faceon_out_path, extension="fits")
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_simulation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.has_files_in_path(self.edgeon_out_path, extension="fits")
 
     # -----------------------------------------------------------------
@@ -935,120 +815,60 @@ class ComponentProjections(object):
 
     @lazyproperty
     def earth_projection_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_earth.output
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_projection_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_faceon.output
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_projection_output(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.simulation_edgeon.output
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def earth_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.earth_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.faceon_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_map_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.edgeon_projection_output.single_total_images
 
     # -----------------------------------------------------------------
 
     @property
     def has_earth_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.earth_wcs is not None
 
     # -----------------------------------------------------------------
 
     @property
     def pixelscale_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.projection_earth.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def pixelscale_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.projection_faceon.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
     def pixelscale_edgeon(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.projection_edgeon.pixelscale
 
     # -----------------------------------------------------------------
@@ -1073,24 +893,12 @@ class ComponentProjections(object):
 
     @lazyproperty
     def faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Frame.from_file(self.faceon_map_path, distance=self.distance, pixelscale=self.pixelscale_faceon)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return Frame.from_file(self.edgeon_map_path, distance=self.distance, pixelscale=self.pixelscale_edgeon)
 
 # -----------------------------------------------------------------

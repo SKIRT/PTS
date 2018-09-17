@@ -41,9 +41,9 @@ from ..basics.instruments import FullSEDInstrument
 from ..projection.model import ComponentProjections
 from ..simulation.sed import ComponentSED
 from ...core.units.parsing import parse_unit as u
-from ...core.tools import types
 from ...core.basics.log import log
 from ...core.simulation.output import SimulationOutput
+from .sfr import salim_fuv_to_sfr, kennicutt_fuv_to_sfr, kennicutt_evans_fuv_to_sfr, kennicutt_tir_to_sfr, calzetti_24um_to_sfr
 
 # -----------------------------------------------------------------
 
@@ -76,12 +76,16 @@ direct_stellar_lum_name = "Direct stellar luminosity"
 # Special: some total, some young, some sfr, some unevolved, some multiple
 sfr_salim_name = "Star formation rate (Salim)"
 sfr_ke_name = "Star formation rate (Kennicutt&Evans)"
+sfr_tir_name = "Star formation rate (TIR)"
+sfr_24um_name = "Star formation rate (24um, Calzetti)"
 sfr_mappings_name = "Star formation rate (MAPPINGS)"
 sfr_mappings_ke_name = "Star formation rate (MAPPINGS+K&E)"
 stellar_mass_name = "Stellar mass"
 stellar_mass_intrinsic_name = "Stellar mass (from intrinsic luminosity)"
 ssfr_salim_name = "Specific star formation rate (Salim)"
 ssfr_ke_name = "Specific star formation rate (Kennicutt&Evans)"
+ssfr_tir_name = "Specific star formation rate (TIR)"
+ssfr_24um_name = "Specific star formation rate (24um, Calzetti)"
 ssfr_mappings_name = "Specific star formation rate (MAPPINGS)"
 ssfr_mappings_ke_name = "Specific star formation rate (MAPPINGS+K&E)"
 
@@ -784,9 +788,10 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output(bulge_simulation_name, self.observed_bulge_simulation_output,
-                                                        intrinsic_output=sed.output, distance=self.distance,
-                                                        map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon,
-                                                        map_edgeon=self.old_bulge_map_edgeon, earth_wcs=self.earth_wcs)
+                                                      intrinsic_output=sed.output, distance=self.distance,
+                                                      #map_earth=self.old_bulge_map_earth, map_faceon=self.old_bulge_map_faceon, map_edgeon=self.old_bulge_map_edgeon,
+                                                      map_earth_path=self.old_bulge_map_earth_path, map_faceon_path=self.old_bulge_map_faceon_path, map_edgeon_path=self.old_bulge_map_edgeon_path,
+                                                      earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -856,9 +861,10 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output(disk_simulation_name, self.observed_disk_simulation_output,
-                                                            intrinsic_output=sed.output, distance=self.distance,
-                                                            map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon,
-                                                            map_edgeon=self.old_disk_map_edgeon, earth_wcs=self.earth_wcs)
+                                                      intrinsic_output=sed.output, distance=self.distance,
+                                                      #map_earth=self.old_disk_map_earth, map_faceon=self.old_disk_map_faceon, map_edgeon=self.old_disk_map_edgeon,
+                                                      map_earth_path=self.old_disk_map_earth_path, map_faceon_path=self.old_disk_map_faceon_path, map_edgeon_path=self.old_disk_map_edgeon_path,
+                                                      earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -1183,9 +1189,10 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output(young_simulation_name, self.observed_young_simulation_output,
-                                                            intrinsic_output=sed.output, distance=self.distance,
-                                                            map_earth=self.young_map_earth, map_faceon=self.young_map_faceon,
-                                                            map_edgeon=self.young_map_edgeon, earth_wcs=self.earth_wcs)
+                                                      intrinsic_output=sed.output, distance=self.distance,
+                                                      #map_earth=self.young_map_earth, map_faceon=self.young_map_faceon, map_edgeon=self.young_map_edgeon,
+                                                      map_earth_path=self.young_map_earth_path, map_faceon_path=self.young_map_faceon_path, map_edgeon_path=self.young_map_edgeon_path,
+                                                      earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -1255,9 +1262,10 @@ class RTModel(object):
 
         # Load and return
         return SingleComponentSimulations.from_output(sfr_simulation_name, self.observed_sfr_simulation_output,
-                                                            intrinsic_output=sed.output, distance=self.distance,
-                                                            map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon,
-                                                            map_edgeon=self.sfr_map_edgeon, earth_wcs=self.earth_wcs)
+                                                      intrinsic_output=sed.output, distance=self.distance,
+                                                      #map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon, map_edgeon=self.sfr_map_edgeon,
+                                                      map_earth_path=self.sfr_map_earth_path, map_faceon_path=self.sfr_map_faceon_path, map_edgeon_path=self.sfr_map_edgeon_path,
+                                                      earth_wcs=self.earth_wcs)
 
     # -----------------------------------------------------------------
 
@@ -1623,6 +1631,18 @@ class RTModel(object):
     @property
     def fuv_wavelength(self):
         return self.fuv_filter.wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mips24_filter(self):
+        return parse_filter("MIPS 24")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mips24_wavelength(self):
+        return self.mips24_filter.wavelength
 
     # -----------------------------------------------------------------
     # PARAMETERS
@@ -8602,14 +8622,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_bulge_map_earth_path(self):
+        return self.old_bulge_projections.earth_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_bulge_map_faceon(self):
         return self.old_bulge_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
+    def old_bulge_map_faceon_path(self):
+        return self.old_bulge_projections.faceon_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_bulge_map_edgeon(self):
         return self.old_bulge_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_map_edgeon_path(self):
+        return self.old_bulge_projections.edgeon_map_path
 
     # -----------------------------------------------------------------
 
@@ -8659,14 +8697,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_disk_map_earth_path(self):
+        return self.old_disk_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_disk_map_faceon(self):
         return self.old_disk_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
+    def old_disk_map_faceon_path(self):
+        return self.old_disk_projections.faceon_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_disk_map_edgeon(self):
         return self.old_disk_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_map_edgeon_path(self):
+        return self.old_disk_projections.edgeon_map_path
 
     # -----------------------------------------------------------------
 
@@ -8710,14 +8766,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def young_map_earth_path(self):
+        return self.young_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_map_faceon(self):
         return self.young_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
+    def young_map_faceon_path(self):
+        return self.young_projections.faceon_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_map_edgeon(self):
         return self.young_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_edgeon_path(self):
+        return self.young_projections.edgeon_map_path
 
     # -----------------------------------------------------------------
 
@@ -8760,14 +8834,32 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @property
+    def sfr_map_earth_path(self):
+        return self.sfr_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_map_faceon(self):
         return self.sfr_projections.faceon
 
     # -----------------------------------------------------------------
 
     @property
+    def sfr_map_faceon_path(self):
+        return self.sfr_projections.faceon_map_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def sfr_map_edgeon(self):
         return self.sfr_projections.edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_map_edgeon_path(self):
+        return self.sfr_projections.edgeon_map_path
 
     # -----------------------------------------------------------------
 
@@ -9101,6 +9193,43 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def total_star_formation_rate_tir(self):
+        return kennicutt_tir_to_sfr(self.dust_luminosity, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_tir(self):
+        return self.has_dust_luminosity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_24um_luminosity(self):
+        # don't interpolate, wavelength grid is expected to contain the FUV wavelength
+        return self.total_simulations.observed_photometry_at(self.mips24_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_24um_luminosity(self):
+        return self.total_simulations.has_observed_photometry
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_24um(self):
+        return calzetti_24um_to_sfr(self.observed_24um_luminosity, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_24um(self):
+        return self.has_observed_24um_luminosity
+
+    # -----------------------------------------------------------------
+
     @property
     def observed_i1_luminosity(self):
         return self.observed_total_sed.photometry_at(self.i1_wavelength)
@@ -9177,6 +9306,30 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def total_ssfr_tir(self):
+        return self.total_star_formation_rate_tir / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_ssfr_tir(self):
+        return self.has_total_star_formation_rate_tir and self.has_total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_ssfr_24um(self):
+        return self.total_star_formation_rate_24um / self.total_stellar_mass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_ssfr_24um(self):
+        return self.has_total_star_formation_rate_24um and self.has_total_stellar_mass
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def derived_parameter_values_total(self):
 
@@ -9216,6 +9369,8 @@ class RTModel(object):
         # Star formation rate
         if self.has_total_star_formation_rate_salim: values[sfr_salim_name] = self.total_star_formation_rate_salim
         if self.has_total_star_formation_rate_ke: values[sfr_ke_name] = self.total_star_formation_rate_ke
+        if self.has_total_star_formation_rate_tir: values[sfr_tir_name] = self.total_star_formation_rate_tir
+        if self.has_total_star_formation_rate_24um: values[sfr_24um_name] = self.total_star_formation_rate_24um
 
         # Stellar mass
         if self.has_total_stellar_mass: values[stellar_mass_name] = self.total_stellar_mass
@@ -9224,6 +9379,8 @@ class RTModel(object):
         # Specific star formation rate
         if self.has_total_ssfr_salim: values[ssfr_salim_name] = self.total_ssfr_salim
         if self.has_total_ssfr_ke: values[ssfr_ke_name] = self.total_ssfr_ke
+        if self.has_total_ssfr_tir: values[ssfr_tir_name] = self.total_ssfr_tir
+        if self.has_total_ssfr_24um: values[ssfr_24um_name] = self.total_ssfr_24um
 
         # Return
         return values
@@ -9851,6 +10008,8 @@ class RTModel(object):
         # Total
         if self.has_total_star_formation_rate_salim: values[sfr_salim_name + total_suffix] = self.total_star_formation_rate_salim
         if self.has_total_star_formation_rate_ke: values[sfr_ke_name + total_suffix] = self.total_star_formation_rate_ke
+        if self.has_total_star_formation_rate_tir: values[sfr_tir_name + total_suffix] = self.total_star_formation_rate_tir
+        if self.has_total_star_formation_rate_24um: values[sfr_24um_name + total_suffix] = self.total_star_formation_rate_24um
 
         # Young
         if self.has_young_star_formation_rate_salim: values[sfr_salim_name + young_suffix] = self.young_star_formation_rate_salim
@@ -9883,6 +10042,8 @@ class RTModel(object):
         # Total
         if self.has_total_ssfr_salim: values[ssfr_salim_name + total_suffix] = self.total_ssfr_salim
         if self.has_total_ssfr_ke: values[ssfr_ke_name + total_suffix] = self.total_ssfr_ke
+        if self.has_total_ssfr_tir: values[ssfr_tir_name + total_suffix] = self.total_ssfr_tir
+        if self.has_total_ssfr_24um: values[ssfr_24um_name + total_suffix] = self.total_ssfr_24um
 
         # Young
         if self.has_young_ssfr_salim: values[ssfr_salim_name + young_suffix] = self.young_ssfr_salim
@@ -10088,169 +10249,6 @@ class RTModel(object):
     @property
     def grid_xyz_filepath(self):
         return self.total_simulations.grid_xyz_filepath
-
-# -----------------------------------------------------------------
-
-kennicutt_evans_logc = 43.35 # 2012
-kennicutt = 1.4e-28 # 1998
-salim = 1.08e-28 # 200
-
-# -----------------------------------------------------------------
-
-def kennicutt_evans_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
-
-    """
-    This function ...
-    :param fuv_luminosity:
-    :param unit:
-    :param distance:
-    :return:
-    """
-
-    # Calculate factor
-    calibration = 1./ 10**kennicutt_evans_logc
-
-    # Get the FUV wavelength
-    fuv_wavelength = parse_filter("GALEX FUV").wavelength
-
-    from ..core.data import Data3D
-
-    # Frame
-    if isinstance(fuv_luminosity, Frame):
-
-        if unit is not None: raise ValueError("Cannot specify unit")
-
-        converted = fuv_luminosity.converted_to("erg/s", density=True, wavelength=fuv_wavelength, distance=distance)
-        converted *= calibration
-        converted.unit = "Msun/yr"
-        return converted
-
-    # 3D data
-    elif isinstance(fuv_luminosity, Data3D):
-
-        if unit is not None: raise ValueError("Cannot specify unit")
-
-        factor = fuv_luminosity.unit.conversion_factor("erg/s", density=True, wavelength=fuv_wavelength, distance=distance)
-        factor *= calibration
-        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt & Evans)")
-
-    # Photometric quantity
-    elif types.is_quantity(fuv_luminosity):
-        if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s", density=True, wavelength=fuv_wavelength, distance=distance).value * calibration * u("Msun/yr")
-
-    # Array
-    elif types.is_array_like(fuv_luminosity):
-
-        if unit is None: raise ValueError("Unit is not specified")
-        factor = unit.conversion_factor("erg/s", density=True, wavelength=fuv_wavelength, distance=distance)
-        factor *= calibration
-        return fuv_luminosity * factor
-
-    # Invalid
-    else: raise ValueError("Invalid type for 'fuv_luminosity'")
-
-# -----------------------------------------------------------------
-
-def kennicutt_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
-
-    """
-    This function ...
-    :param fuv_luminosity:
-    :param unit:
-    :param distance:
-    :return:
-    """
-
-    # Get the FUV wavelength
-    fuv_wavelength = parse_filter("GALEX FUV").wavelength
-
-    from ..core.data import Data3D
-
-    # Frame
-    if isinstance(fuv_luminosity, Frame):
-
-        if unit is not None: raise ValueError("Cannot specify unit")
-
-        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
-        converted *= kennicutt
-        converted.unit = "Msun/yr"
-        return converted
-
-    # 3D data
-    elif isinstance(fuv_luminosity, Data3D):
-
-        if unit is not None: raise ValueError("Cannot specify unit")
-
-        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
-        factor *= kennicutt
-        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Kennicutt)")
-
-    # Photometric quantity
-    elif types.is_quantity(fuv_luminosity):
-        if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance).value * kennicutt * u("Msun/yr")
-
-    # Array
-    elif types.is_array_like(fuv_luminosity):
-        if unit is None: raise ValueError("Unit is not specified")
-        factor = unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
-        factor *= kennicutt
-        return fuv_luminosity * factor
-
-    # Invalid
-    else: raise ValueError("Invalid type for 'fuv_luminosity'")
-
-# -----------------------------------------------------------------
-
-def salim_fuv_to_sfr(fuv_luminosity, unit=None, distance=None):
-
-    """
-    This function ...
-    :param fuv_luminosity:
-    :param unit:
-    :param distance:
-    :return:
-    """
-
-    # Get the FUV wavelength
-    fuv_wavelength = parse_filter("GALEX FUV").wavelength
-
-    from ..core.data import Data3D
-
-    # Frame
-    if isinstance(fuv_luminosity, Frame):
-
-        if unit is not None: raise ValueError("Cannot specify unit")
-
-        converted = fuv_luminosity.converted_to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
-        converted *= salim
-        converted.unit = "Msun/yr"
-        return converted
-
-    # 3D data
-    elif isinstance(fuv_luminosity, Data3D):
-
-        if unit is not None: raise ValueError("Cannot specify unit")
-
-        factor = fuv_luminosity.unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
-        factor *= salim
-        return fuv_luminosity.converted_by_factor(factor, "Msun/yr", new_name="SFR", new_description="star formation rate (Salim)")
-
-    # Photometric quantity
-    elif types.is_quantity(fuv_luminosity):
-        if unit is not None: raise ValueError("Cannot specify unit")
-        return fuv_luminosity.to("erg/s/Hz", wavelength=fuv_wavelength, distance=distance).value * salim * u("Msun/yr")
-
-    # Array
-    elif types.is_array_like(fuv_luminosity):
-        if unit is None: raise ValueError("Unit is not specified")
-        factor = unit.conversion_factor("erg/s/Hz", wavelength=fuv_wavelength, distance=distance)
-        factor *= salim
-        return fuv_luminosity * factor
-
-    # Invalid
-    else: raise ValueError("Invalid type for 'fuv_luminosity'")
 
 # -----------------------------------------------------------------
 

@@ -21,7 +21,7 @@ from .simulation import ObservedComponentSimulation, IntrinsicComponentSimulatio
 from .simulation import earth_name, faceon_name, edgeon_name, total_contribution
 from ...magic.core.frame import Frame
 from ...magic.core.datacube import DataCube
-from ...core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty, LazyDictionary
 
 # -----------------------------------------------------------------
 
@@ -32,7 +32,7 @@ class SingleComponentSimulations(ComponentSimulations):
     """
 
     def __init__(self, name, observed, intrinsic=None, distance=None, map_earth=None, map_faceon=None, map_edgeon=None,
-                 earth_wcs=None):
+                 map_earth_path=None, map_faceon_path=None, map_edgeon_path=None, earth_wcs=None):
 
         """
         This function ...
@@ -52,10 +52,70 @@ class SingleComponentSimulations(ComponentSimulations):
         # Set the intrinsic simulation
         self.intrinsic = intrinsic
 
-        # Set the maps
-        self.map_earth = map_earth
-        self.map_faceon = map_faceon
-        self.map_edgeon = map_edgeon
+        # Initialize maps dictionary
+        self.maps = LazyDictionary(Frame.from_file, distance=distance)
+        self.maps.set_kwargs(earth_name, wcs=earth_wcs)
+
+        # Set maps
+        if map_earth is not None: self.map_earth = map_earth
+        if map_faceon is not None: self.map_faceon = map_faceon
+        if map_edgeon is not None: self.map_edgeon = map_edgeon
+
+        # Set map paths
+        if map_earth_path is not None: self.set_earth_map_path(map_earth_path)
+        if map_faceon_path is not None: self.set_faceon_map_path(map_faceon_path)
+        if map_edgeon_path is not None: self.set_edgeon_map_path(map_edgeon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_earth(self):
+        return self.maps[earth_name] if earth_name in self.maps else None
+
+    # -----------------------------------------------------------------
+
+    @map_earth.setter
+    def map_earth(self, frame):
+        self.maps.set_value(earth_name, frame)
+
+    # -----------------------------------------------------------------
+
+    def set_earth_map_path(self, filepath):
+        self.maps[earth_name] = filepath
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_faceon(self):
+        return self.maps[faceon_name] if faceon_name in self.maps else None
+
+    # -----------------------------------------------------------------
+
+    @map_faceon.setter
+    def map_faceon(self, frame):
+        self.maps.set_value(faceon_name, frame)
+
+    # -----------------------------------------------------------------
+
+    def set_faceon_map_path(self, filepath):
+        self.maps[faceon_name] = filepath
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_edgeon(self):
+        return self.maps[edgeon_name] if edgeon_name in self.maps else None
+
+    # -----------------------------------------------------------------
+
+    @map_edgeon.setter
+    def map_edgeon(self, frame):
+        self.maps.set_value(edgeon_name, frame)
+
+    # -----------------------------------------------------------------
+
+    def set_edgeon_map_path(self, filepath):
+        self.maps[edgeon_name] = filepath
 
     # -----------------------------------------------------------------
 
@@ -155,26 +215,35 @@ class SingleComponentSimulations(ComponentSimulations):
         """
 
         # Load earth map
-        if map_earth is not None:
-            if map_earth_path is not None: raise ValueError("Cannot specify both map_earth and map_earth_path")
-        elif map_earth_path is not None: map_earth = Frame.from_file(map_earth_path, wcs=earth_wcs)
-        else: map_earth = None
+        # No: now use lazy dict for maps that are specified by paths
+        #if map_earth is not None:
+        #    if map_earth_path is not None: raise ValueError("Cannot specify both map_earth and map_earth_path")
+        #elif map_earth_path is not None: map_earth = Frame.from_file(map_earth_path, wcs=earth_wcs)
+        #else: map_earth = None
 
         # Load faceon map
-        if map_faceon is not None:
-            if map_faceon_path is not None: raise ValueError("Cannot specify both map_faceon and map_faceon_path")
-        elif map_faceon_path is not None: map_faceon = Frame.from_file(map_faceon_path)
-        else: map_faceon = None
+        # No: now use lazy dict for maps that are specified by paths
+        #if map_faceon is not None:
+        #    if map_faceon_path is not None: raise ValueError("Cannot specify both map_faceon and map_faceon_path")
+        #elif map_faceon_path is not None: map_faceon = Frame.from_file(map_faceon_path)
+        #else: map_faceon = None
 
         # Load edgeon map
-        if map_edgeon is not None:
-            if map_edgeon_path is not None: raise ValueError("Cannot specify both map_edgeon and map_edgeon_path")
-        elif map_edgeon_path is not None: map_edgeon = Frame.from_file(map_edgeon_path)
-        else: map_edgeon = None
+        # No: now use lazy dict for maps that are specified by paths
+        #if map_edgeon is not None:
+        #    if map_edgeon_path is not None: raise ValueError("Cannot specify both map_edgeon and map_edgeon_path")
+        #elif map_edgeon_path is not None: map_edgeon = Frame.from_file(map_edgeon_path)
+        #else: map_edgeon = None
+
+        # Checks
+        if map_earth is not None and map_earth_path is not None: raise ValueError("Cannot specify both map_earth and map_earth_path")
+        if map_faceon is not None and map_faceon_path is not None: raise ValueError("Cannot specify both map_faceon and map_faceon_path")
+        if map_edgeon is not None and map_edgeon_path is not None: raise ValueError("Cannot specify both map_edgeon and map_edgeon_path")
 
         # Create and return
         return cls(name, observed, intrinsic=intrinsic, distance=distance, map_earth=map_earth, map_faceon=map_faceon,
-                   map_edgeon=map_edgeon, earth_wcs=earth_wcs)
+                   map_edgeon=map_edgeon, map_earth_path=map_earth_path, map_faceon_path=map_faceon_path, map_edgeon_path=map_edgeon_path,
+                   earth_wcs=earth_wcs)
 
     # -----------------------------------------------------------------
 

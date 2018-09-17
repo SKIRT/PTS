@@ -1531,19 +1531,19 @@ class ComponentSimulations(object):
 
     @property
     def has_full_sed(self):
-        return self.has_other_observed_sed_contributions
+        return self.has_observed_sed and self.has_other_observed_sed_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_faceon(self):
-        return self.has_other_observed_sed_contributions_faceon
+        return self.has_faceon_observed_sed and self.has_other_observed_sed_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_edgeon(self):
-        return self.has_other_observed_sed_contributions_edgeon
+        return self.has_edgeon_observed_sed and self.has_other_observed_sed_contributions_edgeon
 
     # -----------------------------------------------------------------
     # CUBES
@@ -1551,19 +1551,19 @@ class ComponentSimulations(object):
 
     @property
     def has_full_cube(self):
-        return self.has_other_observed_cube_contributions
+        return self.has_observed_cube and self.has_other_observed_cube_contributions
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube_faceon(self):
-        return self.has_other_observed_cube_contributions_faceon
+        return self.has_faceon_observed_cube and self.has_other_observed_cube_contributions_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_cube_edgeon(self):
-        return self.has_other_observed_cube_contributions_edgeon
+        return self.has_edgeon_observed_cube and self.has_other_observed_cube_contributions_edgeon
 
     # -----------------------------------------------------------------
 
