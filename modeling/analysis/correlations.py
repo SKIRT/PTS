@@ -44,6 +44,8 @@ m31_name = "M31"
 # Names for correlations
 ssfr_funev_name = "sSFR-Funev"
 temperature_funev_name = "Temperature-Funev"
+sfr_sfr_name = "SFR-SFR"
+mean_age_funev_name = "Mean age-Funev"
 
 # -----------------------------------------------------------------
 
@@ -990,7 +992,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def valid_mean_ages_salim(self):
+    def valid_cell_mean_ages_salim(self):
         return self.cell_mean_ages[self.valid_cell_mask_salim]
 
     # -----------------------------------------------------------------
@@ -1031,7 +1033,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
                 if temperature_name not in colnames: self.ssfr_salim_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_salim, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_salim, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_salim, self.age_unit, as_column=True)
                 self.ssfr_salim_funev_cells.save() # save
             return True
         else: return False
@@ -1047,7 +1049,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 distance_center_name: self.valid_cell_radii_salim,
                 bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim,
                 temperature_name: self.valid_cell_temperatures_salim,
-                mean_age_name: self.valid_mean_ages_salim}
+                mean_age_name: self.valid_cell_mean_ages_salim}
 
     # -----------------------------------------------------------------
 
@@ -1223,6 +1225,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_temperatures_ke(self):
+        return self.cell_temperatures[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mean_ages_ke(self):
+        return self.cell_mean_ages[self.valid_cell_mask_ke]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_ke_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_ke.dat")
@@ -1259,7 +1273,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_ke, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_ke, as_column=True)
                 if temperature_name not in colnames: self.ssfr_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_ke, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_ke, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_ke, self.age_unit, as_column=True)
                 self.ssfr_ke_funev_cells.save() # save
             return True
         else: return False
@@ -1275,7 +1289,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 distance_center_name: self.valid_cell_radii_ke,
                 bulge_disk_ratio_name: self.valid_cell_bd_ratios_ke,
                 temperature_name: self.valid_cell_temperatures_ke,
-                mean_age_name: self.valid_mean_ages_ke}
+                mean_age_name: self.valid_cell_mean_ages_ke}
 
     # -----------------------------------------------------------------
 
@@ -1445,6 +1459,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_temperatures_mappings(self):
+        return self.cell_temperatures[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mean_ages_mappings(self):
+        return self.cell_mean_ages[self.valid_cell_mask_mappings]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_mappings_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_mappings.dat")
@@ -1481,7 +1507,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings, as_column=True)
                 if temperature_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_mappings, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings, self.age_unit, as_column=True)
                 self.ssfr_mappings_funev_cells.save() # save
             return True
         else: return False
@@ -1497,7 +1523,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 distance_center_name: self.valid_cell_radii_mappings,
                 bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings,
                 temperature_name: self.valid_cell_temperatures_mappings,
-                mean_age_name: self.valid_mean_ages_mappings}
+                mean_age_name: self.valid_cell_mean_ages_mappings}
 
     # -----------------------------------------------------------------
 
@@ -1667,6 +1693,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_temperatures_mappings_ke(self):
+        return self.cell_temperatures[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mean_ages_mappings_ke(self):
+        return self.cell_mean_ages[self.valid_cell_mask_mappings_ke]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_mappings_ke_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_mappings_ke.dat")
@@ -1703,7 +1741,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings_ke, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings_ke, as_column=True)
                 if temperature_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings_ke, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_mappings_ke, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings_ke, self.age_unit, as_column=True)
                 self.ssfr_mappings_ke_funev_cells.save() # save
             return True
         else: return False
@@ -1719,7 +1757,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 distance_center_name: self.valid_cell_radii_mappings_ke,
                 bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings_ke,
                 temperature_name: self.valid_cell_temperatures_mappings_ke,
-                mean_age_name: self.valid_mean_ages_mappings_ke}
+                mean_age_name: self.valid_cell_mean_ages_mappings_ke}
 
     # -----------------------------------------------------------------
 
@@ -1961,8 +1999,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def pixel_sfr_mappings_path(self):
+        return fs.join(self.projected_sfr_path, "sfr_mappings_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_pixel_ssfr_mappings(self):
         return fs.is_file(self.pixel_ssfr_mappings_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_sfr_mappings(self):
+        return fs.is_file(self.pixel_sfr_mappings_path)
 
     # -----------------------------------------------------------------
 
@@ -1972,9 +2022,21 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def pixel_sfr_mappings(self):
+        return Frame.from_file(self.pixel_sfr_mappings_path)
+
+    # -----------------------------------------------------------------
+
     @property
     def pixel_ssfr_mappings_values(self):
         return self.pixel_ssfr_mappings.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_mappings_values(self):
+        return self.pixel_sfr_mappings.values
 
     # -----------------------------------------------------------------
 
@@ -2111,7 +2173,227 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
-    # Temperature-Funev
+    # TIR SFR
+
+
+    @property
+    def cell_ssfr_tir_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_tir.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_tir_path(self):
+        return fs.join(self.cell_sfr_path, "sfr_tir.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_tir(self):
+        return fs.is_file(self.cell_ssfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_tir(self):
+        return fs.is_file(self.cell_sfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfr_tir(self):
+        return Data3D.from_file(self.cell_ssfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_tir(self):
+        return Data3D.from_file(self.cell_sfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_tir_values(self):
+        return self.cell_ssfr_tir.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_tir_units(self):
+        return self.cell_ssfr_tir.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_tir_values(self):
+        return self.cell_sfr_tir.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_tir_unit(self):
+        return self.cell_sfr_tir.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_tir_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_tir_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_tir_path(self):
+        return fs.join(self.projected_sfr_path, "sfr_tir_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr_tir(self):
+        return fs.is_file(self.pixel_ssfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_sfr_tir(self):
+        return fs.is_file(self.pixel_sfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_tir(self):
+        return Frame.from_file(self.pixel_ssfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_sfr_tir(self):
+        return Frame.from_file(self.pixel_sfr_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_tir_values(self):
+        return self.pixel_ssfr_tir.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_tir_values(self):
+        return self.pixel_sfr_tir.values
+
+    # -----------------------------------------------------------------
+    # 24 micron SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_24um_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_24um.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_24um_path(self):
+        return fs.join(self.cell_sfr_path, "sfr_24um.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_24um(self):
+        return fs.is_file(self.cell_ssfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_sfr_24um(self):
+        return fs.is_file(self.cell_sfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfr_24um(self):
+        return Data3D.from_file(self.cell_ssfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_24um(self):
+        return Data3D.from_file(self.cell_sfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_24um_values(self):
+        return self.cell_ssfr_24um.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_24um_values(self):
+        return self.cell_sfr_24um.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_24um_unit(self):
+        return self.cell_ssfr_24um.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_24um_unit(self):
+        return self.cell_sfr_24um.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_24um_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_24um_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_24um_path(self):
+        return fs.join(self.projected_sfr_path, "sfr_24um_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr_24um(self):
+        return fs.is_file(self.pixel_ssfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_sfr_24um(self):
+        return fs.is_file(self.pixel_sfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_24um(self):
+        return Frame.from_file(self.pixel_ssfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_sfr_24um(self):
+        return Frame.from_file(self.pixel_sfr_24um_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_24um_values(self):
+        return self.pixel_ssfr_24um.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_24um_values(self):
+        return self.pixel_sfr_24um.values
+
+    # -----------------------------------------------------------------
+    # Temperature - Funev
     # -----------------------------------------------------------------
 
     @property
@@ -2211,6 +2493,284 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                  x_description=self.temperature_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
+    # MEAN AGE - FUNEV
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_cells(self):
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_pixels(self):
+        return False # not implemented yet
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_age_funev_path(self):
+        return fs.create_directory_in(self.correlations_path, mean_age_funev_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_cells_path(self):
+        return fs.join(self.mean_age_funev_path, "cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_funev_cells(self):
+        return fs.is_file(self.mean_age_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mean_age_mask(self):
+        return self.cell_mean_ages != 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_cell_mask_mean_age_funev(self):
+        return self.valid_cell_mean_age_mask * self.valid_cell_funev_mask
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mean_age_funev_cells_path", True, write=False)
+    def mean_age_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Get values
+        valid_cell_mean_ages = self.cell_mean_ages[self.valid_cell_mask_mean_age_funev]
+        valid_cell_funev_values = self.cell_funev_values[self.valid_cell_mask_mean_age_funev]
+
+        # Create and return
+        return Scatter2D.from_xy(valid_cell_mean_ages, valid_cell_funev_values,
+                                 x_name=self.mean_age_name, y_name=self.funev_name, x_unit=self.age_unit,
+                                 x_description=self.mean_age_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_pixels_path(self):
+        return fs.join(self.mean_age_funev_path, "pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_funev_pixels(self):
+        return fs.is_file(self.mean_age_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mean_age_funev_pixels_path", True, write=False)
+    def mean_age_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Get values
+        valid_pixel_mean_ages = None
+        valid_pixel_funev_values = None
+
+        # Return
+        return Scatter2D.from_xy(valid_pixel_mean_ages, valid_pixel_funev_values,
+                                 x_name=self.mean_age_name, y_name=self.funev_name, x_unit=self.age_unit,
+                                 x_description=self.mean_age_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+    # MAPPINGS SFR - TIR SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_sfr_name(self):
+        return "SFR_MAPPINGS"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_sfr_description(self):
+        return "Star formation rate (MAPPINGS)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_sfr_name(self):
+        return "SFR_TIR"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_sfr_description(self):
+        return "Star formation rate (TIR)"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_sfr_path(self):
+        return fs.create_directory_in(self.correlations_path, "SFR-SFR")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_cells_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_tir_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_tir_sfr_cells(self):
+        return fs.is_file(self.mappings_tir_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_tir_sfr_cells_path", True, write=False)
+    def mappings_tir_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        valid_mappings_sfr_values = self.cell_sfr_mappings_values
+        valid_tir_sfr_values = self.cell_sfr_tir_values
+
+        # Return
+        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_tir_sfr_values,
+                                 x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=self.sfr_mappings_unit,
+                                 y_unit=self.sfr_tir_unit, x_description=self.mappings_sfr_description, y_description=self.tir_sfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_pixels_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_tir_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_tir_sfr_pixels(self):
+        return fs.is_file(self.mappings_tir_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_tir_sfr_pixels_path", True, write=False)
+    def mappings_tir_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        valid_mappings_sfr_values = self.pixel_sfr_mappings_values
+        valid_tir_sfr_values = self.pixel_sfr_tir_values
+
+        # Return
+        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_tir_sfr_values,
+                                 x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=self.sfr_mappings_unit,
+                                 x_description=self.mappings_sfr_description, y_description=self.tir_sfr_description)
+
+    # -----------------------------------------------------------------
+    # MAPPINGS SFR - 24 um SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def mips24_sfr_name(self):
+        return "SFR_24um"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mips24_sfr_description(self):
+        return "Star formation rate (MIPS 24 micron)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_cells_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_24um_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_24um_sfr_cells(self):
+        return fs.is_file(self.mappings_24um_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_24um_sfr_cells_path", True, write=False)
+    def mappings_24um_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        valid_mappings_sfr_values = self.cell_sfr_mappings_values
+        valid_24um_sfr_values = self.cell_sfr_24um_values
+
+        # Return
+        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_24um_sfr_values,
+                                 x_name=self.mappings_sfr_name, y_name=self.mips24_sfr_name, x_unit=self.sfr_mappings_unit,
+                                 y_unit=self.sfr_24um_unit, x_description=self.mappings_sfr_description, y_description=self.mips24_sfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_pixels_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_24um_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_24um_sfr_pixels(self):
+        return fs.is_file(self.mappings_24um_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_24um_sfr_pixels_path", True, write=False)
+    def mappings_24um_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        valid_mappings_sfr_values = self.pixel_sfr_mappings_values
+        valid_24um_sfr_values = self.pixel_sfr_24um_values
+
+        # Return
+        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_24um_sfr_values,
+                                 x_name=self.mappings_sfr_name, y_name=self.mips24_sfr_name, x_unit=self.sfr_mappings_unit,
+                                 y_unit=self.sfr_24um_unit, x_description=self.mappings_sfr_description, y_description=self.mips24_sfr_description)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -2279,6 +2839,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # SFR SFR scatter data
         self.write_sfr_sfr()
+
+        # Mean age Funev scatter data
+        self.write_mean_age_funev()
 
     # -----------------------------------------------------------------
 
@@ -2681,13 +3244,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def do_write_mappings_tir_sfr_cells(self):
-        pass
+        return not self.has_mappings_tir_sfr_cells
 
     # -----------------------------------------------------------------
 
     @property
     def do_write_mappings_tir_sfr_pixels(self):
-        pass
+        return not self.has_mappings_tir_sfr_pixels
 
     # -----------------------------------------------------------------
 
@@ -2717,7 +3280,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         log.info("Writing the MAPPINGS SFR to TIR SFR dust cell scatter data ...")
 
         # Write
-        self.temperature_funev_cells.saveto(self.temperature_funev_cells_path)
+        self.mappings_tir_sfr_cells.saveto(self.mappings_tir_sfr_cells_path)
 
     # -----------------------------------------------------------------
 
@@ -2732,7 +3295,19 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         log.info("Writing the MAPPINGS SFR to TIR SFR pixel scatter data ...")
 
         # Write
-        self.temperature_funev_pixels.saveto(self.temperature_funev_pixels_path)
+        self.mappings_tir_sfr_pixels.saveto(self.mappings_tir_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_24um_sfr_cells(self):
+        return not self.has_mappings_24um_sfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_24um_sfr_pixels(self):
+        return not self.has_mappings_24um_sfr_pixels
 
     # -----------------------------------------------------------------
 
@@ -2744,10 +3319,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Cells
+        if self.do_write_mappings_24um_sfr_cells: self.write_mappings_24um_sfr_cells()
 
         # Pixels
-
-        pass
+        if self.do_write_mappings_24um_sfr_pixels: self.write_mappings_24um_sfr_pixels()
 
     # -----------------------------------------------------------------
 
@@ -2758,7 +3333,11 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the MAPPINGS SFR to 24 micron SFR dust cell scatter data ...")
+
+        # Write
+        self.mappings_24um_sfr_cells.saveto(self.mappings_24um_sfr_cells_path)
 
     # -----------------------------------------------------------------
 
@@ -2769,7 +3348,74 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the MAPPINGS SFR to 24 micron SFR dust pixel scatter data ...")
+
+        # Write
+        self.mappings_24um_sfr_pixels.saveto(self.mappings_24um_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_mean_age_cells(self):
+        return self.has_mean_age_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_mean_age_pixels(self):
+        return self.has_mean_age_pixels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mean_age_funev_cells(self):
+        return self.do_mean_age_cells and not self.has_mean_age_funev_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mean_age_funev_pixels(self):
+        return self.do_mean_age_pixels and not self.has_mean_age_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_funev(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mean_age_funev_cells: self.write_mean_age_funev_cells()
+
+        # Pixels
+        if self.do_write_mean_age_funev_pixels: self.write_mean_age_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_funev_cells(self):
+
+        """
+        This functio n...
+        :return:
+        """
+
+        # Write
+        self.mean_age_funev_cells.saveto(self.mean_age_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_funev_pixels(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Write
+        self.mean_age_funev_pixels.saveto(self.mean_age_funev_pixels_path)
 
     # -----------------------------------------------------------------
 
@@ -2788,6 +3434,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Plot
         self.plot_temperature_funev()
+
+        # SFR SFR scatter data
+        self.plot_sfr_sfr()
+
+        # Plot mean age - Funev
+        self.plot_mean_age_funev()
 
     # -----------------------------------------------------------------
 
@@ -3619,6 +4271,414 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                         title=self.temperature_funev_pixels_title,
                         path=self.temperature_funev_pixels_plot_path,
                         ylimits=self.funev_limits, xlog=True, xlimits=self.temperature_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_limits(self):
+        return None
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # MAPPINGS to TIR
+        self.plot_mappings_tir_sfr()
+
+        # MAPPINGS to 24um
+        self.plot_mappings_24um_sfr()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_mappings_tir_sfr_cells(self):
+        return not self.has_mappings_tir_sfr_cells_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_mappings_tir_sfr_pixels(self):
+        return not self.has_mappings_tir_sfr_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_tir_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_plot_mappings_tir_sfr_cells: self.plot_mappings_tir_sfr_cells()
+
+        # Pixels
+        if self.do_plot_mappings_tir_sfr_pixels: self.plot_mappings_tir_sfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_cells_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.mappings_tir_sfr_cells_path
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_cells_title(self):
+        return "Correlation between MAPPINGS SFR and TIR SFR of dust cells"
+        
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_cells_plot_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_tir_cells.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_tir_sfr_cells_plot(self):
+        return fs.is_file(self.mappings_tir_sfr_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_tir_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.mappings_tir_sfr_cells_scatter_paths, self.mappings_sfr_name, self.tir_sfr_name,
+                        self.mappings_sfr_description, self.tir_sfr_description,
+                        title=self.mappings_tir_sfr_cells_title, path=self.mappings_tir_sfr_cells_plot_path,
+                        ylimits=self.sfr_limits, xlog=True, xlimits=self.sfr_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_pixels_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.mappings_tir_sfr_pixels_path
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_pixels_title(self):
+        return "Correlation between MAPPINGS SFR and TIR SFR of model pixels"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_pixels_plot_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_tir_pixels.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_tir_sfr_pixels_plot(self):
+        return fs.is_file(self.mappings_tir_sfr_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_tir_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.mappings_tir_sfr_pixels_scatter_paths, self.mappings_sfr_name, self.tir_sfr_name,
+                        self.mappings_sfr_description, self.tir_sfr_description,
+                        title=self.mappings_tir_sfr_pixels_title, path=self.mappings_tir_sfr_pixels_plot_path,
+                        ylimits=self.sfr_limits, xlog=True, xlimits=self.sfr_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_mappings_24um_sfr_cells(self):
+        return not self.has_mappings_24um_sfr_cells_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_mappings_24um_sfr_pixels(self):
+        return not self.has_mappings_24um_sfr_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_24um_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_plot_mappings_24um_sfr_cells: self.plot_mappings_24um_sfr_cells()
+
+        # Pixels
+        if self.do_plot_mappings_24um_sfr_pixels: self.plot_mappings_24um_sfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mappings_24um_sfr_cells_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.mappings_24um_sfr_cells_path
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_cells_title(self):
+        return "Correlation between MAPPINGS SFR and 24 micron SFR of dust cells"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_cells_plot_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_24um_cells.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_24um_sfr_cells_plot(self):
+        return fs.is_file(self.mappings_24um_sfr_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_24um_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.mappings_24um_sfr_cells_scatter_paths, self.mappings_sfr_name, self.mips24_sfr_name,
+                        self.mappings_sfr_description, self.mips24_sfr_description,
+                        title=self.mappings_24um_sfr_cells_title, path=self.mappings_24um_sfr_cells_plot_path,
+                        ylimits=self.sfr_limits, xlog=True, xlimits=self.sfr_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mappings_24um_sfr_pixels_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.mappings_24um_sfr_pixels_path
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_pixels_title(self):
+        return "Correlation between MAPPINGS SFR and 24 micron SFR of model pixels"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_pixels_plot_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_24um_pixels.pdf")
+        
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_24um_sfr_pixels_plot(self):
+        return fs.is_file(self.mappings_24um_sfr_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_24um_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.mappings_24um_sfr_pixels_scatter_paths, self.mappings_sfr_name, self.mips24_sfr_name,
+                        self.mappings_sfr_description, self.mips24_sfr_description,
+                        title=self.mappings_24um_sfr_pixels_title, path=self.mappings_24um_sfr_pixels_plot_path,
+                        ylimits=self.sfr_limits, xlog=True, xlimits=self.sfr_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_mean_age_funev_cells(self):
+        return self.do_mean_age_cells and not self.has_mean_age_funev_cells_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_plot_mean_age_funev_pixels(self):
+        return self.do_mean_age_pixels and not self.has_mean_age_funev_pixels_plot
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_limits(self):
+        return None
+
+    # -----------------------------------------------------------------
+
+    def plot_mean_age_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_plot_mean_age_funev_cells: self.plot_mean_age_funev_cells()
+
+        # Pixels
+        if self.do_plot_mean_age_funev_pixels: self.plot_mean_age_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_cells_scatters(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.mean_age_funev_cells
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_cells_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (cells)"] = self.mean_age_funev_cells_path
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_cells_plot_path(self):
+        return fs.join(self.mean_age_funev_path, "cells.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_funev_cells_plot(self):
+        return fs.is_file(self.mean_age_funev_cells_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_cells_title(self):
+        return "Correlation between mean stellar age and Funev of cells"
+
+    # -----------------------------------------------------------------
+
+    def plot_mean_age_funev_cells(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.mean_age_funev_cells_scatter_paths, self.mean_age_name, self.funev_name,
+                        self.mean_age_description, self.funev_description,
+                        title=self.mean_age_funev_cells_title, path=self.mean_age_funev_cells_plot_path,
+                        ylimits=self.funev_limits, xlog=True, xlimits=self.mean_age_limits)
+
+        # Plot using Matplotlib
+        else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_pixels_scatters(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.mean_age_funev_pixels
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_pixels_scatter_paths(self):
+        scatters = OrderedDict()
+        scatters[self.galaxy_name + " (pixels)"] = self.mean_age_funev_pixels_path
+        # no references (yet)
+        return scatters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_pixels_plot_path(self):
+        return fs.join(self.mean_age_funev_path, "cells.pdf")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_funev_pixels_plot(self):
+        return fs.is_file(self.mean_age_funev_pixels_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_funev_pixels_title(self):
+        return "Correlation between mean stellar age and Funev of pixels"
+
+    # -----------------------------------------------------------------
+
+    def plot_mean_age_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Plot using TOPCAT's STILTS
+        if self.config.topcat:
+
+            plot_stilts(self.mean_age_funev_pixels_scatter_paths, self.mean_age_name, self.funev_name,
+                        self.mean_age_description, self.funev_description,
+                        title=self.mean_age_funev_pixels_title, path=self.mean_age_funev_pixels_plot_path,
+                        ylimits=self.funev_limits, xlog=True, xlimits=self.mean_age_limits)
 
         # Plot using Matplotlib
         else: raise NotImplementedError("Not implemented")

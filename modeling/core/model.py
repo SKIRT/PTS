@@ -757,7 +757,8 @@ class RTModel(object):
     @lazyproperty
     def total_simulation(self):
         #return self.total_simulations.observed # SLOWER? more loading of files
-        return ObservedComponentSimulation.from_output_path(self.observed_total_output_path, total_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_total_output_path, total_simulation_name, earth_wcs=self.earth_wcs)
+        return self.total_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -830,7 +831,8 @@ class RTModel(object):
     @lazyproperty
     def bulge_simulation(self):
         #return self.bulge_simulations.observed
-        return ObservedComponentSimulation.from_output_path(self.observed_bulge_output_path, bulge_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_bulge_output_path, bulge_simulation_name, earth_wcs=self.earth_wcs)
+        return self.bulge_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -903,7 +905,8 @@ class RTModel(object):
     @property
     def disk_simulation(self):
         #return self.disk_simulations.observed
-        return ObservedComponentSimulation.from_output_path(self.observed_disk_output_path, disk_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_disk_output_path, disk_simulation_name, earth_wcs=self.earth_wcs)
+        return self.disk_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -1158,7 +1161,8 @@ class RTModel(object):
     @lazyproperty
     def old_simulation(self):
         #return self.old_simulations.observed
-        return ObservedComponentSimulation.from_output_path(self.observed_old_output_path, old_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_old_output_path, old_simulation_name, earth_wcs=self.earth_wcs)
+        return self.old_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -1231,7 +1235,8 @@ class RTModel(object):
     @lazyproperty
     def young_simulation(self):
         #return self.young_simulations.observed
-        return ObservedComponentSimulation.from_output_path(self.observed_young_output_path, young_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_young_output_path, young_simulation_name, earth_wcs=self.earth_wcs)
+        return self.young_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -1304,7 +1309,8 @@ class RTModel(object):
     @lazyproperty
     def sfr_simulation(self):
         #return self.sfr_simulations.observed
-        return ObservedComponentSimulation.from_output_path(self.observed_sfr_output_path, sfr_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_sfr_output_path, sfr_simulation_name, earth_wcs=self.earth_wcs)
+        return self.sfr_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -1580,7 +1586,8 @@ class RTModel(object):
     @lazyproperty
     def unevolved_simulation(self):
         #return self.unevolved_simulations.observed
-        return ObservedComponentSimulation.from_output_path(self.observed_unevolved_output_path, unevolved_simulation_name, earth_wcs=self.earth_wcs)
+        #return ObservedComponentSimulation.from_output_path(self.observed_unevolved_output_path, unevolved_simulation_name, earth_wcs=self.earth_wcs)
+        return self.unevolved_simulations.observed
 
     # -----------------------------------------------------------------
 
@@ -5858,6 +5865,80 @@ class RTModel(object):
         return self.has_total_intrinsic_stellar_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------
+    # X. 24 MICRON LUMINOSITY
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_luminosity_cube_earth(self):
+        return self.total_simulations.observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_observed_luminosity_cube_earth(self):
+        return self.total_simulations.has_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_luminosity_cube_faceon(self):
+        return self.total_simulations.faceon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_observed_luminosity_cube_faceon(self):
+        return self.total_simulations.has_faceon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_luminosity_cube_edgeon(self):
+        return self.total_simulations.edgeon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_observed_luminosity_cube_edgeon(self):
+        return self.total_simulations.has_edgeon_observed_cube
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_24um_luminosity_map_earth(self):
+        return self.total_observed_luminosity_cube_earth.get_frame_for_wavelength(self.mips24_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_24um_luminosity_map_earth(self):
+        return self.has_total_observed_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_24um_luminosity_map_faceon(self):
+        return self.total_observed_luminosity_cube_faceon.get_frame_for_wavelength(self.mips24_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_24um_luminosity_map_faceon(self):
+        return self.has_total_observed_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_24um_luminosity_map_edgeon(self):
+        return self.total_observed_luminosity_cube_edgeon.get_frame_for_wavelength(self.mips24_wavelength, copy=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_24um_luminosity_map_edgeon(self):
+        return self.has_total_observed_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
     # 13. STAR FORMATION RATE
     #   SALIM
     #     EARTH
@@ -6022,6 +6103,116 @@ class RTModel(object):
     @property
     def has_total_star_formation_rate_map_edgeon_ke(self):
         return self.has_intrinsic_fuv_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+    #   TIR
+    #     EARTH
+    # -----------------------------------------------------------------
+
+    @property
+    def total_star_formation_rate_map_tir(self):
+        return self.total_star_formation_rate_map_earth_tir
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_total_star_formation_rate_map_tir(self):
+        return self.has_total_star_formation_rate_map_earth_tir
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_map_earth_tir(self):
+        return kennicutt_tir_to_sfr(self.total_dust_luminosity_map_earth, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_earth_tir(self):
+        return self.has_total_dust_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+    #     FACEON
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_map_faceon_tir(self):
+        return kennicutt_tir_to_sfr(self.total_dust_luminosity_map_faceon, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_faceon_tir(self):
+        return self.has_total_dust_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+    #     EDGEON
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_map_edgeon_tir(self):
+        return kennicutt_tir_to_sfr(self.total_dust_luminosity_map_edgeon, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_edgeon_tir(self):
+        return self.has_total_dust_luminosity_map_edgeon
+
+    # -----------------------------------------------------------------
+    #   24 micron
+    #     EARTH
+    # -----------------------------------------------------------------
+
+    @property
+    def total_star_formation_rate_map_24um(self):
+        return self.total_star_formation_rate_map_earth_24um
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_24um(self):
+        return self.has_total_star_formation_rate_map_earth_24um
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_map_earth_24um(self):
+        return calzetti_24um_to_sfr(self.total_24um_luminosity_map_earth, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_earth_24um(self):
+        return self.has_total_24um_luminosity_map_earth
+
+    # -----------------------------------------------------------------
+    #    FACEON
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_map_faceon_24um(self):
+        return calzetti_24um_to_sfr(self.total_24um_luminosity_map_faceon, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_faceon_24um(self):
+        return self.has_total_24um_luminosity_map_faceon
+
+    # -----------------------------------------------------------------
+    #     EDGEON
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_star_formation_rate_map_edgeon_24um(self):
+        return calzetti_24um_to_sfr(self.total_24um_luminosity_map_edgeon, distance=self.distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_star_formation_rate_map_edgeon_24um(self):
+        return self.has_total_24um_luminosity_map_edgeon
 
     # -----------------------------------------------------------------
     # 14. I1 LUMINOSITY

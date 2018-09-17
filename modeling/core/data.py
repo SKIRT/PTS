@@ -1715,6 +1715,19 @@ class SpectralData3D(Data3DBase):
 
     # -----------------------------------------------------------------
 
+    def get_array_for_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        j = self.get_index_for_wavelength(wavelength)
+        return self.get_spatial_array(j)
+
+    # -----------------------------------------------------------------
+
     def get_data3d_for_wavelength(self, wavelength):
 
         """

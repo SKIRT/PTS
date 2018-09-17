@@ -147,12 +147,18 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     @property
     def do_absorption_data(self):
+        #print(self.has_total_contribution_spectral_absorption)
+        #print(self.has_old_contribution_spectral_absorption)
+        #print(self.has_unevolved_contribution_spectral_absorption)
         return self.has_total_contribution_spectral_absorption and self.has_old_contribution_spectral_absorption and self.has_unevolved_contribution_spectral_absorption
 
     # -----------------------------------------------------------------
 
     @property
     def do_emission_data(self):
+        #print(self.has_total_contribution_spectral_emission)
+        #print(self.has_old_contribution_spectral_emission)
+        #print(self.has_unevolved_contribution_spectral_emission)
         return self.has_total_contribution_spectral_emission and self.has_old_contribution_spectral_emission and self.has_unevolved_contribution_spectral_emission
 
     # -----------------------------------------------------------------
