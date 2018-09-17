@@ -268,6 +268,12 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
     log_p = max(log_p, 4.0)
     log_p = min(log_p, 8.0 - 1e-8)
 
+    # Show
+    #print("Log(p)", log_p)
+    #print("log(C)", log_c)
+    #print("fPDR", fPDR)
+    #print("rMetallicity", rel_metallicity)
+
     # Find the appropriate SED from interpolating in the library
     # i_ = find_nearest(np.array(_Zrelv), rel_metallicity)
     i = nr.locate_clip(_Zrelv, rel_metallicity)

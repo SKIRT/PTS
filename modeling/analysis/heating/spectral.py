@@ -1168,7 +1168,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(WavelengthCurve, "curve_faceon_emission_seds_path")
+    @lazyfileproperty(WavelengthCurve, "curve_faceon_emission_seds_path", True)
     def curve_faceon_emission_seds(self):
 
         """
@@ -1299,7 +1299,7 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(WavelengthCurve, "curve_egeon_emission_seds_path", True, write=False)
+    @lazyfileproperty(WavelengthCurve, "curve_edgeon_emission_seds_path", True, write=False)
     def curve_edgeon_emission_seds(self):
 
         """
@@ -3646,11 +3646,11 @@ class SpectralDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Emission from SEDs (to be expected equal)
         self.write_curves_emission_seds()
 
-        # Emission data
-        if self.do_emission_data: self.write_curves_emission_data()
-
         # Absorption data
         if self.do_absorption_data: self.write_curves_absorption_data()
+
+        # Emission data
+        if self.do_emission_data: self.write_curves_emission_data()
 
     # -----------------------------------------------------------------
 

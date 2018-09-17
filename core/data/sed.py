@@ -850,154 +850,73 @@ class SED(WavelengthCurve):
     # SHOULD ALWAYS BE THE CASE FOR AN SED!
     @property
     def is_spectral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_spectral_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_wavelength_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_wavelength_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_frequency_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_frequency_density
 
     # -----------------------------------------------------------------
 
     @property
     def is_neutral_density(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.is_neutral_density
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_wavelength_density_unit(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
         return self.unit.corresponding_wavelength_density_unit
 
     # -----------------------------------------------------------------
 
     def convert_to_corresponding_wavelength_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Convert, return the factor
-        return self.convert_to(self.corresponding_wavelength_density_unit)
+        return self.convert_to(photometry_unit=self.corresponding_wavelength_density_unit)
 
     # -----------------------------------------------------------------
 
     def converted_to_corresponding_wavelength_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.converted_to(self.corresponding_wavelength_density_unit)
+        return self.converted_to(photometry_unit=self.corresponding_wavelength_density_unit)
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_frequency_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_frequency_density_unit
 
     # -----------------------------------------------------------------
 
     def convert_to_corresponding_frequency_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Convert, return the factor
-        return self.convert_to(self.corresponding_frequency_density_unit)
+        return self.convert_to(photometry_unit=self.corresponding_frequency_density_unit)
 
     # -----------------------------------------------------------------
 
     def converted_to_corresponding_frequency_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.converted_to(self.corresponding_frequency_density_unit)
+        return self.converted_to(photometry_unit=self.corresponding_frequency_density_unit)
 
     # -----------------------------------------------------------------
 
     @property
     def corresponding_neutral_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.unit.corresponding_neutral_density_unit
 
     # -----------------------------------------------------------------
 
     def convert_to_corresponding_neutral_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Convert, return the factor
-        return self.convert_to(self.corresponding_neutral_density_unit)
+        return self.convert_to(photometry_unit=self.corresponding_neutral_density_unit)
 
     # -----------------------------------------------------------------
 
     def converted_to_corresponding_neutral_density_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.converted_to(self.corresponding_neutral_density_unit)
+        return self.converted_to(photometry_unit=self.corresponding_neutral_density_unit)
 
     # -----------------------------------------------------------------
 

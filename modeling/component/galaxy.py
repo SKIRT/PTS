@@ -1312,7 +1312,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        from ..core.model import hubble_stage_to_type
+        from ..core.stellar_mass import hubble_stage_to_type
         return hubble_stage_to_type(self.hubble_stage)
 
     # -----------------------------------------------------------------
@@ -1325,7 +1325,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        from ..core.model import hubble_stage_to_type
+        from ..core.stellar_mass import hubble_stage_to_type
         return hubble_stage_to_type(self.hubble_stage, add_subtype=True)[1]
 
     # -----------------------------------------------------------------

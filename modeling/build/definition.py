@@ -1037,6 +1037,12 @@ class ModelDefinition(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_stars_age(self):
+        return 10. * u("Myr")
+
+    # -----------------------------------------------------------------
+
     @property
     def dust_mass(self):
         return self.dust_parameters.mass

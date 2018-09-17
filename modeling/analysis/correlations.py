@@ -28,6 +28,7 @@ from ...magic.core.frame import Frame
 from ...magic.tools.plotting import plot_scatters, plot_stilts
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import sequences
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -61,7 +62,7 @@ mean_age_name = "Mean stellar age"
 
 # Auxilary column names for sSFR-Funev scatter data
 #aux_colnames = [sfr_name, dust_mass_name, distance_center_name, bulge_disk_ratio_name]
-aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name]
+aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name, temperature_name, mean_age_name]
 
 # -----------------------------------------------------------------
 
@@ -306,6 +307,199 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def cell_bd_ratios(self):
         return self.cell_bd_ratio_data.values
+
+    # -----------------------------------------------------------------
+    # BOLOMETRIC LUMINOSITY / STELLAR CONTRIBUTION
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bol_luminosity_unit(self):
+        return u("Lsun")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_bolometric_luminosity(self):
+        return self.model.intrinsic_bolometric_luminosity_old_bulge
+        # SHOULD BE THE SAME (not tested):
+        #return self.model.observed_bolometric_luminosity_old_bulge
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_bolometric_luminosity_scalar(self):
+        return self.bulge_bolometric_luminosity.to(self.bol_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_bolometric_luminosity(self):
+        return self.model.intrinsic_bolometric_luminosity_old_disk
+        # SHOULD BE THE SAME (not tested):
+        #return self.model.observed_bolometric_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_bolometric_luminosity_scalar(self):
+        return self.disk_bolometric_luminosity.to(self.bol_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_bolometric_luminosity(self):
+        return self.model.intrinsic_bolometric_luminosity_young
+        # SHOULD BE THE SAME (not tested):
+        #return self.model.observed_bolometric_luminosity_young
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_bolometric_luminosity_scalar(self):
+        return self.young_bolometric_luminosity.to(self.bol_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_bolometric_luminosity(self):
+        return self.model.intrinsic_bolometric_luminosity_sfr
+        # SHOULD BE THE SAME (not tested):
+        #return self.model.observed_bolometric_luminosity_sfr
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_bolometric_luminosity_scalar(self):
+        return self.sfr_bolometric_luminosity.to(self.bol_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_bol_luminosities(self):
+        return self.bulge_cell_normalized_mass * self.bulge_bolometric_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_bol_luminosities(self):
+        return self.disk_cell_normalized_mass * self.disk_bolometric_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_cell_bol_luminosities(self):
+        return self.bulge_cell_bol_luminosities + self.disk_cell_bol_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_cell_bol_luminosities(self):
+        return self.young_cell_normalized_mass * self.young_bolometric_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_cell_bol_luminosities(self):
+        return self.sfr_cell_normalized_mass * self.sfr_bolometric_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_cell_bol_luminosities(self):
+        return self.young_cell_bol_luminosities + self.sfr_cell_bol_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_bol_luminosities(self):
+        return self.old_cell_bol_luminosities + self.unevolved_cell_bol_luminosities
+
+    # -----------------------------------------------------------------
+    # MEAN STELLAR AGE
+    # -----------------------------------------------------------------
+
+    @property
+    def age_unit(self):
+        return u("Gyr")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mean_age_path(self):
+        return fs.join(self.correlations_path, "mean_age.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_mean_age(self):
+        return fs.is_file(self.cell_mean_age_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_name(self):
+        return "Age"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_description(self):
+        return "Mean stellar age"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_ages(self):
+        return np.array([self.model.old_mean_stellar_age, self.model.young_mean_stellar_age, self.model.sfr_mean_stellar_age])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_old_luminosity_contributions(self):
+        return self.old_cell_bol_luminosities / self.total_cell_bol_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_young_luminosity_contributions(self):
+        return self.young_cell_bol_luminosities / self.total_cell_bol_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_sfr_luminosity_contributions(self):
+        return self.sfr_cell_bol_luminosities / self.total_cell_bol_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_stellar_luminosity_contributions(self):
+        return np.array([self.cell_old_luminosity_contributions, self.cell_young_luminosity_contributions, self.cell_sfr_luminosity_contributions])
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_mean_age_path", True, write=True)
+    def cell_mean_age_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the mean age in dust cell, by weighing each stellar component age (old, young, ionizing) by the respective contribution to the global luminosity in that cell
+        mean_ages = numbers.weighed_arithmetic_mean_numpy(self.stellar_ages, weights=self.cell_stellar_luminosity_contributions)
+
+        # Create the data with external xyz
+        return Data3D.from_values(self.mean_age_name, mean_ages, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, unit=self.age_unit,
+                                  description=self.mean_age_description, xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_mean_ages(self):
+        return self.cell_mean_age_data.values
 
     # -----------------------------------------------------------------
     # DUST MASS
@@ -789,6 +983,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def valid_cell_temperatures_salim(self):
+        return self.cell_temperatures[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def valid_mean_ages_salim(self):
+        return self.cell_mean_ages[self.valid_cell_mask_salim]
+
+    # -----------------------------------------------------------------
+
     @property
     def ssfr_salim_funev_cells_path(self):
         return fs.join(self.ssfr_funev_path, "cells_salim.dat")
@@ -824,6 +1030,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if dust_density_name not in colnames: self.ssfr_salim_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_salim, self.cell_dust_density_unit, as_column=True)
                 if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
+                if temperature_name not in colnames: self.ssfr_salim_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_salim, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_salim, self.age_unit, as_column=True)
                 self.ssfr_salim_funev_cells.save() # save
             return True
         else: return False
@@ -837,7 +1045,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 sfr_density_name: self.valid_cell_sfr_densities_salim,
                 dust_density_name: self.valid_cell_dust_densities_salim,
                 distance_center_name: self.valid_cell_radii_salim,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim}
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_salim,
+                temperature_name: self.valid_cell_temperatures_salim,
+                mean_age_name: self.valid_mean_ages_salim}
 
     # -----------------------------------------------------------------
 
@@ -847,7 +1057,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #dust_mass_name: self.cell_dust_mass_unit,
                 sfr_density_name: self.sfr_density_salim_unit,
                 dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit}
+                distance_center_name: self.length_unit,
+                temperature_name: self.temperature_unit,
+                mean_age_name: self.age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1046,6 +1258,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if dust_density_name not in colnames: self.ssfr_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_ke, self.cell_dust_density_unit, as_column=True)
                 if distance_center_name not in colnames: self.ssfr_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_ke, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_ke, as_column=True)
+                if temperature_name not in colnames: self.ssfr_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_ke, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_ke, self.age_unit, as_column=True)
                 self.ssfr_ke_funev_cells.save() # save
             return True
         else: return False
@@ -1059,7 +1273,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 sfr_density_name: self.valid_cell_sfr_densities_ke,
                 dust_density_name: self.valid_cell_dust_densities_ke,
                 distance_center_name: self.valid_cell_radii_ke,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_ke}
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_ke,
+                temperature_name: self.valid_cell_temperatures_ke,
+                mean_age_name: self.valid_mean_ages_ke}
 
     # -----------------------------------------------------------------
 
@@ -1069,7 +1285,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #dust_mass_name: self.cell_dust_mass_unit,
                 sfr_density_name: self.sfr_density_ke_unit,
                 dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit}
+                distance_center_name: self.length_unit,
+                temperature_name: self.temperature_unit,
+                mean_age_name: self.age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1262,6 +1480,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if dust_density_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings, self.cell_dust_density_unit, as_column=True)
                 if distance_center_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings, as_column=True)
+                if temperature_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_mappings, self.age_unit, as_column=True)
                 self.ssfr_mappings_funev_cells.save() # save
             return True
         else: return False
@@ -1275,7 +1495,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 sfr_density_name: self.valid_cell_sfr_densities_mappings,
                 dust_density_name: self.valid_cell_dust_densities_mappings,
                 distance_center_name: self.valid_cell_radii_mappings,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings}
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings,
+                temperature_name: self.valid_cell_temperatures_mappings,
+                mean_age_name: self.valid_mean_ages_mappings}
 
     # -----------------------------------------------------------------
 
@@ -1285,7 +1507,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #dust_mass_name: self.cell_dust_mass_unit,
                 sfr_density_name: self.sfr_density_mappings_unit,
                 dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit}
+                distance_center_name: self.length_unit,
+                temperature_name: self.temperature_unit,
+                mean_age_name: self.age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1478,6 +1702,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if dust_density_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(dust_density_name, self.valid_cell_dust_densities_mappings_ke, self.cell_dust_density_unit, as_column=True)
                 if distance_center_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings_ke, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings_ke, as_column=True)
+                if temperature_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings_ke, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_mean_ages_mappings_ke, self.age_unit, as_column=True)
                 self.ssfr_mappings_ke_funev_cells.save() # save
             return True
         else: return False
@@ -1491,7 +1717,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 sfr_density_name: self.valid_cell_sfr_densities_mappings_ke,
                 dust_density_name: self.valid_cell_dust_densities_mappings_ke,
                 distance_center_name: self.valid_cell_radii_mappings_ke,
-                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings_ke}
+                bulge_disk_ratio_name: self.valid_cell_bd_ratios_mappings_ke,
+                temperature_name: self.valid_cell_temperatures_mappings_ke,
+                mean_age_name: self.valid_mean_ages_mappings_ke}
 
     # -----------------------------------------------------------------
 
@@ -1501,7 +1729,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 #dust_mass_name: self.cell_dust_mass_unit,
                 sfr_density_name: self.sfr_density_mappings_ke_unit,
                 dust_density_name: self.cell_dust_density_unit,
-                distance_center_name: self.length_unit}
+                distance_center_name: self.length_unit,
+                temperature_name: self.temperature_unit,
+                mean_age_name: self.age_unit}
 
     # -----------------------------------------------------------------
 
@@ -2047,6 +2277,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Temperature Funev scatter data
         self.write_temperature_funev()
 
+        # SFR SFR scatter data
+        self.write_sfr_sfr()
+
     # -----------------------------------------------------------------
 
     def write_ssfr_funev(self):
@@ -2428,6 +2661,115 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Write
         self.temperature_funev_pixels.saveto(self.temperature_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    def write_sfr_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # MAPPINGS to TIR
+        self.write_mappings_tir_sfr()
+
+        # MAPPINGS to 24um
+        self.write_mappings_24um_sfr()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_tir_sfr_cells(self):
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_tir_sfr_pixels(self):
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_tir_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_tir_sfr_cells: self.write_mappings_tir_sfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_tir_sfr_pixels: self.write_mappings_tir_sfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_tir_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the MAPPINGS SFR to TIR SFR dust cell scatter data ...")
+
+        # Write
+        self.temperature_funev_cells.saveto(self.temperature_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_tir_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the MAPPINGS SFR to TIR SFR pixel scatter data ...")
+
+        # Write
+        self.temperature_funev_pixels.saveto(self.temperature_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_24um_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+
+        # Pixels
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_24um_sfr_cells(self):
+
+        """
+        THins function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_24um_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

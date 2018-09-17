@@ -59,6 +59,7 @@ _parameters_command_name = "parameters"
 _sfr_command_name = "sfr"
 _ssfr_command_name = "ssfr"
 _stellar_mass_command_name = "stellar_mass"
+_absorption_command_name = "absorption"
 
 # -----------------------------------------------------------------
 
@@ -78,6 +79,7 @@ commands[_parameters_command_name] = ("show_parameters_command", True, "show mod
 commands[_sfr_command_name] = ("show_sfr", True, "show SFR parameters", None)
 commands[_ssfr_command_name] = ("show_ssfr", True, "show sSFR parameters", None)
 commands[_stellar_mass_command_name] = ("show_stellar_mass", True, "show stellar mass parameters", None)
+commands[_absorption_command_name] = ("show_absorption", True, "investigate absorption", None)
 
 # -----------------------------------------------------------------
 
@@ -1360,6 +1362,29 @@ class ModelExamination(InteractiveConfigurable):
 
         # Parameters
         self.show_stellar_masses()
+
+    # -----------------------------------------------------------------
+
+    def show_absorption(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        mappings = self.model.mappings
+        mappings_transparent = self.model.mappings_transparent
+
+        sed = mappings.sed.converted_to_corresponding_neutral_density_unit()
+        sed_transparent = mappings_transparent.sed.converted_to_corresponding_neutral_density_unit()
+
+        from ...core.plot.sed import plot_seds
+
+        # Plot
+        seds = {"mappings": sed, "transparent": sed_transparent}
+        plot_seds(seds)
 
     # -----------------------------------------------------------------
 

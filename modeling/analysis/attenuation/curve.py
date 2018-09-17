@@ -135,96 +135,48 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
 
     @lazyproperty
     def wavelengths(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.total_sed.wavelengths()
 
     # -----------------------------------------------------------------
 
     @property
     def model(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.analysis_run.model
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def mappings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.mappings
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def normalized_mappings(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.normalized_mappings
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.sfr
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def sfr_dust_mass(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.model.sfr_dust_mass
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_mass(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.parameter_values["dust_mass"]
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fuv_ionizing(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.parameter_values["fuv_ionizing"]
 
     # -----------------------------------------------------------------
