@@ -271,6 +271,7 @@ class PhotometricUnit(CompositeUnit):
 
             # Remove 'per pixel' from the unit
             #if "pix" in str(unit): unit *= "pix"
+            if not hasattr(unit, "bases"): raise ValueError("Not a photometric unit, logarithmic unit?")
             if "pix" in unit.bases: unit *= "pix"
 
             # Set whether it represents a density

@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from collections import OrderedDict
 
+# Import astronomical modules
+from astropy.units import DexUnit
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisRunComponent
 from ...core.tools import filesystem as fs
@@ -423,7 +426,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def age_unit(self):
-        return u("Gyr")
+        return u("Myr")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_age_unit(self):
+        return DexUnit("Myr")
 
     # -----------------------------------------------------------------
 
@@ -614,7 +623,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Create the data with external xyz
         return Data3D.from_values(self.mean_age_name, log_mean_ages, self.cell_x_coordinates_colname,
                                   self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
-                                  length_unit=self.length_unit, #unit=self.age_unit,
+                                  length_unit=self.length_unit, unit=self.log_age_unit,
                                   description=self.mean_age_description, xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
@@ -1155,7 +1164,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_salim_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_salim, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_salim_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_salim, as_column=True)
                 if temperature_name not in colnames: self.ssfr_salim_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_salim, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_salim, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_salim_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_salim, self.log_age_unit, as_column=True)
                 self.ssfr_salim_funev_cells.save() # save
             return True
         else: return False
@@ -1183,7 +1192,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 dust_density_name: self.cell_dust_density_unit,
                 distance_center_name: self.length_unit,
                 temperature_name: self.temperature_unit,
-                mean_age_name: self.age_unit}
+                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1395,7 +1404,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_ke, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_ke, as_column=True)
                 if temperature_name not in colnames: self.ssfr_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_ke, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_ke, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_ke, self.log_age_unit, as_column=True)
                 self.ssfr_ke_funev_cells.save() # save
             return True
         else: return False
@@ -1423,7 +1432,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 dust_density_name: self.cell_dust_density_unit,
                 distance_center_name: self.length_unit,
                 temperature_name: self.temperature_unit,
-                mean_age_name: self.age_unit}
+                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1629,7 +1638,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings, as_column=True)
                 if temperature_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_mappings_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings, self.log_age_unit, as_column=True)
                 self.ssfr_mappings_funev_cells.save() # save
             return True
         else: return False
@@ -1657,7 +1666,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 dust_density_name: self.cell_dust_density_unit,
                 distance_center_name: self.length_unit,
                 temperature_name: self.temperature_unit,
-                mean_age_name: self.age_unit}
+                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -1863,7 +1872,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 if distance_center_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(distance_center_name, self.valid_cell_radii_mappings_ke, self.length_unit, as_column=True)
                 if bulge_disk_ratio_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(bulge_disk_ratio_name, self.valid_cell_bd_ratios_mappings_ke, as_column=True)
                 if temperature_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(temperature_name, self.valid_cell_temperatures_mappings_ke, self.temperature_unit, as_column=True)
-                if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings_ke, self.age_unit, as_column=True)
+                if mean_age_name not in colnames: self.ssfr_mappings_ke_funev_cells.add_aux(mean_age_name, self.valid_cell_mean_ages_mappings_ke, self.log_age_unit, as_column=True)
                 self.ssfr_mappings_ke_funev_cells.save() # save
             return True
         else: return False
@@ -1891,7 +1900,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                 dust_density_name: self.cell_dust_density_unit,
                 distance_center_name: self.length_unit,
                 temperature_name: self.temperature_unit,
-                mean_age_name: self.age_unit}
+                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -2689,7 +2698,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Create and return
         return Scatter2D.from_xy(valid_cell_mean_ages, valid_cell_funev_values,
-                                 x_name=self.mean_age_name, y_name=self.funev_name, x_unit=self.age_unit,
+                                 x_name=self.mean_age_name, y_name=self.funev_name, x_unit=self.log_age_unit,
                                  x_description=self.mean_age_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -2723,7 +2732,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Return
         return Scatter2D.from_xy(valid_pixel_mean_ages, valid_pixel_funev_values,
-                                 x_name=self.mean_age_name, y_name=self.funev_name, x_unit=self.age_unit,
+                                 x_name=self.mean_age_name, y_name=self.funev_name, x_unit=self.log_age_unit,
                                  x_description=self.mean_age_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------

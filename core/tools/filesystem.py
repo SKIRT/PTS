@@ -2199,6 +2199,22 @@ def tail(filepath, window=20):
 
 # -----------------------------------------------------------------
 
+def get_line_values(path, nlines, cls=float, last=False):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :param cls:
+    :param last:
+    :return:
+    """
+
+    if last: return [cls(line) for line in get_last_lines(path, nlines)]
+    else: return [cls(line) for line in get_first_lines(path, nlines, skip_header=True)]
+
+# -----------------------------------------------------------------
+
 def get_last_lines(path, nlines):
 
     """
@@ -2224,33 +2240,36 @@ def get_last_line(path):
 
 # -----------------------------------------------------------------
 
-def read_first_lines(path, nlines):
+def read_first_lines(path, nlines, skip_header=False):
 
     """
     This function ...
     :param path:
     :param nlines:
+    :param skip_header:
     :return:
     """
 
     count = 0
     for line in read_lines(path):
+        if skip_header and line.startswith("#"): continue
         yield line
         count += 1
         if count == nlines: return
 
 # -----------------------------------------------------------------
 
-def get_first_lines(path, nlines):
+def get_first_lines(path, nlines, skip_header=False):
 
     """
     This function ...
     :param path:
     :param nlines:
+    :param skip_header:
     :return:
     """
 
-    return list(read_first_lines(path, nlines))
+    return list(read_first_lines(path, nlines, skip_header=skip_header))
 
 # -----------------------------------------------------------------
 
