@@ -330,7 +330,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_bolometric_luminosity_scalar(self):
-        return self.bulge_bolometric_luminosity.to(self.bol_luminosity_unit).value
+        return self.bulge_bolometric_luminosity.to(self.bol_luminosity_unit, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -344,7 +344,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_bolometric_luminosity_scalar(self):
-        return self.disk_bolometric_luminosity.to(self.bol_luminosity_unit).value
+        return self.disk_bolometric_luminosity.to(self.bol_luminosity_unit, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -358,7 +358,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_bolometric_luminosity_scalar(self):
-        return self.young_bolometric_luminosity.to(self.bol_luminosity_unit).value
+        return self.young_bolometric_luminosity.to(self.bol_luminosity_unit, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -372,7 +372,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_bolometric_luminosity_scalar(self):
-        return self.sfr_bolometric_luminosity.to(self.bol_luminosity_unit).value
+        return self.sfr_bolometric_luminosity.to(self.bol_luminosity_unit, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 

@@ -1780,8 +1780,19 @@ class DataCube(Image):
 
         index = self.get_frame_index_for_wavelength(wavelength)
 
-        if copy: return self.frames[index].copy()
-        else: return self.frames[index]
+        if copy: frame = self.frames[index].copy()
+        else: frame = self.frames[index]
+
+        # Set properties
+        frame.unit = self.unit
+        frame.wcs = self.wcs
+        frame.psf_filter = self.psf_filter
+        frame.fwhm = self.fwhm
+        frame.pixelscale = self.pixelscale
+        frame.distance = self.distance
+
+        # Return
+        return frame
 
     # -----------------------------------------------------------------
 
