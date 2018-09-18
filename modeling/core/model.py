@@ -97,6 +97,9 @@ ssfr_mappings_ke_name = "Specific star formation rate (MAPPINGS+K&E)"
 #ssfr_salim_total_name = "Specific star formation rate (Salim, total)"
 #ssfr_ke_total_name = "Specific star formation rate (Kennicutt&Evans, total)"
 
+obs_fuv_spec_lum_name = "Observed FUV specific luminosity"
+intr_fuv_spec_lum_name = "Intrinsic FUV specific luminosity"
+
 ## Old bulge
 obs_bulge_spec_lum_name = "Observed old stellar bulge specific luminosity" # 7
 intr_bulge_spec_lum_name = "Intrinsic old stellar bulge specific luminosity" # 8 part of parameter set
@@ -2097,6 +2100,30 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def observed_fuv_luminosity_old_bulge(self):
+        return self.bulge_simulations.observed_photometry_at(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_fuv_luminosity_old_bulge(self):
+        return self.bulge_simulations.has_observed_photometry
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_fuv_luminosity_old_bulge(self):
+        return self.bulge_simulation.intrinsic_photometry_at(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_fuv_luminosity_old_bulge(self):
+        return self.bulge_simulations.has_intrinsic_photometry
+
+    # -----------------------------------------------------------------
+
     @property
     def attenuation_curve_old_bulge(self):
         return self.bulge_simulations.attenuation_curve
@@ -2235,6 +2262,30 @@ class RTModel(object):
     @property
     def has_intrinsic_i1_luminosity_old_disk(self):
         return True # should be defined in definition
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_fuv_luminosity_old_disk(self):
+        return self.disk_simulations.observed_photometry_at(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_observed_fuv_luminosity_old_disk(self):
+        return self.disk_simulations.has_observed_photometry
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_fuv_luminosity_old_disk(self):
+        return self.disk_simulations.intrinsic_photometry_at(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_intrinsic_fuv_luminosity_old_disk(self):
+        return self.disk_simulations.has_intrinsic_photometry
 
     # -----------------------------------------------------------------
 
@@ -9754,6 +9805,10 @@ class RTModel(object):
         if self.has_observed_i1_luminosity_old_bulge: values[obs_bulge_spec_lum_name] = self.observed_i1_luminosity_old_bulge
         if self.has_intrinsic_i1_luminosity_old_bulge: values[intr_bulge_spec_lum_name] = self.intrinsic_i1_luminosity_old_bulge  # part of parameter set
 
+        # FUV specific luminosity
+        if self.has_observed_fuv_luminosity_old_bulge: values[obs_fuv_spec_lum_name] = self.observed_fuv_luminosity_old_bulge
+        if self.has_intrinsic_fuv_luminosity_old_bulge: values[intr_fuv_spec_lum_name] = self.intrinsic_fuv_luminosity_old_bulge
+
         # Stellar mass
         if self.has_bulge_stellar_mass: values[stellar_mass_name] = self.bulge_stellar_mass
         if self.has_bulge_stellar_mass_intrinsic: values[stellar_mass_intrinsic_name] = self.bulge_stellar_mass_intrinsic
@@ -9829,6 +9884,10 @@ class RTModel(object):
         # I1 specific luminosity
         if self.has_observed_i1_luminosity_old_disk: values[obs_disk_spec_lum_name] = self.observed_i1_luminosity_old_disk
         if self.has_intrinsic_i1_luminosity_old_disk: values[intr_disk_spec_lum_name] = self.intrinsic_i1_luminosity_old_disk # part of parameter set
+
+        # FUV specific luminosity
+        if self.has_observed_fuv_luminosity_old_disk: values[obs_fuv_spec_lum_name] = self.observed_fuv_luminosity_old_disk
+        if self.has_intrinsic_fuv_luminosity_old_disk: values[intr_fuv_spec_lum_name] = self.intrinsic_fuv_luminosity_old_disk
 
         # Stellar mass
         if self.has_disk_stellar_mass: values[stellar_mass_name] = self.disk_stellar_mass

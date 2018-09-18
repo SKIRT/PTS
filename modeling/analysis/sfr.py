@@ -29,6 +29,8 @@ from ..core.model import oliver_stellar_mass, salim_fuv_to_sfr, kennicutt_evans_
 from ...core.units.parsing import parse_unit as u
 from ...magic.tools.plotting import plot_map
 from ...magic.core.list import uniformize
+from ...core.filter.filter import parse_filter
+from ...magic.tools.colours import make_colour_map
 
 # -----------------------------------------------------------------
 
@@ -187,6 +189,12 @@ class SFRAnalyser(AnalysisRunComponent):
 
             # MAPPINGS + K&E
             if self.has_cell_ssfr_mappings_ke_map_plot: fs.remove_file(self.cell_ssfr_mappings_ke_map_plot_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def specific_luminosity_unit(self):
+        return u("W/micron")
 
     # -----------------------------------------------------------------
 
@@ -765,6 +773,180 @@ class SFRAnalyser(AnalysisRunComponent):
         return sfr / stellar_mass
 
     # -----------------------------------------------------------------
+    # FUV-H
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_fuv_h_earth_path(self):
+        return fs.join(self.projected_path, "ssfr_fuv_h_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_fuv_h_earth(self):
+        return fs.is_file(self.projected_ssfr_fuv_h_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_earth_cube(self):
+        return self.model.total_observed_luminosity_cube_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_faceon_cube(self):
+        return self.model.total_observed_luminosity_cube_faceon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_observed_edgeon_cube(self):
+        return self.model.total_observed_luminosity_cube_edgeon
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fuv_luminosity_map_earth(self):
+        return self.total_observed_earth_cube.get_frame_for_wavelength(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_h_luminosity_map_earth(self):
+        return self.total_observed_earth_cube.get_frame_for_wavelength(self.h_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_ssfr_fuv_h_earth_path", True, write=False)
+    def ssfr_fuv_h_earth_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get maps
+        fuv = self.total_fuv_luminosity_map_earth
+        h = self.total_h_luminosity_map_earth
+
+        # Return the colour map
+        return make_colour_map(fuv, h)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_fuv_h_faceon_path(self):
+        return fs.join(self.projected_path, "ssfr_fuv_h_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_fuv_h_faceon(self):
+        return fs.is_file(self.projected_ssfr_fuv_h_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_fuv_luminosity_map_faceon(self):
+        return self.total_observed_faceon_cube.get_frame_for_wavelength(self.fuv_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_h_luminosity_map_faceon(self):
+        return self.total_observed_faceon_cube.get_frame_for_wavelength(self.h_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_ssfr_fuv_h_faceon_path", True, write=False)
+    def ssfr_fuv_h_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get maps
+        fuv = self.total_fuv_luminosity_map_faceon
+        h = self.total_h_luminosity_map_faceon
+
+        # Return the colour map
+        return make_colour_map(fuv, h)
+
+    # -----------------------------------------------------------------
+    # FUV-r
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_fuv_r_earth_path(self):
+        return fs.join(self.projected_path, "ssfr_fuv_r_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_fuv_r_earth(self):
+        return fs.is_file(self.projected_ssfr_fuv_r_earth_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_r_luminosity_map_earth(self):
+        return self.total_observed_earth_cube.get_frame_for_wavelength(self.r_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_ssfr_fuv_r_earth_path", True, write=False)
+    def ssfr_fuv_r_earth_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get maps
+        fuv = self.total_fuv_luminosity_map_earth
+        r = self.total_r_luminosity_map_earth
+
+        # Return the colour map
+        return make_colour_map(fuv, r)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_ssfr_fuv_r_faceon_path(self):
+        return fs.join(self.projected_path, "ssfr_fuv_r_faceon.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_projected_ssfr_fuv_r_faceon(self):
+        return fs.is_file(self.projected_ssfr_fuv_r_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_r_luminosity_map_faceon(self):
+        return self.total_observed_faceon_cube.get_frame_for_wavelength(self.r_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Frame, "projected_ssfr_fuv_r_faceon_path", True, write=False)
+    def ssfr_fuv_r_faceon_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get maps
+        fuv = self.total_fuv_luminosity_map_faceon
+        r = self.total_r_luminosity_map_faceon
+
+        # Return the colour map
+        return make_colour_map(fuv, r)
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -786,6 +968,30 @@ class SFRAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def bulge_intrinsic_fuv_luminosity(self):
+        return self.model.intrinsic_fuv_luminosity_old_bulge
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_intrinsic_fuv_luminosity_scalar(self):
+        return self.bulge_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_intrinsic_fuv_luminosity(self):
+        return self.model.intrinsic_fuv_luminosity_old_disk
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_intrinsic_fuv_luminosity_scalar(self):
+        return self.disk_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @property
     def young_intrinsic_fuv_luminosity(self):
         return self.model.intrinsic_fuv_luminosity_young
 
@@ -793,7 +999,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_intrinsic_fuv_luminosity_scalar(self):
-        return self.young_intrinsic_fuv_luminosity.to(self.fuv_luminosity_unit).value
+        return self.young_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
 
     # -----------------------------------------------------------------
 
@@ -805,7 +1011,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_intrinsic_fuv_luminosity_scalar(self):
-        return self.sfr_intrinsic_fuv_luminosity.to(self.fuv_luminosity_unit).value
+        return self.sfr_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
 
     # -----------------------------------------------------------------
 
@@ -817,7 +1023,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_intrinsic_i1_luminosity_scalar(self):
-        return self.bulge_intrinsic_i1_luminosity.to(self.i1_luminosity_unit).value
+        return self.bulge_intrinsic_i1_luminosity.to(self.specific_luminosity_unit).value
 
     # -----------------------------------------------------------------
 
@@ -829,13 +1035,11 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_intrinsic_i1_luminosity_scalar(self):
-        return self.disk_intrinsic_i1_luminosity.to(self.i1_luminosity_unit).value
+        return self.disk_intrinsic_i1_luminosity.to(self.specific_luminosity_unit).value
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fuv_luminosity_unit(self):
-        return u("W/micron")
+
 
     # -----------------------------------------------------------------
 
@@ -854,6 +1058,30 @@ class SFRAnalyser(AnalysisRunComponent):
     @lazyproperty
     def unevolved_cell_fuv_luminosities(self):
         return self.young_cell_fuv_luminosities + self.sfr_cell_fuv_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_fuv_luminosities(self):
+        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_fuv_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_fuv_luminosities(self):
+        return self.disk_cell_normalized_mass * self.disk_intrinsic_fuv_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_cell_fuv_luminosities(self):
+        return self.bulge_cell_fuv_luminosities + self.disk_cell_fuv_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_fuv_luminosities(self):
+        return self.old_cell_fuv_luminosities + self.unevolved_cell_fuv_luminosities
 
     # -----------------------------------------------------------------
 
@@ -879,14 +1107,8 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Create the data
         return Data3D(self.fuv_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.unevolved_cell_fuv_luminosities, length_unit=self.length_unit, unit=self.fuv_luminosity_unit,
+                      self.unevolved_cell_fuv_luminosities, length_unit=self.length_unit, unit=self.specific_luminosity_unit,
                       description=self.fuv_description, distance=self.galaxy_distance, wavelength=self.fuv_wavelength)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def i1_luminosity_unit(self):
-        return u("W/micron")
 
     # -----------------------------------------------------------------
 
@@ -929,7 +1151,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         return Data3D(self.i1_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
-                      self.old_cell_i1_luminosities, length_unit=self.length_unit, unit=self.i1_luminosity_unit,
+                      self.old_cell_i1_luminosities, length_unit=self.length_unit, unit=self.specific_luminosity_unit,
                       description=self.i1_description, distance=self.galaxy_distance,
                       wavelength=self.i1_wavelength)
 
@@ -1051,7 +1273,7 @@ class SFRAnalyser(AnalysisRunComponent):
         log.info("Calculating the cell star formation rate (MAPPINGS + Kennicutt & Evans) ...")
 
         # Calculate in Msun/yr
-        sfr_values = self.sfr_mappings_values + kennicutt_evans_fuv_to_sfr(self.young_cell_fuv_luminosities, unit=self.fuv_luminosity_unit)
+        sfr_values = self.sfr_mappings_values + kennicutt_evans_fuv_to_sfr(self.young_cell_fuv_luminosities, unit=self.specific_luminosity_unit)
 
         # Create
         return Data3D(self.sfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates,
@@ -1062,7 +1284,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @property
     def dust_luminosity_unit(self):
-        return u("Lsun")
+        return self.total_contribution_absorption_unit
 
     # -----------------------------------------------------------------
 
@@ -1105,12 +1327,6 @@ class SFRAnalyser(AnalysisRunComponent):
                                   length_unit=self.length_unit, description=self.sfr_description,
                                   xyz_filepath=self.cell_coordinates_filepath, unit="Msun/yr",
                                   distance=self.galaxy_distance)
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def mips24_luminosity_unit(self):
-        #return u("W/micron", density=True)
 
     # -----------------------------------------------------------------
 
@@ -1453,6 +1669,259 @@ class SFRAnalyser(AnalysisRunComponent):
         # Create the data
         return Data3D(self.ssfr_name, self.cell_x_coordinates, self.cell_y_coordinates, self.cell_z_coordinates, self.cell_ssfrs_mappings_ke,
                       length_unit=self.length_unit, unit=self.ssfr_mappings_ke_unit, description=self.ssfr_description, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+    # H luminosities
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def h_wavelength(self):
+        return parse_filter("2MASS H").wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_intrinsic_h_luminosity(self):
+        return self.model.bulge_simulations.intrinsic_photometry_at(self.h_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_intrinsic_h_luminosity_scalar(self):
+        return self.bulge_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_intrinsic_h_luminosity(self):
+        return self.model.disk_simulations.intrinsic_photometry_at(self.h_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_intrinsic_h_luminosity_scalar(self):
+        return self.disk_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_intrinsic_h_luminosity(self):
+        return self.model.young_simulations.intrinsic_photometry_at(self.h_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_intrinsic_h_luminosity_scalar(self):
+        return self.young_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_intrinsic_h_luminosity(self):
+        return self.model.sfr_simulations.intrinsic_photometry_at(self.h_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_intrinsic_h_luminosity_scalar(self):
+        return self.sfr_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_h_luminosities(self):
+        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_h_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_h_luminosities(self):
+        return self.disk_cell_normalized_mass * self.disk_intrinsic_h_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_cell_h_luminosities(self):
+        return self.bulge_cell_h_luminosities + self.disk_cell_h_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_cell_h_luminosities(self):
+        return self.young_cell_normalized_mass * self.young_intrinsic_h_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_cell_h_luminosities(self):
+        return self.sfr_cell_normalized_mass * self.sfr_intrinsic_h_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_cell_h_luminosities(self):
+        return self.young_cell_h_luminosities + self.sfr_cell_h_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_h_luminosities(self):
+        return self.old_cell_h_luminosities + self.unevolved_cell_h_luminosities
+
+    # -----------------------------------------------------------------
+    # R luminosities
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def r_wavelength(self):
+        return parse_filter("SDSS r").wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_intrinsic_r_luminosity(self):
+        return self.model.bulge_simulations.intrinsic_photometry_at(self.r_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_intrinsic_r_luminosity_scalar(self):
+        return self.bulge_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_intrinsic_r_luminosity(self):
+        return self.model.disk_simulations.intrinsic_photometry_at(self.r_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_intrinsic_r_luminosity_scalar(self):
+        return self.disk_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_intrinsic_r_luminosity(self):
+        return self.model.young_simulations.intrinsic_photometry_at(self.r_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_intrinsic_r_luminosity_scalar(self):
+        return self.young_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_intrinsic_r_luminosity(self):
+        return self.model.sfr_simulations.intrinsic_photometry_at(self.r_wavelength, interpolate=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_intrinsic_r_luminosity_scalar(self):
+        return self.sfr_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_cell_r_luminosities(self):
+        return self.bulge_cell_normalized_mass * self.bulge_intrinsic_r_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_cell_r_luminosities(self):
+        return self.disk_cell_normalized_mass * self.disk_intrinsic_r_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_cell_r_luminosities(self):
+        return self.bulge_cell_r_luminosities + self.disk_cell_r_luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_cell_r_luminosities(self):
+        return self.young_cell_normalized_mass * self.young_intrinsic_r_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_cell_r_luminosities(self):
+        return self.sfr_cell_normalized_mass * self.sfr_intrinsic_r_luminosity_scalar
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_r_luminosities(self):
+        return self.old_cell_r_luminosities + self.unevolved_cell_r_luminosities
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_fuv_h_path(self):
+        return fs.join(self.cell_path, "ssfr_fuv_h.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_fuv_h(self):
+        return fs.is_file(self.cell_ssfr_fuv_h_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_ssfr_fuv_h_path", True, write=False)
+    def ssfr_fuv_h_data(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Calculate the colours
+        fuv_h = -2.5 * np.log10(self.total_cell_fuv_luminosities, self.total_cell_h_luminosities)
+
+        # Create the data
+        return Data3D.from_values(self.ssfr_name, fuv_h, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ssfr_description,
+                                  xyz_filepath = self.cell_coordinates_filepath, distance = self.galaxy_distance) # no unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_fuv_r_path(self):
+        return fs.join(self.cell_path, "ssfr_fuv_r.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_fuv_r(self):
+        return fs.is_file(self.cell_ssfr_fuv_r_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_ssfr_fuv_r_path", True, write=False)
+    def ssfr_fuv_r_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the colours
+        fuv_r = -2.5 * np.log10(self.total_cell_fuv_luminosities, self.total_cell_r_luminosities)
+
+        # Create the data
+        return Data3D.from_values(self.ssfr_name, fuv_r, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, description=self.ssfr_description,
+                                  xyz_filepath=self.cell_coordinates_filepath, distance=self.galaxy_distance)  # no unit
 
     # -----------------------------------------------------------------
     # CELL SFR MAP
@@ -2145,6 +2614,12 @@ class SFRAnalyser(AnalysisRunComponent):
         # MAPPINGS + K&E
         self.write_projected_ssfr_mappings_ke()
 
+        # FUV-H
+        self.write_projected_ssfr_fuv_h()
+
+        # FUV-r
+        self.write_projected_ssfr_fuv_r()
+
     # -----------------------------------------------------------------
 
     @property
@@ -2342,6 +2817,104 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         self.ssfr_mappings_ke_faceon_map.saveto(self.projected_ssfr_mappings_ke_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_fuv_h_earth(self):
+        return not self.has_projected_ssfr_fuv_h_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_fuv_h_faceon(self):
+        return not self.has_projected_ssfr_fuv_h_faceon
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_fuv_h(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_projected_ssfr_fuv_h_earth: self.write_projected_ssfr_fuv_h_earth()
+
+        # Faceon
+        if self.do_write_projected_ssfr_fuv_h_faceon: self.write_projected_ssfr_fuv_h_faceon()
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_fuv_h_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ssfr_fuv_h_earth_map.saveto(self.projected_ssfr_fuv_h_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_fuv_h_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ssfr_fuv_h_faceon_map.saveto(self.projected_ssfr_fuv_h_faceon_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_fuv_r_earth(self):
+        return not self.has_projected_ssfr_fuv_r_earth
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_projected_ssfr_fuv_r_faceon(self):
+        return not self.has_projected_ssfr_fuv_r_faceon
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_fuv_r(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Earth
+        if self.do_write_projected_ssfr_fuv_r_earth: self.write_projected_ssfr_fuv_r_earth()
+
+        # Faceon
+        if self.do_write_projected_ssfr_fuv_r_faceon: self.write_projected_ssfr_fuv_r_faceon()
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_fuv_r_earth(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ssfr_fuv_r_earth_map.saveto(self.projected_ssfr_fuv_r_earth_path)
+
+    # -----------------------------------------------------------------
+
+    def write_projected_ssfr_fuv_r_faceon(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ssfr_fuv_r_faceon_map.saveto(self.projected_ssfr_fuv_r_faceon_path)
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -2634,6 +3207,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def do_write_cell_ssfr_fuv_h(self):
+        return not self.has_cell_ssfr_fuv_h
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_cell_ssfr_fuv_r(self):
+        return not self.has_cell_ssfr_fuv_r
+
+    # -----------------------------------------------------------------
+
     def write_cell_ssfr(self):
 
         """
@@ -2655,6 +3240,12 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # MAPPINGS + K&E
         if self.do_write_cell_ssfr_mappings_ke: self.write_cell_ssfr_mappings_ke()
+
+        # FUV-H
+        if self.do_write_cell_ssfr_fuv_h: self.write_cell_ssfr_fuv_h()
+
+        # FUV-R
+        if self.do_write_cell_ssfr_fuv_r: self.write_cell_ssfr_fuv_r()
 
     # -----------------------------------------------------------------
 
@@ -2703,6 +3294,30 @@ class SFRAnalyser(AnalysisRunComponent):
 
         # Write
         self.ssfr_mappings_ke_data.saveto(self.cell_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cell_ssfr_fuv_h(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.ssfr_fuv_h_data.saveto(self.cell_ssfr_fuv_h_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cell_ssfr_fuv_r(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.ssfr_fuv_r_data.saveto(self.cell_ssfr_fuv_r_path)
 
     # -----------------------------------------------------------------
 
