@@ -60,6 +60,7 @@ _sfr_command_name = "sfr"
 _ssfr_command_name = "ssfr"
 _stellar_mass_command_name = "stellar_mass"
 _absorption_command_name = "absorption"
+_luminosities_command_name = "luminosities"
 
 # -----------------------------------------------------------------
 
@@ -80,6 +81,7 @@ commands[_sfr_command_name] = ("show_sfr", True, "show SFR parameters", None)
 commands[_ssfr_command_name] = ("show_ssfr", True, "show sSFR parameters", None)
 commands[_stellar_mass_command_name] = ("show_stellar_mass", True, "show stellar mass parameters", None)
 commands[_absorption_command_name] = ("show_absorption", True, "investigate absorption", None)
+commands[_luminosities_command_name] = ("show_luminosities", True, "show component luminosities", None)
 
 # -----------------------------------------------------------------
 
@@ -1385,6 +1387,58 @@ class ModelExamination(InteractiveConfigurable):
         # Plot
         seds = {"mappings": sed, "transparent": sed_transparent}
         plot_seds(seds)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_distance(self):
+        return self.model.distance
+
+    # -----------------------------------------------------------------
+
+    def show_luminosities(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Bulge
+        bulge_intrinsic = self.model.intrinsic_bolometric_luminosity_old_bulge.to("Lsun", distance=self.galaxy_distance)
+        bulge_observed = self.model.observed_bolometric_luminosity_old_bulge.to("Lsun", distance=self.galaxy_distance)
+        bulge_reldiff = abs(bulge_intrinsic.value - bulge_observed.value) / bulge_intrinsic.value
+
+        # Disk
+        disk_intrinsic = self.model.intrinsic_bolometric_luminosity_old_disk.to("Lsun", distance=self.galaxy_distance)
+        disk_observed = self.model.observed_bolometric_luminosity_old_disk.to("Lsun", distance=self.galaxy_distance)
+        disk_reldiff = abs(disk_intrinsic.value - disk_observed.value) / disk_intrinsic.value
+
+        # Young
+        young_intrinsic = self.model.intrinsic_bolometric_luminosity_young.to("Lsun", distance=self.galaxy_distance)
+        young_observed = self.model.observed_bolometric_luminosity_young.to("Lsun", distance=self.galaxy_distance)
+        young_reldiff = abs(young_intrinsic.value - young_observed.value) / young_intrinsic.value
+
+        # SFR
+        sfr_intrinsic = self.model.intrinsic_bolometric_luminosity_sfr.to("Lsun", distance=self.galaxy_distance)
+        sfr_observed = self.model.observed_bolometric_luminosity_sfr.to("Lsun", distance=self.galaxy_distance)
+        sfr_reldiff = abs(sfr_intrinsic.value - sfr_observed.value) / sfr_intrinsic.value
+
+        print("")
+        print(" - " + fmt.bold + "bulge intrinsic: " + fmt.reset_bold + tostr(bulge_intrinsic))
+        print(" - " + fmt.bold + "bulge observed: " + fmt.reset_bold + tostr(bulge_observed))
+        print("     rel. difference: " + tostr(bulge_reldiff*100, round=True) + "%")
+        print(" - " + fmt.bold + "disk intrinsic: " + fmt.reset_bold + tostr(disk_intrinsic))
+        print(" - " + fmt.bold + "disk observed: " + fmt.reset_bold + tostr(disk_observed))
+        print("     rel. difference: " + tostr(disk_reldiff * 100, round=True) + "%")
+        print(" - " + fmt.bold + "young intrinsic: " + fmt.reset_bold + tostr(young_intrinsic))
+        print(" - " + fmt.bold + "young observed: " + fmt.reset_bold + tostr(young_observed))
+        print("     rel. difference: " + tostr(young_reldiff * 100, round=True) + "%")
+        print(" - " + fmt.bold + "sfr intrinsic: " + fmt.reset_bold + tostr(sfr_intrinsic))
+        print(" - " + fmt.bold + "sfr observed: " + fmt.reset_bold + tostr(sfr_observed))
+        print("     rel. difference: " + tostr(sfr_reldiff * 100, round=True) + "%")
+        print("")
 
     # -----------------------------------------------------------------
 

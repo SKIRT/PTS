@@ -1196,7 +1196,7 @@ class SmartTable(Table):
         This function ...
         :param path:
         :param format:
-        :param lines:
+        :param method:
         :return:
         """
 

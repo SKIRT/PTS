@@ -807,13 +807,14 @@ def divide_with_units(value, unit, other, other_unit=None):
 
         if other_unit is not None: raise ValueError("Cannot specify unit of second value when it is already a quantity")
 
-        #print("OTHER", other)
+        print("UNIT", unit)
+        print("OTHER", other)
 
         other = parse_quantity(other)
         if has_unit: new_unit = divide_units(unit, other.unit)
-        else: new_unit = 1./other.unit
+        else: new_unit = other.unit**-1
 
-        #print("NU", new_unit)
+        print("NU", new_unit)
 
         # Photometric?
         if isinstance(new_unit, PhotometricUnit):
@@ -838,7 +839,7 @@ def divide_with_units(value, unit, other, other_unit=None):
             new_unit = None
 
         # Invalid new unit
-        else: raise RuntimeError("Something went wrong")
+        else: raise RuntimeError("Something went wrong: type of unit: '" + type(new_unit).__name__ + "'")
 
     # Divide by array
     elif types.is_real_or_integer_array(other):

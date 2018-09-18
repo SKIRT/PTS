@@ -1347,13 +1347,13 @@ def weighed_arithmetic_mean_numpy(data, weights=None):
     #return np.dot(np.array(data), weights)
 
     if ndim_weights > 1:
+
         divisors = np.sum(weights, axis=-1)
         #norm_weights = weights /
         norm_weights = np.moveaxis(weights, -1, 0) # move last to first axis
         #print("1", norm_weights.shape)
         # Loop over
-        for index in range(norm_weights.shape[0]):
-            norm_weights[index] /= divisors
+        for index in range(norm_weights.shape[0]): norm_weights[index] /= divisors
         #print(norm_weights.shape)
         norm_weights = np.moveaxis(norm_weights, 0, 1)
         #print("2", norm_weights.shape)

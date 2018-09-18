@@ -1559,6 +1559,8 @@ class DataCube(Image):
         :param error_on_max:
         :param return_masks:
         :param replace_nans:
+        :param dilation_rank:
+        :param dilation_connectivity:
         :return:
         """
 
@@ -1638,7 +1640,8 @@ class DataCube(Image):
         arrays = [delta*data for delta, data in zip(deltas, data_list)]
 
         # Calculate the integral
-        frame = Frame(np.sum(arrays, axis=0), wcs=self.wcs, distance=self.distance, unit=bolometric_unit)
+        frame = Frame(np.sum(arrays, axis=0), wcs=self.wcs, distance=self.distance, unit=bolometric_unit,
+                      psf_filter=self.psf_filter, fwhm=self.fwhm, pixelscale=self.pixelscale)
 
         # Return the frame
         return frame

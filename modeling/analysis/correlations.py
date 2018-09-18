@@ -29,6 +29,7 @@ from ...magic.tools.plotting import plot_scatters, plot_stilts
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import sequences
 from ...core.tools import numbers
+from ...magic.core.list import uniformize
 
 # -----------------------------------------------------------------
 
@@ -457,8 +458,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def log_old_stellar_age(self):
+        return np.log10(self.old_stellar_age_scalar)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def young_stellar_age_scalar(self):
         return self.model.young_mean_stellar_age.to(self.age_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_young_stellar_age(self):
+        return np.log10(self.young_stellar_age_scalar)
 
     # -----------------------------------------------------------------
 
@@ -469,26 +482,110 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def log_sfr_stellar_age(self):
+        return np.log10(self.sfr_stellar_age_scalar)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def stellar_ages(self):
         return np.array([self.old_stellar_age_scalar, self.young_stellar_age_scalar, self.sfr_stellar_age_scalar])
 
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def log_stellar_ages(self):
+        return np.array([self.log_old_stellar_age, self.log_young_stellar_age, self.log_sfr_stellar_age])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_old_bol_fraction_path(self):
+        return fs.join(self.correlations_path, "old_bol_fraction.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_old_bol_fraction_path", True, write=True)
+    def cell_old_bol_fraction_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate fractions
+        fractions = self.old_cell_bol_luminosities / self.total_cell_bol_luminosities
+
+        # Create the data with external xyz
+        return Data3D.from_values("fbol_old", fractions, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, xyz_filepath=self.cell_coordinates_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def cell_old_luminosity_contributions(self):
-        return self.old_cell_bol_luminosities / self.total_cell_bol_luminosities
+        return self.cell_old_bol_fraction_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_young_bol_fraction_path(self):
+        return fs.join(self.correlations_path, "young_bol_fraction.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_young_bol_fraction_path", True, write=True)
+    def cell_young_bol_fraction_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate fractions
+        fractions = self.young_cell_bol_luminosities / self.total_cell_bol_luminosities
+
+        # Create the data with external xyz
+        return Data3D.from_values("fbol_young", fractions, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_young_luminosity_contributions(self):
-        return self.young_cell_bol_luminosities / self.total_cell_bol_luminosities
+        return self.cell_young_bol_fraction_data.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_sfr_bol_fraction_path(self):
+        return fs.join(self.correlations_path, "sfr_bol_fraction.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Data3D, "cell_sfr_bol_fraction_path", True, write=True)
+    def cell_sfr_bol_fraction_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+        
+        # Calculate fractions
+        fractions = self.sfr_cell_bol_luminosities / self.total_cell_bol_luminosities
+
+        # Create the data with external xyz
+        return Data3D.from_values("fbol_sfr", fractions, self.cell_x_coordinates_colname,
+                                  self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
+                                  length_unit=self.length_unit, xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def cell_sfr_luminosity_contributions(self):
-        return self.sfr_cell_bol_luminosities / self.total_cell_bol_luminosities
+        return self.cell_sfr_bol_fraction_data.values
 
     # -----------------------------------------------------------------
 
@@ -506,13 +603,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Check normalization of the weights
+        total = self.cell_old_luminosity_contributions + self.cell_young_luminosity_contributions + self.cell_sfr_luminosity_contributions
+        close = np.isclose(total, 1.)
+        if not np.all(close): raise RuntimeError("Something went wrong")
+
         # Calculate the mean age in dust cell, by weighing each stellar component age (old, young, ionizing) by the respective contribution to the global luminosity in that cell
-        mean_ages = numbers.weighed_arithmetic_mean_numpy(self.stellar_ages, weights=self.cell_stellar_luminosity_contributions)
+        log_mean_ages = numbers.weighed_arithmetic_mean_numpy(self.log_stellar_ages, weights=self.cell_stellar_luminosity_contributions)
 
         # Create the data with external xyz
-        return Data3D.from_values(self.mean_age_name, mean_ages, self.cell_x_coordinates_colname,
+        return Data3D.from_values(self.mean_age_name, log_mean_ages, self.cell_x_coordinates_colname,
                                   self.cell_y_coordinates_colname, self.cell_z_coordinates_colname,
-                                  length_unit=self.length_unit, unit=self.age_unit,
+                                  length_unit=self.length_unit, #unit=self.age_unit,
                                   description=self.mean_age_description, xyz_filepath=self.cell_coordinates_filepath)
 
     # -----------------------------------------------------------------
@@ -1042,6 +1144,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def has_ssfr_salim_funev_cells(self):
         if fs.is_file(self.ssfr_salim_funev_cells_path):
+            #if self.config.recalculate_aux_columns is not None:
+            #    for colname in self.config.recalculate_aux_columns:
             if not self.ssfr_salim_funev_cells_has_all_aux_columns:
                 colnames = self.ssfr_salim_funev_cells_aux_colnames
                 #if sfr_name not in colnames: self.ssfr_salim_funev_cells.add_aux(sfr_name, self.valid_cell_sfr_values_salim, self.sfr_salim_unit, as_column=True)
@@ -2058,6 +2162,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def pixel_sfr_mappings_pixelarea(self):
+        return self.pixel_sfr_mappings.pixelarea
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def valid_pixel_ssfr_mappings_mask(self):
         return np.isfinite(self.pixel_ssfr_mappings_values) * (self.pixel_ssfr_mappings_values != 0)
@@ -2299,6 +2409,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def pixel_sfr_tir_values(self):
         return self.pixel_sfr_tir.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_tir_pixelarea(self):
+        return self.pixel_sfr_tir.pixelarea
 
     # -----------------------------------------------------------------
     # 24 micron SFR
@@ -2700,12 +2816,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Checks
 
         # Get values
-        valid_mappings_sfr_values = self.pixel_sfr_mappings_values
-        valid_tir_sfr_values = self.pixel_sfr_tir_values
+        mappings_sfr = self.pixel_sfr_mappings / self.pixel_sfr_mappings_pixelarea
+        tir_sfr = self.pixel_sfr_tir / self.pixel_sfr_tir_pixelarea
+
+        # Uniformize
+        mappings, tir = uniformize(mappings_sfr, tir_sfr)
+
+        # Get values
+        mappings_values = mappings.data
+        tir_values = tir.data
+        sfr_unit = mappings.unit
 
         # Return
-        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_tir_sfr_values,
-                                 x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=self.sfr_mappings_unit,
+        return Scatter2D.from_xy(mappings_values, tir_values,
+                                 x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=sfr_unit, y_unit=sfr_unit,
                                  x_description=self.mappings_sfr_description, y_description=self.tir_sfr_description)
 
     # -----------------------------------------------------------------
