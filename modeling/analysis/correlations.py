@@ -451,8 +451,26 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_stellar_age_scalar(self):
+        return self.model.old_mean_stellar_age.to(self.age_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_stellar_age_scalar(self):
+        return self.model.young_mean_stellar_age.to(self.age_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_stellar_age_scalar(self):
+        return self.model.sfr_mean_stellar_age.to(self.age_unit).value
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def stellar_ages(self):
-        return np.array([self.model.old_mean_stellar_age, self.model.young_mean_stellar_age, self.model.sfr_mean_stellar_age])
+        return np.array([self.old_stellar_age_scalar, self.young_stellar_age_scalar, self.sfr_stellar_age_scalar])
 
     # -----------------------------------------------------------------
 

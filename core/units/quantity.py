@@ -757,9 +757,18 @@ def divide_with_units(value, unit, other, other_unit=None):
     # Divide by regular value
     if types.is_real_or_integer(other):
 
-        # Determine value and unit
-        new_value = float_division(value, other)
-        new_unit = unit
+        if types.is_real_or_integer(value):
+
+            # Determine value and unit
+            new_value = float_division(value, other)
+            new_unit = unit
+
+        elif types.is_real_or_integer_array(value):
+
+            new_value = value / float(other)
+            new_unit = unit
+
+        else: raise ValueError("Invalid type for 'value'")
 
     # Divide by unit
     elif types.is_unit(other):

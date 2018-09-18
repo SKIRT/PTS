@@ -257,7 +257,7 @@ def calzetti_24um_to_sfr(luminosity, unit=None, distance=None):
         # Return
         #new_array = calzetti_a * converted.data * (calzetti_b * converted.data)**calzetti_exponent
         new_array = calzetti_local * converted.data**calzetti_local_exponent
-        return Frame(new_array, name=name, description=description, unit=new_unit)
+        return Frame(new_array, name=name, description=description, unit=new_unit, wcs=luminosity.wcs, pixelscale=luminosity.pixelscale, psf_filter=luminosity.psf_filter, fwhm=luminosity.fwhm)
 
     # 3D data
     elif isinstance(luminosity, Data3D):
