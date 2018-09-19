@@ -975,7 +975,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_intrinsic_fuv_luminosity_scalar(self):
-        return self.bulge_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
+        return self.bulge_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit, wavelength=self.fuv_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -987,7 +987,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_intrinsic_fuv_luminosity_scalar(self):
-        return self.disk_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
+        return self.disk_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit, wavelength=self.fuv_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -999,7 +999,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_intrinsic_fuv_luminosity_scalar(self):
-        return self.young_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
+        return self.young_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit, wavelength=self.fuv_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1011,7 +1011,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_intrinsic_fuv_luminosity_scalar(self):
-        return self.sfr_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit).value
+        return self.sfr_intrinsic_fuv_luminosity.to(self.specific_luminosity_unit, wavelength=self.fuv_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1023,7 +1023,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_intrinsic_i1_luminosity_scalar(self):
-        return self.bulge_intrinsic_i1_luminosity.to(self.specific_luminosity_unit).value
+        return self.bulge_intrinsic_i1_luminosity.to(self.specific_luminosity_unit, wavelength=self.i1_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1035,11 +1035,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_intrinsic_i1_luminosity_scalar(self):
-        return self.disk_intrinsic_i1_luminosity.to(self.specific_luminosity_unit).value
-
-    # -----------------------------------------------------------------
-
-
+        return self.disk_intrinsic_i1_luminosity.to(self.specific_luminosity_unit, wavelength=self.i1_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1688,7 +1684,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_intrinsic_h_luminosity_scalar(self):
-        return self.bulge_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+        return self.bulge_intrinsic_h_luminosity.to(self.specific_luminosity_unit, wavelength=self.h_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1700,7 +1696,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_intrinsic_h_luminosity_scalar(self):
-        return self.disk_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+        return self.disk_intrinsic_h_luminosity.to(self.specific_luminosity_unit, wavelength=self.h_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1712,7 +1708,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_intrinsic_h_luminosity_scalar(self):
-        return self.young_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+        return self.young_intrinsic_h_luminosity.to(self.specific_luminosity_unit, wavelength=self.h_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1724,7 +1720,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_intrinsic_h_luminosity_scalar(self):
-        return self.sfr_intrinsic_h_luminosity.to(self.specific_luminosity_unit).value
+        return self.sfr_intrinsic_h_luminosity.to(self.specific_luminosity_unit, wavelength=self.h_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1786,7 +1782,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def bulge_intrinsic_r_luminosity_scalar(self):
-        return self.bulge_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+        return self.bulge_intrinsic_r_luminosity.to(self.specific_luminosity_unit, wavelength=self.r_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1798,7 +1794,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def disk_intrinsic_r_luminosity_scalar(self):
-        return self.disk_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+        return self.disk_intrinsic_r_luminosity.to(self.specific_luminosity_unit, wavelength=self.r_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1810,7 +1806,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def young_intrinsic_r_luminosity_scalar(self):
-        return self.young_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+        return self.young_intrinsic_r_luminosity.to(self.specific_luminosity_unit, wavelength=self.r_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 
@@ -1822,7 +1818,7 @@ class SFRAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_intrinsic_r_luminosity_scalar(self):
-        return self.sfr_intrinsic_r_luminosity.to(self.specific_luminosity_unit).value
+        return self.sfr_intrinsic_r_luminosity.to(self.specific_luminosity_unit, wavelength=self.r_wavelength, distance=self.galaxy_distance).value
 
     # -----------------------------------------------------------------
 

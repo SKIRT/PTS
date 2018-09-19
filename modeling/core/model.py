@@ -2114,7 +2114,7 @@ class RTModel(object):
 
     @lazyproperty
     def intrinsic_fuv_luminosity_old_bulge(self):
-        return self.bulge_simulation.intrinsic_photometry_at(self.fuv_wavelength, interpolate=False)
+        return self.bulge_simulations.intrinsic_photometry_at(self.fuv_wavelength, interpolate=False)
 
     # -----------------------------------------------------------------
 

@@ -3955,7 +3955,7 @@ def check_psf_filter(*frames, **kwargs):
         for frame in frames: print(" - " + frame.name + ": " + str(frame.psf_filter))
         print("")
         exit()
-    psf_filter = sequences.find_first_not_none(psf_filters)
+    psf_filter = sequences.find_first_not_none(psf_filters, return_none=True)
     return psf_filter
 
 # -----------------------------------------------------------------
@@ -3971,6 +3971,7 @@ def check_fwhm(*frames, **kwargs):
 
     # Get FWHM
     fwhms = [frame.fwhm for frame in frames]
+    if sequences.all_none(fwhms): return None
 
     # Check FWHM
     difference = abs(fwhms[0] - fwhms[1])

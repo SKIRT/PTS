@@ -1557,12 +1557,6 @@ class Frame(NDDataArray):
 
     @property
     def values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.data.flatten()
 
     # -----------------------------------------------------------------

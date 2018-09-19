@@ -65,10 +65,14 @@ bulge_disk_ratio_name = "Bulge disk ratio"
 #fuv_i1_name =
 temperature_name = "Dust temperature"
 mean_age_name = "Mean stellar age"
+funev_name = "Fraction of heating by unevolved stars"
 
 # Auxilary column names for sSFR-Funev scatter data
 #aux_colnames = [sfr_name, dust_mass_name, distance_center_name, bulge_disk_ratio_name]
 aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name, temperature_name, mean_age_name]
+
+# for SFR-SFR scatter
+sfr_sfr_cells_aux_colnames = [temperature_name, mean_age_name, funev_name]
 
 # -----------------------------------------------------------------
 
@@ -77,7 +81,7 @@ ssfr_funev_base_colnames = ["sSFR", "Funev"]
 # -----------------------------------------------------------------
 
 class CorrelationsAnalyser(AnalysisRunComponent):
-    
+
     """
     This class...
     """
@@ -581,7 +585,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         This function ...
         :return:
         """
-        
+
         # Calculate fractions
         fractions = self.sfr_cell_bol_luminosities / self.total_cell_bol_luminosities
 
@@ -829,7 +833,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def ssfr_unit(self):
-        return u("Msun/yr")
+        return u("1/yr")
 
     # -----------------------------------------------------------------
 
@@ -841,8 +845,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return Scatter2D.from_xy(self.m51_ssfr, self.m51_fractions, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.m51_ssfr, self.m51_fractions, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     # M31 data
@@ -898,8 +901,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return Scatter2D.from_xy(self.m31_ssfr, self.m31_fractions, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit,
-                                 x_description=self.ssfr_description, y_description=self.funev_description)
+        return Scatter2D.from_xy(self.m31_ssfr, self.m31_fractions, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
     # NAMES AND DESCRIPTIONS
@@ -1950,7 +1952,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_funev_values(self):
         return self.pixel_funev.values
 
@@ -1974,7 +1976,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_ssfr_salim_values(self):
         return self.pixel_ssfr_salim.values
 
@@ -2035,7 +2037,6 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
 
         # Create and return
-        #return Scatter2D.from_xy(self.pixel_ssfr_values, self.pixel_funev_values, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_unit, x_description=self.ssfr_description, y_description=self.funev_description)
         return Scatter2D.from_xy(self.valid_pixel_ssfr_values_salim, self.valid_pixel_funev_values_salim, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_salim_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -2060,7 +2061,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_ssfr_ke_values(self):
         return self.pixel_ssfr_ke.values
 
@@ -2159,13 +2160,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_ssfr_mappings_values(self):
         return self.pixel_ssfr_mappings.values
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_sfr_mappings_values(self):
         return self.pixel_sfr_mappings.values
 
@@ -2241,8 +2242,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def pixel_sfr_mappings_ke_path(self):
+        return fs.join(self.projected_sfr_path, "sfr_mappings_ke_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_pixel_ssfr_mappings_ke(self):
         return fs.is_file(self.pixel_ssfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_sfr_mappings_ke(self):
+        return fs.is_file(self.pixel_sfr_mappings_ke_path)
 
     # -----------------------------------------------------------------
 
@@ -2252,9 +2265,27 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def pixel_sfr_mappings_ke(self):
+        return Frame.from_file(self.pixel_sfr_mappings_ke_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def pixel_ssfr_mappings_ke_values(self):
         return self.pixel_ssfr_mappings_ke.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_sfr_mappings_ke_values(self):
+        return self.pixel_sfr_mappings_ke.values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_sfr_mappings_ke_pixelarea(self):
+        return self.pixel_sfr_mappings_ke.pixelarea
 
     # -----------------------------------------------------------------
 
@@ -2409,13 +2440,13 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_ssfr_tir_values(self):
         return self.pixel_ssfr_tir.values
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_sfr_tir_values(self):
         return self.pixel_sfr_tir.values
 
@@ -2525,15 +2556,21 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_ssfr_24um_values(self):
         return self.pixel_ssfr_24um.values
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def pixel_sfr_24um_values(self):
         return self.pixel_sfr_24um.values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_sfr_24um_pixelarea(self):
+        return self.pixel_sfr_24um.pixelarea
 
     # -----------------------------------------------------------------
     # Temperature - Funev
@@ -2769,6 +2806,42 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def cell_sfr_densities_tir(self):
+        return self.cell_sfr_tir_values / self.cell_volumes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_density_tir_unit(self):
+        return self.sfr_tir_unit / self.volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_sfr_density_name(self):
+        return "vSFR_MAPPINGS"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_sfr_density_description(self):
+        return "Star formation rate density (MAPPINGS)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_sfr_density_name(self):
+        return "vSFR_TIR"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_sfr_density_description(self):
+        return "Star formation rate density (TIR)"
+
+    # -----------------------------------------------------------------
+
     @property
     def mappings_tir_sfr_cells_path(self):
         return fs.join(self.sfr_sfr_path, "mappings_tir_cells.dat")
@@ -2776,8 +2849,49 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def mappings_tir_sfr_cells_colnames(self):
+        return fs.get_column_names(self.mappings_tir_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.mappings_tir_sfr_cells_colnames, [self.mappings_sfr_density_name, self.tir_sfr_density_name])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_tir_sfr_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.mappings_tir_sfr_cells_aux_colnames, sfr_sfr_cells_aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_mappings_tir_sfr_cells(self):
-        return fs.is_file(self.mappings_tir_sfr_cells_path)
+        if fs.is_file(self.mappings_tir_sfr_cells_path):
+            if not self.mappings_tir_sfr_cells_has_all_aux_columns:
+                colnames = self.mappings_tir_sfr_cells_aux_colnames
+                if temperature_name not in colnames: self.mappings_tir_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.mappings_tir_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                if funev_name not in colnames: self.mappings_tir_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                self.mappings_tir_sfr_cells.save() # save
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_sfr_cells_aux(self):
+        return {temperature_name: self.cell_temperatures,
+                mean_age_name: self.cell_mean_ages,
+                funev_name: self.cell_funev_values}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_sfr_cells_aux_units(self):
+        return {temperature_name: self.temperature_unit,
+                mean_age_name: self.log_age_unit}
 
     # -----------------------------------------------------------------
 
@@ -2792,13 +2906,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Checks
 
         # Get values
-        valid_mappings_sfr_values = self.cell_sfr_mappings_values
-        valid_tir_sfr_values = self.cell_sfr_tir_values
+        valid_mappings_sfr_values = self.cell_sfr_densities_mappings
+        valid_tir_sfr_values = self.cell_sfr_densities_tir
 
         # Return
         return Scatter2D.from_xy(valid_mappings_sfr_values, valid_tir_sfr_values,
-                                 x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=self.sfr_mappings_unit,
-                                 y_unit=self.sfr_tir_unit, x_description=self.mappings_sfr_description, y_description=self.tir_sfr_description)
+                                 x_name=self.mappings_sfr_density_name, y_name=self.tir_sfr_density_name, x_unit=self.sfr_density_mappings_unit,
+                                 y_unit=self.sfr_density_tir_unit, x_description=self.mappings_sfr_density_description,
+                                 y_description=self.tir_sfr_density_description, aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
 
     # -----------------------------------------------------------------
 
@@ -2839,7 +2954,135 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Return
         return Scatter2D.from_xy(mappings_values, tir_values,
                                  x_name=self.mappings_sfr_name, y_name=self.tir_sfr_name, x_unit=sfr_unit, y_unit=sfr_unit,
-                                 x_description=self.mappings_sfr_description, y_description=self.tir_sfr_description)
+                                 x_description=self.mappings_sfr_density_description, y_description=self.tir_sfr_density_description)
+
+    # -----------------------------------------------------------------
+    # MAPPINGS K&E SFR - TIR SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_sfr_name(self):
+        return "SFR_MAPPINGS_KE"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_sfr_description(self):
+        return "Star formation rate (MAPPINGS + K&E)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_sfr_density_name(self):
+        return "vSFR_MAPPINGS_KE"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_sfr_density_description(self):
+        return "Star formation rate density (MAPPINGS + K&E)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_tir_sfr_cells_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_ke_tir_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_tir_sfr_cells_colnames(self):
+        return fs.get_column_names(self.mappings_ke_tir_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_tir_sfr_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.mappings_ke_tir_sfr_cells_colnames, [self.mappings_ke_sfr_density_name, self.tir_sfr_density_name])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_tir_sfr_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.mappings_ke_tir_sfr_cells_aux_colnames, sfr_sfr_cells_aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_tir_sfr_cells(self):
+        if fs.is_file(self.mappings_ke_tir_sfr_cells_path):
+            if not self.mappings_ke_tir_sfr_cells_has_all_aux_columns:
+                colnames = self.mappings_ke_tir_sfr_cells_aux_colnames
+                if temperature_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                if funev_name not in colnames: self.mappings_ke_tir_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                self.mappings_tir_sfr_cells.save() # save
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_tir_sfr_cells_path", True, write=False)
+    def mappings_ke_tir_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        valid_mappings_ke_sfr_values = self.cell_sfr_densities_mappings_ke
+        valid_tir_sfr_values = self.cell_sfr_densities_tir
+
+        # Return
+        return Scatter2D.from_xy(valid_mappings_ke_sfr_values, valid_tir_sfr_values,
+                                 x_name=self.mappings_ke_sfr_density_name, y_name=self.tir_sfr_density_name,
+                                 x_unit=self.sfr_density_mappings_ke_unit,
+                                 y_unit=self.sfr_density_tir_unit,
+                                 x_description=self.mappings_ke_sfr_density_description,
+                                 y_description=self.tir_sfr_density_description,
+                                 aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_tir_sfr_pixels_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_ke_tir_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_tir_sfr_pixels(self):
+        return fs.is_file(self.mappings_ke_tir_sfr_pixels)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_tir_sfr_pixels_path", True, write=False)
+    def mappings_ke_tir_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        mappings_ke_sfr = self.pixel_sfr_mappings_ke / self.pixel_sfr_mappings_ke_pixelarea
+        tir_sfr = self.pixel_sfr_tir / self.pixel_sfr_tir_pixelarea
+
+        # Uniformize
+        mappings_ke, tir = uniformize(mappings_ke_sfr, tir_sfr)
+
+        # Get values
+        mappings_ke_values = mappings_ke.data
+        tir_values = tir.data
+        sfr_unit = mappings_ke.unit
+
+        # Return
+        return Scatter2D.from_xy(mappings_ke_values, tir_values,
+                                 x_name=self.mappings_ke_sfr_name, y_name=self.tir_sfr_name, x_unit=sfr_unit, y_unit=sfr_unit,
+                                 x_description=self.mappings_ke_sfr_density_description, y_description=self.tir_sfr_density_description)
 
     # -----------------------------------------------------------------
     # MAPPINGS SFR - 24 um SFR
@@ -2857,6 +3100,30 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def cell_sfr_densities_24um(self):
+        return self.cell_sfr_24um_values / self.cell_volumes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_density_24um_unit(self):
+        return self.sfr_24um_unit / self.volume_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mips24_sfr_density_name(self):
+        return "vSFR_24um"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mips24_sfr_density_description(self):
+        return "Star formation rate density (24 micron)"
+
+    # -----------------------------------------------------------------
+
     @property
     def mappings_24um_sfr_cells_path(self):
         return fs.join(self.sfr_sfr_path, "mappings_24um_cells.dat")
@@ -2864,8 +3131,34 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def mappings_24um_sfr_cells_colnames(self):
+        return fs.get_column_names(self.mappings_24um_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.mappings_24um_sfr_cells_colnames, [self.mappings_sfr_density_name, self.mips24_sfr_density_name])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_24um_sfr_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.mappings_24um_sfr_cells_aux_colnames, sfr_sfr_cells_aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_mappings_24um_sfr_cells(self):
-        return fs.is_file(self.mappings_24um_sfr_cells_path)
+        if fs.is_file(self.mappings_24um_sfr_cells_path):
+            if not self.mappings_24um_sfr_cells_has_all_aux_columns:
+                colnames = self.mappings_24um_sfr_cells_aux_colnames
+                if temperature_name not in colnames: self.mappings_24um_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.mappings_24um_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                if funev_name not in colnames: self.mappings_24um_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                self.mappings_24um_sfr_cells.save() # save
+            return True
+        else: return False
 
     # -----------------------------------------------------------------
 
@@ -2880,13 +3173,16 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Checks
 
         # Get values
-        valid_mappings_sfr_values = self.cell_sfr_mappings_values
-        valid_24um_sfr_values = self.cell_sfr_24um_values
+        valid_mappings_sfr_values = self.cell_sfr_densities_mappings
+        valid_24um_sfr_values = self.cell_sfr_densities_24um
 
         # Return
         return Scatter2D.from_xy(valid_mappings_sfr_values, valid_24um_sfr_values,
-                                 x_name=self.mappings_sfr_name, y_name=self.mips24_sfr_name, x_unit=self.sfr_mappings_unit,
-                                 y_unit=self.sfr_24um_unit, x_description=self.mappings_sfr_description, y_description=self.mips24_sfr_description)
+                                 x_name=self.mappings_sfr_density_name, y_name=self.mips24_sfr_density_name,
+                                 x_unit=self.sfr_density_mappings_unit,
+                                 y_unit=self.sfr_density_24um_unit, x_description=self.mappings_sfr_density_description,
+                                 y_description=self.mips24_sfr_density_description,
+                                 aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
 
     # -----------------------------------------------------------------
 
@@ -2913,13 +3209,550 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # Checks
 
         # Get values
-        valid_mappings_sfr_values = self.pixel_sfr_mappings_values
-        valid_24um_sfr_values = self.pixel_sfr_24um_values
+        mappings_sfr = self.pixel_sfr_mappings / self.pixel_sfr_mappings_pixelarea
+        mips24_sfr = self.pixel_sfr_24um / self.pixel_sfr_24um_pixelarea
+
+        # Uniformize
+        mappings, mips24 = uniformize(mappings_sfr, mips24_sfr)
+
+        # Get values
+        mappings_values = mappings.values
+        mips24_values = mips24.values
+        sfr_unit = mappings.unit
 
         # Return
-        return Scatter2D.from_xy(valid_mappings_sfr_values, valid_24um_sfr_values,
-                                 x_name=self.mappings_sfr_name, y_name=self.mips24_sfr_name, x_unit=self.sfr_mappings_unit,
-                                 y_unit=self.sfr_24um_unit, x_description=self.mappings_sfr_description, y_description=self.mips24_sfr_description)
+        return Scatter2D.from_xy(mappings_values, mips24_values,
+                                 x_name=self.mappings_sfr_name, y_name=self.mips24_sfr_name, x_unit=sfr_unit,
+                                 y_unit=sfr_unit, x_description=self.mappings_sfr_density_description,
+                                 y_description=self.mips24_sfr_density_description)
+
+    # -----------------------------------------------------------------
+    # MAPPINGS K&E SFR - 24um SFR
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_24um_sfr_cells_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_ke_24um_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_24um_sfr_cells_colnames(self):
+        return fs.get_column_names(self.mappings_ke_24um_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_24um_sfr_cells_aux_colnames(self):
+        return sequences.elements_not_in_other(self.mappings_ke_24um_sfr_cells_colnames, [self.mappings_ke_sfr_density_name, self.mips24_sfr_density_name])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_24um_sfr_cells_has_all_aux_columns(self):
+        return sequences.contains_all(self.mappings_ke_24um_sfr_cells_aux_colnames, sfr_sfr_cells_aux_colnames)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_24um_sfr_cells(self):
+        if fs.is_file(self.mappings_ke_24um_sfr_cells_path):
+            if not self.mappings_ke_24um_sfr_cells_has_all_aux_columns:
+                colnames = self.mappings_ke_24um_sfr_cells_aux_colnames
+                if temperature_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(temperature_name, self.cell_temperatures, self.temperature_unit, as_column=True)
+                if mean_age_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(mean_age_name, self.cell_mean_ages, self.log_age_unit, as_column=True)
+                if funev_name not in colnames: self.mappings_ke_24um_sfr_cells.add_aux(funev_name, self.cell_funev_values, as_column=True)
+                self.mappings_ke_24um_sfr_cells.save() # save
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_24um_sfr_cells_path", True, write=False)
+    def mappings_ke_24um_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        valid_mappings_ke_sfr_values = self.cell_sfr_densities_mappings_ke
+        valid_24um_sfr_values = self.cell_sfr_densities_24um
+
+        # Return
+        return Scatter2D.from_xy(valid_mappings_ke_sfr_values, valid_24um_sfr_values,
+                                 x_name=self.mappings_ke_sfr_density_name, y_name=self.mips24_sfr_density_name,
+                                 x_unit=self.sfr_density_mappings_ke_unit,
+                                 y_unit=self.sfr_density_24um_unit, x_description=self.mappings_ke_sfr_density_description,
+                                 y_description=self.mips24_sfr_density_description,
+                                 aux=self.sfr_sfr_cells_aux, aux_units=self.sfr_sfr_cells_aux_units)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_24um_sfr_pixels_path(self):
+        return fs.join(self.sfr_sfr_path, "mappings_ke_24um_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_24um_sfr_pixels(self):
+        return fs.is_file(self.mappings_ke_24um_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_24um_sfr_pixels_path", True, write=False)
+    def mappings_ke_24um_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+
+        # Get values
+        mappings_ke_sfr = self.pixel_sfr_mappings_ke / self.pixel_sfr_mappings_ke_pixelarea
+        mips24_sfr = self.pixel_sfr_24um / self.pixel_sfr_24um_pixelarea
+
+        # Uniformize
+        mappings_ke, mips24 = uniformize(mappings_ke_sfr, mips24_sfr)
+
+        # Get values
+        mappings_ke_values = mappings_ke.values
+        mips24_values = mips24.values
+        sfr_unit = mappings_ke.unit
+
+        # Return
+        return Scatter2D.from_xy(mappings_ke_values, mips24_values,
+                                 x_name=self.mappings_ke_sfr_name, y_name=self.mips24_sfr_name, x_unit=sfr_unit,
+                                 y_unit=sfr_unit, x_description=self.mappings_ke_sfr_density_description,
+                                 y_description=self.mips24_sfr_density_description)
+
+    # -----------------------------------------------------------------
+    # MAPPINGS sSFR - FUV-H sSFR
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ssfr_ssfr_path(self):
+        return fs.create_directory_in(self.correlations_path, "sSFR-sSFR")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_fuv_h_ssfr_cells_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_fuv_h_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_fuv_h_ssfr_cells(self):
+        return fs.is_file(self.mappings_fuv_h_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ssfr_name(self):
+        return "sSFR_MAPPINGS"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ssfr_description(self):
+        return "Specific star formation rate (MAPPINGS)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_h_ssfr_name(self):
+        return "FUV-H"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_h_ssfr_description(self):
+        return "FUV-H colour as specific star formation rate proxy"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def magnitude_unit(self):
+        return u("mag")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_fuv_h_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_fuv_h.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_fuv_h(self):
+        return fs.is_file(self.cell_ssfr_fuv_h_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfr_fuv_h(self):
+        return Data3D.from_file(self.cell_ssfr_fuv_h_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_fuv_h_values(self):
+        return self.cell_ssfr_fuv_h.values
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_fuv_h_ssfr_cells_path", True, write=False)
+    def mappings_fuv_h_ssfr_cells(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        # Get values
+        mappings_ssfr_values = self.cell_ssfr_mappings_values
+        fuv_h_ssfr_values = self.cell_ssfr_fuv_h_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ssfr_values, fuv_h_ssfr_values,
+                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_h_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ssfr_description,
+                                 y_description=self.fuv_h_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_fuv_h_ssfr_pixels_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_fuv_h_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_fuv_h_ssfr_pixels(self):
+        return fs.is_file(self.mappings_fuv_h_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_fuv_h_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_fuv_h_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr_fuv_h(self):
+        return fs.is_file(self.pixel_ssfr_fuv_h_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_fuv_h(self):
+        return Frame.from_file(self.pixel_ssfr_fuv_h_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_fuv_h_values(self):
+        return self.pixel_ssfr_fuv_h.values
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_fuv_h_ssfr_pixels_path", True, write=False)
+    def mappings_fuv_h_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ssfr_values = self.pixel_ssfr_mappings_values
+        fuv_h_ssfr_values = self.pixel_ssfr_fuv_h_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ssfr_values, fuv_h_ssfr_values,
+                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_h_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ssfr_description,
+                                 y_description=self.fuv_h_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_fuv_r_ssfr_cells_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_fuv_r_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_fuv_r_ssfr_cells(self):
+        return fs.is_file(self.mappings_fuv_r_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_r_ssfr_name(self):
+        return "FUV-r"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fuv_r_ssfr_description(self):
+        return "FUV-r colour as specific star formation rate proxy"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_fuv_r_path(self):
+        return fs.join(self.cell_sfr_path, "ssfr_fuv_r.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_cell_ssfr_fuv_r(self):
+        return fs.is_file(self.cell_ssfr_fuv_r_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cell_ssfr_fuv_r(self):
+        return Data3D.from_file(self.cell_ssfr_fuv_r_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_ssfr_fuv_r_values(self):
+        return self.cell_ssfr_fuv_r.values
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_fuv_r_ssfr_cells_path", True, write=False)
+    def mappings_fuv_r_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ssfr_values = self.cell_ssfr_mappings_values
+        fuv_r_ssfr_values = self.cell_ssfr_fuv_r_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ssfr_values, fuv_r_ssfr_values,
+                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_r_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ssfr_description,
+                                 y_description=self.fuv_r_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_fuv_r_ssfr_pixels_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_fuv_r_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_fuv_r_ssfr_pixels(self):
+        return fs.is_file(self.mappings_fuv_r_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixel_ssfr_fuv_r_path(self):
+        return fs.join(self.projected_sfr_path, "ssfr_fuv_r_earth.fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_pixel_ssfr_fuv_r(self):
+        return fs.is_file(self.pixel_ssfr_fuv_r_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_fuv_r(self):
+        return Frame.from_file(self.pixel_ssfr_fuv_r_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixel_ssfr_fuv_r_values(self):
+        return self.pixel_ssfr_fuv_r.values
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_fuv_r_ssfr_pixels_path", True, write=False)
+    def mappings_fuv_r_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ssfr_values = self.pixel_ssfr_mappings_values
+        fuv_r_ssfr_values = self.pixel_ssfr_fuv_r_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ssfr_values, fuv_r_ssfr_values,
+                                 x_name=self.mappings_ssfr_name, y_name=self.fuv_r_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ssfr_description,
+                                 y_description=self.fuv_r_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_ssfr_name(self):
+        return "sSFR_MAPPINGS_KE"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_ssfr_description(self):
+        return "Specific star formation rate (MAPPINGS + K&E)"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_fuv_h_ssfr_cells_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_ke_fuv_h_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_fuv_h_ssfr_cells(self):
+        return fs.is_file(self.mappings_ke_fuv_h_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_fuv_h_ssfr_cells_path", True, write=False)
+    def mappings_ke_fuv_h_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ke_ssfr_values = self.cell_ssfr_mappings_ke_values
+        fuv_h_ssfr_values = self.cell_ssfr_fuv_h_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_h_ssfr_values,
+                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_h_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ke_ssfr_description,
+                                 y_description=self.fuv_h_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_fuv_h_ssfr_pixels_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_ke_fuv_h_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_fuv_h_ssfr_pixels(self):
+        return fs.is_file(self.mappings_ke_fuv_h_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_fuv_h_ssfr_pixels_path", True, write=False)
+    def mappings_ke_fuv_h_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ke_ssfr_values = self.pixel_ssfr_mappings_ke_values
+        fuv_h_ssfr_values = self.pixel_ssfr_fuv_h_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_h_ssfr_values,
+                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_h_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ke_ssfr_description,
+                                 y_description=self.fuv_h_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_fuv_r_ssfr_cells_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_ke_fuv_r_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_fuv_r_ssfr_cells(self):
+        return fs.is_file(self.mappings_ke_fuv_r_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_fuv_r_ssfr_cells_path", True, write=False)
+    def mappings_ke_fuv_r_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ke_ssfr_values = self.cell_ssfr_mappings_ke_values
+        fuv_r_ssfr_values = self.cell_ssfr_fuv_r_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_r_ssfr_values,
+                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_r_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ke_ssfr_description,
+                                 y_description=self.fuv_r_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_ke_fuv_r_ssfr_pixels_path(self):
+        return fs.join(self.ssfr_ssfr_path, "mappings_ke_fuv_r_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_ke_fuv_r_ssfr_pixels(self):
+        return fs.is_file(self.mappings_ke_fuv_r_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mappings_ke_fuv_r_ssfr_pixels_path", True, write=False)
+    def mappings_ke_fuv_r_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mappings_ke_ssfr_values = self.pixel_ssfr_mappings_ke_values
+        fuv_r_ssfr_values = self.pixel_ssfr_fuv_r_values
+
+        # Return
+        return Scatter2D.from_xy(mappings_ke_ssfr_values, fuv_r_ssfr_values,
+                                 x_name=self.mappings_ke_ssfr_name, y_name=self.fuv_r_ssfr_name,
+                                 x_unit=self.ssfr_unit, y_unit=self.magnitude_unit,
+                                 x_description=self.mappings_ke_ssfr_description,
+                                 y_description=self.fuv_r_ssfr_description)
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
@@ -2990,6 +3823,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # SFR SFR scatter data
         self.write_sfr_sfr()
+
+        # sSFR sSFR scatter data
+        self.write_ssfr_ssfr()
 
         # Mean age Funev scatter data
         self.write_mean_age_funev()
@@ -3340,6 +4176,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the dust temperature to Funev scatter data ...")
+
         # Cells
         if self.do_write_temperature_funev_cells: self.write_temperature_funev_cells()
 
@@ -3385,11 +4224,20 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the SFR-SFR correlation data ...")
+
         # MAPPINGS to TIR
         self.write_mappings_tir_sfr()
 
         # MAPPINGS to 24um
         self.write_mappings_24um_sfr()
+
+        # MAPPINGS + K&E to TIR
+        self.write_mappings_ke_tir_sfr()
+
+        # MAPPINGS + K&E to 24um
+        self.write_mappings_ke_24um_sfr()
 
     # -----------------------------------------------------------------
 
@@ -3508,6 +4356,348 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @property
+    def do_write_mappings_ke_tir_sfr_cells(self):
+        return not self.has_mappings_ke_tir_sfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_tir_sfr_pixels(self):
+        return not self.has_mappings_ke_tir_sfr_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_tir_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_ke_tir_sfr_cells: self.write_mappings_ke_tir_sfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_ke_tir_sfr_pixels: self.write_mappings_ke_tir_sfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_tir_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the MAPPINGS K&E SFR to TIR SFR dust cell scatter data ...")
+
+        # Write
+        self.mappings_ke_tir_sfr_cells.saveto(self.mappings_ke_tir_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_tir_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the MAPPINGS K&E SFR to TIR SFR pixel scatter data ...")
+
+        # Write
+        self.mappings_ke_tir_sfr_pixels.saveto(self.mappings_ke_tir_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_24um_sfr_cells(self):
+        return not self.has_mappings_ke_24um_sfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_24um_sfr_pixels(self):
+        return not self.has_mappings_ke_24um_sfr_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_24um_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_ke_24um_sfr_cells: self.write_mappings_ke_24um_sfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_ke_24um_sfr_pixels: self.write_mappings_ke_24um_sfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_24um_sfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the MAPPINGS + K&E SFR to 24 micron SFR dust cell scatter data ...")
+
+        # Write
+        self.mappings_ke_24um_sfr_cells.saveto(self.mappings_ke_24um_sfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_24um_sfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the MAPPINGS + K&E SFR to 24 micron SFR dust pixel scatter data ...")
+
+        # Write
+        self.mappings_ke_24um_sfr_pixels.saveto(self.mappings_ke_24um_sfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    def write_ssfr_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sSFR-sSFR correlation data ...")
+
+        # MAPPINGS to FUV-H
+        self.write_mappings_fuv_h_ssfr()
+
+        # MAPPINGS to FUV-R
+        self.write_mappings_fuv_r_ssfr()
+
+        # MAPPINGS KE to FUV-H
+        self.write_mappings_ke_fuv_h_ssfr()
+
+        # MAPPINGS KE to FUV-R
+        self.write_mappings_ke_fuv_r_ssfr()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_fuv_h_ssfr_cells(self):
+        return not self.has_mappings_fuv_h_ssfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_fuv_h_ssfr_pixels(self):
+        return not self.has_mappings_fuv_h_ssfr_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_fuv_h_ssfr(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_fuv_h_ssfr_cells: self.write_mappings_fuv_h_ssfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_fuv_h_ssfr_pixels: self.write_mappings_fuv_h_ssfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_fuv_h_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_fuv_h_ssfr_cells.saveto(self.mappings_fuv_h_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_fuv_h_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_fuv_h_ssfr_pixels.saveto(self.mappings_fuv_h_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_fuv_r_ssfr_cells(self):
+        return not self.has_mappings_fuv_r_ssfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_fuv_r_ssfr_pixels(self):
+        return not self.has_mappings_fuv_r_ssfr_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_fuv_r_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_fuv_r_ssfr_cells: self.write_mappings_fuv_r_ssfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_fuv_r_ssfr_pixels: self.write_mappings_fuv_r_ssfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_fuv_r_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_fuv_r_ssfr_cells.saveto(self.mappings_fuv_r_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_fuv_r_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_fuv_r_ssfr_pixels.saveto(self.mappings_fuv_r_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_fuv_h_ssfr_cells(self):
+        return not self.has_mappings_ke_fuv_h_ssfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_fuv_h_ssfr_pixels(self):
+        return not self.has_mappings_ke_fuv_h_ssfr_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_fuv_h_ssfr(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_ke_fuv_h_ssfr_cells: self.write_mappings_ke_fuv_h_ssfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_ke_fuv_h_ssfr_pixels: self.write_mappings_ke_fuv_h_ssfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_fuv_h_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_ke_fuv_h_ssfr_cells.saveto(self.mappings_ke_fuv_h_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_fuv_h_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_ke_fuv_h_ssfr_pixels.saveto(self.mappings_ke_fuv_h_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_fuv_r_ssfr_cells(self):
+        return not self.has_mappings_ke_fuv_r_ssfr_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mappings_ke_fuv_r_ssfr_pixels(self):
+        return not self.has_mappings_ke_fuv_r_ssfr_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_fuv_r_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mappings_ke_fuv_r_ssfr_cells: self.write_mappings_ke_fuv_r_ssfr_cells()
+
+        # Pixels
+        if self.do_write_mappings_ke_fuv_r_ssfr_pixels: self.write_mappings_ke_fuv_r_ssfr_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_fuv_r_ssfr_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_ke_fuv_r_ssfr_cells.saveto(self.mappings_ke_fuv_r_ssfr_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mappings_ke_fuv_r_ssfr_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mappings_ke_fuv_r_ssfr_pixels.saveto(self.mappings_ke_fuv_r_ssfr_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def do_mean_age_cells(self):
         return self.has_mean_age_cells
 
@@ -3537,6 +4727,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         Thisn function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the mean stellar age to Funev scatter data ...")
 
         # Cells
         if self.do_write_mean_age_funev_cells: self.write_mean_age_funev_cells()
@@ -4306,10 +5499,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         This function ...
         :return:
         """
-        
+
         # Cells
         if self.do_plot_temperature_funev_cells: self.plot_temperature_funev_cells()
-        
+
         # Pixels
         if self.do_plot_temperature_funev_pixels: self.plot_temperature_funev_pixels()
 
@@ -4488,7 +5681,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def mappings_tir_sfr_cells_title(self):
         return "Correlation between MAPPINGS SFR and TIR SFR of dust cells"
-        
+
     # -----------------------------------------------------------------
 
     @property
@@ -4662,7 +5855,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
     @property
     def mappings_24um_sfr_pixels_plot_path(self):
         return fs.join(self.sfr_sfr_path, "mappings_24um_pixels.pdf")
-        
+
     # -----------------------------------------------------------------
 
     @property

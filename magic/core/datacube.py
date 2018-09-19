@@ -1772,15 +1772,20 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def get_frame_for_wavelength(self, wavelength, copy=False):
+    def get_frame_for_wavelength(self, wavelength, copy=False, interpolate=False):
 
         """
         This function ...
         :param wavelength:
         :param copy:
+        :param interpolate:
         :return:
         """
 
+        # Interpolation is not yet supported
+        if interpolate: raise NotImplementedError("Interpolation is not yet implemented")
+
+        # Get frame index
         index = self.get_frame_index_for_wavelength(wavelength)
 
         if copy: frame = self.frames[index].copy()

@@ -264,12 +264,6 @@ class ConvolutionKernel(Frame):
 
     @property
     def prepared(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self._prepared
 
     # -----------------------------------------------------------------
@@ -310,48 +304,24 @@ class ConvolutionKernel(Frame):
 
     @property
     def odd_xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.xsize % 2 != 0
 
     # -----------------------------------------------------------------
 
     @property
     def odd_ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ysize % 2 != 0
 
     # -----------------------------------------------------------------
 
     @property
     def x_fwhms(self):
-
-        """
-        Thisf nction ...
-        :return:
-        """
-
         return 0.5 * float(self.xsize) / self.fwhm_pix
 
     # -----------------------------------------------------------------
 
     @property
     def y_fwhms(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * float(self.ysize) / self.fwhm_pix
 
     # -----------------------------------------------------------------
@@ -374,48 +344,24 @@ class ConvolutionKernel(Frame):
 
     @property
     def sigma(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.fwhm * statistics.fwhm_to_sigma
 
     # -----------------------------------------------------------------
 
     @property
     def sigma_pix(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.sigma / self.average_pixelscale).to("").value if self.sigma is not None else None
 
     # -----------------------------------------------------------------
 
     @property
     def x_sigmas(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return 0.5 * float(self.xsize) / self.sigma_pix
 
     # -----------------------------------------------------------------
 
     @property
     def y_sigmas(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return 0.5 * float(self.ysize) / self.sigma_pix
 
     # -----------------------------------------------------------------
@@ -438,12 +384,6 @@ class ConvolutionKernel(Frame):
 
     @property
     def sigma_level(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.sigmas
 
     # -----------------------------------------------------------------
