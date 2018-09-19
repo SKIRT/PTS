@@ -39,7 +39,7 @@ from ..tools import archive as arch
 # - simulation: the SkirtSimulation object representing the simulation to be handled
 # - figsize: the horizontal and vertical size of the output figure in inch (!); default is 8 x 8 inch
 #
-def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=None):
+def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=None, linewidth=0.1):
 
     if prefix is None: prefix = ""
     else: prefix = prefix + "_"
@@ -51,11 +51,11 @@ def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=
             plotfile = os.path.join(output_path, prefix + os.path.basename(plotfile))
 
         # Make the plot
-        make_grid_plot(gridfile, plotfile, figsize=figsize, silent=silent)
+        make_grid_plot(gridfile, plotfile, figsize=figsize, silent=silent, linewidth=linewidth)
 
 # -----------------------------------------------------------------
 
-def make_grid_plot(gridfile, plotfile, figsize=(8,8), silent=False):
+def make_grid_plot(gridfile, plotfile, figsize=(8,8), silent=False, linewidth=0.1):
 
     # setup the figure with the appropriate size (in points)
     figwidth = 72*figsize[0]
@@ -63,7 +63,7 @@ def make_grid_plot(gridfile, plotfile, figsize=(8,8), silent=False):
     if figwidth==figheight: figheight+=2  # to ensure portrait orientation when printed
     fig = canvas.Canvas(plotfile, pagesize=(figwidth,figheight))
     fig.setAuthor("Python Toolkit for SKIRT")
-    fig.setLineWidth(0.1)
+    fig.setLineWidth(linewidth)
 
     # determine the format type from the first nonempty line (3D format has 3 columns, 2D format has 2 columns)
     for line in arch.opentext(gridfile):

@@ -2199,7 +2199,7 @@ def tail(filepath, window=20):
 
 # -----------------------------------------------------------------
 
-def get_line_values(path, nlines, cls=float, last=False):
+def get_line_values(path, nlines, cls=float, last=False, start=None):
 
     """
     This function ...
@@ -2207,6 +2207,7 @@ def get_line_values(path, nlines, cls=float, last=False):
     :param nlines:
     :param cls:
     :param last:
+    :param start:
     :return:
     """
 

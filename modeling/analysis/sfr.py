@@ -198,6 +198,12 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def frequency_luminosity_unit(self):
+        return u("W/Hz")
+
+    # -----------------------------------------------------------------
+
     @property
     def earth_projection(self):
         return self.analysis_run.earth_projection
@@ -1081,6 +1087,18 @@ class SFRAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def fuv_frequency_luminosity_conversion_factor(self):
+        return self.specific_luminosity_unit.conversion_factor(self.frequency_luminosity_unit, wavelength=self.fuv_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_fuv_frequency_luminosities(self):
+        return self.total_cell_fuv_luminosities * self.fuv_frequency_luminosity_conversion_factor
+
+    # -----------------------------------------------------------------
+
     @property
     def fuv_name(self):
         return "FUV"
@@ -1765,6 +1783,18 @@ class SFRAnalyser(AnalysisRunComponent):
         return self.old_cell_h_luminosities + self.unevolved_cell_h_luminosities
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def h_frequency_luminosity_conversion_factor(self):
+        return self.specific_luminosity_unit.conversion_factor(self.frequency_luminosity_unit, wavelength=self.h_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_h_frequency_luminosities(self):
+        return self.total_cell_h_luminosities * self.h_frequency_luminosity_conversion_factor
+
+    # -----------------------------------------------------------------
     # R luminosities
     # -----------------------------------------------------------------
 
@@ -1857,6 +1887,18 @@ class SFRAnalyser(AnalysisRunComponent):
         return self.old_cell_r_luminosities + self.unevolved_cell_r_luminosities
 
     # -----------------------------------------------------------------
+
+    @lazyproperty
+    def r_frequency_luminosity_conversion_factor(self):
+        return self.specific_luminosity_unit.conversion_factor(self.frequency_luminosity_unit, wavelength=self.r_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_cell_r_frequency_luminosities(self):
+        return self.total_cell_r_luminosities * self.r_frequency_luminosity_conversion_factor
+
+    # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
     @property
@@ -1880,7 +1922,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Calculate the colours
-        fuv_h = -2.5 * np.log10(self.total_cell_fuv_luminosities, self.total_cell_h_luminosities)
+        fuv_h = -2.5 * np.log10(self.total_cell_fuv_frequency_luminosities, self.total_cell_h_frequency_luminosities)
 
         # Create the data
         return Data3D.from_values(self.ssfr_name, fuv_h, self.cell_x_coordinates_colname,
@@ -1911,7 +1953,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Calculate the colours
-        fuv_r = -2.5 * np.log10(self.total_cell_fuv_luminosities, self.total_cell_r_luminosities)
+        fuv_r = -2.5 * np.log10(self.total_cell_fuv_frequency_luminosities, self.total_cell_r_frequency_luminosities)
 
         # Create the data
         return Data3D.from_values(self.ssfr_name, fuv_r, self.cell_x_coordinates_colname,

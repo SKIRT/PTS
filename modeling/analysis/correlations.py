@@ -50,6 +50,7 @@ ssfr_funev_name = "sSFR-Funev"
 temperature_funev_name = "Temperature-Funev"
 sfr_sfr_name = "SFR-SFR"
 mean_age_funev_name = "Mean age-Funev"
+mean_age_ssfr_name = "Mean age-sSFR"
 
 # -----------------------------------------------------------------
 
@@ -604,7 +605,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def cell_stellar_luminosity_contributions(self):
-        return np.array([self.cell_old_luminosity_contributions, self.cell_young_luminosity_contributions, self.cell_sfr_luminosity_contributions])
+        return np.stack([self.cell_old_luminosity_contributions, self.cell_young_luminosity_contributions, self.cell_sfr_luminosity_contributions])
 
     # -----------------------------------------------------------------
 
@@ -622,7 +623,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         if not np.all(close): raise RuntimeError("Something went wrong")
 
         # Calculate the mean age in dust cell, by weighing each stellar component age (old, young, ionizing) by the respective contribution to the global luminosity in that cell
-        log_mean_ages = numbers.weighed_arithmetic_mean_numpy(self.log_stellar_ages, weights=self.cell_stellar_luminosity_contributions)
+        # DOESN'T WORK?? GIVES WAY TOO LOW VALUES
+        #log_mean_ages = numbers.weighed_arithmetic_mean_numpy(self.log_stellar_ages, weights=self.cell_stellar_luminosity_contributions)
+        log_mean_ages = self.log_old_stellar_age * self.cell_old_luminosity_contributions + self.log_young_stellar_age * self.cell_young_luminosity_contributions + self.log_sfr_stellar_age * self.cell_sfr_luminosity_contributions
 
         # Create the data with external xyz
         return Data3D.from_values(self.mean_age_name, log_mean_ages, self.cell_x_coordinates_colname,
@@ -2773,6 +2776,138 @@ class CorrelationsAnalyser(AnalysisRunComponent):
                                  x_description=self.mean_age_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
+    # MEAN AGE - sSFR
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_age_ssfr_path(self):
+        return fs.create_directory_in(self.correlations_path, mean_age_ssfr_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_ssfr_mappings_cells_path(self):
+        return fs.join(self.mean_age_ssfr_path, "mappings_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_ssfr_mappings_cells(self):
+        return fs.is_file(self.mean_age_ssfr_mappings_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mean_age_ssfr_mappings_cells_path", True, write=False)
+    def mean_age_ssfr_mappings_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_cell_ssfr_mappings: raise IOError("The cell sSFR MAPPINGS data is not present: run the sfr analysis first")
+
+        # Get values
+        mean_ages = self.cell_mean_ages
+        ssfr = self.cell_ssfr_mappings_values
+
+        # Create and return
+        return Scatter2D.from_xy(mean_ages, ssfr, x_name=self.mean_age_name, y_name=self.mappings_ssfr_name,
+                                 x_unit=self.log_age_unit, y_unit=self.ssfr_mappings_unit,
+                                 x_description=self.mean_age_description, y_description=self.mappings_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_ssfr_mappings_pixels_path(self):
+        return fs.join(self.mean_age_ssfr_path, "mappings_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_ssfr_mappings_pixels(self):
+        return fs.is_file(self.mean_age_ssfr_mappings_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mean_age_ssfr_mappings_pixels_path", True, write=False)
+    def mean_age_ssfr_mappings_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mean_ages = None
+        ssfr = None
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_ssfr_mappings_ke_cells_path(self):
+        return fs.join(self.mean_age_ssfr_path, "mappings_ke_cells.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_ssfr_mappings_ke_cells(self):
+        return fs.is_file(self.mean_age_ssfr_mappings_ke_cells_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mean_age_ssfr_mappings_ke_cells_path", True, write=False)
+    def mean_age_ssfr_mappings_ke_cells(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Checks
+        if not self.has_cell_ssfr_mappings_ke: raise IOError("The cell sSFR MAPPINGS K&E data is not present: run the sfr analysis first")
+
+        # Get values
+        mean_ages = self.cell_mean_ages
+        ssfr = self.cell_ssfr_mappings_ke_values
+
+        # Create and return
+        return Scatter2D.from_xy(mean_ages, ssfr, x_name=self.mean_age_name, y_name=self.mappings_ke_ssfr_name,
+                                 x_unit=self.log_age_unit, y_unit=self.ssfr_mappings_ke_unit,
+                                 x_description=self.mean_age_description, y_description=self.mappings_ke_ssfr_description)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_age_ssfr_mappings_ke_pixels_path(self):
+        return fs.join(self.mean_age_ssfr_path, "mappings_ke_pixels.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mean_age_ssfr_mappings_ke_pixels(self):
+        return fs.is_file(self.mean_age_ssfr_mappings_ke_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "mean_age_ssfr_mappings_ke_pixels_path", True, write=False)
+    def mean_age_ssfr_mappings_ke_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get values
+        mean_ages = None
+        ssfr = None
+
+        return None
+
+    # -----------------------------------------------------------------
     # MAPPINGS SFR - TIR SFR
     # -----------------------------------------------------------------
 
@@ -2947,8 +3082,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         mappings, tir = uniformize(mappings_sfr, tir_sfr)
 
         # Get values
-        mappings_values = mappings.data
-        tir_values = tir.data
+        mappings_values = mappings.values
+        tir_values = tir.values
         sfr_unit = mappings.unit
 
         # Return
@@ -3053,7 +3188,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def has_mappings_ke_tir_sfr_pixels(self):
-        return fs.is_file(self.mappings_ke_tir_sfr_pixels)
+        return fs.is_file(self.mappings_ke_tir_sfr_pixels_path)
 
     # -----------------------------------------------------------------
 
@@ -3075,8 +3210,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         mappings_ke, tir = uniformize(mappings_ke_sfr, tir_sfr)
 
         # Get values
-        mappings_ke_values = mappings_ke.data
-        tir_values = tir.data
+        mappings_ke_values = mappings_ke.values
+        tir_values = tir.values
         sfr_unit = mappings_ke.unit
 
         # Return
@@ -3829,6 +3964,9 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Mean age Funev scatter data
         self.write_mean_age_funev()
+        
+        # Mean age sSFR scatter data
+        self.write_mean_age_ssfr()
 
     # -----------------------------------------------------------------
 
@@ -4763,6 +4901,123 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def write_mean_age_ssfr(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+        
+        # MAPPINGS
+        self.write_mean_age_ssfr_mappings()
+
+        # MAPPINGS + K&E
+        self.write_mean_age_ssfr_mappings_ke()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mean_age_ssfr_mappings_cells(self):
+        return self.do_mean_age_cells and not self.has_mean_age_ssfr_mappings_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mean_age_ssfr_mappings_pixels(self):
+        return self.do_mean_age_pixels and not self.has_mean_age_ssfr_mappings_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_ssfr_mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        self.write_mean_age_ssfr_mappings_cells()
+
+        # Pixels
+        self.write_mean_age_ssfr_mappings_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_ssfr_mappings_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mean_age_ssfr_mappings_cells.saveto(self.mean_age_ssfr_mappings_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_ssfr_mappings_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mean_age_ssfr_mappings_pixels.saveto(self.mean_age_ssfr_mappings_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mean_age_ssfr_mappings_ke_cells(self):
+        return self.do_mean_age_cells and not self.has_mean_age_ssfr_mappings_ke_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_mean_age_ssfr_mappings_ke_pixels(self):
+        return self.do_mean_age_pixels and not self.has_mean_age_ssfr_mappings_ke_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_ssfr_mappings_ke(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_mean_age_ssfr_mappings_ke_cells: self.write_mean_age_ssfr_mappings_ke_cells()
+
+        # Pixels
+        if self.do_write_mean_age_ssfr_mappings_ke_pixels: self.write_mean_age_ssfr_mappings_ke_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_ssfr_mappings_ke_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mean_age_ssfr_mappings_ke_cells.saveto(self.mean_age_ssfr_mappings_ke_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mean_age_ssfr_mappings_ke_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write
+        self.mean_age_ssfr_mappings_ke_pixels.saveto(self.mean_age_ssfr_mappings_ke_pixels_path)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -4782,8 +5037,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # SFR SFR scatter data
         self.plot_sfr_sfr()
 
+        # sSFR sSFR scatter data
+        self.plot_ssfr_ssfr()
+
         # Plot mean age - Funev
         self.plot_mean_age_funev()
+
+        # Mean age sSFR scatter data
+        self.plot_mean_age_ssfr()
 
     # -----------------------------------------------------------------
 
@@ -5640,6 +5901,12 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # MAPPINGS to 24um
         self.plot_mappings_24um_sfr()
 
+        # MAPPINGS KE to TIR
+        self.plot_mappings_ke_tir_sfr()
+
+        # MAPPINGS KE to 24um
+        self.plot_mappings_ke_24um_sfr()
+
     # -----------------------------------------------------------------
 
     @property
@@ -5884,6 +6151,39 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_mappings_ke_tir_sfr(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot_mappings_ke_24um_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def plot_ssfr_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     @property
     def do_plot_mean_age_funev_cells(self):
         return self.do_mean_age_cells and not self.has_mean_age_funev_cells_plot
@@ -6026,5 +6326,16 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Plot using Matplotlib
         else: raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    def plot_mean_age_ssfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
