@@ -4069,10 +4069,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Cells
-        self.write_ssfr_ke_funev_cells()
+        if self.do_write_ssfr_ke_funev_cells: self.write_ssfr_ke_funev_cells()
 
         # Pixels
-        self.write_ssfr_ke_funev_pixels()
+        if self.do_write_ssfr_ke_funev_pixels: self.write_ssfr_ke_funev_pixels()
 
     # -----------------------------------------------------------------
 
@@ -4936,10 +4936,10 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         """
 
         # Cells
-        self.write_mean_age_ssfr_mappings_cells()
+        if self.do_write_mean_age_ssfr_mappings_cells: self.write_mean_age_ssfr_mappings_cells()
 
         # Pixels
-        self.write_mean_age_ssfr_mappings_pixels()
+        if self.do_write_mean_age_ssfr_mappings_pixels: self.write_mean_age_ssfr_mappings_pixels()
 
     # -----------------------------------------------------------------
 
