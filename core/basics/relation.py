@@ -537,6 +537,58 @@ class Relation(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_x_splice(self, x_min=None, x_max=None, include_min=True, include_max=True, asarray=False, return_indices=False):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param include_min:
+        :param include_max:
+        :param asarray:
+        :param return_indices:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max)  # don't name arguments because of re-definition of function in WavelengthCurve class
+
+        # Get the values
+        x_values = [self.get_value(self.x_name, index, unit=self.x_unit, add_unit=False) for index in indices]
+
+        # Return
+        if asarray: x_values =  np.array(x_values)
+        if return_indices: return x_values, indices
+        else: return x_values
+
+    # -----------------------------------------------------------------
+
+    def get_y_splice(self, x_min=None, x_max=None, include_min=True, include_max=True, asarray=False, return_indices=False):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param include_min:
+        :param include_max:
+        :param asarray:
+        :param return_indices:
+        :return:
+        """
+
+        # Get the indices
+        indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max)  # don't name arguments because of re-definition of function in WavelengthCurve class
+
+        # Get the values
+        y_values = [self.get_value(self.y_name, index, unit=self.y_unit, add_unit=False) for index in indices]
+
+        # Return
+        if asarray: return np.array(y_values)
+        if return_indices: return y_values, indices
+        else: return y_values
+
+    # -----------------------------------------------------------------
+
     def flatten_above(self, value, flatten_value=0., include=True):
 
         """

@@ -34,6 +34,7 @@ from .output import SimulationOutput, ExtractionOutput, PlottingOutput, MiscOutp
 from ..tools import types
 from ..tools.stringify import tostr
 from ..tools import strings
+from ..tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
 
@@ -240,22 +241,18 @@ class SkirtSimulation(object):
 
     @property
     def input_path(self):
-
         return self._inpath
 
     @input_path.setter
     def input_path(self, value):
-
         self._inpath = value
 
     @property
     def output_path(self):
-
         return self._outpath
 
     @output_path.setter
     def output_path(self, value):
-
         self._outpath = value
 
     @property
@@ -1505,5 +1502,9 @@ class RemoteSimulation(SkirtSimulation):
 
         # Save to the original path
         self.saveto(self.path)
+
+# -----------------------------------------------------------------
+
+StaticSkirtSimulation = create_lazified_class(SkirtSimulation, "StaticSkirtSimulation")
 
 # -----------------------------------------------------------------

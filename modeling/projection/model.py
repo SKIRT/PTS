@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.simulation.simulation import createsimulations
+from ...core.simulation.simulation import createsimulations, SkirtSimulation, StaticSkirtSimulation
+from ...core.simulation.output import SimulationOutput
 from ...core.tools.utils import lazyproperty
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
@@ -37,6 +38,10 @@ default_npackages = 5e7
 earth_name = "earth"
 faceon_name = "faceon"
 edgeon_name = "edgeon"
+
+# -----------------------------------------------------------------
+
+output_filename = "output.txt"
 
 # -----------------------------------------------------------------
 
@@ -428,6 +433,18 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def earth_output_filepath(self):
+        return fs.join(self.earth_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_earth_output_file(self):
+        return fs.is_file(self.earth_output_filepath)
+
+    # -----------------------------------------------------------------
+
     def get_simulation_earth(self):
 
         """
@@ -436,10 +453,26 @@ class ComponentProjections(object):
         """
 
         # Simulation already performed?
-        if self.has_earth_simulation: return createsimulations(self.earth_out_path, single=True)
+        if self.has_earth_simulation:
+
+            simulation = StaticSkirtSimulation(prefix=self.simulation_prefix, inpath=self.input_paths, outpath=self.earth_out_path, ski_path=self.ski_path_earth, name=self.simulation_name)
+            if self.has_earth_output_file: simulation.output = SimulationOutput.from_file(self.earth_output_filepath) # static simulation so lazy property
+            return simulation
 
         # Run the simulation
         else: return self.run_earth_simulation()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_output_filepath(self):
+        return fs.join(self.faceon_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_faceon_output_file(self):
+        return fs.is_file(self.faceon_output_filepath)
 
     # -----------------------------------------------------------------
 
@@ -451,10 +484,26 @@ class ComponentProjections(object):
         """
 
         # Simulation already performed?
-        if self.has_faceon_simulation: return createsimulations(self.faceon_out_path, single=True)
+        if self.has_faceon_simulation:
+
+            simulation = StaticSkirtSimulation(prefix=self.simulation_prefix, inpath=self.input_paths, outpath=self.faceon_out_path, ski_path=self.ski_path_faceon, name=self.simulation_name)
+            if self.has_faceon_output_file: simulation.output = SimulationOutput.from_file(self.faceon_output_filepath)
+            return simulation
 
         # Run the simulation
         else: return self.run_faceon_simulation()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_output_filepath(self):
+        return fs.join(self.edgeon_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_edgeon_output_file(self):
+        return fs.is_file(self.edgeon_output_filepath)
 
     # -----------------------------------------------------------------
 
@@ -466,7 +515,11 @@ class ComponentProjections(object):
         """
 
         # Simulation already performed?
-        if self.has_edgeon_simulation: return createsimulations(self.edgeon_out_path, single=True)
+        if self.has_edgeon_simulation:
+
+            simulation = StaticSkirtSimulation(prefix=self.simulation_prefix, inpath=self.input_paths, outpath=self.edgeon_out_path, ski_path=self.ski_path_edgeon, name=self.simulation_name)
+            if self.has_edgeon_output_file: simulation.output = SimulationOutput.from_file(self.edgeon_output_filepath)
+            return simulation
 
         # Run the simulation
         else: return self.run_edgeon_simulation()
@@ -580,145 +633,85 @@ class ComponentProjections(object):
     # -----------------------------------------------------------------
 
     @property
+    def simulation_prefix(self):
+        return self.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_name(self):
+        return self.name
+
+    # -----------------------------------------------------------------
+
+    @property
     def ski_path_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.earth_path, self.name + ".ski")
+        return fs.join(self.earth_path, self.simulation_prefix + ".ski")
 
     # -----------------------------------------------------------------
 
     @property
     def ski_path_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.faceon_path, self.name + ".ski")
+        return fs.join(self.faceon_path, self.simulation_prefix + ".ski")
 
     # -----------------------------------------------------------------
 
     @property
     def ski_path_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.edgeon_path, self.name + ".ski")
+        return fs.join(self.edgeon_path, self.simulation_prefix + ".ski")
 
     # -----------------------------------------------------------------
 
     @property
     def has_skifile_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.ski_path_earth)
 
     # -----------------------------------------------------------------
 
     @property
     def has_skifile_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.ski_path_faceon)
 
     # -----------------------------------------------------------------
 
     @property
     def has_skifile_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.ski_path_edgeon)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_instrument_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FrameInstrument.from_projection(self.projection_earth)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_instrument_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FrameInstrument.from_projection(self.projection_faceon)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def frame_instrument_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FrameInstrument.from_projection(self.projection_edgeon)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def full_instrument_earth(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FullInstrument.from_projection(self.projection_earth)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def full_instrument_faceon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FullInstrument.from_projection(self.projection_faceon)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def full_instrument_edgeon(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FullInstrument.from_projection(self.projection_edgeon)
 
     # -----------------------------------------------------------------
@@ -813,21 +806,27 @@ class ComponentProjections(object):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @lazyproperty # lazy because only check and save one time to file (and runned simulations are not static simulations, so output is just a property)
     def earth_projection_output(self):
-        return self.simulation_earth.output
+        output = self.simulation_earth.output
+        if not self.has_earth_output_file: output.saveto(self.earth_output_filepath)
+        return output
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_projection_output(self):
-        return self.simulation_faceon.output
+        output = self.simulation_faceon.output
+        if not self.has_faceon_output_file: output.saveto(self.faceon_output_filepath)
+        return output
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_projection_output(self):
-        return self.simulation_edgeon.output
+        output = self.simulation_edgeon.output
+        if not self.has_edgeon_output_file: output.saveto(self.edgeon_output_filepath)
+        return output
 
     # -----------------------------------------------------------------
 

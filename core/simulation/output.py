@@ -24,6 +24,7 @@ from ..tools.utils import lazyproperty, memoize_method
 from ..units.unit import parse_unit as u
 from ..basics.log import log
 from ..tools import sequences
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -420,7 +421,9 @@ class Output(object):
         """
 
         # Debugging
-        log.debug("Loading " + self.output_kind + " file paths ...")
+        common_directory = strings.common_part(*args)
+        if common_directory is None: log.debug("Loading " + self.output_kind + " file paths ...")
+        else: log.debug("Loading " + self.output_kind + " file paths '" + common_directory + "...'")
 
         # Get flag
         get_prefix = kwargs.pop("get_prefix", False)

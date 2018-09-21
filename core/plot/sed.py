@@ -14,11 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import matplotlib.patches as patches
 from collections import OrderedDict
-from matplotlib import rc
+from matplotlib import rc, rcdefaults
 from scipy.interpolate import interp1d
 from operator import itemgetter
 from matplotlib import lines
@@ -36,11 +37,7 @@ from ..tools import numbers
 from ..tools.utils import lazyproperty
 from ..tools import introspection
 from ..tools import sequences
-
-# -----------------------------------------------------------------
-
-# Use LaTeX rendering
-rc('text', usetex=True)
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -67,7 +64,7 @@ residual_references = [models_reference, observations_reference]
 
 # -----------------------------------------------------------------
 
-def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf"):
+def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf", unit=None, wavelength_unit=None):
 
     """
     This function ...
@@ -77,6 +74,8 @@ def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pd
     :param title:
     :param show_file:
     :param format:
+    :param unit:
+    :param wavelength_unit:
     :return:
     """
 
@@ -84,8 +83,10 @@ def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pd
     plotter = SEDPlotter()
 
     # Set units
-    plotter.config.wavelength_unit = sed.wavelength_unit
-    plotter.config.unit = sed.unit
+    if wavelength_unit is None: wavelength_unit = sed.wavelength_unit
+    if unit is None: unit = sed.unit
+    plotter.config.wavelength_unit = wavelength_unit
+    plotter.config.unit = unit
 
     # Determine label
     if label is None:
@@ -124,17 +125,27 @@ def plot_seds(seds, **kwargs):
     format = kwargs.pop("format", "pdf")
     residuals = kwargs.pop("residuals", True)
     ghost = kwargs.pop("ghost", False)
+    wavelength_unit = kwargs.pop("wavelength_unit", None)
+    unit = kwargs.pop("unit", None)
+    distance = kwargs.pop("distance", None)
 
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
 
     # Get the units
-    wavelength_units = [seds[label].wavelength_unit for label in seds]
-    units = [seds[label].unit for label in seds]
+    if wavelength_unit is None:
+        wavelength_units = [seds[label].wavelength_unit for label in seds]
+        wavelength_unit = sequences.get_single(wavelength_units)
+    if unit is None:
+        units = [seds[label].unit for label in seds]
+        unit = sequences.get_single(units)
 
     # Set units
-    plotter.config.wavelength_unit = sequences.get_single(wavelength_units)
-    plotter.config.unit = sequences.get_single(units)
+    plotter.config.wavelength_unit = wavelength_unit
+    plotter.config.unit = unit
+
+    # Set distance
+    if distance is not None: plotter.config.distance = distance
 
     # Add SEDs
     plotter.add_seds(seds, residuals=residuals, ghost=ghost)
@@ -197,6 +208,10 @@ class SEDPlotter(Configurable):
         self.models = OrderedDict()
         self.observations = OrderedDict()
 
+        # Options for models and observations
+        self.model_options = defaultdict(Map)
+        self.observation_options = defaultdict(Map)
+
         # Keep track of the minimal and maximal wavelength and flux encountered during the plotting
         self._min_wavelength = None
         self._max_wavelength = None
@@ -224,79 +239,123 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def nseds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.models) + len(self.observations)
+        return self.nmodels + self.nobservations
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def no_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nseds == 0
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def nmodels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.models)
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def one_model(self):
+        return self.nmodels == 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def has_models(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nmodels > 0
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def no_models(self):
+        return self.nmodels == 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def nobservations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.observations)
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
+    def one_observation(self):
+        return self.nobservations == 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def has_observations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nobservations > 0
 
     # -----------------------------------------------------------------
 
-    def add_sed(self, sed, label, residuals=True, ghost=False):
+    @lazyproperty
+    def no_observations(self):
+        return self.nobservations == 0
+
+    # -----------------------------------------------------------------
+
+    def add_observation(self, sed, label, **kwargs):
+
+        """
+        This function ...
+        :param sed:
+        :param label:
+        :param kwargs:
+        :return:
+        """
+
+        # Check label
+        if label in self.observation_labels: raise ValueError("Already an observation with the label '" + label + "'")
+
+        # Make a copy with only broad band filters
+        only_broad = sed.only_broad_band()
+
+        # Check whether there are any points in the SED
+        if len(only_broad) == 0: log.warning("The '" + label + "' SED contains no (broad band) photometry points")
+
+        # Set the SED
+        self.observations[label] = only_broad
+
+    # -----------------------------------------------------------------
+
+    def set_observation_options(self, label, **kwargs):
+        self.observation_options[label].update(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def add_model(self, sed, label, **kwargs):
+
+        """
+        This function ...
+        :param sed:
+        :param label:
+        :param kwargs:
+        :return:
+        """
+
+        # Check label
+        if label in self.model_labels: raise ValueError("Already a model with the label '" + label + "'")
+
+        # Add the SED
+        self.models[label] = sed
+
+        # Set options
+        self.model_options[label].residuals = kwargs.pop("residuals", True)
+        self.model_options[label].ghost = kwargs.pop("ghost", False)
+
+    # -----------------------------------------------------------------
+
+    def set_model_options(self, label, **kwargs):
+        self.model_options[label].update(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def add_sed(self, sed, label, **kwargs):
 
         """
         This function ...
@@ -309,52 +368,27 @@ class SEDPlotter(Configurable):
         """
 
         # Add observed or modeled SED
-        if isinstance(sed, ObservedSED):
-
-            # Check label
-            if label in self.observation_labels: raise ValueError("Already an observation with the label '" + label + "'")
-
-            # Make a copy with only broad band filters
-            only_broad = sed.only_broad_band()
-
-            # Check whether there are any points in the SED
-            if len(only_broad) == 0: log.warning("The '" + label + "' SED contains no (broad band) photometry points")
-
-            # Set the SED
-            self.observations[label] = only_broad
+        if isinstance(sed, ObservedSED): self.add_observation(sed, label, **kwargs)
 
         # Add model SED
-        elif isinstance(sed, SED):
-
-            # Check label
-            if label in self.model_labels: raise ValueError("Already a model with the label '" + label + "'")
-
-            # Add the SED
-            self.models[label] = (sed, residuals, ghost)
+        elif isinstance(sed, SED): self.add_model(sed, label, **kwargs)
 
         # Invalid
         else: raise ValueError("The SED must be an SED or ObservedSED instance")
 
     # -----------------------------------------------------------------
 
-    def add_seds(self, seds, residuals=True, ghost=False):
+    def add_seds(self, seds, **kwargs):
 
         """
         This function ...
         :param seds:
-        :param residuals:
-        :param ghost:
+        :param kwargs
         :return:
         """
 
         # Loop over the SEDs
-        for label in seds:
-
-            # Get the SED
-            sed = seds[label]
-
-            # ADd
-            self.add_sed(sed, label, residuals=residuals, ghost=ghost)
+        for label in seds: self.add_sed(seds[label], label, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -366,8 +400,11 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        # 2. Make the plot
+        # Make the plot
         self.plot()
+
+        # Set matplotlib defaults
+        self.set_defaults()
 
     # -----------------------------------------------------------------
 
@@ -381,6 +418,9 @@ class SEDPlotter(Configurable):
 
         # Call the setup function of the base class
         super(SEDPlotter, self).setup(**kwargs)
+
+        # Use LaTeX rendering
+        rc('text', usetex=True)
 
         # Set the title
         self.title = kwargs.pop("title", None)
@@ -498,24 +538,12 @@ class SEDPlotter(Configurable):
 
     @property
     def xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.plot.xsize
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.nobservations > 1 and self.nmodels > 0:
             main_size = self.config.plot.ysize * self.config.plot.main_relsize
             other_size = float(self.config.plot.ysize) - main_size
@@ -524,15 +552,9 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def figsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return (self.xsize, self.ysize)
+        return (self.xsize, self.ysize,)
 
     # -----------------------------------------------------------------
 
@@ -676,22 +698,26 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        raise NotImplementedError("Clearing the SED plotter is no longer supported. Create a new instance for new plots.")
+
         # Inform the user
-        log.info("Clearing the SED plotter ...")
+        #log.info("Clearing the SED plotter ...")
 
         # Set default values for all attributes
-        self.models = OrderedDict()
-        self.observations = OrderedDict()
-        self._min_wavelength = None
-        self._max_wavelength = None
-        self._min_flux = None
-        self._max_flux = None
-        self.min_wavelength = None
-        self.max_wavelength = None
-        self.min_flux = None
-        self.max_flux = None
-        self.main_plot = None
-        self.residual_plots = []
+        #self.models = OrderedDict()
+        #self.observations = OrderedDict()
+        #self.model_options = defaultdict(Map)
+        #self.observation_options = defaultdict(Map)
+        #self._min_wavelength = None
+        #self._max_wavelength = None
+        #self._min_flux = None
+        #self._max_flux = None
+        #self.min_wavelength = None
+        #self.max_wavelength = None
+        #self.min_flux = None
+        #self.max_flux = None
+        #self.main_plot = None
+        #self.residual_plots = []
 
     # -----------------------------------------------------------------
 
@@ -706,7 +732,7 @@ class SEDPlotter(Configurable):
         log.info("Making the SED plot ...")
 
         # No models
-        if not self.has_models: self.plot_no_models()
+        if self.no_models: self.plot_no_models()
 
         # With models
         else: self.plot_with_models()
@@ -720,8 +746,10 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        # One observation or more observations
-        if self.nobservations == 1: self.plot_one_observation()
+        # One observation
+        if self.one_observation: self.plot_one_observation()
+
+        # More observations
         else: self.plot_more_observations()
 
     # -----------------------------------------------------------------
@@ -763,7 +791,7 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def has_any_observation_errors(self):
 
         """
@@ -793,36 +821,18 @@ class SEDPlotter(Configurable):
 
     @lazyproperty
     def unique_observation_point_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return get_unique_labels(self.observations)
 
     # -----------------------------------------------------------------
 
     @property
     def observation_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observations.keys()
 
     # -----------------------------------------------------------------
 
     @property
     def model_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.models.keys()
 
     # -----------------------------------------------------------------
@@ -850,12 +860,6 @@ class SEDPlotter(Configurable):
 
     @property
     def most_npoints_observation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observations[self.most_npoints_observation_label]
 
     # -----------------------------------------------------------------
@@ -1036,10 +1040,10 @@ class SEDPlotter(Configurable):
         """
 
         # Only models
-        if self.nobservations == 0: self.plot_only_models()
+        if self.no_observations: self.plot_only_models()
 
         # One observation
-        elif self.nobservations == 1: self.plot_one_observation_with_models()
+        elif self.one_observation: self.plot_one_observation_with_models()
 
         # Multiple observations
         else: self.plot_more_observations_with_models()
@@ -1059,7 +1063,10 @@ class SEDPlotter(Configurable):
 
         for_residuals = []
         for model_label in self.models:
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            sed = self.models[model_label]
+            plot_residuals = self.model_options[model_label].residuals
+            ghost = self.model_options[model_label].ghost
             if plot_residuals: for_residuals.append(model_label)
 
         # Create the main plot
@@ -1095,7 +1102,10 @@ class SEDPlotter(Configurable):
         # Loop over the model SEDs
         for model_label in self.models:
 
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            sed = self.models[model_label]
+            plot_residuals = self.model_options[model_label].residuals
+            ghost = self.model_options[model_label].ghost
 
             # Ghost
             if ghost:
@@ -1133,8 +1143,8 @@ class SEDPlotter(Configurable):
 
                 label_a = for_residuals[0]
                 label_b = for_residuals[1]
-                sed_a = self.models[label_a][0]
-                sed_b = self.models[label_b][0]
+                sed_a = self.models[label_a]
+                sed_b = self.models[label_b]
 
                 # Get wavelengths
                 wavelengths_a = sed_a.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
@@ -1176,7 +1186,7 @@ class SEDPlotter(Configurable):
 
                 # Get reference
                 reference_model_label = for_residuals[0]
-                reference_model_sed = self.models[reference_model_label][0]
+                reference_model_sed = self.models[reference_model_label]
                 reference_wavelengths = reference_model_sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 reference_fluxes = reference_model_sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
 
@@ -1193,7 +1203,7 @@ class SEDPlotter(Configurable):
                     linestyle = model_styles[model_label]
 
                     # Get the sed
-                    sed = self.models[model_label][0]
+                    sed = self.models[model_label]
 
                     sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                     model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
@@ -1216,50 +1226,32 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def nmodels_for_residuals(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         count = 0
-
         # Loop over the models
         for model_label in self.models:
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            plot_residuals = self.model_options[model_label].residuals
             if plot_residuals: count += 1
         return count
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def nmodels_not_ghost(self):
-
-        """
-        This fnuction ...
-        :return:
-        """
-
         count = 0
-
         # Loop over the models
         for model_label in self.models:
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            ghost = self.model_options[model_label].ghost
             if not ghost: count += 1
         return count
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def conversion_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         info = dict()
         if self.config.distance is not None: info["distance"] = self.config.distance
         return info
@@ -1372,7 +1364,10 @@ class SEDPlotter(Configurable):
                 # Loop over the models
                 for model_label in self.models:
 
-                    sed, plot_residuals, ghost = self.models[model_label]
+                    #sed, plot_residuals, ghost = self.models[model_label]
+                    sed = self.models[model_label]
+                    plot_residuals = self.model_options[model_label].residuals
+                    ghost = self.model_options[model_label].ghost
 
                     # Don't plot residuals for this model
                     if not plot_residuals: continue
@@ -1422,7 +1417,10 @@ class SEDPlotter(Configurable):
         for model_label in self.models:
 
             # Get entry
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            sed = self.models[model_label]
+            plot_residuals = self.model_options[model_label].residuals
+            ghost = self.model_options[model_label].ghost
 
             if not plot_residuals: continue
 
@@ -1475,7 +1473,10 @@ class SEDPlotter(Configurable):
         for model_label in self.models:
 
             # Get entry
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            sed = self.models[model_label]
+            plot_residuals = self.model_options[model_label].residuals
+            ghost = self.model_options[model_label].ghost
 
             if self.nmodels == 1: model_label = "model"
 
@@ -1746,7 +1747,10 @@ class SEDPlotter(Configurable):
                     for model_label in self.models:
 
                         # Get entry
-                        sed, plot_residuals, ghost = self.models[model_label]
+                        #sed, plot_residuals, ghost = self.models[model_label]
+                        sed = self.models[model_label]
+                        plot_residuals = self.model_options[model_label].residuals
+                        ghost = self.model_options[model_label].ghost
 
                         # Don't plot residuals for this model
                         if not plot_residuals: continue
@@ -1799,7 +1803,10 @@ class SEDPlotter(Configurable):
                 for model_label in self.models:
 
                     # Get entry
-                    sed, plot_residuals, ghost = self.models[model_label]
+                    #sed, plot_residuals, ghost = self.models[model_label]
+                    sed = self.models[model_label]
+                    plot_residuals = self.model_options[model_label].residuals
+                    ghost = self.model_options[model_label].ghost
 
                     if not plot_residuals: continue
 
@@ -1835,7 +1842,10 @@ class SEDPlotter(Configurable):
         for model_label in self.models:
 
             # Get entry
-            sed, plot_residuals, ghost = self.models[model_label]
+            #sed, plot_residuals, ghost = self.models[model_label]
+            sed = self.models[model_label]
+            plot_residuals = self.model_options[model_label].residuals
+            ghost = self.model_options[model_label].ghost
 
             # Get fluxes, wavelengths and errors
             fluxes = sed.photometry(unit=self.config.unit, add_unit=False, conversion_info=self.conversion_info)
@@ -1867,14 +1877,8 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def adjust_wavelength_minmax_observations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.minmax_wavelength_reference is None: return True # both observations and models
         else: return self.config.minmax_wavelength_reference == observations_reference # only observations
 
@@ -1882,12 +1886,6 @@ class SEDPlotter(Configurable):
 
     @lazyproperty
     def adjust_wavelength_minmax_models(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.minmax_wavelength_reference is None: return True  # both observations and models
         else: return self.config.minmax_wavelength_reference == models_reference  # only models
 
@@ -1895,12 +1893,6 @@ class SEDPlotter(Configurable):
 
     @lazyproperty
     def adjust_photometry_minmax_observations(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.minmax_photometry_reference is None: return True # both observations and models
         else: return self.config.minmax_photometry_reference == observations_reference # only observations
 
@@ -1908,12 +1900,6 @@ class SEDPlotter(Configurable):
 
     @lazyproperty
     def adjust_photometry_minmax_models(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.minmax_photometry_reference is None: return True # both observations and models
         else: return self.config.minmax_photometry_reference == models_reference # only models
 
@@ -2137,8 +2123,7 @@ class SEDPlotter(Configurable):
             if upper_flux_model > self._max_flux or self._max_flux is None: self._max_flux = upper_flux_model
         else:
             # Keep track of the minimal and maximal flux
-            min_flux_model = min(filter(None,
-                                        fluxes))  # ignores zeros; see http://stackoverflow.com/questions/21084714/find-the-lowest-value-that-is-not-null-using-python
+            min_flux_model = min(filter(None, fluxes))  # ignores zeros; see http://stackoverflow.com/questions/21084714/find-the-lowest-value-that-is-not-null-using-python
             max_flux_model = max(filter(None, fluxes))  # idem.
             if min_flux_model < self._min_flux or self._min_flux is None: self._min_flux = min_flux_model
             if max_flux_model > self._max_flux or self._max_flux is None: self._max_flux = max_flux_model
@@ -2297,7 +2282,13 @@ class SEDPlotter(Configurable):
         #print(self.min_flux, self.max_flux)
         plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
         #print(plot_min, plot_max)
-        self.main_plot.set_ylim((plot_min, plot_max))
+
+        if plot_min is None:
+            if plot_max is None: pass
+            else: self.main_plot.set_ylim(top=plot_max)
+        else:
+            if plot_max is None: self.main_plot.set_ylim(bottom=plot_min)
+            else: self.main_plot.set_ylim((plot_min, plot_max)) # NORMAL
 
         # Set wavelength axis limits
         #from ..basics.plot import get_plot_wavelength_limits
@@ -2399,6 +2390,17 @@ class SEDPlotter(Configurable):
 
         # Save
         self.figure.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def set_defaults(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        rcdefaults()
 
 # -----------------------------------------------------------------
 
@@ -2573,6 +2575,12 @@ def get_plot_flux_limits(min_flux, max_flux):
     plot_min = 0.9 * log_min_flux if log_min_flux > 0 else 1.1 * log_min_flux
     plot_max = 1.1 * log_max_flux
 
+    #print(log_min_flux, log_max_flux)
+
+    if numbers.is_invalid(plot_min): plot_min = None
+    if numbers.is_invalid(plot_max): plot_max = None
+
+    # Return
     return plot_min, plot_max
 
 # -----------------------------------------------------------------

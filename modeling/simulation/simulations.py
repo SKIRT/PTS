@@ -1619,9 +1619,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Has full instrument
+        # Has full SED instrument and has diffuse dust SED
         if self.has_full_sed and self.has_observed_diffuse_dust_sed: return self.observed_sed - self.observed_diffuse_dust_sed
 
+        # Has full SED instrument and has dust SED
         elif self.has_full_sed and self.has_observed_dust_sed: return self.observed_sed - self.observed_dust_sed + self.intrinsic_dust_sed
 
         # No full instrument data: get the stellar part of the total SED

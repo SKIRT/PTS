@@ -55,6 +55,7 @@ from ..misc.examination import ModelExamination
 from ..config.analyse_correlations import definition as analyse_correlations_definition
 from ..config.analyse_sfr import definition as analyse_sfr_definition
 from .sfr import SFRAnalyser
+from ...core.units.parsing import parse_unit as u
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -155,6 +156,7 @@ _old_disk_name = "old_disk"
 _old_name = "old"
 _young_name = "young"
 _sfr_name = "sfr"
+_sfr_intrinsic_name = "sfr_intrinsic"
 _unevolved_name = "unevolved"
 
 #_sfr_stellar_name = "sfr_stellar"
@@ -207,8 +209,8 @@ sed_commands[_young_name] = ("plot_young_sed_command", True, "plot the SED of th
 ## SFR
 sed_commands[_sfr_name] = ("plot_sfr_sed_command", True, "plot the SED of the star formation regions", None)
 
-#sed_commands[_sfr_stellar_name] = ("plot_sfr_stellar_sed_command", True, "plot the intrinsic/observed stellar SED of the star formation regions", None)
-#sed_commands[_sfr_dust_name] = ("plot_sfr_dust_sed_command", True, "plot the intrinsic/observed dust SED of the star formation regions", None)
+## INTRINSIC SFR
+sed_commands[_sfr_intrinsic_name] = ("plot_sfr_intrinsic_sed_command", True, "plot the intrinsic (stellar and dust) SED of the star formation regions", None)
 
 ## UNEVOLVED
 sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
@@ -316,9 +318,16 @@ default_orientations = (earth_name,)
 # -----------------------------------------------------------------
 
 observed_name = "observed"
+stellar_name = "stellar"
 intrinsic_name = "intrinsic"
+
+# -----------------------------------------------------------------
+
 default_observed_intrinsic = (observed_name, intrinsic_name)
 observed_intrinsic_choices = default_observed_intrinsic
+
+default_observed_stellar_intrinsic = (observed_name, intrinsic_name)
+observed_stellar_intrinsic_choices = [observed_name, stellar_name, intrinsic_name]
 
 # -----------------------------------------------------------------
 
@@ -356,9 +365,27 @@ default_components = [total, old, young, sfr]
 
 # -----------------------------------------------------------------
 
+# Photometric quantity
+flux_name = "flux"
+luminosity_name = "luminosity"
+photometric_quantity_names = [flux_name, luminosity_name]
+default_photometric_quantity_name = flux_name
+
+# Spectral style
+wavelength_style_name = "wavelength"
+frequency_style_name = "frequency"
+neutral_style_name = "neutral"
+spectral_style_names = [wavelength_style_name, frequency_style_name, neutral_style_name]
+default_spectral_style = wavelength_style_name
+
+# -----------------------------------------------------------------
+
+default_plotting_format = "pdf"
+
+# -----------------------------------------------------------------
+
 from ..core.model import contributions, total_contribution, direct_contribution, scattered_contribution, dust_contribution, transparent_contribution
 from ..core.model import dust_direct_contribution, dust_scattered_contribution
-#contributions = []
 default_contributions = [total_contribution, direct_contribution, scattered_contribution, dust_contribution, transparent_contribution]
 
 # -----------------------------------------------------------------
@@ -391,24 +418,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def do_commands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.commands is not None and len(self.config.commands) > 0
 
     # -----------------------------------------------------------------
 
     @property
     def do_interactive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.interactive
 
     # -----------------------------------------------------------------
@@ -447,6 +462,68 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         #super(Analysis, self).setup(**kwargs)
         AnalysisRunComponent.setup(self, **kwargs)
         InteractiveConfigurable.setup(self, **kwargs)
+
+    # -----------------------------------------------------------------
+    # PHOTOMETRIC UNITS
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_lum_unit(self):
+        return u("W/micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frequency_lum_unit(self):
+        return u("W/Hz")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def neutral_lum_unit(self):
+        return u("Lsun", density=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_flux_unit(self):
+        return u("W/m2/micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frequency_flux_unit(self):
+        return u("Jy")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def neutral_flux_unit(self):
+        return u("W/m2", density=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def luminosity_units(self):
+        return {wavelength_style_name: self.wavelength_lum_unit, frequency_style_name: self.frequency_lum_unit, neutral_style_name: self.neutral_lum_unit}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def flux_units(self):
+        return {wavelength_style_name: self.wavelength_flux_unit, frequency_style_name: self.frequency_flux_unit, neutral_style_name: self.neutral_flux_unit}
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def photometric_units(self):
+        return {luminosity_name: self.luminosity_units, flux_name: self.flux_units}
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulations(self):
+        return self.model.simulations
 
     # -----------------------------------------------------------------
 
@@ -918,48 +995,24 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @lazyproperty
     def modeling_environment(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_modeling_environment(self.config.path)
 
     # -----------------------------------------------------------------
 
     @property
     def clipped_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.observed_sed
 
     # -----------------------------------------------------------------
 
     @property
     def truncated_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.truncated_sed
 
     # -----------------------------------------------------------------
 
     @property
     def asymptotic_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.modeling_environment.asymptotic_sed
 
     # -----------------------------------------------------------------
@@ -1015,6 +1068,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_positional_optional("orientations", "string_list", "instrument orientation", default_orientations, choices=orientations)
         definition.add_flag("add_references", "add reference SEDs", False)
         definition.add_optional("additional_error", "percentage", "additional percentual error for the observed flux points")
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1031,13 +1086,17 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get the config
         config = self.get_config_from_command(command, self.plot_total_sed_definition, **kwargs)
 
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
+
         # Plot
-        self.plot_total_sed(orientations=config.orientations, add_references=config.add_references, additional_error=config.additional_error)
+        self.plot_total_sed(orientations=config.orientations, add_references=config.add_references,
+                            additional_error=config.additional_error, unit=unit)
 
     # -----------------------------------------------------------------
 
     def plot_total_sed(self, orientations=default_orientations, add_references=False, additional_error=None, path=None,
-                       show_file=False, title=None, format=None):
+                       show_file=False, title=None, format=default_plotting_format, unit=None):
 
         """
         This function ...
@@ -1048,32 +1107,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param show_file:
         :param title:
         :param format:
+        :param unit:
         :return:
         """
 
         # Debugging
         log.debug("Plotting total SED(s) ...")
 
-        # Add SEDs
-        #seds = OrderedDict()
-        #if add_references: seds.update(self.get_reference_seds(additional_error=additional_error))
-        #for orientation in orientations:
-        #    if orientation == earth_name: seds[orientation] = self.model.observed_total_sed
-        #    elif orientation == faceon_name: seds[orientation] = self.model.faceon_observed_total_sed
-        #    elif orientation == edgeon_name: seds[orientation] = self.model.edgeon_observed_total_sed
-        #    else: raise ValueError("Invalid orientation: '" + orientation + "'")
-
-        # Plot
-        #plot_seds(seds, models_residuals=True)
-
         # Create SED plotter
-        #plotter = SEDPlotter(kwargs)
         plotter = SEDPlotter()
 
-        # Add SEDs
-        #for name in seds:
-        #    sed = seds[name]
-        #    plotter.add_sed(sed, label=name)
+        # Set unit
+        if unit is not None: plotter.config.unit = unit
+        plotter.config.distance = self.galaxy_distance
 
         # Add references?
         if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
@@ -1110,6 +1156,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition = ConfigurationDefinition(write_config=False)
         definition.add_required("observed_intrinsic", "string_tuple", "plot observed stellar SED, intrinsic stellar SED, or both", choices=observed_intrinsic_choices)
         definition.add_positional_optional("components", "string_list", "components", [total], choices=components)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1126,12 +1174,65 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_stellar_sed_definition, **kwargs)
 
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
+
         # Plot
-        self.plot_stellar_sed(config.observed_intrinsic, components=config.components)
+        self.plot_stellar_sed(config.observed_intrinsic, components=config.components, unit=unit)
 
     # -----------------------------------------------------------------
 
-    def plot_stellar_sed(self, observed_intrinsic, components, path=None, title=None, show_file=False, format=None):
+    def get_observed_stellar_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Get the simulations
+        simulations = self.simulations[component]
+
+        # Return the SED
+        if simulations.has_observed_stellar_sed: return simulations.observed_stellar_sed
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_intrinsic_stellar_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Get the simulations
+        simulations = self.simulations[component]
+
+        # Return the SED
+        if simulations.has_intrinsic_sed: return simulations.intrinsic_sed
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_sed(self, component, observed_intrinsic):
+
+        """
+        This function ...
+        :param component:
+        :param observed_intrinsic:
+        :return:
+        """
+
+        if observed_intrinsic == observed_name: return self.get_observed_stellar_sed(component)
+        elif observed_intrinsic == intrinsic_name: return self.get_intrinsic_stellar_sed(component)
+        else: raise ValueError("Invalid option for 'observed_intrinsic': '" + observed_intrinsic + "'")
+
+    # -----------------------------------------------------------------
+
+    def plot_stellar_sed(self, observed_intrinsic, components, path=None, title=None, show_file=False,
+                         format=default_plotting_format, unit=None):
 
         """
         This function ...
@@ -1141,6 +1242,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param title:
         :param show_file:
         :param format:
+        :param unit:
         :return:
         """
 
@@ -1149,6 +1251,10 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Create SED plotter
         plotter = SEDPlotter()
+
+        # Set unit
+        if unit is not None: plotter.config.unit = unit
+        plotter.config.distance = self.galaxy_distance
 
         # Add references?
         # if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
@@ -1161,124 +1267,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
             # Loop over the components
             for component in components:
 
-                # Total simulation
-                if component == total:
+                # Set residuals flag
+                residuals = component == total and oi == observed_name
+                sed = self.get_stellar_sed(component, oi)
+                name = component
 
-                    if oi == observed_name: plotter.add_sed(self.model.observed_stellar_sed, total)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_total_sed, total, residuals=False)
-                    else: raise ValueError("")
+                # Add SED to plotter
+                plotter.add_sed(sed, name, residuals=residuals)
 
-                # Old bulge simulation
-                elif component == bulge:
-
-                    if oi == observed_name: plotter.add_sed(self.model.observed_old_bulge_stellar_sed, bulge, residuals=False)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_bulge, bulge, residuals=False)
-                    else: raise ValueError("")
-
-                # Old disk simulation
-                elif component == disk:
-
-                    if oi == observed_name: plotter.add_sed(self.model.observed_old_disk_stellar_sed, disk, residuals=False)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_disk, disk, residuals=False)
-                    else: raise ValueError("")
-
-                # Old simulation
-                elif component == old:
-
-                    if oi == observed_name: plotter.add_sed(self.model.observed_old_stellar_sed, old, residuals=False)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old, old, residuals=False)
-                    else: raise ValueError("")
-
-                # Young simulation
-                elif component == young:
-
-                    if oi == observed_name: plotter.add_sed(self.model.observed_young_stellar_sed, young, residuals=False)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_young, young, residuals=False)
-                    else: raise ValueError("")
-
-                # SFR simulation
-                elif component == sfr:
-
-                    if oi == observed_name: plotter.add_sed(self.model.observed_sfr_stellar_sed, sfr, residuals=False)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_sfr, sfr, residuals=False)
-                    else: raise ValueError("")
-
-                # Unevolved simulation
-                elif component == unevolved:
-
-                    if oi == observed_name: plotter.add_sed(self.model.observed_unevolved_stellar_sed, unevolved, residuals=False)
-                    elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_unevolved, unevolved, residuals=False)
-                    else: raise ValueError("")
-
-                # Invalid
-                else: raise ValueError("")
-
+        # Both observed and intrinsic
         else:
 
             # ALLOW this for multiple components?
 
             # Loop over the components
             for component in components:
+                for oi in observed_intrinsic:
 
-                # Total simulation
-                if component == total:
+                    # Set residuals flag
+                    residuals = component == total and oi == observed_name
 
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_stellar_sed, total + " " + observed_name)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_total_sed, total + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
+                    # Get the SED
+                    sed = self.get_stellar_sed(component, oi)
 
-                # Old bulge simulation
-                elif component == bulge:
-
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_old_bulge_stellar_sed, bulge + " " + observed_name, residuals=False)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_bulge, bulge + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
-
-                # Old disk simulation
-                elif component == disk:
-
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_old_disk_stellar_sed, disk + " " + observed_name, residuals=False)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old_disk, disk + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
-
-                # Old simulation
-                elif component == old:
-
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_old_stellar_sed, old + " " + observed_name, residuals=False)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_old, old + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
-
-                elif component == young:
-
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_young_stellar_sed, young + " " + observed_name, residuals=False)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_young, young + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
-
-                elif component == sfr:
-
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_sfr_stellar_sed, sfr + " " + observed_name, residuals=False)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_sfr, sfr + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
-
-                elif component == unevolved:
-
-                    for oi in observed_intrinsic:
-                        if oi == observed_name: plotter.add_sed(self.model.observed_unevolved_stellar_sed, unevolved + " " + observed_name, residuals=False)
-                        elif oi == intrinsic_name: plotter.add_sed(self.model.intrinsic_sed_unevolved, unevolved + " " + intrinsic_name, residuals=False)
-                        else: raise ValueError("")
-
-                else: raise ValueError("Invalid component: '" + component + "'")
+                    # Add
+                    plotter.add_sed(sed, component + " " + oi, residuals=residuals)
 
         # Set filepath, if plot is to be shown as file
         if path is None and show_file:
             if format is None: raise ValueError("Format has to be specified")
-            path = fs.join(introspection.pts_temp_dir, "dust_seds." + format)
+            path = fs.join(introspection.pts_temp_dir, "stellar_seds." + format)
 
         # Run the plotter
         plotter.run(title=title, output=path)
@@ -1298,6 +1316,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1314,12 +1334,36 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_dust_sed_definition, **kwargs)
 
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
+
         # Plot
-        self.plot_dust_sed(config.components)
+        self.plot_dust_sed(config.components, unit=unit)
 
     # -----------------------------------------------------------------
 
-    def plot_dust_sed(self, components, title=None, path=None, show_file=False, format=None):
+    def get_dust_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        if component == total: return self.model.dust_sed
+        elif component == bulge: return self.model.observed_old_bulge_dust_sed
+        elif component == disk: return self.model.observed_old_disk_dust_sed
+        elif component == old: return self.model.observed_old_dust_sed
+        elif component == young: return self.model.observed_young_dust_sed
+        elif component == sfr: return self.model.observed_sfr_dust_sed
+        elif component == unevolved: return self.model.observed_unevolved_dust_sed
+        else: raise ValueError("Invalid component: '" + component + "'")
+
+        # THERE IS ALSO model.diffuse_dust_sed !
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_sed(self, components, title=None, path=None, show_file=False, format=default_plotting_format, unit=None):
 
         """
         This function ...
@@ -1328,6 +1372,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param path:
         :param show_file:
         :param format:
+        :param unit:
         :return:
         """
 
@@ -1337,22 +1382,21 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Create SED plotter
         plotter = SEDPlotter()
 
+        # Set unit
+        if unit is not None: plotter.config.unit = unit
+        plotter.config.distance = self.galaxy_distance
+
         # Add references?
         # if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
 
         # Loop over the components
         for component in components:
 
-            if component == total: plotter.add_sed(self.model.dust_sed, total)
-            elif component == bulge: plotter.add_sed(self.model.observed_old_bulge_dust_sed, bulge, residuals=False)
-            elif component == disk: plotter.add_sed(self.model.observed_old_disk_dust_sed, disk, residuals=False)
-            elif component == old: plotter.add_sed(self.model.observed_old_dust_sed, old, residuals=False)
-            elif component == young: plotter.add_sed(self.model.observed_young_dust_sed, young, residuals=False)
-            elif component == sfr: plotter.add_sed(self.model.observed_sfr_dust_sed, sfr, residuals=False)
-            elif component == unevolved: plotter.add_sed(self.model.observed_unevolved_dust_sed, unevolved, residuals=False)
-            else: raise ValueError("Invalid component: '" + component + "'")
+            # Get the SED
+            sed = self.get_dust_sed(component)
 
-            # THERE IS ALSO model.diffuse_dust_sed !
+            # Add
+            plotter.add_sed(sed, component, residuals=False)
 
         # Set filepath, if plot is to be shown as file
         if path is None and show_file:
@@ -1379,6 +1423,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         definition.add_positional_optional("contributions", "string_list", "contributions", default_contributions, choices=contributions)
         definition.add_optional("component", "string", "component", total, choices=components)
         definition.import_settings(plot_seds_definition)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1394,17 +1440,54 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Get config
         config = self.get_config_from_command(command, self.plot_contribution_seds_definition, **kwargs)
-
-        # TODO: use 'component' option to do this for different components?
-
         contributions = config.pop("contributions")
 
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
+
         # Plot
-        self.plot_contribution_seds(contributions, **config)
+        self.plot_contribution_seds(contributions, unit=unit)
 
     # -----------------------------------------------------------------
 
-    def plot_contribution_seds(self, contributions, path=None, title=None, show_file=False, format=None, **kwargs):
+    def get_sed_contribution(self, contribution, component=total):
+
+        """
+        This function ...
+        :param contribution:
+        :param component:
+        :return:
+        """
+
+        # Get the simulations
+        simulations = self.simulations[component]
+
+        # Return the SED
+        if contribution == total_contribution: return simulations.observed_sed
+        elif contribution == direct_contribution:
+            if simulations.has_full_sed: return simulations.observed_sed_direct
+            else: return None
+        elif contribution == scattered_contribution:
+            if simulations.has_full_sed: return simulations.observed_sed_scattered
+            else: return None
+        elif contribution == dust_contribution:
+            if simulations.has_full_sed: return simulations.observed_sed_dust
+            else: return None
+        elif contribution == dust_direct_contribution:
+            if simulations.has_full_sed: return simulations.observed_sed_dust_direct
+            else: return None
+        elif contribution == dust_scattered_contribution:
+            if simulations.has_full_sed: return simulations.observed_sed_dust_scattered
+            else: return None
+        elif contribution == transparent_contribution:
+            if simulations.has_full_sed: return simulations.observed_sed_transparent
+            else: return None
+        else: raise ValueError("Invalid contribution: '" + contribution + "'")
+
+    # -----------------------------------------------------------------
+
+    def plot_contribution_seds(self, contributions, path=None, title=None, show_file=False, format=default_plotting_format,
+                               component=total, unit=None):
 
         """
         This function ...
@@ -1413,6 +1496,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param title:
         :param show_file:
         :param format:
+        :param component:
+        :param unit:
         :return:
         """
 
@@ -1420,20 +1505,25 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.debug("Plotting contribution SEDs ...")
 
         # Create SED plotter
-        plotter = SEDPlotter(kwargs) # **kwargs DOESN'T WORK? (e.g. with min_flux)
+        #plotter = SEDPlotter(kwargs) # **kwargs DOESN'T WORK? (e.g. with min_flux)
+        plotter = SEDPlotter()
+
+        # Set unit
+        if unit is not None: plotter.config.unit = unit
+        plotter.config.distance = self.galaxy_distance
 
         # Loop over the contributions
         for contribution in contributions:
 
-            # TODO: different components (simulations)?
-            if contribution == total_contribution: plotter.add_sed(self.model.observed_total_sed, contribution)
-            elif contribution == direct_contribution: plotter.add_sed(self.model.observed_total_sed_direct, contribution, residuals=False)
-            elif contribution == scattered_contribution: plotter.add_sed(self.model.observed_total_sed_scattered, contribution, residuals=False)
-            elif contribution == dust_contribution: plotter.add_sed(self.model.observed_total_sed_dust, contribution, residuals=False)
-            elif contribution == dust_direct_contribution: plotter.add_sed(self.model.observed_total_sed_dust_direct, contribution, residuals=False)
-            elif contribution == dust_scattered_contribution: plotter.add_sed(self.model.observed_total_sed_dust_scattered, contribution, residuals=False)
-            elif contribution == transparent_contribution: plotter.add_sed(self.model.observed_total_sed_transparent, contribution, residuals=False)
-            else: raise ValueError("Invalid contribution: '" + contribution + "'")
+            # Get the contribution SED
+            sed = self.get_sed_contribution(contribution, component=component)
+            if sed is None:
+                log.warning("No '" + contribution + "' SED can be obtained for the '" + component + "' component: skipping ...")
+                continue
+
+            # Add
+            residuals = contribution == total_contribution and component == total
+            plotter.add_sed(sed, contribution, residuals=residuals)
 
         # Set filepath, if plot is to be shown as file
         if path is None and show_file:
@@ -1458,7 +1548,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         definition = ConfigurationDefinition(write_config=False)
         definition.add_positional_optional("components", "string_list", "components", default_components, choices=components)
-        definition.import_settings(plot_seds_definition)
+        #definition.import_settings(plot_seds_definition)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1478,12 +1570,80 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get
         components = config.pop("components")
 
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
+
         # Plot
-        self.plot_component_seds(config.components, **config)
+        self.plot_component_seds(components, unit=unit)
 
     # -----------------------------------------------------------------
 
-    def plot_component_seds(self, components, path=None, title=None, show_file=False, format=None, **kwargs):
+    def get_simulation_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Return the SED
+        return self.simulations[component].observed_sed
+
+    # -----------------------------------------------------------------
+
+    def get_component_sed(self, component, dust_absorption=True, dust_emission=True):
+
+        """
+        This function ...
+        :param component:
+        :param dust_absorption:
+        :param dust_emission:
+        :return:
+        """
+
+        # Simulation SEDs
+        if dust_emission:
+
+            # Simulation SED
+            if dust_absorption: return self.get_simulation_sed(component)
+
+            # No dust absorption but dust emission, WEEEIRD
+            else: raise NotImplementedError("This SED does not make physically sense")
+
+        # No dust emission
+        else:
+
+            # With absorption
+            if dust_absorption: return self.get_observed_stellar_sed(component)
+
+            # No absorption: intrinsic
+            else: return self.get_intrinsic_stellar_sed(component)
+
+    # -----------------------------------------------------------------
+
+    def get_observed_stellar_or_intrinsic_sed(self, component, observed_stellar_intrinsic):
+
+        """
+        This function ...
+        :param component:
+        :param observed_stellar_or_intrinsic:
+        :return:
+        """
+
+        # Set flags
+        if observed_stellar_intrinsic == observed_name: dust_absorption = dust_emission = True
+        elif observed_stellar_intrinsic == intrinsic_name: dust_absorption = dust_emission = False
+        elif observed_stellar_intrinsic == stellar_name:
+            dust_absorption = True
+            dust_emission = False
+        else: raise ValueError("Invalid option for 'observed_stellar_or_intrinsic'")
+
+        # Return
+        return self.get_component_sed(component, dust_absorption=dust_absorption, dust_emission=dust_emission)
+
+    # -----------------------------------------------------------------
+
+    def plot_component_seds(self, components, path=None, title=None, show_file=False, format=default_plotting_format, unit=None):
 
         """
         This function ...
@@ -1492,6 +1652,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         :param title:
         :param show_file:
         :param format:
+        :param unit:
         :return:
         """
 
@@ -1499,7 +1660,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         log.debug("Plotting component SEDs ...")
 
         # Create SED plotter
-        plotter = SEDPlotter(kwargs)
+        #plotter = SEDPlotter(kwargs)
+        plotter = SEDPlotter()
+
+        # Set unit
+        if unit is not None: plotter.config.unit = unit
+        plotter.config.distance = self.galaxy_distance
 
         # Add references?
         #if add_references: plotter.add_seds(self.get_reference_seds(additional_error=additional_error))
@@ -1507,14 +1673,12 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Loop over the components
         for component in components:
 
-            if component == total: plotter.add_sed(self.model.observed_total_sed, total)
-            elif component == bulge: plotter.add_sed(self.model.observed_old_bulge_sed, bulge, residuals=False)
-            elif component == disk: plotter.add_sed(self.model.observed_old_disk_sed, disk, residuals=False)
-            elif component == old: plotter.add_sed(self.model.observed_old_sed, old, residuals=False)
-            elif component == young: plotter.add_sed(self.model.observed_young_sed, young, residuals=False)
-            elif component == sfr: plotter.add_sed(self.model.observed_sfr_sed, sfr, residuals=False)
-            elif component == unevolved: plotter.add_sed(self.model.observed_unevolved_sed, unevolved, residuals=False)
-            else: raise ValueError("Invalid component: '" + component + "'")
+            # Get the SED
+            sed = self.get_component_sed(component)
+
+            # Add to plot
+            residuals = component == total
+            plotter.add_sed(sed, component, residuals=residuals)
 
         # Set filepath, if plot is to be shown as file
         if path is None and show_file:
@@ -1529,6 +1693,34 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def plot_component_sed(self, component, observed_stellar_intrinsic, unit=None):
+
+        """
+        This function ...
+        :param component:
+        :param observed_stellar_intrinsic:
+        :param unit:
+        :return:
+        """
+
+        # Either observed or intrinsic
+        if len(observed_stellar_intrinsic) == 1:
+
+            # Get the SED
+            sed = self.get_observed_stellar_or_intrinsic_sed(component, observed_stellar_intrinsic[0])
+
+            # Plot
+            plot_sed(sed, unit=unit, distance=self.galaxy_distance)
+
+        # Both
+        else:
+
+            seds = OrderedDict()
+            for osi in observed_stellar_intrinsic: seds[osi] = self.get_observed_stellar_or_intrinsic_sed(component, osi)
+            plot_seds(seds, residuals=False, unit=unit, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def plot_old_bulge_sed_definition(self):
 
@@ -1538,7 +1730,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1555,24 +1749,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_old_bulge_sed_definition, **kwargs)
 
-        # Either observed or intrinsic
-        if config.observed_intrinsic == 1:
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
 
-            oi = config.observed_intrinsic[0]
-
-            if oi == observed_name: plot_sed(self.model.observed_old_bulge_sed)
-            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_old_bulge)
-            else: raise ValueError("")
-
-        # Both
-        else:
-
-            seds = OrderedDict()
-            for oi in config.observed_intrinsic:
-                if oi == observed_name: seds[observed_name] = self.model.observed_old_bulge_sed
-                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_old_bulge
-                else: raise ValueError("")
-            plot_seds(seds, residuals=False)
+        # Plot component
+        self.plot_component_sed(bulge, config.observed_stellar_intrinsic, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1585,7 +1766,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1602,24 +1785,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_old_disk_sed_definition, **kwargs)
 
-        # Either observed or intrinsic
-        if len(config.observed_intrinsic) == 1:
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
 
-            oi = config.observed_intrinsic[0]
-
-            if oi == observed_name: plot_sed(self.model.observed_old_disk_sed)
-            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_old_disk)
-            else: raise ValueError("")
-
-        # Both
-        else:
-
-            seds = OrderedDict()
-            for oi in config.observed_intrinsic:
-                if oi == observed_name: seds[observed_name] = self.model.observed_old_disk_sed
-                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_old_disk
-                else: raise ValueError("")
-            plot_seds(seds, residuals=False)
+        # Plot component
+        self.plot_component_sed(disk, config.observed_stellar_intrinsic, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1632,7 +1802,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
         return definition
 
     # -----------------------------------------------------------------
@@ -1649,24 +1819,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get config
         config = self.get_config_from_command(command, self.plot_old_sed_definition, **kwargs)
 
-        # Either observed or intrinsic
-        if len(config.observed_intrinsic) == 1:
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
 
-            oi = config.observed_intrinsic[0]
-
-            if oi == observed_name: plot_sed(self.model.observed_old_sed)
-            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_old)
-            else: raise ValueError("")
-
-        # Both
-        else:
-
-            seds = OrderedDict()
-            for oi in config.observed_intrinsic:
-                if oi == observed_name: seds[observed_name] = self.model.observed_old_sed
-                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_old
-                else: raise ValueError("")
-            plot_seds(seds, residuals=False)
+        # Plot component
+        self.plot_component_sed(old, config.observed_stellar_intrinsic, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1679,7 +1836,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1696,24 +1855,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get the config
         config = self.get_config_from_command(command, self.plot_young_sed_definition, **kwargs)
 
-        # Either observed or intrinsic
-        if len(config.observed_intrinsic) == 1:
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
 
-            oi = config.observed_intrinsic[0]
-
-            if oi == observed_name: plot_sed(self.model.observed_young_sed)
-            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_young)
-            else: raise ValueError("")
-
-        # Both
-        else:
-
-            seds = OrderedDict()
-            for oi in config.observed_intrinsic:
-                if oi == observed_name: seds[observed_name] = self.model.observed_young_sed
-                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_young
-                else: raise ValueError("")
-            plot_seds(seds, residuals=False)
+        # Plot
+        self.plot_component_sed(young, config.observed_stellar_intrinsic, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1726,7 +1872,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1741,23 +1889,79 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get the config
         config = self.get_config_from_command(command, self.plot_sfr_sed_definition, **kwargs)
 
-        # Either observed or intrinsic
-        if len(config.observed_intrinsic) == 1:
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
 
-            oi = config.observed_intrinsic[0]
-            if oi == observed_name: plot_sed(self.model.observed_sfr_sed)
-            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_sfr)
-            else: raise ValueError("")
+        # Plot
+        self.plot_component_sed(sfr, config.observed_stellar_intrinsic, unit=unit)
 
-        # Both
-        else:
+    # -----------------------------------------------------------------
 
-            seds = OrderedDict()
-            for oi in config.observed_intrinsic:
-                if oi == observed_name: seds[observed_name] = self.model.observed_sfr_sed
-                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_sfr
-                else: raise ValueError("")
-            plot_seds(seds, residuals=False)
+    @lazyproperty
+    def plot_sfr_intrinsic_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_intrinsic_sed_command(self, command, **kwargs):
+
+        """
+        This functino ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get the config
+        config = self.get_config_from_command(command, self.plot_sfr_intrinsic_sed_definition, **kwargs)
+
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
+
+        # Plot
+        self.plot_sfr_intrinsic_sed(unit=unit)
+
+    # -----------------------------------------------------------------
+
+    def plot_sfr_intrinsic_sed(self, unit=None):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        # Get stellar SEDs
+        observed_stellar = self.get_stellar_sed(sfr, observed_name)
+        intrinsic_stellar = self.get_stellar_sed(sfr, intrinsic_name)
+
+        # Get intrinsic SEDs
+        transparent_stellar = self.model.intrinsic_sfr_stellar_sed
+        dust = self.model.intrinsic_sfr_dust_sed
+
+        # Plot
+        seds = OrderedDict()
+        seds["observed stellar"] = observed_stellar
+        seds["intrinsic"] = intrinsic_stellar
+        seds["intrinsic (transparent) stellar"] = transparent_stellar
+        seds["intrinsic dust"] = dust
+
+        #print(observed_stellar)
+        #print(intrinsic_stellar)
+        #print(transparent_stellar)
+        #print(dust)
+
+        # Plot
+        plot_seds(seds, unit=unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1770,7 +1974,9 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         definition = ConfigurationDefinition(write_config=False)
-        definition.add_positional_optional("observed_intrinsic", "string_tuple", "plot observed SED, intrinsic SED (stellar), or both", default_observed_intrinsic, choices=observed_intrinsic_choices)
+        definition.add_positional_optional("observed_stellar_intrinsic", "string_tuple", "plot observed SED (simulation), observed SED (stellar), intrinsic SED (stellar), or multiple", default_observed_stellar_intrinsic, choices=observed_stellar_intrinsic_choices)
+        definition.add_optional("quantity", "string", "flux or luminosity", default_photometric_quantity_name, choices=photometric_quantity_names)
+        definition.add_optional("spectral", "string", "spectral style", default_spectral_style, choices=spectral_style_names)
         return definition
 
     # -----------------------------------------------------------------
@@ -1787,23 +1993,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Get the config
         config = self.get_config_from_command(command, self.plot_unevolved_sed_definition, **kwargs)
 
-        # Either observed or intrinsic
-        if len(config.observed_intrinsic) == 1:
+        # Get photometric unit
+        unit = self.photometric_units[config.quantity][config.spectral]
 
-            oi = config.observed_intrinsic[0]
-            if oi == observed_name: plot_sed(self.model.observed_unevolved_sed)
-            elif oi == intrinsic_name: plot_sed(self.model.intrinsic_sed_unevolved)
-            else: raise ValueError("")
-
-        # Both
-        else:
-
-            seds = OrderedDict()
-            for oi in config.observed_intrinsic:
-                if oi == observed_name: seds[observed_name] = self.model.observed_unevolved_sed
-                elif oi == intrinsic_name: seds[intrinsic_name] = self.model.intrinsic_sed_unevolved
-                else: raise ValueError("")
-            plot_seds(seds, residuals=False)
+        # Plot
+        self.plot_component_sed(unevolved, config.observed_stellar_intrinsic, unit=unit)
 
     # -----------------------------------------------------------------
 
@@ -1871,6 +2065,19 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    def get_component_attenuation_curve(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Return
+        return self.simulations[component].attenuation_curve
+
+    # -----------------------------------------------------------------
+
     def plot_component_attenuation(self, components):
 
         """
@@ -1885,14 +2092,11 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         # Add components
         for component in components:
 
-            if component == total: curves[total] = self.model.attenuation_curve
-            elif component == bulge: curves[bulge] = self.model.attenuation_curve_old_bulge
-            elif component == disk: curves[disk] = self.model.attenuation_curve_old_disk
-            elif component == old: curves[old] = self.model.attenuation_curve_old
-            elif component == young: curves[young] = self.model.attenuation_curve_young
-            elif component == sfr: curves[sfr] = self.model.attenuation_curve_sfr
-            elif component == unevolved: curves[unevolved] = self.model.attenuation_curve_unevolved
-            else: raise ValueError("Invalid component: '" + component + "'")
+            # Get curve
+            curve = self.get_component_attenuation_curve(component)
+
+            # Add
+            curves[component] = curve
 
         # Plot
         plot_attenuation_curves(curves)
@@ -2148,36 +2352,18 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     @property
     def earth_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.total_bolometric_luminosity_cube_earth
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.total_bolometric_luminosity_cube_faceon
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model.total_bolometric_luminosity_cube_edgeon
 
     # -----------------------------------------------------------------

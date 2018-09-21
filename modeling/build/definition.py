@@ -1183,73 +1183,31 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     def get_stellar_deprojection_path(self, component_name):
-
-        """
-        This function ...
-        :param component_name:
-        :return:
-        """
-
         return fs.join(self.stellar_paths[component_name], deprojection_filename)
 
     # -----------------------------------------------------------------
 
     def get_dust_deprojection_path(self, component_name):
-
-        """
-        This function ...
-        :param component_name:
-        :return:
-        """
-
         return fs.join(self.dust_paths[component_name], deprojection_filename)
 
     # -----------------------------------------------------------------
 
     def has_stellar_deprojection(self, component_name):
-
-        """
-        This function ...
-        :param component_name:
-        :return:
-        """
-
         return fs.is_file(self.get_stellar_deprojection_path(component_name))
 
     # -----------------------------------------------------------------
 
     def has_dust_deprojection(self, component_name):
-
-        """
-        This function ...
-        :param component_name:
-        :return:
-        """
-
         return fs.is_file(self.get_dust_deprojection_path(component_name))
 
     # -----------------------------------------------------------------
 
     def get_stellar_deprojection(self, component_name):
-
-        """
-        This function ...
-        :param component_name:
-        :return:
-        """
-
         return DeprojectionModel3D.from_file(self.get_stellar_deprojection_path(component_name))
 
     # -----------------------------------------------------------------
 
     def get_dust_deprojection(self, component_name):
-
-        """
-        This function ...
-        :param component_name:
-        :return:
-        """
-
         return DeprojectionModel3D.from_file(self.get_dust_deprojection_path(component_name))
 
     # -----------------------------------------------------------------
@@ -1458,64 +1416,30 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     def load_bulge_component(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .suite import load_component
         return load_component(self.bulge_component_path)
 
     # -----------------------------------------------------------------
 
     def load_old_stars_component(self, add_map=False):
-
-        """
-        This function ...
-        :param add_map: 
-        :return: 
-        """
-
         from .suite import load_component
         return load_component(self.old_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
 
     def load_young_stars_component(self, add_map=False):
-
-        """
-        This function ...
-        :param add_map: 
-        :return: 
-        """
-
         from .suite import load_component
         return load_component(self.young_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
 
     def load_ionizing_stars_component(self, add_map=False):
-
-        """
-        This function ...
-        :param add_map: 
-        :return: 
-        """
-
         from .suite import load_component
         return load_component(self.ionizing_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
 
     def load_dust_disk_component(self, add_map=False):
-
-        """
-        This function ...
-        :param add_map: 
-        :return: 
-        """
-
         from .suite import load_component
         return load_component(self.dust_component_path, add_map=add_map)
 
@@ -1523,12 +1447,6 @@ class ModelDefinition(object):
 
     @property
     def additional_stellar_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .models.stars import basic_stellar_component_names
         for name in self.stellar_component_names:
             if name in basic_stellar_component_names: continue
@@ -1538,12 +1456,6 @@ class ModelDefinition(object):
 
     @property
     def additional_dust_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from .models.dust import basic_dust_component_names
         for name in self.dust_component_names:
             if name in basic_dust_component_names: continue

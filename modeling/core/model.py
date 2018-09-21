@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import warnings
+import numpy as np
+from copy import deepcopy
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -46,6 +48,7 @@ from .sfr import salim_fuv_to_sfr, kennicutt_fuv_to_sfr, kennicutt_evans_fuv_to_
 from .stellar_mass import oliver_stellar_mass, hubble_stage_to_type
 from ...core.data.sed import SED
 from ...core.tools.serialization import write_dict, load_dict
+from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -174,6 +177,7 @@ diffuse_dust_mass_name = "Diffuse dust mass"
 sed_dirname = "sed"
 projections_dirname = "projections"
 mappings_dirname = "mappings"
+transparent_dirname = "transparent"
 
 # -----------------------------------------------------------------
 
@@ -190,6 +194,14 @@ bulge_component_name = "Evolved stellar bulge"
 disk_component_name = "Evolved stellar disk"
 young_component_name = "Young stars"
 ionizing_component_name = "Ionizing stars"
+transparent_ionizing_component_name = "Ionizing stars (transparent)"
+
+bulge_component_description = "old bulge stellar component"
+disk_component_description = "old disk stellar component"
+young_component_description = "young stellar component"
+ionizing_component_description = "ionizing stellar component"
+transparent_ionizing_component_description = "ionizing stellar component (transparent)"
+dust_component_description = "dust component"
 
 evolved_component_name = "Evolved stars"
 unevolved_component_name = "Unevolved stars"
@@ -735,6 +747,26 @@ class RTModel(object):
     def observed_total_simulation_output(self):
         if not self.has_observed_total_simulation_output_file: return self.create_observed_total_simulation_output_file()
         else: return SimulationOutput.from_file(self.observed_total_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        simulations = OrderedDict()
+        simulations[total_simulation_name] = self.total_simulations
+        simulations[bulge_simulation_name] = self.bulge_simulations
+        simulations[disk_simulation_name] = self.disk_simulations
+        simulations[old_simulation_name] = self.old_simulations
+        simulations[young_simulation_name] = self.young_simulations
+        simulations[sfr_simulation_name] = self.sfr_simulations
+        simulations[unevolved_simulation_name] = self.unevolved_simulations
+        return simulations
 
     # -----------------------------------------------------------------
 
@@ -1297,13 +1329,9 @@ class RTModel(object):
         :return:
         """
 
-        # To run the simulation
-        sed = self.sfr_component_sed
-
         # Load and return
         return SingleComponentSimulations.from_output(sfr_simulation_name, self.observed_sfr_simulation_output,
-                                                      intrinsic_output=sed.output, distance=self.distance,
-                                                      #map_earth=self.sfr_map_earth, map_faceon=self.sfr_map_faceon, map_edgeon=self.sfr_map_edgeon,
+                                                      intrinsic_output=self.sfr_component_sed.output, distance=self.distance,
                                                       map_earth_path=self.sfr_map_earth_path, map_faceon_path=self.sfr_map_faceon_path, map_edgeon_path=self.sfr_map_edgeon_path,
                                                       earth_wcs=self.earth_wcs)
 
@@ -1311,8 +1339,6 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_simulation(self):
-        #return self.sfr_simulations.observed
-        #return ObservedComponentSimulation.from_output_path(self.observed_sfr_output_path, sfr_simulation_name, earth_wcs=self.earth_wcs)
         return self.sfr_simulations.observed
 
     # -----------------------------------------------------------------
@@ -1882,6 +1908,63 @@ class RTModel(object):
         if self.has_mappings_transparent_sed: mappings.sed = self.mappings_transparent_sed
         else: mappings.sed.saveto(self.mappings_transparent_sed_path)
         return mappings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings_transparent_parameters_path(self):
+        return fs.join(self.sfr_mappings_path, "parameters_transparent.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_mappings_transparent_parameters(self):
+        return fs.is_file(self.mappings_transparent_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mappings_transparent_parameters(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Has parameters file?
+        if self.has_mappings_transparent_parameters: return load_dict(self.mappings_transparent_parameters_path, ordered=True)
+
+        # No file yet
+        else:
+
+            # Set neutral luminosity and flux density
+            luminosity = self.mappings_transparent.sed.photometry_at(self.fuv_wavelength, unit=self.intrinsic_fuv_luminosity_sfr.unit, interpolate=True)
+            neutral_luminosity = luminosity.to("Lsun", density=True, density_strict=True, wavelength=self.fuv_wavelength)
+            fluxdensity = luminosity.to("Jy", wavelength=self.fuv_wavelength, distance=self.distance)
+
+            # Create parameters dict
+            parameters = OrderedDict()
+            parameters[metallicity_parameter] = self.metallicity
+            parameters[compactness_parameter] = 0.
+            parameters[pressure_parameter] = self.sfr_pressure
+            parameters[covering_factor_parameter] = 0.
+            parameters[sfr_parameter] = self.sfr
+
+            parameters["luminosity"] = luminosity
+            parameters["neutral_luminosity"] = neutral_luminosity
+            parameters["fluxdensity"] = fluxdensity
+
+            # Write the dictionary
+            write_dict(parameters, self.mappings_transparent_parameters_path)
+
+            # Return the parameters
+            return parameters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def intrinsic_fuv_luminosity_transparent_sfr(self):
+        return self.mappings_transparent_parameters["luminosity"]
 
     # -----------------------------------------------------------------
 
@@ -2894,6 +2977,35 @@ class RTModel(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def intrinsic_sfr_stellar_sed(self):
+        sed = self.transparent_sfr_sed.copy()
+        main_part = sed.splice(parse_quantity("0.1 micron"), parse_quantity("5 micron"))
+        wavelengths = main_part.wavelengths(unit=main_part.wavelength_unit, asarray=True)
+        photometry = main_part.photometry(unit=main_part.unit, asarray=True)
+        # = np.polyfit(wavelengths, photometry, 1)
+        #new = gradient * x1 + intercept
+        logwavelengths = np.log10(wavelengths)
+        logphotometry = np.log10(photometry)
+        from ...magic.tools import plotting
+        plotting.plot_xy(logwavelengths, logphotometry)
+        polyfun = np.poly1d(np.polyfit(logwavelengths, logphotometry, 1))
+        longer_wavelengths, indices = sed.get_x_splice(x_min=parse_quantity("5 micron"), return_indices=True)
+        longer_log_wavelengths = np.log10(longer_wavelengths)
+        longer_log_photometry = polyfun(longer_log_wavelengths)
+        plotting.plot_xy(longer_log_wavelengths, longer_log_photometry)
+        for index, phot in zip(indices, longer_log_photometry): sed.y_data[index] = 10**phot
+
+        return sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def intrinsic_sfr_dust_sed(self):
+        return self.intrinsic_sfr_sed - self.intrinsic_sfr_stellar_sed
+
+    # -----------------------------------------------------------------
+
     @property
     def observed_sfr_stellar_sed(self):
         return self.sfr_simulations.observed_stellar_sed
@@ -3335,6 +3447,12 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def transparent_sfr_sed_path(self):
+        return fs.create_directory_in(self.sfr_path, transparent_dirname)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dust_sed_path(self):
         return fs.create_directory_in(self.dust_path, sed_dirname)
 
@@ -3474,6 +3592,22 @@ class RTModel(object):
     @property
     def sfr_scaleheight(self):
         return self.sfr_deprojection.scale_height
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def transparent_sfr_component(self):
+        component = deepcopy(self.sfr_component)
+        component.parameters_path = None
+        component.parameters.fluxdensity = self.mappings_transparent_parameters["fluxdensity"]
+        component.parameters.luminosity = self.mappings_transparent_parameters["luminosity"]
+        component.parameters.title = "Ionizing stars (transparent)"
+        component.parameters.pressure = self.mappings_transparent_parameters["pressure"]
+        component.parameters.metallicity = self.mappings_transparent_parameters["metallicity"]
+        component.parameters.covering_factor = self.mappings_transparent_parameters["covering_factor"]
+        component.parameters.compactness = self.mappings_transparent_parameters["compactness"]
+        component.parameters.neutral_luminosity = self.mappings_transparent_parameters["neutral_luminosity"]
+        return component
 
     # -----------------------------------------------------------------
     #   DUST DISK
@@ -8893,12 +9027,6 @@ class RTModel(object):
 
     @lazyproperty
     def old_bulge_input_filepaths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         paths = OrderedDict()
         paths[wavelengths_filename] = self.wavelength_grid_path
         return paths
@@ -8907,12 +9035,6 @@ class RTModel(object):
 
     @lazyproperty
     def old_disk_input_filepaths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         paths = OrderedDict()
         paths[wavelengths_filename] = self.wavelength_grid_path
         paths[map_filename] = self.old_disk_map_path
@@ -8922,12 +9044,6 @@ class RTModel(object):
 
     @lazyproperty
     def young_input_filepaths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         paths = OrderedDict()
         paths[wavelengths_filename] = self.wavelength_grid_path
         paths[map_filename] = self.young_map_path
@@ -8937,16 +9053,64 @@ class RTModel(object):
 
     @lazyproperty
     def sfr_input_filepaths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         paths = OrderedDict()
         paths[wavelengths_filename] = self.wavelength_grid_path
         paths[map_filename] = self.sfr_map_path
         return paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_earth_projection_path(self):
+        return fs.create_directory_in(self.old_bulge_projections_path, earth_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_faceon_projection_path(self):
+        return fs.create_directory_in(self.old_bulge_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_bulge_edgeon_projection_path(self):
+        return fs.create_directory_in(self.old_bulge_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_earth_projection_output_filepath(self):
+        return fs.join(self.old_bulge_earth_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_earth_projection_output_file(self):
+        return fs.is_file(self.observed_total_simulation_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_faceon_projection_output_filepath(self):
+        return fs.join(self.old_bulge_faceon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_faceon_projection_output_file(self):
+        return fs.is_file(self.old_bulge_faceon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_bulge_edgeon_projection_output_filepath(self):
+        return fs.join(self.old_bulge_edgeon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_bulge_edgeon_projection_output_file(self):
+        return fs.join(self.old_bulge_edgeon_projection_output_filepath)
 
     # -----------------------------------------------------------------
 
@@ -8959,7 +9123,7 @@ class RTModel(object):
         """
 
         return ComponentProjections(bulge_simulation_name, self.old_bulge_model, path=self.old_bulge_projections_path,
-                                    description="old bulge stellar component",
+                                    description=bulge_component_description,
                                     projection=self.old_disk_projections.projection_earth,
                                     projection_faceon=self.old_disk_projections.projection_faceon,
                                     projection_edgeon=self.old_disk_projections.projection_edgeon, center=self.center,
@@ -9034,6 +9198,42 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_disk_faceon_projection_path(self):
+        return fs.create_directory_in(self.old_disk_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_disk_edgeon_projection_path(self):
+        return fs.create_directory_in(self.old_disk_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_faceon_projection_output_filepath(self):
+        return fs.join(self.old_disk_faceon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_faceon_projection_output_file(self):
+        return fs.is_file(self.old_disk_faceon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_disk_edgeon_projection_output_filepath(self):
+        return fs.join(self.old_disk_edgeon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_disk_edgeon_projection_output_file(self):
+        return fs.is_file(self.old_disk_edgeon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_disk_projections(self):
 
         """
@@ -9042,7 +9242,7 @@ class RTModel(object):
         """
 
         return ComponentProjections(disk_simulation_name, self.old_disk_deprojection, path=self.old_disk_projections_path,
-                                    earth=False, description="old disk stellar component",
+                                    earth=False, description=disk_component_description,
                                     input_filepaths=[self.old_disk_map_path], center=self.center,
                                     earth_wcs=self.old_disk_map_wcs, distance=self.distance)
 
@@ -9103,6 +9303,42 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def young_faceon_projection_path(self):
+        return fs.create_directory_in(self.young_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_edgeon_projection_path(self):
+        return fs.create_directory_in(self.young_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_faceon_projection_output_filepath(self):
+        return fs.join(self.young_faceon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_faceon_projection_output_file(self):
+        return fs.is_file(self.young_faceon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_edgeon_projection_output_filepath(self):
+        return fs.join(self.young_edgeon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_edgeon_projection_output_file(self):
+        return fs.is_file(self.young_edgeon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def young_projections(self):
 
         """
@@ -9111,7 +9347,7 @@ class RTModel(object):
         """
 
         return ComponentProjections(young_simulation_name, self.young_deprojection, path=self.young_projections_path,
-                                    earth=False, description="young stellar component",
+                                    earth=False, description=young_component_description,
                                     input_filepaths=[self.young_map_path], center=self.center,
                                     earth_wcs=self.young_map_wcs, distance=self.distance)
 
@@ -9172,6 +9408,42 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sfr_faceon_projection_path(self):
+        return fs.create_directory_in(self.sfr_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sfr_edgeon_projection_path(self):
+        return fs.create_directory_in(self.sfr_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_faceon_projection_output_filepath(self):
+        return fs.join(self.sfr_faceon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_faceon_projection_output_file(self):
+        return fs.is_file(self.sfr_faceon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_edgeon_projection_output_filepath(self):
+        return fs.join(self.sfr_edgeon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_edgeon_projection_output_file(self):
+        return fs.is_file(self.sfr_edgeon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_projections(self):
 
         """
@@ -9180,7 +9452,7 @@ class RTModel(object):
         """
 
         return ComponentProjections(sfr_simulation_name, self.sfr_deprojection, path=self.sfr_projections_path,
-                                    earth=False, description="SFR component", input_filepaths=[self.sfr_map_path],
+                                    earth=False, description=ionizing_component_description, input_filepaths=[self.sfr_map_path],
                                     center=self.center, earth_wcs=self.sfr_map_wcs, distance=self.distance)
 
     # -----------------------------------------------------------------
@@ -9240,6 +9512,42 @@ class RTModel(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def dust_faceon_projection_path(self):
+        return fs.create_directory_in(self.dust_projections_path, faceon_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_edgeon_projection_path(self):
+        return fs.create_directory_in(self.dust_projections_path, edgeon_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_faceon_projection_output_filepath(self):
+        return fs.join(self.dust_faceon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_faceon_projection_output_file(self):
+        return fs.is_file(self.dust_faceon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_edgeon_projection_output_filepath(self):
+        return fs.join(self.dust_edgeon_projection_path, output_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_edgeon_projection_output_file(self):
+        return fs.is_file(self.dust_edgeon_projection_output_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dust_projections(self):
 
         """
@@ -9248,7 +9556,7 @@ class RTModel(object):
         """
 
         return ComponentProjections(dust_simulation_name, self.dust_deprojection, path=self.dust_projections_path,
-                                    earth=False, description="dust component", input_filepaths=[self.dust_map_path],
+                                    earth=False, description=dust_component_description, input_filepaths=[self.dust_map_path],
                                     distance=self.distance)
 
     # -----------------------------------------------------------------
@@ -9382,7 +9690,7 @@ class RTModel(object):
         :return:
         """
 
-        return ComponentSED(ionizing_component_name, self.sfr_component, description="SFR component",
+        return ComponentSED(ionizing_component_name, self.sfr_component, description=ionizing_component_description,
                             path=self.sfr_sed_path, input_filepaths=self.sfr_input_filepaths,
                             distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
                             wavelengths_filename=wavelengths_filename)
@@ -9398,6 +9706,34 @@ class RTModel(object):
     @property
     def sfr_sed_filepath(self):
         return self.sfr_component_sed.sed_filepath
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def transparent_sfr_component_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ComponentSED(transparent_ionizing_component_name, self.transparent_sfr_component, description=transparent_ionizing_component_description,
+                            path=self.transparent_sfr_sed_path, input_filepaths=self.sfr_input_filepaths,
+                            distance=self.distance, inclination=self.inclination, position_angle=self.position_angle,
+                            wavelengths_filename=wavelengths_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def transparent_sfr_sed(self):
+        return self.transparent_sfr_component_sed.sed
+
+    # -----------------------------------------------------------------
+
+    @property
+    def transparent_sfr_sed_filepath(self):
+        return self.transparent_sfr_component_sed.sed_filepath
 
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------

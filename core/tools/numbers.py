@@ -38,40 +38,16 @@ inf_values = [float("inf"), float("-inf"), np.Inf, -np.Inf, np.inf, -np.inf]
 # -----------------------------------------------------------------
 
 def is_multiple_of(number, other_number):
-
-    """
-    This function ...
-    :param number:
-    :param other_number:
-    :return:
-    """
-
     return number % other_number == 0
 
 # -----------------------------------------------------------------
 
 def is_divisor_of(number, other_number):
-
-    """
-    This function ...
-    :param number:
-    :param other_number:
-    :return:
-    """
-
     return other_number % number == 0
 
 # -----------------------------------------------------------------
 
 def is_multiple_or_divisor_of(number, other_number):
-
-    """
-    This function ...
-    :param number:
-    :param other_number:
-    :return:
-    """
-
     return is_multiple_of(number, other_number) or is_divisor_of(number, other_number)
 
 # -----------------------------------------------------------------
@@ -162,25 +138,11 @@ def is_close_to_zero(value, atol=1.e-8):
 # -----------------------------------------------------------------
 
 def is_even(integer):
-
-    """
-    This function ...
-    :param integer: 
-    :return: 
-    """
-    
     return integer % 2 == 0
 
 # -----------------------------------------------------------------
 
 def is_odd(integer):
-    
-    """
-    This functio n...
-    :param integer: 
-    :return: 
-    """
-
     return integer % 2 != 0
 
 # -----------------------------------------------------------------
@@ -204,6 +166,11 @@ def is_nan(value):
 
 def is_inf(value):
     return value in inf_values or is_numpy_inf(value)
+
+# -----------------------------------------------------------------
+
+def is_invalid(value):
+    return is_nan(value) or is_inf(value)
 
 # -----------------------------------------------------------------
 

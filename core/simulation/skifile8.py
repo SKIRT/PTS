@@ -844,7 +844,7 @@ class SkiFile8:
         # Set the 'writeSpectralAbsorption' setting to true
         self.set_value(dust_system, "writeSpectralAbsorption", str_from_bool(value, lower=True))
 
-    def set_write_spectral_emision(self, value=True):
+    def set_write_spectral_emission(self, value=True):
 
         # Get the dust system
         dust_system = self.get_dust_system()

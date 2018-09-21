@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-import copy
+import warnings
 from scipy.interpolate import interp1d
 
 # Import astronomical modules
@@ -37,8 +37,6 @@ class Curve(Relation):
     """
     This class ...
     """
-
-    # -----------------------------------------------------------------
 
     def add_point(self, x_value, y_value, conversion_info=None, sort=True):
 
@@ -214,6 +212,10 @@ class Curve(Relation):
         # Invalid type
         else: raise TypeError("Cannot add " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
 
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
+
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
@@ -328,6 +330,10 @@ class Curve(Relation):
 
         # Invalid type
         else: raise TypeError("Cannot subtract " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
+
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
@@ -448,6 +454,10 @@ class Curve(Relation):
         # Invalid type
         else: raise TypeError("Cannot multiply " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
 
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
+
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
 
@@ -565,6 +575,10 @@ class Curve(Relation):
 
         # Invalid type
         else: raise TypeError("Cannot multiply " + self.__class__.__name__ + " and a " + str(type(other).__name__) + " object")
+
+        # Check
+        nvalues = len(x_values)
+        if nvalues == 0: warnings.warn("The resulting curve will have no points")
 
         # Create new curve
         return self.__class__.from_columns(x_values, y_values, names=names, units=units)
@@ -1282,6 +1296,11 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def has_broad_band(self):
+        return self.nbroad_band_filters > 0
+
+    # -----------------------------------------------------------------
+
     def only_narrow_band(self):
 
         """
@@ -1302,25 +1321,30 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def has_narrow_band(self):
+        return self.nnarrow_band_filters > 0
+
+    # -----------------------------------------------------------------
+
     def broad_band_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [isinstance(fltr, BroadBandFilter) for fltr in self.filters()]
 
     # -----------------------------------------------------------------
 
+    @property
+    def nbroad_band_filters(self):
+        return len(self.broad_band_filters())
+
+    # -----------------------------------------------------------------
+
     def narrow_band_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return [isinstance(fltr, NarrowBandFilter) for fltr in self.filters()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nnarrow_band_filters(self):
+        return len(self.narrow_band_filters())
 
     # -----------------------------------------------------------------
 

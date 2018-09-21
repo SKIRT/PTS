@@ -1922,7 +1922,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Calculate the colours
-        fuv_h = -2.5 * np.log10(self.total_cell_fuv_frequency_luminosities, self.total_cell_h_frequency_luminosities)
+        fuv_h = -2.5 * np.log10(self.total_cell_fuv_frequency_luminosities / self.total_cell_h_frequency_luminosities)
 
         # Create the data
         return Data3D.from_values(self.ssfr_name, fuv_h, self.cell_x_coordinates_colname,
@@ -1953,7 +1953,7 @@ class SFRAnalyser(AnalysisRunComponent):
         """
 
         # Calculate the colours
-        fuv_r = -2.5 * np.log10(self.total_cell_fuv_frequency_luminosities, self.total_cell_r_frequency_luminosities)
+        fuv_r = -2.5 * np.log10(self.total_cell_fuv_frequency_luminosities / self.total_cell_r_frequency_luminosities)
 
         # Create the data
         return Data3D.from_values(self.ssfr_name, fuv_r, self.cell_x_coordinates_colname,

@@ -2344,8 +2344,104 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
-    # TIR SFR
 
+    @lazyfileproperty(Scatter2D, "fuv_h_funev_cells_path", True, write=False)
+    def fuv_h_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(fuv_h, funev, x_name=self.fuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_h_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "fuv_h_funev_pixels_path", True, write=False)
+    def fuv_h_funev_pixels(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(fuv_h, funev, x_name=self.fuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_h_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "fuv_r_funev_cells_path", True, write=False)
+    def fuv_r_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(fuv_r, funev, x_name=self.fuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_r_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "fuv_r_funev_pixels_path", True, write=False)
+    def fuv_r_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(fuv_r, funev, x_name=self.fuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_r_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "nuv_h_funev_cells_path", True, write=False)
+    def nuv_h_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(nuv_h, funev, x_name=self.nuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_h_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "nuv_h_funev_pixels_path", True, write=False)
+    def nuv_h_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(nuv_h, funev, x_name=self.nuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_h_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "nuv_r_funev_cells_path", True, write=False)
+    def nuv_r_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(nuv_r, funev, x_name=self.nuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_r_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Scatter2D, "nuv_r_funev_pixels_path", True, write=False)
+    def nuv_r_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Scatter2D.from_xy(nuv_r, funev, x_name=self.nuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_r_ssfr_description, y_description=self.funev_description)
+
+    # -----------------------------------------------------------------
+    # TIR SFR
+    # -----------------------------------------------------------------
 
     @property
     def cell_ssfr_tir_path(self):
@@ -3992,6 +4088,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         # MAPPINGS + K&E
         self.write_ssfr_mappings_ke_funev()
 
+        # FUV-H
+        self.write_fuv_h_funev()
+
+        # FUV-R
+        self.write_fuv_r_funev()
+
+        # NUV-H
+        self.write_nuv_h_funev()
+
+        # NUV-R
+        self.write_nuv_r_funev()
+
         # Write the M51 scatter data
         if self.do_write_m51_ssfr_funev: self.write_m51_ssfr_funev()
 
@@ -4233,6 +4341,202 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
         # Write
         self.ssfr_mappings_ke_funev_pixels.saveto(self.ssfr_mappings_ke_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_fuv_h_funev_cells(self):
+        return not self.has_fuv_h_funev_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_fuv_h_funev_pixels(self):
+        return not self.has_fuv_h_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_fuv_h_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_fuv_h_funev_cells: self.write_fuv_h_funev_cells()
+
+        # Pixels
+        if self.do_write_fuv_h_funev_pixels: self.write_fuv_h_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_fuv_h_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fuv_h_funev_cells.saveto(self.fuv_h_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_fuv_h_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fuv_h_funev_pixels.saveto(self.fuv_h_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_fuv_r_funev_cells(self):
+        return not self.has_fuv_r_funev_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_fuv_h_funev_pixels(self):
+        return not self.has_fuv_r_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_fuv_r_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_fuv_r_funev_cells: self.write_fuv_r_funev_cells()
+
+        # Pixels
+        if self.do_write_fuv_h_funev_pixels: self.write_fuv_r_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_fuv_r_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fuv_r_funev_cells.saveto(self.fuv_r_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_fuv_r_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.fuv_r_funev_pixels.saveto(self.fuv_r_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_nuv_h_funev_cells(self):
+        return not self.has_nuv_h_funev_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_nuv_h_funev_pixels(self):
+        return not self.has_nuv_h_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_nuv_h_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_nuv_h_funev_cells: self.write_nuv_h_funev_cells()
+
+        # Pixels
+        if self.do_write_nuv_h_funev_pixels: self.write_nuv_h_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_nuv_h_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.nuv_h_funev_cells.saveto(self.nuv_h_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_nuv_h_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.nuv_h_funev_pixels.saveto(self.nuv_h_funev_pixels_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_nuv_r_funev_cells(self):
+        return not self.has_nuv_r_funev_cells
+
+    # -----------------------------------------------------------------
+
+    @property
+    def do_write_nuv_r_funev_pixels(self):
+        return not self.has_nuv_r_funev_pixels
+
+    # -----------------------------------------------------------------
+
+    def write_nuv_r_funev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cells
+        if self.do_write_nuv_r_funev_cells: self.write_nuv_r_funev_cells()
+
+        # Pixels
+        if self.do_write_nuv_r_funev_pixels: self.write_nuv_r_funev_pixels()
+
+    # -----------------------------------------------------------------
+
+    def write_nuv_r_funev_cells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.nuv_r_funev_cells.saveto(self.nuv_r_funev_cells_path)
+
+    # -----------------------------------------------------------------
+
+    def write_nuv_r_funev_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.nuv_r_funev_pixels.saveto(self.nuv_r_funev_pixels_path)
 
     # -----------------------------------------------------------------
     # M51

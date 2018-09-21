@@ -1004,7 +1004,7 @@ def str_from_real_or_integer(value):
 
 # -----------------------------------------------------------------
 
-def generate_from_two_parts(part_a, part_b, connectors=(" ", "-", ".", "_"), also_reverse=False):
+def generate_from_two_parts(part_a, part_b, connectors=(" ", "-", ".", "_", ""), also_reverse=False):
 
     """
     This function ...
