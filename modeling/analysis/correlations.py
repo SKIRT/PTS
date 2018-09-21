@@ -2344,6 +2344,8 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         return Scatter2D.from_xy(self.valid_pixel_ssfr_values_mappings_ke, self.valid_pixel_funev_values_mappings_ke, x_name=self.ssfr_name, y_name=self.funev_name, x_unit=self.ssfr_mappings_ke_unit, x_description=self.ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
+    # FUV-H / Funev
+    # -----------------------------------------------------------------
 
     @lazyfileproperty(Scatter2D, "fuv_h_funev_cells_path", True, write=False)
     def fuv_h_funev_cells(self):
@@ -2353,6 +2355,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Get values
+        fuv_h = self.cell_ssfr_fuv_h_values
+        funev = self.cell_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(fuv_h, funev, x_name=self.fuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_h_ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -2365,8 +2375,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Get values
+        fuv_h = self.pixel_ssfr_fuv_h_values
+        funev = self.pixel_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(fuv_h, funev, x_name=self.fuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_h_ssfr_description, y_description=self.funev_description)
 
+    # -----------------------------------------------------------------
+    # FUV-R / Funev
     # -----------------------------------------------------------------
 
     @lazyfileproperty(Scatter2D, "fuv_r_funev_cells_path", True, write=False)
@@ -2377,6 +2397,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Get values
+        fuv_r = self.cell_ssfr_fuv_r_values
+        funev = self.cell_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(fuv_r, funev, x_name=self.fuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_r_ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -2389,8 +2417,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Get values
+        fuv_r = self.pixel_ssfr_fuv_r_values
+        funev = self.pixel_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(fuv_r, funev, x_name=self.fuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.fuv_r_ssfr_description, y_description=self.funev_description)
 
+    # -----------------------------------------------------------------
+    # NUV-H / Funev
     # -----------------------------------------------------------------
 
     @lazyfileproperty(Scatter2D, "nuv_h_funev_cells_path", True, write=False)
@@ -2401,6 +2439,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Get values
+        nuv_h = self.cell_ssfr_nuv_h_values
+        funev = self.cell_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(nuv_h, funev, x_name=self.nuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_h_ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -2413,8 +2459,18 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Get values
+        nuv_h = self.pixel_ssfr_nuv_h_values
+        funev = self.pixel_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(nuv_h, funev, x_name=self.nuv_h_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_h_ssfr_description, y_description=self.funev_description)
 
+    # -----------------------------------------------------------------
+    # NUV-R / Funev
     # -----------------------------------------------------------------
 
     @lazyfileproperty(Scatter2D, "nuv_r_funev_cells_path", True, write=False)
@@ -2425,6 +2481,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_cell_funev: raise IOError("The cell Funev data is not present: run the cell heating analysis first")
+
+        # Get values
+        nuv_r = self.cell_ssfr_nuv_r_values
+        funev = self.cell_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(nuv_r, funev, x_name=self.nuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_r_ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
@@ -2437,6 +2501,14 @@ class CorrelationsAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Checks
+        if not self.has_pixel_funev: raise IOError("The Funev frame is not present: run the projected heating analysis first")
+
+        # Get values
+        nuv_r = self.pixel_ssfr_nuv_r_values
+        funev = self.pixel_funev_values
+
+        # Create and return
         return Scatter2D.from_xy(nuv_r, funev, x_name=self.nuv_r_ssfr_name, y_name=self.funev_name, x_unit=self.magnitude_unit, x_description=self.nuv_r_ssfr_description, y_description=self.funev_description)
 
     # -----------------------------------------------------------------
