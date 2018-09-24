@@ -1376,17 +1376,31 @@ class ModelExamination(InteractiveConfigurable):
         :return:
         """
 
-        mappings = self.model.mappings
-        mappings_transparent = self.model.mappings_transparent
-
-        sed = mappings.sed.converted_to_corresponding_neutral_density_unit()
-        sed_transparent = mappings_transparent.sed.converted_to_corresponding_neutral_density_unit()
+        #mappings = self.model.mappings
+        #mappings_transparent = self.model.mappings_transparent
+        #sed = mappings.sed.converted_to_corresponding_neutral_density_unit()
+        #sed_transparent = mappings_transparent.sed.converted_to_corresponding_neutral_density_unit()
 
         from ...core.plot.sed import plot_seds
 
+        # Get stellar SEDs
+        observed_stellar = self.model.get_stellar_sed("sfr", "observed")
+        intrinsic_stellar = self.model.get_stellar_sed("sfr", "intrinsic")
+
+        # Get intrinsic SEDs
+        transparent_stellar = self.model.intrinsic_sfr_stellar_sed
+        dust = self.model.intrinsic_sfr_dust_sed
+
+        mappings_transparent_sed = self.model.mappings_transparent.sed
+        luminosity1 = mappings_transparent_sed.photometry_at(self.model.fuv_wavelength, unit="W/micron", interpolate=True, distance=self.galaxy_distance)
+        luminosity2 = transparent_stellar.photometry_at(self.model.fuv_wavelength, unit="W/micron", interpolate=False, distance=self.galaxy_distance)
+
+        print(luminosity1, luminosity2)
+
         # Plot
-        seds = {"mappings": sed, "transparent": sed_transparent}
-        plot_seds(seds)
+        #seds = {"mappings": sed, "transparent": sed_transparent}
+        seds = {"original": mappings_transparent_sed, "new": transparent_stellar}
+        plot_seds(seds, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 

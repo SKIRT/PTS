@@ -517,7 +517,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True, conversion_info=None):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False, brightness=False, interpolate=True, conversion_info=None, distance=None):
 
         """
         This function ...
@@ -528,10 +528,11 @@ class SED(WavelengthCurve):
         :param brightness:
         :param interpolate:
         :param conversion_info:
+        :param distance:
         :return:
         """
 
-        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness, interpolate=interpolate, conversion_info=conversion_info)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density, brightness=brightness, interpolate=interpolate, conversion_info=conversion_info, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -619,24 +620,23 @@ class SED(WavelengthCurve):
         photometry_unit = PhotometricUnit(photometry_unit, density=density, brightness=brightness)
 
         # Create new SED
-        sed = cls(photometry_unit=photometry_unit, density=density, brightness=brightness, distance=distance)
+        #sed = cls(photometry_unit=photometry_unit, density=density, brightness=brightness, distance=distance)
 
         # Parse units
         wavelength_unit = u(wavelength_unit)
         photometry_unit = u(photometry_unit)
 
         # Add the entries
-        for index in range(len(wavelengths)):
+        #for index in range(len(wavelengths)):
+        #    # Get wavelength and measurement
+        #    wavelength = wavelengths[index] * wavelength_unit
+        #    phot = photometry[index] * photometry_unit
+        #    # Add
+        #    sed.add_point(wavelength, phot)
+        ## Return the sed
+        #return sed
 
-            # Get wavelength and measurement
-            wavelength = wavelengths[index] * wavelength_unit
-            phot = photometry[index] * photometry_unit
-
-            # Add
-            sed.add_point(wavelength, phot)
-
-        # Return the sed
-        return sed
+        return cls.from_columns(wavelengths, photometry, wavelength_unit=wavelength_unit, photometry_unit=photometry_unit, as_columns=True, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -670,11 +670,6 @@ class SED(WavelengthCurve):
         # column 6: dust emission scattered flux; lambda*F_lambda (W/m2)
         # column 7: transparent flux; lambda*F_lambda (W/m2)
 
-        # Open the SED table
-        # sed.table = tables.from_file(path, format="ascii.no_header") # sometimes doesn't work ?? why ??
-        # sed.table.rename_column("col1", "Wavelength")
-        # sed.table.rename_column("col2", "Flux")
-
         # Keep track of the units of the different columns
         units = textfile.get_units(path, remote=remote)
 
@@ -703,20 +698,20 @@ class SED(WavelengthCurve):
         if unit is None: unit = photometry_unit
 
         # Create a new SED
-        sed = cls(photometry_unit=unit, distance=distance)
+        #sed = cls(photometry_unit=unit, distance=distance)
+        #wavelengths, photometry, wavelength_unit, photometry_unit, density = False, brightness = False, distance = None
+        return cls.from_arrays(wavelength_column, photometry_column, wavelength_unit, unit, distance=distance)
 
         # Add the entries
-        for index in range(len(wavelength_column)):
-
+        #for index in range(len(wavelength_column)):
             # Get values
-            wavelength = wavelength_column[index] * wavelength_unit
-            photometry = photometry_column[index] * photometry_unit
-
+            #wavelength = wavelength_column[index] * wavelength_unit
+            #photometry = photometry_column[index] * photometry_unit
             # Add point
-            sed.add_point(wavelength, photometry)
+            #sed.add_point(wavelength, photometry)
 
         # Return the SED
-        return sed
+        #return sed
 
     # -----------------------------------------------------------------
 

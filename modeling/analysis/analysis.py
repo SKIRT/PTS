@@ -1182,55 +1182,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_observed_stellar_sed(self, component):
-
-        """
-        This function ...
-        :param component:
-        :return:
-        """
-
-        # Get the simulations
-        simulations = self.simulations[component]
-
-        # Return the SED
-        if simulations.has_observed_stellar_sed: return simulations.observed_stellar_sed
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    def get_intrinsic_stellar_sed(self, component):
-
-        """
-        This function ...
-        :param component:
-        :return:
-        """
-
-        # Get the simulations
-        simulations = self.simulations[component]
-
-        # Return the SED
-        if simulations.has_intrinsic_sed: return simulations.intrinsic_sed
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    def get_stellar_sed(self, component, observed_intrinsic):
-
-        """
-        This function ...
-        :param component:
-        :param observed_intrinsic:
-        :return:
-        """
-
-        if observed_intrinsic == observed_name: return self.get_observed_stellar_sed(component)
-        elif observed_intrinsic == intrinsic_name: return self.get_intrinsic_stellar_sed(component)
-        else: raise ValueError("Invalid option for 'observed_intrinsic': '" + observed_intrinsic + "'")
-
-    # -----------------------------------------------------------------
-
     def plot_stellar_sed(self, observed_intrinsic, components, path=None, title=None, show_file=False,
                          format=default_plotting_format, unit=None):
 
@@ -1269,7 +1220,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
                 # Set residuals flag
                 residuals = component == total and oi == observed_name
-                sed = self.get_stellar_sed(component, oi)
+                sed = self.model.get_stellar_sed(component, oi)
                 name = component
 
                 # Add SED to plotter
@@ -1288,7 +1239,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
                     residuals = component == total and oi == observed_name
 
                     # Get the SED
-                    sed = self.get_stellar_sed(component, oi)
+                    sed = self.model.get_stellar_sed(component, oi)
 
                     # Add
                     plotter.add_sed(sed, component + " " + oi, residuals=residuals)
@@ -1342,27 +1293,6 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_dust_sed(self, component):
-
-        """
-        This function ...
-        :param component:
-        :return:
-        """
-
-        if component == total: return self.model.dust_sed
-        elif component == bulge: return self.model.observed_old_bulge_dust_sed
-        elif component == disk: return self.model.observed_old_disk_dust_sed
-        elif component == old: return self.model.observed_old_dust_sed
-        elif component == young: return self.model.observed_young_dust_sed
-        elif component == sfr: return self.model.observed_sfr_dust_sed
-        elif component == unevolved: return self.model.observed_unevolved_dust_sed
-        else: raise ValueError("Invalid component: '" + component + "'")
-
-        # THERE IS ALSO model.diffuse_dust_sed !
-
-    # -----------------------------------------------------------------
-
     def plot_dust_sed(self, components, title=None, path=None, show_file=False, format=default_plotting_format, unit=None):
 
         """
@@ -1393,7 +1323,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         for component in components:
 
             # Get the SED
-            sed = self.get_dust_sed(component)
+            sed = self.model.get_dust_sed(component)
 
             # Add
             plotter.add_sed(sed, component, residuals=False)
@@ -1614,10 +1544,10 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         else:
 
             # With absorption
-            if dust_absorption: return self.get_observed_stellar_sed(component)
+            if dust_absorption: return self.model.get_observed_stellar_sed(component)
 
             # No absorption: intrinsic
-            else: return self.get_intrinsic_stellar_sed(component)
+            else: return self.model.get_intrinsic_stellar_sed(component)
 
     # -----------------------------------------------------------------
 
@@ -1626,7 +1556,7 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
         This function ...
         :param component:
-        :param observed_stellar_or_intrinsic:
+        :param observed_stellar_intrinsic:
         :return:
         """
 
@@ -1941,8 +1871,8 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
         """
 
         # Get stellar SEDs
-        observed_stellar = self.get_stellar_sed(sfr, observed_name)
-        intrinsic_stellar = self.get_stellar_sed(sfr, intrinsic_name)
+        observed_stellar = self.model.get_stellar_sed(sfr, observed_name)
+        intrinsic_stellar = self.model.get_stellar_sed(sfr, intrinsic_name)
 
         # Get intrinsic SEDs
         transparent_stellar = self.model.intrinsic_sfr_stellar_sed

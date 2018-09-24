@@ -64,7 +64,7 @@ residual_references = [models_reference, observations_reference]
 
 # -----------------------------------------------------------------
 
-def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf", unit=None, wavelength_unit=None):
+def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pdf", unit=None, wavelength_unit=None, distance=None):
 
     """
     This function ...
@@ -87,6 +87,9 @@ def plot_sed(sed, label=None, path=None, title=None, show_file=False, format="pd
     if unit is None: unit = sed.unit
     plotter.config.wavelength_unit = wavelength_unit
     plotter.config.unit = unit
+
+    # Set distance?
+    if distance is not None: plotter.config.distance = distance
 
     # Determine label
     if label is None:

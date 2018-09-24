@@ -52,6 +52,12 @@ from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------
 
+observed_name = "observed"
+stellar_name = "stellar"
+intrinsic_name = "intrinsic"
+
+# -----------------------------------------------------------------
+
 total_suffix = " [TOTAL]"
 bulge_suffix = " [BULGE]"
 disk_suffix = " [DISK]"
@@ -2983,19 +2989,16 @@ class RTModel(object):
         main_part = sed.splice(parse_quantity("0.1 micron"), parse_quantity("5 micron"))
         wavelengths = main_part.wavelengths(unit=main_part.wavelength_unit, asarray=True)
         photometry = main_part.photometry(unit=main_part.unit, asarray=True)
-        # = np.polyfit(wavelengths, photometry, 1)
-        #new = gradient * x1 + intercept
         logwavelengths = np.log10(wavelengths)
         logphotometry = np.log10(photometry)
         from ...magic.tools import plotting
-        plotting.plot_xy(logwavelengths, logphotometry)
+        #plotting.plot_xy(logwavelengths, logphotometry)
         polyfun = np.poly1d(np.polyfit(logwavelengths, logphotometry, 1))
         longer_wavelengths, indices = sed.get_x_splice(x_min=parse_quantity("5 micron"), return_indices=True)
         longer_log_wavelengths = np.log10(longer_wavelengths)
         longer_log_photometry = polyfun(longer_log_wavelengths)
-        plotting.plot_xy(longer_log_wavelengths, longer_log_photometry)
+        #plotting.plot_xy(longer_log_wavelengths, longer_log_photometry)
         for index, phot in zip(indices, longer_log_photometry): sed.y_data[index] = 10**phot
-
         return sed
 
     # -----------------------------------------------------------------
@@ -10951,5 +10954,84 @@ class RTModel(object):
     @property
     def grid_xyz_filepath(self):
         return self.total_simulations.grid_xyz_filepath
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def get_observed_stellar_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Get the simulations
+        simulations = self.simulations[component]
+
+        # Return the SED
+        if simulations.has_observed_stellar_sed: return simulations.observed_stellar_sed
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_intrinsic_stellar_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Get the simulations
+        simulations = self.simulations[component]
+
+        # Return the SED
+        if simulations.has_intrinsic_sed: return simulations.intrinsic_sed
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_sed(self, component, observed_intrinsic):
+
+        """
+        This function ...
+        :param component:
+        :param observed_intrinsic:
+        :return:
+        """
+
+        # Observed
+        if observed_intrinsic == observed_name: return self.get_observed_stellar_sed(component)
+
+        # Intrinsic
+        elif observed_intrinsic == intrinsic_name: return self.get_intrinsic_stellar_sed(component)
+
+        # Invalid
+        else: raise ValueError("Invalid option for 'observed_intrinsic': '" + observed_intrinsic + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_sed(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        # Return
+        return self.simulations[component].observed_dust_sed
+
+        #if component == total: return self.dust_sed
+        #elif component == bulge: return self.observed_old_bulge_dust_sed
+        #elif component == disk: return self.observed_old_disk_dust_sed
+        #elif component == old: return self.observed_old_dust_sed
+        #elif component == young: return self.observed_young_dust_sed
+        #elif component == sfr: return self.observed_sfr_dust_sed
+        #elif component == unevolved: return self.observed_unevolved_dust_sed
+        #else: raise ValueError("Invalid component: '" + component + "'")
+
+        # THERE IS ALSO model.diffuse_dust_sed !
 
 # -----------------------------------------------------------------

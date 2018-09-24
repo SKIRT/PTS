@@ -65,7 +65,7 @@ funev_name = "Fraction of heating by unevolved stars"
 sfr_density_salim_name = "vSFR (Salim)"
 sfr_density_ke_name = "vSFR (K&E)"
 sfr_density_mappings_name = "vSFR (MAPPINGS)"
-sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K&E"
+sfr_density_mappings_ke_name = "vSFR (MAPPINGS + K&E)"
 
 # Auxilary column names for sSFR-Funev scatter data
 aux_colnames = [sfr_density_name, dust_density_name, distance_center_name, bulge_disk_ratio_name, temperature_name, mean_age_name]

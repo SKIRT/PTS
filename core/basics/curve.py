@@ -746,24 +746,12 @@ class WavelengthCurve(Curve):
 
     @property
     def unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.y_unit
 
     # -----------------------------------------------------------------
 
     @property
     def wavelength_unit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.x_unit
 
     # -----------------------------------------------------------------
@@ -831,7 +819,7 @@ class WavelengthCurve(Curve):
     # -----------------------------------------------------------------
 
     def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False,
-                             interpolate=True, conversion_info=None):
+                             interpolate=True, conversion_info=None, distance=None):
 
         """
         This function ...
@@ -842,6 +830,7 @@ class WavelengthCurve(Curve):
         :param brightness:
         :param interpolate:
         :param conversion_info:
+        :param distance:
         :return:
         """
 
@@ -859,7 +848,8 @@ class WavelengthCurve(Curve):
             # Create conversion info
             if conversion_info is None: conversion_info = dict()
             conversion_info["wavelength"] = wavelength
-            if self.distance is not None: conversion_info["distance"] = self.distance
+            if distance is not None: conversion_info["distance"] = distance
+            elif self.distance is not None: conversion_info["distance"] = self.distance
 
             unit = u(unit, density=density, brightness=brightness)
             value = value.to(unit, **conversion_info)
