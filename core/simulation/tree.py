@@ -22,6 +22,7 @@ from ..tools import filesystem as fs
 from ..basics.table import SmartTable
 from ..basics.log import log
 from ..tools.progress import Bar
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -491,13 +492,13 @@ class DustGridTreeDistribution(Distribution):
 
     @property
     def min_level(self):
-        return self.values[self.min_level_index]
+        return numbers.as_integer_check(self.values[self.min_level_index])
 
     # -----------------------------------------------------------------
 
     @property
     def max_level(self):
-        return self.values[self.max_level_index]
+        return numbers.as_integer_check(self.values[self.max_level_index])
 
     # -----------------------------------------------------------------
 
@@ -506,7 +507,25 @@ class DustGridTreeDistribution(Distribution):
         total = 0
         for index in range(self.min_level_index, self.max_level_index+1):
             total += self.frequencies[index]
-        return total
+        return numbers.as_integer_check(total)
+
+    # -----------------------------------------------------------------
+
+    def get_ncells_below_level(self, level, including=False):
+        total = 0
+        stop = level + 1 if including else level
+        for index in range(self.min_level_index, stop):
+            total += self.frequencies[index]
+        return numbers.as_integer_check(total)
+
+    # -----------------------------------------------------------------
+
+    def get_ncells_above_level(self, level, including=False):
+        total = 0
+        start = level if including else level + 1
+        for index in range(start, self.max_level_index+1):
+            total += self.frequencies[index]
+        return numbers.as_integer_check(total)
 
 # -----------------------------------------------------------------
 
