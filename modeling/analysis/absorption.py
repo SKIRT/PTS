@@ -21,6 +21,7 @@ from ..core.data import Data3D, SpectralData3D
 from ...core.units.parsing import parse_unit as u
 from ...core.data.sed import SED
 from ...core.tools import formatting as fmt
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -209,6 +210,16 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
     #   UNEVOLVED
     # -----------------------------------------------------------------
+
+    @property
+    def unevolved_contribution_spectral_absorption_filepath(self):
+        return self.unevolved_contribution_data.spectral_absorption_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_contribution_spectral_absorption(self):
+        return self.unevolved_contribution_data.has_spectral_absorption
 
     # -----------------------------------------------------------------
     # 3D CELL ABSORPTION DATA
@@ -552,7 +563,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.total_spectral_absorption_data.get_global_sed(self.total_absorption_luminosity_name, description=self.total_absorption_luminosity_description)
+        # total_absorption_luminosity_name
+        return self.total_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     # BULGE
@@ -590,7 +602,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.bulge_spectral_absorption_data.get_global_sed(self.bulge_absorption_luminosity_name, description=self.bulge_absorption_luminosity_description)
+        # bulge_absorption_luminosity_name
+        return self.bulge_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     # DISK
@@ -628,7 +641,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.disk_spectral_absorption_data.get_global_sed(self.disk_absorption_luminosity_name, description=self.disk_absorption_luminosity_description)
+        # disk_absorption_luminosity_name
+        return self.disk_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     # OLD
@@ -666,7 +680,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.old_spectral_absorption_data.get_global_sed(self.old_absorption_luminosity_name, description=self.old_absorption_luminosity_description)
+        # old_absorption_luminosity_name
+        return self.old_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     # YOUNG
@@ -704,7 +719,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.young_spectral_absorption_data.get_global_sed(self.young_absorption_luminosity_name, description=self.young_absorption_luminosity_description)
+        # young_absorption_luminosity_name
+        return self.young_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     # SFR
@@ -742,7 +758,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.sfr_spectral_absorption_data.get_global_sed(self.sfr_absorption_luminosity_name, description=self.sfr_absorption_luminosity_description)
+        # sfr_absorption_luminosity_name
+        return self.sfr_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     #   UNEVOLVED
@@ -780,7 +797,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        return self.unevolved_spectral_absorption_data.get_global_sed(self.unevolved_absorption_luminosity_name, description=self.unevolved_absorption_luminosity_description)
+        # unevolved_absorption_luminosity_name
+        return self.unevolved_spectral_absorption_data.get_global_sed()
 
     # -----------------------------------------------------------------
     # TOTAL STELLAR EMISSION
