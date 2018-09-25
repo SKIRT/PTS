@@ -195,6 +195,7 @@ attenuation_name = "attenuation"
 colours_name = "colours"
 residuals_name = "residuals"
 maps_name = "maps"
+absorption_name = "absorption"
 heating_name = "heating"
 energy_name = "energy"
 sfr_name = "sfr"
@@ -617,6 +618,12 @@ class AnalysisRunBase(object):
     @property
     def ionizing_maps_name(self):
         return fs.name(self.ionizing_maps_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def absorption_path(self):
+        return fs.join(self.path, absorption_name)
 
     # -----------------------------------------------------------------
 
@@ -1320,6 +1327,7 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.colours_path): fs.create_directory(self.colours_path)
         if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.maps_path): fs.create_directory(self.maps_path)
+        if not fs.is_directory(self.absorption_path): fs.create_directory(self.absorption_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
         if not fs.is_directory(self.energy_path): fs.create_directory(self.energy_path)
         if not fs.is_directory(self.sfr_path): fs.create_directory(self.sfr_path)

@@ -59,7 +59,6 @@ _parameters_command_name = "parameters"
 _sfr_command_name = "sfr"
 _ssfr_command_name = "ssfr"
 _stellar_mass_command_name = "stellar_mass"
-_absorption_command_name = "absorption"
 _luminosities_command_name = "luminosities"
 
 # -----------------------------------------------------------------
@@ -80,7 +79,6 @@ commands[_parameters_command_name] = ("show_parameters_command", True, "show mod
 commands[_sfr_command_name] = ("show_sfr", True, "show SFR parameters", None)
 commands[_ssfr_command_name] = ("show_ssfr", True, "show sSFR parameters", None)
 commands[_stellar_mass_command_name] = ("show_stellar_mass", True, "show stellar mass parameters", None)
-commands[_absorption_command_name] = ("show_absorption", True, "investigate absorption", None)
 commands[_luminosities_command_name] = ("show_luminosities", True, "show component luminosities", None)
 
 # -----------------------------------------------------------------
@@ -1364,43 +1362,6 @@ class ModelExamination(InteractiveConfigurable):
 
         # Parameters
         self.show_stellar_masses()
-
-    # -----------------------------------------------------------------
-
-    def show_absorption(self, command, **kwargs):
-
-        """
-        This function ...
-        :param command:
-        :param kwargs:
-        :return:
-        """
-
-        #mappings = self.model.mappings
-        #mappings_transparent = self.model.mappings_transparent
-        #sed = mappings.sed.converted_to_corresponding_neutral_density_unit()
-        #sed_transparent = mappings_transparent.sed.converted_to_corresponding_neutral_density_unit()
-
-        from ...core.plot.sed import plot_seds
-
-        # Get stellar SEDs
-        observed_stellar = self.model.get_stellar_sed("sfr", "observed")
-        intrinsic_stellar = self.model.get_stellar_sed("sfr", "intrinsic")
-
-        # Get intrinsic SEDs
-        transparent_stellar = self.model.intrinsic_sfr_stellar_sed
-        dust = self.model.intrinsic_sfr_dust_sed
-
-        mappings_transparent_sed = self.model.mappings_transparent.sed
-        luminosity1 = mappings_transparent_sed.photometry_at(self.model.fuv_wavelength, unit="W/micron", interpolate=True, distance=self.galaxy_distance)
-        luminosity2 = transparent_stellar.photometry_at(self.model.fuv_wavelength, unit="W/micron", interpolate=False, distance=self.galaxy_distance)
-
-        print(luminosity1, luminosity2)
-
-        # Plot
-        #seds = {"mappings": sed, "transparent": sed_transparent}
-        seds = {"original": mappings_transparent_sed, "new": transparent_stellar}
-        plot_seds(seds, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 

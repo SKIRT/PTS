@@ -450,17 +450,18 @@ def join(*args):
 
 # -----------------------------------------------------------------
 
-def get_filepath(*args):
+def get_filepath(*args, **kwargs):
 
     """
     This function ...
     :param args:
+    :param kwargs:
     :return:
     """
 
     # Construct path, check and return
     path = join(*args)
-    if not is_file(path): raise IOError("File '" + path + "' does not exist")
+    if not is_file(path): raise IOError(kwargs.pop("error_message", "File '" + path + "' does not exist"))
     return path
 
 # -----------------------------------------------------------------

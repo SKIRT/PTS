@@ -237,6 +237,22 @@ class AnalysisRunComponent(AnalysisComponent):
         return self.model.total_simulation_data
 
     # -----------------------------------------------------------------
+    # BULGE SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_contribution_data(self):
+        return self.model.bulge_simulation_data
+
+    # -----------------------------------------------------------------
+    # DISK SIMULATION
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_contribution_data(self):
+        return self.model.disk_simulation_data
+
+    # -----------------------------------------------------------------
     # OLD SIMULATION
     # -----------------------------------------------------------------
 

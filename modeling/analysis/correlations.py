@@ -2809,7 +2809,7 @@ class CorrelationsAnalyser(AnalysisRunComponent):
 
     @property
     def nuv_r_ssfr_name(self):
-        return "FUV-r"
+        return "NUV-r"
 
     # -----------------------------------------------------------------
 

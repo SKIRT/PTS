@@ -651,6 +651,21 @@ class ComponentSimulations(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def observed_sed_absorbed_alternative_uncorrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        intrinsic = self.intrinsic_stellar_sed
+        observed = self.observed_stellar_sed
+
+        return intrinsic - observed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def observed_sed_absorbed_uncorrected(self):
 
         """
@@ -660,8 +675,11 @@ class ComponentSimulations(object):
 
         intrinsic = self.intrinsic_stellar_sed
         direct = self.observed_sed_direct
-        scattered = self.observed_sed_scattered
-        return intrinsic - direct - scattered
+
+        #scattered = self.observed_sed_scattered
+        #return intrinsic - direct - scattered
+
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -673,11 +691,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
-        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct, self.observed_cube_scattered)
+        #intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct, self.observed_cube_scattered)
+        #return intrinsic - direct - scattered
 
-        # Return
-        return intrinsic - direct - scattered
+        intrinsic, direct = uniformize(self.intrinsic_stellar_cube, self.observed_cube_direct)
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -701,9 +719,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        absorbed = self.observed_sed_absorbed_uncorrected
-        correction = self.absorbed_scattering_correction_factor_sed
-        return absorbed * correction
+        #absorbed = self.observed_sed_absorbed_uncorrected
+        #correction = self.absorbed_scattering_correction_factor_sed
+        #return absorbed * correction
+
+        return self.observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -715,11 +735,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
-        absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor, convert=False)
+        #absorbed, correction = uniformize(self.observed_cube_absorbed_uncorrected, self.absorbed_scattering_correction_factor, convert=False)
+        #return absorbed * correction
 
-        # Return
-        return absorbed * correction
+        return self.observed_cube_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -765,10 +784,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
         intrinsic, observed = uniformize(self.intrinsic_stellar_cube, self.observed_stellar_cube, distance=self.distance)
-
-        # Return
         return intrinsic - observed
 
     # -----------------------------------------------------------------
@@ -787,10 +803,7 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Uniformize
         absorbed, correction_term, correction_factor = uniformize(self.observed_cube_absorbed_alternative_uncorrected, self.absorbed_scattering_correction_term, self.absorbed_scattering_correction_factor, convert=(0,1,))
-
-        # Return
         return (absorbed - correction_term) * correction_factor
 
     # -----------------------------------------------------------------
@@ -872,10 +885,15 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_sed_absorbed_uncorrected(self):
-        intrinsic = self.intrinsic_stellar_sed # isotropic
+
+        #intrinsic = self.intrinsic_stellar_sed # isotropic
+        #direct = self.faceon_observed_sed_direct
+        #scattered = self.faceon_observed_sed_scattered
+        #return intrinsic - direct - scattered
+
+        intrinsic = self.intrinsic_stellar_sed
         direct = self.faceon_observed_sed_direct
-        scattered = self.faceon_observed_sed_scattered
-        return intrinsic - direct - scattered
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -887,19 +905,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #intrinsic = self.intrinsic_stellar_cube_faceon
-        #direct = self.faceon_observed_cube_direct
-        #scattered = self.faceon_observed_cube_scattered
-
-        # Return
+        #intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct, self.faceon_observed_cube_scattered)
         #return intrinsic - direct - scattered
 
-        # Uniformize
-        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct, self.faceon_observed_cube_scattered)
-
-        # Return
-        return intrinsic - direct - scattered
+        intrinsic, direct = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_cube_direct)
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -917,9 +927,12 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def faceon_observed_sed_absorbed(self):
-        absorbed = self.faceon_observed_sed_absorbed_uncorrected
-        correction = self.faceon_absorbed_scattering_correction_factor_sed
-        return absorbed * correction
+
+        #absorbed = self.faceon_observed_sed_absorbed_uncorrected
+        #correction = self.faceon_absorbed_scattering_correction_factor_sed
+        #return absorbed * correction
+
+        return self.faceon_observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -931,18 +944,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #absorbed = self.faceon_observed_cube_absorbed_uncorrected
-        #correction = self.faceon_absorbed_scattering_correction_factor
-
-        # Return
+        #absorbed, correction = uniformize(self.faceon_observed_cube_absorbed_uncorrected, self.faceon_absorbed_scattering_correction_factor, convert=False)
         #return absorbed * correction
 
-        # Uniformize
-        absorbed, correction = uniformize(self.faceon_observed_cube_absorbed_uncorrected, self.faceon_absorbed_scattering_correction_factor, convert=False)
-
-        # Return
-        return absorbed * correction
+        return self.faceon_observed_cube_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -965,13 +970,6 @@ class ComponentSimulations(object):
         This function ...
         :return:
         """
-
-        # Get
-        #transparent = self.intrinsic_stellar_cube_faceon
-        #observed = self.faceon_observed_stellar_cube
-
-        # Return
-        #return transparent - observed
 
         # Uniformize
         intrinsic, observed = uniformize(self.intrinsic_stellar_cube_faceon, self.faceon_observed_stellar_cube, distance=self.distance)
@@ -1121,10 +1119,15 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_sed_absorbed_uncorrected(self):
-        intrinsic = self.intrinsic_stellar_sed # ISOTROPIC
+
+        #intrinsic = self.intrinsic_stellar_sed # ISOTROPIC
+        #direct = self.edgeon_observed_sed_direct
+        #scattered = self.edgeon_observed_sed_scattered
+        #return intrinsic - direct - scattered
+
+        intrinsic = self.intrinsic_stellar_sed
         direct = self.edgeon_observed_sed_direct
-        scattered = self.edgeon_observed_sed_scattered
-        return intrinsic - direct - scattered
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -1136,19 +1139,11 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #intrinsic = self.intrinsic_stellar_cube_edgeon
-        #direct = self.edgeon_observed_cube_direct
-        #scattered = self.edgeon_observed_cube_scattered
-
-        # Return
+        #intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct, self.edgeon_observed_cube_scattered)
         #return intrinsic - direct - scattered
 
-        # Uniformize
-        intrinsic, direct, scattered = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct, self.edgeon_observed_cube_scattered)
-
-        # Return
-        return intrinsic - direct - scattered
+        intrinsic, direct =  uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_cube_direct)
+        return intrinsic - direct
 
     # -----------------------------------------------------------------
 
@@ -1166,9 +1161,12 @@ class ComponentSimulations(object):
 
     @lazyproperty
     def edgeon_observed_sed_absorbed(self):
-        absorbed = self.edgeon_observed_sed_absorbed_uncorrected
-        correction = self.edgeon_absorbed_scattering_correction_factor_sed
-        return absorbed * correction
+
+        #absorbed = self.edgeon_observed_sed_absorbed_uncorrected
+        #correction = self.edgeon_absorbed_scattering_correction_factor_sed
+        #return absorbed * correction
+
+        return self.edgeon_observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -1180,18 +1178,10 @@ class ComponentSimulations(object):
         :return:
         """
 
-        # Get
-        #absorbed = self.edgeon_observed_cube_absorbed_uncorrected
-        #correction = self.edgeon_absorbed_scattering_correction_factor
-
-        # Return
+        #absorbed, correction = uniformize(self.edgeon_observed_cube_absorbed_uncorrected, self.edgeon_absorbed_scattering_correction_factor, convert=False)
         #return absorbed * correction
 
-        # Uniformize
-        absorbed, correction = uniformize(self.edgeon_observed_cube_absorbed_uncorrected, self.edgeon_absorbed_scattering_correction_factor, convert=False)
-
-        # Return
-        return absorbed * correction
+        return self.edgeon_observed_cube_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -1214,13 +1204,6 @@ class ComponentSimulations(object):
         This function ...
         :return:
         """
-
-        # Get
-        #transparent = self.intrinsic_stellar_cube_edgeon
-        #observed = self.edgeon_observed_stellar_cube
-
-        # Return
-        #return transparent - observed
 
         # Uniformize
         intrinsic, observed = uniformize(self.intrinsic_stellar_cube_edgeon, self.edgeon_observed_stellar_cube, distance=self.distance)

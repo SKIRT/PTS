@@ -56,6 +56,7 @@ from ..config.analyse_correlations import definition as analyse_correlations_def
 from ..config.analyse_sfr import definition as analyse_sfr_definition
 from .sfr import SFRAnalyser
 from ...core.units.parsing import parse_unit as u
+from ...core.data.sed import SED
 
 from .properties import bol_map_name, intr_stellar_map_name, obs_stellar_map_name, diffuse_dust_map_name, dust_map_name
 from .properties import scattered_map_name, absorbed_diffuse_map_name, fabs_diffuse_map_name, fabs_map_name, stellar_mass_map_name, ssfr_map_name
@@ -168,6 +169,8 @@ _dust_name = "dust"
 _contributions_name = "contributions"
 _components_name = "components"
 
+_absorption_name = "absorption"
+
 # -----------------------------------------------------------------
 
 # Show subcommands
@@ -214,6 +217,9 @@ sed_commands[_sfr_intrinsic_name] = ("plot_sfr_intrinsic_sed_command", True, "pl
 
 ## UNEVOLVED
 sed_commands[_unevolved_name] = ("plot_unevolved_sed_command", True, "plot the SED of the unevolved stellar population (young + sfr)", None)
+
+# ABSORPTION
+sed_commands[_absorption_name] = ("plot_absorption_sed_command", True, "plot absorption SEDs", None)
 
 # -----------------------------------------------------------------
 
@@ -1928,6 +1934,351 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Plot
         self.plot_component_sed(unevolved, config.observed_stellar_intrinsic, unit=unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_path(self):
+        return self.analysis_run.heating_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_path(self):
+        return fs.join(self.analysis_run.heating_path, "spectral")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_heating_cells_path(self):
+        return fs.join(self.spectral_heating_path, "3D")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorption_cells_sed_filepath(self):
+        total_filename = "total_curve_absorption.dat"
+        return fs.get_filepath(self.spectral_heating_cells_path, total_filename, error_message="total spectral absorption SED file is not present: run spectral heating analysis first")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_absorption_cells_sed(self):
+        return SED.from_file(self.total_absorption_cells_sed_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorption_cells_sed_filepath(self):
+        unevolved_filename = "unevolved_curve_absorption.dat"
+        return fs.get_filepath(self.spectral_heating_cells_path, unevolved_filename, error_message="unevolved spectral absorption SED file is not present: run spectral heating analysis first")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unevolved_absorption_cells_sed(self):
+        return SED.from_file(self.unevolved_absorption_cells_sed_filepath)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_absorption_sed_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        definition = ConfigurationDefinition(write_config=False)
+        definition.add_positional_optional("component", "string", "component", total, choices=components)
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def plot_absorption_sed_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.plot_absorption_sed_definition, **kwargs)
+
+        # Total?
+        if config.component == total: self.show_absorption_total()
+
+        # Bulge
+        elif config.component == bulge: self.show_absorption_bulge()
+
+        # Disk
+        elif config.component == disk: self.show_absorption_disk()
+
+        # Old
+        elif config.component == old: self.show_absorption_old()
+
+        # Young
+        elif config.component == young: self.show_absorption_young()
+
+        # SFR
+        elif config.component == sfr: self.show_absorption_sfr()
+
+        # Unevolved
+        elif config.component == unevolved: self.show_absorption_unevolved()
+
+        # Invalid
+        else: raise ValueError("Invalid component '" + config.component + "'")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bolometric_luminosity_unit(self):
+        return u("W")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def specific_luminosity_unit(self):
+        return u("W/micron")
+
+    # -----------------------------------------------------------------
+
+    def plot_seds(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        plot_seds(kwargs, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_total_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for total model (diffuse dust) ...")
+
+        # Get SEDs
+        absorbed = self.total_absorption_sed_diffuse
+        dust = self.total_dust_sed_diffuse
+
+        # Plot absorption
+        self.plot_seds(absorbed=absorbed, dust=dust)
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_total_all(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for total model (all dust) ...")
+
+        # Get SEDs
+        absorbed = self.total_absorption_sed_all
+        dust = self.total_dust_sed_all
+        dust_alt = self.total_dust_sed_all_alt
+
+        # Plot
+        self.plot_seds(absorbed=absorbed, dust=dust, dust_alt=dust_alt)
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for total model ...")
+
+        # NOW THE SAME
+        total_from_sed = self.model.total_absorbed_diffuse_stellar_sed_earth
+        #total_from_sed_uncorrected = self.model.total_simulations.observed_sed_absorbed_uncorrected
+        total_from_sed_alt = self.model.total_simulations.observed_sed_absorbed_alternative_uncorrected
+
+        # Total absorbed energy
+        total_abs_bol_lum = self.total_absorption_cells_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance).value
+        total_abs_bol_lum_from_sed = total_from_sed.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance).value
+        total_abs_bol_lum_from_sed_alt = total_from_sed_alt.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance).value
+
+        scattered = self.model.total_simulations.observed_sed_scattered
+        direct = self.model.total_simulations.observed_sed_direct
+        dust = self.model.total_simulations.observed_sed_dust
+        observed_stellar = self.model.total_simulations.observed_stellar_sed
+        intrinsic_stellar = self.model.total_simulations.intrinsic_stellar_sed
+
+        total_abs_bol_lum_from_dust = dust.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance).value
+
+        # Show
+        print("Total absorbed bolometric luminosity (from cell data): ", total_abs_bol_lum)  # AGREES PERFECTLY WITH ...
+        print("Total absorbed bolometric luminosity (from earth SEDs): ", total_abs_bol_lum_from_sed)
+        #print("Total absorbed bolometric luminosity (from earth SEDs, alt): ", total_abs_bol_lum_from_sed_alt)
+        print("Total absorbed bolometric luminosity (from dust SED)", total_abs_bol_lum_from_dust) ## .. WITH THIS!
+
+        # Percentual absorption
+        rel_absorption = total_abs_bol_lum / total_bol_lum
+        print("Absorption fraction: ", rel_absorption * 100)
+
+        # Plot
+        seds = {"absorption_total": self.total_absorption_cells_sed,
+                "absorption_total_sed": total_from_sed,
+                "absorption_total_sed_alt": total_from_sed_alt,
+                "scattered": scattered,
+                "direct": direct,
+                "observed_stellar": observed_stellar, "intrinsic_stellar": intrinsic_stellar}
+                #"dust": dust}
+        #seds = {"observed_stellar": observed_stellar, "intrinsic_stellar": intrinsic_stellar, "direct": direct, "scattered": scattered}
+        plot_seds(seds, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for old bulge component ...")
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for old disk component ...")
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for old stars ...")
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for young stars ...")
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_sfr_diffuse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for star formation regions (diffuse dust) ...")
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_sfr_internal(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for star formation regions (internal dust) ...")
+
+        #mappings_transparent_sed = self.model.mappings_transparent.sed
+        # luminosity1 = mappings_transparent_sed.photometry_at(self.model.fuv_wavelength, unit="W/micron", interpolate=True, distance=self.galaxy_distance)
+        # luminosity2 = transparent_stellar.photometry_at(self.model.fuv_wavelength, unit="W/micron", interpolate=False, distance=self.galaxy_distance)
+        # print(luminosity1, luminosity2) # SHOULD BE EQUAL: OK!
+
+        # Plot
+        # seds = {"mappings": sed, "transparent": sed_transparent}
+        # seds = {"original": mappings_transparent_sed, "new": transparent_stellar}
+        # plot_seds(seds, distance=self.galaxy_distance)
+
+        # mappings = self.model.mappings
+        # mappings_transparent = self.model.mappings_transparent
+        # sed = mappings.sed.converted_to_corresponding_neutral_density_unit()
+        # sed_transparent = mappings_transparent.sed.converted_to_corresponding_neutral_density_unit()
+
+        # Get stellar SEDs
+        observed_stellar = self.model.get_stellar_sed("sfr", "observed")
+        intrinsic_stellar = self.model.get_stellar_sed("sfr", "intrinsic")
+
+        # Get intrinsic SEDs
+        transparent_stellar = self.model.intrinsic_sfr_stellar_sed
+        dust = self.model.intrinsic_sfr_dust_sed
+
+        luminosity_unit = "W"
+        absorbed_mappings = self.model.intrinsic_dust_luminosity_sfr.to(luminosity_unit, distance=self.galaxy_distance).value
+        absorbed_mappings2 = dust.integrate().to(luminosity_unit, distance=self.galaxy_distance).value
+        print(absorbed_mappings, absorbed_mappings2)
+
+        # INTERNALLY ABSORBED
+        absorbed_sed = transparent_stellar - intrinsic_stellar
+        absorbed_mappings3 = absorbed_sed.integrate().to(luminosity_unit, distance=self.galaxy_distance).value
+        print(absorbed_mappings3)
+
+        # Plot
+        seds = {"mappings_dust1": self.model.sfr_simulations.intrinsic_dust_sed, "mappings_dust2": dust}
+        plot_seds(seds, distance=self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_sfr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing absorption for star formation regions ...")
+
+
+
+    # -----------------------------------------------------------------
+
+    def show_absorption_unevolved(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+
+
 
     # -----------------------------------------------------------------
 

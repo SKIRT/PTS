@@ -1741,11 +1741,11 @@ class SpectralData3D(Data3DBase):
 
     # -----------------------------------------------------------------
 
-    def get_spectral_curve(self, name, measure="sum", description=None, min_wavelength=None, max_wavelength=None,
-                           mask=None, weights=None, load_all=True):
+    def get_global_spectral_curve(self, name, measure="sum", description=None, min_wavelength=None, max_wavelength=None,
+                                   mask=None, weights=None, load_all=True):
 
         """
-        This function ...
+        This function combines the spatial data for each wavelength
         :param name:
         :param measure:
         :param description:
@@ -1757,12 +1757,58 @@ class SpectralData3D(Data3DBase):
         :return:
         """
 
+        # Initialize the curve
+        curve = WavelengthCurve(y_name=name, y_unit=self.unit, y_description=description)
+
+        # Add points
+        self._add_spectral_points(curve, measure=measure, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                                  mask=mask, weights=weights, load_all=load_all)
+
+        # Return the curve
+        return curve
+
+    # -----------------------------------------------------------------
+
+    def get_global_sed(self, min_wavelength=None, max_wavelength=None, mask=None, load_all=True):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param mask:
+        :param load_all:
+        :return:
+        """
+
+        # Create SED
+        sed = SED(photometry_unit=self.unit)
+
+        # Add points
+        self._add_spectral_points(sed, measure="sum", mask=mask, min_wavelength=min_wavelength,
+                                  max_wavelength=max_wavelength, load_all=load_all)
+
+        # Return the SED
+        return sed
+
+    # -----------------------------------------------------------------
+
+    def _add_spectral_points(self, curve, measure="sum", mask=None, min_wavelength=None, max_wavelength=None,
+                             load_all=True, weights=None):
+
+        """
+        This function ..
+        :param curve:
+        :param measure:
+        :param mask:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param load_all:
+        :return:
+        """
+
         # Determine the mask
         if mask is not None: inverse_mask = np.logical_not(mask)
         else: inverse_mask = None
-
-        # Initialize the curve
-        curve = WavelengthCurve(y_name=name, y_unit=self.unit, y_description=description)
 
         # Get the wavelength indices
         indices = self.wavelength_indices(min_wavelength, max_wavelength)

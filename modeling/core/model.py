@@ -2985,20 +2985,44 @@ class RTModel(object):
 
     @lazyproperty
     def intrinsic_sfr_stellar_sed(self):
+
+        # Get copy
         sed = self.transparent_sfr_sed.copy()
+
+        # Get the monotonic decreasing part (with wavelength) of the MAPPINGS SED
         main_part = sed.splice(parse_quantity("0.1 micron"), parse_quantity("5 micron"))
         wavelengths = main_part.wavelengths(unit=main_part.wavelength_unit, asarray=True)
         photometry = main_part.photometry(unit=main_part.unit, asarray=True)
+
         logwavelengths = np.log10(wavelengths)
         logphotometry = np.log10(photometry)
+
         from ...magic.tools import plotting
         #plotting.plot_xy(logwavelengths, logphotometry)
+
+        # Linear regression in loglog space
         polyfun = np.poly1d(np.polyfit(logwavelengths, logphotometry, 1))
+
+        # Extrapolate
         longer_wavelengths, indices = sed.get_x_splice(x_min=parse_quantity("5 micron"), return_indices=True)
+        original_first = sed.get_photometry(indices[0], unit=main_part.unit, add_unit=False)
+        log_original_first = np.log10(original_first)
+
         longer_log_wavelengths = np.log10(longer_wavelengths)
         longer_log_photometry = polyfun(longer_log_wavelengths)
+
+        # Correct offset
+        log_longer_first = longer_log_photometry[0]
+        diff = log_longer_first - log_original_first
+        #print("diff", diff)
+        #print(longer_log_photometry)
+        longer_log_photometry = longer_log_photometry - diff
+        #print(longer_log_photometry)
+
         #plotting.plot_xy(longer_log_wavelengths, longer_log_photometry)
         for index, phot in zip(indices, longer_log_photometry): sed.y_data[index] = 10**phot
+
+        # Return the adapted SED
         return sed
 
     # -----------------------------------------------------------------

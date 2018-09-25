@@ -131,6 +131,7 @@ def plot_seds(seds, **kwargs):
     wavelength_unit = kwargs.pop("wavelength_unit", None)
     unit = kwargs.pop("unit", None)
     distance = kwargs.pop("distance", None)
+    options = kwargs.pop("options", {})
 
     # Create SED plotter
     plotter = SEDPlotter(kwargs)
@@ -151,7 +152,7 @@ def plot_seds(seds, **kwargs):
     if distance is not None: plotter.config.distance = distance
 
     # Add SEDs
-    plotter.add_seds(seds, residuals=residuals, ghost=ghost)
+    plotter.add_seds(seds, residuals=residuals, ghost=ghost, options=options)
 
     # Set filepath, if plot is to be shown as file
     if path is None and show_file: path = fs.join(introspection.pts_temp_dir, "seds." + format)
@@ -242,19 +243,22 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property # HAS TO BE PROPERTY BECAUSE OF CHECKS IN SETUP
     def nseds(self):
         return self.nmodels + self.nobservations
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property # HAS TO BE PROPERTY BECAUSE OF CHECKS IN SETUP
     def no_seds(self):
         return self.nseds == 0
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property # HAS TO BE PROPERTY BECAUSE OF CHECKS IN SETUP
     def nmodels(self):
         return len(self.models)
 
@@ -278,7 +282,8 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    #@lazyproperty
+    @property # HAS TO BE PROPERTY BECAUSE OF CHECKS IN SETUP
     def nobservations(self):
         return len(self.observations)
 
@@ -370,6 +375,9 @@ class SEDPlotter(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Adding the '" + label + "' SED ...")
+
         # Add observed or modeled SED
         if isinstance(sed, ObservedSED): self.add_observation(sed, label, **kwargs)
 
@@ -386,9 +394,11 @@ class SEDPlotter(Configurable):
         """
         This function ...
         :param seds:
-        :param kwargs
+        :param options:
         :return:
         """
+
+        # Get options
 
         # Loop over the SEDs
         for label in seds: self.add_sed(seds[label], label, **kwargs)
@@ -613,8 +623,12 @@ class SEDPlotter(Configurable):
             # One SED per file
             else:
 
+                print(path)
+
                 # Load SED
                 sed = load_sed(path, wavelength_unit=self.config.wavelength_unit_file, photometry_unit=self.config.unit_file)
+
+                print(sed)
 
                 # Add the SED
                 self.add_sed(sed, label=name)
