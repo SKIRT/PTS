@@ -164,7 +164,7 @@ if modules.names["git"] is not None:
 # -----------------------------------------------------------------
 
 skirt_main_path = "~/SKIRT/release/SKIRTmain"
-fitskirt_main_path = "~/SKIRT/release/FitSKIRTmain"
+#fitskirt_main_path = "~/SKIRT/release/FitSKIRTmain"
 
 variable_name = "PATH"
 
@@ -174,9 +174,9 @@ export_command = "export " + variable_name + "=" + value + ":$" + variable_name
 installation_commands["environment"].append(Map(line=export_command, comment="make the SKIRT executable detectable"))
 
 # FitSKIRT
-value = fitskirt_main_path
-export_command = "export " + variable_name + "=" + value + ":$" + variable_name
-installation_commands["environment"].append(Map(line=export_command, comment="make the FitSKIRT executable detectable"))
+#value = fitskirt_main_path
+#export_command = "export " + variable_name + "=" + value + ":$" + variable_name
+#installation_commands["environment"].append(Map(line=export_command, comment="make the FitSKIRT executable detectable"))
 
 # Set the path to the main SKIRT executable
 #self.skirt_path = fs.join(skirt_main_path, "skirt")
