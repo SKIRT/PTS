@@ -12,16 +12,24 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent, AnalysisRunComponent
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.tools.utils import lazyproperty, lazyfileproperty
 from ..core.data import Data3D, SpectralData3D
-from ...core.units.parsing import parse_unit as u
 from ...core.data.sed import SED
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
+from ...core.basics.configuration import open_mapping, save_mapping
+from ...core.basics.map import Map
+from ...core.tools import types
+from ...core.plot.sed import plot_seds
+from ...core.units.parsing import parse_quantity as q
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -56,7 +64,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         self.write()
 
         # Show
-        self.show()
+        if self.config.show: self.show()
 
         # Plotting
         if self.config.plot: self.plot()
@@ -1448,6 +1456,315 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
     # -----------------------------------------------------------------
 
+    @property
+    def total_properties_path(self):
+        return fs.join(self.absorption_path, "total.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_total_properties(self):
+        return fs.is_file(self.total_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "total_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def total_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        props = Map()
+
+        # Stellar
+        props.observed_bol = self.total_observed_luminosity
+        props.stellar_bol = self.total_stellar_luminosity
+
+        # Diffuse
+        diffuse = Map()
+        diffuse.absorbed = self.total_absorption_luminosity_diffuse
+        diffuse.dust = self.total_dust_luminosity_diffuse
+        diffuse.rel_absorbed = self.total_absorption_fraction_diffuse
+        diffuse.rel_dust = self.total_dust_fraction_diffuse
+
+        # All
+        all = Map()
+        all.absorbed = self.total_absorption_luminosity_all
+        all.dust = self.total_dust_luminosity_all
+        all.dust_alt = self.total_dust_luminosity_all_alt
+        all.rel_absorbed = self.total_absorption_fraction_all
+        all.rel_dust = self.total_dust_fraction_all
+        all.rel_dust_alt = self.total_dust_fraction_all_alt
+
+        # Return
+        props.diffuse = diffuse
+        props.all = all
+        return props
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bulge_properties_path(self):
+        return fs.join(self.absorption_path, "bulge.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_bulge_properties(self):
+        return fs.is_file(self.bulge_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "bulge_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def bulge_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        props = Map()
+
+        # Stellar
+        props.observed_bol = self.bulge_observed_luminosity
+        props.stellar_bol = self.bulge_stellar_luminosity
+
+        # Absorption
+        props.absorbed = self.bulge_absorption_luminosity
+        props.dust = self.bulge_dust_luminosity
+        props.rel_absorbed = self.bulge_absorption_fraction
+        props.rel_dust = self.bulge_dust_fraction
+
+        # Return
+        return props
+
+    # -----------------------------------------------------------------
+
+    @property
+    def disk_properties_path(self):
+        return fs.join(self.absorption_path, "disk.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_disk_properties(self):
+        return fs.is_file(self.disk_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "disk_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def disk_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        props = Map
+
+        # Stellar
+        props.observed_bol = self.disk_observed_luminosity
+        props.stellar_bol = self.disk_stellar_luminosity
+
+        # Absorption
+        props.absorbed = self.disk_absorption_luminosity
+        props.dust = self.disk_dust_luminosity
+        props.rel_absorbed = self.disk_absorption_fraction
+        props.rel_dust = self.disk_dust_fraction
+
+        # Return
+        return props
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_properties_path(self):
+        return fs.join(self.absorption_path, "old.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_properties(self):
+        return fs.is_file(self.old_properties_path)
+
+    #-----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "old_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def old_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        props = Map()
+
+        # Stellar
+        props.observed_bol = self.old_observed_luminosity
+        props.stellar_bol = self.old_stellar_luminosity
+
+        # Absorption
+        props.absorbed = self.old_absorption_luminosity
+        props.dust = self.old_dust_luminosity
+        props.rel_absorbed = self.old_absorption_fraction
+        props.rel_dust = self.old_dust_fraction
+
+        # Return
+        return props
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_properties_path(self):
+        return fs.join(self.absorption_path, "young.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_properties(self):
+        return fs.is_file(self.young_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "young_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def young_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        props = Map()
+
+        # Stellar
+        props.observed_bol = self.young_observed_luminosity
+        props.stellar_bol = self.young_stellar_luminosity
+
+        # Absorption
+        props.absorbed = self.young_absorption_luminosity
+        props.dust = self.young_dust_luminosity
+        props.rel_absorbed = self.young_absorption_fraction
+        props.rel_dust = self.young_dust_fraction
+
+        # Return
+        return props
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_properties_path(self):
+        return fs.join(self.absorption_path, "sfr.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sfr_properties(self):
+        return fs.is_file(self.sfr_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "sfr_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def sfr_properties(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Create
+        props = Map()
+
+        # Stellar
+        props.observed_bol = self.sfr_observed_luminosity
+        props.stellar_bol = self.sfr_stellar_luminosity
+
+        # Diffuse
+        diffuse = Map()
+        diffuse.absorbed = self.sfr_absorption_luminosity_diffuse
+        diffuse.dust = self.sfr_dust_luminosity_diffuse
+        diffuse.rel_absorbed = self.sfr_absorption_fraction_diffuse
+        diffuse.rel_dust = self.sfr_dust_fraction_diffuse
+
+        # Internal
+        internal = Map()
+        internal.absorbed = self.sfr_absorption_luminosity_internal
+        internal.dust = self.sfr_dust_luminosity_internal
+        internal.dust_alt = self.sfr_dust_luminosity_internal_alt
+        internal.rel_absorbed = self.sfr_absorption_fraction_internal
+        internal.rel_dust = self.sfr_dust_fraction_internal
+        internal.rel_dust_alt = self.sfr_dust_fraction_internal_alt
+
+        # All
+        all = Map()
+        all.absorbed = self.sfr_absorption_luminosity_all
+        all.dust = self.sfr_dust_luminosity_all
+        all.rel_absorbed = self.sfr_absorption_fraction_all
+        all.rel_dust = self.sfr_dust_fraction_all
+
+        # Return
+        props.diffuse = diffuse
+        props.internal = internal
+        props.all = all
+        return props
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevolved_properties_path(self):
+        return fs.join(self.absorption_path, "unevolved.txt")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unevolved_properties(self):
+        return fs.is_file(self.unevolved_properties_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyfileproperty(Map, "unevolved_properties_path", True, write=True, fsave=save_mapping, fload=open_mapping)
+    def unevolved_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create
+        props = Map()
+
+        # Stellar
+        props.observed_bol = self.unevolved_observed_luminosity
+        props.stellar_bol = self.unevolved_stellar_luminosity
+
+        # Diffuse
+        diffuse = Map()
+        diffuse.absorbed = self.unevolved_absorption_luminosity_diffuse
+        diffuse.dust = self.unevolved_dust_luminosity_diffuse
+        diffuse.rel_absorbed = self.unevolved_absorption_fraction_diffuse
+        diffuse.rel_dust = self.unevolved_dust_fraction_diffuse
+
+        # All
+        all = Map()
+        all.absorbed = self.unevolved_absorption_luminosity_all
+        all.dust = self.unevolved_dust_luminosity_all
+        all.rel_absorbed = self.unevolved_absorption_fraction_all
+        all.rel_dust = self.unevolved_dust_fraction_all
+
+        # Return
+        props.diffuse = diffuse
+        props.all = all
+        return props
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1662,40 +1979,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.total_observed_luminosity, stellar_bol=self.total_stellar_luminosity)
-
-        # Diffuse
-        self.show_total_diffuse()
-
-        # All
-        self.show_total_all()
-
-    # -----------------------------------------------------------------
-
-    def show_total_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show absorption
-        show_values(absorbed=self.total_absorption_luminosity_diffuse, dust=self.total_dust_luminosity_diffuse)
-        show_values(rel_absorbed=self.total_absorption_fraction_diffuse, rel_dust=self.total_dust_fraction_diffuse)
-
-    # -----------------------------------------------------------------
-
-    def show_total_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Show
-        show_values(absorbed=self.total_absorption_luminosity_all, dust=self.total_dust_luminosity_all, dust_alt=self.total_dust_luminosity_all_alt)
-        show_values(rel_absorbed=self.total_absorption_fraction_all, rel_dust=self.total_dust_fraction_all, rel_dust_alt=self.total_dust_fraction_all_alt)
+        show_properties(self.total_properties)
 
     # -----------------------------------------------------------------
 
@@ -1706,12 +1991,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.bulge_observed_luminosity, stellar_bol=self.bulge_stellar_luminosity)
-
-        # Show absorption
-        show_values(absorbed=self.bulge_absorption_luminosity, dust=self.bulge_dust_luminosity)
-        show_values(rel_absorbed=self.bulge_absorption_fraction, rel_dust=self.bulge_dust_fraction)
+        # Show
+        show_properties(self.bulge_properties)
 
     # -----------------------------------------------------------------
 
@@ -1722,12 +2003,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.disk_observed_luminosity, stellar_bol=self.disk_stellar_luminosity)
-
-        # Show absorption
-        show_values(absorbed=self.disk_absorption_luminosity, dust=self.disk_dust_luminosity)
-        show_values(rel_absorbed=self.disk_absorption_fraction, rel_dust=self.disk_dust_fraction)
+        # Show
+        show_properties(self.disk_properties)
 
     # -----------------------------------------------------------------
 
@@ -1738,12 +2015,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.old_observed_luminosity, stellar_bol=self.old_stellar_luminosity)
-
-        # Show absorption
-        show_values(absorbed=self.old_absorption_luminosity, dust=self.old_dust_luminosity)
-        show_values(rel_absorbed=self.old_absorption_fraction, rel_dust=self.old_dust_fraction)
+        # Show
+        show_properties(self.old_properties)
 
     # -----------------------------------------------------------------
 
@@ -1754,12 +2027,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.young_observed_luminosity, stellar_bol=self.young_stellar_luminosity)
-
-        # Show absorption
-        show_values(absorbed=self.young_absorption_luminosity, dust=self.young_dust_luminosity)
-        show_values(rel_absorbed=self.young_absorption_fraction, rel_dust=self.young_dust_fraction)
+        # Show
+        show_properties(self.young_properties)
 
     # -----------------------------------------------------------------
 
@@ -1770,56 +2039,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.sfr_observed_luminosity, stellar_bol=self.sfr_stellar_luminosity)
-
-        # Diffuse
-        self.show_sfr_diffuse()
-
-        # Internal
-        self.show_sfr_internal()
-
-        # All
-        self.show_sfr_all()
-
-    # -----------------------------------------------------------------
-
-    def show_sfr_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show absorption
-        show_values(absorbed=self.sfr_absorption_luminosity_diffuse, dust=self.sfr_dust_luminosity_diffuse)
-        show_values(rel_absorbed=self.sfr_absorption_fraction_diffuse, rel_dust=self.sfr_dust_fraction_diffuse)
-
-    # -----------------------------------------------------------------
-
-    def show_sfr_internal(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show absorption
-        show_values(absorbed=self.sfr_absorption_luminosity_internal, dust=self.sfr_dust_luminosity_internal, dust_alt=self.sfr_dust_luminosity_internal_alt)
-        show_values(rel_absorbed=self.sfr_absorption_fraction_internal, rel_dust=self.sfr_dust_fraction_internal, rel_dust_alt=self.sfr_dust_fraction_internal_alt)
-
-    # -----------------------------------------------------------------
-
-    def show_sfr_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show absorption
-        show_values(absorbed=self.sfr_absorption_luminosity_all, dust=self.sfr_dust_luminosity_all)
-        show_values(rel_absorbed=self.sfr_absorption_fraction_all, rel_dust=self.sfr_dust_fraction_all)
+        # Show
+        show_properties(self.sfr_properties)
 
     # -----------------------------------------------------------------
 
@@ -1830,40 +2051,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
-        # Show stellar
-        show_values(observed_bol=self.unevolved_observed_luminosity, stellar_bol=self.unevolved_stellar_luminosity)
-
-        # Diffuse
-        self.show_unevolved_diffuse()
-
-        # All
-        self.show_unevolved_all()
-
-    # -----------------------------------------------------------------
-
-    def show_unevolved_diffuse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show absorption
-        show_values(absorbed=self.unevolved_absorption_luminosity_diffuse, dust=self.unevolved_dust_luminosity_diffuse)
-        show_values(rel_absorbed=self.unevolved_absorption_fraction_diffuse, rel_dust=self.unevolved_dust_fraction_diffuse)
-
-    # -----------------------------------------------------------------
-
-    def show_unevolved_all(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Show absorption
-        show_values(absorbed=self.unevolved_absorption_luminosity_all, dust=self.unevolved_dust_luminosity_all)
-        show_values(rel_absorbed=self.unevolved_absorption_fraction_all, rel_dust=self.unevolved_dust_fraction_all)
+        # Show
+        show_properties(self.unevolved_properties)
 
     # -----------------------------------------------------------------
 
@@ -1876,6 +2065,57 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Total
+        self.plot_total()
+
+    # -----------------------------------------------------------------
+
+    def plot_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #absorbed = self.model.total_simulations.intrinsic_sed - self.model.total_simulations.observed_stellar_sed
+        #absorbed2 = self.total_spectral_absorption_curve
+        #scattered = self.model.total_simulations.observed_sed_scattered
+        #absorbed3 = self.model.total_simulations.observed_sed_absorbed_uncorrected
+
+        #seds = {"observed_stellar": self.model.total_simulations.observed_stellar_sed, "intrinsic": self.model.total_simulations.intrinsic_sed, "absorbed": absorbed, "absorbed2": absorbed2, "scattered": scattered, "absorbed3": absorbed3}
+        #seds = {"seds": absorbed3, "cells": absorbed2, "scat": scattered}
+        #plot_seds(seds, distance=self.galaxy_distance)
+
+        seds = OrderedDict()
+        seds["observed (stellar)"] = self.model.total_simulations.observed_stellar_sed
+        seds["absorbed"] = self.total_spectral_absorption_curve
+        seds["dust"] = self.model.total_simulations.observed_diffuse_dust_sed
+
+        options = dict()
+        options["absorbed"] = {"above": "observed (stellar)", "above_name": "intrinsic (stellar)"}
+        options["dust"] = {"above": "observed (stellar)"}
+
+        min_wavelength = q("0.01 micron")
+        max_wavelength = q("1000 micron")
+
+        min_flux = q("1e-13.5 W/m2", density=True)
+        max_flux = q("1e-10 W/m2", density=True)
+
+        #unit = u("Jy")
+        unit = None
+
+        # Plot
+        plot_seds(seds, options=options, distance=self.galaxy_distance, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux, unit=unit)
+
+# -----------------------------------------------------------------
+
+def show_properties(properties):
+    for label in properties:
+        if types.is_dictionary(properties[label]):
+            print(" - " + fmt.bold + label + fmt.reset_bold + ":")
+            for label2 in properties[label]: print("    * " + fmt.bold + label2 + fmt.reset_bold + ": " + tostr(properties[label][label2]))
+        else: print(" - " + fmt.bold + label + fmt.reset_bold + ": " + tostr(properties[label]))
 
 # -----------------------------------------------------------------
 

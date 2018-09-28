@@ -1126,7 +1126,8 @@ def files_in_cwd(**kwargs):
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, not_extension=None, contains=None,
                   not_contains=None, extensions=False, returns="path", exact_name=None, exact_not_name=None,
                   startswith=None, endswith=None, sort=None, contains_operator="OR", recursion_level=None, unpack=False,
-                  convert=None, convert_split_index=None, convert_split_pattern=" "):
+                  convert=None, convert_split_index=None, convert_split_pattern=" ", directory_not_contains=None,
+                  directory_exact_not_name=None):
 
     """
     This function ...
@@ -1150,6 +1151,8 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param convert:
     :param convert_split_index:
     :param convert_split_pattern:
+    :param directory_not_contains:
+    :param directory_exact_not_name:
     :return:
     """
 
@@ -1198,6 +1201,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
         # Get the path to the containing directory
         directory = directory_of(item_path)
+        directory_name = name(directory)
 
         # Get the file name and extension
         item_name = os.path.splitext(item)[0]
@@ -1205,6 +1209,22 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
         # Ignore hidden files if requested
         if ignore_hidden and item.startswith("."): continue
+
+        # Ignore in directory?
+        if directory_exact_not_name is not None:
+            if types.is_string_type(directory_exact_not_name):
+                if directory_name == directory_exact_not_name: continue
+            elif types.is_string_sequence(directory_exact_not_name):
+                if directory_name in directory_exact_not_name: continue
+            else: raise ValueError("Unkown type for 'directory_exact_not_name': " + str(directory_exact_not_name))
+
+        # Directory name cannot contain string(s)
+        if directory_not_contains is not None:
+            if types.is_string_type(directory_not_contains):
+                if directory_name == directory_not_contains: continue
+            elif types.is_string_sequence(directory_not_contains):
+                if sequences.any_in(directory_not_contains, directory_name): continue
+            else: raise ValueError("directory_not_contains should be string or sequence")
 
         # Ignore files with extension different from the one that is specified
         if extension is not None:
