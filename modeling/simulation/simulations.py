@@ -744,7 +744,8 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_sed_absorbed(self):
-        return self.has_observed_sed_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor_sed
+        #return self.has_observed_sed_absorbed_uncorrected and self.has_absorbed_scattering_correction_factor_sed
+        return self.has_observed_sed_absorbed_uncorrected
 
     # -----------------------------------------------------------------
 
@@ -1615,12 +1616,6 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed and self.has_observed_diffuse_dust_sed) or (self.has_full_sed and self.has_observed_dust_sed and self.has_intrinsic_dust_sed) or self.has_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
@@ -1634,21 +1629,13 @@ class ComponentSimulations(object):
         """
 
         if self.has_full_sed_faceon and self.has_faceon_observed_diffuse_dust_sed: return self.faceon_observed_sed - self.faceon_observed_diffuse_dust_sed
-
         elif self.has_full_sed_faceon and self.has_faceon_observed_dust_sed: return self.faceon_observed_sed - self.faceon_observed_dust_sed + self.faceon_intrinsic_dust_sed
-
         else: return self.get_stellar_part(self.faceon_observed_sed, full=True) + self.faceon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_faceon_observed_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed_faceon and self.has_faceon_observed_diffuse_dust_sed) or (self.has_full_sed_faceon and self.has_faceon_observed_dust_sed and self.has_faceon_intrinsic_dust_sed) or self.has_faceon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
@@ -1662,21 +1649,13 @@ class ComponentSimulations(object):
         """
 
         if self.has_full_sed_edgeon and self.has_edgeon_observed_diffuse_dust_sed: return self.edgeon_observed_sed - self.edgeon_observed_diffuse_dust_sed
-
         elif self.has_full_sed_edgeon and self.has_edgeon_observed_dust_sed: return self.edgeon_observed_sed - self.edgeon_observed_dust_sed + self.edgeon_intrinsic_dust_sed
-
         else: return self.get_stellar_part(self.edgeon_observed_sed, full=True) + self.edgeon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
 
     @property
     def has_edgeon_observed_stellar_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_sed_edgeon and self.has_edgeon_observed_diffuse_dust_sed) or (self.has_full_sed_edgeon and self.has_edgeon_observed_dust_sed and self.has_edgeon_intrinsic_dust_sed) or self.has_edgeon_intrinsic_dust_sed
 
     # -----------------------------------------------------------------
@@ -1718,12 +1697,6 @@ class ComponentSimulations(object):
 
     @property
     def has_observed_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube and self.has_observed_diffuse_dust_cube) or (self.has_full_cube and self.has_observed_diffuse_dust_cube and self.has_intrinsic_dust_cube) or (self.has_intrinsic_dust_cube)
 
     # -----------------------------------------------------------------
@@ -1761,12 +1734,6 @@ class ComponentSimulations(object):
 
     @property
     def has_faceon_observed_stellar_cube(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (self.has_full_cube_faceon and self.has_faceon_observed_diffuse_dust_cube) or (self.has_full_cube_faceon and self.has_faceon_observed_dust_cube and self.has_faceon_intrinsic_dust_cube) or self.has_faceon_intrinsic_dust_cube
 
     # -----------------------------------------------------------------
@@ -1804,12 +1771,6 @@ class ComponentSimulations(object):
 
     @property
     def has_edgeon_observed_stellar_cube(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
         return (self.has_full_cube_edgeon and self.has_edgeon_observed_diffuse_dust_cube) or (self.has_full_cube_edgeon and self.has_edgeon_observed_dust_cube and self.has_edgeon_intrinsic_dust_cube) or self.has_edgeon_intrinsic_dust_cube
 
     # -----------------------------------------------------------------
