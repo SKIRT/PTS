@@ -141,120 +141,66 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def galaxy_name(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
         return self.environment.galaxy_name
 
     # -----------------------------------------------------------------
 
     @property
     def data_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.data_path
 
     # -----------------------------------------------------------------
 
     @property
     def truncated_sed_path(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.environment.truncated_sed_path
 
     # -----------------------------------------------------------------
 
     @property
     def asymptotic_sed_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.asymptotic_sed_path
 
     # -----------------------------------------------------------------
 
     @property
     def phot_images_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.phot_images_path
 
     # -----------------------------------------------------------------
 
     @property
     def photometry_dataset(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.environment.photometry_dataset
 
     # -----------------------------------------------------------------
 
     @property
+    def static_photometry_dataset(self):
+        return self.environment.static_photometry_dataset
+
+    # -----------------------------------------------------------------
+
+    @property
     def photometry_image_names(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return self.environment.photometry_image_names
 
     # -----------------------------------------------------------------
 
     @property
     def photometry_image_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.photometry_image_paths
 
     # -----------------------------------------------------------------
 
     @property
     def photometry_image_paths_for_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.photometry_image_paths_for_filters
 
     # -----------------------------------------------------------------
 
     @property
     def photometry_image_paths_for_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.photometry_image_paths_for_filter_names
 
     # -----------------------------------------------------------------
@@ -320,253 +266,116 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     def get_photometry_frame_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
         return self.environment.get_photometry_frame_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
     def get_photometry_background(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
         return self.environment.get_photometry_background(name)
 
     # -----------------------------------------------------------------
 
     def get_photometry_background_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
         return self.environment.get_photometry_background_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
     def get_photometry_mask(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
         return self.environment.get_photometry_mask(name)
 
     # -----------------------------------------------------------------
 
     def get_photometry_mask_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
         return self.environment.get_photometry_mask_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
     @property
     def observed_sed_dustpedia_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.observed_sed_dustpedia_path
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_properties_path(self):
-
-        """
-        THis function ...
-        :return:
-        """
-
         return self.environment.galaxy_properties_path
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_info_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_info_path
 
     # -----------------------------------------------------------------
 
     @property
     def data_seds_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.data_seds_path
 
     # -----------------------------------------------------------------
 
     @property
     def data_images_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.data_images_path
 
     # -----------------------------------------------------------------
 
     @property
     def prep_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.prep_path
 
     # -----------------------------------------------------------------
 
     @property
     def inspect_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.environment.inspect_path
 
     # -----------------------------------------------------------------
 
     @property
     def truncation_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.truncation_path
 
     # -----------------------------------------------------------------
 
     @property
     def phot_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.phot_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_raw_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_raw_path
 
     # -----------------------------------------------------------------
 
     @property
     def maps_components_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.maps_components_path
 
     # -----------------------------------------------------------------
 
     @property
     def components_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.components_path
-
-    # -----------------------------------------------------------------
-
-    # @property
-    # def deprojection_path(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     return self.environment.deprojection_path
 
     # -----------------------------------------------------------------
 
     @property
     def playground_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.playground_path
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def ngc_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Get the NGC name from the configuration
         return self.modeling_configuration.ngc_name
 
@@ -574,24 +383,12 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @lazyproperty
     def ngc_name_nospaces(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.ngc_name.replace(" ", "")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def hyperleda_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Get the HYPERLEDA name from the configuration
         return self.modeling_configuration.hyperleda_name
 
@@ -599,96 +396,48 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def initial_dataset_path(self):
-
-        """
-        This property ...
-        :return:
-        """
-
         return self.environment.initial_dataset_path
 
     # -----------------------------------------------------------------
 
     @property
     def initial_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.initial_dataset
 
     # -----------------------------------------------------------------
 
     @property
     def preparation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.preparation_names
 
     # -----------------------------------------------------------------
 
     @property
     def prep_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.preparation_names
 
     # -----------------------------------------------------------------
 
     @property
     def preparation_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.preparation_paths
 
     # -----------------------------------------------------------------
 
     @property
     def dataset_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.prepared_dataset_path
 
     # -----------------------------------------------------------------
 
     @property
     def dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.dataset
 
     # -----------------------------------------------------------------
 
     @property
     def frame_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.frame_list
 
     # -----------------------------------------------------------------
@@ -721,60 +470,30 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def named_frame_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.named_frame_list
 
     # -----------------------------------------------------------------
 
     @property
     def errormap_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.errormap_list
 
     # -----------------------------------------------------------------
 
     @property
     def named_errormap_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.named_errormap_list
 
     # -----------------------------------------------------------------
 
     @property
     def frame_path_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.frame_path_list
 
     # -----------------------------------------------------------------
 
     @property
     def named_frame_path_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.named_frame_path_list
 
     # -----------------------------------------------------------------
@@ -829,24 +548,12 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @lazyproperty
     def decomposition_filter_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return str(self.decomposition_filter)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def decomposition_filter_no_spaces(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return tostr(self.decomposition_filter, delimiter="_")
 
     # -----------------------------------------------------------------
@@ -891,132 +598,66 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def disk_region_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.disk_region_path
 
     # -----------------------------------------------------------------
 
     @property
     def disk_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.disk_ellipse
 
     # -----------------------------------------------------------------
 
     @property
     def disk_position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.disk_position_angle
 
     # -----------------------------------------------------------------
 
     @property
     def disk_axial_ratio(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.disk_axial_ratio
 
     # -----------------------------------------------------------------
 
     @property
     def disk_ellipticity(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.disk_ellipticity
 
     # -----------------------------------------------------------------
 
     @property
     def disk_inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.disk_inclination
 
     # -----------------------------------------------------------------
 
     @property
     def significance_levels_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.significance_levels_path
 
     # -----------------------------------------------------------------
 
     @property
     def truncation_ellipse_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.truncation_ellipse_path
 
     # -----------------------------------------------------------------
 
     @property
     def has_truncation_ellipse(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return self.environment.has_truncation_ellipse
 
     # -----------------------------------------------------------------
 
     @property
     def truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.truncation_ellipse
 
     # -----------------------------------------------------------------
 
     @property
     def truncation_factor(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.truncation_factor
 
     # -----------------------------------------------------------------
@@ -1049,60 +690,30 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def physical_truncation_ellipse(self):
-
-        """
-        This fucntion ...
-        :return: 
-        """
-
         return self.environment.physical_truncation_ellipse
 
     # -----------------------------------------------------------------
 
     @property
     def truncation_area(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.truncation_area
 
     # -----------------------------------------------------------------
 
     @property
     def truncation_box(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.truncation_box
 
     # -----------------------------------------------------------------
 
     @property
     def has_significance_levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.has_significance_levels
 
     # -----------------------------------------------------------------
 
     @property
     def significance_levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.significance_levels
 
     # -----------------------------------------------------------------
@@ -1258,48 +869,24 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def galaxy_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_properties
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_info
 
     # -----------------------------------------------------------------
 
     @property
     def hubble_type(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.hubble_type
 
     # -----------------------------------------------------------------
 
     @property
     def hubble_stage(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.hubble_stage
 
     # -----------------------------------------------------------------
@@ -1332,72 +919,36 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def galaxy_ellipse(self): # from properties
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.environment.galaxy_ellipse
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_distance
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_center(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
         return self.environment.galaxy_center
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_inclination(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_inclination
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_position_angle(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_position_angle
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def galaxy_redshift(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.galaxy_redshift
 
     # -----------------------------------------------------------------
@@ -1436,12 +987,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @lazyproperty
     def bulge2d_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         path = fs.join(self.components_path, "2D", "S4G", "bulge.mod")
         return load_2d_model(path)
 
@@ -1449,145 +994,8 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @lazyproperty
     def disk2d_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         path = fs.join(self.components_path, "2D", "S4G", "disk.mod")
         return load_2d_model(path)
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def input_map_paths(self):
-
-        #"""
-        #This function returns the paths to the input maps of stellar and dust distribution
-        #:return:
-        #"""
-
-        # Check whether the FITS files exist
-        #if not fs.is_file(self.old_stellar_map_path): raise RuntimeError("The map of old stars is not present. Run make_old_map first.")
-        #if not fs.is_file(self.young_stellar_map_path): raise RuntimeError("The map of young stars is not present. Run make_young_map first.")
-        #if not fs.is_file(self.ionizing_stellar_map_path): raise RuntimeError("The map of ionizing stars is not present. Run make_ionizing_map first.")
-        #if not fs.is_file(self.dust_map_path): raise RuntimeError("The dust map is not present. Run make_dust_map first.")
-
-        # Return the paths to the maps of stars and dust
-        #return [self.old_stellar_map_path, self.young_stellar_map_path, self.ionizing_stellar_map_path, self.dust_map_path]
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def old_stellar_map_filename(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return fs.name(self.old_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def young_stellar_map_filename(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return fs.name(self.young_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def ionizing_stellar_map_filename(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return fs.name(self.ionizing_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def dust_map_filename(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return fs.name(self.dust_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def old_stars_map(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.old_stellar_map_path): raise IOError("The map of old stars is not present. Run 'make_old_map' to create it")
-
-        # Open and return the frame of the old stellar distribution
-        #return Frame.from_file(self.old_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def young_stars_map(self):
-
-        #""""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.young_stellar_map_path): raise IOError("The map of young stars is not present. Run 'make_young_map' to create it")
-
-        # Open and return the frame of the young stellar distribution
-        #return Frame.from_file(self.young_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def ionizing_stars_map(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.ionizing_stellar_map_path): raise IOError("The map of ionizing stars is not present. Run 'make_ionizing_map' to create it")
-
-        # Open and return the frame of the ionizing stellar distribution
-        #return Frame.from_file(self.ionizing_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def dust_map(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.dust_map_path): raise IOError("The dust map is not present. Run 'make_dust_map' to create it")
-
-        # Open and return the frame of the dust distribution
-        #return Frame.from_file(self.dust_map_path)
 
     # -----------------------------------------------------------------
 
@@ -1621,12 +1029,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @lazyproperty
     def reference_sed_labels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.reference_seds.keys()
 
     # -----------------------------------------------------------------
@@ -1649,48 +1051,24 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def has_cache_host(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.cache_host_id is not None
 
     # -----------------------------------------------------------------
 
     @property
     def cache_host_id(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.cache_host_id
 
     # -----------------------------------------------------------------
 
     @property
     def cache_host(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.cache_host
 
     # -----------------------------------------------------------------
 
     @property
     def cache_remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.cache_remote
 
     # -----------------------------------------------------------------
@@ -1761,36 +1139,18 @@ class GalaxyModelingComponent(ModelingComponent):
 
     @property
     def analysis_context(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.analysis_context
 
     # -----------------------------------------------------------------
 
     @property
     def analysis_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.analysis_runs
 
     # -----------------------------------------------------------------
 
     @property
     def cached_analysis_runs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.environment.cached_analysis_runs
 
     # -----------------------------------------------------------------

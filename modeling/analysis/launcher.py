@@ -50,7 +50,7 @@ component_names = {bulge: bulge_component_label,
 
 # -----------------------------------------------------------------
 
-class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
+class AnalysisLauncher(AnalysisComponent):
 
     """
     This class...
@@ -65,9 +65,6 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         """
 
         # Call the constructor of the base class
-        #AnalysisComponent.__init__(self, no_config=True)
-        #ModelSimulationInterface.__init__(self, no_config=True)
-        #ModelSimulationInterface.__init__(self, *args, **kwargs)
         AnalysisComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
@@ -109,28 +106,28 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         :return:
         """
 
-        # 2. Get the model
+        # Get the model
         self.get_model()
 
-        # 3. Load the ski file
+        # Load the ski file
         self.load_ski()
 
-        # 4. Create the ski files for the different contributions
+        # Create the ski files for the different contributions
         self.adjust_ski()
 
-        # 5. Set the simulation input paths
+        # Set the simulation input paths
         self.set_input_paths()
 
-        # 6. Set the parallelization scheme
+        # Set the parallelization scheme
         self.set_parallelization()
 
-        # 7. Set analysis options
+        # Set analysis options
         self.set_analysis_options()
 
-        # 8. Writing
+        # Writing
         self.write()
 
-        # 9. Launch the simulations
+        # Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -1575,6 +1572,7 @@ class AnalysisLauncher(AnalysisComponent): #, ModelSimulationInterface):
         # Convolution kernels
         #self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_psfs_auto = True # automatically determine the PSF for each filter
+
         # FWHMS
         self.analysis_options.misc.fwhms_dataset = self.dataset_path
 

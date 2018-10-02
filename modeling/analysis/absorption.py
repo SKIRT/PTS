@@ -91,6 +91,51 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         # Call the setup function of the base class
         super(AbsorptionAnalyser, self).setup()
 
+        # Recalculate properties?
+        if self.config.recalculate:
+            self.config.recalculate_total = True
+            self.config.recalculate_bulge = True
+            self.config.recalculate_disk = True
+            self.config.recalculate_old = True
+            self.config.recalculate_young = True
+            self.config.recalculate_sfr = True
+            self.config.recalculate_unevolved = True
+
+        # Recalculate
+        if self.config.recalculate_total and self.has_total_properties: fs.remove_file(self.total_properties_path)
+        if self.config.recalculate_bulge and self.has_bulge_properties: fs.remove_file(self.bulge_properties_path)
+        if self.config.recalculate_disk and self.has_disk_properties: fs.remove_file(self.disk_properties_path)
+        if self.config.recalculate_old and self.has_old_properties: fs.remove_file(self.old_properties_path)
+        if self.config.recalculate_young and self.has_young_properties: fs.remove_file(self.young_properties_path)
+        if self.config.recalculate_sfr and self.has_sfr_properties: fs.remove_file(self.sfr_properties_path)
+        if self.config.recalculate_unevolved and self.has_unevolved_properties: fs.remove_file(self.unevolved_properties_path)
+
+        # Replot?
+        if self.config.replot:
+            self.config.replot_total = True
+            self.config.replot_bulge = True
+            self.config.replot_disk = True
+            self.config.replot_old = True
+            self.config.replot_young = True
+            self.config.replot_sfr = True
+            self.config.replot_unevolved = True
+
+        # Replot
+        if self.config.replot_total:
+            if self.has_total_diffuse_plot: fs.remove_file(self.total_diffuse_plot_path)
+            if self.has_total_all_plot: fs.remove_file(self.total_all_plot_path)
+        if self.config.replot_bulge and self.has_bulge_plot: fs.remove_file(self.bulge_plot_path)
+        if self.config.replot_disk and self.has_disk_plot: fs.remove_file(self.disk_plot_path)
+        if self.config.replot_old and self.has_old_plot: fs.remove_file(self.old_plot_path)
+        if self.config.replot_young and self.has_young_plot: fs.remove_file(self.young_plot_path)
+        if self.config.replot_sfr:
+            if self.has_sfr_diffuse_plot: fs.remove_file(self.sfr_diffuse_plot_path)
+            if self.has_sfr_internal_plot: fs.remove_file(self.sfr_internal_plot_path)
+            if self.has_sfr_all_plot: fs.remove_file(self.sfr_all_plot_path)
+        if self.config.replot_unevolved:
+            if self.has_unevolved_diffuse_plot: fs.remove_file(self.unevolved_diffuse_plot_path)
+            if self.has_unevolved_all_plot: fs.remove_file(self.unevolved_all_plot_path)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -138,6 +183,34 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @property
     def absorption_path(self):
         return self.analysis_run.absorption_path
+
+    # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_stellar_sed_extrapolate_from(self):
+        return q("100 micron")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_stellar_sed_fit_from(self):
+        return q("20 micron")
+
+    # -----------------------------------------------------------------
+
+    def correct_observed_stellar_sed(self, sed):
+        return sed.extrapolated_from(self.observed_stellar_sed_extrapolate_from, regression_from_x=self.observed_stellar_sed_fit_from, xlog=True, ylog=True)
+
+    # -----------------------------------------------------------------
+
+    def correct_dust_sed(self, sed):
+        return sed.stripped_negatives_and_zeroes()
+
+    # -----------------------------------------------------------------
+
+    def correct_absorption_sed(self, sed):
+        return sed.stripped_negatives_and_zeroes()
 
     # -----------------------------------------------------------------
     # SIMULATION DATA
@@ -686,7 +759,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @property
     def has_old_spectral_absorption_curve(self):
-        return fs.is_file(self.disk_spectral_absorption_curve_path)
+        return fs.is_file(self.old_spectral_absorption_curve_path)
 
     # -----------------------------------------------------------------
 
@@ -807,7 +880,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyfileproperty(SED, "unevolved_spectral_absorption_curve_path", True, write=True)
+    @lazyfileproperty(SED, "unevolved_spectral_absorption_curve_path", True, write=False)
     def unevolved_spectral_absorption_curve(self):
 
         """
@@ -858,9 +931,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_observed_stellar_sed_all(self):
-        return self.old_observed_stellar_sed + self.unevolved_observed_stellar_sed_all
+        return self.correct_observed_stellar_sed(self.old_observed_stellar_sed + self.unevolved_observed_stellar_sed_all)
 
     # -----------------------------------------------------------------
 
@@ -896,9 +969,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_observed_stellar_sed(self):
-        return self.model.bulge_simulations.observed_stellar_sed
+        return self.correct_observed_stellar_sed(self.model.bulge_simulations.observed_stellar_sed)
 
     # -----------------------------------------------------------------
 
@@ -934,9 +1007,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def disk_observed_stellar_sed(self):
-        return self.model.disk_simulations.observed_stellar_sed
+        return self.correct_observed_stellar_sed(self.model.disk_simulations.observed_stellar_sed)
 
     # -----------------------------------------------------------------
 
@@ -972,9 +1045,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_observed_stellar_sed(self):
-        return self.model.old_simulations.observed_stellar_sed
+        return self.correct_observed_stellar_sed(self.model.old_simulations.observed_stellar_sed)
 
     # -----------------------------------------------------------------
 
@@ -1010,9 +1083,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_observed_stellar_sed(self):
-        return self.model.young_simulations.observed_stellar_sed
+        return self.correct_observed_stellar_sed(self.model.young_simulations.observed_stellar_sed)
 
     # -----------------------------------------------------------------
 
@@ -1138,8 +1211,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_absorption_sed_diffuse_cells(self):
+        return self.correct_absorption_sed(self.total_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def total_absorption_luminosity_diffuse_cells(self):
-        return self.total_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.total_absorption_sed_diffuse_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1149,9 +1228,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_absorption_sed_diffuse(self):
-        return self.model.total_simulations.observed_sed_absorbed
+        return self.correct_absorption_sed(self.model.total_simulations.observed_sed_absorbed)
 
     # -----------------------------------------------------------------
 
@@ -1185,9 +1264,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def total_dust_sed_diffuse(self):
-        return self.model.total_simulations.observed_diffuse_dust_sed
+        return self.correct_dust_sed(self.model.total_simulations.observed_diffuse_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1207,7 +1286,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def total_absorption_sed_all(self):
-        return self.total_absorption_sed_diffuse + self.sfr_absorption_sed_internal
+        return self.correct_absorption_sed(self.total_absorption_sed_diffuse + self.sfr_absorption_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -1262,8 +1341,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def bulge_absorption_sed_cells(self):
+        return self.correct_absorption_sed(self.bulge_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def bulge_absorption_luminosity_cells(self):
-        return self.bulge_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.bulge_absorption_sed_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1273,9 +1358,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_absorption_sed(self):
-        return self.model.bulge_simulations.observed_sed_absorbed
+        return self.correct_absorption_sed(self.model.bulge_simulations.observed_sed_absorbed)
 
     # -----------------------------------------------------------------
 
@@ -1309,9 +1394,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def bulge_dust_sed(self):
-        return self.model.bulge_simulations.observed_dust_sed
+        return self.correct_dust_sed(self.model.bulge_simulations.observed_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1330,8 +1415,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def disk_absorption_sed_cells(self):
+        return self.correct_absorption_sed(self.disk_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def disk_absorption_luminosity_cells(self):
-        return self.disk_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.disk_absorption_sed_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1341,9 +1432,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def disk_absorption_sed(self):
-        return self.model.disk_simulations.observed_sed_absorbed
+        return self.correct_absorption_sed(self.model.disk_simulations.observed_sed_absorbed)
 
     # -----------------------------------------------------------------
 
@@ -1377,9 +1468,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def disk_dust_sed(self):
-        return self.model.disk_simulations.observed_dust_sed
+        return self.correct_dust_sed(self.model.disk_simulations.observed_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1398,8 +1489,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def old_absorption_sed_cells(self):
+        return self.correct_absorption_sed(self.old_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def old_absorption_luminosity_cells(self):
-        return self.old_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.old_absorption_sed_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1409,9 +1506,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_absorption_sed(self):
-        return self.model.old_simulations.observed_sed_absorbed
+        return self.correct_absorption_sed(self.model.old_simulations.observed_sed_absorbed)
 
     # -----------------------------------------------------------------
 
@@ -1445,9 +1542,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def old_dust_sed(self):
-        return self.model.old_simulations.observed_dust_sed
+        return self.correct_dust_sed(self.model.old_simulations.observed_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1466,8 +1563,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def young_absorption_sed_cells(self):
+        return self.correct_absorption_sed(self.young_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def young_absorption_luminosity_cells(self):
-        return self.young_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.young_absorption_sed_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1477,9 +1580,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_absorption_sed(self):
-        return self.model.young_simulations.observed_sed_absorbed
+        return self.correct_absorption_sed(self.model.young_simulations.observed_sed_absorbed)
 
     # -----------------------------------------------------------------
 
@@ -1513,9 +1616,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def young_dust_sed(self):
-        return self.model.young_simulations.observed_dust_sed
+        return self.correct_dust_sed(self.model.young_simulations.observed_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1535,8 +1638,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def sfr_absorption_sed_diffuse_cells(self):
+        return self.correct_absorption_sed(self.sfr_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sfr_absorption_luminosity_diffuse_cells(self):
-        return self.sfr_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.sfr_absorption_sed_diffuse_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1546,9 +1655,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def sfr_absorption_sed_diffuse(self):
-        return self.model.sfr_simulations.observed_sed_absorbed
+        return self.correct_absorption_sed(self.model.sfr_simulations.observed_sed_absorbed)
 
     # -----------------------------------------------------------------
 
@@ -1582,9 +1691,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def sfr_dust_sed_diffuse(self):
-        return self.model.sfr_simulations.observed_diffuse_dust_sed
+        return self.correct_dust_sed(self.model.sfr_simulations.observed_diffuse_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1611,7 +1720,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         transparent_stellar = self.model.intrinsic_sfr_stellar_sed # NEW FROM TRANSPARENT MAPPINGS
 
         # INTERNALLY ABSORBED
-        return transparent_stellar - intrinsic_stellar
+        return self.correct_absorption_sed(transparent_stellar - intrinsic_stellar)
 
     # -----------------------------------------------------------------
 
@@ -1667,7 +1776,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def sfr_absorption_sed_all(self):
-        return self.sfr_absorption_sed_diffuse + self.sfr_absorption_sed_internal
+        return self.correct_absorption_sed(self.sfr_absorption_sed_diffuse + self.sfr_absorption_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -1705,8 +1814,14 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def unevolved_absorption_sed_diffuse_cells(self):
+        return self.correct_absorption_sed(self.unevolved_spectral_absorption_curve)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def unevolved_absorption_luminosity_diffuse_cells(self):
-        return self.unevolved_spectral_absorption_curve.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
+        return self.unevolved_absorption_sed_diffuse_cells.integrate().to(self.bolometric_luminosity_unit, distance=self.galaxy_distance)
 
     # -----------------------------------------------------------------
 
@@ -1719,7 +1834,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     @lazyproperty
     def unevolved_absorption_sed_diffuse(self):
         #return self.model.unevolved_simulations.observed_sed_absorbed
-        return self.young_absorption_sed + self.sfr_absorption_sed_diffuse
+        return self.correct_absorption_sed(self.young_absorption_sed + self.sfr_absorption_sed_diffuse)
 
     # -----------------------------------------------------------------
 
@@ -1756,7 +1871,7 @@ class AbsorptionAnalyser(AnalysisRunComponent):
 
     @lazyproperty
     def unevolved_dust_sed_diffuse(self):
-        return self.model.unevolved_simulations.observed_diffuse_dust_sed
+        return self.correct_dust_sed(self.model.unevolved_simulations.observed_diffuse_dust_sed)
 
     # -----------------------------------------------------------------
 
@@ -1774,9 +1889,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
     #   All
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def unevolved_absorption_sed_all(self):
-        return self.unevolved_absorption_sed_diffuse + self.sfr_absorption_sed_internal
+        return self.correct_absorption_sed(self.unevolved_absorption_sed_diffuse + self.sfr_absorption_sed_internal)
 
     # -----------------------------------------------------------------
 
@@ -2249,6 +2364,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the total absorption curve ...")
+
         # Write
         self.total_spectral_absorption_curve.saveto(self.total_spectral_absorption_curve_path)
 
@@ -2260,6 +2378,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the bulge absorption curve ...")
 
         # Write
         self.bulge_spectral_absorption_curve.saveto(self.bulge_spectral_absorption_curve_path)
@@ -2273,6 +2394,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the disk absorption curve ...")
+
         # Write
         self.disk_spectral_absorption_curve.saveto(self.disk_spectral_absorption_curve_path)
 
@@ -2284,6 +2408,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the old absorption curve ...")
 
         # Write
         self.old_spectral_absorption_curve.saveto(self.old_spectral_absorption_curve_path)
@@ -2297,6 +2424,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the young absorption curve ...")
+
         # Write
         self.young_spectral_absorption_curve.saveto(self.young_spectral_absorption_curve_path)
 
@@ -2309,6 +2439,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the SFR absorption curve ...")
+
         # Write
         self.sfr_spectral_absorption_curve.saveto(self.sfr_spectral_absorption_curve_path)
 
@@ -2320,6 +2453,9 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the unevolved absorption curve ...")
 
         # Write
         self.unevolved_spectral_absorption_curve.saveto(self.unevolved_spectral_absorption_curve_path)
@@ -2656,8 +2792,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the total model (diffuse dust) ...")
 
         # Plot
-        if self.has_total_absorption_sed_diffuse: self.plot_seds(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse, self.total_dust_sed_diffuse, self.total_diffuse_plot_path, absorbed_cells=self.total_spectral_absorption_curve)
-        else: self.plot_seds(self.total_observed_stellar_sed_diffuse, self.total_spectral_absorption_curve, self.total_dust_sed_diffuse, self.total_diffuse_plot_path)
+        if self.has_total_absorption_sed_diffuse: self.plot_seds(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse, self.total_dust_sed_diffuse, self.total_diffuse_plot_path, absorbed_cells=self.total_absorption_sed_diffuse_cells)
+        else: self.plot_seds(self.total_observed_stellar_sed_diffuse, self.total_absorption_sed_diffuse_cells, self.total_dust_sed_diffuse, self.total_diffuse_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2711,8 +2847,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the old stellar bulge ...")
 
         # Plot
-        if self.has_bulge_absorption_sed: self.plot_seds(self.bulge_observed_stellar_sed, self.bulge_absorption_sed, self.bulge_dust_sed, self.bulge_plot_path, absorbed_cells=self.bulge_spectral_absorption_curve)
-        else: self.plot_seds(self.bulge_observed_stellar_sed, self.bulge_spectral_absorption_curve, self.bulge_dust_sed, self.bulge_plot_path)
+        if self.has_bulge_absorption_sed: self.plot_seds(self.bulge_observed_stellar_sed, self.bulge_absorption_sed, self.bulge_dust_sed, self.bulge_plot_path, absorbed_cells=self.bulge_absorption_sed_cells)
+        else: self.plot_seds(self.bulge_observed_stellar_sed, self.bulge_absorption_sed_cells, self.bulge_dust_sed, self.bulge_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2739,8 +2875,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the old stellar disk ...")
 
         # Plot
-        if self.has_disk_absorption_sed: self.plot_seds(self.disk_observed_stellar_sed, self.disk_absorption_sed, self.disk_dust_sed, self.disk_plot_path, absorbed_cells=self.disk_spectral_absorption_curve)
-        else: self.plot_seds(self.disk_observed_stellar_sed, self.disk_spectral_absorption_curve, self.disk_dust_sed, self.disk_plot_path)
+        if self.has_disk_absorption_sed: self.plot_seds(self.disk_observed_stellar_sed, self.disk_absorption_sed, self.disk_dust_sed, self.disk_plot_path, absorbed_cells=self.disk_absorption_sed_cells)
+        else: self.plot_seds(self.disk_observed_stellar_sed, self.disk_absorption_sed_cells, self.disk_dust_sed, self.disk_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2767,8 +2903,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the old stars ...")
 
         # Plot
-        if self.has_old_absorption_sed: self.plot_seds(self.old_observed_stellar_sed, self.old_absorption_sed, self.old_dust_sed, self.old_plot_path, absorbed_cells=self.old_spectral_absorption_curve)
-        else: self.plot_seds(self.old_observed_stellar_sed, self.old_spectral_absorption_curve, self.old_dust_sed, self.old_plot_path)
+        if self.has_old_absorption_sed: self.plot_seds(self.old_observed_stellar_sed, self.old_absorption_sed, self.old_dust_sed, self.old_plot_path, absorbed_cells=self.old_absorption_sed_cells)
+        else: self.plot_seds(self.old_observed_stellar_sed, self.old_absorption_sed_cells, self.old_dust_sed, self.old_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2795,8 +2931,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the young stars ...")
 
         # Plot
-        if self.has_young_absorption_sed: self.plot_seds(self.young_observed_stellar_sed, self.young_absorption_sed, self.young_dust_sed, self.young_plot_path, absorbed_cells=self.young_spectral_absorption_curve)
-        else: self.plot_seds(self.young_observed_stellar_sed, self.young_spectral_absorption_curve, self.young_dust_sed, self.young_plot_path)
+        if self.has_young_absorption_sed: self.plot_seds(self.young_observed_stellar_sed, self.young_absorption_sed, self.young_dust_sed, self.young_plot_path, absorbed_cells=self.young_absorption_sed_cells)
+        else: self.plot_seds(self.young_observed_stellar_sed, self.young_absorption_sed_cells, self.young_dust_sed, self.young_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2859,8 +2995,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the star formation regions (diffuse dust) ...")
 
         # Plot
-        if self.has_sfr_absorption_sed_diffuse: self.plot_seds(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path, absorbed_cells=self.sfr_spectral_absorption_curve)
-        else: self.plot_seds(self.sfr_observed_stellar_sed_diffuse, self.sfr_spectral_absorption_curve, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path)
+        if self.has_sfr_absorption_sed_diffuse: self.plot_seds(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path, absorbed_cells=self.sfr_absorption_sed_diffuse_cells)
+        else: self.plot_seds(self.sfr_observed_stellar_sed_diffuse, self.sfr_absorption_sed_diffuse_cells, self.sfr_dust_sed_diffuse, self.sfr_diffuse_plot_path)
 
     # -----------------------------------------------------------------
 
@@ -2968,8 +3104,8 @@ class AbsorptionAnalyser(AnalysisRunComponent):
         log.info("Plotting the absorption and dust SEDs for the unevolved stars (diffuse dust) ...")
 
         # Plot
-        if self.has_unevolved_absorption_sed_diffuse: self.plot_seds(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path, absorbed_cells=self.unevolved_spectral_absorption_curve)
-        else: self.plot_seds(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_spectral_absorption_curve, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path)
+        if self.has_unevolved_absorption_sed_diffuse: self.plot_seds(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path, absorbed_cells=self.unevolved_absorption_sed_diffuse_cells)
+        else: self.plot_seds(self.unevolved_observed_stellar_sed_diffuse, self.unevolved_absorption_sed_diffuse_cells, self.unevolved_dust_sed_diffuse, self.unevolved_diffuse_plot_path)
 
     # -----------------------------------------------------------------
 

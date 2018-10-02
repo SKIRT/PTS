@@ -26,7 +26,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.configuration import Configuration
 from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
-from ...magic.core.dataset import DataSet
+from ...magic.core.dataset import DataSet, StaticDataSet
 from ...core.basics.range import QuantityRange
 from pts.core.tools.utils import lazyproperty
 from ...core.remote.host import load_host
@@ -682,6 +682,12 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     @lazyproperty
     def photometry_dataset(self):
         return DataSet.from_directory(self.phot_images_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def static_photometry_dataset(self):
+        return StaticDataSet.from_directory(self.phot_images_path)
 
     # -----------------------------------------------------------------
 

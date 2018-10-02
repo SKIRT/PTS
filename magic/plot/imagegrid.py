@@ -770,12 +770,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def image_settings_class(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return ResidualImagePlotSettings
 
     # ------------------------------------------------------------------------------
@@ -834,48 +828,24 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def figsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return (15,10)
 
     # ------------------------------------------------------------------------------
 
     @property
     def horizontal(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.direction == horizontal_mode
 
     # ------------------------------------------------------------------------------
 
     @property
     def vertical(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.config.direction == vertical_mode
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def npanels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.config.distributions: return 4  # observation, model, residual, distribution
         else: return 3  # observation, model, residual
 
@@ -883,12 +853,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @lazyproperty
     def nrows(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.horizontal: return self.npanels
         elif self.vertical: return self.nimages
         else: raise ValueError("Invalid direction")
@@ -897,12 +861,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @lazyproperty
     def ncolumns(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         if self.horizontal: return self.nimages
         elif self.vertical: return self.npanels
         else: raise ValueError("Invalid direction")
@@ -911,24 +869,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def share_x(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return True
 
     # ------------------------------------------------------------------------------
 
     @property
     def share_y(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return True
 
     # ------------------------------------------------------------------------------
@@ -961,24 +907,12 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def all_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return sequences.combine_unique(self.observation_names, self.model_names, self.errors_names, self.residuals_names)
 
     # ------------------------------------------------------------------------------
 
     @property
     def observation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observations.keys()
 
     # ------------------------------------------------------------------------------
@@ -997,12 +931,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def model_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.models.keys()
 
     # ------------------------------------------------------------------------------
@@ -1021,12 +949,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def errors_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.errors.keys()
 
     # ------------------------------------------------------------------------------
@@ -1045,12 +967,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def model_errors_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_errors.keys()
 
     # ------------------------------------------------------------------------------
@@ -1069,12 +985,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def residuals_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.residuals.keys()
 
     # ------------------------------------------------------------------------------
@@ -1093,12 +1003,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def distribution_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.distributions.keys()
 
     # ------------------------------------------------------------------------------
@@ -1117,12 +1021,6 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def settings_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.settings.keys()
 
     # ------------------------------------------------------------------------------
@@ -1141,72 +1039,36 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @property
     def names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.observation_names
 
     # ------------------------------------------------------------------------------
 
     @property
     def first_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.names[0]
 
     # ------------------------------------------------------------------------------
 
     @property
     def first_observation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_observation(self.first_name)
 
     # ------------------------------------------------------------------------------
 
     @property
     def first_frame(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.first_observation
 
     # ------------------------------------------------------------------------------
 
     @property
     def nimages(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.names)
 
     # ------------------------------------------------------------------------------
 
     @property
     def has_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.nimages > 0
 
     # ------------------------------------------------------------------------------
@@ -2119,71 +1981,36 @@ class ResidualImageGridPlotter(ImageGridPlotter):
 
     @lazyproperty
     def images_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_directory(images_name)
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def observations_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_directory(observations_name)
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def models_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_directory(models_name)
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def residuals_path(self):
-
-        """"
-        This function ...
-        """
-
         return self.output_path_directory(residuals_name)
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def distributions_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_directory(distributions_name)
 
     # ------------------------------------------------------------------------------
 
     @lazyproperty
     def settings_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.output_path_directory(settings_name)
 
     # ------------------------------------------------------------------------------

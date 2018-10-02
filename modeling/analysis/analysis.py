@@ -37,9 +37,13 @@ from ...core.plot.attenuation import plot_attenuation_curve, plot_attenuation_cu
 from ..config.analyse_cell_heating import definition as analyse_cell_heating_definition
 from ..config.analyse_projected_heating import definition as analyse_projected_heating_definition
 from ..config.analyse_spectral_heating import definition as analyse_spectral_heating_definition
+from ..config.analyse_images import definition as analyse_images_definition
+from ..config.analyse_residuals import definition as analyse_residuals_definition
 from .heating.cell import CellDustHeatingAnalyser
 from .heating.projected import ProjectedDustHeatingAnalyser
 from .heating.spectral import SpectralDustHeatingAnalyser
+from .images import ImagesAnalyser
+from .residuals import ResidualAnalyser
 from ..config.analyse_properties import definition as analyse_properties_definition
 from .properties import PropertiesAnalyser
 from ..config.analyse_cell_energy import definition as analyse_cell_energy_definition
@@ -112,6 +116,7 @@ _heating_command_name = "heating"
 _energy_command_name = "energy"
 _sfr_command_name = "sfr"
 _correlations_command_name = "correlations"
+_residuals_command_name = "residuals"
 
 # -----------------------------------------------------------------
 
@@ -148,6 +153,8 @@ commands[_heating_command_name] = (None, None, "analyse dust heating contributio
 commands[_energy_command_name] = (None, None, "analyse the energy budget in the galaxy", None)
 commands[_sfr_command_name] = ("analyse_sfr_command", True, "analyse the star formation rates", None)
 commands[_correlations_command_name] = ("analyse_correlations_command", True, "analyse the correlations", None)
+commands[_images_command_name] = ("analyse_images_command", True, "analyse the simulation images", None)
+commands[_residuals_command_name] = ("analyse_residuals_command", True, "analyse the image residuals", None)
 
 # -----------------------------------------------------------------
 
@@ -4301,6 +4308,130 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def analyse_images_definition(self):
+
+        """
+        This fnction ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_images_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_images_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_images_definition, **kwargs)
+
+        # Analyse
+        self.analyse_images(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_images(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the mock images ...")
+
+        # Create the analyser
+        analyser = ImagesAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analyse_residuals_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.import_settings(analyse_residuals_definition)
+        definition.remove_setting("run")
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def analyse_residuals_command(self, command, **kwargs):
+
+        """
+        This function ...
+        :param command:
+        :param kwargs:
+        :return:
+        """
+
+        # Get config
+        config = self.get_config_from_command(command, self.analyse_residuals_definition, **kwargs)
+
+        # Analyse
+        self.analyse_residuals(config=config)
+
+    # -----------------------------------------------------------------
+
+    def analyse_residuals(self, config=None):
+
+        """
+        Thi function ...
+        :param config:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing the image residuals ...")
+
+        # Create the analyser
+        analyser = ResidualAnalyser(config=config)
+
+        # Set the modeling path
+        analyser.config.path = self.config.path
+
+        # Set the analysis run
+        analyser.config.run = self.config.run
+
+        # Run
+        analyser.run()
+
+    # -----------------------------------------------------------------
+
     def examine_model(self, **kwargs):
 
         """
@@ -4326,6 +4457,83 @@ class Analysis(AnalysisRunComponent, InteractiveConfigurable):
 
         # Inform the user
         log.info("Showing ...")
+
+    # -----------------------------------------------------------------
+
+    # FROM ANALYSISPLOTTER:
+
+    # def load_wavelength_grid(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Loading the wavelength grid ...")
+    #
+    #     # Determine the path to the wavelength grid file
+    #     path = fs.join(self.analysis_path, "in", "wavelengths.txt")
+    #
+    #     # Load the wavelength grid
+    #     if fs.is_file(path): self.wavelength_grid = WavelengthGrid.from_skirt_input(path)
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def load_transmission_curves(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Loading the transmission curves ...")
+    #
+    #     # Load the observed SED
+    #     sed = ObservedSED.from_file(self.observed_sed_path)
+    #
+    #     # Loop over all filters for the points in the SED
+    #     for fltr in sed.filters():
+    #
+    #         # Create the transmission curve
+    #         transmission = TransmissionCurve.from_filter(fltr)
+    #
+    #         # Normalize the transmission curve
+    #         transmission.normalize(value=1.0, method="max")
+    #
+    #         # Add the transmission curve to the dictionary
+    #         self.transmission_curves[str(fltr)] = transmission
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def plot_wavelengths(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Plotting the wavelength grid ...")
+    #
+    #     # Create the transmission plotter
+    #     plotter = TransmissionPlotter()
+    #
+    #     plotter.title = "Wavelengths used for analysis"
+    #     plotter.transparent = True
+    #
+    #     # Add the transmission curves
+    #     for label in self.transmission_curves: plotter.add_transmission_curve(self.transmission_curves[label], label)
+    #
+    #     # Add the wavelength points
+    #     for wavelength in self.wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
+    #
+    #     # Determine the path to the plot file
+    #     path = fs.join(self.plot_analysis_path, "wavelengths.pdf")
+    #
+    #     # Run the plotter
+    #     plotter.run(path, min_wavelength=self.wavelength_grid.min_wavelength, max_wavelength=self.wavelength_grid.max_wavelength, min_transmission=0.0, max_transmission=1.05)
 
     # -----------------------------------------------------------------
 

@@ -6,24 +6,33 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.modeling.core.environment import load_modeling_environment_cwd
-from pts.core.config.manage_simulations import definition
+from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.analysis.run import AnalysisRuns
+from pts.modeling.config.component import definition
 
 # -----------------------------------------------------------------
 
-# Get the analysis runs
-environment = load_modeling_environment_cwd()
-runs = environment.analysis_runs
+modeling_path = verify_modeling_cwd()
+runs = AnalysisRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
 definition = definition.copy()
 
-# -----------------------------------------------------------------
-
-# THE ANALYSIS RUN
+# Positional optional
 if runs.empty: raise ValueError("No analysis runs present (yet)")
 elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
-else: definition.add_required("run", "string", "name of the analysis run", runs.names)
+else: definition.add_positional_optional("run", "string", "name of the analysis run", runs.last_name, runs.names)
+
+# -----------------------------------------------------------------
+
+# Write intermediate images and kernels?
+definition.add_flag("intermediate", "write intermediate images", True)
+definition.add_flag("kernels", "write kernel images", True)
+
+# -----------------------------------------------------------------
+
+# Plot?
+definition.add_flag("plot", "do plotting")
 
 # -----------------------------------------------------------------

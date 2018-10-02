@@ -454,12 +454,6 @@ class Relation(SmartTable):
 
     @property
     def npoints(self):
-
-        """
-        Thisf unction
-        :return:
-        """
-
         return len(self)
 
     # -----------------------------------------------------------------
@@ -519,6 +513,19 @@ class Relation(SmartTable):
 
         # Get the indices
         indices = self.get_indices(x_min, x_max, include_min=include_min, include_max=include_max) # don't name arguments because of re-definition of function in WavelengthCurve class
+
+        # Return
+        return self.splice_indices(indices)
+
+    # -----------------------------------------------------------------
+
+    def splice_indices(self, indices):
+
+        """
+        This function ...
+        :param indices:
+        :return:
+        """
 
         # Set the x and y unit
         x_unit = self.x_unit

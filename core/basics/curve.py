@@ -587,6 +587,146 @@ class Curve(Relation):
 
     __truediv__ = __div__
 
+    # -----------------------------------------------------------------
+
+    def extrapolate_from(self, from_x, regression_from_x, xlog=False, ylog=False, degree=1):
+
+        """
+        This function ...
+        :param from_x:
+        :param regression_from_x:
+        :param xlog:
+        :param ylog:
+        :param degree: 1 is default, means linear regression
+        :return:
+        """
+
+        # Get the monotonic decreasing or increasing part (or fittable part in general)
+        main_part = self.splice(regression_from_x, from_x)
+
+        # Get x and y values for this part
+        x_values = main_part.get_x(unit=main_part.x_unit, asarray=True)
+        y_values = main_part.get_y(unit=main_part.y_unit, asarray=True)
+
+        # To log?
+        if xlog: x_values = np.log10(x_values)
+        if ylog: y_values = np.log10(y_values)
+
+        # Plot
+        #from ...magic.tools import plotting
+        #plotting.plot_xy(x_values, y_values)
+
+        # Polynomial regression
+        polyfun = np.poly1d(np.polyfit(x_values, y_values, degree))
+
+        # Extrapolate to larger x
+        larger_x, indices = self.get_x_splice(x_min=from_x, return_indices=True)
+        if xlog: larger_x = np.log10(larger_x)
+        larger_y = polyfun(larger_x) # is array
+
+        # Correct offset
+        original_first = self.get_value(self.y_name, indices[0], add_unit=False)
+        if ylog: original_first = np.log10(original_first)
+        longer_y_first = larger_y[0]
+        diff = longer_y_first - original_first
+        larger_y = larger_y - diff
+
+        # Plot
+        #plotting.plot_xy(larger_x, larger_y)
+
+        # Replace with extrapolated data
+        for index, y in zip(indices, larger_y):
+
+            # Set
+            if ylog: self.y_data[index] = 10 ** y
+            else: self.y_data[index] = y
+
+    # -----------------------------------------------------------------
+
+    def extrapolated_from(self, from_x, regression_from_x, xlog=False, ylog=False):
+
+        """
+        This function ...
+        :param from_x:
+        :param regression_from_x:
+        :param xlog:
+        :param ylog:
+        :return:
+        """
+
+        # Get copy
+        sed = self.copy()
+
+        # Extrapolate
+        sed.extrapolate_from(from_x, regression_from_x, xlog=xlog, ylog=ylog)
+
+        # Return
+        return sed
+
+    # -----------------------------------------------------------------
+
+    def get_nonzero_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.nonzero(values)
+
+    # -----------------------------------------------------------------
+
+    def get_positive_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values > 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_negative_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values < 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonnegative_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values >= 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def get_nonpositive_indices(self):
+        values = self.get_y(unit=self.y_unit, asarray=True)
+        return np.where(values <= 0)[0]
+
+    # -----------------------------------------------------------------
+
+    def stripped_zeroes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get indices
+        indices = self.get_nonzero_indices()
+        first = self.get_value(self.x_name, indices[0])
+        last = self.get_value(self.x_name, indices[-1])
+
+        # Return the new curve
+        return self.splice(first, last, include_min=True, include_max=True)
+
+    # -----------------------------------------------------------------
+
+    def stripped_negatives_and_zeroes(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Get indices
+        indices = self.get_positive_indices()
+        first = self.get_value(self.x_name, indices[0])
+        last = self.get_value(self.x_name, indices[-1])
+
+        # Return the new curve
+        return self.splice(first, last, include_min=True, include_max=True)
+
 # -----------------------------------------------------------------
 
 class WavelengthCurve(Curve):
@@ -886,24 +1026,12 @@ class WavelengthCurve(Curve):
 
     @property
     def min_wavelength(self):
-
-        """
-        This ufnction ...
-        :return:
-        """
-
         return self.get_value("Wavelength", 0)
 
     # -----------------------------------------------------------------
 
     @property
     def max_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_value("Wavelength", -1)
 
     # -----------------------------------------------------------------
@@ -1156,23 +1284,11 @@ class FilterCurve(WavelengthCurve):
     # -----------------------------------------------------------------
 
     def instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return arrays.array_as_list(self["Instrument"])
 
     # -----------------------------------------------------------------
 
     def bands(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return arrays.array_as_list(self["Band"])
 
     # -----------------------------------------------------------------

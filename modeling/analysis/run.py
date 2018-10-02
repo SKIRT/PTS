@@ -193,6 +193,7 @@ contributions_name = "contributions"
 properties_name = "properties"
 attenuation_name = "attenuation"
 colours_name = "colours"
+images_name = "images"
 residuals_name = "residuals"
 maps_name = "maps"
 absorption_name = "absorption"
@@ -263,7 +264,6 @@ class AnalysisRunBase(object):
         """
 
         # Otherwise: from initial guess
-
         return self.from_fitting and self.generation_name is not None
 
     # -----------------------------------------------------------------
@@ -277,7 +277,6 @@ class AnalysisRunBase(object):
         """
 
         # Otherwise: from best simulation of a certain generation
-
         return self.from_fitting and self.generation_name is None
 
     # -----------------------------------------------------------------
@@ -510,6 +509,12 @@ class AnalysisRunBase(object):
     @abstractproperty
     def colour_names(self):
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_path(self):
+        return fs.join(self.path, images_name)
 
     # -----------------------------------------------------------------
 
@@ -1322,10 +1327,11 @@ class AnalysisRun(AnalysisRunBase):
         if not fs.is_directory(self.evaluation_path): fs.create_directory(self.evaluation_path)
 
         # Analysis directories
+        if not fs.is_directory(self.images_path): fs.create_directory(self.images_path)
+        if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.properties_path): fs.create_directory(self.properties_path)
         if not fs.is_directory(self.attenuation_path): fs.create_directory(self.attenuation_path)
         if not fs.is_directory(self.colours_path): fs.create_directory(self.colours_path)
-        if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
         if not fs.is_directory(self.maps_path): fs.create_directory(self.maps_path)
         if not fs.is_directory(self.absorption_path): fs.create_directory(self.absorption_path)
         if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
@@ -1930,72 +1936,36 @@ class AnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_grid(self.dust_grid_path)
 
     # -----------------------------------------------------------------
 
     @property
     def analysis_run_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.path
 
     # -----------------------------------------------------------------
 
     @property
     def ski_file(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return SkiFile(self.ski_file_path)
 
     # -----------------------------------------------------------------
 
     @property
     def input_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return load_dict(self.input_file_path)
 
     # -----------------------------------------------------------------
 
     @property
     def dust_grid_tree_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.dust_grid_build_path, dust_grid_tree_filename)
 
     # -----------------------------------------------------------------
@@ -2032,312 +2002,156 @@ class AnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def has_dust_grid_tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
 
     @property
     def model_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, model_name)
 
     # -----------------------------------------------------------------
 
     @property
     def instruments_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, instruments_name)
 
     # -----------------------------------------------------------------
 
     @property
     def projections_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.path, projections_name)
 
     # -----------------------------------------------------------------
 
     @property
     def earth_projection_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.projections_path, earth_projection_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def faceon_projection_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.projections_path, faceon_projection_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def edgeon_projection_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.projections_path, edgeon_projection_filename)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def earth_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return GalaxyProjection.from_file(self.earth_projection_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def edgeon_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return EdgeOnProjection.from_file(self.edgeon_projection_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def faceon_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FaceOnProjection.from_file(self.faceon_projection_path)
 
     # -----------------------------------------------------------------
 
     @property
     def sed_earth_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, sed_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_sed_earth_instrument(self):
-
-        """
-        Thisfunction ...
-        :return:
-        """
-
         return fs.is_file(self.sed_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def full_sed_earth_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, full_sed_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_sed_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.full_sed_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def simple_earth_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, simple_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_simple_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.simple_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def full_earth_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, full_earth_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_earth_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.full_earth_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def simple_faceon_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, simple_faceon_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_simple_faceon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.simple_faceon_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def full_faceon_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, full_faceon_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_faceon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.full_faceon_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def simple_edgeon_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, simple_edgeon_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_simple_edgeon_instrument(self):
-
-        """
-        Thisf unction ...
-        :return:
-        """
-
         return fs.is_file(self.simple_edgeon_instrument_path)
 
     # -----------------------------------------------------------------
 
     @property
     def full_edgeon_instrument_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.instruments_path, full_edgeon_instrument_filename)
 
     # -----------------------------------------------------------------
 
     @property
     def has_full_edgeon_instrument(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.is_file(self.full_edgeon_instrument_path)
 
     # -----------------------------------------------------------------
@@ -2456,12 +2270,6 @@ class AnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def galaxy_properties_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..core.environment import properties_name, data_name
         return fs.join(self.modeling_path, data_name, properties_name)
 
@@ -2469,73 +2277,36 @@ class AnalysisRun(AnalysisRunBase):
 
     @lazyproperty
     def galaxy_properties(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the properties
         return GalaxyProperties.from_file(self.galaxy_properties_path)
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_distance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.distance
 
     # -----------------------------------------------------------------
 
     @property
     def galaxy_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.galaxy_properties.center
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_run_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.info.fitting_run
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def fitting_run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return FittingRun.from_name(self.modeling_path, self.fitting_run_name)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def model_suite(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         from ..build.suite import ModelSuite
         return ModelSuite.from_modeling_path(self.modeling_path)
 
@@ -2543,72 +2314,36 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def model_definition_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.model_suite.get_model_path(self.model_name)
 
     # -----------------------------------------------------------------
 
     @property
     def model_definition_stellar_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.model_definition_path, "stellar")
 
     # -----------------------------------------------------------------
 
     @property
     def model_definition_dust_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.join(self.model_definition_path, "dust")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def model_stellar_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.model_path, "stellar")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def model_dust_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return fs.create_directory_in(self.model_path, "dust")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def stellar_component_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Return the paths as a dictionary based on component name
         return fs.directories_in_path(self.model_stellar_path, returns="dict")
 
@@ -2616,36 +2351,18 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def stellar_component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.stellar_component_paths.keys()
 
     # -----------------------------------------------------------------
 
     @property
     def nstellar_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.stellar_component_names)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
     def dust_component_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Return the paths as a dictionary based on component name
         return fs.directories_in_path(self.model_dust_path, returns="dict")
 
@@ -2653,24 +2370,12 @@ class AnalysisRun(AnalysisRunBase):
 
     @property
     def dust_component_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.dust_component_paths.keys()
 
     # -----------------------------------------------------------------
 
     @property
     def ndust_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.dust_component_names)
 
     # -----------------------------------------------------------------

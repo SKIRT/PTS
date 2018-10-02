@@ -217,12 +217,6 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     def __len__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return len(self.paths)
 
     # -----------------------------------------------------------------
@@ -332,36 +326,18 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return copy.deepcopy(self)
 
     # -----------------------------------------------------------------
 
     @property
     def names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.paths.keys()
 
     # -----------------------------------------------------------------
 
     @property
     def path_list(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.paths.values()
 
     # -----------------------------------------------------------------
@@ -437,24 +413,12 @@ class DataSet(object):
 
     @property
     def filters(self):
-
-        """
-        This functino ...
-        :return:
-        """
-
         return self.get_filters().values()
 
     # -----------------------------------------------------------------
 
     @property
     def filters_from_names(self):
-
-        """
-        Thisnf unction ...
-        :return:
-        """
-
         return self.get_filters_from_names().values()
 
     # -----------------------------------------------------------------
@@ -1524,48 +1488,24 @@ class DataSet(object):
 
     @property
     def pixelscale_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return QuantityRange(self.min_pixelscale, self.max_pixelscale)
 
     # -----------------------------------------------------------------
 
     @property
     def min_pixelscale_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_wcs(self.min_pixelscale_name)
 
     # -----------------------------------------------------------------
 
     @property
     def max_pixelscale_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         return self.get_wcs(self.max_pixelscale_name)
 
     # -----------------------------------------------------------------
 
     @property
     def median_pixelscale_wcs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         name = self.median_pixelscale_name
         return self.get_wcs(name)
 
@@ -1626,7 +1566,6 @@ class DataSet(object):
         This function ...
         :return:
         """
-
 
         names = self.names
         pixelscales = [self.get_pixelscale(name) for name in names]

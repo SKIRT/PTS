@@ -33,3 +33,25 @@ definition.add_flag("show", "showing", True)
 definition.add_flag("plot", "plotting", True)
 
 # -----------------------------------------------------------------
+
+# Recalculate properties
+definition.add_flag("recalculate", "recalculate the properties")
+definition.add_flag("recalculate_total", "recalculate total properties")
+definition.add_flag("recalculate_bulge", "recalculate bulge properties")
+definition.add_flag("recalculate_disk", "recalculate disk properties")
+definition.add_flag("recalculate_old", "recalculate old properties")
+definition.add_flag("recalculate_young", "recalculate young properties")
+definition.add_flag("recalculate_sfr", "recalculate SFR properties")
+definition.add_flag("recalculate_unevolved", "recalculate unevolved properties")
+
+# Replot
+definition.add_flag("replot", "remake the plots")
+definition.add_flag("replot_total", "replot total")
+definition.add_flag("replot_bulge", "replot bulge")
+definition.add_flag("replot_disk", "replot disk")
+definition.add_flag("replot_old", "replot old")
+definition.add_flag("replot_young", "replot young")
+definition.add_flag("replot_sfr", "replot SFR")
+definition.add_flag("replot_unevolved", "replot unevolved")
+
+# -----------------------------------------------------------------
